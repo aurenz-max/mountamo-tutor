@@ -1,0 +1,49 @@
+{
+  "source": "qa/curriculum-design-review/la-g2-2026-10-07/evidence/LA002-02-a-paragraph-architect-informational.json",
+  "primitiveId": "paragraph-architect",
+  "evalMode": "informational",
+  "data": {
+    "title": "Build a Paragraph About Sharks",
+    "paragraphType": "informational",
+    "gradeLevel": "2",
+    "topic": "Sharks and how they live in the ocean",
+    "topicSentenceFrames": [
+      "___ are fish that live in the ___.",
+      "The most important thing to know is that ___.",
+      "___ are amazing ocean animals because ___.",
+      "Have you ever wondered what ___ are?"
+    ],
+    "detailSentenceFrames": [
+      "First, ___.",
+      "Next, ___.",
+      "Then, ___.",
+      "For example, ___.",
+      "Also, ___."
+    ],
+    "concludingSentenceFrames": [
+      "In the end, ___.",
+      "As you can see, ___.",
+      "This is why ___."
+    ],
+    "linkingWords": [
+      "because",
+      "also",
+      "for example",
+      "first",
+      "next",
+      "then",
+      "finally",
+      "another"
+    ],
+    "modelParagraph": {
+      "topicSentence": "Sharks are fish that live in the ocean and breathe with gills.",
+      "detailSentences": [
+        "First, sharks swim very fast to catch their food.",
+        "Next, they have strong teeth that help them eat.",
+        "For example, a great white shark can hunt fish and other ocean animals."
+      ],
+      "concludingSentence": "As you can see, sharks are special animals that fit right into their ocean home."
+    },
+    "supportTier": "medium"
+  }
+}

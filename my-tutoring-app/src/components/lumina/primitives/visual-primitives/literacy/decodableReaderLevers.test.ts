@@ -10,7 +10,9 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import { PRACTICE_LINES } from './decodablePracticeLines';
 import { itemsFromChallenges, sentenceText, type DecodableSentenceLike } from './decodableReaderScript';
-import { DECODABLE_MISSES, decodableReaderLevers, regionLeak, shortLine, shortLineLeak, storyRegion } from './decodableReaderLevers';
+import { DECODABLE_MISSES, PRACTICE_STORIES, decodableReaderLevers, regionLeak, shortLine, shortLineLeak, shortStory, shortStoryLeak,
+  simplerFor, storyRegion } from './decodableReaderLevers';
+import { decodableSpokenMisses } from './decodableReaderWorkspace';
 
 const payload = (mode: string) => JSON.parse(readFileSync(join(__dirname,
   `../../../components/live-activity/runtime/testing/w1-payloads/decodable-reader.${mode}.json`), 'utf8')).data;
@@ -31,10 +33,10 @@ describe.each(['literal', 'read_along'])('%s payload', (mode) => {
     }
   });
 
-  it('the story region is two whole story sentences, one holding the answer; read-along has none', () => {
+  it('the story region is two whole story sentences, one holding the answer', () => {
     for (const item of items.filter(i => i.kind !== 'read_line')) {
       const region = storyRegion(item, sentences);
-      if (mode === 'read_along' || item.kind !== 'answer_spoken') { expect(region).toBeNull(); continue; }
+      if (item.kind !== 'answer_spoken') { expect(region).toBeNull(); continue; }
       if (!region) continue;
       expect(regionLeak(region, sentences)).toBe(false);
       expect(region).toContain(item.evidenceLine);
@@ -66,7 +68,7 @@ describe('levers', () => {
     }
     for (const [mode, misses] of Object.entries(DECODABLE_MISSES)) {
       expect(entry.misses![mode]).toEqual(misses);
-      expect(entry.unanswered![mode]).toEqual(misses);
+      expect(entry.unanswered![mode]).toEqual(mode === 'read_along' ? [] : misses);
     }
     expect(entry.levers).toBe(true);
   });
@@ -77,5 +79,67 @@ describe('levers', () => {
     const line = { ...items.find(i => i.kind === 'read_line' && i.wordCount > 3)! };
     expect(shortLine(line, story)!.text).toBe(PRACTICE_LINES[0].text);
     expect(sentenceText(story[0])).toBe(PRACTICE_LINES[1].text);
+  });
+});
+
+describe('read_along levers', () => {
+  const data = payload('read_along');
+  const sentences: DecodableSentenceLike[] = data.passage.sentences;
+  const { items } = itemsFromChallenges(data);
+  const spoken = items.filter(i => i.kind === 'answer_spoken');
+  const sentence = (text: string, i: number): DecodableSentenceLike => ({ id: `s${i}`, words: text.split(' ').map((t, j) => ({ id: `w${i}${j}`, text: t, phonicsPattern: 'cvc' })) });
+
+  it('every spoken question has the region (read aloud) and a practice story, answering both misses', () => {
+    expect(spoken.length).toBeGreaterThan(0);
+    for (const item of spoken) {
+      const levers = decodableReaderLevers(item, [], sentences, items);
+      expect(levers.map(l => [l.id, l.kind, l.carrier])).toEqual([['story_region', 'help', 'both'], ['short_story', 'simplify', 'both']]);
+      for (const miss of decodableSpokenMisses(item).map(m => m.id)) expect(levers.some(l => l.answers?.includes(miss))).toBe(true);
+      expect(nextLever(levers, 'lifted_word')).toBe('story_region');
+      expect(nextLever(decodableReaderLevers(item, ['story_region'], sentences, items), 'retell')).toBe('short_story');
+    }
+  });
+
+  it('the region fences the tutor: read whole, nothing stressed, never which word answers', () => {
+    const region = decodableReaderLevers(spoken[0], [], sentences, items)[0];
+    expect(region.does).toMatch(/Read those two sentences aloud once, whole/);
+    expect(region.does).toMatch(/never say which word answers/);
+    for (const item of spoken) expect(region.does).not.toContain(item.answerWord!);
+  });
+
+  it('the practice story is a read-along question on two new sentences, its answer in them, no session word', () => {
+    for (const item of spoken) {
+      const practice = shortStory(item, sentences, items)!;
+      expect(practice).toMatchObject({ id: `${item.id}~simpler`, kind: 'answer_spoken' });
+      expect(simplerFor(item, sentences, items)).toEqual(practice);
+      expect(practice.storyText!.split(/(?<=\.)\s+/)).toHaveLength(2);
+      expect(practice.evidenceLine).toBeTruthy();
+      expect(practice.storyText).toContain(practice.evidenceLine);
+      expect(practice.answerWord).not.toBe(item.answerWord);
+      expect(shortStoryLeak(practice, sentences, items)).toBe(false);
+      // Its own misses name its own story, never the lesson story.
+      for (const m of decodableSpokenMisses(practice)) for (const w of m.examples ?? []) expect(practice.storyText!.toLowerCase()).toContain(w.toLowerCase());
+    }
+  });
+
+  it('no practice story on a decode question, a story of two sentences, or when every pool story clashes', () => {
+    const literal = itemsFromChallenges(payload('literal')).items.find(i => i.kind === 'answer_spoken');
+    if (literal) expect(shortStory(literal, payload('literal').passage.sentences, [])).toBeNull();
+    expect(shortStory(spoken[0], sentences.slice(0, 2), items)).toBeNull();
+    const clash = PRACTICE_STORIES.map((p, i) => sentence(p.sentences[0], i));
+    expect(shortStory(spoken[0], clash, items)).toBeNull();
+    const allButLast = PRACTICE_STORIES.slice(0, -1).map((p, i) => sentence(p.sentences[0], i));
+    expect(shortStory(spoken[0], allButLast, items)!.answerWord).toBe(PRACTICE_STORIES.at(-1)!.answer);
+  });
+
+  it("every pool story is reachable: a session that names every other story's answer gets exactly that one", () => {
+    const item = { ...spoken[0], question: 'Who is it?', answerWord: 'zed', storyText: 'Zed is Zed.' };
+    const base = ['Zed is Zed.', 'Zed is Zed.', 'Zed is Zed.'].map(sentence);
+    PRACTICE_STORIES.forEach((p, i) => {
+      const others = sentence(PRACTICE_STORIES.filter((_, j) => j !== i).map(o => o.answer).join(' '), 9);
+      const practice = shortStory(item, [...base, others], [])!;
+      expect(practice.answerWord).toBe(p.answer);
+      expect(practice.question).toBe(p.question);
+    });
   });
 });

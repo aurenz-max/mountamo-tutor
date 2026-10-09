@@ -1,0 +1,164 @@
+{
+  "log": [
+    {
+      "step": "passage",
+      "passage": "Maya stepped into the overgrown backyard and gasped. The old oak tree stood as a giant guarding the secret space. Its twisted branches were thick ropes stretching out into the sky. A patch of wild grass on the lawn was a green carpet waiting for her footsteps. Suddenly, a tiny yellow butterfly danced through the air, moving as lightly as a falling leaf.",
+      "tags": [
+        "simile: as a giant guarding the secret space",
+        "metaphor: were thick ropes",
+        "metaphor: was a green carpet",
+        "simile: as lightly as a falling leaf"
+      ],
+      "underlinedAtStart": 0
+    },
+    {
+      "step": "wrong kind",
+      "feedback": "That sentence has a figure of speech, but not that kind. Look at how it works.",
+      "judgeCalls": 0
+    },
+    {
+      "step": "right kind",
+      "feedback": "Yes! \"as a giant guarding the secret space\" is a simile."
+    },
+    {
+      "step": "plain sentence as simile",
+      "sentence": "Maya stepped into the overgrown backyard and gasped.",
+      "feedback": "I don't see a simile there. Read the sentence again.",
+      "judge": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.97,
+        "fits": 0.34,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "fits": 0.34,
+          "partly": 0.25,
+          "no": 0.41
+        }
+      }
+    },
+    {
+      "step": "makes",
+      "makes": [
+        {
+          "id": "m1",
+          "device": "simile",
+          "subject": "a fluffy kitten"
+        },
+        {
+          "id": "m2",
+          "device": "metaphor",
+          "subject": "the morning sun"
+        },
+        {
+          "id": "m3",
+          "device": "personification",
+          "subject": "rumbling thunder"
+        },
+        {
+          "id": "m4",
+          "device": "hyperbole",
+          "subject": "a cold popsicle"
+        }
+      ]
+    },
+    {
+      "step": "plain sentence for a simile",
+      "feedback": "Read the task again. Does your sentence do that?",
+      "judge": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.93,
+        "fits": 0.06,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.76,
+          "partly": 0.18,
+          "fits": 0.06
+        }
+      }
+    },
+    {
+      "step": "a simile",
+      "feedback": "Yes! That is a simile.",
+      "judge": {
+        "met": true,
+        "realWord": 0.72,
+        "fits": 0.71,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.71,
+          "no": 0.21,
+          "partly": 0.08
+        }
+      }
+    }
+  ],
+  "judge": [
+    {
+      "p": {
+        "ask": "Find a simile in the passage. (It counts only if this sentence really has a simile: something that compares two different things using like or as.)",
+        "made": "Maya stepped into the overgrown backyard and gasped.",
+        "unit": "writing",
+        "context": "Maya stepped into the overgrown backyard and gasped. The old oak tree stood as a giant guarding the secret space. Its twisted branches were thick ropes stretching out into the sky. A patch of wild grass on the lawn was a green carpet waiting for her footsteps. Suddenly, a tiny yellow butterfly danced through the air, moving as lightly as a falling leaf.",
+        "strict": true,
+        "grade": "4"
+      },
+      "v": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.97,
+        "fits": 0.34,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "fits": 0.34,
+          "partly": 0.25,
+          "no": 0.41
+        }
+      }
+    },
+    {
+      "p": {
+        "made": "a fluffy kitten was very big and dark.",
+        "unit": "writing",
+        "grade": "4",
+        "context": "",
+        "ask": "Write a sentence with a simile about a fluffy kitten. (It is about a fluffy kitten and it compares two different things using like or as.)",
+        "strict": true
+      },
+      "v": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.93,
+        "fits": 0.06,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.76,
+          "partly": 0.18,
+          "fits": 0.06
+        }
+      }
+    },
+    {
+      "p": {
+        "made": "A fluffy kitten looked like a giant gray blanket over the lake.",
+        "unit": "writing",
+        "grade": "4",
+        "context": "",
+        "ask": "Write a sentence with a simile about a fluffy kitten. (It is about a fluffy kitten and it compares two different things using like or as.)",
+        "strict": true
+      },
+      "v": {
+        "met": true,
+        "realWord": 0.72,
+        "fits": 0.71,
+        "judge": "jev",
+        "fitsOptions": {
+          "fits": 0.71,
+          "no": 0.21,
+          "partly": 0.08
+        }
+      }
+    }
+  ]
+}

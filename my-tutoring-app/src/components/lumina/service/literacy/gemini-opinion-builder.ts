@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { generateOpinionBuild } from './gemini-opinion-build';
 import type { GenerationContext } from "../generation/generationContext";
 import { OpinionBuilderData } from "../../primitives/visual-primitives/literacy/OpinionBuilder";
 import {
@@ -79,6 +80,10 @@ export const generateOpinionBuilder = async (
   const { topic } = ctx;
   const intent = ctx.intent;
   const config = ctx.raw as OpinionBuilderConfig;
+  // build_opinion (open build, OB-7L): cards for both sides on the bound card surface.
+  if (config?.targetEvalMode === 'build_opinion') {
+    return generateOpinionBuild(topic, ctx.gradeContext, { intent, grade: ctx.grade }) as unknown as Promise<OpinionBuilderData>;
+  }
   // ── Within-mode support tier (config.difficulty): DISPLAY scaffolding only.
   //    Arrives already normalized ('easy'|'medium'|'hard'|undefined) from
   //    resolveGenerationContext — never re-parse config.difficulty here. It is

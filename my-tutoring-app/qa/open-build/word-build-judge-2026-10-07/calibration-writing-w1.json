@@ -1,0 +1,574 @@
+[
+  {
+    "ask": "Write the first sentence: tell what sharks are, or what the paragraph is about. (It names the topic and tells what it is or what the paragraph will be about.)",
+    "context": "",
+    "made": "Sharks are big fish that live in the ocean.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "no": 0,
+        "partly": 0,
+        "fits": 1
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write the first sentence: tell what sharks are, or what the paragraph is about. (It names the topic and tells what it is or what the paragraph will be about.)",
+    "context": "",
+    "made": "This is about sharks and how they live.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.98,
+      "judge": "jev",
+      "fitsOptions": {
+        "partly": 0.02,
+        "fits": 0.98,
+        "no": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write the first sentence: tell what sharks are, or what the paragraph is about. (It names the topic and tells what it is or what the paragraph will be about.)",
+    "context": "",
+    "made": "Sharks are fsh that swim in the see.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "partly": 0,
+        "fits": 1,
+        "no": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write the first sentence: tell what sharks are, or what the paragraph is about. (It names the topic and tells what it is or what the paragraph will be about.)",
+    "context": "",
+    "made": "I like to eat pizza on Friday.",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.97,
+      "fits": 0,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "fits": 0,
+        "partly": 0,
+        "no": 1
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write the first sentence: tell what sharks are, or what the paragraph is about. (It names the topic and tells what it is or what the paragraph will be about.)",
+    "context": "",
+    "made": "Shark the ocean big swim.",
+    "expect": "not_a_word",
+    "jev": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0.44,
+      "fits": 0.86,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "partly": 0.09,
+        "fits": 0.86,
+        "no": 0.05
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "not_a_word",
+      "realWord": 0,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write a sentence with a fact about sharks. (It gives a fact about the topic that the paragraph so far has not already given.)",
+    "context": "Sharks are big fish that live in the ocean.",
+    "made": "Sharks have lots of sharp teeth.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "fits": 1,
+        "partly": 0,
+        "no": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write a sentence with a fact about sharks. (It gives a fact about the topic that the paragraph so far has not already given.)",
+    "context": "Sharks are big fish that live in the ocean.",
+    "made": "They can smell blood from far away.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "no": 0,
+        "partly": 0,
+        "fits": 1
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write a sentence with a fact about sharks. (It gives a fact about the topic that the paragraph so far has not already given.)",
+    "context": "Sharks are big fish that live in the ocean.",
+    "made": "Dogs like to play fetch in the park.",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.96,
+      "fits": 0,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "fits": 0,
+        "no": 1,
+        "partly": 0
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write another fact about sharks. (It gives another fact about the topic, different from the facts already written.)",
+    "context": "Sharks are big fish that live in the ocean. Sharks have lots of sharp teeth.",
+    "made": "Sharks have many sharp teeth.",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.97,
+      "fits": 0.03,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "partly": 0.85,
+        "no": 0.12,
+        "fits": 0.03
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write another fact about sharks. (It gives another fact about the topic, different from the facts already written.)",
+    "context": "Sharks are big fish that live in the ocean. Sharks have lots of sharp teeth.",
+    "made": "Some sharks are as long as a bus.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.97,
+      "fits": 0.99,
+      "judge": "jev",
+      "fitsOptions": {
+        "fits": 0.99,
+        "no": 0,
+        "partly": 0.01
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write a closing sentence that wraps up your paragraph about sharks. (It wraps up the topic (sums it up or restates it) and does not add a new fact.)",
+    "context": "Sharks are big fish that live in the ocean. Sharks have sharp teeth. Some sharks are as long as a bus.",
+    "made": "Now you know a lot about sharks.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "fits": 0.41,
+        "no": 0.31,
+        "partly": 0.28
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write a closing sentence that wraps up your paragraph about sharks. (It wraps up the topic (sums it up or restates it) and does not add a new fact.)",
+    "context": "Sharks are big fish that live in the ocean. Sharks have sharp teeth. Some sharks are as long as a bus.",
+    "made": "That is why sharks are amazing animals.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 0.87,
+      "judge": "jev",
+      "fitsOptions": {
+        "no": 0.04,
+        "partly": 0.09,
+        "fits": 0.87
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write a closing sentence that wraps up your paragraph about sharks. (It wraps up the topic (sums it up or restates it) and does not add a new fact.)",
+    "context": "Sharks are big fish that live in the ocean. Sharks have sharp teeth. Some sharks are as long as a bus.",
+    "made": "Sharks also have rough skin like sandpaper.",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.96,
+      "fits": 0,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "no": 0.01,
+        "partly": 0.99,
+        "fits": 0
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write how your story about a lost puppy begins: who is in it and where. (It starts a story: it names a character and, if it can, where or when.)",
+    "context": "",
+    "made": "Once there was a puppy named Spot who lived on a farm.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "fits": 1,
+        "partly": 0,
+        "no": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write how your story about a lost puppy begins: who is in it and where. (It starts a story: it names a character and, if it can, where or when.)",
+    "context": "",
+    "made": "Puppies are baby dogs.",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.97,
+      "fits": 0.01,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "no": 0.58,
+        "partly": 0.41,
+        "fits": 0.01
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write what happens next: a problem or something that happens. (It tells an event that follows from the beginning, such as a problem.)",
+    "context": "Once there was a puppy named Spot who lived on a farm.",
+    "made": "One day Spot ran into the woods and got lost.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "no": 0,
+        "fits": 1,
+        "partly": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write how the story ends. (It ends the story: it solves the problem or tells how things turned out.)",
+    "context": "Once there was a puppy named Spot who lived on a farm. One day Spot ran into the woods and got lost. Spot followed the sound of the farm bell.",
+    "made": "Spot got home and his family hugged him.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 0.98,
+      "judge": "jev",
+      "fitsOptions": {
+        "fits": 0.98,
+        "no": 0,
+        "partly": 0.02
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write how the story ends. (It ends the story: it solves the problem or tells how things turned out.)",
+    "context": "Once there was a puppy named Spot who lived on a farm. One day Spot ran into the woods and got lost. Spot followed the sound of the farm bell.",
+    "made": "Then Spot saw a big tree.",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.97,
+      "fits": 0.01,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "fits": 0.01,
+        "no": 0.13,
+        "partly": 0.86
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write your opinion about recess. (It states an opinion about the topic (what the writer thinks, likes or believes).)",
+    "context": "",
+    "made": "I think recess should be longer.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "fits": 1,
+        "partly": 0,
+        "no": 0
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write your opinion about recess. (It states an opinion about the topic (what the writer thinks, likes or believes).)",
+    "context": "",
+    "made": "Recess is at 10 o clock.",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.95,
+      "fits": 0,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "fits": 0,
+        "partly": 0.33,
+        "no": 0.67
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write a reason for your opinion. (It gives a reason that supports the opinion already written.)",
+    "context": "I think recess should be longer.",
+    "made": "Kids need more time to run and play.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.98,
+      "fits": 1,
+      "judge": "jev",
+      "fitsOptions": {
+        "partly": 0,
+        "no": 0,
+        "fits": 1
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write a reason for your opinion. (It gives a reason that supports the opinion already written.)",
+    "context": "I think recess should be longer.",
+    "made": "My favorite color is blue.",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.96,
+      "fits": 0,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "partly": 0,
+        "no": 1,
+        "fits": 0
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write a closing sentence that says your opinion again. (It restates the same opinion in other words.)",
+    "context": "I think recess should be longer. Kids need time to play. Playing helps us learn.",
+    "made": "That is why recess should be longer.",
+    "expect": "pass",
+    "jev": {
+      "met": true,
+      "realWord": 0.96,
+      "fits": 0.58,
+      "judge": "jev",
+      "fitsOptions": {
+        "fits": 0.58,
+        "no": 0.07,
+        "partly": 0.35
+      }
+    },
+    "flash": {
+      "met": true,
+      "realWord": 1,
+      "fits": 1,
+      "judge": "flash"
+    }
+  },
+  {
+    "ask": "Write a closing sentence that says your opinion again. (It restates the same opinion in other words.)",
+    "context": "I think recess should be longer. Kids need time to play. Playing helps us learn.",
+    "made": "Recess should be shorter so we can do math.",
+    "expect": "wrong_meaning",
+    "jev": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 0.94,
+      "fits": 0.01,
+      "judge": "jev+flash",
+      "fitsOptions": {
+        "fits": 0.01,
+        "partly": 0.18,
+        "no": 0.81
+      }
+    },
+    "flash": {
+      "met": false,
+      "miss": "wrong_meaning",
+      "realWord": 1,
+      "fits": 0,
+      "judge": "flash"
+    }
+  }
+]

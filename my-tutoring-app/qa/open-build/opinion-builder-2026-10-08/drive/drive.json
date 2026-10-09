@@ -1,0 +1,43 @@
+{
+  "log": [
+    {
+      "step": "mixed sides",
+      "feedback": ""
+    },
+    {
+      "step": "no side",
+      "feedback": "Yes! Every card backs up your opinion, from start to finish."
+    },
+    {
+      "step": "oreo",
+      "prompt": "Should elementary school students have outdoor recess every single day, even when the weather is chilly?"
+    },
+    {
+      "step": "off-question opinion",
+      "feedback": "Read the step again. Does your sentence do that job?"
+    }
+  ],
+  "judge": [
+    {
+      "p": {
+        "ask": "Write your opinion: what do you think about the question? Topic: Should elementary school students have outdoor recess every single day, even when the weather is chilly?. (It states an opinion that answers the question (what the writer thinks or believes).)",
+        "made": "I think that recess should be longer for all kids.",
+        "unit": "writing",
+        "context": "",
+        "grade": "4"
+      },
+      "v": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.98,
+        "fits": 0.27,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.54,
+          "fits": 0.27,
+          "partly": 0.19
+        }
+      }
+    }
+  ]
+}

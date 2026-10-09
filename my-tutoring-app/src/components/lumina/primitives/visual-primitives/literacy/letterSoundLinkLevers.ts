@@ -8,6 +8,12 @@
  *   word; neither letter nor keyword may come up in a later item, which would then be told (contract R4).
  * - `voice_feel_model` (help): a quiet and a buzzing sound on two pictures, no letters (snake "sss", bee "zzz").
  *   Answers `voicing_partner`, only on a voicing-pair item. Leak rule: never the item's own pair.
+ * - `pair_model` (help, both): two OTHER letter cards beside the item, each with its keyword picture, of the same
+ *   sound kinds as the item's two cards, and the tutor says each model sound. The parallel-item model for
+ *   `other_letter` / `other_short_vowel` where `keyword_under_both` is refused (a later item uses a card letter, or a
+ *   card is `i`). A group-1 session uses every group letter, so the model may come from outside the group, as
+ *   `letter_model` does. Leak rule (`pairModelLeak`): no session letter, keyword or picture; kinds match the item's
+ *   as a set, so the model marks neither card.
  * - `far_letter_pair` (simplify): an ungraded practice item first, a NEW sound whose letter is used nowhere in
  *   the session, against a foil of the other kind (vowel against consonant). Leak rule: the same sound with a
  *   far foil would hand over the answer when the full item comes back, and a session letter would be told
@@ -32,6 +38,7 @@ export const KEYWORDS_LEVER = 'keyword_under_both';
 export const VOICE_LEVER = 'voice_feel_model';
 export const FAR_PAIR_LEVER = 'far_letter_pair';
 export const LETTER_MODEL_LEVER = 'letter_model';
+export const PAIR_MODEL_LEVER = 'pair_model';
 
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
 const VOICING = [['t', 'd'], ['p', 'b'], ['s', 'z'], ['f', 'v'], ['k', 'g'], ['c', 'g']];
@@ -135,6 +142,34 @@ export function letterModelFor(item: LetterSoundItem, items: readonly LetterSoun
   return letter ? model(letter) : null;
 }
 
+/** Two letters never paired in a model: one shared sound (c/k), or a mirror pair a K learner confuses (b/d). */
+const BAD_MODEL_PAIRS = [['c', 'k'], ['b', 'd']];
+const kindsOf = (letters: readonly string[]) => letters.map(soundKind).sort().join('+');
+
+/** Leak rule for the pair model: true when a model letter, keyword or picture is a session one, or the model's sound
+ *  kinds are not the item's (a vowel model beside a vowel/consonant item would mark the vowel card). */
+export const pairModelLeak = (pair: readonly LetterModel[], item: LetterSoundItem, items: readonly LetterSoundItem[]) =>
+  pair.length !== 2 || pair[0].letter === pair[1].letter || pair.some(m => letterModelLeak(m, items))
+  || kindsOf(pair.map(m => m.letter)) !== kindsOf(optionLetters(item))
+  || BAD_MODEL_PAIRS.some(([x, y]) => pair.some(m => m.letter === x) && pair.some(m => m.letter === y));
+
+/** The model pair for a hear-see item: in-group letters first, then any that pass. Null if none passes. */
+export function pairModelFor(item: LetterSoundItem, items: readonly LetterSoundItem[], letterGroup: number | undefined): LetterModel[] | null {
+  if (item.mode !== 'hear-see' || item.options.length !== 2) return null;
+  const group = LETTER_GROUPS[normalizeLetterGroup(letterGroup) ?? 4].filter(l => l.length === 1);
+  const ordered = [...EASY_FIRST.filter(l => group.includes(l)), ...EASY_FIRST.filter(l => !group.includes(l))];
+  const model = (l: string): LetterModel => ({ letter: l, sound: spokenSoundFor(l, `/${l}/`), word: keywordFor(l), emoji: emojiForKeyword(keywordFor(l)) });
+  const candidates = ordered.filter(l => canProduceSound(l) && keywordNamesItsPicture(l)).map(model);
+  const [k1, k2] = optionLetters(item).map(soundKind);
+  for (const a of candidates.filter(m => soundKind(m.letter) === k1)) {
+    for (const b of candidates.filter(m => soundKind(m.letter) === k2)) {
+      const pair = [a, b].sort((x, y) => x.letter.localeCompare(y.letter));
+      if (!pairModelLeak(pair, item, items)) return pair;
+    }
+  }
+  return null;
+}
+
 /** The levers this item declares, with their state. */
 export function letterSoundLevers(item: LetterSoundItem | null, pulled: readonly string[], items: readonly LetterSoundItem[],
   index: number, letterGroup: number | undefined): WorkspaceLever[] {
@@ -159,6 +194,14 @@ export function letterSoundLevers(item: LetterSoundItem | null, pulled: readonly
     answers: ['other_short_vowel', 'other_letter'],
     when: 'The learner taps the wrong letter, not a voicing partner.',
     does: 'Puts a keyword picture under each of the two letter cards, alike. Do not name either picture.',
+  });
+  if (pairModelFor(item, items, letterGroup)) levers.push({
+    id: PAIR_MODEL_LEVER, kind: 'help', carrier: 'both', pulled: pulled.includes(PAIR_MODEL_LEVER),
+    answers: ['other_short_vowel', 'other_letter'],
+    when: 'The learner taps the wrong letter, not a voicing partner.',
+    // The model letters are named only in the scene fact once pulled (the letter_model lesson).
+    does: 'Shows two other letter cards, each with its picture, beside the item. Once they are on screen, say each '
+      + "one's sound once. They are not this item's letters; do not say which card on the item matches.",
   });
   const model = voiceModelFor(item);
   if (model) levers.push({

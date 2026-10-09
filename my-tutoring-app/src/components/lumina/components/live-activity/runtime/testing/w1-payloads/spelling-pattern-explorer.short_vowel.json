@@ -1,0 +1,34 @@
+{
+ "source": "qa/tutor-reports/spelling-pattern-explorer-runtime-short_vowel-payload-2026-10-09.json",
+ "primitiveId": "spelling-pattern-explorer",
+ "evalMode": "short_vowel",
+ "data": {
+  "title": "Short Vowel Word Families",
+  "gradeLevel": "Grade 1",
+  "patternType": "short-vowel",
+  "patternWords": [
+   "cat",
+   "bat",
+   "can",
+   "pig",
+   "top",
+   "bug"
+  ],
+  "highlightPattern": "CVC",
+  "ruleTemplate": "Words that have a consonant, a short vowel, and a ________ make a CVC word family.",
+  "correctRule": "consonant",
+  "dictationWords": [
+   "hat",
+   "pan",
+   "dig",
+   "mop"
+  ],
+  "dictationHints": [
+   "Something you wear on your head",
+   "Used for cooking food",
+   "To make a hole in the dirt",
+   "Used to clean the floor"
+  ],
+  "objectiveGrade": "1"
+ }
+}

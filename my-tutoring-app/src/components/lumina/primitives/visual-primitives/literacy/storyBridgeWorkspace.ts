@@ -11,6 +11,7 @@
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { textFacts } from '../../../components/live-activity/runtime/sceneFacts';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import {
   askFor,
   choiceLabel,
@@ -37,10 +38,47 @@ const COMPARISON: Record<string, string> = {
 export function storyBridgeAssignment(item: StoryBridgeItem): TeachingAssignment {
   if (item.answerKind === 'gesture') return { id: item.id, task: ask(item), response: 'gesture' };
   const evidence = evidenceFor(item);
+  const misses = storyBridgeSpokenMisses(item);
   return { id: item.id, task: ask(item), response: 'speech',
     expectedAnswer: `A comparison across both stories. Reference: "${item.comparisonSummary}". ${COMPARISON[item.mode]}. `
       + `Story one says: "${evidence.storyA}" Story two says: "${evidence.storyB}" A detail about only one story is `
-      + 'not a comparison. Titles, names and full sentences are not required.' };
+      + 'not a comparison. Titles, names and full sentences are not required.',
+    ...(misses.length ? { misses } : {}) };
+}
+
+/**
+ * What a wrong spoken comparison shows (handoff 20 Part B), named for what is said, not why:
+ *   - say_alike, say_different: `one_friend_only` (tells about one of the two friends, no link to the other);
+ *     say_alike `told_difference` (tells only a way they differ), say_different `told_likeness` (only a way they
+ *     are alike);
+ *   - main_idea_compare: `one_story_only` (tells about one story, no link to the other). A likeness or a difference
+ *     both count there, so it has no wrong-direction miss.
+ */
+export type SpokenStoryBridgeMiss = 'one_friend_only' | 'told_difference' | 'told_likeness' | 'one_story_only';
+
+/** The spoken modes' known wrong answers on this item, in precedence order. Never sent to the tutor. */
+export function storyBridgeSpokenMisses(item: StoryBridgeItem): KnownMiss[] {
+  if (item.answerKind === 'gesture') return [];
+  const { anchor, target } = item;
+  if (item.mode === 'main_idea_compare') {
+    return [{ id: 'one_story_only',
+      pattern: `The learner tells about only one story, ${item.storyA.title} or ${item.storyB.title}, and makes no link to the other story.`,
+      examples: [item.storyA.mainIdea, item.storyB.mainIdea] }];
+  }
+  const oneFriend: KnownMiss = { id: 'one_friend_only',
+    pattern: `The learner tells something about only one friend, ${anchor.name} or ${target.name}, and makes no link to the other friend.`,
+    examples: [`${anchor.name} ${anchor.uniqueDetail}.`, `${target.name} ${target.uniqueDetail}.`, `${anchor.name} was in one story.`] };
+  if (item.mode === 'say_alike') {
+    return [oneFriend, { id: 'told_difference',
+      pattern: `Asked how ${anchor.name} and ${target.name} are alike, the learner tells only a way the two friends are different, and no way they are alike.`,
+      examples: [`${anchor.name} ${anchor.uniqueDetail} and ${target.name} ${target.uniqueDetail}.`] }];
+  }
+  if (item.mode === 'say_different') {
+    return [oneFriend, { id: 'told_likeness',
+      pattern: `Asked how ${anchor.name} and ${target.name} are different, the learner tells only something both friends did or have, and no way they differ.`,
+      ...(item.sharedBehavior ? { examples: [`They both ${item.sharedBehavior}.`] } : {}) }];
+  }
+  return [];
 }
 
 export function storyBridgeScene(item: StoryBridgeItem): WorkspaceScene {
@@ -71,7 +109,7 @@ export function storyBridgeScene(item: StoryBridgeItem): WorkspaceScene {
  *   - venn_place: `both_for_one` (a one-story detail put in the middle), `one_for_both` (a shared detail put on
  *     one side), `other_side` (the other story's side);
  *   - sequence_two: `earlier_event`, `later_event` (story two's event before or after the matching one).
- * say_alike, say_different and main_idea_compare are spoken and name no misses: each is an open comparison (Part B).
+ * say_alike, say_different and main_idea_compare are spoken: `storyBridgeSpokenMisses`.
  */
 export type StoryBridgeMiss = 'same_look' | 'other_character' | 'same_for_different' | 'different_for_same'
   | 'both_for_one' | 'one_for_both' | 'other_side' | 'earlier_event' | 'later_event';

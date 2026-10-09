@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * story-bridge's levers on the shared teaching workspace (handoff 22 L4). A pull changes the screen in the same
- * commit using story one's material only; candidates stay unmarked; the next tap carries the lever.
+ * story-bridge's levers on the shared teaching workspace (handoff 22 L4; spoken modes 2026-10-09). A pull changes the
+ * screen and the scene fact in the same commit; candidates stay unmarked; the next tap or spoken answer carries the
+ * lever; a refused pull changes nothing. There is no simplify lever.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -78,8 +79,57 @@ it('sequence_two: story one in order with the asked event lit; story two stays m
   h.close();
 });
 
-it('a spoken mode offers no lever', () => {
-  const { h } = mount('say_alike');
-  expect(h.state().task!.workspace!.levers ?? []).toEqual([]);
+const levers = (h: WorkspaceHarness) => h.state().task!.workspace!.levers?.map(l => [l.id, l.pulled]);
+const attempts = (h: WorkspaceHarness) => h.state().task!.workspace!.attempts;
+const onScreen = (h: WorkspaceHarness) => String(h.state().task!.demand.levers_on_screen ?? '');
+
+it('say_alike: friend_events puts each named friend\'s event picture on its card in one commit; a second pull changes nothing; the next answer records it', () => {
+  const { h, items: [item] } = mount('say_alike');
+  expect(levers(h)).toEqual([['friend_events', false], ['ask_sign', false]]);
+  h.say(`${item.anchor.name} was in one story.`); h.feedback('incorrect', 'retry'); h.confirmVisible();
+  expect(q(h, '[data-lever="friend-event"]')).toHaveLength(0);
+  const receipt = h.dispatch('pull_lever', { lever: 'friend_events' });
+  expect(receipt.status).toBe('committed');
+  const marks = q(h, '[data-lever="friend-event"]');
+  expect(marks.map(m => m.textContent).sort()).toEqual([item.anchor.eventEmoji, item.target.eventEmoji].sort());
+  expect(marks.map(m => m.closest('button')!.textContent)).toEqual(expect.arrayContaining(
+    [expect.stringContaining(item.anchor.name), expect.stringContaining(item.target.name)]));
+  const fact = String(receipt.state.task!.demand.levers_on_screen);
+  expect(fact).toContain(item.anchor.sentence);
+  expect(fact).toContain(item.target.sentence);
+  expect(fact).not.toContain(item.comparisonSummary);
+  expect(levers(h)).toEqual([['friend_events', true], ['ask_sign', false]]);
+  // A refused pull: the screen, the levers and the attempts are unchanged (the runtime revision may still move).
+  const before = { html: h.view.container.innerHTML, levers: levers(h), attempts: attempts(h).length, item: h.state().task!.itemId };
+  expect(h.dispatch('pull_lever', { lever: 'friend_events' }).status).toBe('blocked');
+  expect({ html: h.view.container.innerHTML, levers: levers(h), attempts: attempts(h).length, item: h.state().task!.itemId }).toEqual(before);
+  h.say(item.comparisonSummary); h.feedback('correct');
+  expect(attempts(h).at(-1)).toMatchObject({ itemId: item.id, correct: true, assisted: true, levers: ['friend_events'] });
+  h.close();
+});
+
+it('say_different: ask_sign draws both faces with the different sign in the bridge, and the scene says so', () => {
+  const { h, items: [item] } = mount('say_different');
+  expect(q(h, '[data-lever="ask-sign"]')).toHaveLength(0);
+  const receipt = h.dispatch('pull_lever', { lever: 'ask_sign' });
+  expect(receipt.status).toBe('committed');
+  const sign = q(h, '[data-lever="ask-sign"]');
+  expect(sign).toHaveLength(1);
+  expect(sign[0].textContent).toBe(`${item.anchor.emoji}↔️${item.target.emoji}`);
+  expect(onScreen(h)).toMatch(/the different sign ↔️ between them/);
+  h.close();
+});
+
+it('main_idea_compare: two_ideas puts one empty check under each story, naming neither big idea', () => {
+  const { h, items: [item] } = mount('main_idea_compare');
+  expect(levers(h)).toEqual([['two_ideas', false]]);
+  h.say(item.storyA.mainIdea); h.feedback('incorrect', 'retry'); h.confirmVisible();
+  expect(h.dispatch('pull_lever', { lever: 'two_ideas' }).status).toBe('committed');
+  const checks = q(h, '[data-lever="idea-check"]');
+  expect(checks).toHaveLength(2);
+  for (const c of checks) expect(c.textContent).not.toMatch(/sharing|helping|safe|happy/i);
+  expect(onScreen(h)).toMatch(/^Under each story picture, an empty check/);
+  h.say(item.comparisonSummary); h.feedback('correct');
+  expect(attempts(h).at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['two_ideas'] });
   h.close();
 });

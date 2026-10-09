@@ -8,8 +8,9 @@ import { LETTER_GROUPS } from '../../../service/literacy/letterGroups';
 import { itemFromChallenge, letterSoundMiss, type LetterSoundItem } from './letterSoundLinkDomain';
 import { LITERACY_CATALOG } from '../../../service/manifest/catalog/literacy';
 import {
-  cardKeywords, cardKeywordsLeak, fartherPair, laterStimuli, letterModelFor, letterModelLeak, letterSoundLevers, practiceLeak, voiceModelFor,
+  cardKeywords, cardKeywordsLeak, fartherPair, laterStimuli, letterModelFor, letterModelLeak, letterSoundLevers, pairModelFor, pairModelLeak, practiceLeak, voiceModelFor,
 } from './letterSoundLinkLevers';
+import hear_seePayload from '../../../components/live-activity/runtime/testing/w1-payloads/letter-sound-link.hear_see.json';
 
 const hear = (id: string, target: string, foil: string): LetterSoundItem => itemFromChallenge({ id, mode: 'hear-see',
   targetLetter: target, targetSound: `/${target}/`, keywordWord: '', options: [{ letter: target, isCorrect: true }, { letter: foil, isCorrect: false }] });
@@ -139,4 +140,49 @@ it('letter_model: its description names no model letter or word (read before the
   const m = letterModelFor(item, [item], 4)!;
   const [lever] = letterSoundLevers(item, [], [item], 0, 4);
   expect(lever.does).not.toMatch(new RegExp(`\\b(${m.letter}|${m.word}|${m.sound})\\b`, 'i'));
+});
+
+describe('pair_model (J12: hear-see items with no keyword lever)', () => {
+  // The saved group-1 payload: every group letter is used, `i` has no nameable picture, so keyword_under_both and
+  // far_letter_pair are refused on ch1-ch4.
+  const payload = hear_seePayload.data;
+  const items = payload.challenges.map(c => itemFromChallenge(c as Parameters<typeof itemFromChallenge>[0]));
+  const kind = (l: string) => 'aeiou'.includes(l) ? 'v' : 'tpckhdgb'.includes(l) ? 'c' : 'h';
+
+  it.each([[0, 'n', 'other_letter'], [1, 'i', 'other_short_vowel'], [2, 'p', 'other_letter'], [3, 'p', 'other_letter']])(
+    'payload item %i, tapped %s (%s): pair_model is the next lever', (index, tapped, miss) => {
+      const item = items[index];
+      expect(letterSoundMiss(item, tapped)).toBe(miss);
+      const levers = letterSoundLevers(item, [], items, index, payload.letterGroup);
+      expect(levers.map(l => l.id)).not.toContain('keyword_under_both');
+      expect(nextLever(levers, miss)).toBe('pair_model');
+      const pair = pairModelFor(item, items, payload.letterGroup)!;
+      expect(pairModelLeak(pair, item, items)).toBe(false);
+      expect(pair.map(m => kind(m.letter)).sort()).toEqual(item.options.map(o => kind(o.value)).sort());
+    });
+
+  it('the leak rule: a session letter, a kind mismatch, one shared sound, or a mirror pair', () => {
+    const item = hear('h', 'a', 'p');
+    const m = (l: string) => ({ letter: l, sound: l, word: l + 'word', emoji: l });
+    expect(pairModelLeak([m('o'), m('d')], item, [item])).toBe(false);
+    expect(pairModelLeak([m('a'), m('d')], item, [item])).toBe(true);
+    expect(pairModelLeak([m('o'), m('u')], item, [item])).toBe(true);
+    expect(pairModelLeak([m('c'), m('k')], hear('h', 't', 'p'), [hear('h', 't', 'p')])).toBe(true);
+    expect(pairModelLeak([m('b'), m('d')], hear('h', 't', 'p'), [hear('h', 't', 'p')])).toBe(true);
+  });
+
+  it.each([1, 2, 3, 4])('group %i: every two-item session gets a pair that passes its leak rule', group => {
+    const letters = LETTER_GROUPS[group].filter(l => l.length === 1);
+    for (let i = 0; i + 3 < letters.length; i++) {
+      const session = [hear('h1', letters[i], letters[i + 1]), hear('h2', letters[i + 2], letters[i + 3])];
+      const pair = pairModelFor(session[0], session, group)!;
+      expect(pair).toHaveLength(2);
+      expect(pairModelLeak(pair, session[0], session)).toBe(false);
+    }
+  });
+
+  it('its description names no model letter or word (read before the pull)', () => {
+    const lever = letterSoundLevers(items[0], [], items, 0, 1).find(l => l.id === 'pair_model')!;
+    for (const m of pairModelFor(items[0], items, 1)!) expect(lever.does).not.toMatch(new RegExp(`\b(${m.letter}|${m.word})\b`, 'i'));
+  });
 });

@@ -1,0 +1,191 @@
+[
+ {
+  "want": true,
+  "judge": "default",
+  "got": true,
+  "miss": null,
+  "fits": 0.59,
+  "made": "Frogs began to croak loudly along the muddy shoreline.",
+  "ask": "Find a onomatopoeia in the passage. (It counts onl"
+ },
+ {
+  "want": true,
+  "judge": "default",
+  "got": true,
+  "miss": null,
+  "fits": 0.61,
+  "made": "The wind whispered through the tall pine trees, rustling the",
+  "ask": "Find a onomatopoeia in the passage. (It counts onl"
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0.21,
+  "made": "Dark, dramatic clouds rolled heavily across the sky above Si",
+  "ask": "Find a onomatopoeia in the passage. (It counts onl"
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0,
+  "made": "A sudden flash of lightning cut through the sky.",
+  "ask": "Find a simile in the passage. (It counts only if t"
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0,
+  "made": "We raced back to the cabin just as the storm roared with all",
+  "ask": "Find a simile in the passage. (It counts only if t"
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0,
+  "made": "The wind howled through the pine trees like an angry wolf gu",
+  "ask": "Find a metaphor in the passage. (It counts only if"
+ },
+ {
+  "want": true,
+  "judge": "default",
+  "got": true,
+  "miss": null,
+  "fits": 0.84,
+  "made": "The wind howled through the pine trees like an angry wolf gu",
+  "ask": "Find a simile in the passage. (It counts only if t"
+ },
+ {
+  "want": true,
+  "judge": "default",
+  "got": true,
+  "miss": null,
+  "fits": 0.61,
+  "made": "It was raining really hard.",
+  "ask": "What does \"raining cats and dogs\" really mean here"
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0.08,
+  "made": "Cats and dogs were falling from the sky.",
+  "ask": "What does \"raining cats and dogs\" really mean here"
+ },
+ {
+  "want": true,
+  "judge": "default",
+  "got": true,
+  "miss": null,
+  "fits": 1,
+  "made": "The lake was very still and flat.",
+  "ask": "What does \"the water was a sheet of cold glass\" re"
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0.01,
+  "made": "The water was very cold and stormy.",
+  "ask": "What does \"the water was a sheet of cold glass\" re"
+ },
+ {
+  "want": true,
+  "judge": "default",
+  "got": true,
+  "miss": null,
+  "fits": 0.85,
+  "made": "The thunder was as loud as a drum.",
+  "ask": "Write a sentence with a simile about the storm. (I"
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0.08,
+  "made": "The storm was very loud and scary.",
+  "ask": "Write a sentence with a simile about the storm. (I"
+ },
+ {
+  "want": true,
+  "judge": "default",
+  "got": true,
+  "miss": null,
+  "fits": 0.69,
+  "made": "The wind sang a sad song all night.",
+  "ask": "Write a sentence with a personification about the "
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0.32,
+  "made": "The wind blew very hard all night long.",
+  "ask": "Write a sentence with a personification about the "
+ },
+ {
+  "want": true,
+  "judge": "default",
+  "got": true,
+  "miss": null,
+  "fits": 0.77,
+  "made": "It rained so hard the whole town turned into an ocean.",
+  "ask": "Write a sentence with a hyperbole about the rain. "
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0.17,
+  "made": "It rained a little bit in the morning.",
+  "ask": "Write a sentence with a hyperbole about the rain. "
+ },
+ {
+  "want": true,
+  "judge": "default",
+  "got": true,
+  "miss": null,
+  "fits": 0.77,
+  "made": "Wild waves washed over the wooden wall.",
+  "ask": "Write a sentence with a alliteration about the wav"
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0,
+  "made": "The big waves hit the shore.",
+  "ask": "Write a sentence with a alliteration about the wav"
+ },
+ {
+  "want": true,
+  "judge": "default",
+  "got": true,
+  "miss": null,
+  "fits": 0.8,
+  "made": "The lightning was a bright silver whip.",
+  "ask": "Write a sentence with a metaphor about the lightni"
+ },
+ {
+  "want": false,
+  "judge": "default",
+  "got": false,
+  "miss": "wrong_meaning",
+  "fits": 0.49,
+  "made": "The lightning was like a whip.",
+  "ask": "Write a sentence with a metaphor about the lightni"
+ }
+]

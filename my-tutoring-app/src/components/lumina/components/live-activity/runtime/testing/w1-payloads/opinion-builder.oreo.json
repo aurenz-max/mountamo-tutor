@@ -1,0 +1,45 @@
+{
+  "source": "qa/open-build/opinion-builder-2026-10-08/gen-oreo.json",
+  "primitiveId": "opinion-builder",
+  "evalMode": "oreo",
+  "data": {
+    "title": "Should Kids Have Homework?",
+    "gradeLevel": "3",
+    "framework": "oreo",
+    "prompt": "Should kids have homework after spending all day at school?",
+    "scaffold": {
+      "claimLabel": "Opinion",
+      "claimStarters": [
+        "I strongly believe that kids should...",
+        "In my opinion, homework is...",
+        "I think that kids should not..."
+      ],
+      "reasonLabel": "Reasons",
+      "reasonStarters": [
+        "One reason is because...",
+        "Another reason is for instance...",
+        "Also, I think that..."
+      ],
+      "reasonCount": 3,
+      "conclusionLabel": "Restate Opinion",
+      "conclusionStarters": [
+        "As you can see, I believe...",
+        "For all these reasons, I think...",
+        "That is why I feel that..."
+      ],
+      "linkingWords": [
+        "because",
+        "therefore",
+        "for instance",
+        "also",
+        "another",
+        "first",
+        "finally",
+        "in addition",
+        "truly"
+      ],
+      "counterArgumentEnabled": false,
+      "counterArgumentStarters": []
+    }
+  }
+}

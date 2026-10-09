@@ -204,36 +204,17 @@ describe('generateStoryPlanner — grade 2+ is untouched (the control)', () => {
   });
 });
 
-describe('story-planner catalog scaffold', () => {
+describe('story-planner catalog: the teaching workspace carries the read-aloud contract', () => {
   const entry = LITERACY_CATALOG.find(e => e.id === 'story-planner')!;
 
-  it('has a tutoring block at all (it ran on the generic tutor before)', () => {
-    expect(entry.tutoring).toBeTruthy();
+  it('binds the workspace, with no legacy tutoring block left to drift', () => {
+    expect(entry.teachingWorkspace).toBeTruthy();
+    expect(entry.tutoring).toBeUndefined();
   });
 
-  it('carries the read-aloud cap-override clause so the beat survives a lesson switch', () => {
-    const directives = (entry.tutoring!.aiDirectives ?? []).map(d => d.instruction).join(' ');
-    expect(directives).toMatch(/OVERRIDES any instruction to keep it to one sentence/i);
-    expect(directives).toMatch(/\[STORY_ELEMENT_ASKED\]/);
-  });
-
-  it('forbids giving away the arc order, including by elimination', () => {
-    const directives = (entry.tutoring!.aiDirectives ?? []).map(d => d.title + ' ' + d.instruction).join(' ');
-    expect(directives).toMatch(/ORDER IS THE ANSWER/i);
-    expect(directives).toMatch(/eliminating is the same as telling/i);
-  });
-
-  it('has no handlebars conditionals — interpolate_template does key substitution only', () => {
-    const all = JSON.stringify(entry.tutoring);
-    expect(all).not.toMatch(/\{\{#/);
-  });
-
-  it('declares every context key the component actually sends', () => {
-    // Mirrors the tutor-test Tier-1 audit so a bag/catalog drift fails here too.
-    expect(entry.tutoring!.contextKeys).toEqual([
-      'title', 'writingPrompt', 'gradeBand', 'plannerPhase', 'currentQuestion',
-      'currentChoiceLabels', 'chosenSummary', 'arcLabels', 'arcTrayLabels',
-      'arcFilledCount', 'arcSlotCount',
-    ]);
+  it('tells the tutor it is the K-1 reading channel and forbids giving away the arc order, including by elimination', () => {
+    const g = entry.teachingWorkspace!.guidance;
+    expect(g).toMatch(/cannot read: read the story idea, each question and every picture/);
+    expect(g).toMatch(/never say which comes first or which cannot/);
   });
 });

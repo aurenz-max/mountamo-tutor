@@ -1,0 +1,228 @@
+{
+  "source": "qa/open-build/bind-older-2026-10-08/gate-compound_complex.json",
+  "primitiveId": "sentence-builder",
+  "evalMode": "compound_complex",
+  "data": {
+    "title": "Super Explorer Sentences",
+    "gradeLevel": "2",
+    "sentenceType": "compound-complex",
+    "challenges": [
+      {
+        "id": "ch1",
+        "targetMeaning": "Although the sun was shining brightly, Leo packed his heavy coat, and he grabbed his trusty map.",
+        "tiles": [
+          {
+            "id": "ch1_t1",
+            "text": "Although",
+            "role": "conjunction"
+          },
+          {
+            "id": "ch1_t2",
+            "text": "the sun was shining brightly",
+            "role": "predicate"
+          },
+          {
+            "id": "ch1_t3",
+            "text": ",",
+            "role": "punctuation"
+          },
+          {
+            "id": "ch1_t4",
+            "text": "Leo",
+            "role": "subject"
+          },
+          {
+            "id": "ch1_t5",
+            "text": "packed",
+            "role": "predicate"
+          },
+          {
+            "id": "ch1_t6",
+            "text": "his heavy coat",
+            "role": "object"
+          },
+          {
+            "id": "ch1_t7",
+            "text": ",",
+            "role": "punctuation"
+          },
+          {
+            "id": "ch1_t8",
+            "text": "and",
+            "role": "conjunction"
+          },
+          {
+            "id": "ch1_t9",
+            "text": "he",
+            "role": "subject"
+          },
+          {
+            "id": "ch1_t10",
+            "text": "grabbed his trusty map",
+            "role": "predicate"
+          },
+          {
+            "id": "ch1_t11",
+            "text": ".",
+            "role": "punctuation"
+          }
+        ],
+        "validArrangements": [
+          [
+            "ch1_t1",
+            "ch1_t2",
+            "ch1_t3",
+            "ch1_t4",
+            "ch1_t5",
+            "ch1_t6",
+            "ch1_t7",
+            "ch1_t8",
+            "ch1_t9",
+            "ch1_t10",
+            "ch1_t11"
+          ]
+        ],
+        "hint": "Start with the dependent clause beginning with 'Although', followed by a comma, then connect the two main thoughts."
+      },
+      {
+        "id": "ch2",
+        "targetMeaning": "When the brave knights arrived at the castle, the gates opened wide, and the royal trumpets played a song.",
+        "tiles": [
+          {
+            "id": "ch2_t1",
+            "text": "When",
+            "role": "conjunction"
+          },
+          {
+            "id": "ch2_t2",
+            "text": "the brave knights arrived at the castle",
+            "role": "predicate"
+          },
+          {
+            "id": "ch2_t3",
+            "text": ",",
+            "role": "punctuation"
+          },
+          {
+            "id": "ch2_t4",
+            "text": "the gates",
+            "role": "subject"
+          },
+          {
+            "id": "ch2_t5",
+            "text": "opened wide",
+            "role": "predicate"
+          },
+          {
+            "id": "ch2_t6",
+            "text": ",",
+            "role": "punctuation"
+          },
+          {
+            "id": "ch2_t7",
+            "text": "and",
+            "role": "conjunction"
+          },
+          {
+            "id": "ch2_t8",
+            "text": "the royal trumpets",
+            "role": "subject"
+          },
+          {
+            "id": "ch2_t9",
+            "text": "played a song",
+            "role": "predicate"
+          },
+          {
+            "id": "ch2_t10",
+            "text": ".",
+            "role": "punctuation"
+          }
+        ],
+        "validArrangements": [
+          [
+            "ch2_t1",
+            "ch2_t2",
+            "ch2_t3",
+            "ch2_t4",
+            "ch2_t5",
+            "ch2_t6",
+            "ch2_t7",
+            "ch2_t8",
+            "ch2_t9",
+            "ch2_t10"
+          ]
+        ],
+        "hint": "Begin with the 'When' clause to set the scene, use a comma, and join the two independent sentences with 'and'."
+      },
+      {
+        "id": "ch3",
+        "targetMeaning": "If you find a glowing crystal, put it in your pouch, and bring it back to the wise wizard.",
+        "tiles": [
+          {
+            "id": "ch3_t1",
+            "text": "If",
+            "role": "conjunction"
+          },
+          {
+            "id": "ch3_t2",
+            "text": "you find a glowing crystal",
+            "role": "predicate"
+          },
+          {
+            "id": "ch3_t3",
+            "text": ",",
+            "role": "punctuation"
+          },
+          {
+            "id": "ch3_t4",
+            "text": "put",
+            "role": "predicate"
+          },
+          {
+            "id": "ch3_t5",
+            "text": "it in your pouch",
+            "role": "object"
+          },
+          {
+            "id": "ch3_t6",
+            "text": ",",
+            "role": "punctuation"
+          },
+          {
+            "id": "ch3_t7",
+            "text": "and",
+            "role": "conjunction"
+          },
+          {
+            "id": "ch3_t8",
+            "text": "bring it back to the wise wizard",
+            "role": "predicate"
+          },
+          {
+            "id": "ch3_t9",
+            "text": ".",
+            "role": "punctuation"
+          }
+        ],
+        "validArrangements": [
+          [
+            "ch3_t1",
+            "ch3_t2",
+            "ch3_t3",
+            "ch3_t4",
+            "ch3_t5",
+            "ch3_t6",
+            "ch3_t7",
+            "ch3_t8",
+            "ch3_t9"
+          ]
+        ],
+        "hint": "Start with 'If' for the condition, add a comma, then link the two action instructions together."
+      }
+    ],
+    "roleColors": {
+      "subject": "blue"
+    }
+  }
+}

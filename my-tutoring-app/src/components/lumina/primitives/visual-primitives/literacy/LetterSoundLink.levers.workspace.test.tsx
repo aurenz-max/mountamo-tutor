@@ -15,6 +15,7 @@ import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace, type WorkspaceHarness } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { observerLever } from '../../../components/live-activity/runtime/observerLever';
+import groupOne from '../../../components/live-activity/runtime/testing/w1-payloads/letter-sound-link.hear_see.json';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -30,7 +31,7 @@ const q = (h: WorkspaceHarness, sel: string) => Array.from(h.view.container.quer
 
 it('a wrong tap: the observer pulls keyword pictures, under both cards alike, and the scene names neither', () => {
   const h = mount();
-  expect(levers(h).map(l => [l.id, l.pulled])).toEqual([['keyword_under_both', false], ['far_letter_pair', false]]);
+  expect(levers(h).map(l => [l.id, l.pulled])).toEqual([['keyword_under_both', false], ['pair_model', false], ['far_letter_pair', false]]);
   tap('F');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: false, miss: 'other_letter' });
   expect(observerLever(h.state(), true)).toBe('keyword_under_both');
@@ -50,7 +51,7 @@ it('a voicing-partner tap: the observer pulls the voice model, on pictures of an
   tap('S');
   h.dispatch('advance'); h.confirmVisible();
   expect(h.state().task!.itemId).toBe('h2');
-  expect(levers(h).map(l => l.id)).toEqual(['keyword_under_both', 'voice_feel_model', 'far_letter_pair']);
+  expect(levers(h).map(l => l.id)).toEqual(['keyword_under_both', 'pair_model', 'voice_feel_model', 'far_letter_pair']);
   tap('T');
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ miss: 'voicing_partner' });
   expect(observerLever(h.state(), true)).toBe('voice_feel_model');
@@ -85,5 +86,33 @@ it('the practice pair is ungraded, survives Try again, and gives the full item b
   expect(attempts.map(a => [a.itemId, a.correct, !!(a as { practice?: boolean }).practice])).toEqual([
     ['h1', false, false], ['h1~simpler', false, true], ['h1~simpler', true, true], ['h1', true, false]]);
   expect(attempts.at(-1)).toMatchObject({ assisted: true, levers: ['far_letter_pair'] });
+  h.close();
+});
+
+it('group 1, every letter used (J12): the observer pulls the pair model; a refused pull changes nothing', () => {
+  const h = mountWorkspace({ primitiveId: 'letter-sound-link', evalMode: 'hear_see', data: { ...groupOne.data, supportTier: 'medium' } });
+  expect(levers(h).map(l => l.id)).toEqual(['pair_model']);
+  tap('N');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 'ch1', correct: false, miss: 'other_letter' });
+  // A refused pull: no such lever on this item. Screen, levers and attempts unchanged.
+  const before = { html: h.view.container.innerHTML, levers: JSON.stringify(levers(h)), attempts: h.state().task!.workspace!.attempts.length };
+  expect(h.dispatch('pull_lever', { lever: 'far_letter_pair' }).status).not.toBe('committed');
+  expect(h.view.container.innerHTML).toBe(before.html);
+  expect(JSON.stringify(levers(h))).toBe(before.levers);
+  expect(h.state().task!.workspace!.attempts).toHaveLength(before.attempts);
+
+  expect(observerLever(h.state(), true)).toBe('pair_model');
+  const receipt = h.dispatch('pull_lever', { lever: 'pair_model' });
+  expect(receipt.status).toBe('committed');
+  const model = q(h, '[data-pair-model]').map(e => e.getAttribute('data-pair-model'));
+  expect(model).toHaveLength(2);
+  for (const l of model) expect(['s', 'a', 't', 'i', 'p', 'n']).not.toContain(l);
+  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/model pair beside the cards.*not this item's letters/);
+  // The option cards are unchanged and carry no picture.
+  expect(q(h, '[data-lever="card-keyword"]')).toHaveLength(0);
+  expect(screen.getAllByRole('button', { name: /^Tap the letter/ }).map(b => b.textContent)).toEqual(['S', 'N']);
+  h.dispatch('retry');
+  tap('S');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 'ch1', correct: true, assisted: true, levers: ['pair_model'] });
   h.close();
 });

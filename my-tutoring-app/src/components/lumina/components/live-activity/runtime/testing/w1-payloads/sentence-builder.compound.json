@@ -1,0 +1,132 @@
+{
+  "source": "qa/open-build/bind-older-2026-10-08/gate-compound.json",
+  "primitiveId": "sentence-builder",
+  "evalMode": "compound",
+  "data": {
+    "title": "Super Compound Sentences",
+    "gradeLevel": "2",
+    "sentenceType": "compound",
+    "challenges": [
+      {
+        "id": "ch1",
+        "targetMeaning": "The sun is shining brightly and the birds are singing",
+        "tiles": [
+          {
+            "id": "ch1_t1",
+            "text": "The sun is shining brightly",
+            "role": "predicate"
+          },
+          {
+            "id": "ch1_t2",
+            "text": "and",
+            "role": "conjunction"
+          },
+          {
+            "id": "ch1_t3",
+            "text": "the birds are singing",
+            "role": "subject"
+          },
+          {
+            "id": "ch1_t4",
+            "text": ".",
+            "role": "punctuation"
+          }
+        ],
+        "validArrangements": [
+          [
+            "ch1_t1",
+            "ch1_t2",
+            "ch1_t3",
+            "ch1_t4"
+          ]
+        ],
+        "hint": "Join two complete ideas together using the conjunction 'and'."
+      },
+      {
+        "id": "ch2",
+        "targetMeaning": "Max wanted to play outside, but it started to rain",
+        "tiles": [
+          {
+            "id": "ch2_t1",
+            "text": "Max wanted to play outside",
+            "role": "subject"
+          },
+          {
+            "id": "ch2_t2",
+            "text": ",",
+            "role": "punctuation"
+          },
+          {
+            "id": "ch2_t3",
+            "text": "but",
+            "role": "conjunction"
+          },
+          {
+            "id": "ch2_t4",
+            "text": "it started to rain",
+            "role": "predicate"
+          },
+          {
+            "id": "ch2_t5",
+            "text": ".",
+            "role": "punctuation"
+          }
+        ],
+        "validArrangements": [
+          [
+            "ch2_t1",
+            "ch2_t2",
+            "ch2_t3",
+            "ch2_t4",
+            "ch2_t5"
+          ]
+        ],
+        "hint": "Don't forget to put a comma before the conjunction 'but'!"
+      },
+      {
+        "id": "ch3",
+        "targetMeaning": "You can eat an apple, or you can have a banana",
+        "tiles": [
+          {
+            "id": "ch3_t1",
+            "text": "You can eat an apple",
+            "role": "subject"
+          },
+          {
+            "id": "ch3_t2",
+            "text": ",",
+            "role": "punctuation"
+          },
+          {
+            "id": "ch3_t3",
+            "text": "or",
+            "role": "conjunction"
+          },
+          {
+            "id": "ch3_t4",
+            "text": "you can have a banana",
+            "role": "predicate"
+          },
+          {
+            "id": "ch3_t5",
+            "text": ".",
+            "role": "punctuation"
+          }
+        ],
+        "validArrangements": [
+          [
+            "ch3_t1",
+            "ch3_t2",
+            "ch3_t3",
+            "ch3_t4",
+            "ch3_t5"
+          ]
+        ],
+        "hint": "Choose between two snack options using the word 'or'."
+      }
+    ],
+    "roleColors": {
+      "subject": "blue"
+    }
+  }
+}

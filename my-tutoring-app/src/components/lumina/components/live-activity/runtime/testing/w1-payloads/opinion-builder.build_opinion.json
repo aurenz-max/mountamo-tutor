@@ -1,0 +1,230 @@
+{
+  "source": "qa/open-build/opinion-builder-2026-10-08/gen-build.json",
+  "primitiveId": "opinion-builder",
+  "evalMode": "build_opinion",
+  "data": {
+    "title": "School and Home Opinions",
+    "task": "opinion_build",
+    "opinions": [
+      {
+        "id": "o1",
+        "question": "Should kids have daily chores at home?",
+        "cards": [
+          {
+            "id": "1yeso",
+            "text": "I think kids should do chores at home every day.",
+            "role": "opinion",
+            "side": "yes"
+          },
+          {
+            "id": "1yesr1",
+            "text": "Chores teach kids how to be responsible.",
+            "role": "reason",
+            "side": "yes"
+          },
+          {
+            "id": "1yesr2",
+            "text": "Helping out makes family life easier for parents.",
+            "role": "reason",
+            "side": "yes"
+          },
+          {
+            "id": "1yese",
+            "text": "Last week, I washed dishes every night, and my mom was very proud.",
+            "role": "example",
+            "side": "yes"
+          },
+          {
+            "id": "1yesa",
+            "text": "That is why doing chores daily is good for children.",
+            "role": "restate",
+            "side": "yes"
+          },
+          {
+            "id": "1noo",
+            "text": "I think kids should not have daily chores to do.",
+            "role": "opinion",
+            "side": "no"
+          },
+          {
+            "id": "1nor1",
+            "text": "Kids need time to relax and play after school.",
+            "role": "reason",
+            "side": "no"
+          },
+          {
+            "id": "1nor2",
+            "text": "Homework already takes up a lot of free time.",
+            "role": "reason",
+            "side": "no"
+          },
+          {
+            "id": "1noe",
+            "text": "After finishing my math sheet on Tuesday, I was too tired to fold laundry.",
+            "role": "example",
+            "side": "no"
+          },
+          {
+            "id": "1noa",
+            "text": "So kids should get a break from extra tasks at home.",
+            "role": "restate",
+            "side": "no"
+          },
+          {
+            "id": "1x1",
+            "text": "Giraffes have blue tongues.",
+            "role": "off_topic"
+          },
+          {
+            "id": "1x2",
+            "text": "Most carrots are orange.",
+            "role": "off_topic"
+          }
+        ]
+      },
+      {
+        "id": "o2",
+        "question": "Should students wear uniforms to school?",
+        "cards": [
+          {
+            "id": "2yeso",
+            "text": "I think kids should wear school uniforms.",
+            "role": "opinion",
+            "side": "yes"
+          },
+          {
+            "id": "2yesr1",
+            "text": "Uniforms make getting ready in the morning fast.",
+            "role": "reason",
+            "side": "yes"
+          },
+          {
+            "id": "2yesr2",
+            "text": "Everyone looks the same, so no one gets teased for their clothes.",
+            "role": "reason",
+            "side": "yes"
+          },
+          {
+            "id": "2yese",
+            "text": "My cousin puts on her navy polo in two minutes and never worries about outfits.",
+            "role": "example",
+            "side": "yes"
+          },
+          {
+            "id": "2yesa",
+            "text": "That is why school uniforms are helpful for students.",
+            "role": "restate",
+            "side": "yes"
+          },
+          {
+            "id": "2noo",
+            "text": "I think kids should pick their own clothes for school.",
+            "role": "opinion",
+            "side": "no"
+          },
+          {
+            "id": "2nor1",
+            "text": "Clothes let students show their unique personality.",
+            "role": "reason",
+            "side": "no"
+          },
+          {
+            "id": "2nor2",
+            "text": "Comfortable clothes make sitting in class easier.",
+            "role": "reason",
+            "side": "no"
+          },
+          {
+            "id": "2noe",
+            "text": "Wearing my bright dinosaur shirt always makes me feel happy and creative.",
+            "role": "example",
+            "side": "no"
+          },
+          {
+            "id": "2noa",
+            "text": "So students should be allowed to choose what they wear.",
+            "role": "restate",
+            "side": "no"
+          },
+          {
+            "id": "2x1",
+            "text": "The ocean covers most of our planet.",
+            "role": "off_topic"
+          }
+        ]
+      },
+      {
+        "id": "o3",
+        "question": "Should kids be allowed to bring toys to school?",
+        "cards": [
+          {
+            "id": "3yeso",
+            "text": "I think kids should bring toys to school.",
+            "role": "opinion",
+            "side": "yes"
+          },
+          {
+            "id": "3yesr1",
+            "text": "Toys help children make friends at recess.",
+            "role": "reason",
+            "side": "yes"
+          },
+          {
+            "id": "3yesr2",
+            "text": "Small toys can calm kids down when they feel nervous.",
+            "role": "reason",
+            "side": "yes"
+          },
+          {
+            "id": "3yese",
+            "text": "I shared my bouncy ball at lunch, and two new classmates joined my game.",
+            "role": "example",
+            "side": "yes"
+          },
+          {
+            "id": "3yesa",
+            "text": "That is why bringing favorite toys to school is a fun idea.",
+            "role": "restate",
+            "side": "yes"
+          },
+          {
+            "id": "3noo",
+            "text": "I think kids should leave their toys at home.",
+            "role": "opinion",
+            "side": "no"
+          },
+          {
+            "id": "3nor1",
+            "text": "Toys can distract students from their schoolwork.",
+            "role": "reason",
+            "side": "no"
+          },
+          {
+            "id": "3nor2",
+            "text": "Special toys might get lost or broken on the playground.",
+            "role": "reason",
+            "side": "no"
+          },
+          {
+            "id": "3noe",
+            "text": "A classmate dropped his race car in reading group, and nobody could focus.",
+            "role": "example",
+            "side": "no"
+          },
+          {
+            "id": "3noa",
+            "text": "So toys should stay safe in a child's bedroom.",
+            "role": "restate",
+            "side": "no"
+          },
+          {
+            "id": "3x1",
+            "text": "Penguins are birds that cannot fly.",
+            "role": "off_topic"
+          }
+        ]
+      }
+    ],
+    "gradeLevel": "Grade 3"
+  }
+}

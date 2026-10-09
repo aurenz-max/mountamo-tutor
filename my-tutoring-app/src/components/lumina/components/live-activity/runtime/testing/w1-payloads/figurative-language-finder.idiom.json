@@ -1,0 +1,47 @@
+{
+  "source": "qa/open-build/figurative-2026-10-08/gen-idiom.json",
+  "primitiveId": "figurative-language-finder",
+  "evalMode": "idiom",
+  "data": {
+    "title": "Storm at Silver Lake",
+    "gradeLevel": "4",
+    "passage": "Leo and Maya went camping by Silver Lake, hoping for a fun weekend of fishing. As they sat by the water, the dark clouds rolled in and completely blocked the sun. Leo looked up at the sky and said we needed to hit the road before the weather got worse. They quickly packed up their gear because it was raining cats and dogs. Maya shivered as the cold wind began to blow through the trees. She told Leo to hold your horses for a second while she zipped up her heavy winter jacket. Suddenly, a loud crash of thunder made them jump out of their seats. They dashed to the car just in time to stay completely dry. Once safely inside, they watched the heavy rain pour down outside the foggy windows.",
+    "instances": [
+      {
+        "instanceId": "id1",
+        "text": "hit the road",
+        "type": "idiom",
+        "literalMeaning": "to physically strike a paved street with an object or body part",
+        "explanation": "This is an idiom because it does not mean literally hitting a road; it means to start a journey or leave.",
+        "startIndex": 210,
+        "endIndex": 222
+      },
+      {
+        "instanceId": "id2",
+        "text": "raining cats and dogs",
+        "type": "idiom",
+        "literalMeaning": "actual animals falling down from the sky through the clouds",
+        "explanation": "This is an idiom because cats and dogs are not falling from the sky; it is just a funny way to say it is raining very heavily.",
+        "startIndex": 302,
+        "endIndex": 323
+      },
+      {
+        "instanceId": "id3",
+        "text": "hold your horses",
+        "type": "idiom",
+        "literalMeaning": "to physically grab and hold onto animal horses with your hands",
+        "explanation": "This is an idiom because there are no horses present; it means to wait a minute and be patient.",
+        "startIndex": 405,
+        "endIndex": 421
+      }
+    ],
+    "translateInstanceIds": [
+      "id1",
+      "id2",
+      "id3"
+    ],
+    "availableTypes": [
+      "idiom"
+    ]
+  }
+}

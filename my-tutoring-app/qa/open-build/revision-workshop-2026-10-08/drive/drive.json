@@ -1,0 +1,94 @@
+{
+  "log": [
+    {
+      "step": "add_details",
+      "draft": "Yesterday I went to the park. I played on the slide. Then I ate a snack. It was a good day.",
+      "target": "I played on the slide.",
+      "idealShown": false
+    },
+    {
+      "step": "unchanged",
+      "feedback": "That is the same as before. Change it to do the job.",
+      "judgeCalls": 0
+    },
+    {
+      "step": "off job",
+      "feedback": "Read the task again. Does your sentence do that?"
+    },
+    {
+      "step": "added detail",
+      "feedback": "Yes! That revision does the job."
+    },
+    {
+      "step": "reorganize board",
+      "board": [
+        "t2",
+        "t3",
+        "t4",
+        "t1"
+      ],
+      "answer": [
+        "t1",
+        "t2",
+        "t3",
+        "t4"
+      ],
+      "boardIsAnswer": false
+    },
+    {
+      "step": "reversed",
+      "feedback": "Read it in that order. Does it make sense? Look for order words."
+    },
+    {
+      "step": "answer order",
+      "feedback": ""
+    },
+    {
+      "step": "error",
+      "message": "TypeError: Cannot read properties of undefined (reading '0')"
+    }
+  ],
+  "judge": [
+    {
+      "p": {
+        "ask": "Rewrite the sentence and add a detail: what it looked, sounded or felt like, how many, or which kind. Original: \"I played on the slide.\". (It keeps the meaning of the original and adds at least one specific detail.)",
+        "made": "I like dogs a lot.",
+        "unit": "writing",
+        "context": "Yesterday I went to the park. I played on the slide. Then I ate a snack. It was a good day.",
+        "grade": "3"
+      },
+      "v": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.97,
+        "fits": 0.01,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.97,
+          "partly": 0.02,
+          "fits": 0.01
+        }
+      }
+    },
+    {
+      "p": {
+        "ask": "Rewrite the sentence and add a detail: what it looked, sounded or felt like, how many, or which kind. Original: \"I played on the slide.\". (It keeps the meaning of the original and adds at least one specific detail.)",
+        "made": "I played on the slide with my little brother on a sunny, windy morning.",
+        "unit": "writing",
+        "context": "Yesterday I went to the park. I played on the slide. Then I ate a snack. It was a good day.",
+        "grade": "3"
+      },
+      "v": {
+        "met": true,
+        "realWord": 0.97,
+        "fits": 0.78,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.03,
+          "fits": 0.78,
+          "partly": 0.19
+        }
+      }
+    }
+  ]
+}

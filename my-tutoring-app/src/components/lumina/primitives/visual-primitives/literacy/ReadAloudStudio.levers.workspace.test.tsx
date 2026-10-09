@@ -50,3 +50,67 @@ it('the practice line is ungraded, prints no passage word, and gives the line ba
     ['line-1', false], ['line-1~simpler', true], ['line-1', true]]);
   h.close();
 });
+
+// Expression (2026-10-09): help on both reads; on the scored reread, the short line is a modeled practice reread.
+const PHRASED = 'In the shallow water, small fish swam.';
+const mountExpression = () => {
+  const h = mountWorkspace({ primitiveId: 'read-aloud-studio', evalMode: 'expression', data: { title: 'Pond', gradeLevel: '3',
+    fluencyFocus: 'expression', lexileLevel: '520L',
+    lines: [{ text: PHRASED, stressWord: 'fish', phraseGroups: ['In the shallow water,', 'small fish swam.'] }] } });
+  h.press('Use my phrase plan'); h.dispatch('advance'); h.confirmVisible();
+  return h;
+};
+const toReread = (h: WorkspaceHarness) => {
+  h.say(PHRASED); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().task).toMatchObject({ itemId: 'line-1-reread' });
+};
+
+it('expression: the plan has no lever; the first read is marked, nothing said, and the attempt records it', () => {
+  const h = mountWorkspace({ primitiveId: 'read-aloud-studio', evalMode: 'expression', data: { title: 'Pond', gradeLevel: '3',
+    fluencyFocus: 'expression', lexileLevel: '520L', lines: [{ text: PHRASED }] } });
+  expect(h.state().task!.workspace!.levers ?? []).toEqual([]);
+  h.press('Use my phrase plan'); h.dispatch('advance'); h.confirmVisible();
+  expect(h.state().task).toMatchObject({ itemId: 'line-1-first_read' });
+  const sent = seam.send.mock.calls.length;
+  h.dispatch('pull_lever', { lever: 'tracking_underline' });
+  expect(q(h, '[data-track-segment]')).toHaveLength(7);
+  expect(h.state().task!.demand).toMatchObject({ levers_on_screen: expect.stringMatching(/underline under each word/) });
+  expect(JSON.stringify(h.state().task!.workspace!.levers)).not.toMatch(/short_line/);
+  expect(seam.send.mock.calls.length).toBe(sent);
+  h.say('In the water, small fish swam.'); h.feedback('incorrect', 'retry'); h.confirmVisible();
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ itemId: 'line-1-first_read', correct: false, levers: ['tracking_underline'] });
+  h.close();
+});
+
+it('expression: a refused pull changes nothing', () => {
+  const h = mountExpression(); toReread(h);
+  h.dispatch('pull_lever', { lever: 'sound_dots' });
+  const screen = h.view.container.innerHTML, task = h.state().task!;
+  const snap = { demand: task.demand, levers: task.workspace!.levers, attempts: task.workspace!.attempts };
+  for (const lever of ['sound_dots', 'no_such_lever']) h.dispatch('pull_lever', { lever });
+  expect(h.view.container.innerHTML).toBe(screen);
+  const now = h.state().task!;
+  expect({ demand: now.demand, levers: now.workspace!.levers, attempts: now.workspace!.attempts }).toEqual(snap);
+  h.close();
+});
+
+it('expression: the short line opens a modeled practice reread, ungraded, then the line comes back blank and is credited', () => {
+  const h = mountExpression(); toReread(h);
+  h.say('In the water, small fish swam.'); h.feedback('incorrect', 'retry'); h.confirmVisible();
+  h.dispatch('pull_lever', { lever: 'short_line' });
+  expect(h.state().task).toMatchObject({ itemId: 'line-1-reread~simpler' });
+  const text = h.view.container.textContent ?? '';
+  expect(text).not.toMatch(/shallow|fish|swam/);
+  expect(text).toContain('Sam can hop.');
+  expect(text).not.toContain('Your phrase plan');
+  expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/shallow|fish|swam/);
+  expect(h.state().task!.task).toMatch(/Listen: Sam can hop\./);
+  h.say('Sam can hop.'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().task).toMatchObject({ itemId: 'line-1-reread' });
+  expect(h.view.container.textContent).toContain('In the shallow water,');
+  expect(q(h, '[data-track-segment]')).toHaveLength(0);
+  h.say(PHRASED); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.filter(a => a.itemId.startsWith('line-1-reread')).map(a => [a.itemId, a.correct]))
+    .toEqual([['line-1-reread', false], ['line-1-reread~simpler', true], ['line-1-reread', true]]);
+  h.close();
+});

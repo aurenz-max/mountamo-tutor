@@ -1,0 +1,38 @@
+{
+ "source": "qa/tutor-reports/spelling-pattern-explorer-runtime-morphological-payload-2026-10-09.json",
+ "primitiveId": "spelling-pattern-explorer",
+ "evalMode": "morphological",
+ "data": {
+  "title": "Drop the Final E Before Suffixes",
+  "gradeLevel": "Grade 4",
+  "patternType": "suffix-change",
+  "patternWords": [
+   "hiking",
+   "making",
+   "baking",
+   "shining",
+   "riding",
+   "smiling",
+   "saving",
+   "hoping"
+  ],
+  "highlightPattern": "drop-e",
+  "ruleTemplate": "When a base word ends with a silent e, you ______ the e before adding a vowel suffix like -ing.",
+  "correctRule": "drop",
+  "dictationWords": [
+   "moving",
+   "smiling",
+   "hiding",
+   "waving",
+   "naming"
+  ],
+  "dictationHints": [
+   "Base word is move",
+   "Base word is smile",
+   "Base word is hide",
+   "Base word is wave",
+   "Base word is name"
+  ],
+  "objectiveGrade": "4"
+ }
+}

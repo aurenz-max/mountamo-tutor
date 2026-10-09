@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { generateFigurativeBuild } from "./gemini-figurative-build";
 import type { GenerationContext } from "../generation/generationContext";
 import { FigurativeLanguageFinderData, FigurativeType } from "../../primitives/visual-primitives/literacy/FigurativeLanguageFinder";
 import {
@@ -333,6 +334,10 @@ export const generateFigurativeLanguageFinder = async (
   const { topic } = ctx;
   const intent = ctx.intent;
   const config = ctx.raw as FigurativeLanguageFinderConfig;
+  // build_figurative (open build, OB-7L): the learner writes the figures; code picks them, the model names subjects.
+  if (config?.targetEvalMode === 'build_figurative') {
+    return generateFigurativeBuild(topic, ctx.gradeContext, { intent, grade: ctx.grade }) as unknown as Promise<FigurativeLanguageFinderData>;
+  }
   const evalConstraint = resolveEvalModeConstraint(
     'figurative-language-finder',
     config?.targetEvalMode,

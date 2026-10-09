@@ -25,8 +25,14 @@ export interface WordBuildJudgeRequest {
   /** Judge only whether it is a real word: the primitive's code already checked that it fits the ask (a spelling
    *  build: the vowel, the word family, one letter changed). */
   only?: 'real_word';
-  /** A sentence build (sentence-builder): `made` is a sentence, judged for sense and for fitting the ask. */
-  unit?: 'sentence';
+  /** A sentence build (sentence-builder): `made` is a sentence, judged for sense and for fitting the ask. A writing step
+   *  (paragraph-architect): a sentence the learner TYPED, judged for sense and for doing the step's job. */
+  /** A naming ask (is this a simile?): a Jev pass below `STRICT_FITS` also needs flash-latest to agree. In the
+   *  figurative calibration Jev passed a simile named as a metaphor at 0.50 and plain waves as alliteration at 0.58. */
+  strict?: true;
+  unit?: 'sentence' | 'writing';
+  /** writing: the paragraph so far, which a step is read against (a fact not repeated, a closing with no new fact). */
+  context?: string;
 }
 
 export type WordBuildJudgeMiss = 'not_a_word' | 'wrong_meaning';
@@ -46,14 +52,35 @@ export interface WordBuildVerdict {
 
 export const wordBuildState = (r: WordBuildJudgeRequest) => ({
   ask: r.ask,
-  learner_made: r.unit === 'sentence' ? { sentence: r.made } : { word: r.made.toLowerCase(), ...(r.pieces ? { built_from: r.pieces } : {}) },
+  learner_made: r.unit ? { sentence: r.made } : { word: r.made.toLowerCase(), ...(r.pieces ? { built_from: r.pieces } : {}) },
+  ...(r.unit === 'writing' ? { paragraph_so_far: r.context?.trim() || 'nothing yet' } : {}),
   ...(r.board ? { parts_available: r.board } : {}),
   ...(r.grade ? { grade: r.grade } : {}),
 });
 
 /** The questions for this request: both, or real_word alone. */
 export const questionsFor = (r: WordBuildJudgeRequest) =>
-  r.unit === 'sentence' ? SENTENCE_QUESTIONS : r.only === 'real_word' ? { real_word: WORD_BUILD_QUESTIONS.real_word } : WORD_BUILD_QUESTIONS;
+  r.unit === 'writing' ? WRITING_QUESTIONS : r.unit === 'sentence' ? SENTENCE_QUESTIONS : r.only === 'real_word' ? { real_word: WORD_BUILD_QUESTIONS.real_word } : WORD_BUILD_QUESTIONS;
+
+/** A writing step: a child TYPED it, so spelling and capitals are never judged; the job is read against the paragraph
+ *  so far. Same answer names as the word questions, so one decision reads all three. */
+export const WRITING_QUESTIONS = {
+  real_word: { type: 'noul' as const, instructions:
+    'Read `learner_made.sentence`, typed by a young child. Ignore spelling, capital letters and missing punctuation: '
+    + 'read it the way a kind teacher reads a child\'s writing. Is it a sentence that makes sense, telling one idea? '
+    + 'Scrambled words or nonsense are not.',
+    criteria: { true: 'It makes sense as a sentence.', false: 'It does not make sense.' } },
+  fits_ask: { type: 'choice' as const, instructions:
+    'Read `ask`: it names one step of a paragraph and, in brackets, the job that step does. Read `paragraph_so_far`. Does '
+    + '`learner_made.sentence` do that job for this paragraph? A fact must be about the topic and not repeat a fact '
+    + 'already written; a closing must not add a new fact; a reason must support the opinion already written; a story '
+    + 'step must follow from the story so far. Judge the job, not how well it is written.',
+    criteria: {
+      fits: 'It does the job of this step.',
+      partly: 'It is on the topic but does a different job (a new fact where a closing belongs, a repeat of a fact).',
+      no: 'It is about something else or does not do the job.',
+    } },
+};
 
 /** A sentence build: the same two answers under the same names, so one decision reads both. The shape (the end mark,
  *  how a question starts) is the primitive's code check and never reaches these. */
@@ -105,6 +132,12 @@ export function decideWordBuild(realWord: number, fits: number, judge: WordBuild
  * (Jev: refill, unhappy, untrue, careful; flash: replayed, helped, playing), so a learner hears "not yet" only when
  * both judges say so. The miss stays Jev's: flash called unpaint and prepaint real words, Jev did not.
  */
+export const STRICT_FITS = 0.7;
+/** A strict ask's near pass stands only when flash-latest also passes it. */
+export function confirmNearPass(jev: WordBuildVerdict, flash: WordBuildVerdict): WordBuildVerdict {
+  return flash.met ? { ...jev, judge: 'jev+flash' } : { ...flash, judge: 'jev+flash', fitsOptions: jev.fitsOptions };
+}
+
 export function secondOpinion(jev: WordBuildVerdict, flash: WordBuildVerdict): WordBuildVerdict {
   if (jev.met) return jev;
   if (flash.met) return { ...flash, judge: 'jev+flash', fitsOptions: jev.fitsOptions };
@@ -114,6 +147,9 @@ export function secondOpinion(jev: WordBuildVerdict, flash: WordBuildVerdict): W
 /** A request the judge can read: a short ask and a made word of letters. */
 export function wordBuildRequestError(r: Partial<WordBuildJudgeRequest> | null | undefined): string | null {
   if (!r || typeof r.ask !== 'string' || !r.ask.trim() || r.ask.length > 300) return 'ask must be a short sentence';
+  if (r.unit === 'writing') {
+    return typeof r.made === 'string' && r.made.trim().length >= 3 && r.made.length <= 300 ? null : 'made must be a short sentence';
+  }
   if (r.unit === 'sentence') {
     return typeof r.made === 'string' && /^[A-Za-z' ,.?!]{3,160}$/.test(r.made.trim()) ? null : 'made must be a short sentence';
   }

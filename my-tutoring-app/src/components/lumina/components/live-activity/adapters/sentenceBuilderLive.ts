@@ -1,16 +1,21 @@
 import type { SentenceBuilderData } from '../../../primitives/visual-primitives/literacy/SentenceBuilder';
 import { sentenceAssignment, sentencesFrom } from '../../../primitives/visual-primitives/literacy/sentenceBuild';
+import { orderAssignment, ordersFrom } from '../../../primitives/visual-primitives/literacy/sentenceOrder';
 import { workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
-/**
- * Only the open build binds: a `sentence_build` payload whose every item passes the surface's gate. The tile-order
- * modes' payloads are refused here, so `workspaceBinding` leaves them on their own path.
- */
+/** Every item must pass its surface's gate: the word-tile build, or the tile-order challenges. */
 export function validateSentenceBuilderData(value: unknown): SentenceBuilderData {
   const d = value as SentenceBuilderData;
-  if (!d || d.task !== 'sentence_build' || typeof d.title !== 'string' || !Array.isArray(d.sentences) || !d.sentences.length
-      || d.sentences.length > 10 || sentencesFrom(d.sentences, d.supportTier).length !== d.sentences.length)
-    throw new Error('Only a build_sentence payload runs on the teaching workspace.');
+  if (!d || typeof d.title !== 'string') throw new Error('Generated sentence builder has invalid lesson content.');
+  if (d.task === 'sentence_build') {
+    if (!Array.isArray(d.sentences) || !d.sentences.length || d.sentences.length > 10
+        || sentencesFrom(d.sentences, d.supportTier).length !== d.sentences.length)
+      throw new Error('A sentence build item cannot be asked.');
+    return d;
+  }
+  if (!Array.isArray(d.challenges) || !d.challenges.length || d.challenges.length > 10
+      || ordersFrom(d.challenges).length !== d.challenges.length)
+    throw new Error('A sentence builder challenge cannot be asked.');
   return d;
 }
 
@@ -18,7 +23,11 @@ export function validateSentenceBuilderData(value: unknown): SentenceBuilderData
 export const sentenceBuilderLiveDomain: WorkspaceDomain<SentenceBuilderData> = {
   validate: validateSentenceBuilderData,
   initialState: data => {
-    const items = sentencesFrom(data.sentences ?? [], data.supportTier);
-    return workspaceOpening({ title: data.title, task: sentenceAssignment(items[0]).task, total: items.length });
+    if (data.task === 'sentence_build') {
+      const items = sentencesFrom(data.sentences ?? [], data.supportTier);
+      return workspaceOpening({ title: data.title, task: sentenceAssignment(items[0]).task, total: items.length });
+    }
+    const items = ordersFrom(data.challenges);
+    return workspaceOpening({ title: data.title, task: orderAssignment(items[0]).task, total: items.length });
   },
 };

@@ -583,6 +583,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "compound_complex": PriorConfig(7.0, "Compound-complex: multi-clause sentence"),
     },
     "figurative-language-finder": {
+        "build_figurative": PriorConfig(3.5, "Open build: write your own simile, metaphor, personification, hyperbole or alliteration"),
         "sound_devices": PriorConfig(2.0, "Sound devices: alliteration, onomatopoeia"),
         "comparison":    PriorConfig(3.0, "Comparison: simile and metaphor"),
         "advanced":      PriorConfig(4.5, "Advanced: personification, hyperbole, imagery"),
@@ -620,6 +621,7 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "opinion":       PriorConfig(5.0, "Opinion paragraph with claim + support"),
     },
     "opinion-builder": {
+        "build_opinion": PriorConfig(3.1, "Open build: order cards into an OREO answer for either side"),
         "oreo": PriorConfig(3.0, "OREO: Opinion-Reason-Example-Opinion (2-4)"),
         "cer":  PriorConfig(5.5, "CER: Claim-Evidence-Reasoning (5-6)"),
     },

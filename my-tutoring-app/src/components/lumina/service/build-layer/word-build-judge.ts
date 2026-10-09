@@ -2,7 +2,7 @@ import { Type, type Schema } from '@google/genai';
 import { ai } from '../geminiClient';
 import { systemOne, typesafeConfigured } from '../manifest/typesafe/typesafeClient';
 import {
-  SENTENCE_QUESTIONS, WORD_BUILD_QUESTIONS, decideWordBuild, questionsFor, secondOpinion, wordBuildRequestError, wordBuildState,
+  SENTENCE_QUESTIONS, WORD_BUILD_QUESTIONS, WRITING_QUESTIONS, decideWordBuild, questionsFor, secondOpinion, confirmNearPass, STRICT_FITS, wordBuildRequestError, wordBuildState,
   type WordBuildJudgeRequest, type WordBuildVerdict,
 } from './wordBuildDecision';
 
@@ -25,7 +25,7 @@ const fallbackSchema: Schema = {
 };
 
 async function askFlash(r: WordBuildJudgeRequest): Promise<WordBuildVerdict> {
-  const q = r.unit === 'sentence' ? SENTENCE_QUESTIONS : WORD_BUILD_QUESTIONS;
+  const q = r.unit === 'writing' ? WRITING_QUESTIONS : r.unit === 'sentence' ? SENTENCE_QUESTIONS : WORD_BUILD_QUESTIONS;
   const res = await ai.models.generateContent({
     model: FALLBACK_MODEL,
     contents: `${JSON.stringify(wordBuildState(r))}\n\nreal_word: ${q.real_word.instructions}\n\nfits_ask: `
@@ -47,6 +47,7 @@ export async function judgeWordBuild(r: WordBuildJudgeRequest): Promise<WordBuil
         ? (answers as unknown as { fits_ask: { probabilities: Record<string, number> } }).fits_ask.probabilities : undefined;
       const jev = { ...decideWordBuild(answers.real_word.noul, fitsOptions ? fitsOptions.fits ?? 0 : 1, 'jev'),
         ...(fitsOptions ? { fitsOptions } : {}) };
+      if (jev.met && r.strict && jev.fits < STRICT_FITS) return confirmNearPass(jev, await askFlash(r));
       return jev.met ? jev : secondOpinion(jev, await askFlash(r));
     } catch (err) {
       console.warn('[judgeWordBuild] Jev unavailable, using flash-latest:', err instanceof Error ? err.message : err);

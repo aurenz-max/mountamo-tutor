@@ -32,7 +32,10 @@ import { evidenceFor, itemsFromChallenges, type StoryBridgeItem } from './storyB
 import {
   describeStoryBridgeTap, hearStoriesRequest, storyBridgeAssignment, storyBridgeMiss, storyBridgeScene,
 } from './storyBridgeWorkspace';
-import { ANCHOR_LEVER, SETTING_LEVER, TIMELINE_LEVER, TWO_QUESTIONS_LEVER, leversOnScreen, storyBridgeLevers } from './storyBridgeLevers';
+import {
+  ANCHOR_LEVER, ASK_SIGN_LEVER, FRIENDS_LEVER, SETTING_LEVER, TIMELINE_LEVER, TWO_IDEAS_LEVER, TWO_QUESTIONS_LEVER, askSign,
+  leversOnScreen, storyBridgeLevers,
+} from './storyBridgeLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { storyBridgePipPose } from '../../../pip/storyBridgePipPose';
 
@@ -297,7 +300,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
     return id === tappedChoice ? 'incorrect' : 'idle';
   };
 
-  const renderCharacterCard = (character: StoryBridgeCharacter, role: 'anchor' | 'choice' | 'context') => {
+  const renderCharacterCard = (character: StoryBridgeCharacter, role: 'anchor' | 'choice' | 'context', showEvent = false) => {
     const tappable = role === 'choice' && currentItem?.answerKind === 'gesture' && !revealed;
     const state: AnswerChoiceState = role === 'anchor' ? 'selected' : role === 'context' ? 'dimmed' : choiceState(character.id);
     const pipId = role === 'choice' ? `choice-${character.id}` : role === 'anchor' && character.id === currentItem?.anchor.id ? 'anchor' : null;
@@ -312,6 +315,10 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
         {/* Help: what the first friend did, on that friend's card only; never on a candidate. */}
         {pulled(ANCHOR_LEVER) && character.id === currentItem?.anchor.id && (
           <span data-lever="anchor-action" className="text-3xl" role="img" aria-label={`what ${character.name} did`}>{character.eventEmoji}</span>
+        )}
+        {/* Help (say alike / different): each named friend's own event picture; the learner still says the comparison. */}
+        {showEvent && (
+          <span data-lever="friend-event" className="text-3xl" role="img" aria-label={`what ${character.name} did`}>{character.eventEmoji}</span>
         )}
       </button>
     );
@@ -338,13 +345,22 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
             {ordered.map((character) => {
               const isComparedCharacter = character.id === currentItem.anchor.id
                 || (currentItem.mode !== 'match_character' && character.id === currentItem.target.id);
+              const namedFriend = (story.id === currentItem.anchorStory.id && character.id === currentItem.anchor.id)
+                || (story.id === currentItem.targetStory.id && character.id === currentItem.target.id);
               return renderCharacterCard(
                 character,
                 isComparedCharacter ? 'anchor'
                   : currentItem.mode === 'match_character' && story.id === currentItem.targetStory.id ? 'choice' : 'context',
+                pulled(FRIENDS_LEVER) && namedFriend,
               );
             })}
           </div>
+        )}
+        {/* Help (big ideas): an empty check under each story. Code never fills it. */}
+        {currentItem.mode === 'main_idea_compare' && pulled(TWO_IDEAS_LEVER) && (
+          <span data-lever="idea-check" className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-100">
+            💡 mostly about? <span aria-hidden className="inline-block h-5 w-5 rounded border-2 border-slate-400" />
+          </span>
         )}
       </LuminaPanel>
     );
@@ -429,7 +445,16 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
             <div ref={pip.ref('stories')} data-pip-object="stories" className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_1fr] md:items-stretch">
               {renderStoryPanel(currentItem.storyA)}
               <div className={`flex items-center justify-center rounded-2xl px-3 py-2 md:min-w-[4.5rem] bg-gradient-to-b from-sky-500/10 via-sky-500/25 to-sky-500/10 border border-sky-400/20 transition-all duration-500 ${revealed ? 'shadow-lg shadow-cyan-400/20' : ''}`} aria-hidden>
-                <span className={`text-3xl transition-transform duration-500 ${revealed ? 'scale-125' : 'opacity-60'}`}>{revealed ? '🌉' : '🌊'}</span>
+                {/* Help (say alike / different): the two friends' faces with the ask's sign between them. */}
+                {pulled(ASK_SIGN_LEVER) ? (
+                  <span data-lever="ask-sign" className="flex flex-col items-center gap-1 text-3xl">
+                    <span role="img" aria-hidden>{currentItem.anchor.emoji}</span>
+                    <span role="img" aria-label={currentItem.mode === 'say_different' ? 'different' : 'alike'}>{askSign(currentItem)}</span>
+                    <span role="img" aria-hidden>{currentItem.target.emoji}</span>
+                  </span>
+                ) : (
+                  <span className={`text-3xl transition-transform duration-500 ${revealed ? 'scale-125' : 'opacity-60'}`}>{revealed ? '🌉' : '🌊'}</span>
+                )}
               </div>
               {renderStoryPanel(currentItem.storyB)}
             </div>

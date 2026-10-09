@@ -67,6 +67,7 @@ import { buildSentenceReadingItems, sentenceReadingHarnessAnswers }
   from '../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain';
 import { buildLetterSoundLinkItems, letterSoundLinkWorkspaceAnswers }
   from '../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
+import { fartherPair } from '../../primitives/visual-primitives/literacy/letterSoundLinkLevers';
 import { itemsFromChallenges as frameItems, tenFrameHarnessAnswers, type TenFrameItem }
   from '../../primitives/visual-primitives/math/tenFrameScript';
 import { countsFlips } from '../../primitives/visual-primitives/math/tenFrameWorkspace';
@@ -92,6 +93,7 @@ import { blendHarnessAnswers, blendItems } from '../../primitives/visual-primiti
 import { flipHarnessAnswers } from '../../primitives/visual-primitives/literacy/wordFlipWorkspace';
 import { swapHarnessAnswers } from '../../primitives/visual-primitives/literacy/soundSwapWorkspace';
 import { dictationItems, spellingHarnessAnswers } from '../../primitives/visual-primitives/literacy/spellingPatternExplorerWorkspace';
+import { practiceItem as spellingPracticeItem, practiceParent as spellingPracticeParent } from '../../primitives/visual-primitives/literacy/spellingPatternLevers';
 import { cvcHarnessAnswers } from '../../primitives/visual-primitives/literacy/cvcSpellerWorkspace';
 import { OPTION_MODES, ROW_TAP_MODES, barModelHarnessAnswers, isSpokenGraph }
   from '../../primitives/visual-primitives/math/barModelWorkspace';
@@ -117,6 +119,7 @@ import { itemsFromChallenges as spotterItems } from '../../primitives/visual-pri
 import { letterSpotterJourneyAnswers } from '../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
 import { itemsFromChallenges as decodableItems } from '../../primitives/visual-primitives/literacy/decodableReaderScript';
 import { decodableReaderJourneyAnswers } from '../../primitives/visual-primitives/literacy/decodableReaderWorkspace';
+import { simplerFor as decodableSimplerFor } from '../../primitives/visual-primitives/literacy/decodableReaderLevers';
 import { itemsFromChallenges as bookItems } from '../../primitives/visual-primitives/literacy/interactiveBookScript';
 import { interactiveBookJourneyAnswers } from '../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
 import { itemsFromChallenges as bridgeItems } from '../../primitives/visual-primitives/literacy/storyBridgeScript';
@@ -163,6 +166,7 @@ import { itemsFromPayload as sentenceItems } from '../../primitives/visual-primi
 import { sentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/sentenceAnalyzerWorkspace';
 import { readAloudItems } from './adapters/readAloudStudioLive';
 import { readAloudJourneyAnswers } from '../../primitives/visual-primitives/literacy/readAloudStudioWorkspace';
+import { shortLine as readAloudShortLine } from '../../primitives/visual-primitives/literacy/readAloudStudioLevers';
 import { itemsFromChallenges as oralSentenceItems } from '../../primitives/visual-primitives/literacy/oralSentenceStudioScript';
 import { oralSentenceJourneyAnswers } from '../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
 import { causeEffectItems, causeEffectJourneyAnswers } from '../../primitives/visual-primitives/history/causeEffectChainWorkspace';
@@ -202,6 +206,8 @@ import { practiceItem as patternPracticeItem, practiceParent } from '../../primi
 import { angleWorkshopHarnessInputs } from '../../primitives/visual-primitives/math/angleWorkshopWorkspace';
 import { practiceFor as angleWorkshopPracticeFor, practiceParent as angleWorkshopPracticeParent }
   from '../../primitives/visual-primitives/math/angleWorkshopLevers';
+import { sentenceOf as figSentenceOf, sentencesOf as figSentencesOf, typeChoices as figTypeChoices } from '../../primitives/visual-primitives/literacy/figurativeSteps';
+import { splitPictureOption as storySplitPicture } from '../../primitives/visual-primitives/literacy/storySteps';
 import { strategyPickerHarnessInputs } from '../../primitives/visual-primitives/math/strategyPickerWorkspace';
 import { practiceItem as strategyPracticeItem, practiceParent as strategyPracticeParent }
   from '../../primitives/visual-primitives/math/strategyPickerLevers';
@@ -1201,8 +1207,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // the harness invents neither a phoneme nor a grapheme.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = buildLetterSoundLinkItems(ctx.data.challenges ?? [], ctx.data.supportTier)
-        .find(i => i.id === ctx.itemId);
+      const built = buildLetterSoundLinkItems(ctx.data.challenges ?? [], ctx.data.supportTier);
+      // A far_letter_pair practice item (`~simpler`) is rebuilt from its parent with the component's builder.
+      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
+      const item = parent ? fartherPair(parent, built, ctx.data.letterGroup) : built.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current letter-sound assignment');
       const answers = letterSoundLinkWorkspaceAnswers(item);
       const value = intent === 'wrong' ? answers.plainWrong : answers.correct;
@@ -1379,7 +1387,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
           { type: 'write', label: 'Your spelling rule', text: 'The words share the same spelling pattern.' },
           { type: 'choose', label: 'Next: Apply the Rule' }] as DriverInput[] : [];
       }
-      const item = dictationItems(ctx.data.dictationWords, ctx.data.dictationHints).find(d => d.id === ctx.itemId);
+      const words = dictationItems(ctx.data.dictationWords, ctx.data.dictationHints);
+      // The shorter practice word (a simplify lever) is not a generated word: rebuild it from its parent.
+      const parent = spellingPracticeParent(ctx.itemId, words);
+      const item = parent ? spellingPracticeItem(parent, { patternWords: ctx.data.patternWords ?? [],
+        highlightPattern: String(ctx.data.highlightPattern ?? ''), items: words }) : words.find(d => d.id === ctx.itemId);
       if (!item) throw new Error('No current spelling-pattern-explorer word');
       const answers = spellingHarnessAnswers(item, String(ctx.data.highlightPattern ?? ''));
       return [{ type: 'write', label: 'Your spelling', text: intent === 'wrong' ? answers.plainWrong : answers.correct },
@@ -1848,7 +1860,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // Every item is spoken: the printed line read aloud, a word from the story, or the right choice said.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = decodableItems(ctx.data as never).items.find(i => i.id === ctx.itemId);
+      // A practice item (`~simpler`: short_line, short_story) is rebuilt from its parent with the same builder.
+      const built = decodableItems(ctx.data as never).items, sentences = ctx.data.passage?.sentences ?? [];
+      const parent = ctx.itemId?.endsWith('~simpler') ? built.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
+      const item = parent ? decodableSimplerFor(parent, sentences, built) : built.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current decodable-reader item');
       const answers = decodableReaderJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
@@ -2261,12 +2276,15 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     leakTokens: ['RA_ITEM', 'RA_MOVE', 'RA_COMPLETE', 'RA_HEAR', 'RA_PLAN'],
     prompts: WORKSPACE_PROMPTS,
     // Every scored item is the printed line read aloud. Expression's phrase plan accepts any plan, so it has no
-    // wrong answer for this driver to give.
+    // wrong answer: the driver commits the plan as it stands. A practice line (`~simpler`) is rebuilt from its
+    // parent with `shortLine`.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const item = readAloudItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      const all = readAloudItems(ctx.data as never);
+      const parent = ctx.itemId?.endsWith('~simpler') ? all.find(i => `${i.id}~simpler` === ctx.itemId) : undefined;
+      const item = parent ? readAloudShortLine(parent, all) : all.find(i => i.id === ctx.itemId);
       if (!item) throw new Error('No current read-aloud-studio item');
-      if (item.step === 'mark') throw new Error('read-aloud-studio expression mark: any phrase plan is accepted; undriven');
+      if (item.step === 'mark') return intent === 'wrong' ? [] : [{ type: 'choose', label: 'Use my phrase plan' }];
       const answers = readAloudJourneyAnswers(item);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
@@ -2501,6 +2519,99 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
+  'opinion-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/OpinionBuilder.tsx',
+    instanceId: 'opinions',
+    defaults: { grade: 'Grade 3', mode: 'build_opinion', di: false, topic: 'Opinions about school and home' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // build_opinion through its real cards: the yes side's opinion, reason, example, restatement for a pass; the restatement
+    // first for a wrong one. OREO and CER sentences are checked by the writing judge (a model): OpinionBuild.workspace.test.tsx.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      if (ctx.data.task !== 'opinion_build') throw new Error('opinion-builder writing steps are judged by the writing judge, not driven at W1');
+      const q = (ctx.data.opinions ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!q) throw new Error('No current opinion-builder question');
+      const id = (role: string) => q.cards.find((c: { role: string; side?: string }) => c.role === role && c.side === 'yes').id as string;
+      const order = intent === 'wrong' ? [id('restate'), id('reason'), id('example'), id('opinion')]
+        : [id('opinion'), id('reason'), id('example'), id('restate')];
+      const placed = Number(ctx.demand?.cardsPlaced ?? 0) > 0;
+      return [...(placed ? [{ type: 'choose' as const, label: 'Clear' }] : []),
+        ...order.map(c => ({ type: 'choose' as const, label: `card ${c}` })), { type: 'choose' as const, label: "I'm done!" }];
+    },
+    probes: { mounted: { selector: '[data-testid="ob-answer"], [data-testid="ws-paragraph"]' } },
+  },
+  'figurative-language-finder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/FigurativeLanguageFinder.tsx',
+    instanceId: 'figures',
+    defaults: { grade: 'Grade 4', mode: 'comparison', di: false, topic: 'A stormy day at the lake' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // Find steps through the real passage and kind buttons: the first tagged figure not yet found, by its sentence and
+    // kind, passes in code; wrong names a kind that sentence's tags do not hold (a wrong_type in code). Meaning and make
+    // steps are checked by the writing judge (a model): FigurativeLanguageFinder.workspace.test.tsx.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      if (!String(ctx.itemId).startsWith('find')) throw new Error('figurative-language-finder meaning and make steps are judged by the writing judge, not driven at W1');
+      const sentences = figSentencesOf(ctx.data.passage ?? '');
+      const foundSoFar = String(ctx.demand?.foundSoFar ?? '');
+      const inst = (ctx.data.instances ?? []).find((i: { text: string }) => figSentenceOf(sentences, i.text) >= 0 && !foundSoFar.includes(`"${i.text.trim()}"`));
+      if (!inst) throw new Error('No unfound figure left');
+      const n = figSentenceOf(sentences, inst.text);
+      const tagged = (ctx.data.instances ?? []).filter((i: { text: string }) => figSentenceOf(sentences, i.text) === n).map((i: { type: string }) => i.type);
+      const kind = intent === 'wrong' ? figTypeChoices(ctx.data).find(t => !tagged.includes(t))! : inst.type;
+      return [{ type: 'choose' as const, label: `sentence ${n + 1}` }, { type: 'choose' as const, label: `kind ${kind}` },
+        { type: 'choose' as const, label: "I'm done!" }];
+    },
+    probes: { mounted: { selector: '[data-testid="fig-passage"], [data-testid="fig-sentence"], textarea' } },
+  },
+  'story-planner': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/StoryPlanner.tsx',
+    instanceId: 'story',
+    defaults: { grade: 'Grade 1', mode: 'story_structure', di: false, topic: 'A lost puppy' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // K-1 through its real pictures: one tap per card (every picture passes), then the arc events in generated order
+    // (correct) or the last event first (wrong). Grade 2+ cards are checked by the writing judge (a model):
+    // StoryPlanner.workspace.test.tsx.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const cap = (t: string) => storySplitPicture(t).label;
+      // Every picture is a fair creative pick (reader-fit contract), so the plan item has no wrong input.
+      if (ctx.itemId === 'plan') return intent === 'wrong' ? [] : (ctx.data.elements ?? []).filter((e: { choices?: string[] }) => e.choices?.length)
+        .map((e: { choices: string[] }) => ({ type: 'choose' as const, label: cap(e.choices[0]) }));
+      if (ctx.itemId !== 'arc') throw new Error('story-planner cards are judged by the writing judge, not driven at W1');
+      const events = (ctx.data.arcEvents ?? []) as string[];
+      const order = intent === 'wrong' ? [...events.slice(-1), ...events.slice(0, -1)] : events;
+      const placed = ctx.demand?.placed !== undefined && ctx.demand.placed !== 'nothing placed';
+      return [...(placed ? [{ type: 'choose' as const, label: 'Clear' }] : []),
+        ...order.map(e => ({ type: 'choose' as const, label: cap(e) })), { type: 'choose' as const, label: "I'm done!" }];
+    },
+    probes: { mounted: { selector: '[data-testid="sp-order"], [role="group"], textarea' } },
+  },
+  'revision-workshop': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/RevisionWorkshop.tsx',
+    instanceId: 'revisions',
+    defaults: { grade: 'Grade 5', mode: 'reorganize', di: false, topic: 'A day at the beach' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // reorganize through its real sentence cards: the targets' order passes in code; wrong is the last sentence first.
+    // The typed revisions are checked by the writing judge (a model): RevisionWorkshop.workspace.test.tsx.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      if (ctx.data.revisionSkill !== 'reorganize') throw new Error('revision-workshop typed revisions are judged by the writing judge, not driven at W1');
+      const ids = (ctx.data.targets ?? []).map((t: { targetId: string }) => t.targetId) as string[];
+      const order = intent === 'wrong' ? [...ids.slice(-1), ...ids.slice(0, -1)] : ids;
+      const placed = ctx.demand?.order !== undefined && ctx.demand.order !== 'nothing placed';
+      return [...(placed ? [{ type: 'choose' as const, label: 'Clear' }] : []),
+        ...order.map(id => ({ type: 'choose' as const, label: `sentence ${id}` })), { type: 'choose' as const, label: "I'm done!" }];
+    },
+    probes: { mounted: { selector: '[data-testid="rv-order"], [data-testid="rv-draft"]' } },
+  },
   'sentence-builder': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/SentenceBuilder.tsx',
@@ -2510,11 +2621,20 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     prompts: WORKSPACE_PROMPTS,
     // build_sentence is checked by the shared literacy judge (a model) after its code checks;
     // SentenceBuild.workspace.test.tsx drives it with a stubbed judge.
-    inputsFor: (intent) => {
+    // The tile modes through their real tiles: a listed order passes in code; wrong is the reverse order (the end mark
+    // first). Try again keeps the row, so a correct try clears it first. build_sentence is judged by the sentence judge.
+    inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      throw new Error('sentence-builder build_sentence is judged by the sentence judge, not driven at W1');
+      if (ctx.data.task === 'sentence_build') throw new Error('sentence-builder build_sentence is judged by the sentence judge, not driven at W1');
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current sentence-builder challenge');
+      const order: string[] = intent === 'wrong' ? [...c.validArrangements[0]].reverse() : c.validArrangements[0];
+      const text = (id: string) => c.tiles.find((t: { id: string }) => t.id === id).text as string;
+      const placed = Number(ctx.demand?.tilesPlaced ?? 0) > 0;
+      return [...(placed ? [{ type: 'choose' as const, label: 'Clear' }] : []),
+        ...order.map(id => ({ type: 'choose' as const, label: `tile ${text(id)}` })), { type: 'choose' as const, label: "I'm done!" }];
     },
-    probes: { mounted: { selector: '[data-testid="sb-row"]' } },
+    probes: { mounted: { selector: '[data-testid="sb-row"], [data-testid="so-row"]' } },
   },
   'paragraph-architect': {
     execution: 'workspace',
@@ -2527,6 +2647,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // Try again keeps the paragraph, so a correct try clears it first.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
+      // The writing modes' sentences are checked by the writing judge (a model); OlderModes.workspace.test.tsx drives them.
+      if (ctx.data.task !== 'paragraph_build') throw new Error('paragraph-architect writing steps are judged by the writing judge, not driven at W1');
       const p = (ctx.data.paragraphs ?? []).find((x: { id: string }) => x.id === ctx.itemId);
       if (!p) throw new Error('No current paragraph-architect paragraph');
       const id = (role: string, n = 0) => p.cards.filter((c: { role: string }) => c.role === role)[n].id as string;
@@ -2536,7 +2658,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [...(placed ? [{ type: 'choose' as const, label: 'Clear' }] : []),
         ...order.map(c => ({ type: 'choose' as const, label: `card ${c}` })), { type: 'choose' as const, label: "I'm done!" }];
     },
-    probes: { mounted: { selector: '[data-testid="pb-paragraph"]' } },
+    probes: { mounted: { selector: '[data-testid="pb-paragraph"], [data-testid="ws-paragraph"]' } },
   },
   'polygon-area-builder': {
     execution: 'workspace',

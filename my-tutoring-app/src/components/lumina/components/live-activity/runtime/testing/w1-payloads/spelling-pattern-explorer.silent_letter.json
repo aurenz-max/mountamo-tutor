@@ -1,0 +1,38 @@
+{
+ "source": "qa/tutor-reports/spelling-pattern-explorer-runtime-silent_letter-payload-2026-10-09.json",
+ "primitiveId": "spelling-pattern-explorer",
+ "evalMode": "silent_letter",
+ "data": {
+  "title": "Silent Letters: kn, wr, and mb",
+  "gradeLevel": "3",
+  "patternType": "silent-letter",
+  "patternWords": [
+   "knee",
+   "knot",
+   "write",
+   "wrong",
+   "comb",
+   "lamb",
+   "knight",
+   "wrap"
+  ],
+  "highlightPattern": "silent letter",
+  "ruleTemplate": "Sometimes letters like k, w, and b are _________ at the beginning or end of a word.",
+  "correctRule": "silent",
+  "dictationWords": [
+   "knock",
+   "wrist",
+   "thumb",
+   "wrench",
+   "climb"
+  ],
+  "dictationHints": [
+   "Starts with k",
+   "Starts with w",
+   "Ends with b",
+   "Starts with w",
+   "Ends with b"
+  ],
+  "objectiveGrade": "3"
+ }
+}

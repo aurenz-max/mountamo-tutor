@@ -251,7 +251,8 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
   const on = (id: string) => pulledLevers.includes(id);
   /** Credited: the line is marked read in place. */
   const revealed = runner.currentSolved;
-  const currentBreaks = currentItem ? phrasePlans[currentItem.lineId] ?? [] : [];
+  // A practice line has no phrase plan of its own: the parent's marks index the parent's words.
+  const currentBreaks = currentItem && !practice ? phrasePlans[currentItem.lineId] ?? [] : [];
   const canMark = currentItem?.step === 'mark' && runner.canAttempt;
 
   // What the tutor and the observer are shown, republished every render. W1 offers no
@@ -259,7 +260,7 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
     const levers = practice ? [] : readAloudLevers(sessionItem, pulledLevers, items);
-    const scene = readAloudScene(currentItem, phrasePlansRef.current[currentItem.lineId] ?? []);
+    const scene = readAloudScene(currentItem, practice ? [] : phrasePlansRef.current[currentItem.lineId] ?? []);
     const onScreen = practice ? null : leversOnScreen(pulledLevers);
     workspace.current = { ...scene,
       facts: { ...scene.facts,
@@ -361,7 +362,7 @@ const ReadAloudStudioSurface: React.FC<ReadAloudStudioProps> = ({ data, classNam
                 {currentItem.kind === 'dialogue' && currentItem.speaker && (
                   <LuminaBadge accent="amber" className="text-xs">🎭 {currentItem.speaker} says</LuminaBadge>
                 )}
-                {currentItem.step === 'reread' && (
+                {currentItem.step === 'reread' && !practice && (
                   <p className="text-xs uppercase tracking-widest text-slate-300">Your phrase plan</p>
                 )}
                 <div

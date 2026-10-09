@@ -1,0 +1,38 @@
+{
+  "source": "qa/open-build/revision-workshop-2026-10-08/gen-reorganize.json",
+  "primitiveId": "revision-workshop",
+  "evalMode": "reorganize",
+  "data": {
+    "title": "A Day at the Beach",
+    "gradeLevel": "3",
+    "revisionSkill": "reorganize",
+    "draft": "We ate our picnic lunch on the warm sand. First, my family and I packed our big beach bag with sunscreen and towels. After lunch, we built a huge sandcastle and looked for seashells by the water. Finally, we watched the beautiful sunset before driving home.",
+    "targets": [
+      {
+        "targetId": "t1",
+        "originalText": "First, my family and I packed our big beach bag with sunscreen and towels.",
+        "suggestion": "This sentence tells how the day begins, so it belongs at the very beginning of the paragraph.",
+        "idealRevision": "First, my family and I packed our big beach bag with sunscreen and towels."
+      },
+      {
+        "targetId": "t2",
+        "originalText": "We ate our picnic lunch on the warm sand.",
+        "suggestion": "This event happened in the middle of the day, after getting to the beach and before building sandcastles.",
+        "idealRevision": "We ate our picnic lunch on the warm sand."
+      },
+      {
+        "targetId": "t3",
+        "originalText": "After lunch, we built a huge sandcastle and looked for seashells by the water.",
+        "suggestion": "This sentence connects back to lunch and describes the afternoon activities.",
+        "idealRevision": "After lunch, we built a huge sandcastle and looked for seashells by the water."
+      },
+      {
+        "targetId": "t4",
+        "originalText": "Finally, we watched the beautiful sunset before driving home.",
+        "suggestion": "This sentence uses the word 'Finally' and describes an evening activity, making it the best ending for the story.",
+        "idealRevision": "Finally, we watched the beautiful sunset before driving home."
+      }
+    ],
+    "objectiveGrade": "3"
+  }
+}

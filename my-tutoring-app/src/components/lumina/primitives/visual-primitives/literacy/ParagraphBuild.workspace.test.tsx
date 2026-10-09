@@ -56,12 +56,13 @@ describe('build_paragraph rules (pure)', () => {
     expect(fewerCardsFor(p)!.cards).toHaveLength(5);
   });
 
-  it('binds only the build payload; levers answer every miss; the adapter refuses a writing-mode payload', () => {
+  it('binds the build payload and (R12) the writing payloads too; levers answer every miss', () => {
     expect(() => validateParagraphArchitectData(data)).not.toThrow();
     const writing = { title: 'x', paragraphType: 'informational', gradeLevel: '2', topic: 'sharks', topicSentenceFrames: [],
       detailSentenceFrames: [], concludingSentenceFrames: [], linkingWords: [] };
-    expect(() => validateParagraphArchitectData(writing)).toThrow();
-    expect(workspaceBinding({ instanceId: 'w', primitiveId: 'paragraph-architect', pin: 'informational', objectiveIds: ['o'], data: writing })).toBeNull();
+    expect(() => validateParagraphArchitectData(writing)).not.toThrow();
+    expect(() => validateParagraphArchitectData({ ...writing, topic: '' })).toThrow();
+    expect(workspaceBinding({ instanceId: 'w', primitiveId: 'paragraph-architect', pin: 'informational', objectiveIds: ['o'], data: writing })).not.toBeNull();
     expect(workspaceBinding({ instanceId: 'b', primitiveId: 'paragraph-architect', pin: 'build_paragraph', objectiveIds: ['o'], data })).not.toBeNull();
     const tw = getComponentById('paragraph-architect')!.teachingWorkspace!;
     const answered = new Set(paragraphLevers(p, []).flatMap(l => l.answers ?? []));
@@ -105,11 +106,9 @@ describe('build_paragraph on the workspace', () => {
     expect(h.state().task!.evidence.correctness).toBe('correct');
   });
 
-  it('the writing modes still render their own component, unbound', () => {
-    const writing = { title: 'Writing', paragraphType: 'informational', gradeLevel: '2', topic: 'sharks', topicSentenceFrames: ['___ are fish.'],
-      detailSentenceFrames: ['First, ___.'], concludingSentenceFrames: ['In the end, ___.'], linkingWords: ['also'] } as ParagraphArchitectData;
-    render(<ParagraphArchitect data={writing} />);
+  it('an unbound mount shows the needs-the-tutor card (R12: one path)', () => {
+    render(<ParagraphArchitect data={data} />);
     expect(screen.queryByRole('group', { name: 'Your paragraph' })).toBeNull();
-    expect(document.querySelector('[data-workspace-unbound]')).toBeNull();
+    expect(document.querySelector('[data-workspace-unbound="paragraph-architect"]')).not.toBeNull();
   });
 });

@@ -14,8 +14,6 @@ import { READ_ALOUD_MISSES, readAloudLevers, shortLine, shortLineLeak } from './
 
 const items = (mode: ReadAloudMode) => studioItems(JSON.parse(readFileSync(join(__dirname,
   `../../../components/live-activity/runtime/testing/w1-payloads/read-aloud-studio.${mode}.json`), 'utf8')).data.lines, mode);
-const expression = () => studioItems(JSON.parse(readFileSync(join(__dirname,
-  '../../../components/live-activity/runtime/testing/w1-payloads/read-aloud-studio.accuracy.json'), 'utf8')).data.lines, 'expression');
 
 describe.each(['accuracy', 'dialogue'] as const)('%s', (mode) => {
   const all = items(mode);
@@ -45,19 +43,50 @@ describe.each(['accuracy', 'dialogue'] as const)('%s', (mode) => {
   });
 });
 
-it('expression: help on the reads, nothing on the plan, no practice line', () => {
-  const steps = expression();
-  const [mark, first, reread] = steps;
-  expect(readAloudLevers(mark, [], steps)).toEqual([]);
-  expect(readAloudLevers(first, [], steps).map(l => l.id)).toEqual(['tracking_underline', 'sound_dots']);
-  expect(readAloudLevers(reread, [], steps).map(l => l.id)).toEqual(['tracking_underline', 'sound_dots']);
+describe('expression', () => {
+  const steps = items('expression');
+  const rereads = steps.filter(i => i.step === 'reread');
+
+  it('help on both reads, nothing on the plan; the short line on the reread only', () => {
+    expect(rereads.length).toBeGreaterThan(1);
+    for (const line of rereads) {
+      const [mark, first, reread] = steps.filter(i => i.lineId === line.lineId);
+      expect(readAloudLevers(mark, [], steps)).toEqual([]);
+      expect(readAloudLevers(first, [], steps).map(l => l.id)).toEqual(['tracking_underline', 'sound_dots']);
+      expect(readAloudLevers(reread, [], steps).map(l => l.id)).toEqual(['tracking_underline', 'sound_dots', 'short_line']);
+      expect(shortLine(first, steps)).toBeNull();
+      expect(shortLine(mark, steps)).toBeNull();
+    }
+  });
+
+  it('every reread gets a modeled three-word practice reread that prints and stresses no passage word', () => {
+    for (const item of rereads) {
+      const practice = shortLine(item, steps)!;
+      expect(practice).toMatchObject({ id: `${item.id}~simpler`, kind: 'expression', step: 'reread', wordCount: 3,
+        modelGroups: [practice.text], stressWord: undefined });
+      expect(shortLineLeak(practice, steps)).toBe(false);
+    }
+  });
+
+  it('a cold first read is never voiced; the reread keeps only its own model; the short line fences the model', () => {
+    const [, first, reread] = steps;
+    expect(readAloudLevers(first, [], steps)[0].does).toMatch(/do not read the line/);
+    const onReread = readAloudLevers(reread, [], steps);
+    expect(onReread[0].does).toMatch(/only as your model/);
+    expect(onReread[2].does).toMatch(/Never read the passage line/);
+  });
+
+  it('each miss pulls a lever on every read item', () => {
+    for (const item of steps.filter(i => i.step !== 'mark'))
+      for (const miss of READ_ALOUD_MISSES.expression) expect(nextLever(readAloudLevers(item, [], steps), miss)).toBe('tracking_underline');
+  });
 });
 
-it('the catalog lists every spoken miss unanswered', () => {
+it('the catalog lists accuracy and dialogue misses unanswered, expression answered', () => {
   const entry = LITERACY_CATALOG.find(c => c.id === 'read-aloud-studio')!.teachingWorkspace!;
   for (const [mode, misses] of Object.entries(READ_ALOUD_MISSES)) {
     expect(entry.misses![mode]).toEqual(misses);
-    expect(entry.unanswered![mode]).toEqual(misses);
+    expect(entry.unanswered![mode]).toEqual(mode === 'expression' ? undefined : misses);
   }
   expect(entry.levers).toBe(true);
 });

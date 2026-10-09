@@ -1,0 +1,120 @@
+{
+  "source": "qa/open-build/bind-older-2026-10-08/sb-simple.json",
+  "primitiveId": "sentence-builder",
+  "evalMode": "simple",
+  "data": {
+    "title": "Fun Animal Sentences",
+    "gradeLevel": "2",
+    "sentenceType": "simple",
+    "challenges": [
+      {
+        "id": "ch1",
+        "targetMeaning": "A clever monkey eats a banana",
+        "tiles": [
+          {
+            "id": "ch1_t1",
+            "text": "The monkey",
+            "role": "subject"
+          },
+          {
+            "id": "ch1_t2",
+            "text": "eats",
+            "role": "predicate"
+          },
+          {
+            "id": "ch1_t3",
+            "text": "a banana",
+            "role": "object"
+          },
+          {
+            "id": "ch1_t4",
+            "text": ".",
+            "role": "punctuation"
+          }
+        ],
+        "validArrangements": [
+          [
+            "ch1_t1",
+            "ch1_t2",
+            "ch1_t3",
+            "ch1_t4"
+          ]
+        ],
+        "hint": "Start with who is doing the action, then add the action and what is being eaten."
+      },
+      {
+        "id": "ch2",
+        "targetMeaning": "A fuzzy bear sleeps in the cave",
+        "tiles": [
+          {
+            "id": "ch2_t1",
+            "text": "The bear",
+            "role": "subject"
+          },
+          {
+            "id": "ch2_t2",
+            "text": "sleeps",
+            "role": "predicate"
+          },
+          {
+            "id": "ch2_t3",
+            "text": "in the cave",
+            "role": "modifier"
+          },
+          {
+            "id": "ch2_t4",
+            "text": ".",
+            "role": "punctuation"
+          }
+        ],
+        "validArrangements": [
+          [
+            "ch2_t1",
+            "ch2_t2",
+            "ch2_t3",
+            "ch2_t4"
+          ]
+        ],
+        "hint": "Find the animal first, then what it is doing, and finish with where it is."
+      },
+      {
+        "id": "ch3",
+        "targetMeaning": "A brave frog jumps very high",
+        "tiles": [
+          {
+            "id": "ch3_t1",
+            "text": "The frog",
+            "role": "subject"
+          },
+          {
+            "id": "ch3_t2",
+            "text": "jumps",
+            "role": "predicate"
+          },
+          {
+            "id": "ch3_t3",
+            "text": "very high",
+            "role": "modifier"
+          },
+          {
+            "id": "ch3_t4",
+            "text": ".",
+            "role": "punctuation"
+          }
+        ],
+        "validArrangements": [
+          [
+            "ch3_t1",
+            "ch3_t2",
+            "ch3_t3",
+            "ch3_t4"
+          ]
+        ],
+        "hint": "Who is jumping? Put the subject first!"
+      }
+    ],
+    "roleColors": {
+      "subject": "blue"
+    }
+  }
+}

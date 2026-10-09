@@ -89,7 +89,7 @@ import {
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { decodableReaderPipPose } from '../../../pip/decodableReaderPipPose';
 import { decodableReaderAssignment, decodableReaderScene, hearAgainRequest } from './decodableReaderWorkspace';
-import { DOTS_LEVER, REGION_LEVER, TRACK_LEVER, decodableReaderLevers, leversOnScreen, shortLine, storyRegion }
+import { DOTS_LEVER, REGION_LEVER, TRACK_LEVER, decodableReaderLevers, leversOnScreen, simplerFor, storyRegion }
   from './decodableReaderLevers';
 
 // ============================================================================
@@ -364,13 +364,15 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
   // W1 offers no demonstration targets and no presentation.
   useLayoutEffect(() => {
     if (!currentItem || !sessionItem) return;
-    const levers = practice ? [] : decodableReaderLevers(sessionItem, pulledLevers, sentences);
+    const levers = practice ? [] : decodableReaderLevers(sessionItem, pulledLevers, sentences, items);
     const scene = decodableReaderScene(currentItem);
     const onScreen = practice ? null : leversOnScreen(pulledLevers);
     workspace.current = { ...scene,
       facts: { ...scene.facts,
         ...(onScreen ? { levers_on_screen: onScreen } : {}),
-        ...(practice ? { practice: 'An easier practice line of three new words, not from the story, ungraded. The story line comes back after it.' } : {}) },
+        ...(practice ? { practice: practice.kind === 'read_line'
+          ? 'An easier practice line of three new words, not from the story, ungraded. The story line comes back after it.'
+          : 'An easier practice story of two sentences, not from the lesson story, with its own question, ungraded. The lesson story and its question come back after it.' } : {}) },
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
       pullLever: id => {
@@ -379,7 +381,7 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
         if (lever.pulled) return `${id} is already pulled.`;
         if (id === REGION_LEVER && missedItem !== sessionItem.id) return 'The story sentences come back only after a wrong answer: let the learner try first.';
         if (lever.kind === 'simplify') {
-          const simpler = shortLine(sessionItem, sentences);
+          const simpler = simplerFor(sessionItem, sentences, items);
           if (!simpler) return 'There is no easier line here.';
           setLeverState({ item: sessionItem.id, pulled: [...pulledLevers, id] });
           setPractice(simpler);

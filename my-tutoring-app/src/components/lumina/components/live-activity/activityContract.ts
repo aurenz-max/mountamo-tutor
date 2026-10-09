@@ -90,6 +90,10 @@ import { additionFactStrategiesLiveDomain } from './adapters/additionFactStrateg
 import { equationBuilderLiveDomain } from './adapters/equationBuilderLive';
 import { paragraphArchitectLiveDomain } from './adapters/paragraphArchitectLive';
 import { sentenceBuilderLiveDomain } from './adapters/sentenceBuilderLive';
+import { revisionWorkshopLiveDomain } from './adapters/revisionWorkshopLive';
+import { figurativeLanguageFinderLiveDomain } from './adapters/figurativeLanguageFinderLive';
+import { storyPlannerLiveDomain } from './adapters/storyPlannerLive';
+import { opinionBuilderLiveDomain } from './adapters/opinionBuilderLive';
 import { patternBuilderLiveDomain } from './adapters/patternBuilderLive';
 import { strategyPickerLiveDomain } from './adapters/strategyPickerLive';
 import { polygonAreaBuilderLiveDomain } from './adapters/polygonAreaBuilderLive';
@@ -191,6 +195,10 @@ export const LIVE_ADAPTERS = {
   'polygon-area-builder': workspaceAdapter('polygon-area-builder', polygonAreaBuilderLiveDomain),
   'paragraph-architect': workspaceAdapter('paragraph-architect', paragraphArchitectLiveDomain),
   'sentence-builder': workspaceAdapter('sentence-builder', sentenceBuilderLiveDomain),
+  'opinion-builder': workspaceAdapter('opinion-builder', opinionBuilderLiveDomain),
+  'revision-workshop': workspaceAdapter('revision-workshop', revisionWorkshopLiveDomain),
+  'figurative-language-finder': workspaceAdapter('figurative-language-finder', figurativeLanguageFinderLiveDomain),
+  'story-planner': workspaceAdapter('story-planner', storyPlannerLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 
 export type LivePrimitiveId = keyof typeof LIVE_ADAPTERS;

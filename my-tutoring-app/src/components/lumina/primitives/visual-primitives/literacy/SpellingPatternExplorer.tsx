@@ -42,6 +42,10 @@ import {
   describeTyped, dictationAssignment, dictationItems, spellingMatches, spellingMiss, spellingMissWords, spellingScene,
   type DictationItem,
 } from './spellingPatternExplorerWorkspace';
+import {
+  BOXES_LEVER, PATTERN_WORDS_LEVER, leverFacts, letterBoxes, markPattern, practiceItem, shownPatternWords, spellingLevers,
+  type SpellingSession,
+} from './spellingPatternLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -161,15 +165,25 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
   const items = useMemo(() => dictationItems(dictationWords, dictationHints), [dictationWords, dictationHints]);
   const [typed, setTyped] = useState('');
   const [verdict, setVerdict] = useState<{ correct: boolean; words: string } | null>(null);
+  // Levers (`spellingPatternLevers.ts`): this word's runtime pulls, and the ungraded shorter word a simplify pull opens.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<DictationItem | null>(null);
+  const session = useMemo<SpellingSession>(() => ({ patternWords: patternWords ?? [], highlightPattern, items, supportTier }),
+    [patternWords, highlightPattern, items, supportTier]);
   const progress = useController({
     challenges: items, getChallengeId: i => i.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: dictationAssignment,
     // A fresh word opens empty; Try again keeps the typing and the verdict words until the next check.
-    onItemOpened: (_index, retry) => { if (!retry) { setTyped(''); setVerdict(null); } },
+    // A retry on the practice word keeps it; only endPractice brings the full word back.
+    onItemOpened: (_index, retry) => { if (!retry) { setTyped(''); setVerdict(null); setPractice(null); } },
   });
   const allDone = tutorOwned && (progress.isComplete || !!progress.practiceSummary);
-  const item = items[progress.currentIndex] ?? null;
+  const sessionItem = items[progress.currentIndex] ?? null;
+  /** The word being spelled now: the practice word while one is open, else the session's word. */
+  const item = practice ?? sessionItem;
+  const pulled = !practice && sessionItem && leverState.item === sessionItem.id ? leverState.pulled : [];
+  const leversOn = tutorOwned && !practice && sessionItem ? spellingLevers(sessionItem, session, pulled).filter(l => l.pulled).map(l => l.id) : [];
   const blocked = progress.canAttempt === false;
 
   const {
@@ -272,7 +286,7 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
     setVerdict({ correct, words: correct ? 'Yes! That is how it is spelled.' : spellingMissWords(miss) });
     if (correct) SoundManager.playCorrect(); else SoundManager.playIncorrect();
     progress.commitCheck(describeTyped(typed), correct, miss);
-    if (correct) {
+    if (correct && !practice) {
       progress.mergeResult({ challengeId: item.id, correct: true, attempts: progress.currentAttempts + 1,
         score: itemScore(progress.currentAttempts + 1) });
     }
@@ -280,13 +294,36 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
 
   // The scene the tutor reads: the phase, what is on screen, the learner's typing. Never the spelling.
   useLayoutEffect(() => {
-    if (!tutorOwned || !item) return;
-    const hintShown = currentPhase === 'apply' && showHints.has(progress.currentIndex) ? item.hint : undefined;
+    if (!tutorOwned || !item || !sessionItem) return;
+    const hintShown = currentPhase === 'apply' && !practice && showHints.has(progress.currentIndex) ? item.hint : undefined;
+    const scene = spellingScene(item, { phase: allDone ? 'review' : currentPhase, typed, patternWords,
+      patternShown: currentPhase === 'observe' && showPatternPanel ? highlightPattern : undefined,
+      ruleWritten: !!studentRule.trim(), hintShown });
+    // Levers only while the learner spells a session word; none on the practice word.
+    const spelling = currentPhase === 'apply' && !allDone;
+    const levers = spelling && !practice ? spellingLevers(sessionItem, session, pulled) : [];
+    const onScreen = spelling && !practice ? leverFacts(sessionItem, session, pulled) : undefined;
     workspace.current = {
-      ...spellingScene(item, { phase: allDone ? 'review' : currentPhase, typed, patternWords,
-        patternShown: currentPhase === 'observe' && showPatternPanel ? highlightPattern : undefined,
-        ruleWritten: !!studentRule.trim(), hintShown }),
-      readyForResponse: currentPhase === 'apply' && !allDone,
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An ungraded practice word, shorter, with the same spelling pattern; then the full word comes back.' } : {}) },
+      readyForResponse: spelling,
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this word now.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionItem, session);
+          if (!easier) return 'There is no shorter pattern word for this word.';
+          setLeverState(next); setTyped(''); setVerdict(null); setPractice(easier);
+          return { practice: dictationAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      endPractice: () => { setTyped(''); setVerdict(null); setPractice(null); },
     };
   });
 
@@ -398,7 +435,20 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
       <div className="flex justify-center">
         <LuminaChallengeCounter current={Math.min(progress.currentIndex + 1, items.length)} total={items.length} variant="dots" />
       </div>
+      {practice && <p className="text-xs text-amber-300">Practice word</p>}
       <p className="text-xs text-slate-500">Listen to the word, then spell it using the pattern rule:</p>
+      {leversOn.includes(PATTERN_WORDS_LEVER) && (
+        <LuminaPanel data-lever="pattern-words" className="p-2 flex flex-wrap gap-2">
+          {shownPatternWords(session).map(w => {
+            const parts = markPattern(w, highlightPattern);
+            return (
+              <span key={w} data-pattern-word={w} className="px-2 py-1 rounded bg-white/5 border border-white/10 text-slate-200">
+                {parts ? <>{parts[0]}<span className="font-bold text-yellow-300">{parts[1]}</span>{parts[2]}</> : w}
+              </span>
+            );
+          })}
+        </LuminaPanel>
+      )}
       <div className="flex items-center gap-2">
         <input
           value={typed}
@@ -410,14 +460,25 @@ const SpellingPatternExplorerSurface: React.FC<SpellingPatternExplorerProps & { 
           spellCheck={false}
           className="flex-1 px-3 py-2 rounded-lg border text-base bg-white/5 border-white/10 text-slate-200 focus:outline-none focus:border-blue-500/40"
         />
-        {item.hint && !showHints.has(progress.currentIndex) && (
+        {!practice && item.hint && !showHints.has(progress.currentIndex) && (
           <button onClick={() => setShowHints(prev => new Set(Array.from(prev).concat(progress.currentIndex)))}
             className="text-xs text-slate-500 hover:text-slate-400">hint</button>
         )}
-        {item.hint && showHints.has(progress.currentIndex) && (
+        {!practice && item.hint && showHints.has(progress.currentIndex) && (
           <span className="text-xs text-amber-300">{item.hint}</span>
         )}
       </div>
+      {leversOn.includes(BOXES_LEVER) && (() => {
+        const { boxes, extra } = letterBoxes(item, typed);
+        return (
+          <div data-lever="letter-boxes" className="flex items-center gap-1" aria-label={`${boxes.length} letter boxes`}>
+            {boxes.map((l, i) => (
+              <span key={i} data-letter-box={l} className="w-8 h-9 flex items-center justify-center rounded border border-white/20 bg-white/5 text-slate-200 font-mono">{l}</span>
+            ))}
+            {extra && <span data-letter-extra className="ml-1 font-mono text-rose-300">{extra}</span>}
+          </div>
+        );
+      })()}
       <div className="flex justify-end">
         <LuminaActionButton action="check" onClick={checkWord} disabled={blocked || !typed.trim()}>
           Check spelling

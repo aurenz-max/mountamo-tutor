@@ -45,6 +45,33 @@
   "sentence-builder.build_sentence": {
     "J1-drivable": "by design: the sentence is checked by the shared literacy judge (a model) after code checks; SentenceBuild.workspace.test.tsx drives the commit with a stubbed judge"
   },
+  "paragraph-architect.informational": {
+    "J1-drivable": "by design: each typed sentence is checked by the shared writing judge (a model); OlderModes.workspace.test.tsx drives the commits with a stubbed judge"
+  },
+  "figurative-language-finder.build_figurative": {
+    "J1-drivable": "by design: each written figure is checked by the shared writing judge (a model); FigurativeLanguageFinder.workspace.test.tsx drives the commits with a stubbed judge"
+  },
+  "figurative-language-finder.comparison": {
+    "J1-drivable": "by design: the find steps drive in code; each meaning step is checked by the shared writing judge (a model); FigurativeLanguageFinder.workspace.test.tsx drives the commits with a stubbed judge"
+  },
+  "figurative-language-finder.idiom": {
+    "J1-drivable": "by design: the find steps drive in code; each meaning step is checked by the shared writing judge (a model); FigurativeLanguageFinder.workspace.test.tsx drives the commits with a stubbed judge"
+  },
+  "story-planner.story_structure.g3": {
+    "J1-drivable": "by design: grade 2+ cards are checked by the shared writing judge (a model); StoryPlanner.workspace.test.tsx drives the commits with a stubbed judge"
+  },
+  "story-planner.character_setting": {
+    "J1-drivable": "by design: each card is checked by the shared writing judge (a model); StoryPlanner.workspace.test.tsx drives the commits with a stubbed judge"
+  },
+  "revision-workshop.combine_sentences": {
+    "J1-drivable": "by design: each typed revision is checked by the shared writing judge (a model); RevisionWorkshop.workspace.test.tsx drives the commits with a stubbed judge"
+  },
+  "revision-workshop.add_details": {
+    "J1-drivable": "by design: each typed revision is checked by the shared writing judge (a model); RevisionWorkshop.workspace.test.tsx drives the commits with a stubbed judge"
+  },
+  "opinion-builder.oreo": {
+    "J1-drivable": "by design: each typed sentence is checked by the shared writing judge (a model); OpinionBuild.workspace.test.tsx drives the commits with a stubbed judge"
+  },
   "word-flip.build_inflect": {
     "J1-drivable": "by design: the word is checked in code, then by the shared literacy judge (Jev, flash-latest), which the dry sweep has no model for; WordFlip.buildInflect.workspace.test.tsx drives every code miss and the commit with a stubbed judge"
   },
@@ -80,8 +107,5 @@
   },
   "pattern-builder.create": {
     "J12-item-miss-answered": "qa/support-levers/QUEUE-item-gaps-2026-10-09.md"
-  },
-  "read-aloud-studio.expression": {
-    "J1-drivable": "handoff 24 SW-L2"
   }
 }

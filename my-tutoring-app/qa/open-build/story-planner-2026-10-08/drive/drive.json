@@ -1,0 +1,88 @@
+{
+  "log": [
+    {
+      "step": "g3",
+      "prompt": "Write a story about an adventurous character who discovers a mysterious, hidden place and has an exciting experience there.",
+      "first": {
+        "elementId": "char_1",
+        "label": "Character",
+        "prompt": "Who is your main character? Describe what they look like, what they love to do, and one special trait they have.",
+        "required": true
+      }
+    },
+    {
+      "step": "off card",
+      "feedback": "Read the card's question again. Does your idea answer it?",
+      "judge": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.96,
+        "fits": 0.05,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.89,
+          "fits": 0.05,
+          "partly": 0.06
+        }
+      }
+    },
+    {
+      "step": "character",
+      "feedback": "Yes! That character card works.",
+      "judge": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 0.57,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.3,
+          "fits": 0.57,
+          "partly": 0.13
+        }
+      }
+    }
+  ],
+  "judge": [
+    {
+      "p": {
+        "ask": "Character card: Who is your main character? Describe what they look like, what they love to do, and one special trait they ... Story: Write a story about an adventurous character who discovers a mysterious, hidden place and has an exciting e... (It answers the card's question for this story.)",
+        "made": "I like pizza and video games.",
+        "unit": "writing",
+        "context": "Write a story about an adventurous character who discovers a mysterious, hidden place and has an exciting experience there.",
+        "grade": "3"
+      },
+      "v": {
+        "met": false,
+        "miss": "wrong_meaning",
+        "realWord": 0.96,
+        "fits": 0.05,
+        "judge": "jev+flash",
+        "fitsOptions": {
+          "no": 0.89,
+          "fits": 0.05,
+          "partly": 0.06
+        }
+      }
+    },
+    {
+      "p": {
+        "ask": "Character card: Who is your main character? Describe what they look like, what they love to do, and one special trait they ... Story: Write a story about an adventurous character who discovers a mysterious, hidden place and has an exciting e... (It answers the card's question for this story.)",
+        "made": "Pepper is a small, fluffy white puppy with a black spot over one eye who loves to chase butterflies.",
+        "unit": "writing",
+        "context": "Write a story about an adventurous character who discovers a mysterious, hidden place and has an exciting experience there.",
+        "grade": "3"
+      },
+      "v": {
+        "met": true,
+        "realWord": 0.98,
+        "fits": 0.57,
+        "judge": "jev",
+        "fitsOptions": {
+          "no": 0.3,
+          "fits": 0.57,
+          "partly": 0.13
+        }
+      }
+    }
+  ]
+}

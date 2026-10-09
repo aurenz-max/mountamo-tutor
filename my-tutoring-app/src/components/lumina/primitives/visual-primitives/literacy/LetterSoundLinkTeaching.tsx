@@ -46,8 +46,8 @@ import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
 import { letterSoundLinkPipPose } from '../../../pip/letterSoundLinkPipPose';
 import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
-import { FAR_PAIR_LEVER, KEYWORDS_LEVER, LETTER_MODEL_LEVER, VOICE_LEVER, cardKeywords, fartherPair, laterStimuli,
-  letterModelFor, letterSoundLevers, voiceModelFor } from './letterSoundLinkLevers';
+import { FAR_PAIR_LEVER, KEYWORDS_LEVER, LETTER_MODEL_LEVER, PAIR_MODEL_LEVER, VOICE_LEVER, cardKeywords, fartherPair,
+  laterStimuli, letterModelFor, letterSoundLevers, pairModelFor, voiceModelFor } from './letterSoundLinkLevers';
 import { LuminaBadge, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
   LuminaCardTitle, LuminaChallengeCounter, LuminaReadAloudGlyph, answerStateClass } from '../../../ui';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
@@ -156,6 +156,7 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
   const voiceModel = leverOn(VOICE_LEVER) ? voiceModelFor(sessionItem) : null;
   const letterModel = leverOn(LETTER_MODEL_LEVER) ? letterModelFor(sessionItem, items, data.letterGroup) : null;
   const modelPicture = letterModel && sessionItem.mode === 'keyword-match';
+  const pairModel = leverOn(PAIR_MODEL_LEVER) ? pairModelFor(sessionItem, items, data.letterGroup) : null;
   /** The first moment the anchor may appear: a committed correct attempt on
    *  THIS item. There is no `phase === 'affirmed'` on this path — the verdict
    *  and the advance commit together — so the reveal is keyed on the record. */
@@ -171,6 +172,8 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
         + `and a ${voiceModel.buzz.word} (${voiceModel.buzz.sound}), with a hand on the throat` : '',
       letterModel ? `a model on another letter, ${letterModel.letter.toUpperCase()}${modelPicture ? `, beside its picture (${letterModel.word})` : ''}: `
         + `its sound is ${letterModel.sound}${modelPicture ? `, and ${letterModel.word} starts with it` : ''}. It is not this item's letter` : '',
+      pairModel ? `a model pair beside the cards, two other letters with their pictures: ${pairModel.map(m =>
+        `${m.letter.toUpperCase()} (${m.word}), sound ${m.sound}`).join(' and ')}. They are not this item's letters` : '',
     ].filter(Boolean);
     workspace.current = {
       ...scene,
@@ -276,6 +279,15 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
           className="flex items-center justify-center gap-4 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-5 py-3">
           <span className={`text-5xl font-bold ${letterColor(letterModel.letter)}`}>{letterModel.letter}</span>
           {modelPicture && <span role="img" aria-label={letterModel.word} className="text-4xl">{letterModel.emoji}</span>}
+        </div>}
+
+        {/* pair_model: two letters the session never uses, each with its picture, of the item's sound kinds. */}
+        {pairModel && <div data-lever="pair-model" aria-label="Letter pair model"
+          className="flex items-center justify-center gap-8 rounded-2xl border border-cyan-300/20 bg-cyan-950/10 px-5 py-3">
+          {pairModel.map(m => <div key={m.letter} data-pair-model={m.letter} className="flex items-center gap-2">
+            <span className={`text-4xl font-bold ${letterColor(m.letter)}`}>{m.letter}</span>
+            <span role="img" aria-label={m.word} className="text-3xl">{m.emoji}</span>
+          </div>)}
         </div>}
 
         {/* voice_feel_model: a quiet and a buzzing sound on two pictures, never this item's letters. */}

@@ -24,7 +24,7 @@ import type { LetterSoundMiss, SpokenLetterMiss } from '../../../primitives/visu
 import type { LetterSpotterMiss } from '../../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
 import type { WordWorkoutMiss } from '../../../primitives/visual-primitives/literacy/wordWorkoutWorkspace';
 import type { InteractiveBookMiss } from '../../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
-import type { StoryBridgeMiss } from '../../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
+import type { SpokenStoryBridgeMiss, StoryBridgeMiss } from '../../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
 import type { RhymeMiss } from '../../../primitives/visual-primitives/literacy/rhymeStudioLevers';
 import type { PhonemeMiss } from '../../../primitives/visual-primitives/literacy/phonemeExplorerLevers';
 import type { SwapMiss } from '../../../primitives/visual-primitives/literacy/soundSwapLevers';
@@ -164,13 +164,16 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'replay button asks you to read both stories and the question again. You cannot tap or mark anything; '
         + 'beyond its levers you cannot change the screen.',
       levers: true,
-      // Tap modes each have one help lever (`storyBridgeLevers.ts`) answering every tap miss. The tap's own check (`storyBridgeMiss`). say_alike, say_different and main_idea_compare are spoken and name no
-      // misses: each is an open comparison judged against a reference, with no bounded wrong answer (handoff 20 Part B).
-      misses: missLists<StoryBridgeMiss>({
+      // Taps: the tap's own check (`storyBridgeMiss`); spoken comparisons: `storyBridgeSpokenMisses`. Every miss has a
+      // help lever on every item (`storyBridgeLevers.ts`), so nothing is unanswered.
+      misses: missLists<StoryBridgeMiss | SpokenStoryBridgeMiss>({
         match_character: ['same_look', 'other_character'],
         match_setting: ['same_for_different', 'different_for_same'],
         venn_place: ['both_for_one', 'one_for_both', 'other_side'],
         sequence_two: ['earlier_event', 'later_event'],
+        say_alike: ['one_friend_only', 'told_difference'],
+        say_different: ['one_friend_only', 'told_likeness'],
+        main_idea_compare: ['one_story_only'],
       }),
     },
     evalModes: [
@@ -1141,7 +1144,8 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       unanswered: {
         literal: ['word_swap', 'word_skip', 'lifted_word', 'retell'], sequence: ['word_swap', 'word_skip', 'other_choice', 'retell'],
         inference: ['word_swap', 'word_skip', 'other_choice', 'retell'], main_idea: ['word_swap', 'word_skip', 'other_choice', 'retell'],
-        read_along: ['lifted_word', 'retell'],
+        // read_along: both misses answered by story_region (read aloud) and short_story (2026-10-08).
+        read_along: [],
       },
     },
     tutoring: {
@@ -4807,75 +4811,29 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       },
     ],
     supportsEvaluation: true,
-    // Bound ONLY for build_paragraph: the live adapter accepts a paragraph_build payload and refuses the writing modes'
-    // payloads, so those keep their scripted path and their tutoring block.
+    // Every mode is on the teaching workspace (R12, user ruling 2026-10-08): the writing modes write one sentence per
+    // step (`writingStages.ts`), build_paragraph orders cards (`paragraphBuild.ts`).
     teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4'],
-      guidance: 'Build a paragraph: sentence cards are on screen and the learner taps them into a paragraph in order, then '
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'On the writing modes the learner writes a paragraph one sentence per step (the topic sentence, a fact, '
+        + 'another fact, the closing; or a story\'s beginning, middle and end; or an opinion, two reasons, the opinion '
+        + 'again), typing each and pressing "I am done"; the builder checks each sentence makes sense and does its '
+        + 'step\'s job, and spelling is not judged. Never write or say a sentence for them; ask what they want to say '
+        + 'and let them type it. Build a paragraph: sentence cards are on screen and the learner taps them into a paragraph in order, then '
         + 'presses "I am done". A paragraph passes with the sentence that tells the topic first, two or more facts that '
         + 'belong in any order, and the sentence that wraps it up last; the two facts about something else stay out. Many '
         + 'paragraphs pass. A card speaker asks you to read that card only. Never say which card goes first or last or '
         + 'which facts do not belong; ask what the paragraph is about and whether each fact tells about it. You cannot '
         + 'move a card.',
       levers: true,
-      misses: { build_paragraph: ['topic_not_first', 'closing_not_last', 'too_few_details', 'off_topic_detail'] },
+      misses: { build_paragraph: ['topic_not_first', 'closing_not_last', 'too_few_details', 'off_topic_detail'],
+        ...Object.fromEntries(['informational', 'narrative', 'opinion'].map(m => [m, ['too_short', 'blank_left', 'repeat',
+          'not_sense', 'wrong_job']])) },
+      // blank_left and repeat need no lever: the box keeps the sentence and the words say what to change.
+      unanswered: Object.fromEntries(['informational', 'narrative', 'opinion'].map(m => [m, ['blank_left', 'repeat']])),
     },
-    tutoring: {
-      taskDescription:
-        'You are the writing coach for this paragraph-building activity. '
-        + 'The student is writing a {{paragraphType}} paragraph about "{{topic}}" at Grade {{gradeLevel}}. '
-        + 'They are using the hamburger model: topic sentence (top bun), detail sentences (filling), '
-        + 'concluding sentence (bottom bun). '
-        + 'Current phase: {{currentPhase}}. '
-        + 'Explore completed: {{exploreCompleted}}. Practice submitted: {{practiceSubmitted}}. '
-        + 'Detail sentences written: {{detailCount}}. Linking words used: {{linkingWordsUsed}}.',
-      contextKeys: [
-        'paragraphType', 'topic', 'gradeLevel', 'currentPhase',
-        'exploreCompleted', 'practiceSubmitted',
-        'detailCount', 'linkingWordsUsed',
-      ],
-      scaffoldingLevels: {
-        level1:
-          '"What is the most important thing you want to tell the reader about {{topic}}?" '
-          + '"Which sentence tells us what the whole paragraph is about?" '
-          + '"Can you add one more detail to support your main idea?"',
-        level2:
-          '"A {{paragraphType}} paragraph starts with a topic sentence that tells the main idea. '
-          + 'What is the main idea about {{topic}}?" '
-          + '"Good detail sentences give examples, facts, or reasons. '
-          + 'Try using a linking word like \'because\' or \'for example\' to connect your ideas." '
-          + '"Your concluding sentence should wrap up your paragraph—try restating the main idea in a new way."',
-        level3:
-          '"Let\'s build this step by step. First, your topic sentence: '
-          + 'pick a sentence starter and fill in what you want to say about {{topic}}." '
-          + '"Now add details. Each detail should support your topic sentence. '
-          + 'Use the sentence frames to help you start each one." '
-          + '"Finally, wrap it up: restate your main idea or tell the reader '
-          + 'why {{topic}} matters."',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Student writes detail sentences that do not relate to the topic sentence',
-          response: 'Read your topic sentence again. Does this detail tell us more about that main idea? If not, try a detail that connects back to your topic.',
-        },
-        {
-          pattern: 'Student skips the concluding sentence or writes a very short one',
-          response: 'Your paragraph needs a bottom bun! Try restating your main idea in different words, or tell the reader why this topic matters.',
-        },
-        {
-          pattern: 'Student writes only one detail sentence',
-          response: 'Strong paragraphs usually have 2–3 detail sentences. Can you think of another example, reason, or fact about your topic?',
-        },
-        {
-          pattern: 'Student does not use any linking words',
-          response: 'Linking words like "because," "also," and "for example" help connect your ideas. Try clicking a linking word chip to add one to your sentence.',
-        },
-        {
-          pattern: 'Student struggles to identify the topic sentence in the Explore phase',
-          response: 'The topic sentence is usually the first sentence. It tells the reader what the whole paragraph will be about. Which sentence does that?',
-        },
-      ],
-    },
+    // tutoring removed 2026-10-08 (R12): every mode is workspace-only, and bound sessions send `tutoring: null`.
+
   },
   {
     id: 'story-planner',
@@ -4893,97 +4851,20 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'theme_craft', label: 'Theme & Craft (Tier 5)', beta: 5.0, scaffoldingMode: 5, challengeTypes: ['theme_craft'], description: 'Weave theme, dialogue, and craft into the plan.' },
     ],
     supportsEvaluation: true,
-    tutoring: {
-      taskDescription:
-        'Student is planning a story called "{{title}}". The story idea is: {{writingPrompt}}. '
-        + 'They are on the {{plannerPhase}} step. Their plan so far: {{chosenSummary}}. '
-        + 'The parts of the story are: {{arcLabels}} ({{arcFilledCount}} of {{arcSlotCount}} filled in). '
-        + 'At grade band {{gradeBand}}. At K-1 they cannot read or type: they are asked one question at a '
-        + 'time ("{{currentQuestion}}") and tap one of three pictures ({{currentChoiceLabels}}), then tap '
-        + 'event pictures ({{arcTrayLabels}}) into numbered slots to put the story in order. '
-        + 'At grade 2 and up they type their own plan into cards and then the story arc.',
-      contextKeys: [
-        'title',
-        'writingPrompt',
-        'gradeBand',
-        'plannerPhase',
-        'currentQuestion',
-        'currentChoiceLabels',
-        'chosenSummary',
-        'arcLabels',
-        'arcTrayLabels',
-        'arcFilledCount',
-        'arcSlotCount',
-      ],
-      scaffoldingLevels: {
-        level1: '"This is your story — you get to decide. What do you think happens?"',
-        level2: '"Think about the story idea: {{writingPrompt}}. Which of these feels like it belongs in YOUR story?"',
-        level3: '"Let us go one piece at a time. I will say each picture out loud, and you pick the one you like. Then we will think about which one happens first."',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Student stalls at the first question because they think there is a right answer',
-          response: '"There is no right answer here — this is your story, so any of them works. Pick the one that sounds most fun to you."',
-        },
-        {
-          pattern: 'Student taps event pictures into slots at random without thinking about order',
-          response: '"Think about which one could only happen at the very start — before anything else has happened yet. Put that one first."',
-        },
-        {
-          pattern: 'Student puts the ending first because it is the picture they like best',
-          response: '"That is a great one to end with! Something has to happen before it, though. What would happen first, to get there?"',
-        },
-        {
-          pattern: 'Student cannot remember what the pictures are because they cannot read the words',
-          response: '"Let me say them again for you." Then describe each picture out loud, slowly, one at a time. Never ask them to read.',
-        },
-        {
-          pattern: 'A grade 2+ student writes one or two words into a planning card and moves on',
-          response: '"Tell me more about that. What do they look like, or how do they feel? Add that to your card so your reader can picture it too."',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
-          instruction:
-            'At {{gradeBand}} K-1 the student CANNOT read the story idea, the question, the picture captions, or the '
-            + 'slot labels. Your voice is the only channel that carries them. '
-            + 'When you receive [STORY_ELEMENT_ASKED], first read the story idea aloud word for word if the message '
-            + 'gives it to you, then ask the question, then say each of the three picture choices out loud so they '
-            + 'know what they can pick. Reading and saying these IS your greeting — this OVERRIDES any instruction '
-            + 'to keep it to one sentence or to be brief. '
-            + 'When you receive [STORY_PLAN_READ_ALOUD], read aloud, word for word, exactly the text the message '
-            + 'gives you, then wait. '
-            + 'When you receive [STORY_ARC_STARTED], describe each event picture out loud so a non-reader knows what '
-            + 'they are holding. '
-            + 'Never ask a K-1 student to read anything, to type, or to spell. Never say a number of points, a score, '
-            + 'or how many they have left.',
-        },
-        {
-          title: 'THE STORY IS THEIRS — NEVER PLAN IT FOR THEM',
-          instruction:
-            'Picking a character or a place has NO right answer, so never steer, never praise one option over '
-            + 'another, and never say "good choice" in a way that implies the others were worse. '
-            + 'When you receive [STORY_ELEMENT_CHOSEN], say their pick back warmly in a few words and stop — do not '
-            + 'add a follow-up question, and do not start narrating the story on their behalf. '
-            + 'When you receive [STORY_PLAN_ORIENT] (grade 2 and up), welcome them and point them at the first card; '
-            + 'do not suggest what to write in it. '
-            + 'When you receive [STORY_PLAN_COMPLETE], tell their story back to them using ONLY the pieces they '
-            + 'actually chose, then celebrate. Do not add plot they did not pick, and do not correct anything.',
-        },
-        {
-          title: 'ORDER IS THE ANSWER — NEVER GIVE IT AWAY',
-          instruction:
-            'Putting the event pictures in story order is the thing being assessed. The correct order is NOT in your '
-            + 'context and you must never guess it aloud. '
-            + 'Do not say which picture goes first, last, or in any numbered slot; do not say a slot is empty in a way '
-            + 'that names what belongs there; and do not rule options out, because eliminating is the same as telling. '
-            + 'When you receive [STORY_EVENT_PLACED], name what they placed and where they put it, and STOP — never '
-            + 'say whether it is right or wrong, and never react differently to a right one than a wrong one. '
-            + 'To help, ask what could only happen before anything else, or what could only happen at the very end. '
-            + 'Questions about the story are always allowed; statements about the order are not.',
-        },
-      ],
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'At K-1 the learner cannot read: read the story idea, each question and every picture\'s words aloud; '
+        + 'one tap picks a picture (every picture is a fine choice) and moves on. Then they tap the story\'s event '
+        + 'pictures into numbered slots and press "I am done"; describe the pictures when asked, but never say which '
+        + 'comes first or which cannot (ruling one out tells the order). At grade 2 and up the learner types each planning card and presses "I am done"; the builder '
+        + 'checks it answers the card\'s question for this story and makes sense, and spelling is not judged. Any idea '
+        + 'that fits passes. Never write a card for them. You cannot tap or type.',
+      levers: true,
+      // Only story_structure orders events (the K-1 picture band); every mode writes cards at grade 2+.
+      misses: Object.fromEntries(['story_structure', 'character_setting', 'conflict_resolution', 'theme_craft']
+        .map(m => [m, ['too_short', 'repeat', 'not_sense', 'wrong_job', ...(m === 'story_structure' ? ['wrong_order'] : [])]])),
+      // repeat needs no lever: the words say to write something new.
+      unanswered: Object.fromEntries(['story_structure', 'character_setting', 'conflict_resolution', 'theme_craft'].map(m => [m, ['repeat']])),
     },
   },
   {
@@ -4994,8 +4875,36 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     evalModes: [
       { evalMode: 'oreo', label: 'OREO (Tier 2)', beta: 3.0, scaffoldingMode: 2, challengeTypes: ['oreo'], description: 'Opinion-Reason-Example-Opinion (grades 2-4).' },
       { evalMode: 'cer', label: 'CER (Tier 4)', beta: 5.5, scaffoldingMode: 4, challengeTypes: ['cer'], description: 'Claim-Evidence-Reasoning (grades 5-6).' },
+      {
+        evalMode: 'build_opinion',
+        affordances: { answers: ['build'] },
+        label: 'Build an Opinion (open build)',
+        beta: 3.1,
+        scaffoldingMode: 2,
+        challengeTypes: ['build_opinion'],
+        description: 'Open build, on the live tutor: for a yes/no question, tap cards into an OREO answer for EITHER side: '
+          + 'the opinion first, a reason and an example for that side, the opinion again last. Cards for the other side '
+          + 'and an off-topic card are mixed in. Many answers pass. Checked in code from the cards\' roles and sides. '
+          + 'Beta = oreo + 0.1.',
+      },
     ],
     supportsEvaluation: true,
+    // Every mode is on the teaching workspace (OB-7L, following R12): OREO and CER write one sentence per step
+    // (`writingStages.ts`), build_opinion orders cards (`opinionBuild.ts`).
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'On OREO and CER the learner writes an answer to the question one sentence per step (opinion, reason, '
+        + 'example, opinion again; or claim, evidence, reasoning, conclusion), typing each and pressing "I am done"; the '
+        + 'builder checks each sentence makes sense and does its step\'s job, and spelling is not judged. Either side of '
+        + 'the question is fine. Never write a sentence for them or pick their side. On build an opinion the learner taps '
+        + 'cards for one side into an answer in order and presses "I am done"; never say which cards go together or which '
+        + 'side to take. You cannot type or move a card.',
+      levers: true,
+      misses: { ...Object.fromEntries(['oreo', 'cer'].map(m => [m, ['too_short', 'blank_left', 'repeat', 'not_sense', 'wrong_job']])),
+        build_opinion: ['opinion_not_first', 'restate_not_last', 'no_reason', 'no_example', 'other_side', 'off_topic', 'out_of_order'] },
+      // blank_left and repeat need no lever: the box keeps the sentence and the words say what to change.
+      unanswered: Object.fromEntries(['oreo', 'cer'].map(m => [m, ['blank_left', 'repeat']])),
+    },
   },
   {
     id: 'revision-workshop',
@@ -5011,6 +4920,19 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'concision', label: 'Concision (Tier 5)', beta: 6.5, scaffoldingMode: 5, challengeTypes: ['concision'], description: 'Eliminate wordiness.' },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'The draft is on screen with one sentence marked. The learner types a revision of that sentence and presses '
+        + '"I am done"; the builder checks it changed and does the job of this revision (add a detail, a stronger word, one '
+        + 'joined sentence, a transition, fewer words), and spelling is not judged. Many revisions pass. Never say a revised '
+        + 'sentence for them. On reorganize the learner taps the sentences of the draft into the order that makes sense; never '
+        + 'say which sentence goes first. You cannot type or move a sentence.',
+      levers: true,
+      misses: { ...Object.fromEntries(['add_details', 'word_choice', 'transitions'].map(m => [m, ['unchanged', 'too_short', 'not_sense', 'wrong_job']])),
+        combine_sentences: ['unchanged', 'too_short', 'not_combined', 'not_sense', 'wrong_job'],
+        concision: ['unchanged', 'too_short', 'not_shorter', 'not_sense', 'wrong_job'],
+        reorganize: ['wrong_order'] },
+    },
   },
 
   // ===== SPEAKING & LISTENING (SL) =====
@@ -5125,9 +5047,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         + 'sounding-out count. Never grade phrasing, voice or speed. You cannot tap the pause marks.',
       levers: true,
       // Spoken misses (`readAloudStudioLevers.ts`), emitted by `readAloudSpokenMisses`. `unanswered` stays the levers' own
-      // list (`readAloudStudioLevers.test.ts` pins it).
+      // list (`readAloudStudioLevers.test.ts` pins it). Expression's reads are answered (underline, dots, short line on
+      // the reread; 2026-10-09), so it has no unanswered entry.
       misses: { accuracy: ['word_swap', 'word_drop'], expression: ['word_swap', 'word_drop'], dialogue: ['word_swap', 'word_drop', 'paraphrase'] },
-      unanswered: { accuracy: ['word_swap', 'word_drop'], expression: ['word_swap', 'word_drop'], dialogue: ['word_swap', 'word_drop', 'paraphrase'] },
+      unanswered: { accuracy: ['word_swap', 'word_drop'], dialogue: ['word_swap', 'word_drop', 'paraphrase'] },
     },
     tutoring: {
       taskDescription:
@@ -5305,50 +5228,26 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
           + 'and is about the thing. Beta = simple + 0.1.',
       },
     ],
-    // Bound ONLY for build_sentence: the live adapter accepts a sentence_build payload and refuses the tile-order modes'
-    // payloads, so those keep their scripted path and their tutoring block.
+    // Every mode is on the teaching workspace (R12, user ruling 2026-10-08): the tile modes order given tiles
+    // (`sentenceOrder.ts`), build_sentence makes a sentence from word tiles (`sentenceBuild.ts`).
     teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'Make a sentence: word tiles and the end marks . and ? are on screen; the learner taps them into a row to '
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'On the tile modes the learner puts ALL the given tiles in order to make one sentence and presses "I am '
+        + 'done"; more than one order can be right, and the sentence is never printed before. Never say the sentence or '
+        + 'which tile goes next; ask what the sentence is about, or which tile tells who. Make a sentence: word tiles and the end marks . and ? are on screen; the learner taps them into a row to '
         + 'make a question or a telling sentence about the thing named, and presses "I am done". Many sentences pass. A '
         + 'question starts with an asking word and ends with ?; a telling sentence ends with a period. Never say a '
         + 'sentence that would work or which tile goes next; ask the learner to read their sentence aloud. You cannot '
         + 'move a tile.',
       levers: true,
-      misses: { build_sentence: ['no_end_mark', 'end_mark_inside', 'wrong_end_mark', 'too_short', 'not_question_start',
+      misses: { ...Object.fromEntries(['simple', 'compound', 'complex', 'compound_complex'].map(m => [m,
+          ['tiles_left', 'end_mark_not_last', 'not_sense']])),
+        build_sentence: ['no_end_mark', 'end_mark_inside', 'wrong_end_mark', 'too_short', 'not_question_start',
         'question_start', 'same_sentence', 'not_sense', 'off_topic'] },
       // same_sentence has no lever: the sentence already made stays on screen.
       unanswered: { build_sentence: ['same_sentence'] },
     },
-    tutoring: {
-      taskDescription:
-        'Student is building {{sentenceType}} sentences by arranging color-coded tiles into grammatical order. '
-        + 'Phase: {{currentPhase}} ({{phaseDescription}}). Challenge {{withinPhaseIndex}}/{{totalChallengesPerPhase}}. '
-        + 'Target meaning: "{{targetMeaning}}". Tiles placed: {{tilesPlaced}}/{{totalTiles}}. Attempt: {{attemptNumber}}.',
-      contextKeys: [
-        'sentenceType', 'currentPhase', 'phaseDescription', 'withinPhaseIndex',
-        'totalChallengesPerPhase', 'targetMeaning', 'tilesPlaced', 'totalTiles',
-        'attemptNumber', 'gradeLevel', 'placedWords', 'tileRoles',
-      ],
-      scaffoldingLevels: {
-        level1:
-          '"Read the target meaning aloud. Now look at your tiles — which one tells us WHO or WHAT the sentence is about?"',
-        level2:
-          '"The sentence should say: {{targetMeaning}}. Start with the {{subjectHint}} — that\'s the subject (blue tile). '
-          + 'Next, what does the subject DO? That\'s the predicate (red tile)."',
-        level3:
-          '"Let\'s build it together step by step: First, find the subject (blue) — who is the sentence about? '
-          + 'Then the predicate (red) — what do they do? Finally, the object (green) — what do they do it to? '
-          + 'Read it back: does it match the meaning?"',
-      },
-      commonStruggles: [
-        { pattern: 'Student places tiles in wrong order repeatedly', response: '"Let\'s slow down. Read the meaning again. Now point to WHO the sentence is about — that word goes first. Sentences usually follow: Who → Does what → To what."' },
-        { pattern: 'Student confuses subject and object', response: '"Both are things or people, but one DOES the action and the other RECEIVES it. In \'The cat chased the mouse\', who is doing the chasing? That\'s the subject!"' },
-        { pattern: 'Student forgets punctuation tile', response: '"Almost there! Every sentence needs something at the end. What mark tells the reader the sentence is finished?"' },
-        { pattern: 'Student hesitates and places no tiles', response: '"Start with any tile you\'re sure about! The blue tiles are subjects — pick the one that matches WHO the sentence is about."' },
-        { pattern: 'Student struggles with conjunctions in compound sentences', response: '"You have two ideas to connect. Words like \'and\', \'but\', and \'so\' are bridges between them. Which bridge word fits the meaning best?"' },
-      ],
-    },
+    // tutoring removed 2026-10-08 (R12): every mode is workspace-only, and bound sessions send `tutoring: null`.
     supportsEvaluation: true,
   },
   {
@@ -5482,8 +5381,31 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         challengeTypes: ['idiom'],
         description: 'Interpret culturally specific expressions.',
       },
+      {
+        evalMode: 'build_figurative',
+        affordances: { answers: ['build'] },
+        label: 'Make a Figure (open build)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['figurative_build'],
+        description: 'Write your own simile, metaphor, personification, hyperbole or alliteration about a subject; many sentences pass.',
+      },
     ],
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'On the find steps the learner taps a sentence of the passage, taps the kind of figure of speech in it and '
+        + 'presses "I am done"; any figure the passage holds passes, in any order. Never say which sentence holds one or '
+        + 'what kind it is. On the meaning steps the learner types what a marked phrase really means; on make a figure '
+        + 'the learner writes their own. Those are checked for doing the job and making sense; spelling is not judged and '
+        + 'many answers pass. Never write it for them. You cannot tap or type.',
+      levers: true,
+      misses: { ...Object.fromEntries(['sound_devices', 'comparison', 'advanced', 'idiom'].map(m => [m,
+        ['wrong_type', 'no_device', 'already_found', 'too_short', 'unchanged', 'not_sense', 'wrong_job']])),
+        build_figurative: ['too_short', 'not_sense', 'wrong_job'] },
+      // already_found and too_short need no lever: the words say what to do next.
+      unanswered: Object.fromEntries(['sound_devices', 'comparison', 'advanced', 'idiom'].map(m => [m, ['already_found', 'too_short']])),
+    },
     tutoring: {
       taskDescription:
         'You coach a student through a figurative-language activity. '

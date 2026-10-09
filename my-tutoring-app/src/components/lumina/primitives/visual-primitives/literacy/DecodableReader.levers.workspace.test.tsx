@@ -70,3 +70,57 @@ it('the story region is refused before a try, then shows two whole sentences wit
   expect(q(h, '[data-lever="story-region"] span, [data-lever="story-region"] mark')).toHaveLength(0);
   h.close();
 });
+
+// Read-along (K): the tutor reads the story; the learner says one word. The region is read aloud by the tutor
+// (carrier both) and the practice story is a two-sentence read-along item of its own.
+const RA = { title: 'Nap Time', gradeLevel: 'K', readingMode: 'read_along', phonicsPatternsInPassage: ['cvc'],
+  passage: { sentences: [sentence('s1', 'The fat cat sat on a mat.'), sentence('s2', 'A rat ran to the mat.'), sentence('s3', 'The cat can nap.')] },
+  comprehensionQuestions: [{ question: 'What animal sat on a mat?', answerWord: 'cat' }, { question: 'What can the cat do?', answerWord: 'nap' }] };
+const mountRA = () => mountWorkspace({ primitiveId: 'decodable-reader', evalMode: 'read_along', data: RA });
+const leverState = (h: WorkspaceHarness) => h.state().task!.workspace!.levers!.map(l => [l.id, l.pulled]);
+
+it('read-along: the region is refused before a try and changes nothing; after a miss it shows two sentences in one commit', () => {
+  const h = mountRA();
+  expect(h.state().task).toMatchObject({ itemId: 'q-1' });
+  const levers = leverState(h), attempts = h.state().task!.workspace!.attempts.length, screen = text(h);
+  expect(levers).toEqual([['story_region', false], ['short_story', false]]);
+  expect(h.dispatch('pull_lever', { lever: 'story_region' }).status).not.toBe('committed');
+  expect(leverState(h)).toEqual(levers);
+  expect(h.state().task!.workspace!.attempts).toHaveLength(attempts);
+  expect(text(h)).toBe(screen);
+  expect(q(h, '[data-lever="story-region"]')).toHaveLength(0);
+
+  h.say('rat'); h.feedback('incorrect', 'retry');
+  const receipt = h.dispatch('pull_lever', { lever: 'story_region' });
+  expect(receipt.status).toBe('committed');
+  expect(q(h, '[data-lever="story-region"] p').map(p => p.textContent)).toEqual(['The fat cat sat on a mat.', 'A rat ran to the mat.']);
+  expect(q(h, '[data-lever="story-region"] span, [data-lever="story-region"] mark')).toHaveLength(0);
+  expect(String(receipt.state.task!.demand.levers_on_screen)).toMatch(/two sentences of the story/);
+  expect(String(receipt.state.task!.demand.levers_on_screen)).not.toMatch(/\bcat\b/);
+  h.say('cat'); h.feedback('correct');
+  expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true, assisted: true, levers: ['story_region'] });
+  h.close();
+});
+
+it('read-along: the practice story is ungraded, shares no story word, and the full question comes back blank, then credited', () => {
+  const h = mountRA();
+  h.say('rat'); h.feedback('incorrect', 'retry');
+  h.dispatch('pull_lever', { lever: 'short_story' });
+  expect(h.state().task).toMatchObject({ itemId: 'q-1~simpler' });
+  const story = h.view.container.querySelector('[data-pip-object="story"]')!.textContent!;
+  expect(story).toBe('Ben has a red bus. The bus is big.');
+  expect(story).not.toMatch(/\b(fat|cat|sat|mat|rat|ran|nap|animal)\b/i);
+  expect(h.view.container.querySelector('[data-pip-object="question"]')!.textContent).toBe('What does Ben have?');
+  expect(String(h.state().task!.demand.practice)).toMatch(/practice story of two sentences/);
+  h.say('bus'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().task).toMatchObject({ itemId: 'q-1' });
+  expect(h.view.container.querySelector('[data-pip-object="story"]')!.textContent).toBe('The fat cat sat on a mat. A rat ran to the mat. The cat can nap.');
+  expect(text(h)).toMatch(/say your answer/);
+  expect(h.view.container.querySelector('.font-black')).toBeNull();
+  h.say('cat'); h.feedback('correct');
+  const attempts = h.state().task!.workspace!.attempts;
+  expect(attempts.map(a => [a.itemId, a.correct])).toEqual([['q-1', false], ['q-1~simpler', true], ['q-1', true]]);
+  expect(attempts[1]).toMatchObject({ practice: true });
+  expect(attempts.at(-1)).toMatchObject({ assisted: true, levers: ['short_story'] });
+  h.close();
+});

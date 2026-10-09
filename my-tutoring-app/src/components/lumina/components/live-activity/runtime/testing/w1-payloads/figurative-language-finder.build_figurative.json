@@ -1,0 +1,41 @@
+{
+  "source": "qa/open-build/figurative-2026-10-08/gen-build_figurative.json",
+  "primitiveId": "figurative-language-finder",
+  "evalMode": "build_figurative",
+  "data": {
+    "title": "A Stormy Day at the Lake",
+    "task": "figurative_build",
+    "makes": [
+      {
+        "id": "m1",
+        "device": "simile",
+        "subject": "dark storm clouds"
+      },
+      {
+        "id": "m2",
+        "device": "metaphor",
+        "subject": "the crashing waves"
+      },
+      {
+        "id": "m3",
+        "device": "personification",
+        "subject": "loud thunder"
+      },
+      {
+        "id": "m4",
+        "device": "hyperbole",
+        "subject": "the wooden dock"
+      }
+    ],
+    "passage": "",
+    "instances": [],
+    "translateInstanceIds": [],
+    "availableTypes": [
+      "simile",
+      "metaphor",
+      "personification",
+      "hyperbole"
+    ],
+    "gradeLevel": "4"
+  }
+}

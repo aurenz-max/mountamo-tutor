@@ -358,7 +358,15 @@ export function validateChallengeTypes(
   // An open build payload (qa/open-build/ROADMAP.md, OB-3L) names its task at the root and holds its items in its own
   // array; the whole session is the pinned mode's one challenge type.
   const buildArray = { build_affix: 'buildItems', build_inflect: 'buildItems', letter_build: 'buildItems', pair_build: 'pairItems',
-    paragraph_build: 'paragraphs', sentence_build: 'sentences' }[String(data.task ?? '')];
+    paragraph_build: 'paragraphs', sentence_build: 'sentences', opinion_build: 'opinions', figurative_build: 'makes' }[String(data.task ?? '')];
+  // revision-workshop holds its sentences to revise in `targets` (reorganize: the sentences to order).
+  if (componentId === 'revision-workshop') {
+    const n = Array.isArray(data.targets) ? (data.targets as unknown[]).length : 0;
+    const skill = String(data.revisionSkill ?? '');
+    return n > 0 && allowed.has(skill)
+      ? { valid: true, challengeCount: n, typesFound: [skill] }
+      : { valid: false, challengeCount: n, typesFound: skill ? [skill] : [], error: n ? `revisionSkill ${skill} is not this mode's` : 'No targets' };
+  }
   if (buildArray) {
     const n = Array.isArray(data[buildArray]) ? (data[buildArray] as unknown[]).length : 0;
     return n > 0
