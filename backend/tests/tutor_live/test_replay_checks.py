@@ -92,3 +92,24 @@ def test_spoken_forms():
     assert {'4', 'four'} <= forms('4') and {'one half', 'a half'} <= forms('1/2')
     assert said_fix('Jump back 2 spaces.', 'Jump back 2 from 6') is None
     assert said_fix('Jump back 3 spaces.', 'Jump back 2 from 6') == 'Jump back'
+
+
+MENU = ['morning', 'afternoon', 'evening', 'night']
+
+
+@pytest.mark.parametrize('text,excused', [
+    # time-sequencer replay 10-09: reading the choices names the key among the others.
+    ('Look at the yummy breakfast! When do we eat this yummy meal: Morning, Afternoon, Evening, or Night?', True),
+    ('When the sun first comes up and you get out of bed, is that morning or evening?', True),
+    # The key alone in its sentence, or the others denied, is still the answer.
+    ('We eat breakfast in the morning. Which one is it?', False),
+    ('It is morning, not night.', False),
+])
+def test_reading_the_menu_is_not_the_key(text, excused):
+    reply = {'text': text, 'calls': []}
+    result = score(reply, {'kind': 'start'}, {'keys': ['morning'], 'ask': 'When do we eat breakfast?', 'leakTokens': [], 'menu': MENU})
+    assert result['checks']['no_key_before_try'] is excused
+
+
+def test_no_menu_keeps_the_key_check():
+    assert check('Morning, afternoon or night?', 'start', ['morning'])['checks']['no_key_before_try'] is False

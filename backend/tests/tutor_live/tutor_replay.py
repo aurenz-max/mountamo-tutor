@@ -190,7 +190,7 @@ async def replay_record(api, record, args, gate):
                     result['checks']['miss_recorded'] = bool(seen.get('accepted')) and seen.get('verdict') == 'incorrect'
             scored.append({**s, **result})
         out.append({'kind': moment['kind'], 'itemId': moment['itemId'], 'trigger': trigger(moment)[:400], 'miss': moment.get('miss'),
-                    'scoredWith': {'keys': record.get('keys'), 'ask': record.get('ask'), 'leakTokens': record.get('leakTokens')},
+                    'scoredWith': {'keys': record.get('keys'), 'ask': record.get('ask'), 'leakTokens': record.get('leakTokens'), 'menu': record.get('menu')},
                     'samples': scored})
     return {'payload': record['payload'], 'primitiveId': record['primitiveId'], 'evalMode': record['evalMode'],
             'keys': record.get('keys'), 'stopped': record.get('stopped'), 'moments': out}

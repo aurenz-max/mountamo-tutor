@@ -117,6 +117,18 @@ def said_key(text, keys):
                                      else any(says(text, f) for f in forms(k)))), None)
 
 
+NEGATION = re.compile(r"\bnot\b|n['’]t\b|\bnever\b", re.I)
+
+
+def read_as_menu(text, key, menu):
+    """True when every sentence that says the key also names another option on screen and denies none: the tutor
+    reading the choices ("Morning, Afternoon, Evening, or Night?", time-sequencer replay 10-09) is not the answer.
+    "When you play all afternoon, the sun is up for hours" still says it."""
+    others = [o for o in menu if str(o).lower() != str(key).lower() and not any(says(o, f) for f in forms(key))]
+    sentences = [x for x in re.split(r'(?<=[.!?:])\s+', text) if any(says(x, f) for f in forms(key))]
+    return bool(others and sentences) and all(not NEGATION.search(x) and any(says(x, o) for o in others) for x in sentences)
+
+
 def said_fix(text, ask):
     """A statement (not a question) telling the learner what to change by how much. An amount the ask itself states
     ("put two counters", "jump back 2") is the assignment; "shade one slice" for "show 1/2" is not in the ask."""
@@ -146,6 +158,8 @@ def score(reply, moment, record):
     secret = [k for k in record.get('keys') or [] if not any(says(without_asked_fractions(ask, ask), f) for f in forms(k))]
     # The reply restating the ask's fraction ("shade one-third") is not the key either.
     key = said_key(without_asked_fractions(text, ask), secret) if kind in PRE_TRY else None
+    if key is not None and read_as_menu(text, key, [str(o).strip().lower() for o in record.get('menu') or []]):
+        key = None
     fix = said_fix(text, record.get('ask')) if kind in PRE_TRY else None
     leaked = leak.search(text)
     # Words said in the same turn as the pull, before its receipt; a replay's follow-up line comes after it.
