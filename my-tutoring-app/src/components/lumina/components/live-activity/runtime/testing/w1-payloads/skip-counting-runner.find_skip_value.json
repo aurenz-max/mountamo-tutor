@@ -1,0 +1,76 @@
+{
+ "source": "qa/tutor-reports/skip-counting-runner-runtime-find_skip_value-payload-2026-10-09.json",
+ "primitiveId": "skip-counting-runner",
+ "evalMode": "find_skip_value",
+ "data": {
+  "title": "Finding the Jump Size!",
+  "description": "Discover the secret skip value by watching the friendly rabbit hop along the number line.",
+  "skipValue": 2,
+  "startFrom": 0,
+  "endAt": 10,
+  "direction": "forward",
+  "character": {
+   "type": "rabbit",
+   "imagePrompt": "A cute cheerful rabbit ready to make regular hops along a number line."
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "find_skip_value",
+    "instruction": "Look at where it lands. How far is each jump?",
+    "hint": "Find the difference between two landings next to each other.",
+    "narration": "Can you figure out how far each jump goes?",
+    "startPosition": 0
+   },
+   {
+    "id": "c2",
+    "type": "find_skip_value",
+    "instruction": "Watch the hops along the line. Can you figure out the skip value for this path?",
+    "hint": "Find the difference between two landings next to each other.",
+    "narration": "Keep counting along with the bouncing rabbit!",
+    "startPosition": 0
+   },
+   {
+    "id": "c3",
+    "type": "find_skip_value",
+    "instruction": "Inspect the jump intervals from 0 up to 8. What is the skip value?",
+    "hint": "Find the difference between two landings next to each other.",
+    "narration": "Every single jump is the exact same size!",
+    "startPosition": 0
+   },
+   {
+    "id": "c4",
+    "type": "find_skip_value",
+    "instruction": "Observe the pattern on the number line ending at 10. What is the hidden skip value?",
+    "hint": "Find the difference between two landings next to each other.",
+    "narration": "You are becoming a number line expert!",
+    "startPosition": 0
+   },
+   {
+    "id": "c5",
+    "type": "find_skip_value",
+    "instruction": "Final challenge! Look at all the jumps shown on the line. What is the skip value?",
+    "hint": "Find the difference between two landings next to each other.",
+    "narration": "Fantastic job discovering the skip values!",
+    "startPosition": 0
+   }
+  ],
+  "showOptions": {
+   "showArray": true,
+   "showJumpArcs": true,
+   "showEquation": true,
+   "showDigitPattern": true,
+   "autoPlay": false,
+   "showTrackLabels": true,
+   "showSequenceChips": true,
+   "showSkipValueBadge": true
+  },
+  "gradeBand": "1-2",
+  "gameMode": {
+   "enabled": false,
+   "timeLimit": 60,
+   "type": "speed_count"
+  },
+  "supportTier": "easy"
+ }
+}

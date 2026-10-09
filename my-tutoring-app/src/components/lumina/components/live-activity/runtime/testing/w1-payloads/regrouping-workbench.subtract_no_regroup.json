@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/regrouping-workbench-runtime-subtract_no_regroup-payload-2026-10-09.json",
+ "primitiveId": "regrouping-workbench",
+ "evalMode": "subtract_no_regroup",
+ "data": {
+  "title": "Subtracting Two-Digit Numbers Without Regrouping",
+  "description": "Practice two-digit subtraction problems where no borrowing is needed, building foundational subtraction fluency.",
+  "operation": "subtraction",
+  "operand1": 87,
+  "operand2": 34,
+  "maxPlace": "tens",
+  "challenges": [
+   {
+    "id": "sub_nr_1",
+    "type": "subtract_no_regroup",
+    "problem": "58 - 23",
+    "requiresRegrouping": false,
+    "regroupCount": 0,
+    "hint": "Subtract the ones column first, then subtract the tens column.",
+    "narration": "Let's subtract 23 from 58. Look at the ones: 8 minus 3. Can we do this without borrowing?"
+   },
+   {
+    "id": "sub_nr_2",
+    "type": "subtract_no_regroup",
+    "problem": "77 - 45",
+    "requiresRegrouping": false,
+    "regroupCount": 0,
+    "hint": "Start with the ones place: 7 minus 5.",
+    "narration": "Great job! Now let's try 77 minus 45. Check the ones column first."
+   },
+   {
+    "id": "sub_nr_3",
+    "type": "subtract_no_regroup",
+    "problem": "89 - 32",
+    "requiresRegrouping": false,
+    "regroupCount": 0,
+    "hint": "Subtract the ones digits, and then the tens digits.",
+    "narration": "You are doing wonderful. Let's solve 89 minus 32 step by step."
+   },
+   {
+    "id": "sub_nr_4",
+    "type": "subtract_no_regroup",
+    "problem": "66 - 41",
+    "requiresRegrouping": false,
+    "regroupCount": 0,
+    "hint": "Remember, if the top number is bigger than the bottom number in a column, you don't need to borrow!",
+    "narration": "Final challenge: 66 minus 41. You've got this!"
+   }
+  ],
+  "showOptions": {
+   "showAlgorithm": true,
+   "showCarryBorrow": false,
+   "showPlaceColumns": true,
+   "animateRegrouping": false,
+   "stepByStepMode": true
+  },
+  "gradeBand": "1-2",
+  "decimalMode": false,
+  "initialState": {
+   "blocksPlaced": true,
+   "algorithmVisible": true
+  },
+  "wordProblemContext": {
+   "enabled": true,
+   "imagePrompt": "A classroom with base-ten blocks on a desk showing subtraction.",
+   "story": "Students are learning to take away blocks from a starting amount to find out how many are left over."
+  }
+ }
+}

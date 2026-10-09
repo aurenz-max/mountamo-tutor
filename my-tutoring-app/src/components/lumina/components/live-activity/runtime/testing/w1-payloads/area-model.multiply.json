@@ -1,0 +1,77 @@
+{
+ "source": "qa/tutor-reports/area-model-runtime-multiply-payload-2026-10-09.json",
+ "primitiveId": "area-model",
+ "evalMode": "multiply",
+ "data": {
+  "title": "Multiplying with the Area Model",
+  "description": "Break larger numbers down into place-value parts and use the area model to find each partial product with confidence. Discover how decomposing factors makes multi-digit multiplication clear and visual!",
+  "challenges": [
+   {
+    "id": "area-model-1",
+    "factor1Parts": [
+     200,
+     90,
+     6
+    ],
+    "factor2Parts": [
+     10,
+     6
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-2",
+    "factor1Parts": [
+     200,
+     30,
+     6
+    ],
+    "factor2Parts": [
+     40,
+     2
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-3",
+    "factor1Parts": [
+     400,
+     10,
+     1
+    ],
+    "factor2Parts": [
+     30,
+     3
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-4",
+    "factor1Parts": [
+     300,
+     20,
+     1
+    ],
+    "factor2Parts": [
+     30,
+     7
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   }
+  ],
+  "challengeType": "multiply",
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

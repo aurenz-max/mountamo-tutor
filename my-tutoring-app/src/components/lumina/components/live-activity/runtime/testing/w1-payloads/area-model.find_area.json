@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/area-model-runtime-find_area-payload-2026-10-09.json",
+ "primitiveId": "area-model",
+ "evalMode": "find_area",
+ "data": {
+  "title": "Multiplying with the Area Model",
+  "description": "Break larger numbers into friendly parts to find partial products and solve multi-digit multiplication step by step. Use the visual grid to add each section together for the total area!",
+  "challenges": [
+   {
+    "id": "area-model-1",
+    "factor1Parts": [
+     40,
+     6
+    ],
+    "factor2Parts": [
+     30,
+     1
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-2",
+    "factor1Parts": [
+     30,
+     8
+    ],
+    "factor2Parts": [
+     20,
+     7
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-3",
+    "factor1Parts": [
+     10,
+     1
+    ],
+    "factor2Parts": [
+     30,
+     4
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-4",
+    "factor1Parts": [
+     10,
+     9
+    ],
+    "factor2Parts": [
+     20,
+     7
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-5",
+    "factor1Parts": [
+     40,
+     6
+    ],
+    "factor2Parts": [
+     40,
+     9
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   }
+  ],
+  "challengeType": "find_area",
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

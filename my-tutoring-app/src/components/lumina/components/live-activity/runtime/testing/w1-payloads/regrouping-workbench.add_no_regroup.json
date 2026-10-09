@@ -1,0 +1,61 @@
+{
+ "source": "qa/tutor-reports/regrouping-workbench-runtime-add_no_regroup-payload-2026-10-09.json",
+ "primitiveId": "regrouping-workbench",
+ "evalMode": "add_no_regroup",
+ "data": {
+  "title": "Adding Two-Digit Numbers Without Regrouping",
+  "description": "Practice adding two-digit numbers using base-ten blocks and the standard algorithm without needing to regroup.",
+  "operation": "addition",
+  "operand1": 32,
+  "operand2": 45,
+  "maxPlace": "tens",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "add_no_regroup",
+    "problem": "23 + 14",
+    "requiresRegrouping": false,
+    "regroupCount": 0,
+    "hint": "Add the ones column first, then add the tens column.",
+    "narration": "Let's add 23 and 14 together by combining the ones and tens!"
+   },
+   {
+    "id": "c2",
+    "type": "add_no_regroup",
+    "problem": "31 + 42",
+    "requiresRegrouping": false,
+    "regroupCount": 0,
+    "hint": "Start with 1 + 2 in the ones place.",
+    "narration": "Great job! Now let's try 31 plus 42."
+   },
+   {
+    "id": "c3",
+    "type": "add_no_regroup",
+    "problem": "53 + 24",
+    "requiresRegrouping": false,
+    "regroupCount": 0,
+    "hint": "Check the ones place: 3 + 4 is less than 10, so no regrouping needed.",
+    "narration": "You are doing fantastic. Here is our final addition problem: 53 + 24."
+   }
+  ],
+  "showOptions": {
+   "showAlgorithm": true,
+   "showCarryBorrow": false,
+   "showPlaceColumns": true,
+   "animateRegrouping": false,
+   "stepByStepMode": true
+  },
+  "gradeBand": "1-2",
+  "decimalMode": false,
+  "initialState": {
+   "blocksPlaced": true,
+   "algorithmVisible": true
+  },
+  "regroupingSteps": [],
+  "wordProblemContext": {
+   "enabled": true,
+   "imagePrompt": "Friendly cartoon teacher with base-ten blocks on a wooden table",
+   "story": "You are organizing two groups of items for the classroom. Combine them to find the total sum!"
+  }
+ }
+}

@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/regrouping-workbench-runtime-subtract_regroup-payload-2026-10-09.json",
+ "primitiveId": "regrouping-workbench",
+ "evalMode": "subtract_regroup",
+ "data": {
+  "title": "Subtraction with Borrowing",
+  "description": "Learn how to borrow from the tens place when the ones digit is too small to subtract.",
+  "operation": "subtraction",
+  "operand1": 52,
+  "operand2": 17,
+  "maxPlace": "tens",
+  "challenges": [
+   {
+    "id": "sub_reg_1",
+    "type": "subtract_regroup",
+    "problem": "52 - 17",
+    "requiresRegrouping": true,
+    "regroupCount": 1,
+    "hint": "You cannot take 7 ones from 2 ones! Borrow 1 ten and turn it into 10 ones.",
+    "narration": "Let's subtract 17 from 52. Uh oh, 2 is smaller than 7 in the ones place! We need to borrow!"
+   },
+   {
+    "id": "sub_reg_2",
+    "type": "subtract_regroup",
+    "problem": "43 - 18",
+    "requiresRegrouping": true,
+    "regroupCount": 1,
+    "hint": "Look at the ones place: 3 is smaller than 8. Trade a ten rod for 10 ones cubes.",
+    "narration": "Time for the next problem. Can you take 8 from 3 without borrowing? Not quite!"
+   },
+   {
+    "id": "sub_reg_3",
+    "type": "subtract_regroup",
+    "problem": "61 - 25",
+    "requiresRegrouping": true,
+    "regroupCount": 1,
+    "hint": "1 one is less than 5 ones. Borrow from the tens column to get started.",
+    "narration": "Here is our final subtraction challenge. Watch those ones places closely!"
+   }
+  ],
+  "showOptions": {
+   "showAlgorithm": true,
+   "showCarryBorrow": true,
+   "showPlaceColumns": true,
+   "animateRegrouping": true,
+   "stepByStepMode": true
+  },
+  "gradeBand": "1-2",
+  "decimalMode": false,
+  "initialState": {
+   "blocksPlaced": true,
+   "algorithmVisible": true
+  },
+  "regroupingSteps": [
+   {
+    "place": "ones",
+    "type": "borrow",
+    "fromValue": 2,
+    "toValue": 12,
+    "narration": "We take 1 ten from the tens place, leaving 4 tens, and add 10 ones to the 2 ones to make 12 ones."
+   }
+  ],
+  "wordProblemContext": {
+   "enabled": true,
+   "imagePrompt": "A classroom with base-ten blocks on a table, showing tens rods and ones cubes.",
+   "story": "You have a collection of base-ten blocks. When you need to take away some objects and don't have enough ones, you borrow a ten!"
+  }
+ }
+}

@@ -1,0 +1,79 @@
+{
+ "source": "qa/tutor-reports/skip-counting-runner-runtime-connect_multiplication-payload-2026-10-09.json",
+ "primitiveId": "skip-counting-runner",
+ "evalMode": "connect_multiplication",
+ "data": {
+  "title": "Rocket Launch Multiplication by 10s!",
+  "description": "Connect skip counting by tens to multiplication facts as our rocket blasts off to the stars.",
+  "skipValue": 10,
+  "startFrom": 0,
+  "endAt": 50,
+  "direction": "forward",
+  "character": {
+   "type": "rocket",
+   "imagePrompt": "A shiny red rocket ship blasting off into space leaving a fiery trail"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "connect_multiplication",
+    "instruction": "The rocket jumped from 0 to 10. How many jumps of 10 did it make? Finish the multiplication fact.",
+    "hint": "Count the jumps, one arc at a time.",
+    "narration": "10! One jump of 10 is 10.",
+    "startPosition": 10,
+    "targetFact": "1 \u00d7 10 = 10"
+   },
+   {
+    "id": "c2",
+    "type": "connect_multiplication",
+    "instruction": "The rocket jumped from 0 to 20. How many jumps of 10 did it make? Finish the multiplication fact.",
+    "hint": "Count the jumps, one arc at a time.",
+    "narration": "20! Two jumps of 10 make 20.",
+    "startPosition": 20,
+    "targetFact": "2 \u00d7 10 = 20"
+   },
+   {
+    "id": "c3",
+    "type": "connect_multiplication",
+    "instruction": "The rocket jumped from 0 to 30. How many jumps of 10 did it make? Finish the multiplication fact.",
+    "hint": "Count the jumps, one arc at a time.",
+    "narration": "30! Three jumps of 10 equal 30.",
+    "startPosition": 30,
+    "targetFact": "3 \u00d7 10 = 30"
+   },
+   {
+    "id": "c4",
+    "type": "connect_multiplication",
+    "instruction": "The rocket jumped from 0 to 40. How many jumps of 10 did it make? Finish the multiplication fact.",
+    "hint": "Count the jumps, one arc at a time.",
+    "narration": "40! Four jumps of 10 make 40.",
+    "startPosition": 40,
+    "targetFact": "4 \u00d7 10 = 40"
+   },
+   {
+    "id": "c5",
+    "type": "connect_multiplication",
+    "instruction": "The rocket jumped from 0 to 50. How many jumps of 10 did it make? Finish the multiplication fact.",
+    "hint": "Count the jumps, one arc at a time.",
+    "narration": "50! Five jumps of 10 make 50.",
+    "startPosition": 50,
+    "targetFact": "5 \u00d7 10 = 50"
+   }
+  ],
+  "showOptions": {
+   "showArray": false,
+   "showJumpArcs": false,
+   "showEquation": false,
+   "showDigitPattern": false,
+   "autoPlay": false,
+   "showTrackLabels": false,
+   "showSequenceChips": false,
+   "showSkipValueBadge": true
+  },
+  "gradeBand": "2-3",
+  "gameMode": {
+   "enabled": false
+  },
+  "supportTier": "hard"
+ }
+}

@@ -1,0 +1,3357 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    1,
+    25
+   ],
+   "no_change_before_receipt": [
+    0,
+    25
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    1,
+    25
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "area-model.build_model",
+   "primitiveId": "area-model",
+   "evalMode": "build_model",
+   "keys": [
+    "140",
+    "cell row 2 column 1",
+    "35",
+    "175",
+    "submit final answer"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "area-model-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "140",
+       "cell row 2 column 1",
+       "35",
+       "175",
+       "submit final answer"
+      ],
+      "ask": "Find 7 \u00d7 (20 + 5) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "72057 \u00d7 20?7 \u00d7 5?",
+       "7 \u00d7 20?",
+       "cell row 1 column 1",
+       "7 \u00d7 5?",
+       "cell row 2 column 1",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Tap a cell on the grid to multiply its parts together.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the area model! Pick a cell to start, multiply its side parts together, and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! We're using the area model to multiply 7 by 20 plus 5. Tap a cell to get started!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the area model! Whenever you're ready, tap a cell to find its product.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! We're exploring multiplying with the area model. Whenever you're ready, tap a cell to get started!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "area-model-1",
+     "trigger": "The learner submitted \"Typed 14 in the cell in row 1, column 1 (labelled 7 \u00d7 20)\". The board checked it: not right.",
+     "miss": "dropped_zeros",
+     "scoredWith": {
+      "keys": [
+       "140",
+       "cell row 2 column 1",
+       "35",
+       "175",
+       "submit final answer"
+      ],
+      "ask": "Find 7 \u00d7 (20 + 5) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "72057 \u00d7 20?7 \u00d7 5?",
+       "7 \u00d7 20?",
+       "cell row 1 column 1",
+       "7 \u00d7 5?",
+       "cell row 2 column 1",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beneath the cell to see how the tens are split up. How many tens are there when we multiply by 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the cell to see the parts split into tens. How many tens does 20 have?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look under the cell to see how the tens are split. How many tens do you have in that row?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under that cell to see the parts split into tens. How many tens does 20 have?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "tens_split"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look beneath that cell where the parts are split into tens. How many tens do we have when we multiply 7 by 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "area-model-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "140",
+       "cell row 2 column 1",
+       "35",
+       "175",
+       "submit final answer"
+      ],
+      "ask": "Find 7 \u00d7 (20 + 5) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "72057 \u00d7 20?7 \u00d7 5?",
+       "7 \u00d7 20?",
+       "cell row 1 column 1",
+       "7 \u00d7 5?",
+       "cell row 2 column 1",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look under the cell to see how the numbers are broken down. How many tens do 14 groups of ten make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look under the cell to see the parts split into tens. What do 14 tens make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look under the cell to see the numbers broken into tens. What do 7 and 2 tens make altogether?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "tens_split"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look under that top cell to see the parts split into tens. What value do you get when you multiply 14 tens?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now look below that top cell: it shows the parts split into tens. What does 14 tens equal?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "tens_split"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "area-model-1",
+     "trigger": "The learner said they were stuck, so the host pulled tens_split (help). It is on screen now: Under each cell with a tens part, writes its parts split into a one-digit fact and its tens, like 3 \u00d7 4 \u00d7 10 \u00d7 10. Never the product. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question agai",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "140",
+       "cell row 2 column 1",
+       "35",
+       "175",
+       "submit final answer"
+      ],
+      "ask": "Find 7 \u00d7 (20 + 5) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "72057 \u00d7 20?7 \u00d7 5?",
+       "7 \u00d7 20?",
+       "cell row 1 column 1",
+       "7 \u00d7 5?",
+       "cell row 2 column 1",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look right below that top cell: it now shows 20 split into tens. What do you get when you multiply 14 by 10?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the top cell: it now shows 20 split into tens. What value do you get when you multiply 14 by 10?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the cell to see the numbers split into single digits and tens. What do you get when you multiply 14 by that ten?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how under the top cell, the parts are now split into the single-digit numbers and tens. What do you get when you multiply that by ten?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under that top cell\u2014the parts are now split into the single-digit fact and its tens. What value do you get when you multiply 14 by 10?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "area-model-1",
+     "trigger": "The learner submitted \"Typed 175 as the sum of the cell products\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "140",
+       "cell row 2 column 1",
+       "35",
+       "175",
+       "submit final answer"
+      ],
+      "ask": "Find 7 \u00d7 (20 + 5) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "72057 \u00d7 20?7 \u00d7 5?",
+       "7 \u00d7 20?",
+       "cell row 1 column 1",
+       "7 \u00d7 5?",
+       "cell row 2 column 1",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You filled both cells and added 140 and 35 to get 175! Great job working through that tens part.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found both parts\u2014140 and 35\u2014and added them together to make 175.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both parts and added 140 and 35 to get 175! Now you can press Submit Final Answer.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found both products and added 140 and 35 together to get 175.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found both parts and added them up to 175.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "area-model.factor",
+   "primitiveId": "area-model",
+   "evalMode": "factor",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "area-model-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Find the column parts and the row parts whose products make every cell. The total area is 1316.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "80032014056check my factors",
+       "check my factors",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to our lesson on the area model! Take a look at the cells in the grid and see if you can find the parts along the top and side that multiply to make them.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the cells inside the grid to see what numbers can multiply to make each box.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the numbers inside the grid and see what column parts and row parts could multiply together to make them.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the cells inside the grid, and let's figure out what numbers along the top and side multiply to make them.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the area model! Take a look at the cells inside the grid to see what numbers make them up.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "area-model-1",
+     "trigger": "The learner submitted \"Typed column parts 40, 7 and row parts 20, 8\". The board checked it: not right.",
+     "miss": "swapped",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Find the column parts and the row parts whose products make every cell. The total area is 1316.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "80032014056check my factors",
+       "check my factors",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice how each column and row is outlined to match its label. Look at the cells in the first row\u2014which number do both of those cells share?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0",
+          "lever": "shared_parts"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how each row and column is now outlined in matching colors. Which parts line up with the first row versus the first column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_parts",
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how each column and row is now outlined in matching colors. Which parts share the cells going across each row versus down each column?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0",
+          "lever": "shared_parts"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how each row and column is now outlined in matching colors. Which parts line up with the rows, and which line up with the columns?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0",
+          "lever": "shared_parts"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the colors outlining each column and row to see which cells share a part. How do the numbers in that first row relate to each other?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_parts",
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "area-model-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Find the column parts and the row parts whose products make every cell. The total area is 1316.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "80032014056check my factors",
+       "check my factors",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The screen now outlines each row and column in matching colors so you can see which cells share a part. Take a look at the two numbers in the top row: what number goes evenly into both of them?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "shared_parts",
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The colors now outline each column and row to show how they line up with the blank boxes. Look at the numbers you found\u2014could your top parts and side parts be switched?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0",
+          "lever": "shared_parts"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The grid now outlines each column and row in matching colors to show which cells go together. Look at the numbers you found earlier\u2014could the parts along the top and side be switched?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0",
+          "lever": "shared_parts"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The columns and rows are now outlined in matching colors. Take a look at the two numbers in that top row\u2014which number could you multiply across both to get 800 and 320?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0",
+          "lever": "shared_parts"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now outlines each row and column in matching colors so you can see which cells share a part. Check whether your parts along the top match the columns or if they belong along the side.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0",
+          "lever": "shared_parts"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "area-model-1",
+     "trigger": "The learner said they were stuck, so the host pulled shared_parts (help). It is on screen now: Outlines each column of cells in the colour of its blank column part, and each row in the colour of its blank row part. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Find the column parts and the row parts whose products make every cell. The total area is 1316.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "80032014056check my factors",
+       "check my factors",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "See how each row and column is now outlined in its own color? Look across the top row with 800 and 320 to see which number could be their row part.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the colored outlines around each row and column. Which numbers along the side and top match the cells in each colored section?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the colored outlines around the rows and columns\u2014each row shares its side part, and each column shares its top part. Looking at the top row, what shared number could multiply into both of those cells?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the colors around each row and column\u2014each row has its own color border matching its side label, and each column matches its top label. \n\nWhich number could go on the left to make both cells in that first colored row?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The grid now has matching colored outlines showing which cells share each row and column part. Look at the colors along the top and side to see how the cells line up, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "area-model-1",
+     "trigger": "The learner submitted \"Typed column parts 20, 8 and row parts 40, 7\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Find the column parts and the row parts whose products make every cell. The total area is 1316.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "80032014056check my factors",
+       "check my factors",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You solved it! By swapping the numbers to put column parts 20 and 8 along the top and row parts 40 and 7 down the side, every cell multiplied out correctly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and typed the column parts 20 and 8 with the row parts 40 and 7! That matches every single cell perfectly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You swapped the parts to the right spots and found column parts 20 and 8 with row parts 40 and 7. Great job working that out!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You matched up the rows and columns and found the right parts: 20 and 8 across the top, and 40 and 7 down the side! Great job checking how each row and column work together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You swapped them to put 20 and 8 along the top with 40 and 7 on the side, and now every cell matches!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "area-model.find_area",
+   "primitiveId": "area-model",
+   "evalMode": "find_area",
+   "keys": [
+    "1200",
+    "cell row 1 column 2",
+    "180",
+    "cell row 2 column 1",
+    "cell row 2 column 2",
+    "1426",
+    "submit final answer"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "area-model-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1200",
+       "cell row 1 column 2",
+       "180",
+       "cell row 2 column 1",
+       "cell row 2 column 2",
+       "1426",
+       "submit final answer"
+      ],
+      "ask": "Find (40 + 6) \u00d7 (30 + 1) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "40630140 \u00d7 30?6 \u00d7 30?40 \u00d7 1?6 \u00d7 1?",
+       "40 \u00d7 30?",
+       "cell row 1 column 1",
+       "6 \u00d7 30?",
+       "cell row 1 column 2",
+       "40 \u00d7 1?",
+       "cell row 2 column 1",
+       "6 \u00d7 1?",
+       "cell row 2 column 2",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Tap any box in the grid to multiply its top number by its side number.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the area model! Pick any cell to start, multiply its column part by its row part, and type what you get.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Choose any box in the grid to start, multiply its top number by its side number, and check your answer.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you're ready, tap any cell to start multiplying.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the area model on the screen. Tap any cell to start multiplying its parts.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "area-model-1",
+     "trigger": "The learner submitted \"Typed 120 in the cell in row 1, column 1 (labelled 40 \u00d7 30)\". The board checked it: not right.",
+     "miss": "dropped_zeros",
+     "scoredWith": {
+      "keys": [
+       "1200",
+       "cell row 1 column 2",
+       "180",
+       "cell row 2 column 1",
+       "cell row 2 column 2",
+       "1426",
+       "submit final answer"
+      ],
+      "ask": "Find (40 + 6) \u00d7 (30 + 1) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "40630140 \u00d7 30?6 \u00d7 30?40 \u00d7 1?6 \u00d7 1?",
+       "40 \u00d7 30?",
+       "cell row 1 column 1",
+       "6 \u00d7 30?",
+       "cell row 1 column 2",
+       "40 \u00d7 1?",
+       "cell row 2 column 1",
+       "6 \u00d7 1?",
+       "cell row 2 column 2",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under that box to see how the tens are split up. How many tens are being multiplied together there?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look below that box to see how the tens are split up. How many tens are we multiplying together here?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look underneath that box to see the numbers broken into tens. How many tens are being multiplied together here?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the box to see each number split into tens. How many tens are you multiplying together here?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below that box to see the tens split out. How many tens are you multiplying together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "area-model-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1200",
+       "cell row 1 column 2",
+       "180",
+       "cell row 2 column 1",
+       "cell row 2 column 2",
+       "1426",
+       "submit final answer"
+      ],
+      "ask": "Find (40 + 6) \u00d7 (30 + 1) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "40630140 \u00d7 30?6 \u00d7 30?40 \u00d7 1?6 \u00d7 1?",
+       "40 \u00d7 30?",
+       "cell row 1 column 1",
+       "6 \u00d7 30?",
+       "cell row 1 column 2",
+       "40 \u00d7 1?",
+       "cell row 2 column 1",
+       "6 \u00d7 1?",
+       "cell row 2 column 2",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the box to see the numbers broken into tens. What do 4 \u00d7 3 times 10 times 10 make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look below the box to see 4 \u00d7 3 \u00d7 10 \u00d7 10 written out. What does multiplying by 10 twice do to the 12?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look below that box to see the numbers broken down into tens. What do you get when you multiply those tens together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "tens_split"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Under the box, the numbers are split into 4 \u00d7 3 \u00d7 10 \u00d7 10. What number do you get when you multiply those tens?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Under that box, you can now see the numbers split into single digits and tens. When you multiply 4 tens by 3 tens, how many tens do you get in total?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "area-model-1",
+     "trigger": "The learner said they were stuck, so the host pulled tens_split (help). It is on screen now: Under each cell with a tens part, writes its parts split into a one-digit fact and its tens, like 3 \u00d7 4 \u00d7 10 \u00d7 10. Never the product. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question agai",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1200",
+       "cell row 1 column 2",
+       "180",
+       "cell row 2 column 1",
+       "cell row 2 column 2",
+       "1426",
+       "submit final answer"
+      ],
+      "ask": "Find (40 + 6) \u00d7 (30 + 1) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "40630140 \u00d7 30?6 \u00d7 30?40 \u00d7 1?6 \u00d7 1?",
+       "40 \u00d7 30?",
+       "cell row 1 column 1",
+       "6 \u00d7 30?",
+       "cell row 1 column 2",
+       "40 \u00d7 1?",
+       "cell row 2 column 1",
+       "6 \u00d7 1?",
+       "cell row 2 column 2",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Under the box, you can now see the numbers split into single digits and tens. Take a look at that breakdown and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under that box, you can now see the numbers split into single digits and tens. How many times are we multiplying by 10 there?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new note right under that cell showing the numbers split into single digits and tens. When you multiply those tens, what does the whole product come out to?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look under the box now\u2014it shows the numbers split into single digits and tens. How many times are we multiplying by 10 there?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under that box, where the numbers are split into smaller pieces: 4 \u00d7 3 \u00d7 10 \u00d7 10. Give it another try with those tens included!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "area-model-1",
+     "trigger": "The learner submitted \"Typed 1426 as the sum of the cell products\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1200",
+       "cell row 1 column 2",
+       "180",
+       "cell row 2 column 1",
+       "cell row 2 column 2",
+       "1426",
+       "submit final answer"
+      ],
+      "ask": "Find (40 + 6) \u00d7 (30 + 1) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "40630140 \u00d7 30?6 \u00d7 30?40 \u00d7 1?6 \u00d7 1?",
+       "40 \u00d7 30?",
+       "cell row 1 column 1",
+       "6 \u00d7 30?",
+       "cell row 1 column 2",
+       "40 \u00d7 1?",
+       "cell row 2 column 1",
+       "6 \u00d7 1?",
+       "cell row 2 column 2",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found 1426 by adding up all four cell products. Fantastic job working through the steps!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found each box's product and added them together to get 1426.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found all four parts and added them up to 1426! Excellent work using the tens breakdown to solve the whole area model.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found 1426 by multiplying every box and adding all four parts together! Great work working through that.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found all four cell products and added them together to get 1426! Great job working through that whole model.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "area-model.multiply",
+   "primitiveId": "area-model",
+   "evalMode": "multiply",
+   "keys": [
+    "2000",
+    "cell row 1 column 2",
+    "900",
+    "cell row 1 column 3",
+    "60",
+    "cell row 2 column 1",
+    "1200",
+    "cell row 2 column 2",
+    "540",
+    "cell row 2 column 3",
+    "36",
+    "4736",
+    "submit final answer"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "area-model-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2000",
+       "cell row 1 column 2",
+       "900",
+       "cell row 1 column 3",
+       "60",
+       "cell row 2 column 1",
+       "1200",
+       "cell row 2 column 2",
+       "540",
+       "cell row 2 column 3",
+       "36",
+       "4736",
+       "submit final answer"
+      ],
+      "ask": "Find (200 + 90 + 6) \u00d7 (10 + 6) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "200 \u00d7 10?",
+       "cell row 1 column 1",
+       "90 \u00d7 10?",
+       "cell row 1 column 2",
+       "6 \u00d7 10?",
+       "cell row 1 column 3",
+       "200 \u00d7 6?",
+       "cell row 2 column 1",
+       "90 \u00d7 6?",
+       "cell row 2 column 2",
+       "6 \u00d7 6?",
+       "cell row 2 column 3",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Tap any cell to multiply its top number by its side number.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap any cell to multiply its parts and find its area.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap any box on the grid to multiply its top number by its side number.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap any cell to find its product, and check each one as you go.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap any box in the grid to find its area by multiplying its top number and side number.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "area-model-1",
+     "trigger": "The learner submitted \"Typed 200 in the cell in row 1, column 1 (labelled 200 \u00d7 10)\". The board checked it: not right.",
+     "miss": "dropped_zeros",
+     "scoredWith": {
+      "keys": [
+       "2000",
+       "cell row 1 column 2",
+       "900",
+       "cell row 1 column 3",
+       "60",
+       "cell row 2 column 1",
+       "1200",
+       "cell row 2 column 2",
+       "540",
+       "cell row 2 column 3",
+       "36",
+       "4736",
+       "submit final answer"
+      ],
+      "ask": "Find (200 + 90 + 6) \u00d7 (10 + 6) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "200 \u00d7 10?",
+       "cell row 1 column 1",
+       "90 \u00d7 10?",
+       "cell row 1 column 2",
+       "6 \u00d7 10?",
+       "cell row 1 column 3",
+       "200 \u00d7 6?",
+       "cell row 2 column 1",
+       "90 \u00d7 6?",
+       "cell row 2 column 2",
+       "6 \u00d7 6?",
+       "cell row 2 column 3",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the cell to see the parts split into tens. How many tens do 200 and 10 have altogether?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "tens_split"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look under the box to see how the tens split apart. How many total tens are being multiplied together here?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new clue underneath that cell showing how the tens break apart. How many tens are we multiplying together in total?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under that cell to see the tens split into groups of ten. How many tens are we multiplying together here?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "tens_split"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under that cell to see the tens split out. How many tens are being multiplied altogether?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "tens_split"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "area-model-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2000",
+       "cell row 1 column 2",
+       "900",
+       "cell row 1 column 3",
+       "60",
+       "cell row 2 column 1",
+       "1200",
+       "cell row 2 column 2",
+       "540",
+       "cell row 2 column 3",
+       "36",
+       "4736",
+       "submit final answer"
+      ],
+      "ask": "Find (200 + 90 + 6) \u00d7 (10 + 6) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "200 \u00d7 10?",
+       "cell row 1 column 1",
+       "90 \u00d7 10?",
+       "cell row 1 column 2",
+       "6 \u00d7 10?",
+       "cell row 1 column 3",
+       "200 \u00d7 6?",
+       "cell row 2 column 1",
+       "90 \u00d7 6?",
+       "cell row 2 column 2",
+       "6 \u00d7 6?",
+       "cell row 2 column 3",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look under the cell to see the numbers broken into tens. What basic multiplication fact do you see first?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "tens_split"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look below the cells to see the numbers broken down into tens. How many tens do you see to multiply with 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "tens_split"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look under that first cell\u2014it now shows the numbers broken down into tens. How many tens do you see multiplied together there?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "tens_split"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look right under the cell: the numbers are split into basic facts and tens. What do you get when you multiply 2 by 1, and then count all those tens?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look right under the cell to see the numbers broken into tens. What does 2 \u00d7 1 equal with all those tens attached?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "tens_split",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "area-model-1",
+     "trigger": "The learner said they were stuck, so the host pulled tens_split (help). It is on screen now: Under each cell with a tens part, writes its parts split into a one-digit fact and its tens, like 3 \u00d7 4 \u00d7 10 \u00d7 10. Never the product. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question agai",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2000",
+       "cell row 1 column 2",
+       "900",
+       "cell row 1 column 3",
+       "60",
+       "cell row 2 column 1",
+       "1200",
+       "cell row 2 column 2",
+       "540",
+       "cell row 2 column 3",
+       "36",
+       "4736",
+       "submit final answer"
+      ],
+      "ask": "Find (200 + 90 + 6) \u00d7 (10 + 6) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "200 \u00d7 10?",
+       "cell row 1 column 1",
+       "90 \u00d7 10?",
+       "cell row 1 column 2",
+       "6 \u00d7 10?",
+       "cell row 1 column 3",
+       "200 \u00d7 6?",
+       "cell row 2 column 1",
+       "90 \u00d7 6?",
+       "cell row 2 column 2",
+       "6 \u00d7 6?",
+       "cell row 2 column 3",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look right under the cell to see the numbers split into single digits and tens. How many tens get multiplied together here?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how the numbers under that cell are split into single digits and tens. How many times are you multiplying by ten here?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new clue written right under that cell, showing the numbers split into single digits and tens. Give that first box another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under each cell, the numbers are now split into basic facts and groups of tens. Take a look at that breakdown and give that first cell another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look underneath the cell to see the numbers broken down into single digits and tens. What do you get when you multiply those parts together?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "area-model-1",
+     "trigger": "The learner submitted \"Typed 4736 as the sum of the cell products\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2000",
+       "cell row 1 column 2",
+       "900",
+       "cell row 1 column 3",
+       "60",
+       "cell row 2 column 1",
+       "1200",
+       "cell row 2 column 2",
+       "540",
+       "cell row 2 column 3",
+       "36",
+       "4736",
+       "submit final answer"
+      ],
+      "ask": "Find (200 + 90 + 6) \u00d7 (10 + 6) with the area model: multiply each cell's column part by its row part, then add the cell products.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "200 \u00d7 10?",
+       "cell row 1 column 1",
+       "90 \u00d7 10?",
+       "cell row 1 column 2",
+       "6 \u00d7 10?",
+       "cell row 1 column 3",
+       "200 \u00d7 6?",
+       "cell row 2 column 1",
+       "90 \u00d7 6?",
+       "cell row 2 column 2",
+       "6 \u00d7 6?",
+       "cell row 2 column 3",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You solved all six cells and added them together to find 4736!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You multiplied all six cells and added them up to 4736!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You multiplied each cell and added all six products together to get 4736!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got every cell product and added them up to find 4736! Fantastic job working through each part.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You filled in all six cells and added them together to find 4,736!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "area-model.perimeter",
+   "primitiveId": "area-model",
+   "evalMode": "perimeter",
+   "keys": [
+    "54"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "area-model-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "54"
+      ],
+      "ask": "Find the perimeter of a rectangle with sides 13 and 14.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "submit",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! We have a rectangle with sides 13 and 14, and we want to find the distance all the way around it. Take a look at the sides and type your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you're ready, take a look at the rectangle and see if you can find the perimeter all the way around.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! To find the perimeter, think about the total distance all the way around the rectangle.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the rectangle on your screen and find its perimeter when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's find the perimeter of this rectangle. Take your time to work it out and type your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "area-model-1",
+     "trigger": "The learner submitted \"Typed 27 as the perimeter\". The board checked it: not right.",
+     "miss": "two_sides_only",
+     "scoredWith": {
+      "keys": [
+       "54"
+      ],
+      "ask": "Find the perimeter of a rectangle with sides 13 and 14.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "submit",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the rectangle now\u2014all four of its sides are labelled for you. How many sides do we need to count to go all the way around?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "all_sides",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look around the rectangle now\u2014all four sides are labelled for you! How many sides do we need to add to go all the way around?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "all_sides"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the rectangle now\u2014all four of its sides are labelled. How many sides do we need to travel along to go all the way around?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "all_sides"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the rectangle now\u2014all four of its sides are labelled. How many sides do we need to travel along to go all the way around?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "all_sides",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the rectangle now: all four sides are labelled for you. How many sides do we need to include to go all the way around?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "all_sides"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "area-model-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "54"
+      ],
+      "ask": "Find the perimeter of a rectangle with sides 13 and 14.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "submit",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "All four sides are now marked around the rectangle, and you can see them written out to add together. What do you get when you combine all four sides?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "all_sides",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice that the screen now shows the numbers along the bottom and right sides too, as well as the four numbers written out together. Try adding all four edges to find the total distance around.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "all_sides"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": true
+       },
+       "evidence": {
+        "no_fix_before_try": "Try adding all four"
+       },
+       "pulledLever": true
+      },
+      {
+       "text": "Now all four sides are written right on the rectangle and in an addition sentence for you. What do you get when you add all four sides together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "all_sides"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now all four sides of the rectangle are labelled around the shape. What do you get when you add all four sides together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "smaller_rectangle"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "all_sides"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now the screen shows the numbers on all four sides of the rectangle, plus the addition line showing them together. What total do you get when you add all four of those sides?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "all_sides"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "area-model-1",
+     "trigger": "The learner said they were stuck, so the host pulled all_sides (help). It is on screen now: Labels all four sides of the rectangle, the bottom and the right as well as the top and the left. No total. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through f",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "54"
+      ],
+      "ask": "Find the perimeter of a rectangle with sides 13 and 14.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "submit",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look around the rectangle now\u2014the bottom and right sides are labelled too, so you can see numbers for every side. Give it another try by adding up the sides all the way around!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how the bottom and right edges are now labelled, showing the length of each side all the way around. Try adding up those numbers and type in your answer!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the bottom and right edges of the rectangle\u2014their lengths are marked for you now too. When you add all four sides together, what do you get?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look around the rectangle now\u2014the bottom and right sides are labelled with their measurements, too. Try adding the four sides all together and typing your new answer!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Try adding the four"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that the bottom and right sides are labelled now, too. See if you can add up all four sides all the way around!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "area-model-1",
+     "trigger": "The learner submitted \"Typed 54 as the perimeter\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "54"
+      ],
+      "ask": "Find the perimeter of a rectangle with sides 13 and 14.",
+      "leakTokens": [
+       "CELL_INCORRECT",
+       "SUM_INCORRECT",
+       "PERIMETER_INCORRECT",
+       "FACTOR_INCORRECT",
+       "CHALLENGE_CORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "ACTIVITY_START",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "submit",
+       "how to use this tool"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got 54 by adding up all four sides of the rectangle! Excellent work fixing that.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got 54 by adding all four sides around the rectangle! Fantastic job fixing that and working it out.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u201454 is the perimeter! You added up all four sides of the rectangle to find the total distance around.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You added up all four sides to find 54 for the perimeter.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! By checking all four sides and adding 13 + 14 + 13 + 14, you got 54 for the perimeter.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

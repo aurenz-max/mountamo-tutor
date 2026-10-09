@@ -5,7 +5,9 @@ import type { BarModelMiss, SpokenGraphMiss } from '../../../primitives/visual-p
 import type { SpokenBalanceMiss } from '../../../primitives/visual-primitives/math/balanceScaleWorkspace';
 import type { BaseTenMiss, SpokenBaseTenMiss } from '../../../primitives/visual-primitives/math/baseTenWorkspace';
 import type { CoinMiss } from '../../../primitives/visual-primitives/math/coinCounterWorkspace';
+import { REGROUP_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/regroupingWorkbenchWorkspace';
 import type { MeasureMiss } from '../../../primitives/visual-primitives/math/measureLabWorkspace';
+import type { AreaModelMiss } from '../../../primitives/visual-primitives/math/areaModelWorkspace';
 import type { LengthMiss } from '../../../primitives/visual-primitives/math/lengthLabWorkspace';
 import type { ClockMiss } from '../../../primitives/visual-primitives/math/analogClockWorkspace';
 import type { TimeSequencerMiss } from '../../../primitives/visual-primitives/math/timeSequencerWorkspace';
@@ -20,6 +22,7 @@ import type { FractionBarMiss } from '../../../primitives/visual-primitives/math
 import type { TouchMiss } from '../../../primitives/visual-primitives/math/fractionCirclesWorkspace';
 import { EQUAL_BUILD_MISSES, type EqualBuildMiss } from '../../../primitives/visual-primitives/math/fractionEqualBuild';
 import type { HundredsChartMiss } from '../../../primitives/visual-primitives/math/hundredsChartWorkspace';
+import { SKIP_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/skipCountingWorkspace';
 import type { MathFactMiss } from '../../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
 import type { AdditionFactMiss } from '../../../primitives/visual-primitives/math/additionFactStrategiesWorkspace';
 import { CLASSIC_MISSES as ANGLE_CLASSIC_MISSES, MAKE_ANGLE_MISSES } from '../../../primitives/visual-primitives/math/angleWorkshopWorkspace';
@@ -922,6 +925,33 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: areaModelDeliveryEligible },
+    teachingWorkspace: {
+      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'The activity checks every entry itself, and you are not told the answers. On build, find-area and multiply '
+        + 'the learner taps a cell, types its product and presses Check; once every cell is right they type the sum of the '
+        + 'cells and press Submit Final Answer. A right cell stays on screen; a wrong one is marked. On perimeter they type '
+        + 'one number; on factor they type each column part and row part, and any parts that make every cell are right. '
+        + 'Never say a cell product, the total, the perimeter or a part the learner must find, before the check or after a '
+        + 'wrong one, and never say whether a typed number is right before the activity checks it. The column and row '
+        + 'parts printed on the grid may be named; when the cells are not labelled, ask which column part and row part a '
+        + 'cell uses instead of saying them. Teaching the method is fine: a cell is its column part times its row part, '
+        + 'the product is all the cells added, the perimeter is the distance all the way around. After a wrong entry, do '
+        + 'not tell the learner what to change (how many zeros to write, which sides to add again): ask a question that '
+        + 'lets them find it, such as how many tens each part has or how many sides a rectangle has. After a lever too: '
+        + 'say where to look and ask a question; do not tell them to add the four sides or count the zeros. A worked example on '
+        + 'other numbers is teaching. You cannot tap or type for the learner.',
+      // Every mode publishes levers (`areaModelLevers.ts`); every miss below is answered by one on every saved payload
+      // item (`areaModelLevers.test.ts`). Cell labels, the side sum and the start cell are the tier's starting positions.
+      levers: true,
+      // The activity's own check (`areaMiss`), every mode. A forward item's misses are a cell's or the sum's.
+      misses: missLists<AreaModelMiss>({
+        build_model: ['added_not_multiplied', 'dropped_zeros', 'extra_zeros', 'one_group_off', 'wrong_product', 'left_out_part', 'carry_slip', 'sum_off'],
+        find_area: ['added_not_multiplied', 'dropped_zeros', 'extra_zeros', 'one_group_off', 'wrong_product', 'left_out_part', 'carry_slip', 'sum_off'],
+        multiply: ['added_not_multiplied', 'dropped_zeros', 'extra_zeros', 'one_group_off', 'wrong_product', 'left_out_part', 'carry_slip', 'sum_off'],
+        perimeter: ['gave_area', 'two_sides_only', 'three_sides', 'perimeter_off'],
+        factor: ['swapped', 'one_part_wrong', 'parts_wrong'],
+      }),
+    },
     description: 'Multi-challenge visual area model for multiplication, perimeter, and factoring. Each session walks the student through 3-6 distinct factor pairs in the same eval mode. Per-challenge data (factor decompositions, display flags) is built locally from a pool service; Gemini emits only session-level wrapper metadata. Use for multi-digit multiplication, distributive property, partial products, perimeter (4.MD.3), and area-model factoring. ESSENTIAL for grades 3-6 math.',
     constraints: 'The manifest must NOT supply specific factor numbers, decompositions, or display flags — the generator picks 3-6 pairs locally per the selected eval mode. Algebraic mode is reserved for future expansion (no eval mode currently uses it).',
     affordances: { representation: 'pictorial', answers: ['type'], role: 'apply', minutes: 5 },
@@ -3210,6 +3240,21 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     description: 'Rhythmic skip counting with animated number line jumps for grades 1-3. A character (frog, kangaroo, rabbit, rocket) jumps along a number line in equal leaps, landing on multiples. Students count along, predict landing spots, identify skip values, fill missing numbers, and connect to multiplication facts. Parallel array visualization links skip counting to multiplication. Supports forward and backward counting. ESSENTIAL for grades 1-3 skip counting, multiplication foundations, and number pattern recognition.',
     constraints: 'Best for grades 1-3. Grades 1-2: skip by 2s, 5s, 10s, forward only, count_along and predict challenges. Grades 2-3: skip by 3s, 4s, backward counting, multiplication connections.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 4 },
+    teachingWorkspace: {
+      levers: true,
+      grades: ['Grade 1', 'Grade 2', 'Grade 3'],
+      guidance: 'The runner checks the learner’s work itself, and you are not told the answer. On count along the learner '
+        + 'taps the number where the character lands next, one jump at a time, then presses Check; a tap further on is a '
+        + 'miss. On the other kinds the learner types a number and presses Check: the next landing (predict), each number '
+        + 'hidden as "?" (fill missing, one at a time), how far each jump goes (find the skip value), or how many jumps '
+        + 'reach the number (multiplication: the box completes "? × jump size = number reached"). Those are the answers: '
+        + 'before the learner has checked, never say them, never count on past the character or across a "?", never give '
+        + 'the difference between two landings when the jump size is asked, and never count the jumps to the end. Do not '
+        + 'tell the learner what to add to which number; ask what changes from one number to the next. Say the '
+        + 'instruction in your own words first. You cannot tap, type or jump for the learner.',
+      // The runner's own check (`skipMiss`); levers in skipCountingLevers.ts.
+      misses: missLists(SKIP_MISSES_BY_MODE),
+    },
     evalModes: [
       {
         evalMode: 'count_along',
@@ -3386,6 +3431,22 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'regrouping-workbench',
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4'],
+      guidance: 'The activity checks the answer itself, and you are not told it: the learner types one digit in each box '
+        + 'under the written problem, ones on the right, and presses Check. Before the check and after a wrong one, never '
+        + 'say the answer, a digit of it, or whether a typed digit is right; ask what the learner gets in one column, '
+        + 'starting with the ones. Teaching is place value: in addition, when a column makes ten or more, ten of them make '
+        + 'one of the next place, which is carried; in subtraction, when the top digit is smaller than the bottom one, one '
+        + 'of the next place is broken into ten, and that place\'s top digit is then one less. The blocks show this: Carry '
+        + 'or Borrow under a column makes the trade on screen, and a trade is never checked. When the regroup marks are '
+        + 'hidden, do not say which column needs a trade. Read the problem and any story aloud. You cannot type, trade or '
+        + 'press Check for the learner.',
+      // Every mode declares levers (`regroupingWorkbenchLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`regroupMiss`), every mode.
+      misses: { ...REGROUP_MISSES_BY_MODE },
+    },
     description: 'Interactive addition and subtraction with regrouping (carrying and borrowing) for grades 1-4. Split view: base-ten blocks workspace (ones cubes, tens rods, hundreds flats) alongside the written algorithm. Students tap to trade 10 ones for 1 ten (carry) or break 1 ten into 10 ones (borrow). The blocks and algorithm update in parallel. Progressive phases from exploration to solving. Supports word problem contexts. ESSENTIAL for grades 1-4 multi-digit addition, subtraction, regrouping, and standard algorithm understanding.',
     constraints: 'Best for grades 1-4. Grades 1-2: two-digit problems with one regroup, addition focus. Grades 3-4: three-digit problems with multiple regroups, addition and subtraction. Supports add_no_regroup, subtract_no_regroup, add_regroup, and subtract_regroup challenge types.',
     affordances: { representation: ['concrete', 'symbolic'], answers: ['manipulate', 'type'], role: 'apply', minutes: 6 },

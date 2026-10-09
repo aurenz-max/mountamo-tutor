@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/area-model-runtime-factor-payload-2026-10-09.json",
+ "primitiveId": "area-model",
+ "evalMode": "factor",
+ "data": {
+  "title": "Multiplying with the Area Model: Finding Missing Factors",
+  "description": "Put your multiplication detective skills to work by finding the mystery factors that created each partial product! Use your understanding of number decomposition and place value to reveal the missing dimensions of the grid.",
+  "challenges": [
+   {
+    "id": "area-model-1",
+    "factor1Parts": [
+     20,
+     8
+    ],
+    "factor2Parts": [
+     40,
+     7
+    ],
+    "showPartialProducts": true,
+    "showDimensions": false,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-2",
+    "factor1Parts": [
+     30,
+     7
+    ],
+    "factor2Parts": [
+     40,
+     3
+    ],
+    "showPartialProducts": true,
+    "showDimensions": false,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-3",
+    "factor1Parts": [
+     40,
+     3
+    ],
+    "factor2Parts": [
+     10,
+     5
+    ],
+    "showPartialProducts": true,
+    "showDimensions": false,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-4",
+    "factor1Parts": [
+     30,
+     9
+    ],
+    "factor2Parts": [
+     10,
+     4
+    ],
+    "showPartialProducts": true,
+    "showDimensions": false,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-5",
+    "factor1Parts": [
+     30,
+     4
+    ],
+    "factor2Parts": [
+     10,
+     7
+    ],
+    "showPartialProducts": true,
+    "showDimensions": false,
+    "algebraicMode": false,
+    "highlightCell": null
+   }
+  ],
+  "challengeType": "factor",
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

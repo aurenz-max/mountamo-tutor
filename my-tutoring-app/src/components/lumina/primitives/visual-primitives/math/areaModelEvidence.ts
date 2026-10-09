@@ -16,6 +16,8 @@ export interface AreaModelResponse {
   /** Cell pre-labelled with its two parts, or the perimeter side sum written out. */
   scaffoldShown: boolean;
   hintsBefore: number;
+  /** The check's named miss on a wrong entry (`areaMiss`), the same one the workspace records. */
+  miss?: string;
 }
 
 const total = (parts: readonly number[]) => parts.reduce((s, v) => s + v, 0);
@@ -78,6 +80,7 @@ export function areaModelDiagnosisEvidence(
       itemId: r.challengeId, phase: r.step, challenge: question(r), expected: r.expected,
       observed: `${r.correct ? 'Correct' : 'Incorrect'}: entered ${r.entered}`,
       support: `Try ${r.attempt}; ${scaffold(r)}; ${r.hintsBefore} help panel opening(s) on this model; support tier ${supportTier ?? 'none'}.`,
+      ...(!r.correct && r.miss ? { miss: r.miss } : {}),
     })),
   };
 }

@@ -1,0 +1,82 @@
+{
+ "source": "qa/tutor-reports/skip-counting-runner-runtime-count_along-payload-2026-10-09.json",
+ "primitiveId": "skip-counting-runner",
+ "evalMode": "count_along",
+ "data": {
+  "title": "Kangaroo Leaps by 5s!",
+  "description": "Watch the friendly kangaroo hop along the number line in jumps of 5, building your foundation for multiplication and counting fluency.",
+  "skipValue": 5,
+  "startFrom": 0,
+  "endAt": 50,
+  "direction": "forward",
+  "character": {
+   "type": "kangaroo",
+   "imagePrompt": "A friendly cheerful cartoon kangaroo ready to jump"
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "count_along",
+    "instruction": "Tap each number the kangaroo lands on, one jump at a time, from 0 to 50.",
+    "hint": "The kangaroo starts at 0 and adds 5.",
+    "narration": "5...",
+    "startPosition": 0
+   },
+   {
+    "id": "c2",
+    "type": "count_along",
+    "instruction": "Tap each number the kangaroo lands on, one jump at a time, from 5 to 50.",
+    "hint": "Count on from 5 by adding 5 more.",
+    "narration": "5... 10...",
+    "startPosition": 5
+   },
+   {
+    "id": "c3",
+    "type": "count_along",
+    "instruction": "Tap each number the kangaroo lands on, one jump at a time, from 15 to 50.",
+    "hint": "Each hop adds 5: 5, 10, 15.",
+    "narration": "5... 10... 15...",
+    "startPosition": 15
+   },
+   {
+    "id": "c4",
+    "type": "count_along",
+    "instruction": "Tap each number the kangaroo lands on, one jump at a time, from 20 to 50.",
+    "hint": "Keep adding 5 after 20.",
+    "narration": "5... 10... 15... 20... 25...",
+    "startPosition": 20
+   },
+   {
+    "id": "c5",
+    "type": "count_along",
+    "instruction": "Tap each number the kangaroo lands on, one jump at a time, from 30 to 50.",
+    "hint": "Listen to the pattern: 25, 30, 35.",
+    "narration": "25... 30... 35...",
+    "startPosition": 30
+   },
+   {
+    "id": "c6",
+    "type": "count_along",
+    "instruction": "Tap each number the kangaroo lands on, one jump at a time, from 35 to 50.",
+    "hint": "Every number ends in 0 or 5 when counting by 5s.",
+    "narration": "40... 45... 50!",
+    "startPosition": 35
+   }
+  ],
+  "showOptions": {
+   "showArray": true,
+   "showJumpArcs": true,
+   "showEquation": true,
+   "showDigitPattern": true,
+   "autoPlay": true,
+   "showTrackLabels": true,
+   "showSequenceChips": true,
+   "showSkipValueBadge": true
+  },
+  "gradeBand": "1-2",
+  "gameMode": {
+   "enabled": false
+  },
+  "supportTier": "easy"
+ }
+}

@@ -1,0 +1,2067 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "regrouping-workbench.add_no_regroup",
+   "primitiveId": "regrouping-workbench",
+   "evalMode": "add_no_regroup",
+   "keys": [
+    "37"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "37"
+      ],
+      "ask": "Find 23 + 14. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You are organizing two groups of items for the classroom. Combine them to find 23 + 14!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! We are organizing two groups of items for the classroom to find 23 + 14. Let's start with the ones column on the right\u2014how many ones are there altogether?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have 23 plus 14 to add together! You are organizing two groups of items for the classroom. Combine them to find the total sum!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You are organizing two groups of items for the classroom to find 23 + 14. What do you get when you start by adding the ones column?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You are organizing two groups of items for the classroom to find 23 plus 14. What do you get when you add the ones blocks first?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Wrote 3 in the tens, 8 in the ones\". The board checked it: not right.",
+     "miss": "column_slip",
+     "scoredWith": {
+      "keys": [
+       "37"
+      ],
+      "ask": "Find 23 + 14. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's start with the ones column on the right: what do you get when you add 3 ones plus 4 ones?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's start with the ones column on the right. What do you get when you add 3 ones and 4 ones?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's check the ones column first. What do you get when you add 3 ones plus 4 ones?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's start with the ones column on the right: what do you get when you add 3 ones plus 4 ones?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the ones column first. What do you get when you add 3 ones plus 4 ones?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "37"
+      ],
+      "ask": "Find 23 + 14. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You can do this! Look at the blocks in the ones column on the right and count how many single blocks there are.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can count the blocks in the ones column to see how many there are. How many ones blocks do you see on the screen?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can count the blocks in the ones column on the right side. How many ones are there all together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can count the blocks in the ones column to see how many there are. What do you get when you count them?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can count the blocks in the ones column on the screen to see how many there are altogether. How many ones blocks do you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Wrote 3 in the tens, 7 in the ones\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "37"
+      ],
+      "ask": "Find 23 + 14. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You fixed the ones column and found 37 by writing 3 in the tens and 7 in the ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the mistake and got 3 tens and 7 ones, making 37! Excellent work counting each column.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the ones column and got 3 tens and 7 ones! Fantastic job working through that problem.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the ones column and got 3 tens and 7 ones, 37! Great job working it out.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You fixed your answer and got 37 by writing 3 in the tens and 7 in the ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "regrouping-workbench.add_regroup",
+   "primitiveId": "regrouping-workbench",
+   "evalMode": "add_regroup",
+   "keys": [
+    "72"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "72"
+      ],
+      "ask": "Find 27 + 45. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u2191 carry",
+       "carry from the ones",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Students are gathering school supplies and putting them together in boxes. Let's find the total by adding 27 plus 45!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Students are gathering school supplies and putting them together in boxes. Let's find the total for 27 plus 45!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Students are gathering school supplies and putting them together in boxes! We want to find 27 + 45. What do you see when you look at the ones blocks?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Students are gathering school supplies and putting them together in boxes. Let's find the total amount for 27 + 45!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Students are gathering school supplies and putting them together in boxes! We want to find 27 + 45. What do you see when you look at the ones column?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Wrote 6 in the tens, 2 in the ones\". The board checked it: not right.",
+     "miss": "no_carry",
+     "scoredWith": {
+      "keys": [
+       "72"
+      ],
+      "ask": "Find 27 + 45. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u2191 carry",
+       "carry from the ones",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Good try! When you add the ones, 7 plus 5 makes 12, so can we trade ten ones for a ten?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the ones column first: when we add 7 and 5, we get 12 ones. What happens to the tens column when we trade 10 of those ones?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! When you add the ones, 7 plus 5 makes 12, so ten of those ones can trade for a new ten block. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's check the ones column first: when we add 7 and 5, what do we get?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was a great try! When we add the ones together and get 12, what happens to the ten?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "72"
+      ],
+      "ask": "Find 27 + 45. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u2191 carry",
+       "carry from the ones",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Try tapping the Carry button under the ones column to trade ten ones into a ten block!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Try pressing the Carry button under the ones column to see what happens to the blocks!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Try clicking the \"Carry\" button under the ones column to move ten ones over to the tens. What does the tens column show after that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Try pressing the Carry button to trade 10 ones for a new ten block! What happens to the tens column when you carry?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Try tapping the Carry button under the ones blocks to trade ten ones for a new ten rod. Then see how many tens and ones you have!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Wrote 7 in the tens, 2 in the ones\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "72"
+      ],
+      "ask": "Find 27 + 45. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u2191 carry",
+       "carry from the ones",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You fixed it and got 7 tens and 2 ones, making 72! Excellent work carrying that ten over.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You fixed the tens to 7 and wrote 2 in the ones to get 72.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You fixed your tens to make 7 tens and 2 ones for 72!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You fixed your tens to make 7 tens and 2 ones, giving 72!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You fixed the mistake and put 7 in the tens and 2 in the ones for 72.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "regrouping-workbench.subtract_no_regroup",
+   "primitiveId": "regrouping-workbench",
+   "evalMode": "subtract_no_regroup",
+   "keys": [
+    "35"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "sub_nr_1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "35"
+      ],
+      "ask": "Find 58 \u2212 23. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's find 58 minus 23 by taking away blocks to see how many are left. You can start with the ones column on the right!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's find 58 minus 23 by taking away blocks to see how many are left. You can start with the ones column on the right!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's find 58 minus 23. You can start with the ones column on the right!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's find 58 minus 23 by taking away blocks to see how many are left. You can start with the ones column on the right!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's find 58 minus 23. You can start by looking at the ones column on the right.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "sub_nr_1",
+     "trigger": "The learner submitted \"Wrote 3 in the tens, 6 in the ones\". The board checked it: not right.",
+     "miss": "column_slip",
+     "scoredWith": {
+      "keys": [
+       "35"
+      ],
+      "ask": "Find 58 \u2212 23. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Good try! In the ones place on the right, what do you get when you start with 8 and take away 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! What do you get in the ones column when you take 3 away from 8?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's take another look at the ones place. What do you get when you start with 8 ones and take away 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice try! Let's take another look at the ones column: what do you get when you start with 8 ones and take away 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Let's look closely at the ones column: what is 8 take away 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "sub_nr_1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "35"
+      ],
+      "ask": "Find 58 \u2212 23. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We can take it one column at a time! Look at the 8 ones blocks on the right and count backwards 3\u2014how many ones are left?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You have 8 ones blocks and need to take away 3 of them. How many ones are left?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can do this! Look at the 8 ones blocks and count backwards 3 to see what is left.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's take it one step at a time! Look at the ones column on the right: count backwards 3 from 8, and see what number you get.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We can take it one column at a time! Look at the 8 ones blocks: if you take away 3 of them, how many are left?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "sub_nr_1",
+     "trigger": "The learner submitted \"Wrote 3 in the tens, 5 in the ones\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "35"
+      ],
+      "ask": "Find 58 \u2212 23. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You figured it out and wrote 3 in the tens and 5 in the ones to get 35! Fantastic job subtracting each column.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the ones place and found 3 tens and 5 ones, giving 35! Fantastic job working that out.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You fixed the ones column to 5 and found 35 by working through each place.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and got 35 by putting 3 tens and 5 ones! That was great thinking through each column.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the ones place to 5 and got 35! Fantastic job working through both columns.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "regrouping-workbench.subtract_regroup",
+   "primitiveId": "regrouping-workbench",
+   "evalMode": "subtract_regroup",
+   "keys": [
+    "35"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "sub_reg_1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "35"
+      ],
+      "ask": "Find 52 \u2212 17. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u2193 borrow",
+       "borrow for the ones",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We have 52 minus 17 to solve. You have a collection of base-ten blocks, and when you don't have enough ones to take away, you can borrow a ten!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have a collection of base-ten blocks, and our challenge is to find 52 \u2212 17. When you take away some objects and don't have enough ones, you can borrow a ten!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! We want to find 52 minus 17. You have base-ten blocks, and when you don't have enough ones to take away, you can borrow a ten!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! We need to find 52 minus 17. You have base-ten blocks to help\u2014when you need to take away ones and don't have enough, you can borrow a ten!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's find 52 minus 17! You have base-ten blocks, and when you need to take away ones and don't have enough, you can borrow a ten.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "sub_reg_1",
+     "trigger": "The learner submitted \"Wrote 4 in the tens, 5 in the ones\". The board checked it: not right.",
+     "miss": "smaller_from_larger",
+     "scoredWith": {
+      "keys": [
+       "35"
+      ],
+      "ask": "Find 52 \u2212 17. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u2193 borrow",
+       "borrow for the ones",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's look at the ones column first: we have 2 ones, but we need to take away 7. What happens if you use the Borrow button under the ones?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's start in the ones place: can we take 7 ones away from 2 ones, or do we need to borrow a ten?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the ones column: can you take 7 away from 2? Try using the Borrow button to trade a ten for ten ones!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the ones column: we have 2 ones and need to take away 7. What happens if you borrow a ten?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the ones column first: we have 2 ones and need to take away 7. What happens if you borrow a ten?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "sub_reg_1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "35"
+      ],
+      "ask": "Find 52 \u2212 17. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u2193 borrow",
+       "borrow for the ones",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Try tapping the Borrow button under the ones column. That breaks one ten into ten ones so you have enough to take away 7!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Try clicking the Borrow button to break 1 ten into 10 ones. How many ones do you have after that?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Try pressing the Borrow button under the ones column. That breaks one ten block into ten ones so you have enough to subtract!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can do it! Press the \"Borrow\" button under the ones column to break one ten into ten ones, and see how many ones you have then.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Try pressing the Borrow button under the ones column to trade one ten for ten ones. Then, see how many ones you have in all to take 7 away from!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "sub_reg_1",
+     "trigger": "The learner submitted \"Wrote 3 in the tens, 5 in the ones\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "35"
+      ],
+      "ask": "Find 52 \u2212 17. Write the answer in the boxes under the problem, one digit in each place, then press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "REGROUP_CARRY",
+       "REGROUP_BORROW",
+       "REGROUP_NOT_NEEDED",
+       "SOLVE_CORRECT",
+       "SOLVE_INCORRECT",
+       "PHASE_TRANSITION",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u2193 borrow",
+       "borrow for the ones",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You solved it by writing 3 in the tens and 5 in the ones to get 35! You fixed it and regrouped when you needed more ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and wrote 3 in the tens and 5 in the ones to get 35! You borrowed a ten to make enough ones, and that solved it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You fixed your tens column to 3 and ones to 5 after borrowing to find 35!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out and got 35 by fixing the tens and ones! Great job borrowing that ten.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You wrote 3 in the tens and 5 in the ones to make 35, regrouping a ten when you needed more ones.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

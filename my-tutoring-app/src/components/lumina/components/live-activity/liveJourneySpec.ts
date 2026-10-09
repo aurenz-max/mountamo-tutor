@@ -36,9 +36,14 @@ import { farThree } from '../../primitives/visual-primitives/math/compareObjects
 import { threeCards } from '../../primitives/visual-primitives/math/numberSequencerLevers';
 import { threePlaces } from '../../primitives/visual-primitives/math/ordinalLineLevers';
 import { COIN_CENTS, fewestCoins } from '../../primitives/visual-primitives/math/coinCounterWorkspace';
+import { operandsOf as regroupOperands, regroupingHarnessDigits } from '../../primitives/visual-primitives/math/regroupingWorkbenchWorkspace';
+import { practiceParent as regroupPracticeParent, smallerProblem as smallerRegroupProblem }
+  from '../../primitives/visual-primitives/math/regroupingWorkbenchLevers';
 import { practiceItem as coinPracticeItem, practiceParent as coinPracticeParent } from '../../primitives/visual-primitives/math/coinCounterLevers';
 import { practiceItem as clockPracticeItem, practiceParent as clockPracticeParent } from '../../primitives/visual-primitives/math/analogClockLevers';
 import { practiceItem as measurePracticeItem, practiceParent as measurePracticeParent } from '../../primitives/visual-primitives/math/measureLabLevers';
+import { cellProducts as areaCellProducts, partsFit as areaPartsFit } from '../../primitives/visual-primitives/math/areaModelWorkspace';
+import { practiceItem as areaPracticeItem, practiceParent as areaPracticeParent } from '../../primitives/visual-primitives/math/areaModelLevers';
 import { practiceItem as timePracticeItem, practiceParent as timePracticeParent } from '../../primitives/visual-primitives/math/timeSequencerLevers';
 import { simplerLength } from '../../primitives/visual-primitives/math/lengthLabLevers';
 import { simplerShape } from '../../primitives/visual-primitives/math/shapeComposerLevers';
@@ -204,6 +209,9 @@ import { practiceItem as spatialPracticeItem, practiceParent as spatialPracticeP
 import { hundredsChartHarnessInputs } from '../../primitives/visual-primitives/math/hundredsChartWorkspace';
 import { practiceItem as hundredsChartPracticeItem, practiceParent as hundredsChartPracticeParent }
   from '../../primitives/visual-primitives/math/hundredsChartLevers';
+import { skipHarnessInputs } from '../../primitives/visual-primitives/math/skipCountingWorkspace';
+import { practiceItem as skipPracticeItem, practiceParent as skipPracticeParent }
+  from '../../primitives/visual-primitives/math/skipCountingLevers';
 import { mathFactHarnessInputs } from '../../primitives/visual-primitives/math/mathFactFluencyWorkspace';
 import { additionFactHarnessInputs } from '../../primitives/visual-primitives/math/additionFactStrategiesWorkspace';
 import { smallerFact as smallerAdditionFact } from '../../primitives/visual-primitives/math/additionFactStrategiesLevers';
@@ -289,10 +297,24 @@ export interface LiveJourney {
   exampleTaught?: (artifact: SupportArtifact, spoken: string) => string | null;
   /** Extra DOM probes. `reminder` and `support` are shared and supplied by the driver. */
   probes?: Record<string, JourneyProbe>;
+  /**
+   * The tutor replay's keys, when the inputs type the answer in parts (one digit per place box): the whole answer as
+   * the screen would print it. Without it each typed part is a key, and a part that is also an operand's digit reads
+   * as a leak when the tutor reads the problem's column ("7 plus 5" over 27 + 45 = 72). The sweep's J3/J13 still check
+   * every part.
+   */
+  replayKeys?: (ctx: JourneyContext) => string[];
 }
 
 /** What a learner says to ask for each action on any shared-workspace surface. */
 const WORKSPACE_PROMPTS = { opening: 'What do I do?', hint: 'Can you help me?', example: 'Can you show me what you mean?' };
+
+/** regrouping-workbench's current item; an easier practice problem (`~simpler`) is rebuilt from its parent with the same builder. */
+function regroupItem(ctx: JourneyContext): any {
+  const parentId = regroupPracticeParent(String(ctx.itemId ?? ''));
+  const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+  return parent && parentId !== ctx.itemId ? smallerRegroupProblem(parent, ctx.data.operation, ctx.data as { operand1: number; operand2: number }) : parent;
+}
 
 /** The retiring cue tags. The workspace emits none of them; a model that voices
  *  one is reading a legacy pack it should no longer be sent. */
@@ -774,6 +796,84 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const change = c.correctChange ?? (c.paidAmount - c.itemCost);
       const typedChange = !wrong ? change : c.itemCost !== change ? c.itemCost : change + 1;
       return [{ type: 'write', label: 'Change in cents', text: String(typedChange) }, check];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'regrouping-workbench': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/RegroupingWorkbench.tsx',
+    instanceId: 'regroup',
+    defaults: { grade: 'Grade 2', mode: 'add_regroup', di: false, topic: 'Adding two-digit numbers with regrouping' },
+    leakTokens: ['ACTIVITY_START', 'REGROUP_CARRY', 'REGROUP_BORROW', 'REGROUP_NOT_NEEDED', 'SOLVE_CORRECT', 'SOLVE_INCORRECT',
+      'PHASE_TRANSITION', 'ALL_COMPLETE', '[TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // The answer is typed one digit per place box ("Ones digit", "Tens digit", ...) and checked. A wrong answer is the
+    // mode's signature error from `regroupMiss`: the carry left out, the smaller digit taken from the larger, or (no
+    // regroup) the ones digit off by one. Trades are optional and never checked, so the row does not make them.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = regroupItem(ctx);
+      if (!c) throw new Error('No current regrouping-workbench challenge');
+      const [a, b] = regroupOperands(c, ctx.data as { operand1: number; operand2: number });
+      const op = ctx.data.operation as 'addition' | 'subtraction';
+      const places = ({ tens: 2, hundreds: 3, thousands: 4 } as Record<string, number>)[ctx.data.maxPlace] ?? 2;
+      const digits = regroupingHarnessDigits(op, a, b, places, intent === 'wrong' ? 'wrong' : 'correct');
+      const names = ['Ones', 'Tens', 'Hundreds', 'Thousands'];
+      return [...digits.map((d, i): DriverInput => ({ type: 'write', label: `${names[i]} digit`, text: String(d) })), { type: 'check' }];
+    },
+    replayKeys: ctx => {
+      const c = regroupItem(ctx);
+      if (!c) return [];
+      const [a, b] = regroupOperands(c, ctx.data as { operand1: number; operand2: number });
+      return [String(ctx.data.operation === 'addition' ? a + b : a - b)];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'area-model': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/AreaModel.tsx',
+    instanceId: 'area',
+    defaults: { grade: 'Grade 4', mode: 'find_area', di: false, topic: 'Multiplying with the area model' },
+    leakTokens: ['CELL_INCORRECT', 'SUM_INCORRECT', 'PERIMETER_INCORRECT', 'FACTOR_INCORRECT', 'CHALLENGE_CORRECT',
+      'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls. A forward item: tap each cell not yet right (the scene's `learnerWork`
+    // lists the right ones; Try again keeps them), type its product and Check, then type the sum and Submit. A wrong
+    // answer is the mode's signature error from `areaMiss`: the first open cell with its zeros dropped (or its parts
+    // added), the sum less one cell once every cell is right, the two sides added for a perimeter, the parts swapped.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const mode = ctx.data.challengeType, wrong = intent === 'wrong';
+      // An easier item (`~easier`) is rebuilt from its parent with the same builder.
+      const parent = areaPracticeParent(ctx.itemId, ctx.data.challenges ?? []);
+      const c: any = parent ? areaPracticeItem(parent, mode) : (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current area-model challenge');
+      const f1: number[] = c.factor1Parts, f2: number[] = c.factor2Parts;
+      const total = (p: number[]) => p.reduce((s, v) => s + v, 0);
+      const write = (label: string, text: number | string): DriverInput => ({ type: 'write', label, text: String(text) });
+      if (mode === 'perimeter') {
+        const w = total(f1), h = total(f2);
+        return [write('Perimeter', wrong ? w + h : 2 * (w + h)), { type: 'choose', label: 'Submit' }];
+      }
+      if (mode === 'factor') {
+        const swapFits = areaPartsFit(c, f2.map(String), f1.map(String));
+        const [top, left] = !wrong ? [f1, f2] : f1.length === f2.length && !swapFits ? [f2, f1] : [[f1[0] + 1, ...f1.slice(1)], f2];
+        return [...top.map((v, i) => write(`Column part ${i + 1}`, v)), ...left.map((v, i) => write(`Row part ${i + 1}`, v)),
+          { type: 'check' }];
+      }
+      if (mode !== 'build_model' && mode !== 'find_area' && mode !== 'multiply') throw new Error(`area-model: no driver for ${mode}`);
+      const right = new Set(Array.from(String(ctx.demand?.learnerWork ?? '').matchAll(/in row (\d+), column (\d+)/g), m => `${+m[1] - 1},${+m[2] - 1}`));
+      const open = f2.flatMap((_, r) => f1.map((_, k) => [r, k] as const)).filter(([r, k]) => !right.has(`${r},${k}`));
+      const cell = (r: number, k: number, value: number): DriverInput[] => [{ type: 'choose', label: `Cell row ${r + 1} column ${k + 1}` },
+        write('Cell product', value), { type: 'check' }];
+      const products = areaCellProducts(c);
+      if (wrong && open.length) {
+        const [r, k] = open[0], a = f1[k], b = f2[r], p = a * b;
+        return cell(r, k, p % 10 === 0 && p >= 10 && p / 10 !== a + b ? p / 10 : a + b !== p ? a + b : p + a);
+      }
+      const sum = total(f1) * total(f2);
+      return [...open.flatMap(([r, k]) => cell(r, k, products[r][k])),
+        write('Sum of the cell products', wrong ? sum - products[0][0] : sum), { type: 'choose', label: 'Submit Final Answer' }];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
@@ -2710,6 +2810,34 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return hundredsChartHarnessInputs(c, intent === 'wrong', ctx.data.gridMax ?? 100);
     },
     probes: { mounted: { selector: '[data-pip-object="chart"]' } },
+  },
+  'skip-counting-runner': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/SkipCountingRunner.tsx',
+    instanceId: 'skip',
+    defaults: { grade: 'Grade 2', mode: 'count_along', di: false, topic: 'Skip counting by 5s on a number line' },
+    leakTokens: ['ACTIVITY_START', 'JUMP_LANDING', 'JUMP_WRONG_TARGET', 'PREDICT_', 'FILL_', 'SKIP_VALUE_', 'MULTIPLY_',
+      'COUNT_COMPLETE', 'PHASE_TRANSITION', 'CHALLENGE_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: count_along taps each next tick (`tick-<n>`) then Check; the typed modes
+    // write the number into their box and Check (fill_missing one gap at a time). Try again keeps the landings and the
+    // gaps filled, so the row reads where the character stands (`at`) and what is filled from the scene facts.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const all = ctx.data.challenges ?? [];
+      const line = { skipValue: ctx.data.skipValue, startFrom: ctx.data.startFrom ?? 0, endAt: ctx.data.endAt,
+        direction: ctx.data.direction ?? 'forward' };
+      // The easier practice count (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = skipPracticeParent(ctx.itemId, all);
+      const practice = parent ? skipPracticeItem(parent, { challenges: all, line, showOptions: ctx.data.showOptions,
+        supportTier: ctx.data.supportTier }) : null;
+      const c = practice?.challenge ?? all.find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current skip-counting-runner challenge');
+      const at = Number(ctx.demand?.at);
+      const filled = String(ctx.demand?.filled ?? '').split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n) && String(ctx.demand?.filled ?? '').trim() !== '');
+      return skipHarnessInputs(c, practice?.line ?? line, intent === 'wrong', { at: Number.isFinite(at) ? at : undefined, filled });
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'math-fact-fluency': {
     execution: 'workspace',

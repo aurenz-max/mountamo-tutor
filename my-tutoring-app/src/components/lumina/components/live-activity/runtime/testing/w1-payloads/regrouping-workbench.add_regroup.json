@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/regrouping-workbench-runtime-add_regroup-payload-2026-10-09.json",
+ "primitiveId": "regrouping-workbench",
+ "evalMode": "add_regroup",
+ "data": {
+  "title": "Adding Two-Digit Numbers with Regrouping",
+  "description": "Learn how to carry the ten when the ones column adds up to 10 or more.",
+  "operation": "addition",
+  "operand1": 27,
+  "operand2": 45,
+  "maxPlace": "tens",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "add_regroup",
+    "problem": "27 + 45",
+    "requiresRegrouping": true,
+    "regroupCount": 1,
+    "hint": "Count your ones blocks. If you have 10 or more, trade 10 ones for 1 tens rod!",
+    "narration": "Whoa, 7 + 5 = 12! That's more than 9, so we need to regroup!"
+   },
+   {
+    "id": "c2",
+    "type": "add_regroup",
+    "problem": "38 + 24",
+    "requiresRegrouping": true,
+    "regroupCount": 1,
+    "hint": "Add the ones first. 8 + 4 gives you a new ten to carry over!",
+    "narration": "Let's add the ones column together. Remember to carry the extra ten!"
+   },
+   {
+    "id": "c3",
+    "type": "add_regroup",
+    "problem": "19 + 36",
+    "requiresRegrouping": true,
+    "regroupCount": 1,
+    "hint": "9 plus 6 makes 15. Write down the 5 and carry the 1 ten.",
+    "narration": "Another chance to practice carrying the ten. You've got this!"
+   }
+  ],
+  "showOptions": {
+   "showAlgorithm": true,
+   "showCarryBorrow": true,
+   "showPlaceColumns": true,
+   "animateRegrouping": true,
+   "stepByStepMode": true
+  },
+  "gradeBand": "1-2",
+  "decimalMode": false,
+  "initialState": {
+   "blocksPlaced": true,
+   "algorithmVisible": true
+  },
+  "regroupingSteps": [
+   {
+    "place": "ones",
+    "type": "carry",
+    "fromValue": 12,
+    "toValue": 2,
+    "narration": "We traded 10 ones cubes for 1 tens rod. Now we have 2 ones left and 1 new ten!"
+   }
+  ],
+  "wordProblemContext": {
+   "enabled": true,
+   "imagePrompt": "Friendly cartoon children collecting objects together in a bright classroom.",
+   "story": "Students are gathering school supplies and putting them together in boxes. Let's find the total amount by adding them up!"
+  }
+ }
+}

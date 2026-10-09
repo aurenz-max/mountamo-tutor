@@ -16,17 +16,19 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *    currentPosition is seeded from challenge.startPosition. The number input
  *    only renders while nextExpectedPosition !== null, so a startPosition whose
  *    next step overshoots endAt is UNANSWERABLE (a dead challenge).
- *  - fill_missing (checkFillMissing): correct ⇔ hiddenPositions.includes(answer)
- *    && !landingSpots.includes(answer). landingSpots always starts with
+ *  - fill_missing (skipMatches, skipCountingWorkspace.ts): each typed number must
+ *    be a hidden position not yet filled; the item is correct when the last
+ *    hidden position is filled (since 2026-10-09). landingSpots always starts with
  *    [startFrom], so a hidden position equal to startFrom can never be filled —
  *    unsolvable. Every hidden position must be a real sequence multiple.
  *  - find_skip_value (checkFindSkipValue): correct ⇔ answer === skipValue. The
  *    answer IS the skip value that defines the sequence, so there is nothing to
  *    re-derive independently — we validate structure/scope only (see below).
- *  - connect_multiplication (checkMultiplication): correct ⇔ enteredProduct ===
- *    jumpCount·skipValue + startFrom (=== startPosition), where jumpCount =
- *    (startPosition − startFrom)/skipValue. targetFact is display text the
- *    student reads, so its parsed product must equal that graded answer.
+ *  - connect_multiplication (skipMatches): correct ⇔ the typed number of jumps
+ *    === jumpCount = (startPosition − startFrom)/skipValue (since 2026-10-09:
+ *    the product is printed beside the box, so the jumps are the unknown).
+ *    targetFact must still be the true fact: multiplicand jumpCount, product
+ *    startPosition.
  *  - count_along: correct ⇔ the student walks the sequence to the end
  *    (nextExpectedPosition === null); no numeric key, structure/scope only.
  *
@@ -258,7 +260,7 @@ export const skipCountingRunnerOracle: ContentOracle = {
             });
             break;
           }
-          // Graded answer the student must enter (mirrors expectedProduct).
+          // The product the fact must reach (the learner types its multiplicand, jumpCount).
           const gradedAnswer = jumpCount * (skipValue as number) + startFrom;
           varietyAnswers.push(gradedAnswer);
           const tf = c.targetFact;
@@ -277,7 +279,7 @@ export const skipCountingRunnerOracle: ContentOracle = {
                 violations.push({ check: 'answer-key-desync', where, detail: `targetFact multiplicand ${parsed.a} ≠ true jump count ${jumpCount} (from ${startFrom} to ${startPosition} by ${skipValue}s)` });
               }
               if (parsed.c !== gradedAnswer) {
-                violations.push({ check: 'answer-key-desync', where, detail: `targetFact product ${parsed.c} ≠ graded answer ${gradedAnswer} — the student is told to enter a value the component marks wrong` });
+                violations.push({ check: 'answer-key-desync', where, detail: `targetFact product ${parsed.c} ≠ graded answer ${gradedAnswer} — the fact contradicts the line` });
               }
             }
           }

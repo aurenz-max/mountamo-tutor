@@ -1,0 +1,78 @@
+{
+ "source": "qa/tutor-reports/area-model-runtime-perimeter-payload-2026-10-09.json",
+ "primitiveId": "area-model",
+ "evalMode": "perimeter",
+ "data": {
+  "title": "Perimeter Practice with Rectangles",
+  "description": "Explore how to find the total distance around rectangles by adding their side lengths together. Practice using rectangle models to strengthen your perimeter problem-solving skills!",
+  "challenges": [
+   {
+    "id": "area-model-1",
+    "factor1Parts": [
+     13
+    ],
+    "factor2Parts": [
+     14
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-2",
+    "factor1Parts": [
+     14
+    ],
+    "factor2Parts": [
+     25
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-3",
+    "factor1Parts": [
+     16
+    ],
+    "factor2Parts": [
+     7
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-4",
+    "factor1Parts": [
+     23
+    ],
+    "factor2Parts": [
+     19
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-5",
+    "factor1Parts": [
+     14
+    ],
+    "factor2Parts": [
+     5
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   }
+  ],
+  "challengeType": "perimeter",
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

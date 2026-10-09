@@ -1,13 +1,24 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import {
   usePrimitiveEvaluation,
   type AreaModelMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  areaCheckCorrect, areaMiss, describeAreaCheck, workspaceAssignmentFor, workspaceScene, type AreaCheck, type AreaView,
+} from './areaModelWorkspace';
+import {
+  ALL_SIDES_LEVER, CELL_DOTS_LEVER, CELL_LABELS_LEVER, PRACTICE_NOTE, SHARED_PARTS_LEVER, SIDE_SUM_LEVER, STACK_LEVER,
+  START_CELL_LEVER, TENS_SPLIT_LEVER, areaModelLevers, leverFacts, practiceItem, tensSplits,
+} from './areaModelLevers';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import {
@@ -114,6 +125,10 @@ export interface AreaModelData {
 interface AreaModelProps {
   data: AreaModelData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 interface CellState {
@@ -135,6 +150,10 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   multiply:    { label: 'Multiply',    icon: '✖️', accentColor: 'purple' },
   factor:      { label: 'Factor',      icon: '🔍', accentColor: 'pink' },
 };
+
+/** `shared_parts` lever: one colour per column part and per row part, matching its cells. */
+const COLUMN_COLOURS = ['#38bdf8', '#f472b6', '#a3e635', '#fb923c'];
+const ROW_COLOURS = ['#facc15', '#c084fc', '#2dd4bf', '#f87171'];
 
 /** Per-challenge score: 100 first try, then -20 per extra attempt, floored at 20. */
 function phaseScore(attempts: number): number {
@@ -181,7 +200,9 @@ function tutorRevealPolicy(
 // Component
 // ============================================================================
 
-const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
+const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  AreaModelProps & { tutorOwned: boolean; useController: (options: ProgressOptions<AreaModelChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -200,29 +221,54 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
   const stableInstanceIdRef = useRef(instanceId || `area-model-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress ─────────────────────────────────────────
-  const {
-    currentIndex,
-    results,
-    isComplete,
-    recordResult,
-    advance,
-  } = useChallengeProgress<AreaModelChallenge>({
+  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
     challenges,
     getChallengeId: (c) => c.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignmentFor(sessionChallengeType),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
   });
+  const { currentIndex, results, isComplete, mergeResult, advance } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  // The activity's own check is the workspace's checked gesture. A ref, so the memoized callbacks read the latest.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
 
-  const currentChallenge = challenges[currentIndex] ?? null;
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  // In-item levers (`areaModelLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<AreaModelChallenge | null>(null);
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice item. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   const factor1Parts = currentChallenge?.factor1Parts ?? [10, 2];
   const factor2Parts = currentChallenge?.factor2Parts ?? [10, 3];
   const showPartialProducts = currentChallenge?.showPartialProducts ?? true;
   const showDimensions = currentChallenge?.showDimensions ?? true;
   const algebraicMode = currentChallenge?.algebraicMode ?? false;
-  const highlightCell = currentChallenge?.highlightCell ?? null;
   const labels = currentChallenge?.labels;
-  // Support-tier levers (default true = max scaffolding when unset).
-  const showCellEquations = currentChallenge?.showCellEquations ?? true;
-  const showPerimeterExpansion = currentChallenge?.showPerimeterExpansion ?? true;
+  // Support-tier starting positions (default true = max scaffolding when unset); a runtime lever turns one on.
+  const tierCellEquations = currentChallenge?.showCellEquations ?? true;
+  const tierPerimeterExpansion = currentChallenge?.showPerimeterExpansion ?? true;
+  const showCellEquations = tierCellEquations || leverOn(CELL_LABELS_LEVER);
+  const showPerimeterExpansion = tierPerimeterExpansion || leverOn(SIDE_SUM_LEVER);
+  const highlightCell: [number, number] | null = currentChallenge?.highlightCell ?? (leverOn(START_CELL_LEVER) ? [0, 0] : null);
+  const showTensSplit = leverOn(TENS_SPLIT_LEVER);
+  const showCellDots = leverOn(CELL_DOTS_LEVER);
+  const showStack = leverOn(STACK_LEVER);
+  const showAllSides = leverOn(ALL_SIDES_LEVER);
+  const showSharedParts = leverOn(SHARED_PARTS_LEVER);
 
   const isFactorMode = sessionChallengeType === 'factor';
   const isPerimeterMode = sessionChallengeType === 'perimeter';
@@ -244,6 +290,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     }
     return products;
   }, [factor1Parts, factor2Parts]);
+
+  /** `tens_split` lever: each tens cell's parts split into a one-digit fact and its tens, leak-checked. */
+  const splits = useMemo(() => (currentChallenge ? tensSplits(currentChallenge) : {}), [currentChallenge]);
 
   // ── Per-challenge interaction state (resets on advance) ────────
   // Forward mode (build_model / find_area / multiply)
@@ -271,21 +320,23 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
   // Shared per-challenge
   const [challengeHintCount, setChallengeHintCount] = useState(0);
   const [challengeDone, setChallengeDone] = useState(false);
+  /** A wrong check still on screen, in the learner's terms (workspace scene), until Try again or the next check. */
+  const [lastWrong, setLastWrong] = useState<string | null>(null);
 
   const recordedRef = useRef(false);
   const sessionCompleteFiredRef = useRef(false);
   // Every checked entry, including tries later corrected. Evidence only; grading is unchanged.
   const responsesRef = useRef<AreaModelResponse[]>([]);
   const recordResponse = (entry: Omit<AreaModelResponse, 'challengeId' | 'factor1Parts' | 'factor2Parts' | 'hintsBefore'>) => {
-    if (!currentChallenge) return;
+    // An easier practice item is ungraded: it is not evidence about the session's items.
+    if (!currentChallenge || practice) return;
     responsesRef.current.push({ challengeId: currentChallenge.id, factor1Parts: [...factor1Parts], factor2Parts: [...factor2Parts],
       hintsBefore: challengeHintCount, ...entry });
   };
 
   // ── Reset every per-challenge slot when the active challenge changes ──
   // PRD §6c: missing any slot leaks state from challenge N into challenge N+1.
-  useEffect(() => {
-    if (!currentChallenge) return;
+  const resetWork = (challenge: AreaModelChallenge) => {
     setCellStates(new Map());
     setSelectedCell(null);
     setCurrentInput('');
@@ -293,19 +344,51 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     setSumAttempted(false);
     setSumCorrect(null);
     setSumAttempts(0);
-    setFactorTopInputs(currentChallenge.factor1Parts.map(() => ''));
-    setFactorLeftInputs(currentChallenge.factor2Parts.map(() => ''));
+    setFactorTopInputs(challenge.factor1Parts.map(() => ''));
+    setFactorLeftInputs(challenge.factor2Parts.map(() => ''));
     setFactorChecked(false);
-    setFactorTopCorrect(currentChallenge.factor1Parts.map(() => null));
-    setFactorLeftCorrect(currentChallenge.factor2Parts.map(() => null));
+    setFactorTopCorrect(challenge.factor1Parts.map(() => null));
+    setFactorLeftCorrect(challenge.factor2Parts.map(() => null));
     setFactorAttempts(0);
     setPerimeterInput('');
     setPerimeterAttempts(0);
     setPerimeterCorrect(null);
     setChallengeHintCount(0);
     setChallengeDone(false);
+    setLastWrong(null);
     recordedRef.current = false;
-  }, [currentChallenge?.id]);
+  };
+  useEffect(() => {
+    if (currentChallenge) resetWork(currentChallenge);
+  }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Workspace Try again: the wrong entry comes off the screen and the right work stays (right cells, right parts).
+   * The attempt counters stay the item's.
+   */
+  const clearWrong = () => {
+    setCellStates(prev => new Map(Array.from(prev).filter(([, s]) => s.isCorrect)));
+    setSelectedCell(null);
+    setCurrentInput('');
+    setSumInput('');
+    setSumAttempted(false);
+    setSumCorrect(null);
+    setPerimeterInput('');
+    setPerimeterCorrect(null);
+    setFactorTopInputs(prev => prev.map((v, i) => (factorTopCorrect[i] === true ? v : '')));
+    setFactorLeftInputs(prev => prev.map((v, i) => (factorLeftCorrect[i] === true ? v : '')));
+    setFactorChecked(false);
+    setFactorTopCorrect(factor1Parts.map(() => null));
+    setFactorLeftCorrect(factor2Parts.map(() => null));
+    setLastWrong(null);
+  };
+  // A fresh item opens blank; Try again clears only the wrong entry.
+  openItem.current = (index, retry) => {
+    const opened = challenges[index];
+    // Try again on a practice item keeps it; a fresh item (or the full item back after practice) drops it.
+    if (retry) clearWrong();
+    else { setPractice(null); if (opened) resetWork(opened); }
+  };
 
   // ── Evaluation hook ────────────────────────────────────────────
   const {
@@ -356,12 +439,17 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     factor1Parts, factor2Parts, factor1Total, factor2Total, algebraicMode, supportTier,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // The legacy context carries the factors and totals; on the workspace path the tutor reads the scene instead.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'area-model',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this challenge's check state, the tutor's speech on it, and
@@ -410,13 +498,17 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
       score: number,
       attempts: number,
       extras: Record<string, unknown> = {},
+      response = '',
     ) => {
       if (!currentChallenge) return;
       if (recordedRef.current) return;
       if (!stateMatchesChallenge(currentChallenge)) return;
       recordedRef.current = true;
       setChallengeDone(true);
-      recordResult({
+      // The checked gesture (counts the attempt, records the base result), then this primitive's own fields.
+      commitCheck.current(response, correct);
+      if (practice) return;
+      mergeResult({
         challengeId: currentChallenge.id,
         correct,
         attempts,
@@ -432,7 +524,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
       );
     },
     [
-      currentChallenge, stateMatchesChallenge, recordResult, challengeHintCount,
+      currentChallenge, stateMatchesChallenge, mergeResult, challengeHintCount, practice,
       sendText, currentIndex, challenges.length, sessionChallengeType,
     ],
   );
@@ -466,7 +558,8 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
       averageAttemptsPerChallenge,
     };
 
-    if (!hasSubmittedEvaluation) {
+    // The workspace path submits the scored session from `onFinished` (below), not this tally.
+    if (!hasSubmittedEvaluation && !tutorOwned) {
       const goalMet = correctCount === challenges.length;
       submitEvaluation(goalMet, overallAccuracy, metrics, {
         studentWork: {
@@ -496,8 +589,38 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     );
   }, [
     isComplete, results, challenges, sessionChallengeType, supportTier,
-    submitEvaluation, hasSubmittedEvaluation, sendText,
+    submitEvaluation, hasSubmittedEvaluation, sendText, tutorOwned,
   ]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session (item scores count corrections).
+  // The evidence is this primitive's own per-entry record, right cells included, with each wrong entry's named miss;
+  // its first-response score is the session's, so an item worked with a lever pulled is not read as first try.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || challenges.length === 0) return;
+    const metrics: AreaModelMetrics = {
+      type: 'area-model',
+      challengeType: sessionChallengeType,
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: results.filter((r) => Number(r.hintsUsed ?? 0) > 0).length,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
+    };
+    const own = areaModelDiagnosisEvidence(challenges.map((c) => c.id), responsesRef.current, sessionChallengeType, supportTier);
+    submitEvaluation(result.passed, result.accuracy, metrics, {
+      studentWork: {
+        challengeCount: challenges.length,
+        challengeType: sessionChallengeType,
+        pairs: challenges.map((c) => ({ factor1: c.factor1Parts, factor2: c.factor2Parts })),
+        responses: responsesRef.current.map(({ challengeId, step, cell, expected, entered, attempt, miss }) =>
+          ({ challengeId, step, cell, expected, entered, attempt, miss })),
+      },
+      challengeResults: result.outcomes, learningResponses: result.learningResponses,
+      teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance,
+    }, undefined, own ? { ...own, firstResponseScore: result.diagnosisEvidence.firstResponseScore } : result.diagnosisEvidence);
+  };
 
   // ── Helpers ────────────────────────────────────────────────────
   const getCellKey = (row: number, col: number): string => `${row},${col}`;
@@ -516,7 +639,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
 
   // ── Forward-mode handlers (build_model / find_area / multiply) ──
   const handleCellClick = (row: number, col: number) => {
-    if (challengeDone || isFactorMode || isPerimeterMode) return;
+    if (challengeDone || isFactorMode || isPerimeterMode || learnerBlocked()) return;
     const cellState = getCellState(row, col);
     if (cellState?.isCorrect) return;
     SoundManager.tap();
@@ -524,13 +647,22 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     setCurrentInput(cellState?.studentAnswer || '');
   };
 
+  /** A wrong entry is a checked miss: it reaches the tutor and closes the item until Try again. */
+  const commitWrong = (check: AreaCheck, labelled: boolean) => {
+    if (!currentChallenge) return;
+    const response = describeAreaCheck(currentChallenge, check, labelled);
+    setLastWrong(response);
+    commitCheck.current(response, false, areaMiss(currentChallenge, check));
+  };
+
+  // A right cell is kept and is not a commit: the item's answer is the whole model. A wrong cell commits.
   const handleCellSubmit = () => {
-    if (!selectedCell || challengeDone) return;
+    if (!selectedCell || challengeDone || !currentChallenge || learnerBlocked()) return;
     const [row, col] = selectedCell;
     const cellKey = getCellKey(row, col);
     const correctAnswer = factor1Parts[col] * factor2Parts[row];
-    const studentAnswerNum = parseInt(currentInput, 10);
-    const isCorrect = studentAnswerNum === correctAnswer;
+    const check: AreaCheck = { step: 'cell', row, col, entered: currentInput };
+    const isCorrect = areaCheckCorrect(currentChallenge, check);
 
     const existingState = getCellState(row, col);
     const newState: CellState = {
@@ -545,14 +677,16 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     next.set(cellKey, newState);
     setCellStates(next);
     recordResponse({ step: 'cell', attempt: newState.attempts, cell: [row, col], expected: String(correctAnswer),
-      entered: currentInput, correct: isCorrect, scaffoldShown: showCellEquations });
+      entered: currentInput, correct: isCorrect, scaffoldShown: showCellEquations, miss: areaMiss(currentChallenge, check) });
 
     if (isCorrect) {
       SoundManager.playCorrect();
       setSelectedCell(null);
       setCurrentInput('');
+      setLastWrong(null);
     } else {
       SoundManager.playIncorrect();
+      commitWrong(check, showCellEquations);
       sendText(
         `[CELL_INCORRECT] Student entered "${currentInput}" for the cell ${formatCellEquation(row, col)} `
         + `(attempt ${newState.attempts}). Give a brief hint about this one cell without giving the product.`
@@ -563,22 +697,23 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
   };
 
   const handleSumSubmit = () => {
-    if (challengeDone || !currentChallenge) return;
+    if (challengeDone || !currentChallenge || learnerBlocked()) return;
     if (!sumInput) return;
 
-    const studentSumNum = parseInt(sumInput, 10);
+    const check: AreaCheck = { step: 'sum', entered: sumInput };
     const correctSum = totalProduct;
-    const isCorrect = studentSumNum === correctSum;
+    const isCorrect = areaCheckCorrect(currentChallenge, check);
 
     const nextSumAttempts = sumAttempts + 1;
     setSumAttempts(nextSumAttempts);
     setSumAttempted(true);
     setSumCorrect(isCorrect);
     recordResponse({ step: 'sum', attempt: nextSumAttempts, expected: String(correctSum), entered: sumInput,
-      correct: isCorrect, scaffoldShown: true });
+      correct: isCorrect, scaffoldShown: true, miss: areaMiss(currentChallenge, check) });
 
     if (!isCorrect) {
       SoundManager.playIncorrect();
+      commitWrong(check, showCellEquations);
       sendText(
         `[SUM_INCORRECT] Student summed the partial products to "${sumInput}" but that is wrong `
         + `(attempt ${nextSumAttempts}). All cell products are already correct. `
@@ -612,25 +747,26 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     completeCurrentChallenge(true, isPerfect ? 100 : score, cellAttempts + nextSumAttempts, {
       cellAttempts,
       sumAttempts: nextSumAttempts,
-    });
+    }, describeAreaCheck(currentChallenge, check, showCellEquations));
   };
 
   // ── Perimeter handler ──────────────────────────────────────────
   const handlePerimeterSubmit = () => {
-    if (challengeDone || !currentChallenge) return;
+    if (challengeDone || !currentChallenge || learnerBlocked()) return;
     if (!perimeterInput) return;
 
-    const studentPerimeter = parseInt(perimeterInput, 10);
-    const isCorrect = studentPerimeter === totalPerimeter;
+    const check: AreaCheck = { step: 'perimeter', entered: perimeterInput };
+    const isCorrect = areaCheckCorrect(currentChallenge, check);
     const nextAttempts = perimeterAttempts + 1;
 
     setPerimeterCorrect(isCorrect);
     setPerimeterAttempts(nextAttempts);
     recordResponse({ step: 'perimeter', attempt: nextAttempts, expected: String(totalPerimeter), entered: perimeterInput,
-      correct: isCorrect, scaffoldShown: showPerimeterExpansion });
+      correct: isCorrect, scaffoldShown: showPerimeterExpansion, miss: areaMiss(currentChallenge, check) });
 
     if (!isCorrect) {
       SoundManager.playIncorrect();
+      commitWrong(check, false);
       sendText(
         `[PERIMETER_INCORRECT] Student answered "${perimeterInput}" for the perimeter of a `
         + `${factor1Total} × ${factor2Total} rectangle (attempt ${nextAttempts}). `
@@ -645,11 +781,12 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     const score = phaseScore(nextAttempts);
     completeCurrentChallenge(true, score, nextAttempts, {
       perimeterAttempts: nextAttempts,
-    });
+    }, describeAreaCheck(currentChallenge, check, false));
   };
 
   // ── Factor handlers ────────────────────────────────────────────
   const handleFactorTopChange = (index: number, value: string) => {
+    if (learnerBlocked()) return;
     const next = [...factorTopInputs];
     next[index] = value;
     setFactorTopInputs(next);
@@ -661,6 +798,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
   };
 
   const handleFactorLeftChange = (index: number, value: string) => {
+    if (learnerBlocked()) return;
     const next = [...factorLeftInputs];
     next[index] = value;
     setFactorLeftInputs(next);
@@ -672,25 +810,25 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
   };
 
   const handleFactorCheck = () => {
-    if (challengeDone || !currentChallenge) return;
+    if (challengeDone || !currentChallenge || learnerBlocked()) return;
     const nextAttempts = factorAttempts + 1;
     setFactorAttempts(nextAttempts);
 
+    const check: AreaCheck = { step: 'dimensions', top: factorTopInputs, left: factorLeftInputs };
+    // Any parts that make every cell are right, not only the generator's split.
+    const allCorrect = areaCheckCorrect(currentChallenge, check);
     const topNums = factorTopInputs.map((v) => parseInt(v, 10));
     const leftNums = factorLeftInputs.map((v) => parseInt(v, 10));
-
-    const topResults = topNums.map((n, i) => n === factor1Parts[i]);
-    const leftResults = leftNums.map((n, i) => n === factor2Parts[i]);
-    setFactorTopCorrect(topResults);
-    setFactorLeftCorrect(leftResults);
+    setFactorTopCorrect(allCorrect ? topNums.map(() => true) : topNums.map((n, i) => n === factor1Parts[i]));
+    setFactorLeftCorrect(allCorrect ? leftNums.map(() => true) : leftNums.map((n, i) => n === factor2Parts[i]));
     setFactorChecked(true);
 
-    const allCorrect = topResults.every(Boolean) && leftResults.every(Boolean);
     recordResponse({ step: 'dimensions', attempt: nextAttempts, correct: allCorrect, scaffoldShown: highlightCell !== null,
       expected: `columns ${factor1Parts.join(', ')}; rows ${factor2Parts.join(', ')}`,
-      entered: `columns ${factorTopInputs.join(', ')}; rows ${factorLeftInputs.join(', ')}` });
+      entered: `columns ${factorTopInputs.join(', ')}; rows ${factorLeftInputs.join(', ')}`, miss: areaMiss(currentChallenge, check) });
     if (!allCorrect) {
       SoundManager.playIncorrect();
+      commitWrong(check, false);
       sendText(
         `[FACTOR_INCORRECT] Student's dimension guesses are wrong (attempt ${nextAttempts}). `
         + `They entered top: [${factorTopInputs.join(', ')}], left: [${factorLeftInputs.join(', ')}]. `
@@ -705,7 +843,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     const score = phaseScore(nextAttempts);
     completeCurrentChallenge(true, score, nextAttempts, {
       factorAttempts: nextAttempts,
-    });
+    }, describeAreaCheck(currentChallenge, check, false));
   };
 
   // ── Hints (per-challenge counter) ──────────────────────────────
@@ -802,6 +940,47 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     factorTopCorrect.every((v) => v === true) &&
     factorLeftCorrect.every((v) => v === true);
   const hasNextChallenge = currentIndex + 1 < challenges.length;
+  /** Workspace path: the learner's input is closed while a checked answer waits for Try again. */
+  const closed = tutorOwned && progress.canAttempt === false;
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  const areaView: AreaView = {
+    cells: Object.fromEntries(Array.from(cellStates, ([key, s]) => [key, { entered: s.studentAnswer, correct: !!s.isCorrect }])),
+    sumInput, perimeterInput, factorTop: factorTopInputs, factorLeft: factorLeftInputs,
+    cellsLabelled: showCellEquations, sideSumShown: showPerimeterExpansion, lastWrong,
+  };
+  // Every mode declares its levers; a tier aid already on screen counts as pulled.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, sessionChallengeType, areaView);
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, sessionChallengeType);
+    const levers = practice ? [] : areaModelLevers(sessionChallenge, pulledLevers, { mode: sessionChallengeType,
+      cellsLabelled: tierCellEquations, sideSumShown: tierPerimeterExpansion, startCellShown: !!sessionChallenge.highlightCell });
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        if (id === STACK_LEVER && !allCellsComplete())
+          return 'The products stand in a column only once every cell is right; first help with the cell, with another lever.';
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge, sessionChallengeType);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          // The practice item and the full item share no work: both start blank.
+          setLeverState(pulled); resetWork(easier); setPractice(easier);
+          return { practice: workspaceAssignmentFor(sessionChallengeType)(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { resetWork(sessionChallenge); setPractice(null); },
+    };
+  });
 
   // ── Empty state ────────────────────────────────────────────────
   if (challenges.length === 0) {
@@ -867,6 +1046,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
 
         <LuminaCardHeader className="relative z-10 text-center">
           <LuminaCardTitle className="text-xl">{title}</LuminaCardTitle>
+          {practice ? <div className="text-center text-xs text-amber-300" data-practice>Practice</div> : null}
           <LuminaCardDescription className="text-slate-300">{description}</LuminaCardDescription>
         </LuminaCardHeader>
 
@@ -926,7 +1106,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                   {factor1Total} × {factor2Total}
                 </span>
               </div>
-              {perimeterAttempts > 0 && (
+              {perimeterAttempts > 0 && !tutorOwned && (
                 <div className="text-xs text-slate-500 mt-1">
                   Attempts: {perimeterAttempts}
                 </div>
@@ -945,7 +1125,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                   Total area = {totalProduct}
                 </span>
               </div>
-              {factorAttempts > 0 && (
+              {factorAttempts > 0 && !tutorOwned && (
                 <div className="text-xs text-slate-500 mt-1">
                   Attempts: {factorAttempts}
                 </div>
@@ -1021,7 +1201,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                         inputMode="numeric"
                         value={factorTopInputs[index] ?? ''}
                         onChange={(e) => handleFactorTopChange(index, e.target.value)}
-                        disabled={challengeDone || factorAllCorrect}
+                        disabled={challengeDone || factorAllCorrect || closed}
+                        aria-label={`Column part ${index + 1}`}
+                        style={showSharedParts ? { boxShadow: `0 0 0 3px ${COLUMN_COLOURS[index % COLUMN_COLOURS.length]}` } : undefined}
                         className={`w-16 px-2 py-1 text-center font-mono font-bold text-sm bg-slate-700/80 text-blue-300 ${getFactorInputStyle(factorTopCorrect[index] ?? null)}`}
                         placeholder="?"
                       />
@@ -1057,7 +1239,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                           inputMode="numeric"
                           value={factorLeftInputs[index] ?? ''}
                           onChange={(e) => handleFactorLeftChange(index, e.target.value)}
-                          disabled={challengeDone || factorAllCorrect}
+                          disabled={challengeDone || factorAllCorrect || closed}
+                          aria-label={`Row part ${index + 1}`}
+                          style={showSharedParts ? { boxShadow: `0 0 0 3px ${ROW_COLOURS[index % ROW_COLOURS.length]}` } : undefined}
                           className={`w-16 px-2 py-1 text-center font-mono font-bold text-sm bg-slate-700/80 text-purple-300 ${getFactorInputStyle(factorLeftCorrect[index] ?? null)}`}
                           placeholder="?"
                         />
@@ -1093,9 +1277,12 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                         selectedCell[0] === rowIndex &&
                         selectedCell[1] === colIndex;
 
+                      const forwardCell = !isFactorMode && !isPerimeterMode;
+                      const CellTag = forwardCell ? 'button' : 'div';
                       return (
-                        <div
+                        <CellTag
                           key={`cell-${rowIndex}-${colIndex}`}
+                          {...(forwardCell ? { type: 'button' as const, 'aria-label': `Cell row ${rowIndex + 1} column ${colIndex + 1}` } : {})}
                           className={`
                             border-2 rounded-lg flex flex-col items-center justify-center p-4
                             transition-all duration-300
@@ -1106,6 +1293,10 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                           style={{
                             minHeight: `${cellHeightForPart(factor2Parts[rowIndex])}px`,
                             minWidth: `${cellWidthForPart(factor1Parts[colIndex])}px`,
+                            ...(isFactorMode && showSharedParts ? {
+                              borderTopColor: COLUMN_COLOURS[colIndex % COLUMN_COLOURS.length], borderTopWidth: 5,
+                              borderLeftColor: ROW_COLOURS[rowIndex % ROW_COLOURS.length], borderLeftWidth: 5,
+                            } : {}),
                           }}
                           onClick={() => handleCellClick(rowIndex, colIndex)}
                         >
@@ -1120,6 +1311,22 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                               {showCellEquations && (
                                 <div className="text-xs text-slate-400 mb-2">
                                   {formatCellEquation(rowIndex, colIndex)}
+                                </div>
+                              )}
+                              {showTensSplit && splits[`${rowIndex},${colIndex}`] && (
+                                <div className="text-xs text-amber-300 mb-2 font-mono" data-lever="tens_split">
+                                  {splits[`${rowIndex},${colIndex}`]}
+                                </div>
+                              )}
+                              {showCellDots && factor2Parts[rowIndex] <= 10 && factor1Parts[colIndex] <= 10 && (
+                                <div className="flex flex-col gap-0.5 mb-2" data-lever="cell_dots" aria-hidden="true">
+                                  {Array.from({ length: factor2Parts[rowIndex] }, (_, r) => (
+                                    <div key={r} className="flex gap-0.5">
+                                      {Array.from({ length: factor1Parts[colIndex] }, (_, k) => (
+                                        <span key={k} className="block w-1.5 h-1.5 rounded-full bg-sky-300/80" />
+                                      ))}
+                                    </div>
+                                  ))}
                                 </div>
                               )}
 
@@ -1146,12 +1353,22 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                               )}
                             </>
                           )}
-                        </div>
+                        </CellTag>
                       );
                     }),
                   )}
                 </div>
+                {isPerimeterMode && showAllSides && (
+                  <div className="flex items-center ml-2 text-purple-300 font-mono font-bold text-sm" data-lever="all_sides">
+                    {factor2Total}
+                  </div>
+                )}
               </div>
+              {isPerimeterMode && showAllSides && (
+                <div className="flex justify-center mt-2 ml-16 text-blue-300 font-mono font-bold text-sm" data-lever="all_sides">
+                  {factor1Total}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1176,18 +1393,19 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                       type="number"
                       inputMode="numeric"
                       value={currentInput}
-                      onChange={(e) => setCurrentInput(e.target.value)}
+                      onChange={(e) => { if (!learnerBlocked()) setCurrentInput(e.target.value); }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleCellSubmit();
                       }}
                       className="flex-1 font-mono"
                       placeholder="Enter answer"
-                      disabled={challengeDone}
+                      aria-label="Cell product"
+                      disabled={challengeDone || closed}
                     />
                     <LuminaButton
                       tone="primary"
                       onClick={handleCellSubmit}
-                      disabled={!currentInput || challengeDone}
+                      disabled={!currentInput || challengeDone || closed}
                     >
                       Check
                     </LuminaButton>
@@ -1212,6 +1430,15 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                     .map((s) => s.studentAnswer)
                     .join(' + ')}
                 </div>
+                {showStack && (
+                  <div className="flex justify-center" data-lever="stack_products">
+                    <div className="inline-flex flex-col items-end font-mono text-lg text-slate-200 border-b-2 border-slate-400 pb-1 px-3">
+                      {Array.from(cellStates.values()).filter((s) => s.isCorrect).map((s, i, all) => (
+                        <div key={`${s.row},${s.col}`}>{i === all.length - 1 ? '+ ' : ''}{s.studentAnswer}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm text-slate-300 mb-2">
                     What is the sum of all partial products?
@@ -1221,17 +1448,19 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                       type="number"
                       inputMode="numeric"
                       value={sumInput}
-                      onChange={(e) => setSumInput(e.target.value)}
+                      onChange={(e) => { if (!learnerBlocked()) setSumInput(e.target.value); }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleSumSubmit();
                       }}
                       className="flex-1 font-mono"
                       placeholder="Enter sum"
+                      aria-label="Sum of the cell products"
+                      disabled={closed}
                     />
                     <LuminaButton
                       tone="primary"
                       onClick={handleSumSubmit}
-                      disabled={!sumInput || challengeDone}
+                      disabled={!sumInput || challengeDone || closed}
                     >
                       Submit Final Answer
                     </LuminaButton>
@@ -1274,6 +1503,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                       inputMode="numeric"
                       value={perimeterInput}
                       onChange={(e) => {
+                        if (learnerBlocked()) return;
                         setPerimeterInput(e.target.value);
                         if (perimeterCorrect !== null) setPerimeterCorrect(null);
                       }}
@@ -1288,12 +1518,13 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                             : ''
                       }`}
                       placeholder="Enter perimeter"
-                      disabled={challengeDone}
+                      aria-label="Perimeter"
+                      disabled={challengeDone || closed}
                     />
                     <LuminaButton
                       tone="primary"
                       onClick={handlePerimeterSubmit}
-                      disabled={!perimeterInput || challengeDone}
+                      disabled={!perimeterInput || challengeDone || closed}
                     >
                       Submit
                     </LuminaButton>
@@ -1314,7 +1545,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
               <LuminaButton
                 tone="primary"
                 onClick={handleFactorCheck}
-                disabled={!allFactorInputsFilled}
+                disabled={!allFactorInputsFilled || closed}
                 className="px-8 py-3 text-lg"
               >
                 Check My Factors
@@ -1359,7 +1590,7 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
                   </p>
                 )}
               </LuminaFeedbackCard>
-              {hasNextChallenge ? (
+              {tutorOwned ? null : hasNextChallenge ? (
                 <div className="flex justify-end">
                   <LuminaActionButton action="next" onClick={handleNextChallenge}>
                     Next Problem →
@@ -1450,5 +1681,9 @@ const AreaModel: React.FC<AreaModelProps> = ({ data, className }) => {
     </div>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const AreaModel = withWorkspaceController<AreaModelProps, ProgressOptions<AreaModelChallenge>, Progress>(
+  'area-model', AreaModelSurface, useScriptedProgress, useWorkspaceProgressFor('area-model'));
 
 export default AreaModel;

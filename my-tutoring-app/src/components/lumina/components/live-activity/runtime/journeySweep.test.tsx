@@ -551,6 +551,9 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
       .flatMap(el => [el.textContent ?? '', el.getAttribute('aria-label') ?? ''])
       .map(t => t.trim().toLowerCase()).filter(t => t && t.length <= 40)));
     // A gesture key no input names (a fraction build's slice count): the challenge's own answer fields.
+    // A row whose inputs type the answer in parts (one digit per place box) names the whole answer instead: a part
+    // that is also an operand's digit is read with the problem ("7 plus 5" over 27 + 45 = 72, regrouping replay 10-09).
+    if (row.replayKeys) record.keys = row.replayKeys(context()).filter(k => !forms(k).some(f => occurrences(record.ask, f)));
     if (!record.keys.length) for (const [field, value] of Object.entries(context().challenge ?? {}))
       if (/target|answer|correct|numerator/i.test(field) && typeof value === 'number') record.keys.push(String(value));
     if (LADDER === 'second_wrong' && wrong.length && answer(wrong, 'miss') && task().itemId === item) {
@@ -588,7 +591,7 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
     const responses = h.state().task?.workspace?.attempts.filter(a => a.itemId === item) ?? [];
     const numbers = (text?: string) => text?.match(/\d+(?:\.\d+)?/g) ?? [];
     const wrongNumbers = new Set(responses.filter(a => !a.correct).flatMap(a => numbers(a.response)));
-    for (const n of numbers(responses.find(a => a.correct)?.response))
+    if (!row.replayKeys) for (const n of numbers(responses.find(a => a.correct)?.response))
       if (!wrongNumbers.has(n) && !occurrences(record.ask, n) && !record.keys.includes(n)) record.keys.push(n);
   } catch (e) {
     record.stopped = (e as Error).message;

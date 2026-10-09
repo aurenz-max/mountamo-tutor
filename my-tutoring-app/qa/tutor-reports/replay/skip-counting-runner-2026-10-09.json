@@ -1,0 +1,3018 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    1,
+    25
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    25
+   ],
+   "no_protocol_leak": [
+    0,
+    25
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    25
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "skip-counting-runner.connect_multiplication",
+   "primitiveId": "skip-counting-runner",
+   "evalMode": "connect_multiplication",
+   "keys": [
+    "1"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "The rocket jumped from 0 to 10. How many jumps of 10 did it make? Finish the multiplication fact.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "\ud83d\ude80\u00d7 10 = 10",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The rocket jumped from 0 to 10. Type how many jumps it took to complete the number sentence, and press Check!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The rocket started at 0 and landed at 10. Type how many jumps of 10 it made to get there, then press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the rocket landed on the number line. How many jumps did it take to get from 0 to 10?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the rocket started and where it landed. How many jumps did it take to get to 10?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The rocket hopped from 0 to 10. Type how many jumps of 10 it made to finish the multiplication fact, then press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 2 for the number of jumps\". The board checked it: not right.",
+     "miss": "counted_start",
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "The rocket jumped from 0 to 10. How many jumps of 10 did it make? Finish the multiplication fact.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "\ud83d\ude80\u00d7 10 = 10",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the jump arc that appeared on the line from 0 to 10. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_marks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the jump arc drawn on the line. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "jump_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the colored jump arc showing the path from 0 to 10. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "jump_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the number line now\u2014each jump is shown as its own curved arc from start to finish. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_marks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I added the jump arc on the number line so you can see each leap from zero. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_marks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "The rocket jumped from 0 to 10. How many jumps of 10 did it make? Finish the multiplication fact.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "\ud83d\ude80\u00d7 10 = 10",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "",
+       "before": "",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "jump_marks"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "array_rows",
+          "actionId": "test/3/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_marks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "See that arc showing the rocket's leap from 0 straight to 10? How many jump curved lines do you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_marks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now each jump is drawn as its own colored arc on the number line. Look at how many arcs go from 0 to 10!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "jump_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Each jump the rocket took is drawn with its own curved line. How many curved jumps do you see going from 0 to 10?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "jump_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The number line now shows each jump drawn as its own colored arc. How many arcs did the rocket take to land on 10?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_marks",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled jump_marks (help). It is on screen now: Draws every jump as its own arc in alternating colours, with no numbers. You may point along the arcs; never count them to the end or say how many. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "The rocket jumped from 0 to 10. How many jumps of 10 did it make? Finish the multiplication fact.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "\ud83d\ude80\u00d7 10 = 10",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A colorful curved jump line has appeared right above the number line. Look at that arc from 0 to 10 and try typing how many jumps were made!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A curved jump arc is drawn over the line to show the rocket's leap from 0 to 10. Type how many jumps that is, and press Check!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A colored arc is now drawn on the line showing that jump from 0 to 10. How many arcs did the rocket make to get there?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A curved jump arc appeared above the line showing the rocket's path from 0 to 10. Type how many jumps that is, and hit Check!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A jump arc is now drawn right on the number line showing the leap from 0 to 10. Type how many jumps you see and press Check!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 1 for the number of jumps\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "1"
+      ],
+      "ask": "The rocket jumped from 0 to 10. How many jumps of 10 did it make? Finish the multiplication fact.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "\ud83d\ude80\u00d7 10 = 10",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You typed 1 because it took just 1 jump of 10 to reach 10.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, typing 1 because that was 1 jump of 10 to reach 10!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You typed 1, counting that single big jump from 0 to 10.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted that single arc and typed 1 jump to make 10!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You counted the arc and typed 1 jump.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "skip-counting-runner.count_along",
+   "primitiveId": "skip-counting-runner",
+   "evalMode": "count_along",
+   "keys": [],
+   "stopped": "a simplify lever opened a practice item",
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Tap each number the kangaroo lands on, one jump at a time, from 0 to 50.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": []
+     },
+     "samples": [
+      {
+       "text": "Tap each number the kangaroo lands on as it counts by fives, one jump at a time!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Tap each number the kangaroo lands on as we count by 5s, one jump at a time!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap each number our kangaroo friend lands on as we count by fives, one jump at a time.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap each number where the kangaroo lands as we count by 5s.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The kangaroo starts at 0 and counts by 5s. Tap each number it lands on, one jump at a time!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Tapped 10 right after landing on 0\". The board checked it: not right.",
+     "miss": "skipped_a_landing",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Tap each number the kangaroo lands on, one jump at a time, from 0 to 50.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": []
+     },
+     "samples": [
+      {
+       "text": "The kangaroo is at 0 and takes one jump of 5. What number comes right after 0 when counting by fives?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The kangaroo is starting at 0 and takes just one jump of 5. Where will it land first?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The kangaroo is starting at 0 and takes just one jump of 5. Where will it land first?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The kangaroo starts at 0 and takes one jump of 5. Where does its very first jump land?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The kangaroo starts at 0 and makes one jump of 5. Where will it land first?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Tap each number the kangaroo lands on, one jump at a time, from 0 to 50.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": []
+     },
+     "samples": [
+      {
+       "text": "I opened a shorter practice line counting by tens up to 30. Where does the kangaroo land on its very first jump from 0?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "simpler_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's try a shorter practice count by tens first. Tap where the kangaroo lands after jumping 10 from 0!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "simpler_count",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have a shorter practice line now counting by tens. Give it a try by tapping where the first jump lands!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "simpler_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Let's try a shorter practice count by tens up to 30 first. Where does the kangaroo land on its very first jump from 0?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "simpler_count",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have a shorter practice line counting by tens up to 30. Tap where the kangaroo lands on its first jump!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "simpler_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1~simpler",
+     "trigger": "The learner said they were stuck, so the host pulled simpler_count (simplify). It is on screen now: Opens an ungraded practice count of the same kind, plainer and shorter; then this item comes back blank. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the easier item on screen.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Tap each number the kangaroo lands on, one jump at a time, from 0 to 50.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": []
+     },
+     "samples": [
+      {
+       "text": "We have a shorter number line to 30 now, counting by tens. Tap the number where the kangaroo lands on its first jump from 0.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have a shorter number line to 30 now, counting by tens. Tap the number where the kangaroo lands on its first jump!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the line now\u2014it is shorter and counts by tens up to 30. Tap where the kangaroo lands on its very first jump!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have a shorter practice line now, counting by tens up to 30. Look at the kangaroo starting at 0, and tap where it lands on its first jump!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We now have a shorter line counting by tens up to 30. Look at the line starting at 0, and tap where the kangaroo lands on its first jump!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "skip-counting-runner.fill_missing",
+   "primitiveId": "skip-counting-runner",
+   "evalMode": "fill_missing",
+   "keys": [
+    "10",
+    "20"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10",
+       "20"
+      ],
+      "ask": "2 numbers on the line are hidden. Type each missing number.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "05?15?253035404550\ud83e\udd98missing number:",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! We have a number line counting by fives, but two numbers are hidden behind question marks. Type one missing number and press Check whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We are skip counting by 5s along the number line. Find the missing numbers where the question marks are, type one in, and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the kangaroo lands as it counts by fives. Type each missing number in the box and press Check!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our number line! Follow along with the jumps by 5s, type each missing number, and hit Check when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the number line and see how the kangaroo jumps by 5s. Type each missing number where you see a question mark and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"No gap filled yet; typed 11\". The board checked it: not right.",
+     "miss": "near_miss",
+     "scoredWith": {
+      "keys": [
+       "10",
+       "20"
+      ],
+      "ask": "2 numbers on the line are hidden. Type each missing number.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "05?15?253035404550\ud83e\udd98missing number:",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the jumps on the line: each hop adds five. Try counting five up from the number right before the question mark!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "step_arcs",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can see jump arcs showing plus five between each landing on the line. Try adding five from the number right before the question mark.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "step_arcs",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Try adding five"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the jump arcs showing plus five for every hop. Try counting five more from the number right before the question mark.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "step_arcs"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the jump arcs added above each hop, showing plus five every time. Try jumping up by fives to see what number lands on the question mark.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "step_arcs"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I added jump arcs showing plus five for each leap. Look at the number right before the first question mark and try jumping by five from there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "step_arcs",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10",
+       "20"
+      ],
+      "ask": "2 numbers on the line are hidden. Type each missing number.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "05?15?253035404550\ud83e\udd98missing number:",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I've added jump arcs showing +5 between each landing to help guide you. Look at the number right before the question mark, add 5 to it, and give it a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "step_arcs",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added helper arcs showing the plus five jumps between the numbers. Look at the number right before the first question mark and follow the plus five arc to see what comes next.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "step_arcs"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I drew jump arcs showing +5 between each number to help you see the hops. Look at the number right before the question mark and add 5 to it!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "step_arcs",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added jump arcs showing \"+5\" between the numbers to help guide you. Look at the number right before the question mark and follow that hop!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "step_arcs"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've added jump arcs showing +5 between each number to help you see the steps. Look at the number right before the question mark and add 5 to it!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "step_arcs",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled step_arcs (help). It is on screen now: Draws an arc with the jump size between every two neighbouring numbers; each gap keeps its \"?\". You may point to the number before a gap; never say a missing number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10",
+       "20"
+      ],
+      "ask": "2 numbers on the line are hidden. Type each missing number.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "05?15?253035404550\ud83e\udd98missing number:",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now there are little curved jump arcs marked with +5 between each step on your line. Look at the number right before that first question mark and follow the +5 jump!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now there are little arcs showing plus 5 between every hop on the line! Find the number right before that first question mark and count up 5 from it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can see jump arcs showing plus five between each hop on the line! Look at the number right before that first question mark, jump forward by five, and try typing that next number.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now you can see jump arcs marked with +5 between each number on the line. Look at the number right before the question mark, follow the hop, and see what you get!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Arcs showing \"+5\" are now drawn between the hops on the line. Look at the number right before the first question mark, follow the hop of 5, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Filled 10; typed 20\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10",
+       "20"
+      ],
+      "ask": "2 numbers on the line are hidden. Type each missing number.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "05?15?253035404550\ud83e\udd98missing number:",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You filled in both missing numbers, 10 and 20, by counting up by 5! Fantastic work using the jump arcs to solve it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both hidden numbers, 10 and 20, by using those jump arcs to count up by fives!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you filled in 10 and 20 by following those jumps of five!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You filled in 10 and typed 20 by using those jumps of five to find the missing numbers. Great counting!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both missing numbers, 10 and 20, by following those five-step jumps across the line!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "skip-counting-runner.find_skip_value",
+   "primitiveId": "skip-counting-runner",
+   "evalMode": "find_skip_value",
+   "keys": [
+    "2"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2"
+      ],
+      "ask": "Look at where it lands. How far is each jump?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "0246810\ud83d\udc300\u2192?skip value:",
+       "\ud83d\udc30 jump!",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the number line to see where the rabbit lands. Type how far each jump goes, then press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the rabbit jumps along the number line. How far does each jump go?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the rabbit lands on the number line. How far does each jump go?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the rabbit lands on the number line to see how far it travels in one jump. Type that number in the box and tap Check when you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the rabbit jumps along the number line. How far does each jump go?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 3 for how far each jump goes\". The board checked it: not right.",
+     "miss": "one_over",
+     "scoredWith": {
+      "keys": [
+       "2"
+      ],
+      "ask": "Look at where it lands. How far is each jump?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "0246810\ud83d\udc300\u2192?skip value:",
+       "\ud83d\udc30 jump!",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Good try! Look at the dots under that very first jump from 0 to where it lands, and try another number.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Look at the dots under that first jump to see what was added, and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was a close try. Look at the dots under that very first jump to see how many spaces the rabbit travels, then give it another shot!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Look at the dots between the start and the first landing to see how much is added each time, and give it another go.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Look at the dots between the start and the first landing to see how much is added each time.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2"
+      ],
+      "ask": "Look at where it lands. How far is each jump?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "0246810\ud83d\udc300\u2192?skip value:",
+       "\ud83d\udc30 jump!",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Start at 0 and see what number is added to reach that first landing.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look at where the rabbit starts at 0, and see what number gets added each time it takes one jump. Give that a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look at the very first hop starting at 0. How many spaces does the rabbit move across before it lands?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Count how many steps the rabbit takes from 0 until it lands on that first number line mark. What do you get?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Start at 0 and see what number gets added each time the rabbit makes a hop.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/1"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled model_count (help). It is on screen now: Draws a small number line beside the item counting by another step, with its jump size written over each jump. You may compare the two lines; never say the item's jump size. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2"
+      ],
+      "ask": "Look at where it lands. How far is each jump?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "0246810\ud83d\udc300\u2192?skip value:",
+       "\ud83d\udc30 jump!",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new number line appeared showing jumps of plus 10! Look at the rabbit's line and see how much is added on each jump, then give it a try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new example line on the side showing jumps of plus ten. Compare that with the rabbit's line to see how big each jump is, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new example line beside your picture showing jumps with the amount added on top. Compare it with your rabbit's jumps and give your question another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a new number line on the side showing jumps with their size written on top. Look at how that line shows each jump, then try finding the jump size on your rabbit's line!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a new number line on the side showing jumps of 10. Look at our rabbit's line and type how far each jump goes.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 2 for how far each jump goes\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2"
+      ],
+      "ask": "Look at where it lands. How far is each jump?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "0246810\ud83d\udc300\u2192?skip value:",
+       "\ud83d\udc30 jump!",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it! You saw how much was added and typed 2 for each jump.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You checked the jumps and found 2 for each hop!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You figured out that each jump goes 2 spaces forward.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it by typing 2 and checking your work! Each jump on the line goes forward by 2.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and typed 2 by looking at where the jumps landed. Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "skip-counting-runner.predict",
+   "primitiveId": "skip-counting-runner",
+   "evalMode": "predict",
+   "keys": [
+    "10"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "The kangaroo is at 5. Where is the next landing?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "?\ud83e\udd98next landing:",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The kangaroo started at 0 and hopped to 5. Type where the kangaroo lands next, then press Check!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The kangaroo started at 0 and hopped to 5. Type the number for where it will land next, then press Check!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The kangaroo started at 0 and hopped to 5. Where do you think it lands on the next hop?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The kangaroo started at 0 and hopped to 5. Type where it lands on its next hop, then press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The kangaroo started at 0 and took a jump to 5. Where do you think it will land next?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 6 for the landing after 5\". The board checked it: not right.",
+     "miss": "added_one",
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "The kangaroo is at 5. Where is the next landing?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "?\ud83e\udd98next landing:",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the jump size shown above the hop from 0 to 5. How big is each kangaroo jump?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_sizes",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look above the first jump: it shows +5! Try jumping that same amount forward from 5.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "jump_sizes"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look above the first jump\u2014it shows +5! Try jumping that same amount forward from 5.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_sizes",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look above the first hop\u2014it shows +5 to reach 5. Try jumping another +5 from 5!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_sizes",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the jump size shown above the hop from 0 to 5. How far does the kangaroo jump each time?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_sizes",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "The kangaroo is at 5. Where is the next landing?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "?\ud83e\udd98next landing:",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I added the jump size above the hop, showing it jumps by 5 each time. If the kangaroo is at 5 and jumps forward 5 more, where does it land?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_sizes",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The number line now shows that each jump adds 5. If the kangaroo is at 5 and jumps 5 more, what number will it reach?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "jump_sizes"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows a \"+5\" over the first jump. What number do you reach if you start at 5 and add another 5?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "jump_sizes",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look, the jump shows \"+5\" above it! If the kangaroo jumps forward 5 more from 5, where will it land?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "jump_sizes"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows a \"+5\" over the kangaroo's first jump. If the kangaroo is at 5 and jumps forward by 5 more, what number will it land on?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "jump_sizes"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled jump_sizes (help). It is on screen now: Writes the jump size over each jump already made; nothing past the character. You may point to the jumps; Never say the next landing. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question agai",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "The kangaroo is at 5. Where is the next landing?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "?\ud83e\udd98next landing:",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the \"+5\" written above the jump from 0 to 5. What number do you reach if you count on 5 more from 5?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look above the hop from 0 to 5\u2014there is now a \"+5\" written over it to show the jump size. Try starting at 5 and hopping forward that same amount!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that \"+5\" is now written above the jump from 0 to 5. What number will the kangaroo land on if it takes another jump of 5?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look above the first hop\u2014a little \"+5\" is now written right over it to show each jump adds 5. Try counting on 5 from where the kangaroo is now!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look above the first jump: there is a \"+5\" written over it! Try taking another jump of 5 from 5 and type where you land.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 10 for the landing after 5\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "The kangaroo is at 5. Where is the next landing?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "JUMP_LANDING",
+       "JUMP_WRONG_TARGET",
+       "PREDICT_",
+       "FILL_",
+       "SKIP_VALUE_",
+       "MULTIPLY_",
+       "COUNT_COMPLETE",
+       "PHASE_TRANSITION",
+       "CHALLENGE_COMPLETE"
+      ],
+      "menu": [
+       "?\ud83e\udd98next landing:",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You typed 10, jumping by 5 to land right on 10!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted by 5 and landed right on 10!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You typed 10, jumping forward by 5 to land right on target.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You typed 10, jumping by 5 to land right on the mark.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You used the jump size of 5 to land right on 10.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,108 @@
+{
+ "source": "qa/tutor-reports/skip-counting-runner-runtime-fill_missing-payload-2026-10-09.json",
+ "primitiveId": "skip-counting-runner",
+ "evalMode": "fill_missing",
+ "data": {
+  "title": "Kangaroo Hops by 5s!",
+  "description": "Join our friendly kangaroo as we hop along the number line by fives, building the foundation for multiplication!",
+  "skipValue": 5,
+  "startFrom": 0,
+  "endAt": 50,
+  "direction": "forward",
+  "character": {
+   "type": "kangaroo",
+   "imagePrompt": "A cheerful cartoon kangaroo wearing a red scarf, ready to hop."
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "fill_missing",
+    "instruction": "2 numbers on the line are hidden. Type each missing number.",
+    "hint": "Look at the numbers on each side of a \"?\". How far apart are the numbers next to each other?",
+    "narration": "5... 10... 15... 20... 25!",
+    "hiddenPositions": [
+     10,
+     20
+    ],
+    "startPosition": 0
+   },
+   {
+    "id": "c2",
+    "type": "fill_missing",
+    "instruction": "2 numbers on the line are hidden. Type each missing number.",
+    "hint": "Look at the numbers on each side of a \"?\". How far apart are the numbers next to each other?",
+    "narration": "10... 15... 20... 25... 30!",
+    "hiddenPositions": [
+     15,
+     25
+    ],
+    "startPosition": 0
+   },
+   {
+    "id": "c3",
+    "type": "fill_missing",
+    "instruction": "2 numbers on the line are hidden. Type each missing number.",
+    "hint": "Look at the numbers on each side of a \"?\". How far apart are the numbers next to each other?",
+    "narration": "20... 25... 30... 35!",
+    "hiddenPositions": [
+     20,
+     30
+    ],
+    "startPosition": 0
+   },
+   {
+    "id": "c4",
+    "type": "fill_missing",
+    "instruction": "2 numbers on the line are hidden. Type each missing number.",
+    "hint": "Look at the numbers on each side of a \"?\". How far apart are the numbers next to each other?",
+    "narration": "25... 30... 35... 40!",
+    "hiddenPositions": [
+     25,
+     35
+    ],
+    "startPosition": 0
+   },
+   {
+    "id": "c5",
+    "type": "fill_missing",
+    "instruction": "2 numbers on the line are hidden. Type each missing number.",
+    "hint": "Look at the numbers on each side of a \"?\". How far apart are the numbers next to each other?",
+    "narration": "30... 35... 40... 45!",
+    "hiddenPositions": [
+     30,
+     40
+    ],
+    "startPosition": 0
+   },
+   {
+    "id": "c6",
+    "type": "fill_missing",
+    "instruction": "2 numbers on the line are hidden. Type each missing number.",
+    "hint": "Look at the numbers on each side of a \"?\". How far apart are the numbers next to each other?",
+    "narration": "35... 40... 45... 50!",
+    "hiddenPositions": [
+     35,
+     45
+    ],
+    "startPosition": 0
+   }
+  ],
+  "showOptions": {
+   "showArray": false,
+   "showJumpArcs": true,
+   "showEquation": false,
+   "showDigitPattern": false,
+   "autoPlay": false,
+   "showTrackLabels": true,
+   "showSequenceChips": true,
+   "showSkipValueBadge": true
+  },
+  "gradeBand": "1-2",
+  "gameMode": {
+   "enabled": false,
+   "timeLimit": 60,
+   "type": "fill_the_gaps"
+  },
+  "supportTier": "medium"
+ }
+}

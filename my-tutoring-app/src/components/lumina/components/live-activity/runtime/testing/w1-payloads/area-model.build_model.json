@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/area-model-runtime-build_model-payload-2026-10-09.json",
+ "primitiveId": "area-model",
+ "evalMode": "build_model",
+ "data": {
+  "title": "Multiplying with the Area Model",
+  "description": "Discover how breaking numbers into smaller place value parts makes multiplication visual and simple. Build your own area models step by step to solve each puzzle!",
+  "challenges": [
+   {
+    "id": "area-model-1",
+    "factor1Parts": [
+     7
+    ],
+    "factor2Parts": [
+     20,
+     5
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-2",
+    "factor1Parts": [
+     6
+    ],
+    "factor2Parts": [
+     20,
+     1
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-3",
+    "factor1Parts": [
+     4
+    ],
+    "factor2Parts": [
+     20,
+     3
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   },
+   {
+    "id": "area-model-4",
+    "factor1Parts": [
+     7
+    ],
+    "factor2Parts": [
+     10,
+     4
+    ],
+    "showPartialProducts": false,
+    "showDimensions": true,
+    "algebraicMode": false,
+    "highlightCell": null
+   }
+  ],
+  "challengeType": "build_model",
+  "gradeLevel": "elementary students (grades 1-5) - Use age-appropriate vocabulary, concrete examples, structured learning objectives, and interactive elements. Build fundamental understanding."
+ }
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -17,7 +17,18 @@ import {
 } from '../../../evaluation';
 import type { RegroupingWorkbenchMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  describeRegroupWork, operandsOf, regroupMiss, regroupingMatches, resultOf, startBlocks, typedValue,
+  workspaceAssignment, workspaceScene, type RegroupView,
+} from './regroupingWorkbenchWorkspace';
+import {
+  COLUMN_COLORS_LEVER, OPERATION_MODEL_LEVER, REGROUP_MARKS_LEVER, TRADE_MODEL_LEVER,
+  leverFacts, regroupLevers, smallerProblem,
+} from './regroupingWorkbenchLevers';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -37,6 +48,8 @@ export interface RegroupingStep {
 
 export interface RegroupingChallenge {
   id: string;
+  /** The generator's challenge type (one per eval mode). The component grades on the session `operation`. */
+  type?: string;
   problem: string;
   requiresRegrouping: boolean;
   regroupCount: number;
@@ -110,6 +123,58 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 };
 
 const PLACE_LABELS = ['Ones', 'Tens', 'Hundreds', 'Thousands'];
+/** Each place's block colour, carried onto its written column by the column_colors lever. */
+const PLACE_TEXT = ['text-blue-300', 'text-orange-300', 'text-emerald-300', 'text-purple-300'];
+const PLACE_BORDER = ['border-blue-400/70', 'border-orange-400/70', 'border-emerald-400/70', 'border-purple-400/70'];
+
+// Lever pictures (`regroupingWorkbenchLevers.ts`). Each is drawn only while its lever is pulled; none uses a digit or
+// the item's numbers.
+function TradeModel({ addition }: { addition: boolean }) {
+  const cubes = (
+    <div className="flex flex-col gap-0.5">
+      {Array.from({ length: 10 }, (_, i) => <div key={i} className="w-2.5 h-2.5 rounded-sm bg-blue-400/70" />)}
+    </div>
+  );
+  const rod = <div className="w-2.5 h-[48px] rounded-sm bg-orange-400/70" />;
+  return (
+    <div data-lever="trade-model" className="p-3 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-4 justify-center">
+      <div aria-hidden className="flex items-center gap-3">
+        {addition ? cubes : rod}
+        <span className="text-slate-400 text-lg">→</span>
+        {addition ? rod : cubes}
+      </div>
+      <p className="text-slate-300 text-sm">{addition ? 'ten ones make one ten' : 'one ten makes ten ones, and the tens have one less'}</p>
+    </div>
+  );
+}
+
+function OperationModel({ addition }: { addition: boolean }) {
+  const dot = (key: string, crossed = false) => (
+    <span key={key} className={`relative inline-block w-3 h-3 rounded-full bg-cyan-300/70 ${crossed ? 'opacity-50' : ''}`}>
+      {crossed && <span className="absolute inset-0 flex items-center justify-center text-red-400 text-xs leading-none">✕</span>}
+    </span>
+  );
+  return (
+    <div data-lever="operation-model" className="p-3 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-4 justify-center">
+      <div aria-hidden className="flex items-center gap-2">
+        {addition ? (
+          <>
+            <span className="flex gap-1">{['a', 'b', 'c'].map(k => dot(k))}</span>
+            <span className="text-slate-400">and</span>
+            <span className="flex gap-1">{['d', 'e'].map(k => dot(k))}</span>
+            <span className="text-slate-400 text-lg">→</span>
+            <span className="flex gap-1 p-1 rounded-md border border-white/15">{['a', 'b', 'c', 'd', 'e'].map(k => dot(k))}</span>
+          </>
+        ) : (
+          <span className="flex gap-1 p-1 rounded-md border border-white/15">
+            {['a', 'b', 'c', 'd', 'e'].map((k, i) => dot(k, i >= 3))}
+          </span>
+        )}
+      </div>
+      <p className="text-slate-300 text-sm">{addition ? 'put together' : 'take away'}</p>
+    </div>
+  );
+}
 
 // ============================================================================
 // Helpers
@@ -130,10 +195,6 @@ function getDigits(num: number, maxPlace: string, overridePlaces?: number): numb
   return digits; // [ones, tens, hundreds, ...]
 }
 
-function computeAnswer(op: 'addition' | 'subtraction', a: number, b: number): number {
-  return op === 'addition' ? a + b : a - b;
-}
-
 // ============================================================================
 // Props
 // ============================================================================
@@ -141,13 +202,19 @@ function computeAnswer(op: 'addition' | 'subtraction', a: number, b: number): nu
 interface RegroupingWorkbenchProps {
   data: RegroupingWorkbenchData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, className }) => {
+const RegroupingWorkbenchSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  RegroupingWorkbenchProps & { tutorOwned: boolean; useController: (options: ProgressOptions<RegroupingChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -179,44 +246,50 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     showColumnBadges = false,
   } = showOptions;
 
+  const fallback = useMemo(() => ({ operand1: initialOperand1, operand2: initialOperand2 }), [initialOperand1, initialOperand2]);
+
   // Compute places from maxPlace, but expand if any answer needs more digits
   // (e.g., 67+85=152 needs 3 digit slots even when maxPlace='tens')
   const basePlaces = getPlaceCount(maxPlace);
   const places = useMemo(() => {
     let maxDigits = basePlaces;
-    // Check initial operands
-    const ans0 = Math.abs(computeAnswer(operation, initialOperand1, initialOperand2));
-    const d0 = ans0 > 0 ? Math.floor(Math.log10(ans0)) + 1 : 1;
-    if (d0 > maxDigits) maxDigits = d0;
-    // Check all challenge answers
-    for (const ch of challenges) {
-      const parts = ch.problem.split(/[+\-−]/);
-      const a = parseInt(parts[0]?.trim(), 10);
-      const b = parseInt(parts[1]?.trim(), 10);
-      if (!isNaN(a) && !isNaN(b)) {
-        const ans = Math.abs(computeAnswer(operation, a, b));
-        const d = ans > 0 ? Math.floor(Math.log10(ans)) + 1 : 1;
-        if (d > maxDigits) maxDigits = d;
-      }
+    for (const [a, b] of [[initialOperand1, initialOperand2], ...challenges.map(ch => operandsOf(ch, fallback))]) {
+      const ans = Math.abs(resultOf(operation, a, b));
+      const d = ans > 0 ? Math.floor(Math.log10(ans)) + 1 : 1;
+      if (d > maxDigits) maxDigits = d;
     }
     return maxDigits;
-  }, [basePlaces, operation, initialOperand1, initialOperand2, challenges]);
+  }, [basePlaces, operation, initialOperand1, initialOperand2, challenges, fallback]);
+
+  // Refs
+  const stableInstanceIdRef = useRef(instanceId || `regrouping-workbench-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // State — shared hooks
+  // Challenge progress. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  /** Bound below, once the setters exist; the progress hook calls it only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: (ch) => workspaceAssignment(ch, operation, fallback),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -228,18 +301,23 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
 
   const [currentPhase, setCurrentPhase] = useState<Phase>('explore');
 
-  // Current problem
-  const currentChallenge = challenges[currentChallengeIndex] || null;
-  const operand1 = currentChallenge ? parseInt(currentChallenge.problem.split(/[+\-−]/)[0].trim(), 10) || initialOperand1 : initialOperand1;
-  const operand2 = currentChallenge ? parseInt(currentChallenge.problem.split(/[+\-−]/)[1]?.trim(), 10) || initialOperand2 : initialOperand2;
-  const correctAnswer = computeAnswer(operation, operand1, operand2);
+  // Levers (`regroupingWorkbenchLevers.ts`), keyed by the session item they were pulled on, and the easier problem a
+  // simplify lever put on screen in its place. The tier's regroup marks and place labels are starting positions.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<RegroupingChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] || null;
+  /** What is on screen: the easier problem while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  const marksOn = showRegroupHints || leverOn(REGROUP_MARKS_LEVER);
+  const colorsOn = leverOn(COLUMN_COLORS_LEVER);
+  const [operand1, operand2] = operandsOf(currentChallenge, fallback);
+  const correctAnswer = resultOf(operation, operand1, operand2);
 
-  // Block counts per place value [ones, tens, hundreds, thousands]
-  // Always show the answer's digits so students see the result in blocks
-  const [blocks, setBlocks] = useState<number[]>(() => {
-    const answer = computeAnswer(operation, operand1, operand2);
-    return getDigits(answer, maxPlace, places);
-  });
+  // Block counts per place value [ones, tens, hundreds, thousands]. They start as the problem's own blocks (both
+  // numbers together for addition, the top number for subtraction) and change only by the learner's trades.
+  const [blocks, setBlocks] = useState<number[]>(() => startBlocks(operation, operand1, operand2, places));
 
   // Carry/borrow state per place
   const [carries, setCarries] = useState<number[]>(new Array(places).fill(0));
@@ -260,9 +338,31 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   const [stepByStepUsed] = useState(stepByStepMode);
   const [challengeStartTime, setChallengeStartTime] = useState(Date.now());
 
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `regrouping-workbench-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  /** A challenge's board, blank: its own blocks, no trades, no digits. */
+  const resetBoard = (ch: RegroupingChallenge | null) => {
+    const [a, b] = operandsOf(ch, fallback);
+    setBlocks(startBlocks(operation, a, b, places));
+    setCarries(new Array(places).fill(0));
+    setRegroupedPlaces(new Set());
+    setAnswerDigits(new Array(places).fill(null));
+    setFeedback('');
+    setFeedbackType('');
+    setChallengeStartTime(Date.now());
+  };
+  // Workspace path. A fresh challenge opens blank. Try again clears the checked digits and keeps the trades: the
+  // typed number is what was checked, and the blocks are the learner's own tool. Try again on a practice problem keeps
+  // it; only a fresh item (or the return from practice) ends it.
+  openItem.current = (index, retry) => {
+    if (retry) {
+      setAnswerDigits(new Array(places).fill(null));
+      setFeedback('');
+      setFeedbackType('');
+      return;
+    }
+    setPractice(null);
+    resetBoard(challenges[index] ?? null);
+    setCurrentPhase('explore');
+  };
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -283,7 +383,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring Integration
+  // AI Tutoring Integration (the scripted path; off on the workspace path, whose packet carries no answer)
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     operation,
@@ -328,12 +428,17 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     return '';
   }, [currentChallenge, supportTier]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'regrouping-workbench',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === '1-2' ? 'Grade 1-2' : 'Grade 3-4',
+    enabled: !tutorOwned,
   });
+  // Its cues carry the answer, so on the workspace path they send nothing.
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Activity introduction
   const hasIntroducedRef = useRef(false);
@@ -355,13 +460,13 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   }, [isConnected, challenges.length, operation, operand1, operand2, gradeBand, currentChallenge, wordProblemContext, sendText, tutorRevealClause]);
 
   // -------------------------------------------------------------------------
-  // Auto-submit evaluation when all challenges complete
+  // Submit the evaluation when all challenges complete
   // -------------------------------------------------------------------------
-  // The "Next Problem" button is hidden when allChallengesComplete is true,
-  // so advanceToNextChallenge is never called for the last challenge.
-  useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
-
+  /** Once per session: the evaluation hook's own flag lands a render later. */
+  const submittedRef = useRef(false);
+  const submitAll = useCallback(() => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
     const totalCorrect = challengeResults.filter(r => r.correct).length;
     const totalRegroups = challengeResults.reduce((s, r) => s + ((r.regroupingTotal as number) ?? 0), 0);
     const correctRegroups = challengeResults.reduce((s, r) => s + ((r.regroupingCorrect as number) ?? 0), 0);
@@ -398,16 +503,24 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
       { silent: true },
     );
   }, [
-    allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, phaseResults,
-    algorithmConnectionMade, incorrectRegroupAttempts, stepByStepUsed, wordProblemContext,
-    submitEvaluation, sendText, operation,
+    challenges, challengeResults, phaseResults, algorithmConnectionMade, incorrectRegroupAttempts, stepByStepUsed,
+    wordProblemContext, submitEvaluation, sendText, operation,
   ]);
+
+  // The "Next Problem" button is hidden when allChallengesComplete is true,
+  // so advanceToNextChallenge is never called for the last challenge.
+  useEffect(() => {
+    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+    // The live host has no evaluation provider; a workspace family submits only under one.
+    if (progress.recordsEvaluation === false) return;
+    submitAll();
+  }, [allChallengesComplete, hasSubmittedEvaluation, challenges.length, progress.recordsEvaluation, submitAll]);
 
   // -------------------------------------------------------------------------
   // Regrouping Logic
   // -------------------------------------------------------------------------
   const handleRegroup = useCallback((placeIndex: number) => {
-    if (hasSubmittedEvaluation) return;
+    if (hasSubmittedEvaluation || workspaceClosed.current) return;
 
     if (operation === 'addition') {
       // Carry: if blocks at this place >= 10, trade 10 for 1 at next place
@@ -424,6 +537,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
           return next;
         });
         setRegroupedPlaces(prev => new Set(prev).add(placeIndex));
+        setCurrentPhase('regroup');
         SoundManager.snap();
         setFeedback(`Traded 10 ${PLACE_LABELS[placeIndex].toLowerCase()} for 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()}!`);
         setFeedbackType('success');
@@ -447,7 +561,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
       }
     } else {
       // Borrow: if blocks at this place < operand2's digit, borrow from next place
-      const d2 = getDigits(operand2, maxPlace);
+      const d2 = getDigits(operand2, maxPlace, places);
       if (blocks[placeIndex] < d2[placeIndex] && placeIndex < places - 1 && blocks[placeIndex + 1] > 0) {
         setBlocks(prev => {
           const next = [...prev];
@@ -461,6 +575,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
           return next;
         });
         setRegroupedPlaces(prev => new Set(prev).add(placeIndex));
+        setCurrentPhase('regroup');
         SoundManager.snap();
         setFeedback(`Borrowed 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()} = 10 ${PLACE_LABELS[placeIndex].toLowerCase()}!`);
         setFeedbackType('success');
@@ -471,7 +586,12 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
           + `Explain: "We traded 1 ${PLACE_LABELS[placeIndex + 1].toLowerCase()} for 10 ${PLACE_LABELS[placeIndex].toLowerCase()} so we have enough to subtract."`,
           { silent: true }
         );
-      } else if (blocks[placeIndex] >= d2[placeIndex]) {
+      } else if (blocks[placeIndex] < d2[placeIndex]) {
+        // Nothing in the next column to break yet (a borrow across a zero starts one column further up).
+        SoundManager.invalid();
+        setFeedback(`There are no ${PLACE_LABELS[placeIndex + 1]?.toLowerCase() ?? 'blocks'} to break yet. Look at the next column first.`);
+        setFeedbackType('error');
+      } else {
         setIncorrectRegroupAttempts(c => c + 1);
         SoundManager.invalid();
         setFeedback(`You have enough ${PLACE_LABELS[placeIndex].toLowerCase()} already. No need to borrow!`);
@@ -484,8 +604,10 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
   // Answer Submission
   // -------------------------------------------------------------------------
   const handleDigitChange = useCallback((placeIndex: number, value: string) => {
-    if (hasSubmittedEvaluation) return;
-    const num = value === '' ? null : parseInt(value, 10);
+    if (hasSubmittedEvaluation || workspaceClosed.current) return;
+    const last = value.slice(-1);
+    const num = last === '' ? null : /^\d$/.test(last) ? parseInt(last, 10) : undefined;
+    if (num === undefined) return;
     setAnswerDigits(prev => {
       const next = [...prev];
       next[placeIndex] = num;
@@ -493,16 +615,20 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     });
   }, [hasSubmittedEvaluation]);
 
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-    incrementAttempts();
+  /** The learner's work, as the check and the tutor read it. */
+  const view = (over: Partial<RegroupView> = {}): RegroupView => ({
+    operation, a: operand1, b: operand2, places, digits: answerDigits, blocks, trades: regroupedPlaces.size,
+    regroupMarks: marksOn, placeLabels: showPlaceColumns, carryRow: showCarryBorrow,
+    columnBadges: showColumnBadges, algorithmShown: showAlgorithm,
+    story: wordProblemContext?.enabled ? wordProblemContext.story : undefined,
+    ...over,
+  });
 
-    // Build answer from digits
-    const studentAnswer = answerDigits.reduce<number>((sum, d, i) => {
-      return sum + ((d ?? 0) * Math.pow(10, i));
-    }, 0);
-
-    const correct = studentAnswer === correctAnswer;
+  const handleCheckAnswer = () => {
+    if (!currentChallenge || learnerBlocked()) return;
+    const work = view();
+    const studentAnswer = typedValue(answerDigits);
+    const correct = regroupingMatches(work);
     const timeMs = Date.now() - challengeStartTime;
 
     // Count correct regroups
@@ -512,6 +638,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     if (correct) {
       SoundManager.playCorrect();
       setAlgorithmConnectionMade(true);
+      setCurrentPhase('connect');
       setFeedback(`Correct! ${currentChallenge.problem} = ${correctAnswer}`);
       setFeedbackType('success');
       sendText(
@@ -521,8 +648,9 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         + `Celebrate and connect to the algorithm: "See how the blocks match the numbers? Each trade is a carry!"`,
         { silent: true }
       );
-
-      recordResult({
+      // The primitive's own fields; the commit below adds the verdict and the attempt count on both paths. A practice
+      // problem (a simplify lever) is not the session's challenge and records nothing.
+      if (!practice) recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
@@ -532,8 +660,10 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
       });
     } else {
       SoundManager.playIncorrect();
-      setFeedback(`Your answer is ${studentAnswer}, but the correct answer is ${correctAnswer}. Check your work!`);
+      // Never the right number: the learner looks at the columns again.
+      setFeedback(`Your answer is ${studentAnswer}. Not quite. Check each column again.`);
       setFeedbackType('error');
+      setCurrentPhase('solve');
       sendText(
         `[SOLVE_INCORRECT] Student answered ${studentAnswer} but correct is ${correctAnswer}. `
         + `Problem: ${currentChallenge.problem}. Attempt ${currentAttempts + 1}. `
@@ -543,82 +673,22 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         { silent: true }
       );
     }
-  }, [currentChallenge, answerDigits, correctAnswer, currentAttempts, challengeStartTime, regroupedPlaces, sendText, incrementAttempts, recordResult, tutorRevealClause]);
+    progress.commitCheck(describeRegroupWork(work), correct, correct ? undefined : regroupMiss(work));
+  };
 
   // -------------------------------------------------------------------------
-  // Challenge Navigation
+  // Challenge Navigation (scripted path; the workspace path hides Next and the runtime advances)
   // -------------------------------------------------------------------------
   const advanceToNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
-      // All challenges done
-      const phaseScoreStr = phaseResults
-        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const overallPct = challenges.length > 0
-        ? Math.round(challengeResults.filter(r => r.correct).length / challenges.length * 100)
-        : 0;
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Student completed all ${challenges.length} regrouping problems! `
-        + `Celebrate and give encouraging phase-specific feedback about ${operation} with regrouping.`,
-        { silent: true }
-      );
-
-      // Submit evaluation
-      if (!hasSubmittedEvaluation) {
-        const totalCorrect = challengeResults.filter(r => r.correct).length;
-        const totalRegroups = challengeResults.reduce((s, r) => s + ((r.regroupingTotal as number) ?? 0), 0);
-        const correctRegroups = challengeResults.reduce((s, r) => s + ((r.regroupingCorrect as number) ?? 0), 0);
-        const avgTime = challengeResults.length > 0
-          ? challengeResults.reduce((s, r) => s + ((r.timeMs as number) ?? 0), 0) / challengeResults.length
-          : 0;
-        const score = challenges.length > 0
-          ? Math.round((totalCorrect / challenges.length) * 100)
-          : 0;
-
-        const metrics: RegroupingWorkbenchMetrics = {
-          type: 'regrouping-workbench',
-          problemsCompleted: totalCorrect,
-          problemsTotal: challenges.length,
-          regroupingCorrect: correctRegroups,
-          regroupingTotal: totalRegroups,
-          algorithmConnectionMade,
-          incorrectRegroupAttempts,
-          stepByStepUsed,
-          wordProblemContextEngaged: !!(wordProblemContext?.enabled && wordProblemContext.story),
-          averageTimePerProblem: Math.round(avgTime),
-          attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-        };
-
-        submitEvaluation(
-          totalCorrect === challenges.length,
-          score,
-          metrics,
-          { challengeResults }
-        );
-      }
+      if (!hasSubmittedEvaluation && progress.recordsEvaluation !== false) submitAll();
       return;
     }
 
     // advanceProgress() already incremented index and reset attempts.
-    // Just reset domain-specific state:
-    setFeedback('');
-    setFeedbackType('');
-    setRegroupedPlaces(new Set());
-    setAnswerDigits(new Array(places).fill(null));
-    setCarries(new Array(places).fill(0));
-    setChallengeStartTime(Date.now());
-
-    // Parse new problem
     const nextIndex = currentChallengeIndex + 1;
     const nextChallenge = challenges[nextIndex];
-    const nextOp1 = parseInt(nextChallenge.problem.split(/[+\-−]/)[0].trim(), 10) || operand1;
-    const nextOp2 = parseInt(nextChallenge.problem.split(/[+\-−]/)[1]?.trim(), 10) || operand2;
-    // Always show the answer's digits in blocks
-    const nextAnswer = computeAnswer(operation, nextOp1, nextOp2);
-    setBlocks(getDigits(nextAnswer, maxPlace, places));
-
+    resetBoard(nextChallenge ?? null);
     setCurrentPhase('explore');
 
     sendText(
@@ -627,12 +697,8 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
       + `Read the problem and encourage them.`,
       { silent: true }
     );
-  }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText, operation,
-    hasSubmittedEvaluation, algorithmConnectionMade, incorrectRegroupAttempts,
-    stepByStepUsed, wordProblemContext, submitEvaluation, places, maxPlace,
-    operand1, operand2, currentChallengeIndex,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [advanceProgress, challenges, sendText, hasSubmittedEvaluation, progress.recordsEvaluation, submitAll, currentChallengeIndex]);
 
   // -------------------------------------------------------------------------
   // Computed Values
@@ -657,10 +723,44 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     if (operation === 'addition') {
       return blocks[placeIndex] >= 10;
     } else {
-      const d2 = getDigits(operand2, maxPlace);
+      const d2 = getDigits(operand2, maxPlace, places);
       return blocks[placeIndex] < d2[placeIndex];
     }
-  }, [operation, blocks, operand2, maxPlace]);
+  }, [operation, blocks, operand2, maxPlace, places]);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation; every mode declares levers (`regroupingWorkbenchLevers.ts`).
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, view());
+    const ctx = { operation, fallback, marksShown: showRegroupHints };
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, operation);
+    const levers = practice ? [] : regroupLevers(sessionChallenge, pulledLevers, ctx);
+    const tradeNeededNow = blocks.some((_, i) => i < places - 1 && needsRegroup(i));
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (id === REGROUP_MARKS_LEVER && !tradeNeededNow) {
+          return 'No column needs a trade now: the learner has made the trades. Ask what each column shows.';
+        }
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = smallerProblem(sessionChallenge, operation, fallback);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetBoard(easier);
+          return { practice: workspaceAssignment(easier, operation, fallback) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetBoard(sessionChallenge); },
+    };
+  });
 
   // -------------------------------------------------------------------------
   // Render
@@ -676,6 +776,8 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     solved: isCurrentChallengeComplete,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
+
+  const inputClosed = allChallengesComplete || blocked;
 
   return (
     <LuminaCard className={className}>
@@ -727,6 +829,9 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
         )}
 
         {/* Problem Display */}
+        {practice && (
+          <p className="text-center text-cyan-300 text-xs">An easier one first.</p>
+        )}
         <div className="text-center">
           <span className="text-2xl font-bold text-slate-100 font-mono">
             {operand1} {operation === 'addition' ? '+' : '−'} {operand2} = ?
@@ -777,7 +882,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
                     </div>
                     <span className={`text-lg font-bold font-mono ${
                       // Red "regroup needed" overflow cue is a HINT MARK — withdrawn at hard.
-                      showRegroupHints && needsRegroup(placeIdx) ? 'text-red-400' : 'text-slate-200'
+                      marksOn && needsRegroup(placeIdx) ? 'text-red-400' : 'text-slate-200'
                     }`}>
                       {blocks[placeIdx]}
                     </span>
@@ -795,10 +900,14 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
                       At hard (showRegroupHints=false) it is available on EVERY
                       regroupable column — the student must decide WHEN to use it. */}
                   {!isCurrentChallengeComplete && !allChallengesComplete && placeIdx < places - 1
-                    && (showRegroupHints ? needsRegroup(placeIdx) : true) && (
+                    && (marksOn ? needsRegroup(placeIdx) : true) && (
                     <button
                       type="button"
-                      className="mt-1 text-[10px] px-2 py-0.5 h-auto rounded-md bg-orange-500/10 border border-orange-400/30 hover:bg-orange-500/20 text-orange-300 transition-colors"
+                      aria-label={operation === 'addition'
+                        ? `Carry from the ${PLACE_LABELS[placeIdx].toLowerCase()}`
+                        : `Borrow for the ${PLACE_LABELS[placeIdx].toLowerCase()}`}
+                      disabled={blocked}
+                      className="mt-1 text-[10px] px-2 py-0.5 h-auto rounded-md bg-orange-500/10 border border-orange-400/30 hover:bg-orange-500/20 text-orange-300 transition-colors disabled:opacity-50"
                       onClick={() => handleRegroup(placeIdx)}
                     >
                       {operation === 'addition' ? '↑ Carry' : '↓ Borrow'}
@@ -830,6 +939,17 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
               <p className="text-slate-500 text-xs mb-3 text-center font-medium">Written Algorithm</p>
 
               <div className="flex flex-col items-center gap-1 font-mono">
+                {/* column_colors lever: the place names over the written columns */}
+                {colorsOn && (
+                  <div data-lever="column-names" className="flex justify-end" style={{ width: `${places * 32 + 24}px` }}>
+                    <span className="w-6" />
+                    {Array.from({ length: places }, (_, i) => places - 1 - i).map(placeIdx => (
+                      <span key={`name-${placeIdx}`} className={`w-8 text-center text-[9px] font-sans ${PLACE_TEXT[placeIdx]}`}>
+                        {PLACE_LABELS[placeIdx]}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {/* Carry digits row */}
                 {showCarryBorrow && operation === 'addition' && (
                   <div className="flex justify-end gap-0" style={{ width: `${places * 32 + 24}px` }}>
@@ -849,7 +969,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
                 <div className="flex justify-end" style={{ width: `${places * 32 + 24}px` }}>
                   <span className="w-6" />
                   {Array.from({ length: places }, (_, i) => places - 1 - i).map(placeIdx => (
-                    <span key={`d1-${placeIdx}`} className="w-8 text-center text-slate-200 text-lg">
+                    <span key={`d1-${placeIdx}`} className={`w-8 text-center text-lg ${colorsOn ? PLACE_TEXT[placeIdx] : 'text-slate-200'}`}>
                       {d1Display[placeIdx]}
                     </span>
                   ))}
@@ -861,7 +981,7 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
                     {operation === 'addition' ? '+' : '−'}
                   </span>
                   {Array.from({ length: places }, (_, i) => places - 1 - i).map(placeIdx => (
-                    <span key={`d2-${placeIdx}`} className="w-8 text-center text-slate-200 text-lg">
+                    <span key={`d2-${placeIdx}`} className={`w-8 text-center text-lg ${colorsOn ? PLACE_TEXT[placeIdx] : 'text-slate-200'}`}>
                       {d2Display[placeIdx]}
                     </span>
                   ))}
@@ -885,9 +1005,11 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
                           type="text"
                           inputMode="numeric"
                           maxLength={1}
+                          aria-label={`${PLACE_LABELS[placeIdx]} digit`}
                           value={answerDigits[placeIdx] !== null ? String(answerDigits[placeIdx]) : ''}
                           onChange={e => handleDigitChange(placeIdx, e.target.value)}
-                          className="w-7 h-8 text-center text-lg font-bold"
+                          disabled={inputClosed}
+                          className={`w-7 h-8 text-center text-lg font-bold ${colorsOn ? `border-2 ${PLACE_BORDER[placeIdx]}` : ''}`}
                         />
                       )}
                     </div>
@@ -913,6 +1035,8 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
           )}
         </div>
 
+        {leverOn(TRADE_MODEL_LEVER) && <TradeModel addition={operation === 'addition'} />}
+        {leverOn(OPERATION_MODEL_LEVER) && <OperationModel addition={operation === 'addition'} />}
         </div>
 
         {/* Feedback */}
@@ -933,10 +1057,11 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}
-                disabled={hasSubmittedEvaluation || answerDigits.every(d => d === null)}
+                disabled={hasSubmittedEvaluation || blocked || answerDigits.every(d => d === null)}
               />
             )}
-            {isCurrentChallengeComplete && !allChallengesComplete && (
+            {/* Scripted path only: on the workspace the runtime advances. */}
+            {!tutorOwned && isCurrentChallengeComplete && !allChallengesComplete && (
               <LuminaActionButton
                 action="next"
                 onClick={advanceToNextChallenge}
@@ -947,8 +1072,8 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
           </div>
         )}
 
-        {/* Hint */}
-        {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
+        {/* Hint (scripted path; on the workspace the tutor teaches) */}
+        {!tutorOwned && currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
           <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
           </LuminaPanel>
@@ -969,5 +1094,9 @@ const RegroupingWorkbench: React.FC<RegroupingWorkbenchProps> = ({ data, classNa
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const RegroupingWorkbench = withWorkspaceController<RegroupingWorkbenchProps, ProgressOptions<RegroupingChallenge>, Progress>(
+  'regrouping-workbench', RegroupingWorkbenchSurface, useScriptedProgress, useWorkspaceProgressFor('regrouping-workbench'));
 
 export default RegroupingWorkbench;

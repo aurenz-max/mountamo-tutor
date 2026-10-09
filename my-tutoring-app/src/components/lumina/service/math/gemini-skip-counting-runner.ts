@@ -891,5 +891,57 @@ Return the complete skip counting runner configuration.
     );
   }
 
+  // ── Student-facing text the runner's own check depends on, built by code (2026-10-09, W1 binding) ──
+  // The generated text contradicted the screen: count_along said "from 10 to 20" while every item counted the whole
+  // line from 0; fill_missing listed a sequence whose blanks were not the hidden numbers and hinted the answers;
+  // connect_multiplication named the number of jumps, which is what the learner gives.
+  const who = data.character?.type && data.character.type !== 'custom' ? `the ${data.character.type}` : 'the character';
+  const endPos = positions[positions.length - 1];
+  // count_along items that all start at the same place are one count repeated: spread their starts along the line
+  // (a count on from 15 is the same skill), keeping at least three jumps in each.
+  const counts = (data.challenges as Array<{ type: string; startPosition?: number }>).filter(c => c.type === 'count_along');
+  if (counts.length > 1 && new Set(counts.map(c => c.startPosition ?? data.startFrom)).size === 1 && positions.length > 4) {
+    const room = positions.length - 4;
+    counts.forEach((c, i) => { c.startPosition = positions[Math.round((i * room) / (counts.length - 1))]; });
+  }
+  for (const ch of data.challenges as Array<{ type: string; instruction: string; hint: string; startPosition?: number; hiddenPositions?: number[] }>) {
+    if (ch.type === 'count_along') {
+      // An item that names where it starts ("from 10") starts there, so the items are not one count repeated.
+      const from = ch.instruction?.match(/from\s+(\d+)/i);
+      const named = from ? parseInt(from[1], 10) : NaN;
+      if (positionSet.has(named) && named !== endPos) ch.startPosition = named;
+      const start = ch.startPosition ?? data.startFrom;
+      ch.instruction = `Tap each number ${who} lands on, one jump at a time, from ${start} to ${endPos}.`;
+    } else if (ch.type === 'fill_missing') {
+      const n = (ch.hiddenPositions ?? []).length;
+      ch.instruction = n === 1 ? 'One number on the line is hidden. Type the missing number.'
+        : `${n || 'Some'} numbers on the line are hidden. Type each missing number.`;
+      ch.hint = 'Look at the numbers on each side of a "?". How far apart are the numbers next to each other?';
+    } else if (ch.type === 'connect_multiplication') {
+      ch.instruction = `${who.charAt(0).toUpperCase()}${who.slice(1)} jumped from ${data.startFrom} to ${ch.startPosition}. `
+        + `How many jumps of ${data.skipValue} did it make? Finish the multiplication fact.`;
+      ch.hint = 'Count the jumps, one arc at a time.';
+    }
+  }
+
+  // find_skip_value: the skip value is the answer, so no text the learner reads may name it (a generated title read
+  // "Jump by 5s!"). Code replaces any title, description, instruction or hint that does.
+  if (data.challenges.some((c: { type: string }) => c.type === 'find_skip_value')) {
+    const sv = Number(data.skipValue);
+    const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+    const names = new RegExp(`\\b(${sv}|${words[sv] ?? sv})s?\\b|\\bby\\s+\\w+s\\b`, 'i');
+    if (pinnedType === 'find_skip_value') {
+      if (names.test(data.title ?? '')) data.title = 'How Far Is Each Jump?';
+      if (names.test(data.description ?? '')) data.description = 'Watch where the character lands and work out how far each jump goes.';
+    }
+    for (const ch of data.challenges as Array<{ type: string; instruction: string; hint: string; narration: string }>) {
+      if (ch.type !== 'find_skip_value') continue;
+      if (names.test(ch.instruction ?? '')) ch.instruction = 'Look at where it lands. How far is each jump?';
+      // A hint can describe the answer without naming it ("a two-digit number ending in zero"): always code's.
+      ch.hint = 'Find the difference between two landings next to each other.';
+      if (names.test(ch.narration ?? '')) ch.narration = 'Can you figure out how far each jump goes?';
+    }
+  }
+
   return data;
 };

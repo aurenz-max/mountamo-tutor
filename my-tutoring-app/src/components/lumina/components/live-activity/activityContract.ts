@@ -19,7 +19,9 @@ import { numberTracerLiveDomain } from './adapters/numberTracerLive';
 import { shapeTracerLiveDomain } from './adapters/shapeTracerLive';
 import { comparisonBuilderLiveDomain } from './adapters/comparisonBuilderLive';
 import { coinCounterLiveDomain } from './adapters/coinCounterLive';
+import { regroupingWorkbenchLiveDomain } from './adapters/regroupingWorkbenchLive';
 import { measureLabLiveDomain } from './adapters/measureLabLive';
+import { areaModelLiveDomain } from './adapters/areaModelLive';
 import { lengthLabLiveDomain } from './adapters/lengthLabLive';
 import { analogClockLiveDomain } from './adapters/analogClockLive';
 import { timeSequencerLiveDomain } from './adapters/timeSequencerLive';
@@ -93,6 +95,7 @@ import { diWorkedProcedureLiveDomain } from './adapters/diWorkedProcedureLive';
 import { diWordProblemSetupLiveDomain } from './adapters/diWordProblemSetupLive';
 import { spatialSceneLiveDomain } from './adapters/spatialSceneLive';
 import { hundredsChartLiveDomain } from './adapters/hundredsChartLive';
+import { skipCountingRunnerLiveDomain } from './adapters/skipCountingRunnerLive';
 import { mathFactFluencyLiveDomain } from './adapters/mathFactFluencyLive';
 import { additionFactStrategiesLiveDomain } from './adapters/additionFactStrategiesLive';
 import { equationBuilderLiveDomain } from './adapters/equationBuilderLive';
@@ -129,7 +132,9 @@ export const LIVE_ADAPTERS = {
   'shape-tracer': workspaceAdapter('shape-tracer', shapeTracerLiveDomain),
   'comparison-builder': workspaceAdapter('comparison-builder', comparisonBuilderLiveDomain),
   'coin-counter': workspaceAdapter('coin-counter', coinCounterLiveDomain),
+  'regrouping-workbench': workspaceAdapter('regrouping-workbench', regroupingWorkbenchLiveDomain),
   'measure-lab': workspaceAdapter('measure-lab', measureLabLiveDomain),
+  'area-model': workspaceAdapter('area-model', areaModelLiveDomain),
   'length-lab': workspaceAdapter('length-lab', lengthLabLiveDomain),
   'analog-clock': workspaceAdapter('analog-clock', analogClockLiveDomain),
   'time-sequencer': workspaceAdapter('time-sequencer', timeSequencerLiveDomain),
@@ -203,6 +208,7 @@ export const LIVE_ADAPTERS = {
   'di-word-problem-setup': workspaceAdapter('di-word-problem-setup', diWordProblemSetupLiveDomain),
   'spatial-scene': workspaceAdapter('spatial-scene', spatialSceneLiveDomain),
   'hundreds-chart': workspaceAdapter('hundreds-chart', hundredsChartLiveDomain),
+  'skip-counting-runner': workspaceAdapter('skip-counting-runner', skipCountingRunnerLiveDomain),
   'math-fact-fluency': workspaceAdapter('math-fact-fluency', mathFactFluencyLiveDomain),
   'addition-fact-strategies': workspaceAdapter('addition-fact-strategies', additionFactStrategiesLiveDomain),
   'equation-builder': workspaceAdapter('equation-builder', equationBuilderLiveDomain),

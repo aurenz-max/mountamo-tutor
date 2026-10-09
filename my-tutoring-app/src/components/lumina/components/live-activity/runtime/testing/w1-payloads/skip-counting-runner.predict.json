@@ -1,0 +1,100 @@
+{
+ "source": "qa/tutor-reports/skip-counting-runner-runtime-predict-payload-2026-10-09.json",
+ "primitiveId": "skip-counting-runner",
+ "evalMode": "predict",
+ "data": {
+  "title": "Kangaroo Hops by 5s!",
+  "description": "Help the kangaroo hop across the number line by 5s to discover number patterns and build early multiplication skills.",
+  "skipValue": 5,
+  "startFrom": 0,
+  "endAt": 50,
+  "direction": "forward",
+  "character": {
+   "type": "kangaroo",
+   "imagePrompt": "A cheerful cartoon kangaroo ready to hop forward on a numbered path."
+  },
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "predict",
+    "instruction": "The kangaroo is at 5. Where is the next landing?",
+    "hint": "Think about what comes next after five.",
+    "narration": "Hop to five, and then...",
+    "hiddenPositions": [
+     10
+    ],
+    "startPosition": 5
+   },
+   {
+    "id": "c2",
+    "type": "predict",
+    "instruction": "The kangaroo is at 10. Where is the next landing?",
+    "hint": "Count forward by fives to find the next spot.",
+    "narration": "Ten, and then...",
+    "hiddenPositions": [
+     15
+    ],
+    "startPosition": 10
+   },
+   {
+    "id": "c3",
+    "type": "predict",
+    "instruction": "The kangaroo is at 15. Where is the next landing?",
+    "hint": "Look closely at the pattern in the numbers.",
+    "narration": "Fifteen, and then...",
+    "hiddenPositions": [
+     20
+    ],
+    "startPosition": 15
+   },
+   {
+    "id": "c4",
+    "type": "predict",
+    "instruction": "The kangaroo is at 20. Where is the next landing?",
+    "hint": "Keep the rhythm going strong.",
+    "narration": "Twenty, and then...",
+    "hiddenPositions": [
+     25
+    ],
+    "startPosition": 20
+   },
+   {
+    "id": "c5",
+    "type": "predict",
+    "instruction": "The kangaroo is at 30. Where is the next landing?",
+    "hint": "You are getting further along the track. What follows thirty?",
+    "narration": "Thirty, and then...",
+    "hiddenPositions": [
+     35
+    ],
+    "startPosition": 30
+   },
+   {
+    "id": "c6",
+    "type": "predict",
+    "instruction": "The kangaroo is at 40. Where is the next landing?",
+    "hint": "This is near the end of the path. Look at the last few jumps.",
+    "narration": "Forty, and then...",
+    "hiddenPositions": [
+     45
+    ],
+    "startPosition": 40
+   }
+  ],
+  "showOptions": {
+   "showArray": false,
+   "showJumpArcs": false,
+   "showEquation": false,
+   "showDigitPattern": false,
+   "autoPlay": false,
+   "showTrackLabels": false,
+   "showSequenceChips": false,
+   "showSkipValueBadge": false
+  },
+  "gradeBand": "1-2",
+  "gameMode": {
+   "enabled": false
+  },
+  "supportTier": "hard"
+ }
+}
