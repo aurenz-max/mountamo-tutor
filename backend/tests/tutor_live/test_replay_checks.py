@@ -92,6 +92,10 @@ def test_spoken_forms():
     assert {'4', 'four'} <= forms('4') and {'one half', 'a half'} <= forms('1/2')
     assert said_fix('Jump back 2 spaces.', 'Jump back 2 from 6') is None
     assert said_fix('Jump back 3 spaces.', 'Jump back 2 from 6') == 'Jump back'
+    # A numbered start dot names a place, not an amount (letter-workshop replay 10-09).
+    assert said_fix('Put your finger or pen on dot number 1 first.', 'Trace lowercase a on the writing paper.') is None
+    assert said_fix('Put your pencil right on dot 1 and try from there.', 'Copy lowercase s beside the model.') is None
+    assert said_fix('Put 3 dots on the line.', 'Trace lowercase a on the writing paper.') is not None
 
 
 MENU = ['morning', 'afternoon', 'evening', 'night']
@@ -141,9 +145,26 @@ def test_a_count_from_one_says_only_where_it_stops(text, said):
     ('Look under the cell to see the parts split into tens.', True),
     ('Now all four sides are written right on the rectangle.', True),
     ('Take a look under that first cell, it now shows the numbers.', True),
+    # story-map replay 10-09, said in the turn that pulls the lever.
+    ('Two empty person spaces appeared on the screen, showing there are two characters in total.', True),
+    ('I opened a short practice story for us called "Rosa and the Kite."', True),
+    ('I brought up a shorter practice story so we can try together!', True),
+    ('Two character spaces are showing on the screen now. Who is the dog?', True),
+    ('Let\'s try a shorter practice story first! Read about Rosa and Tim.', False),
     # Asking, not claiming.
     ('Look at the rectangle. What do you notice about the sides?', False),
     ('Let me add something to help you look at the tens.', False),
 ])
 def test_a_change_claimed_in_the_pulling_turn(text, early):
     assert (check(text, 'stuck', calls=[PULL])['checks']['no_change_before_receipt'] is False) is early
+
+
+@pytest.mark.parametrize('text,fix', [
+    # life-cycle-sequencer replay 10-09: the last two cards are the ones left, not an amount.
+    ('Great, now place those last two cards where they belong.', False),
+    ('Move the other three cards into the empty slots.', False),
+    # An amount to change is still a fix.
+    ('Add two more counters to the frame.', True),
+])
+def test_naming_the_cards_left_is_not_a_fix(text, fix):
+    assert (check(text, 'stuck', ask='Put the stages in order.')['checks']['no_fix_before_try'] is False) is fix

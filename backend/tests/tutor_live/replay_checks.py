@@ -37,7 +37,10 @@ CHANGE_DONE = re.compile(r"\bI(?:'ve| have)? (?:drawn|added|put|marked|shown|hig
                          r"|\bnow (?:shows?|outlines?|displays?|has|marks?|labels?)\b|\bcan now see\b"
                          r"|\b(?:is|are) now (?:\w+ed|written|shown|drawn|showing)\b"
                          r"|\bnow [^.?!]{0,40}\b(?:is|are) (?:written|labell?ed|marked|drawn|shown|outlined|split)\b"
-                         r"|\blook (?:right )?(?:under|below|beneath|above|beside) [^.?!]{0,30}\bto see\b", re.I)
+                         r"|\blook (?:right )?(?:under|below|beneath|above|beside) [^.?!]{0,30}\bto see\b"
+                         # story-map replay 10-09: "Two person spaces just appeared", "I opened a short practice story".
+                         r"|\b(?:just |have |has )?appeared\b|\bI(?:'ve| have)? (?:opened|brought up|pulled up|put up)\b"
+                         r"|\b(?:showing|are|is) on (?:the|your|our) screen now\b|\bshowing on (?:the|your|our) screen\b", re.I)
 
 
 def forms(phrase):
@@ -166,7 +169,11 @@ def said_fix(text, ask):
     text = PRONOUN_ONE.sub('', text)
     # Names with a number in them are not amounts.
     text = re.sub(r"\bten[- ]frames?\b|\bhundreds? chart\b|\bfive[- ]frames?\b", 'frame', text, flags=re.I)
+    # A numbered start dot is a name too: "put your pen on dot 1", "the number 1 dot" (letter-workshop replay 10-09).
+    text = re.sub(r"\bdot (?:number(?:ed)? )?(?:\d+|one|two|three)\b|\b(?:number )?(?:\d+|one|two|three) dot\b", 'the dot', text, flags=re.I)
     text = without_asked_fractions(text, ask)  # "shade the circle to show 1/2" restates the ask
+    # "the last two cards" names which objects, not how many to change (life-cycle-sequencer replay 10-09).
+    text = re.sub(r"\b(?:last|remaining|other|final)\s+(?:\d+|" + '|'.join(NUMBER_WORDS) + r")\b", 'the', text, flags=re.I)
     for sentence in re.split(r'(?<=[.!?])\s+', text):
         if sentence.rstrip().endswith('?'):
             continue
