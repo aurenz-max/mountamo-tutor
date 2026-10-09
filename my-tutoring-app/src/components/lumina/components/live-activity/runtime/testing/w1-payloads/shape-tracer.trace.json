@@ -1,0 +1,131 @@
+{
+ "source": "qa/tutor-reports/shape-tracer-runtime-trace-payload-2026-10-09.json",
+ "primitiveId": "shape-tracer",
+ "evalMode": "trace",
+ "data": {
+  "title": "Trace the Magic Shapes!",
+  "description": "Learn to draw triangles, squares, and rectangles by following the dotted lines.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "trace",
+    "instruction": "Trace the triangle by following the dots!",
+    "targetShape": "triangle",
+    "tracePath": [
+     {
+      "x": 262,
+      "y": 81
+     },
+     {
+      "x": 145,
+      "y": 271
+     },
+     {
+      "x": 344,
+      "y": 288
+     }
+    ],
+    "tolerance": 35
+   },
+   {
+    "id": "c2",
+    "type": "trace",
+    "instruction": "Trace the square by following the dots!",
+    "targetShape": "square",
+    "tracePath": [
+     {
+      "x": 150,
+      "y": 100
+     },
+     {
+      "x": 350,
+      "y": 100
+     },
+     {
+      "x": 350,
+      "y": 300
+     },
+     {
+      "x": 150,
+      "y": 300
+     }
+    ],
+    "tolerance": 35
+   },
+   {
+    "id": "c3",
+    "type": "trace",
+    "instruction": "Trace the rectangle by following the dots!",
+    "targetShape": "rectangle",
+    "tracePath": [
+     {
+      "x": 108,
+      "y": 107
+     },
+     {
+      "x": 406,
+      "y": 133
+     },
+     {
+      "x": 392,
+      "y": 293
+     },
+     {
+      "x": 94,
+      "y": 267
+     }
+    ],
+    "tolerance": 35
+   },
+   {
+    "id": "c4",
+    "type": "trace",
+    "instruction": "Trace the triangle by following the dots!",
+    "targetShape": "triangle",
+    "tracePath": [
+     {
+      "x": 250,
+      "y": 80
+     },
+     {
+      "x": 150,
+      "y": 280
+     },
+     {
+      "x": 350,
+      "y": 280
+     }
+    ],
+    "tolerance": 35
+   },
+   {
+    "id": "c5",
+    "type": "trace",
+    "instruction": "Trace the square by following the dots!",
+    "targetShape": "square",
+    "tracePath": [
+     {
+      "x": 159,
+      "y": 92
+     },
+     {
+      "x": 358,
+      "y": 109
+     },
+     {
+      "x": 341,
+      "y": 308
+     },
+     {
+      "x": 142,
+      "y": 291
+     }
+    ],
+    "tolerance": 35
+   }
+  ],
+  "gridSize": 25,
+  "showPropertyReminder": false,
+  "gradeBand": "K"
+ }
+}

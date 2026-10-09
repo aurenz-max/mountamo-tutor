@@ -1,0 +1,224 @@
+{
+ "source": "qa/tutor-reports/fast-fact-runtime-recognize-payload-2026-10-09.json",
+ "primitiveId": "fast-fact",
+ "evalMode": "recognize",
+ "data": {
+  "title": "Adding Within Twenty",
+  "description": "Practice quick addition facts up to 20.",
+  "subject": "Math",
+  "challenges": [
+   {
+    "id": "add_1",
+    "type": "warm-up",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "5 + 3 = ?",
+     "subtext": "Calculate the sum"
+    },
+    "correctAnswer": "8",
+    "responseMode": "choice",
+    "options": [
+     "7",
+     "9",
+     "8",
+     "10"
+    ],
+    "explanation": "Five plus three equals eight.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "add_2",
+    "type": "warm-up",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "4 + 4 = ?",
+     "subtext": "Calculate the sum"
+    },
+    "correctAnswer": "8",
+    "responseMode": "choice",
+    "options": [
+     "6",
+     "7",
+     "9",
+     "8"
+    ],
+    "explanation": "Four plus four equals eight.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "add_3",
+    "type": "warm-up",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "6 + 2 = ?",
+     "subtext": "Calculate the sum"
+    },
+    "correctAnswer": "8",
+    "responseMode": "choice",
+    "options": [
+     "8",
+     "7",
+     "9",
+     "10"
+    ],
+    "explanation": "Six plus two equals eight.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "add_4",
+    "type": "core",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "7 + 5 = ?",
+     "subtext": "Calculate the sum"
+    },
+    "correctAnswer": "12",
+    "responseMode": "choice",
+    "options": [
+     "11",
+     "12",
+     "13",
+     "14"
+    ],
+    "explanation": "Seven plus five equals twelve.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "add_5",
+    "type": "core",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "8 + 6 = ?",
+     "subtext": "Calculate the sum"
+    },
+    "correctAnswer": "14",
+    "responseMode": "choice",
+    "options": [
+     "12",
+     "13",
+     "14",
+     "15"
+    ],
+    "explanation": "Eight plus six equals fourteen.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "add_6",
+    "type": "core",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "9 + 4 = ?",
+     "subtext": "Calculate the sum"
+    },
+    "correctAnswer": "13",
+    "responseMode": "choice",
+    "options": [
+     "11",
+     "12",
+     "14",
+     "13"
+    ],
+    "explanation": "Nine plus four equals thirteen.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "add_7",
+    "type": "core",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "7 + 7 = ?",
+     "subtext": "Calculate the sum"
+    },
+    "correctAnswer": "14",
+    "responseMode": "choice",
+    "options": [
+     "14",
+     "13",
+     "15",
+     "16"
+    ],
+    "explanation": "Seven plus seven equals fourteen.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "add_8",
+    "type": "mastery",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "9 + 9 = ?",
+     "subtext": "Calculate the sum"
+    },
+    "correctAnswer": "18",
+    "responseMode": "choice",
+    "options": [
+     "16",
+     "18",
+     "17",
+     "19"
+    ],
+    "explanation": "Nine plus nine equals eighteen.",
+    "difficulty": "hard"
+   },
+   {
+    "id": "add_9",
+    "type": "mastery",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "8 + 7 = ?",
+     "subtext": "Calculate the sum"
+    },
+    "correctAnswer": "15",
+    "responseMode": "choice",
+    "options": [
+     "13",
+     "14",
+     "15",
+     "16"
+    ],
+    "explanation": "Eight plus seven equals fifteen.",
+    "difficulty": "hard"
+   },
+   {
+    "id": "add_10",
+    "type": "mastery",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "9 + 8 = ?",
+     "subtext": "Calculate the sum"
+    },
+    "correctAnswer": "17",
+    "responseMode": "choice",
+    "options": [
+     "15",
+     "16",
+     "18",
+     "17"
+    ],
+    "explanation": "Nine plus eight equals seventeen.",
+    "difficulty": "hard"
+   }
+  ],
+  "targetResponseTime": 6,
+  "phaseConfig": {
+   "warm-up": {
+    "label": "Warm Up",
+    "icon": "\ud83c\udf31",
+    "accentColor": "emerald"
+   },
+   "core": {
+    "label": "Core Practice",
+    "icon": "\u2b50",
+    "accentColor": "blue"
+   },
+   "mastery": {
+    "label": "Mastery",
+    "icon": "\ud83d\udd25",
+    "accentColor": "amber"
+   }
+  },
+  "showStreakCounter": true,
+  "showAccuracy": true,
+  "maxAttemptsPerChallenge": 2,
+  "gradeBand": "K-2"
+ }
+}

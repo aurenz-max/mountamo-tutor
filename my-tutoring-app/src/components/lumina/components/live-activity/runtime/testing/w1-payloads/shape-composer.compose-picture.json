@@ -1,0 +1,334 @@
+{
+ "source": "qa/tutor-reports/shape-composer-runtime-compose-picture-payload-2026-10-09.json",
+ "primitiveId": "shape-composer",
+ "evalMode": "compose-picture",
+ "data": {
+  "title": "Picture Building Fun!",
+  "description": "Practice picture building with shapes.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "compose-picture",
+    "instruction": "Let us build a simple house in the garden! Place a big square for the base and a triangle on top for the roof.",
+    "hint": "Put the square at the bottom and place the triangle right on top of it.",
+    "targetPicture": "house",
+    "targetDescription": "A house with a square body, triangle roof, and rectangle door",
+    "availableShapes": [
+     {
+      "shape": "square",
+      "color": "#3B82F6",
+      "count": 1
+     },
+     {
+      "shape": "triangle",
+      "color": "#8B5CF6",
+      "count": 1
+     },
+     {
+      "shape": "rectangle",
+      "color": "#10B981",
+      "count": 1
+     }
+    ],
+    "pictureSlots": [
+     {
+      "id": "cp0-s0",
+      "shape": "square",
+      "x": 140,
+      "y": 155,
+      "width": 120,
+      "height": 100,
+      "rotation": 0
+     },
+     {
+      "id": "cp0-s1",
+      "shape": "triangle",
+      "x": 130,
+      "y": 95,
+      "width": 140,
+      "height": 60,
+      "rotation": 0
+     },
+     {
+      "id": "cp0-s2",
+      "shape": "rectangle",
+      "x": 185,
+      "y": 215,
+      "width": 30,
+      "height": 40,
+      "rotation": 0
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "compose-picture",
+    "instruction": "Time to grow a tree in our garden! Use a rectangle for the trunk and a triangle for the leafy top.",
+    "hint": "The tall rectangle makes the trunk, and the triangle rests on it like green leaves.",
+    "targetPicture": "tree",
+    "targetDescription": "A tree with two triangle foliage layers and a rectangle trunk",
+    "availableShapes": [
+     {
+      "shape": "triangle",
+      "color": "#22C55E",
+      "count": 2
+     },
+     {
+      "shape": "rectangle",
+      "color": "#92400E",
+      "count": 1
+     }
+    ],
+    "pictureSlots": [
+     {
+      "id": "cp1-s0",
+      "shape": "triangle",
+      "x": 150,
+      "y": 85,
+      "width": 100,
+      "height": 80,
+      "rotation": 0
+     },
+     {
+      "id": "cp1-s1",
+      "shape": "triangle",
+      "x": 140,
+      "y": 135,
+      "width": 120,
+      "height": 80,
+      "rotation": 0
+     },
+     {
+      "id": "cp1-s2",
+      "shape": "rectangle",
+      "x": 185,
+      "y": 215,
+      "width": 30,
+      "height": 60,
+      "rotation": 0
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "compose-picture",
+    "instruction": "Look at the sunny garden! Let us build a rocket ship to fly to the sky using rectangles and triangles.",
+    "hint": "Put the rectangle in the middle for the body, and add triangles on the sides and top.",
+    "targetPicture": "rocket",
+    "targetDescription": "A rocket with a triangle nose, rectangle body, and two triangle fins",
+    "availableShapes": [
+     {
+      "shape": "triangle",
+      "color": "#EF4444",
+      "count": 3
+     },
+     {
+      "shape": "rectangle",
+      "color": "#6B7280",
+      "count": 1
+     }
+    ],
+    "pictureSlots": [
+     {
+      "id": "cp2-s0",
+      "shape": "triangle",
+      "x": 175,
+      "y": 65,
+      "width": 50,
+      "height": 40,
+      "rotation": 0
+     },
+     {
+      "id": "cp2-s1",
+      "shape": "rectangle",
+      "x": 170,
+      "y": 105,
+      "width": 60,
+      "height": 120,
+      "rotation": 0
+     },
+     {
+      "id": "cp2-s2",
+      "shape": "triangle",
+      "x": 145,
+      "y": 195,
+      "width": 30,
+      "height": 40,
+      "rotation": 30
+     },
+     {
+      "id": "cp2-s3",
+      "shape": "triangle",
+      "x": 225,
+      "y": 195,
+      "width": 30,
+      "height": 40,
+      "rotation": -30
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "compose-picture",
+    "instruction": "Build a bigger house with a window! Use a square for the walls, a triangle for the roof, and a small circle for the window.",
+    "hint": "Start with the square, add the triangle roof, and place the circle inside as a round window.",
+    "targetPicture": "house",
+    "targetDescription": "A house with a square body, triangle roof, and rectangle door",
+    "availableShapes": [
+     {
+      "shape": "square",
+      "color": "#3B82F6",
+      "count": 1
+     },
+     {
+      "shape": "triangle",
+      "color": "#8B5CF6",
+      "count": 1
+     },
+     {
+      "shape": "rectangle",
+      "color": "#10B981",
+      "count": 1
+     }
+    ],
+    "pictureSlots": [
+     {
+      "id": "cp3-s0",
+      "shape": "square",
+      "x": 140,
+      "y": 155,
+      "width": 120,
+      "height": 100,
+      "rotation": 0
+     },
+     {
+      "id": "cp3-s1",
+      "shape": "triangle",
+      "x": 130,
+      "y": 95,
+      "width": 140,
+      "height": 60,
+      "rotation": 0
+     },
+     {
+      "id": "cp3-s2",
+      "shape": "rectangle",
+      "x": 185,
+      "y": 215,
+      "width": 30,
+      "height": 40,
+      "rotation": 0
+     }
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "compose-picture",
+    "instruction": "Let us plant an apple tree! Use a rectangle for the trunk, a big triangle for the top, and circles for the sweet red apples.",
+    "hint": "Place the triangle above the rectangle trunk, then decorate the branches with circles.",
+    "targetPicture": "tree",
+    "targetDescription": "A tree with two triangle foliage layers and a rectangle trunk",
+    "availableShapes": [
+     {
+      "shape": "triangle",
+      "color": "#22C55E",
+      "count": 2
+     },
+     {
+      "shape": "rectangle",
+      "color": "#92400E",
+      "count": 1
+     }
+    ],
+    "pictureSlots": [
+     {
+      "id": "cp4-s0",
+      "shape": "triangle",
+      "x": 150,
+      "y": 85,
+      "width": 100,
+      "height": 80,
+      "rotation": 0
+     },
+     {
+      "id": "cp4-s1",
+      "shape": "triangle",
+      "x": 140,
+      "y": 135,
+      "width": 120,
+      "height": 80,
+      "rotation": 0
+     },
+     {
+      "id": "cp4-s2",
+      "shape": "rectangle",
+      "x": 185,
+      "y": 215,
+      "width": 30,
+      "height": 60,
+      "rotation": 0
+     }
+    ]
+   },
+   {
+    "id": "c6",
+    "type": "compose-picture",
+    "instruction": "Ready for a big adventure? Build a super-fast rocket ship using a rectangle, triangles, and circles for the engine fire!",
+    "hint": "Use the rectangle for the main body, triangles for the wings and tip, and circles at the bottom.",
+    "targetPicture": "rocket",
+    "targetDescription": "A rocket with a triangle nose, rectangle body, and two triangle fins",
+    "availableShapes": [
+     {
+      "shape": "triangle",
+      "color": "#EF4444",
+      "count": 3
+     },
+     {
+      "shape": "rectangle",
+      "color": "#6B7280",
+      "count": 1
+     }
+    ],
+    "pictureSlots": [
+     {
+      "id": "cp5-s0",
+      "shape": "triangle",
+      "x": 175,
+      "y": 65,
+      "width": 50,
+      "height": 40,
+      "rotation": 0
+     },
+     {
+      "id": "cp5-s1",
+      "shape": "rectangle",
+      "x": 170,
+      "y": 105,
+      "width": 60,
+      "height": 120,
+      "rotation": 0
+     },
+     {
+      "id": "cp5-s2",
+      "shape": "triangle",
+      "x": 145,
+      "y": 195,
+      "width": 30,
+      "height": 40,
+      "rotation": 30
+     },
+     {
+      "id": "cp5-s3",
+      "shape": "triangle",
+      "x": 225,
+      "y": 195,
+      "width": 30,
+      "height": 40,
+      "rotation": -30
+     }
+    ]
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

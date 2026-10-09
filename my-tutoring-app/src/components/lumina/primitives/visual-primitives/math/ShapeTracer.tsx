@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -16,13 +16,25 @@ import {
 } from '../../../evaluation';
 import type { ShapeTracerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { shapeTracerPipPose } from '../../../pip/shapeTracerPipPose';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  CANVAS_HEIGHT, CANVAS_WIDTH, checkShapeProperties, describeShapeWork, freeTrace, gridDots as generateGridDots,
+  nextTraceCorner, shapeTracerMiss, tierGuides, traceAccepts, workspaceAssignment, workspaceScene, type ShapeTracerView,
+} from './shapeTracerWorkspace';
+import {
+  BARS_LEVER, FADE_LEVER, OUTLINE_LEVER, RINGS_LEVER, STRIP_LEVER, cornerRings, guidesWith, leverFacts, practiceItem,
+  shapeTracerLevers, sideBars,
+} from './shapeTracerLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -96,8 +108,6 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'connect-dots': { label: 'Connect', icon: '🔗', accentColor: 'orange' },
 };
 
-const CANVAS_WIDTH = 500;
-const CANVAS_HEIGHT = 400;
 const DOT_RADIUS = 16;
 const GRID_DOT_RADIUS = 6;
 
@@ -122,62 +132,25 @@ const SHAPE_STROKE: Record<string, string> = {
 };
 
 // ============================================================================
-// Helpers
-// ============================================================================
-
-function dist(a: { x: number; y: number }, b: { x: number; y: number }): number {
-  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-}
-
-function generateGridDots(gridSize: number): Array<{ x: number; y: number }> {
-  const dots: Array<{ x: number; y: number }> = [];
-  const pad = 40;
-  for (let x = pad; x <= CANVAS_WIDTH - pad; x += gridSize) {
-    for (let y = pad; y <= CANVAS_HEIGHT - pad; y += gridSize) {
-      dots.push({ x, y });
-    }
-  }
-  return dots;
-}
-
-function checkShapeProperties(
-  vertices: Array<{ x: number; y: number }>,
-  required: NonNullable<ShapeTracerChallenge['requiredProperties']>,
-): { correct: boolean; feedback: string } {
-  const numSides = vertices.length;
-
-  if (required.sides !== undefined && numSides !== required.sides) {
-    return { correct: false, feedback: `Your shape has ${numSides} sides but needs ${required.sides}.` };
-  }
-  if (required.corners !== undefined && numSides !== required.corners) {
-    return { correct: false, feedback: `Your shape has ${numSides} corners but needs ${required.corners}.` };
-  }
-  if (required.allSidesEqual && numSides >= 2) {
-    const lengths = vertices.map((v, i) => dist(v, vertices[(i + 1) % numSides]));
-    const avg = lengths.reduce((a, b) => a + b, 0) / lengths.length;
-    const tolerance = avg * 0.35; // generous for small hands
-    if (!lengths.every(len => Math.abs(len - avg) <= tolerance)) {
-      return { correct: false, feedback: 'Try to make all sides about the same length!' };
-    }
-  }
-
-  return { correct: true, feedback: 'Great shape!' };
-}
-
-// ============================================================================
 // Props
 // ============================================================================
 
 interface ShapeTracerProps {
   data: ShapeTracerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
+const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  ShapeTracerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ShapeTracerChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -201,21 +174,41 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
   const [revealedShape, setRevealedShape] = useState('');
+  /** The last tap was refused (not the next corner, or a grid dot already used); the tutor is told. */
+  const [refusedTap, setRefusedTap] = useState(false);
+  // Levers (`shapeTracerLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<ShapeTracerChallenge | null>(null);
 
-  // ── Challenge Progress (shared hooks) ─────────────────────────────
+  // ── Challenge Progress. On the workspace path the runtime moves the index. ──
 
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({
+  const stableInstanceIdRef = useRef(instanceId || `shape-tracer-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
     challenges,
     getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (_index, retry) => openItem.current(retry),
+    onFinished: result => finish.current(result),
   });
+  const {
+    currentIndex: currentChallengeIndex,
+    results: challengeResults,
+    isComplete: allChallengesComplete,
+    advance: advanceProgress,
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  // The activity's own check is the workspace's checked gesture. A ref, so the tap callbacks keep their deps.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -225,17 +218,17 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     phaseConfig: CHALLENGE_TYPE_CONFIG,
   });
 
-  const currentChallenge = useMemo(
-    () => challenges[currentChallengeIndex] || null,
-    [challenges, currentChallengeIndex],
-  );
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never on a practice item. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   const gridDots = useMemo(() => generateGridDots(gridSize), [gridSize]);
-
-  // ── Refs ──────────────────────────────────────────────────────────
-
-  const stableInstanceIdRef = useRef(instanceId || `shape-tracer-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  /** The tracing help on the canvas: what the challenge's tier left on, plus the guide levers pulled on it. */
+  const guides = currentChallenge ? guidesWith(currentChallenge, practice ? [] : pulledLevers) : tierGuides({} as ShapeTracerChallenge);
+  const freeStart = !!currentChallenge && freeTrace(currentChallenge);
 
   // ── Computed ──────────────────────────────────────────────────────
 
@@ -271,7 +264,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     }
   }, [currentChallenge]);
 
-  const isCurrentChallengeComplete = challengeResults.some(
+  // A practice item records nothing in the session's results; its own finished shape is what says it is done.
+  const isCurrentChallengeComplete = practice ? shapeComplete : challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct,
   );
 
@@ -280,6 +274,12 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       ? selectedGridPoints.length > 0
       : tappedIndices.length > 0
   );
+
+  /** The learner's work as the domain module reads it (describe, miss, scene). */
+  const view: ShapeTracerView = {
+    tapped: tappedIndices, points: selectedGridPoints, refused: refusedTap, complete: shapeComplete,
+    guides, propertyReminder: showPropertyReminder,
+  };
 
   // ── Evaluation Hook ───────────────────────────────────────────────
 
@@ -307,14 +307,14 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     requiredProperties: currentChallenge?.requiredProperties ?? {},
     sidesCompleted,
     totalSides,
-    attemptNumber: currentAttempts + 1,
+    attemptNumber: progress.currentAttempts + 1,
     gradeBand,
     totalChallenges: challenges.length,
     currentChallengeIndex,
     instruction: currentChallenge?.instruction ?? '',
     supportTier: currentChallenge?.supportTier,
   }), [
-    currentChallenge, sidesCompleted, totalSides, currentAttempts,
+    currentChallenge, sidesCompleted, totalSides, progress.currentAttempts,
     gradeBand, challenges.length, currentChallengeIndex,
   ]);
 
@@ -341,12 +341,18 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     return '';
   }, []);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Its context carries the dot order and the hidden shape, so it is off on the workspace path, and its scripted
+  // cues send nothing there.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'shape-tracer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K' ? 'Kindergarten' : 'Grade 1',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // ── Pip shared surface ────────────────────────────────────────────
   // A projection of this challenge's check state, the tutor's speech on it, and
@@ -372,7 +378,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
   // Activity introduction
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
+    if (tutorOwned || !isConnected || hasIntroducedRef.current || challenges.length === 0) return;
     hasIntroducedRef.current = true;
     sendText(
       `[ACTIVITY_START] Shape Tracer activity for ${gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}. `
@@ -382,19 +388,46 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       + tutorRevealClause(currentChallenge?.supportTier),
       { silent: true },
     );
-  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText, tutorRevealClause]);
+  }, [isConnected, challenges.length, gradeBand, currentChallenge, sendText, tutorRevealClause, tutorOwned]);
+
+  // ── Reset ─────────────────────────────────────────────────────────
+
+  const resetDomainState = useCallback(() => {
+    pip.clear();
+    setTappedIndices([]);
+    setSelectedGridPoints([]);
+    setShapeComplete(false);
+    setFeedback('');
+    setFeedbackType('');
+    setRevealedShape('');
+    setRefusedTap(false);
+  }, [pip.clear]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A fresh challenge starts empty, and the return from a practice item ends it. Try again (only after a checked
+  // miss) keeps a connect-dots item's joined dots, which were all right, and clears a drawing's corners; on a practice
+  // item it keeps the practice item.
+  openItem.current = (retry) => {
+    if (!retry) { setPractice(null); resetDomainState(); return; }
+    setFeedback(''); setFeedbackType(''); setRefusedTap(false);
+    if (currentChallenge?.type === 'draw-from-description') setSelectedGridPoints([]);
+  };
+
+  /** The finished shape: the activity's check on its last correct tap. */
+  const creditShape = useCallback((ch: ShapeTracerChallenge, work: ShapeTracerView) => {
+    commitCheck.current(describeShapeWork(ch, work), true);
+  }, []);
 
   // ── Interaction Handlers ──────────────────────────────────────────
 
   const handleTraceTap = useCallback((vertexIndex: number) => {
-    if (hasSubmittedEvaluation || shapeComplete) return;
+    if (hasSubmittedEvaluation || shapeComplete || learnerBlocked()) return;
     const path = currentChallenge?.tracePath;
     if (!path) return;
 
-    if (vertexIndex !== tappedIndices.length) {
+    if (!traceAccepts(path.length, tappedIndices, vertexIndex, freeStart)) {
       SoundManager.invalid();
-      setFeedback('Try tapping the next dot in order!');
+      setFeedback(freeStart ? 'Tap the corner right next to your last one!' : 'Try tapping the next dot in order!');
       setFeedbackType('error');
+      setRefusedTap(true);
       return;
     }
 
@@ -402,6 +435,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     setTappedIndices(newTapped);
     setFeedback('');
     setFeedbackType('');
+    setRefusedTap(false);
 
     const isComplete = newTapped.length === path.length;
     if (!isComplete) SoundManager.tap();
@@ -420,21 +454,18 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       setShapeComplete(true);
       setFeedback(`You traced the ${currentChallenge?.targetShape}!`);
       setFeedbackType('success');
-      recordResult({
-        challengeId: currentChallenge!.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
+      creditShape(currentChallenge!, { ...view, tapped: newTapped, refused: false, complete: true });
       sendText(
         `[ANSWER_CORRECT] Student traced a ${currentChallenge?.targetShape} with ${path.length} sides! `
         + `Celebrate: "You drew a perfect ${currentChallenge?.targetShape}! Look at all ${path.length} sides!"`,
         { silent: true },
       );
     }
-  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, currentAttempts, sendText, recordResult]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, freeStart, sendText, creditShape]);
 
   const handleCompleteTap = useCallback((vertexIndex: number) => {
-    if (hasSubmittedEvaluation || shapeComplete) return;
+    if (hasSubmittedEvaluation || shapeComplete || learnerBlocked()) return;
     const remaining = currentChallenge?.remainingVertices;
     if (!remaining) return;
 
@@ -442,6 +473,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       SoundManager.invalid();
       setFeedback('Tap the next dot to add the next side!');
       setFeedbackType('error');
+      setRefusedTap(true);
       return;
     }
 
@@ -449,6 +481,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     setTappedIndices(newTapped);
     setFeedback('');
     setFeedbackType('');
+    setRefusedTap(false);
 
     const isComplete = newTapped.length === remaining.length;
     if (!isComplete) SoundManager.tap();
@@ -470,45 +503,47 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       setShapeComplete(true);
       setFeedback(`You completed the ${currentChallenge?.targetShape}!`);
       setFeedbackType('success');
-      recordResult({
-        challengeId: currentChallenge!.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
+      creditShape(currentChallenge!, { ...view, tapped: newTapped, refused: false, complete: true });
       sendText(
         `[ANSWER_CORRECT] Student completed a ${currentChallenge?.targetShape}! `
         + `They drew the missing ${remaining.length} side(s). Celebrate!`,
         { silent: true },
       );
     }
-  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, currentAttempts, sendText, recordResult]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, sendText, creditShape]);
 
   const handleGridDotClick = useCallback((dot: { x: number; y: number }) => {
-    if (hasSubmittedEvaluation || shapeComplete) return;
+    if (hasSubmittedEvaluation || shapeComplete || learnerBlocked()) return;
     if (selectedGridPoints.some(p => p.x === dot.x && p.y === dot.y)) {
       SoundManager.invalid();
       setFeedback('You already placed a corner there!');
       setFeedbackType('error');
+      setRefusedTap(true);
       return;
     }
     SoundManager.tap();
     setSelectedGridPoints(prev => [...prev, dot]);
     setFeedback('');
     setFeedbackType('');
+    setRefusedTap(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasSubmittedEvaluation, shapeComplete, selectedGridPoints]);
 
   const handleConnectDotTap = useCallback((dotIndex: number) => {
-    if (hasSubmittedEvaluation || shapeComplete) return;
+    if (hasSubmittedEvaluation || shapeComplete || learnerBlocked()) return;
     const dots = currentChallenge?.dots;
     const order = currentChallenge?.correctOrder;
-    if (!dots || !order) return;
+    if (!dots || !order || !currentChallenge) return;
 
     const expectedDot = order[tappedIndices.length];
     if (dotIndex !== expectedDot) {
+      // A dot out of order is this mode's checked wrong answer (it always counted as an attempt).
       SoundManager.invalid();
-      incrementAttempts();
       setFeedback('Try finding the next number in order!');
       setFeedbackType('error');
+      commitCheck.current(describeShapeWork(currentChallenge, view, dotIndex), false,
+        shapeTracerMiss(currentChallenge, { tapped: tappedIndices, points: [], wrongDot: dotIndex }));
       sendText(
         `[WRONG_DOT] Student tapped dot ${dotIndex} but should tap dot ${expectedDot} (step ${tappedIndices.length + 1}). `
         + `Hint: "Look for the number ${tappedIndices.length + 1}. Which dot is next?"`,
@@ -528,24 +563,22 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     if (isComplete) {
       SoundManager.playCorrect();
       setShapeComplete(true);
-      const shapeName = currentChallenge?.revealShape || currentChallenge?.targetShape || 'shape';
+      const shapeName = currentChallenge.revealShape || currentChallenge.targetShape || 'shape';
       setRevealedShape(shapeName);
       setFeedback(`It's a ${shapeName}!`);
       setFeedbackType('success');
-      recordResult({
-        challengeId: currentChallenge!.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
+      creditShape(currentChallenge, { ...view, tapped: newTapped, complete: true });
       sendText(
         `[ANSWER_CORRECT] Student connected all ${order.length} dots and revealed a ${shapeName}! `
         + `Ask: "What shape did you make? How many sides does it have?"`,
         { silent: true },
       );
     }
-  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, currentAttempts, sendText, recordResult, incrementAttempts]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSubmittedEvaluation, shapeComplete, currentChallenge, tappedIndices, sendText, creditShape]);
 
   const handleUndo = useCallback(() => {
+    if (learnerBlocked()) return;
     if (currentChallenge?.type === 'draw-from-description') {
       setSelectedGridPoints(prev => prev.slice(0, -1));
     } else {
@@ -553,9 +586,12 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     }
     setFeedback('');
     setFeedbackType('');
+    setRefusedTap(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallenge?.type]);
 
   const handleCheckShape = useCallback(() => {
+    if (learnerBlocked()) return;
     if (!currentChallenge || currentChallenge.type !== 'draw-from-description') return;
     if (selectedGridPoints.length < 3) {
       SoundManager.invalid();
@@ -564,33 +600,17 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       return;
     }
 
-    incrementAttempts();
     const required = currentChallenge.requiredProperties;
-    if (!required) {
-      SoundManager.playCorrect();
-      setShapeComplete(true);
-      setFeedback(`Nice ${currentChallenge.targetShape}!`);
-      setFeedbackType('success');
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      return;
-    }
-
-    const result = checkShapeProperties(selectedGridPoints, required);
+    const result = required ? checkShapeProperties(selectedGridPoints, required) : { correct: true, feedback: '' };
+    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    const work = { ...view, refused: false };
     if (result.correct) {
       SoundManager.playCorrect();
       setShapeComplete(true);
-      setFeedback(`Great job! You drew a ${currentChallenge.targetShape}!`);
+      setFeedback(required ? `Great job! You drew a ${currentChallenge.targetShape}!` : `Nice ${currentChallenge.targetShape}!`);
       setFeedbackType('success');
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
+      commitCheck.current(describeShapeWork(currentChallenge, work), true);
+      if (required) sendText(
         `[ANSWER_CORRECT] Student drew a ${currentChallenge.targetShape} from description: "${currentChallenge.description}". `
         + `Their shape has ${selectedGridPoints.length} sides. Celebrate!`,
         { silent: true },
@@ -599,6 +619,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       SoundManager.playIncorrect();
       setFeedback(result.feedback);
       setFeedbackType('error');
+      commitCheck.current(describeShapeWork(currentChallenge, work), false,
+        shapeTracerMiss(currentChallenge, { tapped: [], points: selectedGridPoints }));
       sendText(
         `[ANSWER_INCORRECT] Student's shape doesn't match. ${result.feedback} `
         + `Required: ${JSON.stringify(required)}. Student drew ${selectedGridPoints.length} vertices. `
@@ -606,7 +628,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
         { silent: true },
       );
     }
-  }, [currentChallenge, selectedGridPoints, currentAttempts, sendText, recordResult, incrementAttempts]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge, selectedGridPoints, sendText]);
 
   // ── Challenge Navigation ──────────────────────────────────────────
 
@@ -626,7 +649,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
         { silent: true },
       );
 
-      if (!hasSubmittedEvaluation) {
+      // The workspace path submits the scored session from `onFinished` (below), not this tally.
+      if (!hasSubmittedEvaluation && !tutorOwned) {
         const correct = challengeResults.filter(r => r.correct).length;
         const accuracy = Math.round((correct / challenges.length) * 100);
         const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
@@ -645,13 +669,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     }
 
     // Reset domain-specific state
-    pip.clear();
-    setTappedIndices([]);
-    setSelectedGridPoints([]);
-    setShapeComplete(false);
-    setFeedback('');
-    setFeedbackType('');
-    setRevealedShape('');
+    resetDomainState();
 
     const nextChallenge = challenges[currentChallengeIndex + 1];
     sendText(
@@ -662,9 +680,26 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       { silent: true },
     );
   }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, tutorRevealClause, pip.clear,
+    advanceProgress, phaseResults, challenges, challengeResults, sendText, tutorOwned,
+    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex, tutorRevealClause, resetDomainState,
   ]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation) return;
+    const metrics: ShapeTracerMetrics = {
+      type: 'shape-tracer',
+      tracingAccuracy: result.accuracy,
+      shapesCompleted: result.solvedCount,
+      totalShapes: challenges.length,
+      attemptsCount: result.attemptsCount,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // Auto-submit when all complete
   const hasAutoSubmittedRef = useRef(false);
@@ -674,6 +709,39 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
       advanceToNextChallenge();
     }
   }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. W1 offers no
+  // demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, view);
+    // Levers belong to the session item; a practice item offers none. A guide the tier already shows is pulled.
+    const levers = practice ? [] : shapeTracerLevers(sessionChallenge, pulledLevers);
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item, not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (id === FADE_LEVER && !tappedIndices.length) return 'No dot is joined yet, so nothing would change; pull it once a dot is joined.';
+        if (id === BARS_LEVER && selectedGridPoints.length < 2) return 'The bars show the learner’s own sides, and there are none yet; pull it once two corners are placed.';
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge);
+          if (!easier) return 'This item has no easier one; try a help lever.';
+          setLeverState(pulled); resetDomainState(); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { resetDomainState(); setPractice(null); },
+    };
+  });
 
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challenges.length === 0) return 0;
@@ -691,11 +759,9 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     const path = currentChallenge?.tracePath;
     if (!path || path.length === 0) return null;
 
-    // Support-tier scaffolds: undefined = ON (legacy / no tier applied).
-    const showGuidePath = currentChallenge?.showGuidePath ?? true;
-    const showDirectionArrows = currentChallenge?.showDirectionArrows ?? true;
-    const showNextCue = currentChallenge?.showNextCue ?? true;
-    const showOrderNumbers = currentChallenge?.showOrderNumbers ?? true;
+    // Support-tier scaffolds (`tierGuides`): undefined = ON (legacy / no tier applied).
+    const { guidePath: showGuidePath, arrows: showDirectionArrows, nextCue: showNextCue, orderNumbers: showOrderNumbers } = guides;
+    const nextCorner = nextTraceCorner(path.length, tappedIndices, freeStart);
 
     return (
       <>
@@ -746,11 +812,11 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
           );
         })}
 
-        {/* Closing line when shape is complete */}
-        {shapeComplete && path.length > 2 && (
+        {/* Closing line when shape is complete: from the last corner tapped back to the first */}
+        {shapeComplete && path.length > 2 && tappedIndices.length === path.length && (
           <line
-            x1={path[path.length - 1].x} y1={path[path.length - 1].y}
-            x2={path[0].x} y2={path[0].y}
+            x1={path[tappedIndices[path.length - 1]].x} y1={path[tappedIndices[path.length - 1]].y}
+            x2={path[tappedIndices[0]].x} y2={path[tappedIndices[0]].y}
             stroke={shapeStroke}
             strokeWidth={3}
             strokeLinecap="round"
@@ -760,7 +826,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
         {/* Vertex dots (tap targets) */}
         {path.map((point, idx) => {
           const isTapped = tappedIndices.includes(idx);
-          const isNext = idx === tappedIndices.length;
+          const isNext = idx === nextCorner;
 
           return (
             <g key={`v-${idx}`} ref={pip.ref(`vertex-${idx}`)} data-pip-object={`vertex-${idx}`} className="cursor-pointer"
@@ -821,7 +887,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     const remaining = currentChallenge?.remainingVertices ?? [];
 
     // Support-tier scaffolds: undefined = ON (legacy / no tier applied).
-    const showNextCue = currentChallenge?.showNextCue ?? true;
+    const showNextCue = guides.nextCue;
 
     // Build all vertices for polygon fill when complete
     const allVerts: Array<{ x: number; y: number }> = [];
@@ -845,6 +911,15 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
             points={allVerts.map(p => `${p.x},${p.y}`).join(' ')}
             fill={shapeFill} stroke="none"
             className="transition-all duration-500"
+          />
+        )}
+
+        {/* The dotted_outline lever: the whole shape's dashed outline, through the open corners too */}
+        {leverOn(OUTLINE_LEVER) && !shapeComplete && allVerts.length >= 3 && (
+          <polygon
+            data-lever={OUTLINE_LEVER}
+            points={allVerts.map(p => `${p.x},${p.y}`).join(' ')}
+            fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeDasharray="8 6"
           />
         )}
 
@@ -944,8 +1019,8 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     // Support-tier scaffolds: undefined = ON (legacy / no tier applied).
     // Vertex order labels withdraw at hard; the dashed preview-closing line
     // withdraws at medium/hard (mapped to showGuidePath = easy-only).
-    const showOrderNumbers = currentChallenge?.showOrderNumbers ?? true;
-    const showPreviewLine = currentChallenge?.showGuidePath ?? true;
+    const showOrderNumbers = guides.orderNumbers;
+    const showPreviewLine = guides.guidePath;
 
     return (
       <>
@@ -1035,7 +1110,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
 
     // Support-tier scaffold: the pulsing next-dot cue. The dot NUMBERS are the
     // puzzle's answer, so they always render (never withdrawn by tier).
-    const showNextCue = currentChallenge?.showNextCue ?? true;
+    const showNextCue = guides.nextCue;
 
     return (
       <>
@@ -1077,6 +1152,17 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
         {dots.map((dot, idx) => {
           const isTapped = tappedIndices.includes(idx);
           const isNext = order[tappedIndices.length] === idx;
+          // The fade_joined lever: a joined dot becomes a green tick, so it stops looking like a dot to tap.
+          if (isTapped && leverOn(FADE_LEVER) && !shapeComplete) {
+            return (
+              <g key={`d-${idx}`} ref={pip.ref(`dot-${idx}`)} data-pip-object={`dot-${idx}`} className="cursor-pointer"
+                onClick={() => { pip.look(`dot-${idx}`); handleConnectDotTap(idx); }}>
+                <circle cx={dot.x} cy={dot.y} r={DOT_RADIUS} fill="rgba(34, 197, 94, 0.12)" stroke="rgba(34, 197, 94, 0.5)" strokeWidth={2} />
+                <text x={dot.x} y={dot.y} textAnchor="middle" dominantBaseline="central" fontSize={14} fill="#4ade80"
+                  className="pointer-events-none select-none">{'✓'}</text>
+              </g>
+            );
+          }
 
           return (
             <g key={`d-${idx}`} ref={pip.ref(`dot-${idx}`)} data-pip-object={`dot-${idx}`} className="cursor-pointer"
@@ -1135,10 +1221,14 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
         <div className="flex items-center justify-between">
           <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           <div className="flex items-center gap-2">
+            {practice && <LuminaBadge className="text-xs">Practice</LuminaBadge>}
             <LuminaBadge accent="blue" className="text-xs">
               {gradeBand === 'K' ? 'Kindergarten' : 'Grade 1'}
             </LuminaBadge>
-            {currentChallenge && (
+            {/* The shape's name: never on draw-from-description (the clue's properties are the task), and on
+                connect-dots only once the joined dots reveal it. */}
+            {currentChallenge && currentChallenge.type !== 'draw-from-description'
+              && (currentChallenge.type !== 'connect-dots' || revealedShape) && (
               <LuminaBadge accent="purple" className="text-xs">
                 {currentChallenge.targetShape}
               </LuminaBadge>
@@ -1205,6 +1295,21 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
                 </LuminaBadge>
               )}
             </div>
+          </div>
+        )}
+
+        {/* The number_strip lever: the dots' numbers in counting order, a tick on each one joined. Marks no dot. */}
+        {currentChallenge?.type === 'connect-dots' && leverOn(STRIP_LEVER) && !shapeComplete && (
+          <div data-lever={STRIP_LEVER} aria-label="Number strip" className="flex justify-center gap-1.5 flex-wrap">
+            {(currentChallenge.correctOrder ?? []).map((dotIdx, i) => {
+              const joined = i < tappedIndices.length;
+              return (
+                <span key={`strip-${i}`} className={`min-w-8 rounded-md border px-2 py-1 text-center text-sm font-bold ${
+                  joined ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-300' : 'border-white/10 bg-slate-800/40 text-slate-300'}`}>
+                  {currentChallenge.dots?.[dotIdx]?.label ?? String(dotIdx + 1)}{joined ? ' ✓' : ''}
+                </span>
+              );
+            })}
           </div>
         )}
 
@@ -1278,6 +1383,33 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
           </div>
         )}
 
+        {/* The corner_rings lever: one ring per corner the clue asks for, filled by the learner's corners; extras in red */}
+        {currentChallenge?.type === 'draw-from-description' && leverOn(RINGS_LEVER) && (() => {
+          const { rings, filled, extra } = cornerRings(currentChallenge, selectedGridPoints.length);
+          return (
+            <div data-lever={RINGS_LEVER} aria-label="Corner rings" className="flex items-center justify-center gap-2">
+              {Array.from({ length: rings }, (_, i) => (
+                <span key={`ring-${i}`} className={`h-5 w-5 rounded-full border-2 ${i < filled ? 'border-emerald-300 bg-emerald-400/60' : 'border-emerald-300/50'}`} />
+              ))}
+              {Array.from({ length: extra }, (_, i) => (
+                <span key={`extra-${i}`} className="h-5 w-5 rounded-full border-2 border-red-400 bg-red-500/50" />
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* The side_bars lever: one bar per side of the learner's own shape, as long as the side */}
+        {currentChallenge?.type === 'draw-from-description' && leverOn(BARS_LEVER) && selectedGridPoints.length >= 2 && (() => {
+          const bars = sideBars(selectedGridPoints), longest = Math.max(...bars, 1);
+          return (
+            <div data-lever={BARS_LEVER} aria-label="Side bars" className="mx-auto flex w-full max-w-[320px] flex-col gap-1">
+              {bars.map((len, i) => (
+                <div key={`bar-${i}`} className="h-2.5 rounded-full bg-sky-400/70" style={{ width: `${Math.round((len / longest) * 100)}%` }} />
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Feedback */}
         {feedback && (
           <div className={`text-center text-sm font-medium ${
@@ -1292,7 +1424,7 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
         {/* Action Buttons */}
         {challenges.length > 0 && (
           <div className="flex justify-center gap-3">
-            {canUndo && (
+            {canUndo && !(tutorOwned && progress.canAttempt === false) && (
               <LuminaButton tone="subtle" onClick={handleUndo}>
                 Undo
               </LuminaButton>
@@ -1302,13 +1434,13 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckShape}
-                disabled={selectedGridPoints.length < 3}
+                disabled={selectedGridPoints.length < 3 || (tutorOwned && progress.canAttempt === false)}
               >
                 Check Shape
               </LuminaActionButton>
             )}
 
-            {isCurrentChallengeComplete && !allChallengesComplete && (
+            {!tutorOwned && isCurrentChallengeComplete && !allChallengesComplete && (
               <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                 Next Challenge
               </LuminaActionButton>
@@ -1342,5 +1474,9 @@ const ShapeTracer: React.FC<ShapeTracerProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path keeps the runtime's progression: no Next button, no scripted cue, no legacy AI context.
+const ShapeTracer = withWorkspaceController<ShapeTracerProps, ProgressOptions<ShapeTracerChallenge>, Progress>(
+  'shape-tracer', ShapeTracerSurface, useScriptedProgress, useWorkspaceProgressFor('shape-tracer'));
 
 export default ShapeTracer;

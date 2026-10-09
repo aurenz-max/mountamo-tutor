@@ -16,6 +16,7 @@ import { numberBondLiveDomain } from './adapters/numberBondLive';
 import { ordinalLineLiveDomain } from './adapters/ordinalLineLive';
 import { sortingStationLiveDomain } from './adapters/sortingStationLive';
 import { numberTracerLiveDomain } from './adapters/numberTracerLive';
+import { shapeTracerLiveDomain } from './adapters/shapeTracerLive';
 import { comparisonBuilderLiveDomain } from './adapters/comparisonBuilderLive';
 import { coinCounterLiveDomain } from './adapters/coinCounterLive';
 import { measureLabLiveDomain } from './adapters/measureLabLive';
@@ -59,6 +60,7 @@ import { additionSubtractionSceneLiveDomain } from './adapters/additionSubtracti
 import { threeDShapeExplorerLiveDomain } from './adapters/threeDShapeExplorerLive';
 import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
 import { timelineBuilderLiveDomain } from './adapters/timelineBuilderLive';
+import { fastFactLiveDomain } from './adapters/fastFactLive';
 import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
 import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
 import { foodWebBuilderLiveDomain } from './adapters/foodWebBuilderLive';
@@ -82,6 +84,7 @@ import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { trainYardLiveDomain } from './adapters/trainYardLive';
 import { openBuilderLiveDomain } from './adapters/openBuilderLive';
 import { shapeBuilderLiveDomain } from './adapters/shapeBuilderLive';
+import { shapeComposerLiveDomain } from './adapters/shapeComposerLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
 import { diSpokenPracticeLiveDomain } from './adapters/diSpokenPracticeLive';
 import { diDiceRollLiveDomain } from './adapters/diDiceRollLive';
@@ -123,6 +126,7 @@ export const LIVE_ADAPTERS = {
   'ordinal-line': workspaceAdapter('ordinal-line', ordinalLineLiveDomain),
   'sorting-station': workspaceAdapter('sorting-station', sortingStationLiveDomain),
   'number-tracer': workspaceAdapter('number-tracer', numberTracerLiveDomain),
+  'shape-tracer': workspaceAdapter('shape-tracer', shapeTracerLiveDomain),
   'comparison-builder': workspaceAdapter('comparison-builder', comparisonBuilderLiveDomain),
   'coin-counter': workspaceAdapter('coin-counter', coinCounterLiveDomain),
   'measure-lab': workspaceAdapter('measure-lab', measureLabLiveDomain),
@@ -166,6 +170,7 @@ export const LIVE_ADAPTERS = {
   '3d-shape-explorer': workspaceAdapter('3d-shape-explorer', threeDShapeExplorerLiveDomain),
   'calendar-explorer': workspaceAdapter('calendar-explorer', calendarExplorerLiveDomain),
   'timeline-builder': workspaceAdapter('timeline-builder', timelineBuilderLiveDomain),
+  'fast-fact': workspaceAdapter('fast-fact', fastFactLiveDomain),
   'push-pull-arena': workspaceAdapter('push-pull-arena', pushPullArenaLiveDomain),
   'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
   'food-web-builder': workspaceAdapter('food-web-builder', foodWebBuilderLiveDomain),
@@ -189,6 +194,7 @@ export const LIVE_ADAPTERS = {
   'train-yard': workspaceAdapter('train-yard', trainYardLiveDomain),
   'open-builder': workspaceAdapter('open-builder', openBuilderLiveDomain),
   'shape-builder': workspaceAdapter('shape-builder', shapeBuilderLiveDomain),
+  'shape-composer': workspaceAdapter('shape-composer', shapeComposerLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),
   'di-spoken-practice': workspaceAdapter('di-spoken-practice', diSpokenPracticeLiveDomain),
   'di-dice-roll': workspaceAdapter('di-dice-roll', diDiceRollLiveDomain),

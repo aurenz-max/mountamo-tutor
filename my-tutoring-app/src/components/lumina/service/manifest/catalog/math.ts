@@ -29,6 +29,7 @@ import type { JumpMiss, LineMiss as NumberLineMiss } from '../../../primitives/v
 import type { BuildHopsMiss } from '../../../primitives/visual-primitives/math/numberLineBuildHops';
 import type { OrderMiss, SpokenSequencerMiss } from '../../../primitives/visual-primitives/math/numberSequencerDomain';
 import type { NumberTracerMiss } from '../../../primitives/visual-primitives/math/numberTracerWorkspace';
+import type { ShapeTracerMiss } from '../../../primitives/visual-primitives/math/shapeTracerWorkspace';
 import type { LineMiss, SpokenOrdinalMiss } from '../../../primitives/visual-primitives/math/ordinalLineWorkspace';
 import type { PatternBuilderMiss } from '../../../primitives/visual-primitives/math/patternBuilderWorkspace';
 import type { PlaceValueMiss, SpokenPlaceValueMiss } from '../../../primitives/visual-primitives/math/placeValueWorkspace';
@@ -38,6 +39,7 @@ import type { FrameMiss } from '../../../primitives/visual-primitives/math/tenFr
 import type { SpokenFrameMiss } from '../../../primitives/visual-primitives/math/tenFrameWorkspace';
 import type { SpokenShapeMiss } from '../../../primitives/visual-primitives/math/shapeSorterDomain';
 import type { ShapeBuilderMiss } from '../../../primitives/visual-primitives/math/shapeBuilderWorkspace';
+import type { ShapeComposerMiss } from '../../../primitives/visual-primitives/math/shapeComposerWorkspace';
 import type { SpokenSortingMiss } from '../../../primitives/visual-primitives/math/sortingStationWorkspace';
 import type { SpokenSolidMiss } from '../../../primitives/visual-primitives/math/threeDShapeExplorerWorkspace';
 import { FRACTION_TOUCH_EVAL_MODES } from '../../../primitives/visual-primitives/math/fractionTouchModes';
@@ -4952,6 +4954,27 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'shape-tracer',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The activity checks the shape itself, and you are not told an answer: the learner taps dots on the canvas, '
+        + 'and on a drawing places corners on the grid and presses Check Shape. A trace or a completion finishes itself on '
+        + 'the last right corner; a tap that is not the next corner is not drawn and not checked. On connect-dots a dot out '
+        + 'of number order is a checked miss, and the hidden shape is not named until every dot is joined: do not name it '
+        + 'before then. Counting on is the task there: ask which number comes after the last dot joined; do not say it. '
+        + 'On draw-from-description the clue is the task: read it aloud, and do not name the shape it '
+        + 'describes unless the instruction does, or say where to put a corner. When the order numbers or the next-dot glow '
+        + 'are hidden, do not say which dot comes next or where to start; ask what the shape needs, such as how many corners '
+        + 'it has. A Kindergarten learner may not read: read the instruction aloud. You cannot tap, draw or check for the '
+        + 'learner.',
+      // Every mode publishes levers (`shapeTracerLevers.ts`); every miss below is answered by one on every saved payload
+      // item (`shapeTracerLevers.test.ts`).
+      levers: true,
+      // The activity's own check (`shapeTracerMiss`). A trace or completion tap out of turn is refused, never checked.
+      misses: missLists<ShapeTracerMiss>({
+        connect_dots: ['started_elsewhere', 'skipped_number', 'went_back'],
+        draw_from_description: ['too_few_sides', 'too_many_sides', 'sides_unequal'],
+      }),
+    },
     description: 'Interactive shape construction canvas with 4 progressive challenge types: trace (follow dotted outlines), complete (finish half-drawn shapes), draw-from-description (build shapes from verbal property descriptions), and connect-dots (reveal shapes by connecting numbered dots). Develops geometric reasoning by linking shape properties to motor construction. Perfect for K-1 shape recognition and spatial reasoning. ESSENTIAL for Kindergarten and Grade 1 geometry.',
     constraints: 'Canvas coordinate space is 500x400. All vertex coordinates must be within bounds (x: 40-460, y: 40-360). Shapes should be large enough for small hands to tap. Maximum 6 challenges per activity.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['manipulate'], role: 'apply', minutes: 5 },
@@ -5930,6 +5953,34 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'shape-composer',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The activity checks the answer itself, and you are not told it: the learner drags pieces onto the board, '
+        + 'taps shapes, or types a number, then presses Check Answer (“I’m done!” on a build). Pieces snap when they are '
+        + 'close to their place, and a selected piece shows a turn button. On compose-match and compose-picture never say '
+        + 'where a piece goes or which way to turn it; asking what shape could fill a corner is teaching. On decompose '
+        + 'never name the shapes the big shape is made of or how many: ask the learner to trace each part with a finger '
+        + 'and say what shape it is. On how-many-ways never say the number, even as how many pieces to try, and never say '
+        + 'how the shape splits (such as cutting it corner to corner); the palette '
+        + 'pieces may not fit the named shape exactly, so invite the learner to picture the small shapes fitting inside '
+        + 'it one at a time, and count them. On free-create the learner makes their own picture from the shapes listed under the ask; '
+        + 'describe what you see, but never say which shape to add, take off or move, or how many are on the board. A '
+        + 'Kindergarten or Grade 1 learner may not read: read the instruction aloud, including the listed shapes on a '
+        + 'build. You cannot drag, tap or type for the learner.',
+      // Every mode declares levers (`shapeComposerLevers.ts`); every miss below is answered by one on every saved item.
+      levers: true,
+      // An older free-create payload with no recipe has no list to match or shorten: its any-two-shapes check has no lever.
+      unanswered: { 'free-create': ['too_few_shapes'] },
+      // The activity's own check (`shapeComposerMiss`), every mode. free-create's `too_few_shapes` is an older payload's
+      // (no recipe) any-two-shapes check.
+      misses: missLists<ShapeComposerMiss>({
+        'compose-match': ['pieces_left', 'piece_off_outline'],
+        'compose-picture': ['shape_missing', 'shape_off_spot'],
+        decompose: ['not_a_part', 'missed_part', 'extra_part', 'wrong_mix'],
+        'how-many-ways': ['too_few', 'too_many'],
+        'free-create': ['missing_piece', 'extra_piece', 'overlapping', 'not_touching', 'too_few_shapes'],
+      }),
+    },
     description: 'Interactive shape composition and decomposition workspace. Students compose larger shapes from smaller pieces (tangram-style), build pictures from shape palettes, and decompose composite shapes into basic components. Supports snap-to-fit placement, rotation, and guided decomposition. Perfect for teaching spatial reasoning, shape relationships, and geometry vocabulary at K-1 level. ESSENTIAL for kindergarten geometry composition standards.',
     constraints: 'Requires K-1 grade band. Challenge types: compose-match, compose-picture, decompose, free-create, how-many-ways.',
     affordances: { representation: 'concrete', reader: 'none', answers: ['build'], role: ['visualize', 'apply'], minutes: 8 },

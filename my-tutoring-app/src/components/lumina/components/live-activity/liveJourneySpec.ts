@@ -41,6 +41,8 @@ import { practiceItem as clockPracticeItem, practiceParent as clockPracticeParen
 import { practiceItem as measurePracticeItem, practiceParent as measurePracticeParent } from '../../primitives/visual-primitives/math/measureLabLevers';
 import { practiceItem as timePracticeItem, practiceParent as timePracticeParent } from '../../primitives/visual-primitives/math/timeSequencerLevers';
 import { simplerLength } from '../../primitives/visual-primitives/math/lengthLabLevers';
+import { simplerShape } from '../../primitives/visual-primitives/math/shapeComposerLevers';
+import { fastFactMiss, isAnswerCorrect as isFactCorrect } from '../../primitives/visual-primitives/core/fastFactWorkspace';
 import { arraysOf, gridFor } from '../../primitives/visual-primitives/math/arrayGridWorkspace';
 import { smallerArray } from '../../primitives/visual-primitives/math/arrayGridLevers';
 import type { ArrayGridChallenge } from '../../primitives/visual-primitives/math/ArrayGrid';
@@ -81,6 +83,7 @@ import { buildCompareItems, compareObjectsHarnessAnswers } from '../../primitive
 import { itemsFromChallenges as placeValueItems, placeValueHarnessAnswers } from '../../primitives/visual-primitives/math/placeValueScript';
 import { getDigitPaths } from '../../primitives/visual-primitives/math/numberTracerPaths';
 import { tracePart } from '../../primitives/visual-primitives/math/numberTracerLevers';
+import { drawCorners as shapeTracerDrawCorners } from '../../primitives/visual-primitives/math/shapeTracerWorkspace';
 import { itemsFromChallenges as sortingItems, sortingStationHarnessAnswers } from '../../primitives/visual-primitives/math/sortingStationScript';
 import { simplerFromParent as sortingSimplerFromParent } from '../../primitives/visual-primitives/math/sortingStationLevers';
 import { placeLabel } from '../../primitives/visual-primitives/math/spokenNumberWords';
@@ -633,6 +636,33 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'draw', strokes }, { type: 'choose', label: 'Check' }];
     },
     probes: { mounted: { selector: 'canvas' } },
+  },
+  'shape-tracer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/ShapeTracer.tsx',
+    instanceId: 'shapes',
+    defaults: { grade: 'Kindergarten', mode: 'trace', di: false, topic: 'Drawing triangles, squares and rectangles' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START', 'SIDE_COMPLETE', 'WRONG_DOT', 'REVEAL:'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every type through its real dots. trace and complete tap the corners in turn and finish themselves; a tap out of
+    // turn is refused on the dot, never checked, so they have no wrong input. connect-dots: the wrong answer starts at
+    // the second number (`started_elsewhere`). draw-from-description places a regular polygon on the grid
+    // (`drawCorners`) and presses Check Shape; the wrong one has one corner fewer (one more on a triangle).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current shape-tracer challenge');
+      const wrong = intent === 'wrong';
+      const touch = (prefix: string, ids: number[]): DriverInput[] => ids.map(i => ({ type: 'touch', target: `${prefix}-${i}` }));
+      if (c.type === 'trace') return wrong ? [] : touch('vertex', (c.tracePath ?? []).map((_: unknown, i: number) => i));
+      if (c.type === 'complete') return wrong ? [] : touch('remaining', (c.remainingVertices ?? []).map((_: unknown, i: number) => i));
+      if (c.type === 'connect-dots') {
+        const order: number[] = c.correctOrder ?? [];
+        return touch('dot', wrong ? [order[1]] : order);
+      }
+      return [...touch('grid', shapeTracerDrawCorners(c, ctx.data.gridSize ?? 50, wrong)), { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="canvas"]' } },
   },
   'comparison-builder': {
     execution: 'workspace',
@@ -1716,6 +1746,36 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[aria-label^="Building site"]' } },
   },
+  'shape-composer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/ShapeComposer.tsx',
+    instanceId: 'shape-composer',
+    defaults: { grade: 'Kindergarten', mode: 'decompose', di: false, topic: 'Composing and decomposing shapes' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START'],
+    prompts: WORKSPACE_PROMPTS,
+    // decompose taps each part's shape (wrong: one part left out, `missed_part`); how-many-ways types the number (wrong:
+    // one more than the fewest, `too_many`). The other modes are answered by dragging pieces on the board, which the
+    // driver has no input for: ShapeComposer.workspace.test.tsx drives them with pointer events.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier item (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = String(ctx.itemId ?? '').replace(/~simpler$/, '');
+      const found = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = found && parentId !== ctx.itemId ? simplerShape(found) : found;
+      if (!c) throw new Error('No current shape-composer challenge');
+      const wrong = intent === 'wrong', check: DriverInput = { type: 'check' };
+      if (c.type === 'decompose') {
+        const taps: string[] = (c.expectedComponents ?? []).flatMap((p: { shape: string; count: number }) =>
+          Array.from({ length: p.count }, () => p.shape));
+        return [...(wrong ? taps.slice(0, -1) : taps).map((label): DriverInput => ({ type: 'choose', label })), check];
+      }
+      if (c.type === 'how-many-ways') {
+        return [{ type: 'write', label: 'How many pieces', text: String(c.minimumPiecesNeeded + (wrong ? 1 : 0)) }, check];
+      }
+      throw new Error(`shape-composer ${c.type}: pieces are dragged on the board; the driver has no drag input`);
+    },
+    probes: { mounted: { selector: '[data-pip-object="canvas"], [data-pip-object="choices"]' } },
+  },
   'shape-builder': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/ShapeBuilder.tsx',
@@ -2216,6 +2276,32 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const order = intent === 'wrong' ? [ordered[1], ordered[0], ...ordered.slice(2)] : ordered;
       return [...order.flatMap((e, i): DriverInput[] => [{ type: 'choose', label: e.label }, { type: 'choose', label: `Slot ${i + 1}` }]),
         { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'fast-fact': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/core/FastFact.tsx',
+    instanceId: 'facts',
+    defaults: { grade: 'Grade 2', mode: 'recall', di: false, topic: 'Addition facts within 20' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode is one tap on a choice button (its text). A wrong tap is the most telling wrong choice by
+    // `fastFactMiss`: another operation's result, then a number one away, then the first other choice.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current fast-fact challenge');
+      const options: string[] = c.options ?? [];
+      const right = options.find(o => isFactCorrect(o, c));
+      if (!right) throw new Error(`fast-fact ${c.challengeType}: no choice is credited`);
+      if (intent !== 'wrong') return [{ type: 'choose', label: right }];
+      const others = options.filter(o => o !== right);
+      const rank = (o: string) => ['wrong_operation', 'one_less', 'one_more', 'other_number', 'other_choice']
+        .indexOf(fastFactMiss(c, { picked: o }) ?? 'other_choice');
+      const pick = [...others].sort((a, b) => rank(a) - rank(b))[0];
+      if (!pick) throw new Error(`fast-fact ${c.challengeType}: one choice has no wrong tap`);
+      return [{ type: 'choose', label: pick }];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

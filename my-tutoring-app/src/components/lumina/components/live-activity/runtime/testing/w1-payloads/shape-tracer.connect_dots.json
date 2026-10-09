@@ -1,0 +1,177 @@
+{
+ "source": "qa/tutor-reports/shape-tracer-runtime-connect_dots-payload-2026-10-09.json",
+ "primitiveId": "shape-tracer",
+ "evalMode": "connect_dots",
+ "data": {
+  "title": "Trace the Magic Shapes!",
+  "description": "Learn to draw triangles, squares, and rectangles by connecting the dots in order!",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "connect-dots",
+    "instruction": "Connect the dots 1, 2, and 3 to discover the hidden triangle!",
+    "targetShape": "triangle",
+    "dots": [
+     {
+      "x": 250,
+      "y": 80,
+      "label": "1"
+     },
+     {
+      "x": 150,
+      "y": 280,
+      "label": "2"
+     },
+     {
+      "x": 350,
+      "y": 280,
+      "label": "3"
+     }
+    ],
+    "correctOrder": [
+     0,
+     1,
+     2
+    ],
+    "revealShape": "triangle"
+   },
+   {
+    "id": "c2",
+    "type": "connect-dots",
+    "instruction": "Connect the dots to discover the hidden square!",
+    "targetShape": "square",
+    "dots": [
+     {
+      "x": 150,
+      "y": 100,
+      "label": "1"
+     },
+     {
+      "x": 350,
+      "y": 100,
+      "label": "2"
+     },
+     {
+      "x": 350,
+      "y": 300,
+      "label": "3"
+     },
+     {
+      "x": 150,
+      "y": 300,
+      "label": "4"
+     }
+    ],
+    "correctOrder": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "revealShape": "square"
+   },
+   {
+    "id": "c3",
+    "type": "connect-dots",
+    "instruction": "Connect the dots to discover the hidden rectangle!",
+    "targetShape": "rectangle",
+    "dots": [
+     {
+      "x": 100,
+      "y": 120,
+      "label": "1"
+     },
+     {
+      "x": 400,
+      "y": 120,
+      "label": "2"
+     },
+     {
+      "x": 400,
+      "y": 280,
+      "label": "3"
+     },
+     {
+      "x": 100,
+      "y": 280,
+      "label": "4"
+     }
+    ],
+    "correctOrder": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "revealShape": "rectangle"
+   },
+   {
+    "id": "c4",
+    "type": "connect-dots",
+    "instruction": "Connect the dots 1 to 3 to discover the hidden triangle!",
+    "targetShape": "triangle",
+    "dots": [
+     {
+      "x": 250,
+      "y": 80,
+      "label": "1"
+     },
+     {
+      "x": 150,
+      "y": 280,
+      "label": "2"
+     },
+     {
+      "x": 350,
+      "y": 280,
+      "label": "3"
+     }
+    ],
+    "correctOrder": [
+     0,
+     1,
+     2
+    ],
+    "revealShape": "triangle"
+   },
+   {
+    "id": "c5",
+    "type": "connect-dots",
+    "instruction": "Connect the dots in order to reveal the magical square!",
+    "targetShape": "square",
+    "dots": [
+     {
+      "x": 159,
+      "y": 92,
+      "label": "1"
+     },
+     {
+      "x": 358,
+      "y": 109,
+      "label": "2"
+     },
+     {
+      "x": 341,
+      "y": 308,
+      "label": "3"
+     },
+     {
+      "x": 142,
+      "y": 291,
+      "label": "4"
+     }
+    ],
+    "correctOrder": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "revealShape": "square"
+   }
+  ],
+  "gridSize": 25,
+  "showPropertyReminder": false,
+  "gradeBand": "K"
+ }
+}

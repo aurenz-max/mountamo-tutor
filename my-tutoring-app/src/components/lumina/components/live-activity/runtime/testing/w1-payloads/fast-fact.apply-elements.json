@@ -1,0 +1,224 @@
+{
+ "source": "qa/tutor-reports/fast-fact-runtime-apply-elements-payload-2026-10-09.json",
+ "primitiveId": "fast-fact",
+ "evalMode": "apply",
+ "data": {
+  "title": "Elemental Applications and Symbol Mastery",
+  "description": "Test your knowledge of chemical element symbols through real-world applications and reverse associations.",
+  "subject": "Science",
+  "challenges": [
+   {
+    "id": "chem_1",
+    "type": "warm-up",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Which element symbol is on the tank of a gas that makes party balloons float?",
+     "subtext": "Identify the symbol"
+    },
+    "correctAnswer": "He",
+    "responseMode": "choice",
+    "options": [
+     "H",
+     "Ne",
+     "He",
+     "Ar"
+    ],
+    "explanation": "Helium, represented by He, is a lightweight noble gas used to inflate balloons.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "chem_2",
+    "type": "warm-up",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "What is the standard chemical symbol for the metal used to make traditional pennies?",
+     "subtext": "Identify the symbol"
+    },
+    "correctAnswer": "Cu",
+    "responseMode": "choice",
+    "options": [
+     "Co",
+     "C",
+     "Ca",
+     "Cu"
+    ],
+    "explanation": "Copper, represented by Cu, is widely used in electrical wiring and coinage.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "chem_3",
+    "type": "warm-up",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Which element symbol represents the primary component of breathable air?",
+     "subtext": "Identify the symbol"
+    },
+    "correctAnswer": "N",
+    "responseMode": "choice",
+    "options": [
+     "N",
+     "Na",
+     "Ni",
+     "Ne"
+    ],
+    "explanation": "Nitrogen makes up about 78 percent of Earth's atmosphere and uses the symbol N.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "chem_4",
+    "type": "core",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "What is the symbol for the heavy liquid metal historically used in thermometers?",
+     "subtext": "Identify the symbol"
+    },
+    "correctAnswer": "Hg",
+    "responseMode": "choice",
+    "options": [
+     "Ag",
+     "Hg",
+     "Au",
+     "Mg"
+    ],
+    "explanation": "Mercury uses the symbol Hg, derived from its historic Latin name hydrargyrum.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "chem_5",
+    "type": "core",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Which element symbol denotes the precious yellow metal valued across human history?",
+     "subtext": "Identify the symbol"
+    },
+    "correctAnswer": "Au",
+    "responseMode": "choice",
+    "options": [
+     "Ag",
+     "Al",
+     "Au",
+     "As"
+    ],
+    "explanation": "Gold is represented by the symbol Au, coming from the Latin word aurum.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "chem_6",
+    "type": "core",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "What symbol represents the halogen added to municipal water supplies for dental health?",
+     "subtext": "Identify the symbol"
+    },
+    "correctAnswer": "F",
+    "responseMode": "choice",
+    "options": [
+     "Fe",
+     "Fr",
+     "P",
+     "F"
+    ],
+    "explanation": "Fluorine, represented by F, is commonly added in small amounts to tap water.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "chem_7",
+    "type": "mastery",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Which element symbol identifies the alkaline earth metal found abundantly in dairy and bones?",
+     "subtext": "Identify the symbol"
+    },
+    "correctAnswer": "Ca",
+    "responseMode": "choice",
+    "options": [
+     "Ca",
+     "C",
+     "Cl",
+     "Co"
+    ],
+    "explanation": "Calcium is represented by the symbol Ca and is essential for skeletal structure.",
+    "difficulty": "hard"
+   },
+   {
+    "id": "chem_8",
+    "type": "mastery",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "What is the symbol for the toxic gas deployed defensively in World War I trenches?",
+     "subtext": "Identify the symbol"
+    },
+    "correctAnswer": "Cl",
+    "responseMode": "choice",
+    "options": [
+     "C",
+     "Cl",
+     "Cr",
+     "Cs"
+    ],
+    "explanation": "Chlorine is a yellowish-green gas represented by the symbol Cl.",
+    "difficulty": "hard"
+   },
+   {
+    "id": "chem_9",
+    "type": "mastery",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Which symbol represents the radioactive element historically used in luminous watch dials?",
+     "subtext": "Identify the symbol"
+    },
+    "correctAnswer": "Ra",
+    "responseMode": "choice",
+    "options": [
+     "Rn",
+     "Rz",
+     "Ra",
+     "Re"
+    ],
+    "explanation": "Radium, represented by Ra, was once widely used for glow-in-the-dark paint.",
+    "difficulty": "hard"
+   },
+   {
+    "id": "chem_10",
+    "type": "mastery",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "What symbol denotes the trace metalloid crucial for modern computer semiconductor chips?",
+     "subtext": "Identify the symbol"
+    },
+    "correctAnswer": "Si",
+    "responseMode": "choice",
+    "options": [
+     "S",
+     "Se",
+     "Sn",
+     "Si"
+    ],
+    "explanation": "Silicon is represented by Si and forms the backbone of microelectronics.",
+    "difficulty": "hard"
+   }
+  ],
+  "targetResponseTime": 5,
+  "phaseConfig": {
+   "warm-up": {
+    "label": "Common Elements",
+    "icon": "\ud83e\uddea",
+    "accentColor": "blue"
+   },
+   "core": {
+    "label": "Metals & Gases",
+    "icon": "\u26a1",
+    "accentColor": "emerald"
+   },
+   "mastery": {
+    "label": "Advanced Applications",
+    "icon": "\ud83d\udd2c",
+    "accentColor": "amber"
+   }
+  },
+  "showStreakCounter": true,
+  "showAccuracy": true,
+  "maxAttemptsPerChallenge": 2,
+  "gradeBand": "6-8"
+ }
+}

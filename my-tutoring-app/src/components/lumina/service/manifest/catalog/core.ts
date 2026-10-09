@@ -6,6 +6,8 @@
  */
 
 import { ComponentDefinition } from '../../../types';
+import type { FastFactMiss } from '../../../primitives/visual-primitives/core/fastFactWorkspace';
+import { sameMisses } from './missLists';
 
 export const CORE_CATALOG: ComponentDefinition[] = [
   {
@@ -356,6 +358,25 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fast-fact',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8',
+        'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'A fact drill with no timer: never mention speed, a clock or answering quickly. The learner taps one '
+        + 'choice and the activity checks it at once; you are not told the answer. Read the question aloud, and for a '
+        + 'young learner read every choice aloud in the order shown, in the same voice for each. Before a tap, and after '
+        + 'a wrong one, never say the answer, which choice it is, or rule choices out until one is left. A counting picture '
+        + 'is counted by the learner: point them to it, never say how many. Teaching is how to get to the fact: what the '
+        + 'question asks, a related fact they know, a way to work it out that the learner then carries out. Never count, '
+        + 'add or work it through yourself, not even to one step short of the end. You cannot tap for the learner.',
+      // Every mode has levers (`fastFactLevers.ts`): spread_pictures on counting pictures, count_model on a sum,
+      // difference or product, drop_far_choice on any menu with two untried choices to spare. No miss is unanswered by
+      // decision; a two-choice item, or a three-choice text item after one wrong tap, offers none (reported).
+      levers: true,
+      // The tap's own check (`fastFactMiss`), every mode: the drill is subject-agnostic, so the misses are the shapes a
+      // wrong choice has in any subject.
+      misses: sameMisses<FastFactMiss>(['recognize', 'recall', 'apply'],
+        ['wrong_operation', 'one_less', 'one_more', 'other_number', 'other_choice']),
+    },
     description: 'Untimed fluency drill for rapid recall across any subject. '
       + 'Multiple-choice challenges with configurable phases and visual prompts. No countdown or time pressure — students answer at their own pace; response time is measured silently for the automaticity signal only. '
       + 'Use for: math facts, sight words, vocabulary, element symbols, dates & events, translations — '

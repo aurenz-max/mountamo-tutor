@@ -787,16 +787,19 @@ ${tierSection}`;
   const data = result.text ? JSON.parse(result.text) : null;
   if (!data) return fallbackDrawFromDescription(shape, setup);
 
+  const description: string = data.description || `Draw a shape with ${data.sides || 3} sides`;
   return {
     id: '',
     type: 'draw-from-description',
     instruction: data.instruction || `Read the clue and draw a ${shape}!`,
     targetShape: shape,
-    description: data.description || `Draw a shape with ${data.sides || 3} sides`,
+    description,
     requiredProperties: {
       sides: data.sides || 3,
       corners: data.corners || 3,
-      allSidesEqual: data.allSidesEqual ?? false,
+      // The check holds the learner only to what the clue says: "3 straight sides" came back with allSidesEqual
+      // true (2026-10-09 payload), and the equal-sides check then failed a correct triangle.
+      allSidesEqual: (data.allSidesEqual ?? false) && /\b(equal|same)\b/i.test(description),
       hasCurvedSides: data.hasCurvedSides ?? false,
     },
   };
@@ -1007,7 +1010,7 @@ function fallbackDrawFromDescription(shape: string, _setup: SetupResult): ShapeT
     rectangle: { sides: 4, corners: 4, equal: false, curved: false, desc: 'A shape with 4 sides - 2 long and 2 short - and 4 corners' },
     circle: { sides: 0, corners: 0, equal: false, curved: true, desc: 'A perfectly round shape with no corners' },
     hexagon: { sides: 6, corners: 6, equal: true, curved: false, desc: 'A shape with 6 equal sides and 6 corners' },
-    pentagon: { sides: 5, corners: 5, equal: true, curved: false, desc: 'A shape with 5 sides and 5 corners' },
+    pentagon: { sides: 5, corners: 5, equal: true, curved: false, desc: 'A shape with 5 equal sides and 5 corners' },
     rhombus: { sides: 4, corners: 4, equal: true, curved: false, desc: 'A shape like a tilted square - 4 equal sides but not square corners' },
   };
   const props = shapeProps[shape] || shapeProps.triangle!;

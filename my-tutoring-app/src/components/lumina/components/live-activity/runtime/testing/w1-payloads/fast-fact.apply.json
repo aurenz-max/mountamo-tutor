@@ -1,0 +1,214 @@
+{
+ "source": "qa/tutor-reports/fast-fact-runtime-apply-payload-2026-10-09.json",
+ "primitiveId": "fast-fact",
+ "evalMode": "apply",
+ "data": {
+  "title": "Addition Facts Within 20",
+  "description": "Practice and master single-digit and double-digit addition facts up to 20.",
+  "subject": "Math",
+  "challenges": [
+   {
+    "id": "add_1",
+    "type": "warm-up",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Find the missing addend: 7 + ___ = 12"
+    },
+    "correctAnswer": "5",
+    "responseMode": "choice",
+    "options": [
+     "4",
+     "6",
+     "5",
+     "7"
+    ],
+    "explanation": "Counting up from 7 to 12 gives us 5.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "add_2",
+    "type": "warm-up",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Which number makes this equation true? 8 + ___ = 15"
+    },
+    "correctAnswer": "7",
+    "responseMode": "choice",
+    "options": [
+     "6",
+     "8",
+     "9",
+     "7"
+    ],
+    "explanation": "15 minus 8 leaves a difference of 7.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "add_3",
+    "type": "warm-up",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "What is the sum if you increase 9 by 6?"
+    },
+    "correctAnswer": "15",
+    "responseMode": "choice",
+    "options": [
+     "15",
+     "14",
+     "16",
+     "17"
+    ],
+    "explanation": "Increasing 9 by 6 is the same as calculating 9 + 6, which equals 15.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "add_4",
+    "type": "warm-up",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Complete the equation: ___ + 4 = 11"
+    },
+    "correctAnswer": "7",
+    "responseMode": "choice",
+    "options": [
+     "6",
+     "7",
+     "8",
+     "9"
+    ],
+    "explanation": "7 plus 4 equals 11.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "add_5",
+    "type": "core",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "If Leo has 6 apples and buys 8 more, how many apples does he have in total?"
+    },
+    "correctAnswer": "14",
+    "responseMode": "choice",
+    "options": [
+     "12",
+     "13",
+     "14",
+     "15"
+    ],
+    "explanation": "Adding 6 and 8 together results in a total of 14.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "add_6",
+    "type": "core",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Which sum equals 17?"
+    },
+    "correctAnswer": "9 + 8",
+    "responseMode": "choice",
+    "options": [
+     "7 + 8",
+     "8 + 8",
+     "9 + 9",
+     "9 + 8"
+    ],
+    "explanation": "9 + 8 equals 17.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "add_7",
+    "type": "core",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Sarah read 5 books on Monday and 7 books on Tuesday. How many books did she read altogether?"
+    },
+    "correctAnswer": "12",
+    "responseMode": "choice",
+    "options": [
+     "12",
+     "11",
+     "13",
+     "14"
+    ],
+    "explanation": "5 + 7 equals 12 books in total.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "add_8",
+    "type": "mastery",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Which number makes this number sentence true? 9 + 9 = 8 + ___"
+    },
+    "correctAnswer": "10",
+    "responseMode": "choice",
+    "options": [
+     "9",
+     "10",
+     "11",
+     "12"
+    ],
+    "explanation": "9 + 9 is 18. To make 8 + ___ equal to 18, the missing number must be 10.",
+    "difficulty": "hard"
+   },
+   {
+    "id": "add_9",
+    "type": "mastery",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "What is the result when you combine 7, 5, and 4?"
+    },
+    "correctAnswer": "16",
+    "responseMode": "choice",
+    "options": [
+     "15",
+     "17",
+     "16",
+     "18"
+    ],
+    "explanation": "Adding 7 + 5 gives 12, and adding 4 more gives 16.",
+    "difficulty": "hard"
+   },
+   {
+    "id": "add_10",
+    "type": "mastery",
+    "challengeType": "apply",
+    "prompt": {
+     "text": "Which addition problem has a sum greater than 15?"
+    },
+    "correctAnswer": "8 + 9",
+    "responseMode": "choice",
+    "options": [
+     "6 + 7",
+     "7 + 8",
+     "5 + 9",
+     "8 + 9"
+    ],
+    "explanation": "8 + 9 equals 17, which is greater than 15.",
+    "difficulty": "hard"
+   }
+  ],
+  "targetResponseTime": 8,
+  "phaseConfig": {
+   "warm-up": {
+    "label": "Warm Up",
+    "icon": "\ud83c\udf31",
+    "accentColor": "emerald"
+   },
+   "core": {
+    "label": "Core Practice",
+    "icon": "\u2b50",
+    "accentColor": "blue"
+   },
+   "mastery": {
+    "label": "Mastery",
+    "icon": "\ud83d\udd25",
+    "accentColor": "amber"
+   }
+  },
+  "showStreakCounter": true,
+  "showAccuracy": true,
+  "maxAttemptsPerChallenge": 2,
+  "gradeBand": "K-2"
+ }
+}

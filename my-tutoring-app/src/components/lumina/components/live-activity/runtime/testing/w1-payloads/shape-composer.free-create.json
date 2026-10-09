@@ -1,0 +1,72 @@
+{
+ "source": "qa/tutor-reports/shape-composer-runtime-free-create-payload-2026-10-09.json",
+ "primitiveId": "shape-composer",
+ "evalMode": "free-create",
+ "data": {
+  "title": "Shape Pictures Fun!",
+  "description": "Practice shape pictures with shapes.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "free-create",
+    "instruction": "Make your own picture with one triangle and one square. Every shape must touch another shape.",
+    "recipe": [
+     {
+      "shape": "triangle",
+      "count": 1
+     },
+     {
+      "shape": "square",
+      "count": 1
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "free-create",
+    "instruction": "Make your own picture with one rectangle and two triangles. Every shape must touch another shape.",
+    "recipe": [
+     {
+      "shape": "rectangle",
+      "count": 1
+     },
+     {
+      "shape": "triangle",
+      "count": 2
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "free-create",
+    "instruction": "Make your own picture with one circle and two squares. Every shape must touch another shape.",
+    "recipe": [
+     {
+      "shape": "circle",
+      "count": 1
+     },
+     {
+      "shape": "square",
+      "count": 2
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "free-create",
+    "instruction": "Make your own picture with two squares and two circles. Every shape must touch another shape.",
+    "recipe": [
+     {
+      "shape": "square",
+      "count": 2
+     },
+     {
+      "shape": "circle",
+      "count": 2
+     }
+    ]
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

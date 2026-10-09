@@ -1,0 +1,67 @@
+{
+ "source": "qa/tutor-reports/shape-composer-runtime-how-many-ways-payload-2026-10-09.json",
+ "primitiveId": "shape-composer",
+ "evalMode": "how-many-ways",
+ "data": {
+  "title": "Shape Counting Fun!",
+  "description": "Practice shape counting with shapes.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "how-many-ways",
+    "instruction": "How many triangles do you need to build a square garden tile?",
+    "hint": "Try putting two triangles side by side to make a four-sided square shape.",
+    "targetForComposition": "square",
+    "allowedPieces": [
+     "triangle"
+    ],
+    "minimumPiecesNeeded": 2
+   },
+   {
+    "id": "c2",
+    "type": "how-many-ways",
+    "instruction": "How many squares do you need to build a rectangle flower bed?",
+    "hint": "Put two square tiles next to each other to form a longer rectangle.",
+    "targetForComposition": "rectangle",
+    "allowedPieces": [
+     "square"
+    ],
+    "minimumPiecesNeeded": 2
+   },
+   {
+    "id": "c3",
+    "type": "how-many-ways",
+    "instruction": "How many triangles do you need to build a trapezoid pathway stone?",
+    "hint": "Combine three triangles together to form the sloping sides of a trapezoid.",
+    "targetForComposition": "trapezoid",
+    "allowedPieces": [
+     "triangle"
+    ],
+    "minimumPiecesNeeded": 3
+   },
+   {
+    "id": "c4",
+    "type": "how-many-ways",
+    "instruction": "How many triangles do you need to build a large triangle roof for the garden shed?",
+    "hint": "You need four smaller triangles to fit together into one big triangle shape.",
+    "targetForComposition": "large-triangle",
+    "allowedPieces": [
+     "triangle"
+    ],
+    "minimumPiecesNeeded": 4
+   },
+   {
+    "id": "c5",
+    "type": "how-many-ways",
+    "instruction": "How many triangles do you need to build a hexagon flower patch?",
+    "hint": "Arrange six triangles in a circle around a center point to make a hexagon.",
+    "targetForComposition": "hexagon",
+    "allowedPieces": [
+     "triangle"
+    ],
+    "minimumPiecesNeeded": 6
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

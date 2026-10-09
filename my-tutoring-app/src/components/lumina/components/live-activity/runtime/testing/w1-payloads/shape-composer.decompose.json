@@ -1,0 +1,144 @@
+{
+ "source": "qa/tutor-reports/shape-composer-runtime-decompose-payload-2026-10-09.json",
+ "primitiveId": "shape-composer",
+ "evalMode": "decompose",
+ "data": {
+  "title": "Shape Decomposition Fun!",
+  "description": "Practice shape decomposition with shapes.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "decompose",
+    "instruction": "Look at the playground sandbox tile. What smaller shapes make up this big square?",
+    "hint": "Look closely! Straight lines cut across the square to make smaller shapes.",
+    "compositeShapePath": "M 140 115 L 260 115 L 260 235 L 140 235 Z",
+    "compositeDescription": "A square that can be split into 2 triangles",
+    "expectedComponents": [
+     {
+      "shape": "triangle",
+      "count": 2
+     }
+    ],
+    "divisionLineHints": [
+     {
+      "x1": 140,
+      "y1": 115,
+      "x2": 260,
+      "y2": 235
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "decompose",
+    "instruction": "Look at the slide platform. What shapes are used to build this rectangle?",
+    "hint": "Count how many identical equal-sized blocks are lined up side by side.",
+    "compositeShapePath": "M 110 130 L 290 130 L 290 220 L 110 220 Z",
+    "compositeDescription": "A rectangle that can be split into 2 squares",
+    "expectedComponents": [
+     {
+      "shape": "square",
+      "count": 2
+     }
+    ],
+    "divisionLineHints": [
+     {
+      "x1": 200,
+      "y1": 130,
+      "x2": 200,
+      "y2": 220
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "decompose",
+    "instruction": "Look at the playground clubhouse. What shapes do you see making this house?",
+    "hint": "Check the walls at the bottom and the roof on the top!",
+    "compositeShapePath": "M 140 115 L 260 115 L 260 235 L 140 235 Z",
+    "compositeDescription": "A square that can be split into 2 triangles",
+    "expectedComponents": [
+     {
+      "shape": "triangle",
+      "count": 2
+     }
+    ],
+    "divisionLineHints": [
+     {
+      "x1": 140,
+      "y1": 115,
+      "x2": 260,
+      "y2": 235
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "decompose",
+    "instruction": "Look at the shiny kite decoration on the playground fence. What shapes make this diamond?",
+    "hint": "Draw an imaginary line down the middle. What two shapes do you see meeting?",
+    "compositeShapePath": "M 200 115 L 260 175 L 200 235 L 140 175 Z",
+    "compositeDescription": "A diamond that can be split into 2 triangles",
+    "expectedComponents": [
+     {
+      "shape": "triangle",
+      "count": 2
+     }
+    ],
+    "divisionLineHints": [
+     {
+      "x1": 140,
+      "y1": 175,
+      "x2": 260,
+      "y2": 175
+     }
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "decompose",
+    "instruction": "Look at this larger sandbox area. What shapes make up this big rectangle?",
+    "hint": "Count all the equal square paving stones inside the play area.",
+    "compositeShapePath": "M 110 130 L 290 130 L 290 220 L 110 220 Z",
+    "compositeDescription": "A rectangle that can be split into 2 squares",
+    "expectedComponents": [
+     {
+      "shape": "square",
+      "count": 2
+     }
+    ],
+    "divisionLineHints": [
+     {
+      "x1": 200,
+      "y1": 130,
+      "x2": 200,
+      "y2": 220
+     }
+    ]
+   },
+   {
+    "id": "c6",
+    "type": "decompose",
+    "instruction": "Look at this grand playground tower. What shapes make up this house figure?",
+    "hint": "Find the main base room and the pointy roof above it.",
+    "compositeShapePath": "M 140 115 L 260 115 L 260 235 L 140 235 Z",
+    "compositeDescription": "A square that can be split into 2 triangles",
+    "expectedComponents": [
+     {
+      "shape": "triangle",
+      "count": 2
+     }
+    ],
+    "divisionLineHints": [
+     {
+      "x1": 140,
+      "y1": 115,
+      "x2": 260,
+      "y2": 235
+     }
+    ]
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

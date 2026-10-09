@@ -1,0 +1,202 @@
+{
+ "source": "qa/tutor-reports/shape-composer-runtime-compose-match-payload-2026-10-09.json",
+ "primitiveId": "shape-composer",
+ "evalMode": "compose-match",
+ "data": {
+  "title": "Shape Composition Fun!",
+  "description": "Practice shape composition with shapes.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "compose-match",
+    "instruction": "Let's start our quilt! Use the smaller triangles to fill the large-triangle silhouette.",
+    "hint": "Try turning the triangles so their flat edges match the sides of the big triangle.",
+    "targetShape": "large-triangle",
+    "targetOutlinePath": "M 200 115 L 260 235 L 140 235 Z",
+    "pieces": [
+     {
+      "id": "cm0-p0",
+      "shape": "triangle",
+      "color": "#8B5CF6",
+      "width": 60,
+      "height": 60,
+      "targetX": 170,
+      "targetY": 115,
+      "targetRotation": 0
+     },
+     {
+      "id": "cm0-p1",
+      "shape": "triangle",
+      "color": "#3B82F6",
+      "width": 60,
+      "height": 60,
+      "targetX": 140,
+      "targetY": 175,
+      "targetRotation": 0
+     },
+     {
+      "id": "cm0-p2",
+      "shape": "triangle",
+      "color": "#10B981",
+      "width": 60,
+      "height": 60,
+      "targetX": 200,
+      "targetY": 175,
+      "targetRotation": 0
+     },
+     {
+      "id": "cm0-p3",
+      "shape": "triangle",
+      "color": "#F59E0B",
+      "width": 60,
+      "height": 60,
+      "targetX": 170,
+      "targetY": 175,
+      "targetRotation": 180
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "compose-match",
+    "instruction": "Great job! Now use the squares to fill the large-square quilt patch.",
+    "hint": "Count how many small squares fit across the top and bottom of the big square.",
+    "targetShape": "large-square",
+    "targetOutlinePath": "M 140 115 L 260 115 L 260 235 L 140 235 Z",
+    "pieces": [
+     {
+      "id": "cm1-p0",
+      "shape": "triangle",
+      "color": "#8B5CF6",
+      "width": 120,
+      "height": 120,
+      "targetX": 140,
+      "targetY": 115,
+      "targetRotation": 0
+     },
+     {
+      "id": "cm1-p1",
+      "shape": "triangle",
+      "color": "#6366F1",
+      "width": 120,
+      "height": 120,
+      "targetX": 140,
+      "targetY": 115,
+      "targetRotation": 180
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "compose-match",
+    "instruction": "Wonderful! Can you use rectangles to fill this long rectangle patch?",
+    "hint": "Lay the rectangles side by side to cover the whole space without leaving gaps.",
+    "targetShape": "rectangle",
+    "targetOutlinePath": "M 110 130 L 290 130 L 290 220 L 110 220 Z",
+    "pieces": [
+     {
+      "id": "cm2-p0",
+      "shape": "square",
+      "color": "#3B82F6",
+      "width": 90,
+      "height": 90,
+      "targetX": 110,
+      "targetY": 130,
+      "targetRotation": 0
+     },
+     {
+      "id": "cm2-p1",
+      "shape": "square",
+      "color": "#6366F1",
+      "width": 90,
+      "height": 90,
+      "targetX": 200,
+      "targetY": 130,
+      "targetRotation": 0
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "compose-match",
+    "instruction": "Our quilt is growing! Combine triangles and a square to fill this large-triangle pattern.",
+    "hint": "Put the square at the bottom and let the triangles point up to the top corner.",
+    "targetShape": "large-triangle",
+    "targetOutlinePath": "M 200 115 L 260 235 L 140 235 Z",
+    "pieces": [
+     {
+      "id": "cm3-p0",
+      "shape": "triangle",
+      "color": "#8B5CF6",
+      "width": 60,
+      "height": 60,
+      "targetX": 170,
+      "targetY": 115,
+      "targetRotation": 0
+     },
+     {
+      "id": "cm3-p1",
+      "shape": "triangle",
+      "color": "#3B82F6",
+      "width": 60,
+      "height": 60,
+      "targetX": 140,
+      "targetY": 175,
+      "targetRotation": 0
+     },
+     {
+      "id": "cm3-p2",
+      "shape": "triangle",
+      "color": "#10B981",
+      "width": 60,
+      "height": 60,
+      "targetX": 200,
+      "targetY": 175,
+      "targetRotation": 0
+     },
+     {
+      "id": "cm3-p3",
+      "shape": "triangle",
+      "color": "#F59E0B",
+      "width": 60,
+      "height": 60,
+      "targetX": 170,
+      "targetY": 175,
+      "targetRotation": 180
+     }
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "compose-match",
+    "instruction": "Almost done! Use smaller rectangles and squares to fill the large-square patch.",
+    "hint": "Match the straight edges of the smaller shapes to the corners of the big square.",
+    "targetShape": "large-square",
+    "targetOutlinePath": "M 140 115 L 260 115 L 260 235 L 140 235 Z",
+    "pieces": [
+     {
+      "id": "cm4-p0",
+      "shape": "triangle",
+      "color": "#8B5CF6",
+      "width": 120,
+      "height": 120,
+      "targetX": 140,
+      "targetY": 115,
+      "targetRotation": 0
+     },
+     {
+      "id": "cm4-p1",
+      "shape": "triangle",
+      "color": "#6366F1",
+      "width": 120,
+      "height": 120,
+      "targetX": 140,
+      "targetY": 115,
+      "targetRotation": 180
+     }
+    ]
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

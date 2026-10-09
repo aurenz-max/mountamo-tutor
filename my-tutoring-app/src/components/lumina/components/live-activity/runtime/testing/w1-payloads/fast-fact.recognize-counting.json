@@ -1,0 +1,264 @@
+{
+ "source": "qa/tutor-reports/fast-fact-runtime-recognize-counting-payload-2026-10-09.json",
+ "primitiveId": "fast-fact",
+ "evalMode": "recognize",
+ "data": {
+  "title": "Fun with Counting Objects",
+  "description": "Practice counting everyday objects up to 10 with fun emoji quantities.",
+  "subject": "Math",
+  "challenges": [
+   {
+    "id": "fc_1",
+    "type": "warm-up",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "How many stars do you see?",
+     "subtext": "Count the stars",
+     "visual": {
+      "type": "emoji",
+      "emoji": "\u2b50\u2b50\u2b50",
+      "alt": "3 yellow stars"
+     }
+    },
+    "correctAnswer": "3",
+    "responseMode": "choice",
+    "options": [
+     "3",
+     "2",
+     "5"
+    ],
+    "explanation": "There are 3 stars counted one by one.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "fc_2",
+    "type": "warm-up",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "How many apples are here?",
+     "subtext": "Count the apples",
+     "visual": {
+      "type": "emoji",
+      "emoji": "\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e\ud83c\udf4e",
+      "alt": "5 red apples"
+     }
+    },
+    "correctAnswer": "5",
+    "responseMode": "choice",
+    "options": [
+     "4",
+     "5",
+     "6"
+    ],
+    "explanation": "Counting the red apples gives us a total of 5.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "fc_3",
+    "type": "warm-up",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "Count the cats shown here.",
+     "subtext": "Count the cats",
+     "visual": {
+      "type": "emoji",
+      "emoji": "\ud83d\udc31\ud83d\udc31",
+      "alt": "2 cats"
+     }
+    },
+    "correctAnswer": "2",
+    "responseMode": "choice",
+    "options": [
+     "1",
+     "4",
+     "2"
+    ],
+    "explanation": "There are 2 friendly cats in the picture.",
+    "difficulty": "easy"
+   },
+   {
+    "id": "fc_4",
+    "type": "core",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "How many fish are swimming?",
+     "subtext": "Count the fish",
+     "visual": {
+      "type": "emoji",
+      "emoji": "\ud83d\udc1f\ud83d\udc1f\ud83d\udc1f\ud83d\udc1f\ud83d\udc1f\ud83d\udc1f",
+      "alt": "6 blue fish"
+     }
+    },
+    "correctAnswer": "6",
+    "responseMode": "choice",
+    "options": [
+     "6",
+     "5",
+     "8"
+    ],
+    "explanation": "Counting them all up gives 6 fish.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "fc_5",
+    "type": "core",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "How many balloons can you see?",
+     "subtext": "Count the balloons",
+     "visual": {
+      "type": "emoji",
+      "emoji": "\ud83c\udf88\ud83c\udf88\ud83c\udf88\ud83c\udf88\ud83c\udf88\ud83c\udf88\ud83c\udf88",
+      "alt": "7 balloons"
+     }
+    },
+    "correctAnswer": "7",
+    "responseMode": "choice",
+    "options": [
+     "6",
+     "7",
+     "9"
+    ],
+    "explanation": "There are 7 colorful balloons in total.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "fc_6",
+    "type": "core",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "Count the flowers in this group.",
+     "subtext": "Count the flowers",
+     "visual": {
+      "type": "emoji",
+      "emoji": "\ud83c\udf38\ud83c\udf38\ud83c\udf38\ud83c\udf38",
+      "alt": "4 pink flowers"
+     }
+    },
+    "correctAnswer": "4",
+    "responseMode": "choice",
+    "options": [
+     "3",
+     "5",
+     "4"
+    ],
+    "explanation": "Counting the flowers leads us to 4.",
+    "difficulty": "medium"
+   },
+   {
+    "id": "fc_7",
+    "type": "mastery",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "How many cookies are ready?",
+     "subtext": "Count the cookies",
+     "visual": {
+      "type": "emoji",
+      "emoji": "\ud83c\udf6a\ud83c\udf6a\ud83c\udf6a\ud83c\udf6a\ud83c\udf6a\ud83c\udf6a\ud83c\udf6a\ud83c\udf6a",
+      "alt": "8 cookies"
+     }
+    },
+    "correctAnswer": "8",
+    "responseMode": "choice",
+    "options": [
+     "8",
+     "7",
+     "10"
+    ],
+    "explanation": "There are 8 delicious cookies counted.",
+    "difficulty": "hard"
+   },
+   {
+    "id": "fc_8",
+    "type": "mastery",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "Count the buzzing bees.",
+     "subtext": "Count the bees",
+     "visual": {
+      "type": "emoji",
+      "emoji": "\ud83d\udc1d\ud83d\udc1d\ud83d\udc1d\ud83d\udc1d\ud83d\udc1d\ud83d\udc1d\ud83d\udc1d\ud83d\udc1d\ud83d\udc1d",
+      "alt": "9 bees"
+     }
+    },
+    "correctAnswer": "9",
+    "responseMode": "choice",
+    "options": [
+     "7",
+     "9",
+     "10"
+    ],
+    "explanation": "Counting the bees carefully brings us to 9.",
+    "difficulty": "hard"
+   },
+   {
+    "id": "fc_9",
+    "type": "mastery",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "How many shiny stars are here?",
+     "subtext": "Count the stars",
+     "visual": {
+      "type": "emoji",
+      "emoji": "\u2728\u2728\u2728\u2728\u2728\u2728\u2728\u2728\u2728\u2728",
+      "alt": "10 shiny stars"
+     }
+    },
+    "correctAnswer": "10",
+    "responseMode": "choice",
+    "options": [
+     "8",
+     "9",
+     "10"
+    ],
+    "explanation": "Counting all of them reaches the maximum of 10.",
+    "difficulty": "hard"
+   },
+   {
+    "id": "fc_10",
+    "type": "mastery",
+    "challengeType": "recognize",
+    "prompt": {
+     "text": "How many soccer balls do you see?",
+     "subtext": "Count the balls",
+     "visual": {
+      "type": "emoji",
+      "emoji": "\u26bd",
+      "alt": "1 soccer ball"
+     }
+    },
+    "correctAnswer": "1",
+    "responseMode": "choice",
+    "options": [
+     "1",
+     "2",
+     "3"
+    ],
+    "explanation": "There is just 1 lonely soccer ball.",
+    "difficulty": "hard"
+   }
+  ],
+  "targetResponseTime": 8,
+  "phaseConfig": {
+   "warm-up": {
+    "label": "Warm-Up",
+    "icon": "\ud83c\udf31",
+    "accentColor": "emerald"
+   },
+   "core": {
+    "label": "Core Practice",
+    "icon": "\u2b50",
+    "accentColor": "blue"
+   },
+   "mastery": {
+    "label": "Mastery",
+    "icon": "\ud83d\ude80",
+    "accentColor": "amber"
+   }
+  },
+  "showStreakCounter": true,
+  "showAccuracy": true,
+  "maxAttemptsPerChallenge": 2,
+  "gradeBand": "K-2"
+ }
+}

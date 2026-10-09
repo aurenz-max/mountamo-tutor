@@ -1,0 +1,196 @@
+{
+ "source": "qa/tutor-reports/shape-tracer-runtime-complete-payload-2026-10-09.json",
+ "primitiveId": "shape-tracer",
+ "evalMode": "complete",
+ "data": {
+  "title": "Trace and Complete!",
+  "description": "Finish drawing fun triangles, squares, and rectangles by connecting the missing sides.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "complete",
+    "instruction": "Finish the triangle!",
+    "targetShape": "triangle",
+    "drawnSides": [
+     {
+      "from": {
+       "x": 250,
+       "y": 80
+      },
+      "to": {
+       "x": 150,
+       "y": 280
+      }
+     },
+     {
+      "from": {
+       "x": 150,
+       "y": 280
+      },
+      "to": {
+       "x": 350,
+       "y": 280
+      }
+     }
+    ],
+    "remainingVertices": [
+     {
+      "x": 350,
+      "y": 280
+     }
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "complete",
+    "instruction": "Finish the square by connecting the missing sides!",
+    "targetShape": "square",
+    "drawnSides": [
+     {
+      "from": {
+       "x": 150,
+       "y": 100
+      },
+      "to": {
+       "x": 350,
+       "y": 100
+      }
+     },
+     {
+      "from": {
+       "x": 350,
+       "y": 100
+      },
+      "to": {
+       "x": 350,
+       "y": 300
+      }
+     }
+    ],
+    "remainingVertices": [
+     {
+      "x": 350,
+      "y": 300
+     },
+     {
+      "x": 150,
+      "y": 300
+     }
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "complete",
+    "instruction": "Finish the rectangle by drawing the missing sides!",
+    "targetShape": "rectangle",
+    "drawnSides": [
+     {
+      "from": {
+       "x": 108,
+       "y": 107
+      },
+      "to": {
+       "x": 406,
+       "y": 133
+      }
+     },
+     {
+      "from": {
+       "x": 406,
+       "y": 133
+      },
+      "to": {
+       "x": 392,
+       "y": 293
+      }
+     }
+    ],
+    "remainingVertices": [
+     {
+      "x": 392,
+      "y": 293
+     },
+     {
+      "x": 94,
+      "y": 267
+     }
+    ]
+   },
+   {
+    "id": "c4",
+    "type": "complete",
+    "instruction": "Finish the triangle!",
+    "targetShape": "triangle",
+    "drawnSides": [
+     {
+      "from": {
+       "x": 250,
+       "y": 80
+      },
+      "to": {
+       "x": 150,
+       "y": 280
+      }
+     },
+     {
+      "from": {
+       "x": 150,
+       "y": 280
+      },
+      "to": {
+       "x": 350,
+       "y": 280
+      }
+     }
+    ],
+    "remainingVertices": [
+     {
+      "x": 350,
+      "y": 280
+     }
+    ]
+   },
+   {
+    "id": "c5",
+    "type": "complete",
+    "instruction": "Finish the square by connecting the missing sides!",
+    "targetShape": "square",
+    "drawnSides": [
+     {
+      "from": {
+       "x": 159,
+       "y": 92
+      },
+      "to": {
+       "x": 358,
+       "y": 109
+      }
+     },
+     {
+      "from": {
+       "x": 358,
+       "y": 109
+      },
+      "to": {
+       "x": 341,
+       "y": 308
+      }
+     }
+    ],
+    "remainingVertices": [
+     {
+      "x": 341,
+      "y": 308
+     },
+     {
+      "x": 142,
+      "y": 291
+     }
+    ]
+   }
+  ],
+  "gridSize": 25,
+  "showPropertyReminder": false,
+  "gradeBand": "K"
+ }
+}

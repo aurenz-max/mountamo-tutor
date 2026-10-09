@@ -1,0 +1,79 @@
+{
+ "source": "qa/tutor-reports/shape-tracer-runtime-draw_from_description-payload-2026-10-09.json",
+ "primitiveId": "shape-tracer",
+ "evalMode": "draw_from_description",
+ "data": {
+  "title": "Shape Builders Adventure!",
+  "description": "Learn to draw triangles, squares, and rectangles by following fun clues about sides and corners.",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "draw-from-description",
+    "instruction": "Read the clue and draw the shape!",
+    "targetShape": "triangle",
+    "description": "A shape with 3 straight sides and 3 pointy corners",
+    "requiredProperties": {
+     "sides": 3,
+     "corners": 3,
+     "allSidesEqual": false,
+     "hasCurvedSides": false
+    }
+   },
+   {
+    "id": "c2",
+    "type": "draw-from-description",
+    "instruction": "Read the clue and draw the shape!",
+    "targetShape": "square",
+    "description": "A shape with 4 straight sides that are all the same length and 4 pointy corners",
+    "requiredProperties": {
+     "sides": 4,
+     "corners": 4,
+     "allSidesEqual": true,
+     "hasCurvedSides": false
+    }
+   },
+   {
+    "id": "c3",
+    "type": "draw-from-description",
+    "instruction": "Read the clue and draw the shape!",
+    "targetShape": "rectangle",
+    "description": "A shape with 4 straight sides and 4 pointy corners, where the opposite sides are the same length",
+    "requiredProperties": {
+     "sides": 4,
+     "corners": 4,
+     "allSidesEqual": false,
+     "hasCurvedSides": false
+    }
+   },
+   {
+    "id": "c4",
+    "type": "draw-from-description",
+    "instruction": "Read the clue and draw the shape!",
+    "targetShape": "square",
+    "description": "A shape with 4 equal straight sides and 4 pointy corners",
+    "requiredProperties": {
+     "sides": 4,
+     "corners": 4,
+     "allSidesEqual": true,
+     "hasCurvedSides": false
+    }
+   },
+   {
+    "id": "c5",
+    "type": "draw-from-description",
+    "instruction": "Read the clue and draw the shape!",
+    "targetShape": "triangle",
+    "description": "A fun shape with 3 straight sides and 3 pointy corners!",
+    "requiredProperties": {
+     "sides": 3,
+     "corners": 3,
+     "allSidesEqual": false,
+     "hasCurvedSides": false
+    }
+   }
+  ],
+  "gridSize": 25,
+  "showPropertyReminder": false,
+  "gradeBand": "K"
+ }
+}
