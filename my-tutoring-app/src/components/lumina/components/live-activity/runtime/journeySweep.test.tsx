@@ -479,7 +479,7 @@ interface Moment { kind: MomentKind; itemId: string; packet: unknown; host: stri
   /** The runtime's `spoken_miss` request for this answer, and whether the mode records a miss from the words (RP-2). */
   spokenMiss?: SpokenMissRequest; missFromWords?: boolean }
 interface MomentRecord { payload: string; primitiveId: string; evalMode: string; guidance: string; topic: string;
-  gradeLevel: string | null; leakTokens: string[]; ask: string; keys: string[]; moments: Moment[]; stopped?: string }
+  gradeLevel: string | null; leakTokens: string[]; ask: string; keys: string[]; menu: string[]; moments: Moment[]; stopped?: string }
 const MOMENTS: MomentRecord[] = [];
 
 async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { file: string }): Promise<MomentRecord | null> {
@@ -492,7 +492,7 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
   const task = () => h.state().task!;
   const record: MomentRecord = { payload: file, primitiveId, evalMode,
     guidance: buildLiveActivitySpec([primitiveId]).activities[0].guidance, topic: row.defaults.topic,
-    gradeLevel: (data.gradeLevel as string) ?? row.defaults.grade, leakTokens: row.leakTokens, ask: task().task, keys: [], moments: [] };
+    gradeLevel: (data.gradeLevel as string) ?? row.defaults.grade, leakTokens: row.leakTokens, ask: task().task, keys: [], menu: [], moments: [] };
   const context = (): JourneyContext => ({ data: { ...data, instanceId: 'ws' },
     challenge: (data.challenges ?? []).find((c: { id: string }) => c.id === task().itemId) ?? null,
     diItems: [], itemId: task().itemId, demand: task().demand ?? null, expectedAnswer: task().workspace?.expectedAnswer ?? null });
@@ -541,6 +541,11 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
     const wrong = row.inputsFor('wrong', context()), correct = row.inputsFor('correct', context());
     record.keys = keyPhrases(task().workspace?.expectedAnswer, correct, wrong, h.view.container)
       .filter(k => !forms(k).some(f => occurrences(record.ask, f)));
+    // The options on screen: a reply that reads them all names the key among them, which is not giving it away
+    // (replay_checks.read_as_menu; time-sequencer replay 10-09).
+    record.menu = Array.from(new Set(Array.from(h.view.container.querySelectorAll('button, [data-pip-object]'))
+      .flatMap(el => [el.textContent ?? '', el.getAttribute('aria-label') ?? ''])
+      .map(t => t.trim().toLowerCase()).filter(t => t && t.length <= 40)));
     // A gesture key no input names (a fraction build's slice count): the challenge's own answer fields.
     if (!record.keys.length) for (const [field, value] of Object.entries(context().challenge ?? {}))
       if (/target|answer|correct|numerator/i.test(field) && typeof value === 'number') record.keys.push(String(value));
