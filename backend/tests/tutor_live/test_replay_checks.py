@@ -132,3 +132,18 @@ def test_number_options_read_as_words():
 ])
 def test_a_count_from_one_says_only_where_it_stops(text, said):
     assert (check(text, 'stuck', ['2'] if 'four' not in text else ['4'])['checks']['no_key_before_try'] is False) is said
+
+
+@pytest.mark.parametrize('text,early', [
+    # area-model replay 10-09, said in the turn that pulls the lever.
+    ('The screen now outlines each row and column in matching colors.', True),
+    ('The columns and rows are now outlined in matching colors.', True),
+    ('Look under the cell to see the parts split into tens.', True),
+    ('Now all four sides are written right on the rectangle.', True),
+    ('Take a look under that first cell, it now shows the numbers.', True),
+    # Asking, not claiming.
+    ('Look at the rectangle. What do you notice about the sides?', False),
+    ('Let me add something to help you look at the tens.', False),
+])
+def test_a_change_claimed_in_the_pulling_turn(text, early):
+    assert (check(text, 'stuck', calls=[PULL])['checks']['no_change_before_receipt'] is False) is early

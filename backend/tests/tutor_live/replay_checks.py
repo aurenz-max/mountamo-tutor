@@ -32,7 +32,12 @@ FIX = re.compile(r"^(?:[^,]{0,30},\s*)?(?:(?:please|just|now|so|then|next|and|ok
                  r"(?!\s+(?:is|are|was|were|has|shows)\b)", re.I)  # "Hop 1 is now drawn" names a hop, it does not ask for one
 # A screen change described as already there: fine after the receipt, not in the reply that asks for it.
 CHANGE_DONE = re.compile(r"\bI(?:'ve| have)? (?:drawn|added|put|marked|shown|highlighted|outlined|numbered|pulled)\b"
-                         r"|\b(?:now|look,?) (?:you can )?see\b|\bis now (?:drawn|marked|showing|on)\b|\bsee (?:how|the|those) [^.?!]{0,30}\bnow\b", re.I)
+                         r"|\b(?:now|look,?) (?:you can )?see\b|\bis now (?:drawn|marked|showing|on)\b|\bsee (?:how|the|those) [^.?!]{0,30}\bnow\b"
+                         # area-model replay 10-09: the screen narrated as changed in the pulling turn, in other words.
+                         r"|\bnow (?:shows?|outlines?|displays?|has|marks?|labels?)\b|\bcan now see\b"
+                         r"|\b(?:is|are) now (?:\w+ed|written|shown|drawn|showing)\b"
+                         r"|\bnow [^.?!]{0,40}\b(?:is|are) (?:written|labell?ed|marked|drawn|shown|outlined|split)\b"
+                         r"|\blook (?:right )?(?:under|below|beneath|above|beside) [^.?!]{0,30}\bto see\b", re.I)
 
 
 def forms(phrase):
