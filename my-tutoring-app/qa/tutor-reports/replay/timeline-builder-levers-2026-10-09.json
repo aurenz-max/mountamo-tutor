@@ -1,0 +1,1944 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "timeline-builder.place-historical",
+   "primitiveId": "timeline-builder",
+   "evalMode": "place-historical",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put these morning events in the order they happened in history, from oldest to newest.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "electric hair dryer",
+       "instant breakfast cereal",
+       "glass toothbrush",
+       "mechanical alarm clock",
+       "digital coffee maker",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Put these morning events in the order they happened in history, from oldest to newest. In the bank we have Electric Hair Dryer, Instant Breakfast Cereal, Glass Toothbrush, Mechanical Alarm Clock, and Digital Coffee Maker.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's put these morning events in order from oldest to newest! You can tap an event and place it into a slot.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Put these morning events in order from oldest to newest: Electric Hair Dryer, Instant Breakfast Cereal, Glass Toothbrush, Mechanical Alarm Clock, and Digital Coffee Maker.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Put these morning events in the order they happened in history, from oldest to newest: Electric Hair Dryer, Instant Breakfast Cereal, Glass Toothbrush, Mechanical Alarm Clock, and Digital Coffee Maker. Tap an event and place it into a slot to begin!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's put these morning events in order from oldest to newest. In the bank we have: Electric Hair Dryer, Instant Breakfast Cereal, Glass Toothbrush, Mechanical Alarm Clock, and Digital Coffee Maker.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Placed, from 1500 to 2000: slot 1 \\\"Glass Toothbrush\\\", slot 2 \\\"Mechanical Alarm Clock\\\", slot 3 \\\"Instant Breakfast Cereal\\\", slot 4 \\\"Electric Hair Dryer\\\", slot 5 \\\"Digital Coffee Maker\\\"\". The board checked it: not right.",
+     "miss": "adjacent_swap",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put these morning events in the order they happened in history, from oldest to newest.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "electric hair dryer",
+       "instant breakfast cereal",
+       "glass toothbrush",
+       "mechanical alarm clock",
+       "digital coffee maker",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got three of them right! Take a look at the two red ones and try swapping them around.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got 3 out of 5 slots right! Take a close look at the red slots and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got 3 out of 5 slots right! Take another look and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have three of them right! Take another look at the two that are red and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got 3 out of 5 slots right! Take a close look at the red slots and try again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put these morning events in the order they happened in history, from oldest to newest.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "electric hair dryer",
+       "instant breakfast cereal",
+       "glass toothbrush",
+       "mechanical alarm clock",
+       "digital coffee maker",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A time ruler just appeared below the slots showing years from 1500 to 2000. Try matching your events to the years on the ruler to see which one comes earlier.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A number line with the years from 1500 to 2000 has appeared under the slots to help you see the dates. Check which of the first two happened earlier in time!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A timeline ruler just appeared under the slots showing the years from 1500 to 2000. Try checking the years on your cards to see which one comes earlier!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A timeline ruler just appeared under the slots to show the years from 1500 to 2000. Try matching your events to the years on the ruler!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "time_ruler"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look below the slots\u2014a time ruler is now showing the years from 1500 to 2000 to help you see which one came first. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "time_ruler"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled time_ruler (help). It is on screen now: Draws the timeline's scale under the slots: years at even steps, from the start to the end. No event is on it; the learner matches each card to a place on it. Never say which event goes where. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put these morning events in the order they happened in history, from oldest to newest.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "electric hair dryer",
+       "instant breakfast cereal",
+       "glass toothbrush",
+       "mechanical alarm clock",
+       "digital coffee maker",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look below the slots\u2014a number line is now showing the years from 1500 to 2000 in order. See if you can match the year on each card to that line.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A year scale is now shown right under the slots, from 1500 up to 2000. Look at the years on your cards to see where they land on that line, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right underneath the slots\u2014there is now a number line showing the years from 1500 up to 2000. Give it another try by matching the dates on your cards to those years!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the slots\u2014a time ruler with years is now drawn there. Check where your first two events match on those years and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the slots\u2014there is now a ruler showing years in order from 1500 to 2000. Try matching your two red cards to the years on that ruler to see which belongs earlier!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Placed, from 1500 to 2000: slot 1 \\\"Mechanical Alarm Clock\\\", slot 2 \\\"Glass Toothbrush\\\", slot 3 \\\"Instant Breakfast Cereal\\\", slot 4 \\\"Electric Hair Dryer\\\", slot 5 \\\"Digital Coffee Maker\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put these morning events in the order they happened in history, from oldest to newest.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "electric hair dryer",
+       "instant breakfast cereal",
+       "glass toothbrush",
+       "mechanical alarm clock",
+       "digital coffee maker",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You swapped the Mechanical Alarm Clock and the Glass Toothbrush into the right spots, and now all five are correct!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the mistake by putting the Mechanical Alarm Clock first and the Glass Toothbrush second, and now all five are in the right order!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out by switching the Mechanical Alarm Clock and the Glass Toothbrush into the right spots! All five events are completely green now.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You put all five events in the right order by switching the clock and the toothbrush to match their years!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You placed the Mechanical Alarm Clock and the Glass Toothbrush into the right spots, and all five are correct! Using the timeline years helped you get every single one in order.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "timeline-builder.sequence-daily",
+   "primitiveId": "timeline-builder",
+   "evalMode": "sequence-daily",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put these school day events in the correct order from morning to night.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "wake up",
+       "morning homeroom",
+       "go to sleep",
+       "eat lunch",
+       "board the bus",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Put these school day events in order from morning to night: Wake Up, Morning Homeroom, Go to Sleep, Eat Lunch, and Board the Bus. Tap an event and place it into a slot!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's put these school day events in order from morning to night: Wake Up, Morning Homeroom, Go to Sleep, Eat Lunch, and Board the Bus. Tap an event and place it into a slot on the timeline to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's put these school day events in order from morning to night. Tap an event and place it into a slot when you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Put these school day events in order from morning to night: Wake Up, Morning Homeroom, Go to Sleep, Eat Lunch, and Board the Bus. Tap an event and place it into a slot!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's put these school day events in order from morning to night. Our events are: Wake Up, Morning Homeroom, Go to Sleep, Eat Lunch, and Board the Bus. Tap an event and place it into a slot to get started!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Placed, from Morning to Bedtime: slot 1 \\\"Morning Homeroom\\\", slot 2 \\\"Wake Up\\\", slot 3 \\\"Eat Lunch\\\", slot 4 \\\"Board the Bus\\\", slot 5 \\\"Go to Sleep\\\"\". The board checked it: not right.",
+     "miss": "adjacent_swap",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put these school day events in the correct order from morning to night.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "wake up",
+       "morning homeroom",
+       "go to sleep",
+       "eat lunch",
+       "board the bus",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got 3 out of 5 slots right! Look at the pictures underneath the slots to see the parts of the day, and try switching the ones that need another look.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got three slots right! Look at the pictures showing the parts of the day under the slots, and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "time_ruler"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have three slots right and two to fix. Take another look at those first two and try again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have three slots right! Take a look at the pictures below the slots showing the parts of the day, and try switching the ones that need fixing.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have three slots right! Look below the slots to see the pictures showing the parts of the day, and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "time_ruler"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put these school day events in the correct order from morning to night.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "wake up",
+       "morning homeroom",
+       "go to sleep",
+       "eat lunch",
+       "board the bus",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A picture ruler appeared under the slots to show the parts of the day from morning to night. Think about what you do first when you start your day: wake up, or arrive at homeroom?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "time_ruler"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Pictures showing the parts of the day from morning to night just appeared under your timeline. What happens first when your day begins?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "time_ruler"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now pictures showing the parts of the day are right below the slots to guide you. What do you do first when you get out of bed?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture timeline just appeared below the slots to show the parts of the day from morning to night. Think about what you do first when you start your day!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A pictures guide popped up under the slots showing the parts of the day from morning to night. Think about what you do first when you start your day: wake up, or arrive at homeroom?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled time_ruler (help). It is on screen now: Draws the timeline's scale under the slots: the parts of the day, as pictures, from the start to the end. No event is on it; the learner matches each card to a place on it. Never say which event goes where. First point the learner to it: say what is now drawn and where to look, as a change to the picture; ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put these school day events in the correct order from morning to night.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "wake up",
+       "morning homeroom",
+       "go to sleep",
+       "eat lunch",
+       "board the bus",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Under the slots, there is now a picture row showing parts of the day from morning all the way to night. Take another look at your cards and see which pictures match them best.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the slots\u2014there is now a picture ruler showing the parts of the day from morning to night. Use those pictures to help decide which event belongs in each slot and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Pictures of the parts of the day are now shown under the slots from morning to night. Take a look at them and see which cards you want to move.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the slots, pictures now show the parts of the day from the early morning sun to the night sky. Take another look at those first two red slots and try placing them again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the slots\u2014there is now a picture scale showing the parts of the day from start to end! Use those pictures to help you decide, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Placed, from Morning to Bedtime: slot 1 \\\"Wake Up\\\", slot 2 \\\"Morning Homeroom\\\", slot 3 \\\"Eat Lunch\\\", slot 4 \\\"Board the Bus\\\", slot 5 \\\"Go to Sleep\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put these school day events in the correct order from morning to night.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "wake up",
+       "morning homeroom",
+       "go to sleep",
+       "eat lunch",
+       "board the bus",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You put Wake Up first and Morning Homeroom right after it, and now all five events are in order! Great job fixing those morning steps.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the order so Wake Up comes first and Morning Homeroom is right after it, getting all 5 events lined up from morning to night! Great job checking your work.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the order by putting Wake Up first, and now all five events are in the right spots from morning to bedtime!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You switched Wake Up and Morning Homeroom into the right spots, and now all five events are in order from morning to bedtime.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the order by putting Wake Up first and Morning Homeroom second, and all 5 slots are correct! Excellent job checking and solving that timeline.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "timeline-builder.sequence-yearly",
+   "primitiveId": "timeline-builder",
+   "evalMode": "sequence-yearly",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Place these fun school events in the correct order from the start of the year to the end.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "first day of school",
+       "field dayplay fun games outside in may.",
+       "field day",
+       "fall picture day",
+       "100th day of school",
+       "winter holiday show",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Place these fun school events in order from the start of the year to the end: First Day of School, Field Day, Fall Picture Day, 100th Day of School, and Winter Holiday Show. Tap an event and tap a slot to place it!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's put these school events in order from the start of the year to the end! We have First Day of School, Field Day, Fall Picture Day, 100th Day of School, and Winter Holiday Show. Tap an event and place it into a slot to begin.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's put these school events in order from the start of the year to the end: First Day of School, Field Day, Fall Picture Day, 100th Day of School, and Winter Holiday Show. Tap an event and place it into a slot when you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's place these fun school events in order from the start of the year to the end! Our events are: First Day of School, Field Day, Fall Picture Day, 100th Day of School, and Winter Holiday Show. Tap an event and place it in a slot to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Place these school events in order from the start of the year to the end: First Day of School, Field Day, Fall Picture Day, 100th Day of School, and Winter Holiday Show. Tap an event and put it in a slot to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Placed, from August to June: slot 1 \\\"Fall Picture Day\\\", slot 2 \\\"First Day of School\\\", slot 3 \\\"Winter Holiday Show\\\", slot 4 \\\"100th Day of School\\\", slot 5 \\\"Field Day\\\"\". The board checked it: not right.",
+     "miss": "adjacent_swap",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Place these fun school events in the correct order from the start of the year to the end.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "first day of school",
+       "field dayplay fun games outside in may.",
+       "field day",
+       "fall picture day",
+       "100th day of school",
+       "winter holiday show",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got three events right! Look at the new timeline below showing all the months from August to June to help sort out the rest.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got three of them right! Look below the slots\u2014now you can see all the months of the school year to help you match each card.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "time_ruler"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got 3 out of 5 slots right! Take a close look at the red slots and try again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got three events in the right place! Look below the slots to see the months of the school year to help with the other two.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got three of the events in the right spot! Look below the slots\u2014now you can see all the months of the school year to help you match them.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "time_ruler"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Place these fun school events in the correct order from the start of the year to the end.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "first day of school",
+       "field dayplay fun games outside in may.",
+       "field day",
+       "fall picture day",
+       "100th day of school",
+       "winter holiday show",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A month line just appeared under the slots to show the school year from August to June. Which month comes first on the line, August or October?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "time_ruler"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The months of the school year are now lined up below the slots to help you see which month comes earlier. Which event happens earlier between August and October?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "time_ruler"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A month ruler has appeared right under your slots showing the months from August through June. Which month comes earlier, August or October?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now every month of the school year is shown in order under the slots. Which month comes first on the timeline, August or October?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now every month from August to June is shown right under the slots. Which month comes first, August or October?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "time_ruler",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled time_ruler (help). It is on screen now: Draws the timeline's scale under the slots: every month of the scale, from the start to the end. No event is on it; the learner matches each card to a place on it. Never say which event goes where. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never cal",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Place these fun school events in the correct order from the start of the year to the end.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "first day of school",
+       "field dayplay fun games outside in may.",
+       "field day",
+       "fall picture day",
+       "100th day of school",
+       "winter holiday show",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look right under the slots\u2014now every month of the school year is written out in order from August to June! You can match the months on your cards to that line and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the slots, you can now see each month of the school year written out from August to June. Take a look at the months on your cards and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A line of months appeared right under the slots, showing the whole school year from August to June. Take a look at the cards and try putting them in order!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The month line is right under the slots now, showing every month from August to June. You can look at the months on your cards to see where they match!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Every month from August to June is now written in order right beneath the slots. Take a look at the months for your red cards and try swapping them!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Placed, from August to June: slot 1 \\\"First Day of School\\\", slot 2 \\\"Fall Picture Day\\\", slot 3 \\\"Winter Holiday Show\\\", slot 4 \\\"100th Day of School\\\", slot 5 \\\"Field Day\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Place these fun school events in the correct order from the start of the year to the end.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM"
+      ],
+      "menu": [
+       "1",
+       "slot 1",
+       "2",
+       "slot 2",
+       "3",
+       "slot 3",
+       "4",
+       "slot 4",
+       "5",
+       "slot 5",
+       "first day of school",
+       "field dayplay fun games outside in may.",
+       "field day",
+       "fall picture day",
+       "100th day of school",
+       "winter holiday show",
+       "check order",
+       "hint"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You used the month line to swap the First Day of School and Fall Picture Day right into place.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You used the month line to fix the order and placed all five school events in the right spots from August to June.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got all five in the right order! By checking the months on the timeline, you put First Day of School and Fall Picture Day in their exact spots.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You matched up the months and placed all five events in the right order from First Day of School to Field Day.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You used the month line to swap First Day of School and Fall Picture Day, and got all five events in the right order.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

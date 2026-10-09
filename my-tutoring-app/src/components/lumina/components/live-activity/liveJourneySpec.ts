@@ -37,6 +37,10 @@ import { threeCards } from '../../primitives/visual-primitives/math/numberSequen
 import { threePlaces } from '../../primitives/visual-primitives/math/ordinalLineLevers';
 import { COIN_CENTS, fewestCoins } from '../../primitives/visual-primitives/math/coinCounterWorkspace';
 import { practiceItem as coinPracticeItem, practiceParent as coinPracticeParent } from '../../primitives/visual-primitives/math/coinCounterLevers';
+import { practiceItem as clockPracticeItem, practiceParent as clockPracticeParent } from '../../primitives/visual-primitives/math/analogClockLevers';
+import { practiceItem as measurePracticeItem, practiceParent as measurePracticeParent } from '../../primitives/visual-primitives/math/measureLabLevers';
+import { practiceItem as timePracticeItem, practiceParent as timePracticeParent } from '../../primitives/visual-primitives/math/timeSequencerLevers';
+import { simplerLength } from '../../primitives/visual-primitives/math/lengthLabLevers';
 import { arraysOf, gridFor } from '../../primitives/visual-primitives/math/arrayGridWorkspace';
 import { smallerArray } from '../../primitives/visual-primitives/math/arrayGridLevers';
 import type { ArrayGridChallenge } from '../../primitives/visual-primitives/math/ArrayGrid';
@@ -137,6 +141,7 @@ import type { CalendarExplorerChallenge } from '../../primitives/visual-primitiv
 import { calendarSequenceItemsFromChallenges, calendarSequenceJourneyAnswers, isGridDateAnswer }
   from '../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
 import { calendarPracticeItem, calendarPracticeParent } from '../../primitives/visual-primitives/calendar/calendarExplorerLevers';
+import { practiceParentId as timelinePracticeParent, practiceTimeline } from '../../primitives/visual-primitives/calendar/timelineBuilderLevers';
 import { itemsFromChallenges as arenaItems } from '../../primitives/visual-primitives/physics/pushPullArenaScript';
 import { pushPullArenaJourneyAnswers } from '../../primitives/visual-primitives/physics/pushPullArenaWorkspace';
 import { ARENA_SIMPLER, arenaPracticeItem } from '../../primitives/visual-primitives/physics/pushPullArenaLevers';
@@ -755,7 +760,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // clears the bench, so every program starts from a blank one.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      // An easier item (`~smaller`) is rebuilt from its parent with the same builder.
+      const parent = measurePracticeParent(ctx.itemId, ctx.data.challenges ?? []);
+      const c: any = parent ? measurePracticeItem(parent) : (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current measure-lab challenge');
       const wrong = intent === 'wrong';
       const choose = (label: string): DriverInput => ({ type: 'choose', label });
@@ -794,7 +801,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // A guess kept from a wrong attempt (Try again keeps it) is read from the scene's `guess` fact.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      // An easier item (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = String(ctx.itemId ?? '').replace(/~simpler$/, '');
+      const found = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = found && parentId !== ctx.itemId ? simplerLength(found, ctx.data.unitType) : found;
       if (!c) throw new Error('No current length-lab challenge');
       const wrong = intent === 'wrong', check: DriverInput = { type: 'check' };
       const unitOf = (u?: string) => (u || ctx.data.unitType || 'cubes').replace('_', ' ');
@@ -843,7 +853,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // set_time moves the hands by dragging the dial or the bar under it; the driver has no drag input.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      // A simpler item (`~simpler`, the simplify lever) is rebuilt from its parent with the same builder.
+      const parent = clockPracticeParent(ctx.itemId, ctx.data.challenges ?? []);
+      const c: any = parent ? clockPracticeItem(parent) : (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current analog-clock challenge');
       const wrong = intent === 'wrong';
       const check: DriverInput = { type: 'check' };
@@ -877,7 +889,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // the rest reversed), the neighbouring time of day, another card, the shorter activity, another schedule row.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c: any = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      // An easier practice item (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const all = ctx.data.challenges ?? [], parent = timePracticeParent(ctx.itemId, all);
+      const c: any = parent ? timePracticeItem(parent) : all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current time-sequencer challenge');
       const wrong = intent === 'wrong';
       const check: DriverInput = { type: 'check' };
@@ -892,7 +906,9 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       }
       if (c.type === 'match-time-of-day') {
         const periods = ['morning', 'afternoon', 'evening', 'night'];
-        const pick = wrong ? periods[(periods.indexOf(c.correctPeriod) + 1) % 4] : c.correctPeriod;
+        // A two-choice practice item offers only its own time of day and the opposite one.
+        const pick = !wrong ? c.correctPeriod : c.periodChoices ? c.periodChoices.find((p: string) => p !== c.correctPeriod)
+          : periods[(periods.indexOf(c.correctPeriod) + 1) % 4];
         return [choose(pick.charAt(0).toUpperCase() + pick.slice(1)), check];
       }
       if (c.type === 'before-after') {
@@ -2189,7 +2205,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // trades the first two events (`adjacent_swap`), every slot still filled.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      // A practice timeline (`<item>~simpler`) is not a generated challenge: rebuild it from its parent with the same builder.
+      const all = ctx.data.challenges ?? [];
+      const parentId = timelinePracticeParent(ctx.itemId);
+      const parent = parentId ? all.find((x: { id: string }) => x.id === parentId) : undefined;
+      const c = parent ? practiceTimeline(parent, all) : all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current timeline-builder challenge');
       const ordered: { label: string }[] = [...c.events].sort((a: any, b: any) => a.correctPosition - b.correctPosition);
       if (ordered.length < 2) throw new Error(`timeline-builder ${c.type}: fewer than two events`);

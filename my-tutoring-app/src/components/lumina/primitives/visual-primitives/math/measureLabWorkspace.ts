@@ -30,6 +30,9 @@ export interface MeasureView {
 export const EMPTY_VIEW: MeasureView = { prediction: null, placed: { left: false, right: false }, poured: {}, order: [], chosenCount: null };
 
 const SHAPE_WORDS: Record<ContainerShape, string> = { tall: 'tall and narrow', wide: 'wide and short', round: 'round' };
+/** The shape in words, and its drawn size where an easier practice item draws it larger or smaller. */
+const shapeWords = (c?: { shape: ContainerShape; scale?: number }) => !c ? ''
+  : SHAPE_WORDS[c.shape] + ((c.scale ?? 1) > 1 ? ', drawn large' : (c.scale ?? 1) < 1 ? ', drawn small' : '');
 
 const nameOf = (challenge: MeasureLabChallenge, id: string | null): string => {
   if (!id) return '';
@@ -133,14 +136,14 @@ export function workspaceScene(challenge: MeasureLabChallenge, view: MeasureView
       : view.placed.left || view.placed.right ? 'one object on, the beam still level' : 'empty and level';
   } else if (challenge.type === 'capacity_predict') {
     const a = challenge.containerA, b = challenge.containerB;
-    drawn.containers = `the ${a?.name} (${a ? SHAPE_WORDS[a.shape] : ''}) on the left, the ${b?.name} (${b ? SHAPE_WORDS[b.shape] : ''}) `
+    drawn.containers = `the ${a?.name} (${shapeWords(a)}) on the left, the ${b?.name} (${shapeWords(b)}) `
       + 'on the right; how much each holds is not shown';
     drawn.howToAnswer = `first tap the one you think holds more, then press Pour to fill both with ${unit}; the activity checks the guess`;
     if (a && b && capacityTested(challenge, view))
       drawn.afterPouring = `the left one took ${view.poured[a.id]} ${unit}, the right one took ${view.poured[b.id]} ${unit}`;
   } else if (challenge.type === 'pour_count') {
     const c = challenge.container;
-    drawn.container = `the ${c?.name} (${c ? SHAPE_WORDS[c.shape] : ''}), empty to start`;
+    drawn.container = `the ${c?.name} (${shapeWords(c)}), empty to start`;
     drawn.howToAnswer = `tap a ${unit.replace(/s$/, '')} to pour it in, one at a time; when it is full, number buttons `
       + 'appear and the learner taps how many it took';
     drawn.level = pourFull(challenge, view) ? 'full' : c && view.poured[c.id] ? 'partly filled' : 'empty';

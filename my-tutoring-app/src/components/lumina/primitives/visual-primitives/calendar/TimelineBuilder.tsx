@@ -19,6 +19,8 @@ import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type Progr
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { bankOrder, describeTimelineWork, timelineCorrect, timelineMiss, workspaceAssignment, workspaceScene,
   type TimelineView } from './timelineBuilderWorkspace';
+import { ARROW_LEVER, PRACTICE_NOTE, RULER_LEVER, practiceAssignment, practiceTimeline, timeRuler, timelineLeverFacts,
+  timelineLevers } from './timelineBuilderLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -145,14 +147,14 @@ const TimelineBuilderSurface = ({ data, runtimePlanItemId, tutorOwned, useContro
 
   // ── Challenge Progress. On the workspace path the runtime moves the index. ──
   // Bound below, once the setters and the evaluation exist.
-  const openItem = useRef<() => void>(() => {});
+  const openItem = useRef<(retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
   const progress = useController({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: workspaceAssignment,
-    onItemOpened: () => openItem.current(),
+    onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: result => finish.current(result),
   });
   const {
@@ -195,7 +197,19 @@ const TimelineBuilderSurface = ({ data, runtimePlanItemId, tutorOwned, useContro
   const startTimeRef = useRef(Date.now());
   const challengeStartRef = useRef(Date.now());
 
-  const currentChallenge = challenges[currentIndex];
+  // In-item levers (`timelineBuilderLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // practice timeline a simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<TimelineBuilderChallenge | null>(null);
+
+  const sessionChallenge = challenges[currentIndex];
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = !practice && sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
+  const itemLevers = tutorOwned && !practice ? timelineLevers(sessionChallenge, challenges, pulledLevers) : [];
+  /** A help lever is drawn on the session item while pulled, never on a practice timeline. */
+  const helpOn = (id: string) => itemLevers.some(l => l.id === id && l.kind === 'help' && l.pulled);
+  const arrowOn = helpOn(ARROW_LEVER);
+  const ruler = helpOn(RULER_LEVER) ? timeRuler(sessionChallenge) : null;
 
   /** A fresh challenge, or the same one reopened by Try again: the board starts blank. */
   const clearBoard = useCallback(() => {
@@ -205,7 +219,8 @@ const TimelineBuilderSurface = ({ data, runtimePlanItemId, tutorOwned, useContro
     setShowHint(false);
     challengeStartRef.current = Date.now();
   }, []);
-  openItem.current = clearBoard;
+  // Try again keeps a practice timeline; a fresh item, or the full item back after practice, drops it.
+  openItem.current = (retry) => { clearBoard(); if (!retry) setPractice(null); };
 
   // ── Derived: which events are placed vs in bank ─────────────────
   const placedEventIds = useMemo(
@@ -288,7 +303,8 @@ const TimelineBuilderSurface = ({ data, runtimePlanItemId, tutorOwned, useContro
     setFeedback({ checked: true, correctSlots, incorrectSlots });
 
     // The activity's own score for this challenge, then the check itself (counts the attempt on both paths).
-    if (allCorrect) {
+    // A practice timeline is ungraded: it records nothing for the session.
+    if (allCorrect && !practice) {
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
@@ -333,7 +349,7 @@ const TimelineBuilderSurface = ({ data, runtimePlanItemId, tutorOwned, useContro
         );
       }
     }
-  }, [currentChallenge, placements, slotCount, currentAttempts, recordResult, sendText, tutorOwned]);
+  }, [currentChallenge, placements, slotCount, currentAttempts, recordResult, sendText, tutorOwned, practice]);
 
   /** Retry after incorrect check (scripted path; the workspace's Try again is on the shell) */
   const handleRetry = useCallback(() => {
@@ -411,17 +427,41 @@ const TimelineBuilderSurface = ({ data, runtimePlanItemId, tutorOwned, useContro
   const canRetry = feedback?.checked && !isCorrect && !hasAnsweredCurrent;
   const canProceed = hasAnsweredCurrent && !tutorOwned;
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. W1: no levers,
-  // demonstrations or presentation.
+  // Workspace path: what the tutor and the observer are shown, republished every render, with the session item's
+  // levers. No demonstrations or presentation.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || allChallengesComplete) return;
+    if (!tutorOwned || !currentChallenge || !sessionChallenge || allChallengesComplete) return;
     const view: TimelineView = {
       placements,
       marked: feedback?.checked
         ? { right: Array.from(feedback.correctSlots).sort(), wrong: Array.from(feedback.incorrectSlots).sort() } : null,
       hintShown: showHint,
     };
-    workspace.current = { ...workspaceScene(currentChallenge, view) };
+    const scene = workspaceScene(currentChallenge, view);
+    const levers = itemLevers;
+    const onScreen = practice ? ''
+      : timelineLeverFacts(sessionChallenge, levers.filter(l => l.kind === 'help' && l.pulled).map(l => l.id));
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this timeline.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceTimeline(sessionChallenge, challenges);
+          if (!easier) return 'This timeline is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier); clearBoard();
+          return { practice: practiceAssignment(easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      // Back to the full item, blank: the practice timeline is not the learner's work on it.
+      endPractice: () => { setPractice(null); clearBoard(); },
+    };
   });
 
   // ── Pip shared surface ───────────────────────────────────────────
@@ -514,11 +554,27 @@ const TimelineBuilderSurface = ({ data, runtimePlanItemId, tutorOwned, useContro
             <div {...pip.workspace} className="space-y-6">
             {/* Timeline visualization */}
             <div className="relative">
+              {practice && (
+                <p className="text-xs text-amber-300 mb-1" data-practice>Practice timeline</p>
+              )}
               {/* Scale labels */}
               <div className="flex justify-between mb-2 text-xs text-slate-500 font-mono px-2">
                 <span>{currentChallenge.scaleStart}</span>
                 <span>{currentChallenge.scaleEnd}</span>
               </div>
+
+              {/* The help lever `time_arrow`: which way time runs along the timeline, drawn on no event. */}
+              {arrowOn && (
+                <div data-lever="time-arrow" aria-label="Earlier to later"
+                  className="mb-2 flex items-center gap-2 px-2 text-sm text-cyan-200">
+                  <span aria-hidden>🚩</span>
+                  <span className="text-xs">earlier</span>
+                  <div className="relative h-0.5 flex-1 bg-cyan-300/70">
+                    <span aria-hidden className="absolute -right-1 -top-[9px] text-base leading-none">▶</span>
+                  </div>
+                  <span className="text-xs">later</span>
+                </div>
+              )}
 
               {/* Timeline bar */}
               <div className={`relative h-2 rounded-full bg-gradient-to-r ${SCALE_COLORS[currentChallenge.type] || SCALE_COLORS.daily} mb-4`}>
@@ -597,6 +653,20 @@ const TimelineBuilderSurface = ({ data, runtimePlanItemId, tutorOwned, useContro
                   );
                 })}
               </div>
+
+              {/* The help lever `time_ruler`: the timeline's own scale under the slots, no event on it. */}
+              {ruler && (
+                <div data-lever="time-ruler" aria-label="Timeline scale"
+                  className="mt-3 flex justify-between gap-1 border-t border-cyan-300/40 px-1 pt-1 text-cyan-200">
+                  {ruler.map((m, i) => (
+                    <div key={`${m.label}-${i}`} data-lever="ruler-mark" className="flex flex-col items-center text-center">
+                      <span aria-hidden className="h-1.5 w-px bg-cyan-300/60" />
+                      {m.icon && <span className="text-lg leading-none" aria-hidden>{m.icon}</span>}
+                      <span className="text-[10px] leading-tight">{ruler.length > 8 ? m.label.slice(0, 3) : m.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Event bank */}

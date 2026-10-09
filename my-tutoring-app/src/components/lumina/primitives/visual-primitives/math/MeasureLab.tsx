@@ -60,6 +60,10 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeMeasureWork, measureMiss, workspaceAssignment, workspaceScene, type MeasureView } from './measureLabWorkspace';
+import {
+  CUP_LINES_LEVER, DOWN_MODEL, DOWN_MODEL_LEVER, LEVEL_LINES, LEVEL_LINES_LEVER, ORDER_STEPS, ORDER_STEPS_LEVER,
+  POURED_SHELF_LEVER, PRACTICE_NOTE, leverFacts, measureLabLevers, practiceItem, shelfCups,
+} from './measureLabLevers';
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the generator)
@@ -90,6 +94,8 @@ export interface MeasureContainer {
   capacity: number;
   /** order_capacity only: how much is already in it, in cups. */
   filled?: number;
+  /** Drawn size, 1 by default. Only an easier practice item (`easy_pair`) draws one larger and one smaller. */
+  scale?: number;
 }
 
 export interface MeasureLabChallenge {
@@ -171,13 +177,9 @@ const tiltFor = (leftW: number, rightW: number): number => {
 
 /** Outline of a container, by shape. Sizes are SHAPE, never capacity — a tall
  *  narrow jug holding less than a wide bowl is the whole point of the compare. */
-const shapeBox = (shape: ContainerShape): { w: number; h: number } => {
-  switch (shape) {
-    case 'tall': return { w: 62, h: 150 };
-    case 'wide': return { w: 128, h: 78 };
-    case 'round':
-    default: return { w: 96, h: 104 };
-  }
+const shapeBox = (shape: ContainerShape, scale = 1): { w: number; h: number } => {
+  const box = shape === 'tall' ? { w: 62, h: 150 } : shape === 'wide' ? { w: 128, h: 78 } : { w: 96, h: 104 };
+  return { w: Math.round(box.w * scale), h: Math.round(box.h * scale) };
 };
 
 interface ContainerViewProps {
@@ -193,12 +195,14 @@ interface ContainerViewProps {
   /** Pip's registry id for this container; presentation only. */
   pipId?: string;
   pipRef?: (element: Element | null) => void;
+  /** level_lines lever: even lines across the glass, as fractions of its height (the same on every jar). */
+  levelLines?: readonly number[];
 }
 
 const ContainerView: React.FC<ContainerViewProps> = ({
-  container, poured, capacity, state = 'idle', badge, onClick, pipId, pipRef,
+  container, poured, capacity, state = 'idle', badge, onClick, pipId, pipRef, levelLines,
 }) => {
-  const { w, h } = shapeBox(container.shape);
+  const { w, h } = shapeBox(container.shape, container.scale);
   const fillFrac = capacity > 0 ? Math.max(0, Math.min(1, poured / capacity)) : 0;
   const fillH = Math.round(h * fillFrac);
   const rounded = container.shape === 'round' ? 28 : 8;
@@ -225,6 +229,10 @@ const ContainerView: React.FC<ContainerViewProps> = ({
           fill="rgba(56,189,248,0.55)"
           className="transition-all duration-500"
         />
+        {levelLines?.map((f) => (
+          <line key={f} data-lever="level-line" x1={8} x2={8 + w} y1={8 + h - Math.round(h * f)} y2={8 + h - Math.round(h * f)}
+            stroke="rgba(255,255,255,0.28)" strokeWidth={1} strokeDasharray="4 3" />
+        ))}
         {/* the glass */}
         <rect
           x={8} y={8} width={w} height={h} rx={rounded}
@@ -236,6 +244,35 @@ const ContainerView: React.FC<ContainerViewProps> = ({
       <span className="text-sm text-slate-200">{container.name}</span>
       {badge ? <span className="text-xs font-mono text-cyan-300">{badge}</span> : null}
     </button>
+  );
+};
+
+/** cup_lines / poured_shelf levers: a shelf with one cup picture per cup, in a row. No number. */
+const CupShelf: React.FC<{ id: string; cups: number; emoji: string }> = ({ id, cups, emoji }) => (
+  <div data-lever="cup-shelf" data-container={id} className="flex flex-col items-center gap-1">
+    <div className="flex min-h-8 flex-wrap justify-center gap-1">
+      {Array.from({ length: cups }).map((_, i) => (
+        <span key={i} data-lever="shelf-cup" aria-hidden className="text-2xl leading-none">{emoji}</span>
+      ))}
+    </div>
+    <div className="h-1.5 w-40 rounded-full bg-white/25" />
+  </div>
+);
+
+/** down_model lever: a small model balance, fixed blocks, never the item's objects. */
+const DownModel: React.FC = () => {
+  const block = (x: number, y: number, k: number) => <rect key={k} x={x} y={y} width={16} height={14} rx={2} fill="rgba(251,191,36,0.85)" />;
+  const leftDown = DOWN_MODEL.downSide === 'left';
+  const ly = leftDown ? 62 : 38, ry = leftDown ? 38 : 62;
+  return (
+    <svg data-lever="down-model" aria-label="a model balance" width={200} height={100} viewBox="0 0 200 100">
+      <rect x={96} y={40} width={8} height={50} rx={3} fill="rgba(255,255,255,0.15)" />
+      <line x1={40} y1={ly - 14} x2={160} y2={ry - 14} stroke="rgba(148,163,184,0.85)" strokeWidth={5} strokeLinecap="round" />
+      <rect x={18} y={ly} width={44} height={6} rx={3} fill="rgba(148,163,184,0.7)" />
+      <rect x={138} y={ry} width={44} height={6} rx={3} fill="rgba(148,163,184,0.7)" />
+      {Array.from({ length: leftDown ? DOWN_MODEL.heavyBlocks : DOWN_MODEL.lightBlocks }).map((_, k) => block(32, ly - 14 * (k + 1), k))}
+      {Array.from({ length: leftDown ? DOWN_MODEL.lightBlocks : DOWN_MODEL.heavyBlocks }).map((_, k) => block(152, ry - 14 * (k + 1), k))}
+    </svg>
   );
 };
 
@@ -273,14 +310,14 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // On the workspace path the runtime moves the index; a fresh item and Try again clear the bench (bound below).
-  const openItem = useRef<() => void>(() => {});
+  const openItem = useRef<(retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
   const progress = useController({
     challenges,
     getChallengeId: (c) => c.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: workspaceAssignment,
-    onItemOpened: () => openItem.current(),
+    onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: (result) => finish.current(result),
   });
   const { currentIndex, currentAttempts, results, isComplete, advance } = progress;
@@ -292,7 +329,16 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const commitCheck = useRef(progress.commitCheck);
   commitCheck.current = progress.commitCheck;
 
-  const currentChallenge = challenges[currentIndex] ?? null;
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  // In-item levers (`measureLabLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<MeasureLabChallenge | null>(null);
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice item. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -355,7 +401,8 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     recordedRef.current = false;
     if (verdictTimerRef.current) { clearTimeout(verdictTimerRef.current); verdictTimerRef.current = null; }
   }, []);
-  openItem.current = clearWork;
+  // A fresh item (or the full item back after a practice item) drops the practice; Try again keeps it.
+  openItem.current = (retry) => { clearWork(); if (!retry) setPractice(null); };
 
   // Per-challenge reset — every slot above that depends on the active challenge.
   useEffect(() => {
@@ -596,10 +643,33 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const advanceToNext = () => { advance(); };
 
   // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets, no presentation and no levers.
+  // W1 offers no demonstration targets and no presentation. Every mode declares its levers.
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
-    workspace.current = { ...workspaceScene(currentChallenge, viewRef.current) };
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, viewRef.current);
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : measureLabLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          // The practice item and the full item share no work: both start blank.
+          setLeverState(pulled); clearWork(); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { clearWork(); setPractice(null); },
+    };
   });
 
   // ── Pip shared surface ────────────────────────────────────────────────────
@@ -679,6 +749,7 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
           {!isComplete && ch ? (
             <>
+              {practice ? <div className="text-center text-xs text-amber-300" data-practice>Practice</div> : null}
               <LuminaPrompt accent="cyan" center>
                 <span className="text-base">{ch.prompt}</span>
               </LuminaPrompt>
@@ -765,6 +836,8 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                     </svg>
                   </div>
 
+                  {leverOn(DOWN_MODEL_LEVER) ? <div className="flex justify-center"><DownModel /></div> : null}
+
                   {prediction !== null && !bothPlaced ? (
                     <div className="flex justify-center gap-4">
                       {(['left', 'right'] as const).map((side) => {
@@ -800,8 +873,8 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                   </div>
                   <div ref={pip.ref('containers')} data-pip-object="containers" className="flex flex-wrap justify-center items-end gap-4 sm:gap-8">
                     {[ch.containerA, ch.containerB].map((c) => (
+                      <div key={c.id} className="flex flex-col items-center gap-2">
                       <ContainerView
-                        key={c.id}
                         pipId={`container-${c.id}`}
                         pipRef={pip.ref(`container-${c.id}`)}
                         container={c}
@@ -813,6 +886,9 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                           ? () => { pip.look(`container-${c.id}`); handlePredict(c.id); }
                           : undefined}
                       />
+                      {leverOn(CUP_LINES_LEVER)
+                        ? <CupShelf id={c.id} cups={shelfCups(ch, view)[c.id] ?? 0} emoji={unitEmoji} /> : null}
+                      </div>
                     ))}
                   </div>
                   {prediction !== null && !Object.keys(poured).length ? (
@@ -838,6 +914,11 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                       capacity={ch.container.capacity}
                     />
                   </div>
+                  {leverOn(POURED_SHELF_LEVER) ? (
+                    <div className="flex justify-center">
+                      <CupShelf id={ch.container.id} cups={shelfCups(ch, view)[ch.container.id] ?? 0} emoji={unitEmoji} />
+                    </div>
+                  ) : null}
                   <div className="flex flex-col items-center gap-2">
                     <LuminaSectionLabel accent="emerald" size="sm">
                       Tap a {unitName.replace(/s$/, '')} to pour it in
@@ -911,11 +992,17 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                           capacity={c.capacity}
                           state={pos >= 0 ? 'selected' : 'idle'}
                           badge={pos >= 0 ? `#${pos + 1}` : undefined}
+                          levelLines={leverOn(LEVEL_LINES_LEVER) ? LEVEL_LINES : undefined}
                           onClick={feedback === 'correct' ? undefined : () => { pip.look(`container-${c.id}`); handleOrderTap(c.id); }}
                         />
                       );
                     })}
                   </div>
+                  {leverOn(ORDER_STEPS_LEVER) ? (
+                    <div data-lever="order-steps" aria-label="the way the order goes" className="flex items-end justify-center gap-2">
+                      {ORDER_STEPS.map((hgt) => <div key={hgt} className="w-6 rounded-t bg-purple-300/60" style={{ height: hgt * 1.4 }} />)}
+                    </div>
+                  ) : null}
                   {order.length > 0 && feedback !== 'correct' ? (
                     <div className="flex justify-center">
                       <LuminaButton tone="ghost" onClick={() => { if (!learnerBlocked()) setOrder([]); }}>Start over</LuminaButton>

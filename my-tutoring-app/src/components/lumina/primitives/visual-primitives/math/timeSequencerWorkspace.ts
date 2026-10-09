@@ -118,7 +118,7 @@ export function workspaceScene(challenge: TimeSequencerChallenge, view: TimeView
     if (challenge.prelabelFirstSlot && (challenge.correctOrder?.length ?? 0) > 1) drawn.startHere = 'the first card of the day starts already placed';
   } else if (challenge.type === 'match-time-of-day') {
     drawn.activity = challenge.event?.label ?? '';
-    drawn.choices = PERIODS.map(cap).join(', ');
+    drawn.choices = (challenge.periodChoices ?? PERIODS).map(cap).join(', ');
   } else if (challenge.type === 'before-after') {
     drawn.referenceCard = challenge.referenceEvent?.label ?? '';
     drawn.relation = challenge.relation ?? '';

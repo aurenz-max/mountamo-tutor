@@ -30,6 +30,19 @@
   `wrong_minute`, `other_time`; `hour_off`, `too_short`, `too_long` (catalog `teachingWorkspace.misses`).
 - **Probe:** `AnalogClock.workspace.test.tsx`; journey sweep on `w1-payloads/analog-clock.*.json`.
 
+### R4 — levers never draw or say the answer · OBSERVED (NEW 2026-10-09)
+- Every mode declares levers (`analogClockLevers.ts`, catalog `levers: true`); each starts released, and a tier aid
+  already on screen is declared pulled. Leak rules in code, unit-tested (`analogClockLevers.test.ts`):
+  `running_model` is a second clock whose hours stay two or more from the item's (`modelLeaks`), labels no hand, and
+  is the only help on `hand_name` (where which hand tells the hour IS the answer); the legend never on `hand_name`;
+  the digital echo only on `set_time` (`echoOffered`); `start_and_sweep` draws only the learner's own run; lever facts
+  carry no digit.
+- Simplify (`simpler_item`) stays in the mode and never shows the item's time, duration or right option
+  (`practiceLeaks`): read/match a whole hour with two far choices, hear_time two faces, set_time a whole hour (none on
+  the hour), elapsed whole hours (none on whole hours). hand_name and count_face have none. Practice is ungraded; the
+  full item comes back blank; Try again on a practice item keeps it.
+- Every pull is recorded on the next attempt (`assisted`, `levers`). **Probe:** `AnalogClock.levers.workspace.test.tsx`.
+
 ## Gaps
 
 ### G1 — generated read/match hints name the hand positions · OPEN
@@ -44,3 +57,4 @@
 ## Changelog
 
 - 2026-10-09 — created with the W1 workspace binding (R3).
+- 2026-10-09 — R4 levers on every mode (`/add-support-tiers`; qa/eval-reports/analog-clock-levers-2026-10-09.md).

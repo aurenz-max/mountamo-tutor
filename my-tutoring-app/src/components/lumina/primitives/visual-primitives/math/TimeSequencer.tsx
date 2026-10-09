@@ -30,6 +30,10 @@ import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type Progr
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { EMPTY_TIME_VIEW, describeTimeWork, timeSequencerMiss, workspaceAssignment, workspaceScene, type TimeView }
   from './timeSequencerWorkspace';
+import {
+  DAY_ANCHORS_LEVER, DURATION_MODEL_LEVER, FACE_NUMBERS_LEVER, OPTION_PICTURES_LEVER, PRACTICE_NOTE, RELATION_MODEL_LEVER,
+  SKY_STRIP_LEVER, dayAnchors, durationModel, leverFacts, optionPictures, practiceItem, relationModel, timeSequencerLevers,
+} from './timeSequencerLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -77,6 +81,8 @@ export interface TimeSequencerChallenge {
   // match-time-of-day
   event?: EventCard;
   correctPeriod?: 'morning' | 'afternoon' | 'evening' | 'night';
+  /** The choices shown, when fewer than all four (the `two_choices` practice item). */
+  periodChoices?: ('morning' | 'afternoon' | 'evening' | 'night')[];
 
   // before-after
   referenceEvent?: EventCard;
@@ -256,7 +262,7 @@ function skyWindowFor(fractions: (number | undefined)[]): [number, number] {
 // 44px, not the 34 the first draft used: at 34 the hour hand was legible to an
 // adult reading a desktop screenshot and marginal for the five-year-old who has
 // to tell 7 o'clock from 9 o'clock, and telling them apart IS the task here.
-const ClockFace: React.FC<{ hour: number; size?: number }> = ({ hour, size = 44 }) => {
+const ClockFace: React.FC<{ hour: number; size?: number; numbers?: boolean }> = ({ hour, size = 44, numbers }) => {
   const r = size / 2;
   const h12 = ((hour % 12) + 12) % 12;
   const hourAngle = (h12 / 12) * 2 * Math.PI;
@@ -275,6 +281,14 @@ const ClockFace: React.FC<{ hour: number; size?: number }> = ({ hour, size = 44 
             x2={r + Math.sin(a) * (r * 0.9)} y2={r - Math.cos(a) * (r * 0.9)}
             stroke="rgb(148 163 184)" strokeWidth={i % 3 === 0 ? 1.4 : 0.7}
           />
+        );
+      })}
+      {/* The face_numbers lever: all twelve numbers round the face, so the short hand has a number to point at. */}
+      {numbers && Array.from({ length: 12 }, (_, i) => {
+        const n = i + 1, a = (n / 12) * 2 * Math.PI, at = r * 0.6;
+        return (
+          <text key={`n${n}`} data-lever="face-number" x={r + Math.sin(a) * at} y={r - Math.cos(a) * at}
+            textAnchor="middle" dominantBaseline="central" fontSize={size * 0.13} fill="rgb(51 65 85)">{n}</text>
         );
       })}
       {/* Minute hand — straight up on every whole hour. */}
@@ -304,6 +318,7 @@ const SkyStrip: React.FC<{ fraction: number; window?: [number, number] }> = ({ f
   return (
     <div
       aria-hidden
+      data-sky-strip
       className="relative mt-1 h-3.5 w-full max-w-[150px] rounded-full overflow-hidden border border-white/10"
       style={{ background: `linear-gradient(90deg, ${gradient})` }}
     >
@@ -332,6 +347,8 @@ interface EventCardVisualProps {
   showSky?: boolean;
   /** clock-sequence: the analog face at `event.clockHour`, drawn beside the emoji. */
   showClock?: boolean;
+  /** The face_numbers lever: a larger face with all twelve numbers. */
+  clockNumbers?: boolean;
   /** The challenge-local day window the sky strips share, so the cards are comparable. */
   skyWindow?: [number, number];
   className?: string;
@@ -341,7 +358,7 @@ interface EventCardVisualProps {
 }
 
 const EventCardVisual: React.FC<EventCardVisualProps> = ({
-  event, index, selected, onClick, disabled, showTime, showSky, showClock, skyWindow, className = '', pipId, pipRef,
+  event, index, selected, onClick, disabled, showTime, showSky, showClock, clockNumbers, skyWindow, className = '', pipId, pipRef,
 }) => (
   <button
     ref={pipRef}
@@ -367,7 +384,7 @@ const EventCardVisual: React.FC<EventCardVisualProps> = ({
     <span className="text-2xl flex-shrink-0">{event.emoji}</span>
     {/* The face sits BESIDE the activity picture, not under the label: on
         clock-sequence the pairing of the two is the thing being learned. */}
-    {showClock && event.clockHour !== undefined && <ClockFace hour={event.clockHour} />}
+    {showClock && event.clockHour !== undefined && <ClockFace hour={event.clockHour} numbers={clockNumbers} size={clockNumbers ? 64 : 44} />}
     <div className="flex-1 min-w-0">
       <span className="text-slate-200 text-sm font-medium block truncate">{event.label}</span>
       {showTime && event.typicalTime && (
@@ -458,7 +475,17 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   });
 
   // ── State ──────────────────────────────────────────────────────────
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // Levers (`timeSequencerLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place. The tier's sky strip counts as pulled; it is the item's presentation.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<TimeSequencerChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never on a practice item. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  const skyOn = !!currentChallenge?.showSkyCue || leverOn(SKY_STRIP_LEVER);
 
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
@@ -542,9 +569,11 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     setFeedbackType('');
   }, []);
   // Workspace path: a fresh challenge and Try again both open blank, with the start-here card back in the first slot.
-  openItem.current = (index) => {
+  // A fresh item (or the full item back after a practice item) ends any practice; Try again keeps the practice item.
+  openItem.current = (index, retry) => {
     resetDomainState();
-    setOrderedEvents(seededOrder(challenges[index]));
+    if (!retry) setPractice(null);
+    setOrderedEvents(seededOrder(retry && practice ? practice : challenges[index]));
   };
 
   // ── Pre-seed the first ordered slot (easy/medium "start here" anchor) ──
@@ -823,9 +852,33 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
 
   // Workspace path: what the tutor and the observer are shown, republished every render.
   // W1 offers no demonstration targets and no presentation.
+  // Every mode declares levers (`timeSequencerLevers.ts`).
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
-    workspace.current = { ...workspaceScene(currentChallenge, timeView.current) };
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, timeView.current);
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : timeSequencerLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge);
+          if (!easier) return 'This item has no easier practice; try a help lever.';
+          // The practice item and the full item share no work: both start blank.
+          setLeverState(pulled); resetDomainState(); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { resetDomainState(); setPractice(null); setOrderedEvents(seededOrder(sessionChallenge)); },
+    };
   });
 
   const handleToggleSequenceEvent = useCallback((eventId: string) => {
@@ -895,8 +948,9 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
                 index={i}
                 selected
                 showTime={currentChallenge.showTimeAnchors}
-                showSky={currentChallenge.showSkyCue}
+                showSky={skyOn}
                 showClock={currentChallenge.showClockFace}
+                clockNumbers={leverOn(FACE_NUMBERS_LEVER)}
                 skyWindow={skyWindow}
                 pipId={`card-${event.id}`}
                 pipRef={pip.ref(`card-${event.id}`)}
@@ -918,8 +972,9 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
                 key={event.id}
                 event={event}
                 showTime={currentChallenge.showTimeAnchors}
-                showSky={currentChallenge.showSkyCue}
+                showSky={skyOn}
                 showClock={currentChallenge.showClockFace}
+                clockNumbers={leverOn(FACE_NUMBERS_LEVER)}
                 skyWindow={skyWindow}
                 pipId={`card-${event.id}`}
                 pipRef={pip.ref(`card-${event.id}`)}
@@ -935,6 +990,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
 
   const renderMatchTimeOfDay = () => {
     if (!currentChallenge || !currentChallenge.event) return null;
+    const anchors = leverOn(DAY_ANCHORS_LEVER) ? dayAnchors(currentChallenge) : null;
     return (
       <div className="space-y-4">
         {/* No time anchor here — the clock time would reveal the period (the answer). */}
@@ -943,7 +999,8 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
             pipId="event" pipRef={pip.ref('event')} />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          {Object.entries(PERIOD_DISPLAY).map(([period, display]) => (
+          {Object.entries(PERIOD_DISPLAY).filter(([period]) => !currentChallenge.periodChoices
+            || (currentChallenge.periodChoices as string[]).includes(period)).map(([period, display]) => (
             <button
               key={period}
               ref={pip.ref(`period-${period}`)}
@@ -962,6 +1019,12 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
             >
               <span className="text-2xl block">{display.emoji}</span>
               <span className="text-sm font-medium">{display.label}</span>
+              {anchors && (
+                <span data-lever="day-anchor" className="mt-1 block text-xs text-slate-400">
+                  <span className="text-lg mr-1" aria-hidden>{anchors[period as keyof typeof anchors].emoji}</span>
+                  {anchors[period as keyof typeof anchors].label}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -973,9 +1036,25 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     if (!currentChallenge) return null;
     const ref = currentChallenge.referenceEvent;
     const opts = currentChallenge.options || [];
+    const model = leverOn(RELATION_MODEL_LEVER) ? relationModel(currentChallenge) : null;
 
     return (
       <div className="space-y-4">
+        {/* The relation_model lever: three OTHER cards in day order, the first "before" and the last "after" the middle. */}
+        {model && (
+          <div data-lever="relation-model" className="flex items-end justify-center gap-2 rounded-xl border border-white/10 bg-slate-800/20 p-2">
+            {model.map((card, i) => (
+              <React.Fragment key={card.label}>
+                {i > 0 && <span className="pb-6 text-slate-500" aria-hidden>→</span>}
+                <div className={`flex flex-col items-center rounded-lg px-2 py-1 ${i === 1 ? 'border border-blue-400/40' : ''}`}>
+                  <span className="text-2xl" aria-hidden>{card.emoji}</span>
+                  <span className="text-xs text-slate-300">{card.label}</span>
+                  <span className="min-h-4 text-[11px] font-bold text-blue-300">{i === 0 ? 'before' : i === 2 ? 'after' : ''}</span>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
         <div className="text-center">
           <span className="text-slate-400 text-xs block mb-1">
             What happens <span className="text-blue-300 font-bold">{currentChallenge.relation}</span>...
@@ -1013,9 +1092,23 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     if (!currentChallenge) return null;
     const { eventA, eventB } = currentChallenge;
     if (!eventA || !eventB) return null;
+    const model = leverOn(DURATION_MODEL_LEVER) ? durationModel(currentChallenge) : null;
+    const bar = (card: { label: string; emoji: string }, width: number) => (
+      <div key={card.label} className="flex items-center gap-2">
+        <span className="w-40 truncate text-xs text-slate-300"><span aria-hidden className="mr-1">{card.emoji}</span>{card.label}</span>
+        <div className="h-2.5 rounded-full bg-emerald-400/70" data-lever="duration-bar" style={{ width: `${width}%` }} />
+      </div>
+    );
 
     return (
       <div ref={pip.ref('durations')} data-pip-object="durations" className="space-y-4">
+        {/* The duration_model lever: two OTHER pairs, each activity with a bar as long as it takes. */}
+        {model && (
+          <div data-lever="duration-model" className="space-y-2 rounded-xl border border-white/10 bg-slate-800/20 p-2">
+            <div className="space-y-1">{bar(model.far[0], 6)}{bar(model.far[1], 55)}</div>
+            <div className="space-y-1 border-t border-white/5 pt-1">{bar(model.same[0], 14)}{bar(model.same[1], 14)}</div>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4">
           <button
             ref={pip.ref('duration-A')}
@@ -1077,6 +1170,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     if (!currentChallenge) return null;
     const schedule = currentChallenge.schedule || [];
     const options = currentChallenge.activityOptions || schedule.map((s) => s.activity);
+    const pictures = leverOn(OPTION_PICTURES_LEVER) ? optionPictures(currentChallenge) : null;
 
     return (
       <div className="space-y-4">
@@ -1118,6 +1212,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
               ref={pip.ref(`activity-${i}`)}
               data-pip-object={`activity-${i}`}
               type="button"
+              aria-label={activity}
               onClick={() => { pip.look(`activity-${i}`); if (!isCurrentChallengeCorrect && !learnerBlocked()) { SoundManager.select(); setScheduleAnswer(activity); } }}
               disabled={isCurrentChallengeCorrect}
               className={`
@@ -1128,6 +1223,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
                 ${isCurrentChallengeCorrect ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
               `}
             >
+              {pictures?.[activity] && <span data-lever="option-picture" className="mr-2" aria-hidden>{pictures[activity]}</span>}
               {activity}
             </button>
           ))}
@@ -1196,6 +1292,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         {/* Current challenge */}
         {currentChallenge && !allChallengesComplete && (
           <div className="space-y-4">
+            {practice && <div className="text-center text-xs text-amber-300" data-practice>Practice</div>}
             <LuminaPanel className="p-3 rounded-xl">
               <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
             </LuminaPanel>

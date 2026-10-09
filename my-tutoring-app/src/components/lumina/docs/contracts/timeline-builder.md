@@ -22,6 +22,15 @@ the learner's placements, never the order. Try again clears the board. Probe: wo
 Outside a live runtime: Try Again keeps placements, three misses reveal the order and record a partial score, Next
 advances and submits. Workspace path: no Next, no scripted Try Again, no `sendText`, `useLuminaAI` disabled.
 
+### R4 — levers never place, rank or name an event · OBSERVED (2026-10-09)
+`timelineBuilderLevers.ts`, workspace path only. `time_arrow` (help): an arrow earlier → later along the bar.
+`time_ruler` (help): the scale under the slots — day parts as pictures (daily, morning-to-night scales only), every
+month start → end (yearly), years at even steps (historical); refused where the scale ends cannot be read, where a
+mark is an event's name, or where the marks are only the cards' own months/years (`rulerLeaks`). `fewer_events`
+(simplify): `<item>~simpler`, same `type`, 3 events (2 on a 3-event item) from a code pool, none sharing a label with
+any session timeline (`practiceLeaks`), ungraded; the full item returns blank. Lever state keyed by item; Try again
+keeps a pulled lever and a practice timeline. Probe: `timelineBuilderLevers.test.ts`, `TimelineBuilder.levers.workspace.test.tsx`.
+
 ## Open
 - **G1** — card descriptions for `place-historical` can carry the year; ordering by stated year is the intended
   skill at grades 4-8 but makes K-3 historical items a number-ordering task. Generator question → `/eval-test`.

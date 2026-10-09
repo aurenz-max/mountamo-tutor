@@ -25,6 +25,10 @@ import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type Progr
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeLengthWork, lengthLabMatches, lengthMiss, workspaceAssignment, workspaceScene, type LengthView }
   from './lengthLabWorkspace';
+import {
+  CHAIN_MODEL_LEVER, END_LINES_LEVER, ORDER_STEPS_LEVER, OUTLINE_LEVER, UNIT_MARKS_LEVER, UNIT_MODEL_LEVER, WORD_MODEL_LEVER,
+  lengthLabLevers, leverFacts, simplerLength,
+} from './lengthLabLevers';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -197,6 +201,70 @@ function ObjectBar({ name, length, color, maxUnits, showLabel = true, highlighte
 }
 
 // ============================================================================
+// Lever pictures (`lengthLabLevers.ts`). Each is drawn only while its lever is pulled; none names an item object.
+// ============================================================================
+
+/** end_lines: each bar's far end carried down as a dashed line across the panel (the panel has p-4 padding). */
+function EndLines({ lengths }: { lengths: number[] }) {
+  return (
+    <>
+      {Array.from(new Set(lengths)).map((len) => (
+        <div key={len} data-lever="end-line" aria-hidden
+          className="absolute top-2 bottom-2 border-l-2 border-dashed border-yellow-300/70 pointer-events-none"
+          style={{ left: `${16 + Math.max(24, Math.min(len, MAX_BAR_UNITS) * UNIT_WIDTH)}px` }} />
+      ))}
+    </>
+  );
+}
+
+const ModelBar = ({ width, color = '#94a3b8', tag }: { width: number; color?: string; tag?: string }) => (
+  <div className="flex items-center gap-2">
+    <div className="rounded" style={{ width: `${width}px`, height: '14px', backgroundColor: color, opacity: 0.8 }} />
+    {tag && <span className="text-xs text-slate-300">{tag}</span>}
+  </div>
+);
+
+/** word_model: what longer, shorter and same look like, on plain grey bars. */
+function WordModel() {
+  return (
+    <div data-lever="word-model" className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-3">
+      <div className="space-y-1"><ModelBar width={120} tag="longer" /><ModelBar width={48} tag="shorter" /></div>
+      <div className="space-y-1"><ModelBar width={80} tag="same" /><ModelBar width={80} tag="same" /></div>
+    </div>
+  );
+}
+
+/** unit_model: one plain grey bar, measured with small squares and with big squares. */
+function UnitModel() {
+  const squares = (n: number, size: number) => (
+    <div className="flex">{Array.from({ length: n }).map((_, i) => (
+      <div key={i} className="border border-white/30 bg-white/10" style={{ width: `${size}px`, height: '16px' }} />))}</div>
+  );
+  return (
+    <div data-lever="unit-model" className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-1">
+      <ModelBar width={128} />
+      {squares(4, 32)}
+      {squares(2, 64)}
+    </div>
+  );
+}
+
+/** chain_model: three plain bars at one start, with the two captions that chain them. */
+function ChainModel() {
+  return (
+    <div data-lever="chain-model" className="p-3 rounded-xl bg-white/[0.03] border border-white/10 space-y-2">
+      <div className="space-y-1">
+        <ModelBar width={40} color="#ef4444" />
+        <ModelBar width={80} color="#3b82f6" />
+        <ModelBar width={120} color="#22c55e" />
+      </div>
+      <p className="text-xs text-slate-300">red is shorter than blue</p>
+      <p className="text-xs text-slate-300">blue is shorter than green</p>
+    </div>
+  );
+}
+
+// ============================================================================
 // Helper: Tiling Workspace
 // ============================================================================
 
@@ -221,9 +289,11 @@ interface TilingWorkspaceProps {
   revealOnMiss?: boolean;
   /** The tiles in the row as they change, for the tutor's view of the work. */
   onCountChange?: (count: number) => void;
+  /** object_outline lever: a dashed outline of the object's length behind the units. */
+  outline?: boolean;
 }
 
-function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1, pipRef, pipId, revealOnMiss = true, onCountChange }: TilingWorkspaceProps) {
+function TilingWorkspace({ objectName, objectLength, objectColor, unitType, correctCount, onComplete, disabled, showAlignmentFeedback = true, unitSpan = 1, pipRef, pipId, revealOnMiss = true, onCountChange, outline = false }: TilingWorkspaceProps) {
   const [placedUnits, setPlacedUnits] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const objectWidthPx = Math.min(objectLength, MAX_BAR_UNITS) * UNIT_WIDTH;
@@ -275,7 +345,12 @@ function TilingWorkspace({ objectName, objectLength, objectColor, unitType, corr
         {/* Unit tiles below */}
         <div className="space-y-1">
           <span className="text-slate-400 text-xs uppercase tracking-wider">Your tiles ({unitType.replace('_', ' ')})</span>
-          <div className="flex items-center gap-0 min-h-[32px]">
+          <div className="relative flex items-center gap-0 min-h-[32px]">
+            {outline && (
+              <div data-lever="object-outline" aria-hidden
+                className="absolute left-0 rounded-md border-2 border-dashed border-yellow-300/70 pointer-events-none"
+                style={{ width: `${objectWidthPx}px`, height: '28px', minWidth: '24px' }} />
+            )}
             {Array.from({ length: placedUnits }).map((_, i) => (
               <div
                 key={i}
@@ -368,9 +443,11 @@ interface OrderingWorkspaceProps {
   disabled: boolean;
   /** The names in the slots as they change, for the tutor's view of the work. */
   onSlotsChange?: (order: string[]) => void;
+  /** order_steps lever: three wordless bars under the slots, growing the way the slots run. */
+  steps?: boolean;
 }
 
-function OrderingWorkspace({ items, correctOrderCsv, onComplete, disabled, onSlotsChange }: OrderingWorkspaceProps) {
+function OrderingWorkspace({ items, correctOrderCsv, onComplete, disabled, onSlotsChange, steps = false }: OrderingWorkspaceProps) {
   const [slots, setSlots] = useState<(OrderItem | null)[]>([null, null, null]);
   const [availableItems, setAvailableItems] = useState<OrderItem[]>([...items]);
   const [submitted, setSubmitted] = useState(false);
@@ -476,6 +553,15 @@ function OrderingWorkspace({ items, correctOrderCsv, onComplete, disabled, onSlo
             );
           })}
         </div>
+        {steps && (
+          <div className="flex items-end gap-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="min-w-[80px] flex justify-center">
+                <div data-lever="order-step" aria-hidden className="w-10 rounded-sm bg-yellow-300/50" style={{ height: `${8 * (i + 1)}px` }} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Submit */}
@@ -610,7 +696,15 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
   });
 
   // ── Current challenge ──
-  const currentChallenge = challenges[currentIndex] || null;
+  // Levers (`lengthLabLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place. The tier's unit marks and fit line are starting positions, not levers.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<LengthLabChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex] || null;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   /** estimate_then_tile: the guess the child committed BEFORE the units appeared.
@@ -627,7 +721,19 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
 
   // A fresh challenge starts clean. Try again clears the checked work but keeps the guess, which is never graded:
   // the child measures again against the same guess.
+  const clearWork = () => {
+    setSelectedAnswer(null);
+    setShowFeedback(false);
+    setEstimate(null);
+    setUnitACount(null);
+    setUnitBCount(null);
+    setTiles(0);
+    setOrder([]);
+    setAttemptKey(k => k + 1);
+  };
+  // Try again on a practice item keeps it; only a fresh item (or the return from practice) ends it.
   openItem.current = (retry) => {
+    if (!retry) setPractice(null);
     setSelectedAnswer(null);
     setShowFeedback(false);
     setUnitACount(null);
@@ -668,7 +774,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
   const unitB = currentChallenge?.unitTypeB || unitType;
   const view = (over: Partial<LengthView> = {}): LengthView => ({
     answer: selectedAnswer, tiles, estimate, countA: unitACount, countB: unitBCount, unitA, unitB, order,
-    ticksShown: !!currentChallenge?.showUnitTicks, fitShown: currentChallenge?.showAlignmentFeedback !== false,
+    ticksShown: !!currentChallenge?.showUnitTicks || leverOn(UNIT_MARKS_LEVER), fitShown: currentChallenge?.showAlignmentFeedback !== false,
     ...over,
   });
   /** The activity's own check, committed as the workspace's checked gesture (the attempt counted on both paths). */
@@ -828,11 +934,37 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     setUnitBCount(null);
   }, [advanceProgress]);
 
-  // Workspace path: what the tutor and the observer are shown, republished every render. W1: no demonstration,
-  // no presentation, no levers.
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation; every mode declares levers (`lengthLabLevers.ts`).
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge) return;
-    workspace.current = { ...workspaceScene(currentChallenge, view()) };
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, view());
+    const ctx = { ticksShown: !!sessionChallenge.showUnitTicks, sessionUnit: unitType };
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : lengthLabLevers(sessionChallenge, pulledLevers, ctx);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (id === OUTLINE_LEVER && sessionChallenge.type === 'estimate_then_tile' && estimate === null) {
+          return 'The units row appears after the guess: the learner taps a guess first.';
+        }
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerLength(sessionChallenge, unitType);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); clearWork(); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { clearWork(); setPractice(null); },
+    };
   });
 
   // ── Pip shared surface ──
@@ -879,6 +1011,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
   const renderChallenge = () => {
     if (!currentChallenge) return null;
     const ch = currentChallenge;
+    const ticksOn = !!ch.showUnitTicks || leverOn(UNIT_MARKS_LEVER);
 
     switch (ch.type) {
       case 'compare': {
@@ -888,10 +1021,12 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
         return (
           <div className="space-y-5">
             {/* Two objects on shared baseline */}
-            <div ref={pip.ref('objects')} data-pip-object="objects" className="space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
-              <ObjectBar name={ch.objectName0} length={ch.objectLength0} color={ch.objectColor0} maxUnits={MAX_BAR_UNITS} showTicks={ch.showUnitTicks} />
-              <ObjectBar name={ch.objectName1} length={ch.objectLength1} color={ch.objectColor1} maxUnits={MAX_BAR_UNITS} showTicks={ch.showUnitTicks} />
+            <div ref={pip.ref('objects')} data-pip-object="objects" className="relative space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
+              <ObjectBar name={ch.objectName0} length={ch.objectLength0} color={ch.objectColor0} maxUnits={MAX_BAR_UNITS} showTicks={ticksOn} />
+              <ObjectBar name={ch.objectName1} length={ch.objectLength1} color={ch.objectColor1} maxUnits={MAX_BAR_UNITS} showTicks={ticksOn} />
+              {leverOn(END_LINES_LEVER) && <EndLines lengths={[ch.objectLength0, ch.objectLength1]} />}
             </div>
+            {leverOn(WORD_MODEL_LEVER) && <WordModel />}
 
             {/* Answer buttons */}
             <div className="flex flex-wrap gap-2">
@@ -968,6 +1103,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
                   pipId="measure"
                   revealOnMiss={!tutorOwned}
                   onCountChange={setTiles}
+                  outline={leverOn(OUTLINE_LEVER)}
                 />
               </>
             )}
@@ -982,6 +1118,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
         const correctUnit = (ch.correctUnitCount ?? 0) > (ch.correctUnitCountB ?? 0) ? unitA : unitB;
         return (
           <div className="space-y-5">
+            {leverOn(UNIT_MODEL_LEVER) && <UnitModel />}
             <div className="space-y-2">
               <p className="text-sm text-slate-300">
                 First, measure the {ch.objectName0} with {label(unitA)}.
@@ -1082,6 +1219,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
             pipId="measure"
             revealOnMiss={!tutorOwned}
             onCountChange={setTiles}
+            outline={leverOn(OUTLINE_LEVER)}
           />
         );
 
@@ -1089,10 +1227,11 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
         return (
           <div className="space-y-5">
             {/* Show all objects */}
-            <div ref={pip.ref('objects')} data-pip-object="objects" className="space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
+            <div ref={pip.ref('objects')} data-pip-object="objects" className="relative space-y-3 p-4 rounded-xl bg-white/[0.03] border border-white/5">
               {orderItems.map(item => (
-                <ObjectBar key={item.name} name={item.name} length={item.length} color={item.color} maxUnits={MAX_BAR_UNITS} showTicks={ch.showUnitTicks} />
+                <ObjectBar key={item.name} name={item.name} length={item.length} color={item.color} maxUnits={MAX_BAR_UNITS} showTicks={ticksOn} />
               ))}
+              {leverOn(END_LINES_LEVER) && <EndLines lengths={orderItems.map(item => item.length)} />}
             </div>
 
             <OrderingWorkspace
@@ -1102,6 +1241,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
               onComplete={handleOrderComplete}
               disabled={inputClosed}
               onSlotsChange={setOrder}
+              steps={leverOn(ORDER_STEPS_LEVER)}
             />
           </div>
         );
@@ -1129,6 +1269,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
                 </div>
               )}
             </div>
+            {leverOn(CHAIN_MODEL_LEVER) && <ChainModel />}
 
             {/* Question: which is longer? */}
             <div className="flex flex-wrap gap-2">

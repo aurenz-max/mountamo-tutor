@@ -30,6 +30,10 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { clockMiss, describeClockWork, workspaceAssignment, workspaceScene, type ClockView } from './analogClockWorkspace';
+import {
+  DIGITAL_ECHO_LEVER, HAND_LEGEND_LEVER, MINUTE_NUMBERS_LEVER, ROUND_ARROW_LEVER, RUNNING_MODEL_LEVER, SHORT_HANDS_LEVER,
+  START_SWEEP_LEVER, analogClockLevers, leverFacts, practiceItem, runningModelHour, sweptMinutes,
+} from './analogClockLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -192,11 +196,19 @@ const ClockFace: React.FC<{
   /** count_face: the numerals become targets, tapped 1 through 12. */
   onNumeralClick?: (num: number) => void;
   countedNumerals?: number[];
+  /** Lever `short_hands` (hear_time): the short hand thick and yellow, the long hand faint. */
+  shortHandEmphasis?: boolean;
+  /** Lever `round_arrow` (count_face): a dashed arrow round the face from the 1. */
+  roundArrow?: boolean;
+  /** Lever `start_and_sweep` (elapsed): faint hands at the start time, and the long hand's swept path. */
+  sweep?: { hourDeg: number; minuteDeg: number; minutes: number };
 }> = ({
   hourDeg, minuteDeg, showMinuteTicks, showMinuteNumbers,
   highlightColor = '#60a5fa', isPulsing,
   onHandClick, pickedHand = null, onNumeralClick, countedNumerals,
+  shortHandEmphasis, roundArrow, sweep,
 }) => {
+  const at = (deg: number, r: number) => ({ x: CENTER + r * Math.sin(deg * Math.PI / 180), y: CENTER - r * Math.cos(deg * Math.PI / 180) });
   const numerals = Array.from({ length: 12 }, (_, i) => {
     const num = i + 1;
     const angle = (num * 30 - 90) * (Math.PI / 180);
@@ -287,6 +299,34 @@ const ClockFace: React.FC<{
         />
       ))}
 
+      {/* Lever start_and_sweep: one ring per full turn of the long hand since the start, and the part turn shaded. */}
+      {sweep && sweep.minutes > 0 && (
+        <g data-lever="sweep">
+          {Array.from({ length: Math.floor(sweep.minutes / 60) }, (_, i) => (
+            <circle key={`lap-${i}`} data-lever="sweep-ring" cx={CENTER} cy={CENTER} r={MINUTE_HAND_LENGTH + 4 - i * 7}
+              fill="none" stroke="rgba(251,191,36,0.55)" strokeWidth={3} />
+          ))}
+          {sweep.minutes % 60 > 0 && (() => {
+            const from = sweep.minuteDeg, to = sweep.minuteDeg + (sweep.minutes % 60) * 6, r = MINUTE_HAND_LENGTH;
+            const a = at(from, r), b = at(to, r);
+            return <path data-lever="sweep-wedge" fill="rgba(251,191,36,0.18)" stroke="rgba(251,191,36,0.5)" strokeWidth={1}
+              d={`M ${CENTER} ${CENTER} L ${a.x} ${a.y} A ${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${b.x} ${b.y} Z`} />;
+          })()}
+        </g>
+      )}
+
+      {/* Lever round_arrow: the way the count goes, from the 1 round to the 12. No number is marked. */}
+      {roundArrow && (() => {
+        const r = FACE_RADIUS + 7, a = at(30, r), b = at(350, r), tip = at(358, r);
+        return (
+          <g data-lever="round-arrow">
+            <path d={`M ${a.x} ${a.y} A ${r} ${r} 0 1 1 ${b.x} ${b.y}`} fill="none" stroke="rgba(52,211,153,0.8)"
+              strokeWidth={2.5} strokeDasharray="6 5" />
+            <path d={`M ${tip.x} ${tip.y} L ${b.x - 4} ${b.y - 6} L ${b.x - 4} ${b.y + 6} Z`} fill="rgba(52,211,153,0.9)" />
+          </g>
+        );
+      })()}
+
       {/* Minute-position number labels (reading aid — easy tier) */}
       {minuteLabels.map(({ minute, x, y }) => (
         <text
@@ -339,12 +379,23 @@ const ClockFace: React.FC<{
         );
       })}
 
+      {/* Lever start_and_sweep: faint copies of the hands where they started. */}
+      {sweep && (
+        <g data-lever="start-hands" opacity={0.3}>
+          <line x1={CENTER} y1={CENTER} x2={CENTER} y2={CENTER - HOUR_HAND_LENGTH} stroke="#fbbf24" strokeWidth={5}
+            strokeLinecap="round" strokeDasharray="4 3" transform={`rotate(${sweep.hourDeg}, ${CENTER}, ${CENTER})`} />
+          <line x1={CENTER} y1={CENTER} x2={CENTER} y2={CENTER - MINUTE_HAND_LENGTH} stroke="#fbbf24" strokeWidth={3}
+            strokeLinecap="round" strokeDasharray="4 3" transform={`rotate(${sweep.minuteDeg}, ${CENTER}, ${CENTER})`} />
+        </g>
+      )}
+
       {/* Hour hand */}
       <line
+        data-lever={shortHandEmphasis ? 'short-hand' : undefined}
         x1={CENTER} y1={CENTER}
         x2={CENTER} y2={CENTER - HOUR_HAND_LENGTH}
-        stroke={pickedHand === 'hour' ? '#facc15' : highlightColor}
-        strokeWidth={pickedHand === 'hour' ? 8 : 5}
+        stroke={pickedHand === 'hour' || shortHandEmphasis ? '#facc15' : highlightColor}
+        strokeWidth={pickedHand === 'hour' || shortHandEmphasis ? 8 : 5}
         strokeLinecap="round"
         transform={`rotate(${hourDeg}, ${CENTER}, ${CENTER})`}
         style={{ transition: isPulsing ? 'none' : 'transform 0.3s ease-out' }}
@@ -354,7 +405,7 @@ const ClockFace: React.FC<{
       <line
         x1={CENTER} y1={CENTER}
         x2={CENTER} y2={CENTER - MINUTE_HAND_LENGTH}
-        stroke={pickedHand === 'minute' ? '#facc15' : 'rgba(255,255,255,0.9)'}
+        stroke={pickedHand === 'minute' ? '#facc15' : shortHandEmphasis ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.9)'}
         strokeWidth={pickedHand === 'minute' ? 7 : 3}
         strokeLinecap="round"
         transform={`rotate(${minuteDeg}, ${CENTER}, ${CENTER})`}
@@ -395,6 +446,25 @@ const ClockFace: React.FC<{
       <circle cx={CENTER} cy={CENTER} r={6} fill={highlightColor} />
       <circle cx={CENTER} cy={CENTER} r={3} fill="rgba(15, 23, 42, 0.8)" />
     </svg>
+  );
+};
+
+/**
+ * Lever `running_model`: a small second clock at another hour (`runningModelHour`), running through one hour over and
+ * over: the long hand all the way round while the short hand moves from one number to the next. No hand is labelled.
+ */
+const RunningModel: React.FC<{ hour: number }> = ({ hour }) => {
+  const [minute, setMinute] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setMinute(m => (m + 1) % 60), 100);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div data-lever="running-model" aria-hidden className="shrink-0" style={{ width: CLOCK_SIZE * 0.45, height: CLOCK_SIZE * 0.45 }}>
+      <div style={{ transform: 'scale(0.45)', transformOrigin: 'top left' }}>
+        <ClockFace hourDeg={hourToDegrees(hour, minute)} minuteDeg={minuteToDegrees(minute)} showMinuteTicks={false} isPulsing />
+      </div>
+    </div>
   );
 };
 
@@ -547,14 +617,14 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const stableInstanceIdRef = useRef(instanceId || `analog-clock-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   // Bound below, once the setters and the evaluation exist.
-  const openItem = useRef<(index: number) => void>(() => {});
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
   const progress = useController({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: workspaceAssignment,
-    onItemOpened: (index) => openItem.current(index),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
   });
   const {
@@ -584,7 +654,17 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     phaseConfig: PHASE_TYPE_CONFIG,
   });
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // Levers (`analogClockLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place. Every item starts with its levers released; the tier's aids are its presentation.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<ClockChallenge | null>(null);
+  /** A practice item checked right: it records nothing, so the session results never say so. */
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   // Clock display state
   const [displayHour, setDisplayHour] = useState<number>(12);
@@ -621,6 +701,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
 
     setPickedHand(null);
     setCountedNumerals([]);
+    setPracticeSolved(false);
 
     if (
       currentChallenge.type === 'read' || currentChallenge.type === 'match'
@@ -653,8 +734,13 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChallengeIndex, currentChallenge]);
   // Workspace path: a fresh challenge, Try again and the return from a practice item all open the challenge
-  // blank (no pick, no touched hand or numbers, the hands back where the challenge starts them).
-  openItem.current = (index) => resetSurface(challenges[index] ?? null);
+  // blank (no pick, no touched hand or numbers, the hands back where the challenge starts them). Try again on a
+  // practice item reopens the practice item; a fresh item or the return ends it.
+  openItem.current = (index, retry) => {
+    if (retry && practice) { resetSurface(practice); return; }
+    setPractice(null);
+    resetSurface(challenges[index] ?? null);
+  };
 
   // -------------------------------------------------------------------------
   // Stopwatch animation for elapsed mode
@@ -822,8 +908,10 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       SoundManager.playCorrect();
       setFeedback('Correct!');
       setFeedbackType('success');
-      // The clock's own fields; `commitCheck` below adds the verdict and the attempts on both paths.
-      recordResult({
+      // The clock's own fields; `commitCheck` below adds the verdict and the attempts on both paths. A practice item
+      // (the simplify lever) records nothing: it is not the session's challenge.
+      if (practice) setPracticeSolved(true);
+      else recordResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
@@ -854,7 +942,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       correct ? undefined : clockMiss(currentChallenge, work));
   }, [
     currentChallenge, selectedOption, displayHour, displayMinute,
-    pickedHand, countedNumerals,
+    pickedHand, countedNumerals, practice,
     currentAttempts, hasSubmittedEvaluation, recordResult, sendText, tutorOwned,
   ]);
 
@@ -1007,16 +1095,26 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
 
   // ── Within-mode support-tier reading aids (default = max scaffolding when the
   // generator set no tier, so an un-tiered session is unchanged). ──
-  const showMinuteNumbers = currentChallenge?.showMinuteNumbers ?? false;
-  const showHandLegend = currentChallenge?.showHandLegend ?? false;
+  // The tier's aids are the session item's (a practice item keeps them); a pulled lever turns one on for this item.
+  const tierMinuteNumbers = sessionChallenge?.showMinuteNumbers ?? false;
+  const tierHandLegend = sessionChallenge?.showHandLegend ?? false;
+  const tierEcho = (sessionChallenge?.showDigitalEcho ?? false) && sessionChallenge?.type === 'set_time';
+  const showMinuteNumbers = tierMinuteNumbers || leverOn(MINUTE_NUMBERS_LEVER);
+  const showHandLegend = tierHandLegend || leverOn(HAND_LEGEND_LEVER);
   // ANSWER-LEAK guard is upstream (generator only ever enables this on set_time),
   // but defensively re-clamp here so the echo can NEVER show on read/match — the
   // displayed time is the answer there. set_time's target was given, so the echo
   // is a self-check; elapsed keeps its existing stopwatch readout below.
-  const showDigitalEcho =
-    (currentChallenge?.showDigitalEcho ?? false) && currentChallenge?.type === 'set_time';
+  const showDigitalEcho = currentChallenge?.type === 'set_time' && (tierEcho || leverOn(DIGITAL_ECHO_LEVER));
+  const runningModelOn = leverOn(RUNNING_MODEL_LEVER);
+  const sweepStart = currentChallenge?.type === 'elapsed'
+    ? { hour: currentChallenge.startHour ?? currentChallenge.targetHour, minute: currentChallenge.startMinute ?? 0 } : null;
+  const sweep = sweepStart && leverOn(START_SWEEP_LEVER) ? {
+    hourDeg: hourToDegrees(sweepStart.hour, sweepStart.minute), minuteDeg: minuteToDegrees(sweepStart.minute),
+    minutes: sweptMinutes(sweepStart, { hour: displayHour, minute: displayMinute }),
+  } : undefined;
 
-  const isCurrentChallengeCorrect = currentChallenge
+  const isCurrentChallengeCorrect = practice ? practiceSolved : currentChallenge
     ? challengeResults.some(r => r.challengeId === currentChallenge.id && r.correct)
     : false;
 
@@ -1027,10 +1125,33 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   };
 
   // Workspace path: what the tutor and the observer are shown, republished every render.
-  // W1 offers no demonstration targets and no presentation.
+  // W1 offers no demonstration targets and no presentation. Every mode declares levers (`analogClockLevers.ts`).
   useLayoutEffect(() => {
-    if (!tutorOwned || !currentChallenge || !clockView.current) return;
-    workspace.current = { ...workspaceScene(currentChallenge, clockView.current) };
+    if (!tutorOwned || !currentChallenge || !sessionChallenge || !clockView.current) return;
+    const scene = workspaceScene(currentChallenge, clockView.current);
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : analogClockLevers(sessionChallenge, pulledLevers,
+      { legendShown: tierHandLegend, minuteNumbersShown: tierMinuteNumbers, echoShown: tierEcho });
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionChallenge);
+          if (!easier) return 'This item has no easier one; try a help lever.';
+          setLeverState(pulled); setStopwatchRunning(false); resetSurface(easier); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setStopwatchRunning(false); resetSurface(sessionChallenge); setPractice(null); },
+    };
   });
 
   const localOverallScore = challenges.length > 0
@@ -1100,9 +1221,12 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       <LuminaCardContent className="flex flex-col items-center gap-4">
         {/* Instruction */}
         {currentChallenge && !allChallengesComplete && (
-          <p className="text-slate-200 text-center font-medium text-base">
-            {currentChallenge.instruction}
-          </p>
+          <div className="flex flex-col items-center gap-1">
+            {practice && <LuminaBadge>Practice</LuminaBadge>}
+            <p className="text-slate-200 text-center font-medium text-base">
+              {currentChallenge.instruction}
+            </p>
+          </div>
         )}
 
         {/* Phase summary when complete */}
@@ -1125,6 +1249,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                 o'clock?" into matching against an answer already on screen —
                 caught in the 2026-09-09 Chrome drive, where the big dial sat
                 over the options showing exactly the time being asked for. */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
             <div
               ref={svgContainerRef}
               data-pip-object="clock"
@@ -1151,6 +1276,8 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                 pickedHand={currentChallenge?.type === 'hand_name' ? pickedHand : null}
                 onNumeralClick={currentChallenge?.type === 'count_face' ? handleNumeralClick : undefined}
                 countedNumerals={currentChallenge?.type === 'count_face' ? countedNumerals : undefined}
+                roundArrow={currentChallenge?.type === 'count_face' && leverOn(ROUND_ARROW_LEVER)}
+                sweep={sweep}
               />
 
               {/* Drag hint overlay for set_time */}
@@ -1161,6 +1288,10 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   </span>
                 </div>
               )}
+            </div>
+            {runningModelOn && currentChallenge && currentChallenge.type !== 'hear_time' && (
+              <RunningModel hour={runningModelHour(currentChallenge.targetHour)} />
+            )}
             </div>
 
             {/* Hand-color legend (support tier: easy + medium). A reading aid that
@@ -1259,6 +1390,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                           hourDeg={((oh % 12) + (om || 0) / 60) * 30}
                           minuteDeg={(om || 0) * 6}
                           showMinuteTicks={false}
+                          shortHandEmphasis={leverOn(SHORT_HANDS_LEVER)}
                         />
                       </div>
                     </button>

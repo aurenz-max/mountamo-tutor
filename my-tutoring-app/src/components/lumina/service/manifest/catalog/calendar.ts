@@ -203,6 +203,8 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       // The activity's own check (`timelineMiss`), read from the placed order; the same kinds on every timeline.
       misses: missLists<TimelineMiss>(sameMisses(['sequence-daily', 'sequence-yearly', 'place-historical'],
         ['reversed', 'adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order'])),
+      // time_arrow, time_ruler, fewer_events (`timelineBuilderLevers.ts`); every miss answered on every mode.
+      levers: true,
     },
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate'], role: ['visualize', 'apply'], minutes: 8 },
     tutoring: {

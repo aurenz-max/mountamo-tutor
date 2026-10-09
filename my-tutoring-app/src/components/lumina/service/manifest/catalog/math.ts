@@ -3591,6 +3591,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'it is poured is teaching; saying how many it took is not. On least-to-most the learner taps the containers '
         + 'from least water to most: never say which has the least or the most; ask them to look at how high the water '
         + 'comes. You cannot tap, pour or place for the learner.',
+      // Every mode's misses are answered by a drawn lever (`measureLabLevers.ts`).
+      levers: true,
       // The activity's own check (`measureMiss`), every mode.
       misses: missLists<MeasureMiss>({
         balance_predict: ['picked_lighter'],
@@ -5307,13 +5309,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       guidance: 'The activity checks the answer itself, and you are not told it: the learner taps a choice, lays units along '
         + 'an object with + and presses Check, or taps three objects into the slots and presses Check Order. You are not told '
         + 'any length, unit count or order. Before the check, and after a wrong one, never say which object is longer or '
-        + 'shorter, how many units reach the end, which unit was needed more, or where an object goes. Teaching is how to '
+        + 'shorter, how many units reach the end, whether to add or take away units, which unit was needed more, or where an object goes: ask the learner to look where their units end against the object. Teaching is how to '
         + 'measure: line up the starting ends and look at the far ends; lay units end to end with no gaps and no overlaps, '
         + 'from one end of the object to the other, and count each one once; compare two objects at a time; on indirect, '
         + 'read the clues as a chain through the reference object. A guess is never marked: any number is fine, and do not '
         + 'say whether it is close. When unit marks or the fit line are hidden on screen, do not count cells or say whether '
         + 'the units fit. The learner may not read: read the instruction, the clues and the choices aloud. You cannot tap, '
         + 'lay or place for the learner.',
+      // Every mode declares levers (`lengthLabLevers.ts`); every miss is answered by one on every item.
+      levers: true,
       // The activity's own check (`lengthMiss`), every mode.
       misses: missLists<LengthMiss>({
         compare: ['reversed', 'said_same', 'missed_same'],
@@ -5413,10 +5417,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'the one asked for, or how long something took. Teaching is fine: one hand is short and one is long, ask which '
         + 'number the short hand is on or just past, count by fives round the face together without saying where the count '
         + 'stops. On hand_name which hand tells the hour or the minutes is the question, and there are only two: say how '
-        + 'each hand moves, but never tell the learner to touch the other hand, even after a wrong touch. When the minute numbers or the hand legend are hidden, do '
+        + 'each hand moves (fast or slow), but never tie short or long to the hour or the '
+        + 'minutes, and never tell the learner to touch the other hand, even after a wrong touch. When the minute numbers or the hand legend are hidden, do '
         + 'not supply them: ask. On set_time the time to show is the task, so you may say it, but do not tell the learner '
         + 'the hands are right before Check. A Kindergarten learner may not read: read the question aloud; on hear_time '
         + 'saying the time asked for is the task, not the answer. You cannot touch, pick or move anything for the learner.',
+      // Every mode publishes levers (`analogClockLevers.ts`); every miss below is answered by one on every saved payload
+      // item (`analogClockLevers.test.ts`).
+      levers: true,
       // The activity's own check (`clockMiss`). count_face has none: a number out of order restarts the count, so a
       // Check is only ever twelve in order.
       misses: missLists<ClockMiss>({
@@ -5729,6 +5737,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'help the learner find the asked time in the table and read across; do not read the activity out. A '
         + 'Kindergarten or Grade 1 learner may not read: read the instruction and the card names aloud. You cannot tap '
         + 'or order cards for the learner.',
+      // Every mode publishes a help and a simplify lever (`timeSequencerLevers.ts`); each answers every miss of its mode.
+      levers: true,
       // The activity's own check (`timeSequencerMiss`), every mode.
       misses: missLists<TimeSequencerMiss>({
         'sequence-3': ['reversed', 'swapped_pair', 'wrong_first'],
