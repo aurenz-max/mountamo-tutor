@@ -6,6 +6,7 @@
 
 import { ComponentDefinition } from '../../../types';
 import type { SpokenSolarMiss } from '../../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
+import type { ShadowMiss } from '../../../primitives/visual-primitives/astronomy/lightShadowWorkspace';
 import { missLists } from './missLists';
 
 export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
@@ -720,8 +721,30 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
       commonStruggles: [
         { pattern: 'Student thinks shadow should point toward the sun', response: '"Try holding your hand up to a flashlight. Where does the shadow go? It goes the OTHER way! Shadows always point away from the light."' },
         { pattern: 'Student does not connect shadow length to sun height', response: '"Drag the sun to the very top of the sky. Now drag it low. See how the shadow gets longer? Lower sun = longer shadow!"' },
-        { pattern: 'Student confuses direction labels', response: '"Remember: the sun rises in the East (point right) and sets in the West (point left). Morning shadows point West, evening shadows point East."' },
+        { pattern: 'Student confuses direction labels', response: '"Remember: the sun rises in the East (the left side of the picture) and sets in the West (the right side). Morning shadows point West, evening shadows point East."' },
       ],
+    },
+    // Shared teaching workspace (W1, plain shape): `lightShadowWorkspace.ts`. The scripted fallback still reads `tutoring`.
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'Every item is answered by tapping one choice and checking it; the activity judges it against the '
+        + 'shadow worked out from the sun\'s position, and you are not told the answer. In this picture east is the left side '
+        + 'and west the right side, even when the ground labels are hidden. Observe: the learner drags the sun to the time '
+        + 'mark the question names. Predict: no shadow is drawn until the prediction is right. Measure: the shadow is drawn '
+        + 'and reading it is the task. Apply: the sun and the clock are hidden; only the shadow shows. Never say or hint '
+        + 'which way the shadow points, how long it is, or on apply the time or part of the day: not as a statement, not '
+        + 'as a choice to try, not as a yes-or-no question that names one ("does it point right?"). Ask questions that '
+        + 'name both sides or none: where is the sun, which side can the light not reach, left or right, long or short. '
+        + 'Read the question and the choices aloud for a young learner. You cannot move the sun, tap or check for the learner.',
+      // Every mode's misses are answered by a drawn lever (`lightShadowLevers.ts`).
+      levers: true,
+      // The activity's own check (`shadowMiss`), every mode.
+      misses: missLists<ShadowMiss>({
+        observe: ['toward_sun', 'side_when_overhead', 'below_when_side', 'length_flipped', 'length_off', 'both_wrong'],
+        predict: ['toward_sun', 'side_when_overhead', 'below_when_side', 'length_flipped', 'length_off', 'both_wrong'],
+        measure: ['toward_sun', 'side_when_overhead', 'below_when_side', 'length_flipped', 'length_off', 'both_wrong'],
+        apply: ['mirror_time', 'wrong_height', 'other_time'],
+      }),
     },
     supportsEvaluation: true,
   },

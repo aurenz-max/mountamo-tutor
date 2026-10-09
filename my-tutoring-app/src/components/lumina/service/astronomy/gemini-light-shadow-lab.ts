@@ -14,6 +14,7 @@ import type {
   ChallengeType,
   LabTheme,
 } from '../../primitives/visual-primitives/astronomy/LightShadowLab';
+import { HEIGHT_MODEL_LEVER, SHADOW_ZONES_LEVER, SIDE_MODEL_LEVER } from '../../primitives/visual-primitives/astronomy/lightShadowLevers';
 
 import {
   resolveEvalModeConstraint,
@@ -590,6 +591,24 @@ function validateShadowLength(altitude: number): RelativeLength {
 // GENERATOR FUNCTION
 // ============================================================================
 
+type ShadowGrade = 'K' | '1' | '2' | '3' | '4' | '5';
+/** The curriculum grade, 6+ capped at 5; null when the lesson has none. */
+export const shadowGradeFromGrade = (grade?: string): ShadowGrade | null => {
+  const g = (grade ?? '').toString().trim().toUpperCase();
+  if (!g) return null;
+  if (g === 'K' || g === 'KINDERGARTEN') return 'K';
+  const n = parseInt(g, 10);
+  return isNaN(n) ? null : n <= 0 ? 'K' : n >= 5 ? '5' : (String(n) as ShadowGrade);
+};
+const shadowGradeFromProse = (prose?: string): ShadowGrade => {
+  const p = (prose ?? '').toLowerCase();
+  if (/(kindergarten|preschool)/.test(p)) return 'K';
+  const m = /grade\s*(\d)|(\d)(?:st|nd|rd|th)\s*grade|(first|second|third|fourth|fifth)\s*grade/.exec(p);
+  const word = { first: '1', second: '2', third: '3', fourth: '4', fifth: '5' } as Record<string, string>;
+  const n = m ? Number(m[1] ?? m[2] ?? word[m[3]]) : 3;
+  return (n >= 5 ? '5' : String(Math.max(1, n))) as ShadowGrade;
+};
+
 type LightShadowLabConfig = {
   targetEvalMode?: string;
   /**
@@ -607,8 +626,8 @@ export const generateLightShadowLab = async (
   const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as LightShadowLabConfig;
-  const resolvedGrade = (gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '3') as
-    'K' | '1' | '2' | '3' | '4' | '5';
+  // Canonical grade first (`ctx.grade`); the prose regex fell through to '3' for "Grade 1" and kindergarten prose.
+  const resolvedGrade = shadowGradeFromGrade(ctx.grade) ?? shadowGradeFromProse(gradeLevel);
   const gradeConfig = GRADE_CONFIGURATIONS[resolvedGrade] || GRADE_CONFIGURATIONS['3'];
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
@@ -705,7 +724,13 @@ ${tierSection}
 **Sun Positions:** Include 3-5 sun positions spanning the day (morning, midday, afternoon at minimum).
 
 **Challenges:** Generate ${gradeConfig.numChallenges} challenges that progress in difficulty.
-- For observe/predict types: include 2-3 distractor answer options
+- The activity builds the answer choices itself. For observe, predict and measure the choices are always a shadow
+  DIRECTION together with a LENGTH ("West (right), Long"), so every one of those instructions asks for BOTH which way
+  the shadow points AND how long it is. For apply the choices are clock times.
+- observe: the sun's path shows a mark for each time in sunPositions; the instruction names one of those times
+  ("Drag the sun to the 8:00 AM mark...") and asks about the shadow there.
+- predict, measure, apply: the activity puts the sun in place, so never tell the student to move, set or advance it.
+- apply: describe only the shadow (its direction and length); never name the time or the part of the day.
 - For all types: include a pedagogical hint
 - Do NOT reveal answers in instruction text
 - Use warm, encouraging language for younger grades
@@ -855,6 +880,12 @@ Generate a complete, educationally sound activity configuration.
         ch.showLiveShadowReadout = sc.showLiveShadowReadout;
         ch.showSunPath = sc.showSunPath;
         ch.showDirectionLabels = sc.showDirectionLabels;
+        // Starting positions for the runtime levers (`lightShadowLevers.ts`): easy opens with the help that lets the
+        // learner check the work (ground marks where the shadow is drawn, the rule as pictures where it is not).
+        // Not a pull: nothing is recorded as help. medium and hard start with none.
+        if (supportTier === 'easy') {
+          ch.startLevers = ch.type === 'observe' || ch.type === 'measure' ? [SHADOW_ZONES_LEVER] : [SIDE_MODEL_LEVER, HEIGHT_MODEL_LEVER];
+        }
         // #2 instruction-as-scaffold: at easy, name the governing rule in the
         // hint; at medium/hard, strip the rule from the hint so the student
         // recalls/reasons it. The instruction text itself is authored neutral by

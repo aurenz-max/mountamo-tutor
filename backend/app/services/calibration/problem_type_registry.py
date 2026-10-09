@@ -970,8 +970,15 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # -----------------------------------------------------------------
     # Biology primitives
     # -----------------------------------------------------------------
-    "classification-sorter":      {"default": PriorConfig(2.5, "Sort organisms into categories")},
-    "life-cycle-sequencer":       {"default": PriorConfig(3.0, "Sequence biological life stages")},
+    "classification-sorter": {
+        "sort":    PriorConfig(2.5, "Sort each organism or trait into its group by the rule"),
+        # Sessions generated before the mode was registered (no pinned mode) are the same task.
+        "default": PriorConfig(2.5, "Sort organisms into categories"),
+    },
+    "life-cycle-sequencer": {
+        "sequence": PriorConfig(3.0, "Order every stage of a life cycle or process"),
+        "default":  PriorConfig(3.0, "Sequence biological life stages"),
+    },
     "habitat-diorama": {
         "observe": PriorConfig(2.5, "Identify an organism from an ecological clue"),
         "connect": PriorConfig(3.5, "Complete an ecological relationship"),

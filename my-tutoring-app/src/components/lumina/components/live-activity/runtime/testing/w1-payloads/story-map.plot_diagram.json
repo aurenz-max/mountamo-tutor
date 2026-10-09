@@ -1,0 +1,76 @@
+{
+ "source": "qa/tutor-reports/story-map-runtime-plot_diagram-payload-2026-10-09.json",
+ "primitiveId": "story-map",
+ "evalMode": "plot_diagram",
+ "data": {
+  "title": "Story Map: The Lost Puppy's Journey Home",
+  "gradeLevel": "5",
+  "structureType": "plot-diagram",
+  "passage": {
+   "title": "The Long Way Home",
+   "text": "One chilly autumn evening, a golden retriever puppy named Buster found himself hopelessly lost in the dense, unfamiliar Whispering Woods as darkness began to fall like a heavy curtain. Buster, a courageous but frightened young dog, had chased a vibrant blue butterfly far away from the safety of his backyard. Driven by fierce determination, he scrambled over fallen logs and forged through prickly blackberry brambles as the howling wind threatened to push him backward. Suddenly, a flash of lightning illuminated a towering oak tree, and Buster recognized the distinct metal wind chime he had heard from his porch every single day. He sprinted toward the familiar sound with all his remaining energy, bursting through the treeline into his own brightly lit yard. There stood his worried owner, Sarah, waiting with open arms to welcome her exhausted pup safely home.",
+   "author": "Elena Rostova"
+  },
+  "elements": {
+   "characters": [
+    {
+     "name": "Buster",
+     "description": "A courageous, golden retriever puppy who gets lost in the woods.",
+     "role": "protagonist"
+    },
+    {
+     "name": "Sarah",
+     "description": "Buster's worried owner who waits for him at home.",
+     "role": "supporting"
+    }
+   ],
+   "setting": {
+    "place": "Whispering Woods and backyard",
+    "time": "One chilly autumn evening",
+    "description": "A dense, unfamiliar forest that transitions to a safe backyard at night."
+   },
+   "conflict": {
+    "type": "person-vs-nature",
+    "description": "Buster must battle the elements, darkness, and distance of the Whispering Woods to find his way back home."
+   }
+  },
+  "events": [
+   {
+    "id": "event1",
+    "text": "Buster chases a blue butterfly and gets lost in the Whispering Woods on a chilly autumn evening.",
+    "arcPosition": "beginning",
+    "order": 0
+   },
+   {
+    "id": "event2",
+    "text": "Buster scrambles over fallen logs and pushes through prickly brambles as the wind howls.",
+    "arcPosition": "rising-action",
+    "order": 1
+   },
+   {
+    "id": "event3",
+    "text": "A flash of lightning reveals the metal wind chime from his porch near a towering oak tree.",
+    "arcPosition": "climax",
+    "order": 2
+   },
+   {
+    "id": "event4",
+    "text": "Buster sprints toward the familiar sound with all his remaining energy.",
+    "arcPosition": "falling-action",
+    "order": 3
+   },
+   {
+    "id": "event5",
+    "text": "Buster bursts into his lit yard and reunites with his worried owner, Sarah.",
+    "arcPosition": "resolution",
+    "order": 4
+   }
+  ],
+  "objectiveGrade": "5",
+  "supportTier": "hard",
+  "distractorCharacters": [
+   "Max",
+   "Officer Higgins"
+  ]
+ }
+}

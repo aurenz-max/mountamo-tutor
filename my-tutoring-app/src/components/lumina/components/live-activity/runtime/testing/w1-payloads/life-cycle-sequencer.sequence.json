@@ -1,0 +1,56 @@
+{
+ "source": "qa/tutor-reports/life-cycle-sequencer-runtime-sequence-payload-2026-10-09.json",
+ "primitiveId": "life-cycle-sequencer",
+ "evalMode": "sequence",
+ "data": {
+  "title": "Life Cycle of a Butterfly",
+  "instructions": "Put the pictures in order from start to finish",
+  "cycleType": "circular",
+  "stages": [
+   {
+    "id": "stage1",
+    "label": "Egg",
+    "imagePrompt": "A tiny round egg resting on a green leaf",
+    "description": "A mama butterfly lays a tiny egg on a leaf. Inside the egg, a baby caterpillar is starting to grow.",
+    "correctPosition": 0,
+    "transitionToNext": "The egg hatches and a tiny caterpillar crawls out",
+    "duration": "1 week"
+   },
+   {
+    "id": "stage2",
+    "label": "Caterpillar",
+    "imagePrompt": "A fuzzy green caterpillar eating a green leaf",
+    "description": "The hungry caterpillar eats lots of leaves to grow big and strong. It sheds its skin as it gets bigger.",
+    "correctPosition": 1,
+    "transitionToNext": "The caterpillar hangs upside down and makes a chrysalis",
+    "duration": "2 weeks"
+   },
+   {
+    "id": "stage3",
+    "label": "Chrysalis",
+    "imagePrompt": "A green chrysalis hanging from a plant stem",
+    "description": "The caterpillar rests inside a special shell called a chrysalis. Magic is happening inside!",
+    "correctPosition": 2,
+    "transitionToNext": "The chrysalis opens up and a butterfly comes out",
+    "duration": "2 weeks"
+   },
+   {
+    "id": "stage4",
+    "label": "Butterfly",
+    "imagePrompt": "A bright colorful butterfly with big wings sitting on a flower",
+    "description": "A beautiful butterfly comes out with wet wings. Once its wings dry, it flies away to drink sweet nectar from flowers.",
+    "correctPosition": 3,
+    "transitionToNext": "The adult butterfly lays new eggs on a leaf to start the cycle again",
+    "duration": "2 to 4 weeks"
+   }
+  ],
+  "scaleContext": "This complete cycle takes about 6 to 8 weeks from egg to butterfly",
+  "misconceptionTrap": {
+   "commonError": "Students often think the chrysalis is a sleeping bag where the caterpillar just takes a nap",
+   "correction": "The caterpillar is actually very busy changing its body inside the chrysalis to grow wings!"
+  },
+  "gradeBand": "K-2",
+  "targetEvalMode": "sequence",
+  "objectiveGrade": "1"
+ }
+}

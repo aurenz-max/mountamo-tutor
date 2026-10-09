@@ -1,0 +1,2505 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "light-shadow-lab.apply",
+   "primitiveId": "light-shadow-lab",
+   "evalMode": "apply",
+   "keys": [
+    "8:00 am",
+    "8"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8:00 am",
+       "8"
+      ],
+      "ask": "The shadow of the flagpole is very long and points toward the west (right). What time of day could this be?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "10:00 am",
+       "8:00 am",
+       "12:00 pm",
+       "4:00 pm",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The shadow of the flagpole is very long and points toward the west, to the right. The choices are 10:00 AM, 8:00 AM, 12:00 PM, and 4:00 PM. Which time do you think makes this shadow?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The shadow of the flagpole is very long and points toward the west, on the right. What time of day could this be: 10:00 AM, 8:00 AM, 12:00 PM, or 4:00 PM?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The shadow of the flagpole is very long and points toward the west, on the right. What time of day could this be: 10:00 AM, 8:00 AM, 12:00 PM, or 4:00 PM? Tap your choice and check it whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The shadow of the flagpole is very long and points toward the west, on the right. What time of day could this be: 10:00 AM, 8:00 AM, 12:00 PM, or 4:00 PM?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The shadow of the flagpole is very long and points toward the west, on the right. What time of day could this be: 10:00 AM, 8:00 AM, 12:00 PM, or 4:00 PM?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Chose \\\"4:00 PM\\\"\". The board checked it: not right.",
+     "miss": "mirror_time",
+     "scoredWith": {
+      "keys": [
+       "8:00 am",
+       "8"
+      ],
+      "ask": "The shadow of the flagpole is very long and points toward the west (right). What time of day could this be?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "10:00 am",
+       "8:00 am",
+       "12:00 pm",
+       "4:00 pm",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the three helper pictures on the side showing where the shadow falls when the sun is on each side. When the shadow points to the right, which side of the sky must the sun be on?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the three pictures that just popped up beside the scene showing where the shadow falls when the sun is on different sides. When the shadow points to the right, which side must the sun be on?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Three small pictures just appeared beside the scene to show where a shadow falls when the sun is on the left, right, or straight above. Looking at those pictures, which side would the sun need to be on for the shadow to fall to the right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the three pictures beside the flagpole: they show how the sun on one side makes the shadow fall on the opposite side. If the shadow is on the right, which side of the sky must the sun be on?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the three helper pictures beside the flagpole: see how the shadow always points opposite the sun. When the shadow points to the west, would the sun be in the east or the west?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8:00 am",
+       "8"
+      ],
+      "ask": "The shadow of the flagpole is very long and points toward the west (right). What time of day could this be?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "10:00 am",
+       "8:00 am",
+       "12:00 pm",
+       "4:00 pm",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Three little pictures appeared showing how the sun's place makes shadows fall to the left, straight under, or to the right. Take a look at them and see which morning or afternoon time matches our long shadow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Three small helper pictures appeared on the side showing how shadows fall when the sun is on the left, straight above, or on the right. When the shadow points to the right, which side must the sun be on?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "easy_shadow"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Three pictures appeared on the side showing where the shadow falls for different sun positions. Which picture matches a shadow pointing to the right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Three helper pictures popped up on the side showing how shadows point opposite to the sun. If our shadow points right to the west, is the sun on the east side or the west side?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Three pictures appeared on the side showing how a shadow forms opposite the sun. When the shadow points to the west on the right, does that mean the sun is in the east or the west?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled side_model (help). It is on screen now: Shows three small pictures beside the scene: a sun on the left with a block's shadow on the right, a sun straight above with a dot of shadow underneath, and a sun on the right with the shadow on the left. They show no part of this item. First point the learner to it: say what is now drawn and where to look",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8:00 am",
+       "8"
+      ],
+      "ask": "The shadow of the flagpole is very long and points toward the west (right). What time of day could this be?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "10:00 am",
+       "8:00 am",
+       "12:00 pm",
+       "4:00 pm",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beside the scene at the three new pictures showing how the shadow points when the sun is on the left, straight above, or on the right. Give the question another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the scene, there are now three small pictures showing how shadows fall when the sun is on the left, straight above, or on the right. Look at those pictures, and tap the time you want to try next.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the scene, there are now three small pictures showing where shadows fall when the sun is on the left, straight above, or on the right. Take another look at those pictures and give the question another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the scene, there are now three small pictures showing where shadows point when the sun is on the left, overhead, or on the right. Look at those guides and try picking another time for our flagpole shadow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the scene, there are now three small pictures showing how shadows fall when the sun is on the left, straight above, or on the right. Take a look at them, and try choosing a time again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Chose \\\"8:00 AM\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8:00 am",
+       "8"
+      ],
+      "ask": "The shadow of the flagpole is very long and points toward the west (right). What time of day could this be?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "10:00 am",
+       "8:00 am",
+       "12:00 pm",
+       "4:00 pm",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You checked 8:00 AM and got it right! You used the helper pictures to match the direction of the shadow to the morning sun.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it by checking the helper pictures and choosing 8:00 AM! In the early morning, the sun is low on the left in the east, casting that long shadow to the right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out and chose 8:00 AM by matching the sun on the left with the shadow falling to the west!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You chose 8:00 AM and checked it to find the right time. Great job using the helper pictures to connect the morning sun on the left with the shadow falling to the right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and chose 8:00 AM! In the morning, the sun on the left casts that long shadow all the way to the right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "light-shadow-lab.measure",
+   "primitiveId": "light-shadow-lab",
+   "evalMode": "measure",
+   "keys": [
+    "west (right), long"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Record the shadow data for 8:00 AM by finding its direction and relative length.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to the shadow lab! Look at the shadow on the ground for 8:00 AM, tap the choice that matches its direction and length, and check your work.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the shadow for 8:00 AM. Look at the ground to see which side it points toward, and whether it looks long or short.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's find the shadow data for 8:00 AM! Look at the shadow in the picture and tap the matching choice: West (right) or East (left), and is it short or long?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the shadow at 8:00 AM. Look at whether the shadow points east or west, and if it looks short or long.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's find the shadow data for 8:00 AM! Look at the shadow in the picture and tap the matching choice: West (right) or East (left), and short or long.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Chose \\\"East (left), Long\\\"\". The board checked it: not right.",
+     "miss": "toward_sun",
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Record the shadow data for 8:00 AM by finding its direction and relative length.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the pictures on the side showing how shadows fall away from the sun. Which side does the shadow stretch toward in our picture, east on the left or west on the right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the three helper pictures on the side showing where shadows fall compared to the sun. Take another look at which side the shadow falls on, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the three helper pictures on the side showing where shadows fall when the sun shines. When the sun is on one side, which direction does the shadow stretch toward?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the pictures on the side showing where shadows fall when light shines from each side. Which direction does the shadow stretch compared to where the sun is?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the three pictures that just appeared on the side showing how light creates shadows. Look back at the main picture to see which side the shadow falls on, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Record the shadow data for 8:00 AM by finding its direction and relative length.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Three little guide pictures just popped up on the side showing how a shadow always points away from the sun. Look at where our sun is on the left, and see which side the shadow falls on.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Three helpful pictures just appeared on the side showing how shadows point opposite the sun. Look at where our sun is on the left, and see which way the shadow points across the ground!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Three guide pictures just appeared beside our scene to show where shadows fall. When the sun is on the left, does the shadow point to the left or to the right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Three helpful guide pictures just popped up on the side showing where shadows fall when the sun shines from different directions. Notice which side the shadow falls on when the sun is on the left, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Three guide pictures just popped up on the side showing where shadows fall when the sun shines from different spots. Look at where our sun is on the left, and see which way the shadow points!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled side_model (help). It is on screen now: Shows three small pictures beside the scene: a sun on the left with a block's shadow on the right, a sun straight above with a dot of shadow underneath, and a sun on the right with the shadow on the left. They show no part of this item. First point the learner to it: say what is now drawn and where to look",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Record the shadow data for 8:00 AM by finding its direction and relative length.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beside the scene\u2014there are three little pictures showing where shadows go when the sun is on the left, up high, or on the right. Give the question another try whenever you're ready!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside our picture, there are now three small guide drawings showing where shadows fall when the sun is on the left, straight above, or on the right. Take a look at those, then try choosing your answer again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the scene at the three little guide pictures showing where a shadow falls when the sun is on the left, up high, or on the right. Give the question another try by picking the choice that matches our shadow's direction and length!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Three little example pictures are now beside the scene showing where shadows fall when the sun is on the left, straight above, or on the right. Give the question another try by picking the matching shadow and checking it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Three small guide pictures are now beside the scene showing where shadows fall when the sun is in different spots. Take a look at those examples, and then pick the choice that matches our shadow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Chose \\\"West (right), Long\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Record the shadow data for 8:00 AM by finding its direction and relative length.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You checked West (right), Long, and that is spot on! You noticed that when the sun is on the east side, the shadow stretches out long toward the west.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and chose West (right), Long! You noticed the sun was on the left, so the shadow stretched long to the right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You noticed the guide pictures and fixed your answer to \"West (right), Long\"! Great job reading the direction and length.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out\u2014you chose West (right), Long, using the guide to see that the shadow falls away from the sun!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and chose West (right), Long! You noticed the shadow stretches to the right side opposite the sun, and that it's nice and long early in the morning.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "light-shadow-lab.observe",
+   "primitiveId": "light-shadow-lab",
+   "evalMode": "observe",
+   "keys": [
+    "west (right), long"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. What do you notice about its direction and length?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. What do you notice about its direction and length?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. Does it point east or west, and is it short or long?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. What do you notice about its direction and length?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. What do you notice about its direction and length?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. What do you notice about its direction and length?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Chose \\\"East (left), Long\\\"\". The board checked it: not right.",
+     "miss": "toward_sun",
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. What do you notice about its direction and length?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new pictures showing where shadows fall when the sun shines from different sides. When the sun is on the left, does the shadow point left or right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the three small pictures that popped up showing where the shadow falls when the sun shines from each side. Make sure your sun is at 8:00 AM, and try choosing again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the pictures that appeared on the side showing where shadows fall when the sun shines from different spots. When the sun is shining from 8:00 AM, does Sammy's shadow point toward the sun or away from the sun?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the three small pictures that appeared beside the scene to see which side a shadow falls when the sun shines. When the sun is shining from 8:00 AM, does Sammy's shadow stretch toward the east on the left, or the west on the right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new pictures beside the scene showing where the sun shines and where shadows fall. Where is the shadow pointing compared to where the sun is?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. What do you notice about its direction and length?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Some helpful pictures appeared beside the scene showing how shadows fall when the sun shines from each side. First, drag the sun over to 8:00 AM on the left and see where Sammy's shadow points!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the three small pictures on the side showing where shadows fall. When the sun is shining from one side, does the shadow fall toward the sun or away from it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the three small helper pictures on the side to see which side a shadow falls on. First drag the sun to 8:00 AM, and see which side Sammy's shadow points.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Three helpful pictures appeared showing where shadows fall when the sun shines from different spots. When the sun is on one side, which side does the shadow stretch toward?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Three helpful pictures just appeared showing where shadows fall when the sun shines from different spots. First, try dragging the sun to 8:00 AM on the left to see where Sammy's shadow points.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled side_model (help). It is on screen now: Shows three small pictures beside the scene: a sun on the left with a block's shadow on the right, a sun straight above with a dot of shadow underneath, and a sun on the right with the shadow on the left. They show no part of this item. First point the learner to it: say what is now drawn and where to look",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. What do you notice about its direction and length?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the side of the screen where three pictures appeared, showing where shadows fall when the sun shines from different spots. Move the sun to the 8:00 AM mark and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are three small pictures beside the scene showing where shadows fall when the sun shines from different spots. Move the sun to 8:00 AM on the left side, and choose the answer that matches Sammy's shadow!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the scene\u2014there are three little pictures showing where the shadow falls when the sun shines from each spot! Drag the sun to 8:00 AM, see what happens to Sammy's shadow, and tap your choice.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the scene\u2014there are three little pictures showing where shadows land when the sun is in different spots. Take a look at those, drag the sun to 8:00 AM, and try choosing your answer again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the three small pictures that appeared beside the scene. They show where a shadow falls when the sun is on the left, straight above, or on the right. Now drag the sun to 8:00 AM, see what Sammy's shadow does, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Chose \\\"West (right), Long\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. What do you notice about its direction and length?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You noticed that Sammy's shadow stretched West (right), Long when the sun was low on the left!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You noticed the clues and chose West (right), Long! When the sun is low on the east side in the morning, Sammy's shadow stretches out long toward the west.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You noticed that at 8:00 AM the shadow reaches West to the right, and it is long.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out\u2014you chose West (right), Long, noticing that Sammy's shadow stretched long to the right side!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed your mistake and chose West (right), Long! When the sun is low on the east side in the morning, the shadow stretches long on the opposite side.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "light-shadow-lab.predict",
+   "primitiveId": "light-shadow-lab",
+   "evalMode": "predict",
+   "keys": [
+    "west (right), long"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like: West (right) and short, West (right) and long, East (left) and short, or East (left) and long?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like: West or East, short or long?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like: West (right) and short, West (right) and long, East (left) and short, or East (left) and long?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like: West (right) and short, West (right) and long, East (left) and short, or East (left) and long?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like: West (right) and short, West (right) and long, East (left) and short, or East (left) and long?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Chose \\\"East (left), Long\\\"\". The board checked it: not right.",
+     "miss": "toward_sun",
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new pictures beside the scene to see which side shadows fall when the sun shines from one side. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the pictures on the side showing where the shadow falls when the sun shines from each direction. Which side can the light not reach?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new pictures beside the scene showing where shadows fall when the sun shines. When the sun shines on one side, which side does the shadow go?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the pictures beside the scene to see which side a shadow falls when the sun shines on an object. When the sun shines from one side, which side does the shadow go to?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the pictures that appeared beside the scene showing where shadows fall when the sun shines from different directions. Which side can the sun's light reach, and which side is blocked?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the pictures that appeared beside the scene: when the sun shines from one side, the shadow points to the other side. If the sun is on the left, does the shadow point left or right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the three small pictures that appeared beside the scene. When the sun is shining from one side, does the shadow fall on the same side or the opposite side?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "easy_sun"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the three small pictures on the side: when the sun shines from one side, the shadow points to the other side. If the sun is on the left, does Maya's shadow fall to the left or to the right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the three helper pictures on the side showing where shadows fall when light shines. Since the sun is on the left, which side does the shadow go on: the left or the right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "side_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the three small pictures beside the scene showing where shadows fall. When the sun is shining from the east on the left, does Maya block the light to the left or to the right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "side_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled side_model (help). It is on screen now: Shows three small pictures beside the scene: a sun on the left with a block's shadow on the right, a sun straight above with a dot of shadow underneath, and a sun on the right with the shadow on the left. They show no part of this item. First point the learner to it: say what is now drawn and where to look",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Three pictures appeared beside Maya showing where shadows fall when the sun is in different spots. Take a look at them, and then choose your prediction again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look beside the picture: three small cards now show where a shadow falls when the sun shines from each side or from up high. Take a look at those cards and give your prediction another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are three new pictures on the side showing where shadows fall when the sun shines from the left, middle, or right. Take a look at those pictures and give the question another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside Maya's picture, three new drawings show where a shadow falls when the sun is on the left, up high, or on the right. Take a look at them and choose your answer!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Three new helper pictures are beside the scene showing where shadows fall when the sun is on the left, straight above, or on the right. Look at where our sun is, tap your prediction, and check it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Chose \\\"West (right), Long\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "west (right), long"
+      ],
+      "ask": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ALL_COMPLETE",
+       "NEXT_ITEM",
+       "SUPPORT="
+      ],
+      "menu": [
+       "west (right), short",
+       "west (right), long",
+       "east (left), short",
+       "east (left), long",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You fixed your answer and chose West (right), Long, and that is spot on! When the morning sun is low on the left, the shadow stretches out long toward the right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and chose West (right), Long! You saw that the sun on the left casts a long shadow to the right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You checked West (right), Long, and that was it! You noticed the sun on the east side cast Maya's long shadow all the way to the west.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you picked West (right), Long, and fixed it by checking which side the shadow falls!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked it out and chose West (right), Long! Checking the pictures helped you see that the shadow falls on the opposite side of the sun.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

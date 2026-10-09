@@ -1,0 +1,33 @@
+{
+ "source": "qa/tutor-reports/letter-workshop-runtime-write-payload-2026-10-09.json",
+ "primitiveId": "letter-workshop",
+ "evalMode": "write",
+ "data": {
+  "title": "Letter Workshop",
+  "description": "Practice making clear letter forms on the writing lines.",
+  "challengeType": "write",
+  "challenges": [
+   {
+    "id": "letter-workshop-1",
+    "type": "write",
+    "templateId": "lowercase-t"
+   },
+   {
+    "id": "letter-workshop-2",
+    "type": "write",
+    "templateId": "lowercase-i"
+   },
+   {
+    "id": "letter-workshop-3",
+    "type": "write",
+    "templateId": "lowercase-p"
+   },
+   {
+    "id": "letter-workshop-4",
+    "type": "write",
+    "templateId": "lowercase-a"
+   }
+  ],
+  "gradeLevel": "K"
+ }
+}

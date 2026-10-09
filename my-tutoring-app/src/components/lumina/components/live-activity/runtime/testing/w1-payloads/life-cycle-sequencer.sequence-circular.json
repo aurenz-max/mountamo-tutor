@@ -1,0 +1,56 @@
+{
+ "source": "qa/tutor-reports/life-cycle-sequencer-runtime-sequence-circular-payload-2026-10-09.json",
+ "primitiveId": "life-cycle-sequencer",
+ "evalMode": "sequence",
+ "data": {
+  "title": "The Journey of Water: The Water Cycle",
+  "instructions": "Drag the stages into the correct order to show how water moves around Earth",
+  "cycleType": "circular",
+  "stages": [
+   {
+    "id": "stage1",
+    "label": "Evaporation",
+    "imagePrompt": "The sun shining brightly over a blue ocean with steam or vapor rising up from the water",
+    "description": "Energy from the sun heats up liquid water in oceans, lakes, and rivers. This causes the water to change into an invisible gas called water vapor, which rises up into the air. Transpiration is also part of this, where plants release water vapor from their leaves.",
+    "correctPosition": 0,
+    "transitionToNext": "Warm water vapor rises high into the colder air, cools down, and changes back into liquid droplets",
+    "duration": "Varies from minutes to days"
+   },
+   {
+    "id": "stage2",
+    "label": "Condensation",
+    "imagePrompt": "Fluffy white and gray clouds forming in the sky as water vapor gathers around tiny dust particles",
+    "description": "As water vapor rises high in the atmosphere, it meets colder air and loses heat. This causes the invisible gas to condense, turning back into tiny liquid water droplets or ice crystals. Billions of these tiny droplets clump together to form clouds and fog.",
+    "correctPosition": 1,
+    "transitionToNext": "The water droplets inside clouds get too heavy to stay floating in the air",
+    "duration": "Hours to days"
+   },
+   {
+    "id": "stage3",
+    "label": "Precipitation",
+    "imagePrompt": "Raindrops and snowflakes falling from dark storm clouds toward the ground",
+    "description": "When condensed water droplets in clouds become too heavy, gravity pulls them down toward Earth. Depending on the temperature, this falling water can take the form of rain, snow, sleet, or hail. This is how water returns from the sky to the land and oceans.",
+    "correctPosition": 2,
+    "transitionToNext": "Water hits the ground and either soaks into the soil or flows over the surface",
+    "duration": "Minutes to hours"
+   },
+   {
+    "id": "stage4",
+    "label": "Collection and Runoff",
+    "imagePrompt": "Water flowing in streams down a mountain and collecting in a large blue lake and ocean",
+    "description": "Precipitation that falls on land flows over the ground as runoff, filling streams, rivers, and eventually flowing back into the oceans. Some water soaks deep into the ground in a process called infiltration, becoming underground groundwater that feeds plants and wells.",
+    "correctPosition": 3,
+    "transitionToNext": "The sun heats up the collected water in oceans and lakes, starting the cycle again",
+    "duration": "Days to thousands of years"
+   }
+  ],
+  "scaleContext": "The water cycle is a continuous loop with no true beginning or end. A single drop of water might stay in the ocean for thousands of years or cycle through the air in just a few days.",
+  "misconceptionTrap": {
+   "commonError": "Students often think evaporation only happens from big oceans and that water disappears when it evaporates",
+   "correction": "Evaporation happens from ALL water surfaces, including puddles, wet grass, swimming pools, and even from plants! The water doesn't disappear; it just turns into an invisible gas called water vapor in the air."
+  },
+  "gradeBand": "3-5",
+  "targetEvalMode": "sequence",
+  "objectiveGrade": "4"
+ }
+}

@@ -1,0 +1,2342 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "story-map.bme",
+   "primitiveId": "story-map",
+   "evalMode": "bme",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "identify",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "ms. ortiz",
+       "sam",
+       "an unknown city - long ago",
+       "the big green park - one sunny morning",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I will read our story to you: \"One sunny morning, a little brown puppy named Max got lost in the big green park. Max began to cry because he could not see his owner. Suddenly, his kind friend Sam heard him bark and ran over to help him go home.\" \n\nTap the names of the characters you heard, and tap where and when the story happened.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's read the story together! \"One sunny morning, a little brown puppy named Max got lost in the big green park. Max began to cry because he could not see his owner. Suddenly, his kind friend Sam heard him bark and ran over to help him go home.\"",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I will read our story: \"One sunny morning, a little brown puppy named Max got lost in the big green park. Max began to cry because he could not see his owner. Suddenly, his kind friend Sam heard him bark and ran over to help him go home.\" \n\nTap the names of the characters and where the story happens.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's read our story together: \"One sunny morning, a little brown puppy named Max got lost in the big green park. Max began to cry because he could not see his owner. Suddenly, his kind friend Sam heard him bark and ran over to help him go home.\"\n\nTap every character in the story, and tap the setting where and when it takes place!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's read the story together: \"One sunny morning, a little brown puppy named Max got lost in the big green park. Max began to cry because he could not see his owner. Suddenly, his kind friend Sam heard him bark and ran over to help him go home.\"\n\nTap every character in the story and the setting where it happens!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "identify",
+     "trigger": "The learner submitted \"Picked characters: Sam. Picked setting: \\\"the big green park - One sunny morning\\\".\". The board checked it: not right.",
+     "miss": "missed_character",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "ms. ortiz",
+       "sam",
+       "an unknown city - long ago",
+       "the big green park - one sunny morning",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, the screen shows spaces for two characters in our story. Who else was in the story with Sam?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the bottom of the screen\u2014there are two spaces showing that this story has two characters. \n\nWho was the other friend in the story with Sam?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the names\u2014now there are two person spaces, showing our story has two characters in it. Who else did something in the story?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the names: there are two spaces for two characters in this story. Who else was in the story with Sam?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look, there are two spaces for the two characters in this story! \n\nWho else was in the story with Sam?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "identify",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "ms. ortiz",
+       "sam",
+       "an unknown city - long ago",
+       "the big green park - one sunny morning",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Two person spaces appeared on your screen to show there are two characters in all. Think about the little puppy who got lost, and tap his name too!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can see two character spots on the screen, so our story has two characters. Tap the other character from our story to fill the second spot!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now there are two person spaces on the screen showing this story has two characters. You already found Sam, so see if you can tap the other friend from our story.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now you can see two spaces under the names, showing there are two characters in our story. Remember the little brown puppy who got lost?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows two empty person spaces because our story has two characters. Try picking the other character from the story!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "identify",
+     "trigger": "The learner said they were stuck, so the host pulled character_count (help). It is on screen now: Shows a row of empty person spaces, one for each character in the story, filling one per name picked. It counts the picks; it never marks which names are right. You may say how many characters the story has. First point the learner to it: say what is now drawn and where to look, as a change to the pic",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "ms. ortiz",
+       "sam",
+       "an unknown city - long ago",
+       "the big green park - one sunny morning",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Under the names, you can see two empty spaces, showing that our story has two characters. Tap the other character from our story to fill the second space, and then check!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the names: there are two spaces for the two characters in our story! Go ahead and tap the puppy's name so both spaces are filled, then tap Check Answers.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the names\u2014there are two person spaces showing that our story has two characters. You already picked one, so tap the other character's name to fill both spaces and check again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the names: there are two empty person spaces showing that our story has two characters. Tap the other character from our story to fill the second space, and then check!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the names, there are now two empty person spaces showing that our story has two characters. You already found one with Sam, so take a look at the other names to find the second character.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "identify",
+     "trigger": "The learner submitted \"Picked characters: Max, Sam. Picked setting: \\\"the big green park - One sunny morning\\\".\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "ms. ortiz",
+       "sam",
+       "an unknown city - long ago",
+       "the big green park - one sunny morning",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You added Max to go with Sam and found the park setting, and now both character spaces are full!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found both characters, Max and Sam, and the setting at the big green park on a sunny morning.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both characters by picking Max and Sam, and you matched the setting to the big green park on one sunny morning!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found both characters, Max and Sam, and the setting at the big green park on a sunny morning.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found them! You picked Max and Sam for the two characters, and you chose the park on a sunny morning for the setting.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "story-map.heros_journey",
+   "primitiveId": "story-map",
+   "evalMode": "heros_journey",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "identify",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "mr. finch",
+       "maya",
+       "barnaby",
+       "an unknown city - long ago",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to the story! Take your time reading through Barnaby's adventure, then choose the characters and setting you see in the tale.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the story! Read through Barnaby's adventure, then choose the characters and setting you find.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the story on your screen, then select the characters and the setting when you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take your time reading the story, then tap the characters and setting you find.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the story! Read through Barnaby's adventure, then choose the characters and the setting when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "identify",
+     "trigger": "The learner submitted \"Picked characters: Maya. Picked setting: \\\"Whispering Woods - One chilly autumn evening\\\".\". The board checked it: not right.",
+     "miss": "missed_character",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "mr. finch",
+       "maya",
+       "barnaby",
+       "an unknown city - long ago",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look below the names: two spaces appeared, showing the story has two characters. Take another look at the text and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You can see two spaces under the names now, showing there are two characters in this story. Take another look at who is doing things in the story and try picking again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the two spaces that appeared\u2014this story actually has two characters. Who else takes part in the story?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You'll see spaces for two characters under the names. Check back through the text to see who else took part in the adventure!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the two character spaces that appeared under the names. The story has two characters in it, so see who else is part of the adventure and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "identify",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "mr. finch",
+       "maya",
+       "barnaby",
+       "an unknown city - long ago",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There are two person spaces shown below the names, so our story features two characters in total. Who else is in the forest alongside Maya?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Two spaces are now showing under the names to count our characters. Who else in the story is doing things alongside Maya?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Two empty character spaces are now showing on your screen. Who is the golden retriever puppy trying to get home?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Two empty spaces are now showing under the names, which means there are two characters to find in this story. Who is the adventure about?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice the two empty spaces under the names showing that this story has two characters. Who else besides Maya is taking action in the story?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "identify",
+     "trigger": "The learner said they were stuck, so the host pulled character_count (help). It is on screen now: Shows a row of empty person spaces, one for each character in the story, filling one per name picked. It counts the picks; it never marks which names are right. You may say how many characters the story has. First point the learner to it: say what is now drawn and where to look, as a change to the pic",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "mr. finch",
+       "maya",
+       "barnaby",
+       "an unknown city - long ago",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Two empty person spaces appeared right below the names, showing that this story has two characters. Take another look at the printed names and see who else took part in the journey.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two empty person spaces have appeared right beneath the names, showing that there are two characters in total in this story. Look back at who does things in the woods alongside Maya and choose your second character.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the character names, you can now see two empty person spaces showing that our story has two characters. Take another look at who is in the story and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the names: two person spaces have appeared, showing there are two characters in total. Who else is in the forest with Maya?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the names: a row of two person spaces has appeared to show how many characters are in this story. See who else is doing things in the story, tap their name to fill the second space, and check again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "identify",
+     "trigger": "The learner submitted \"Picked characters: Maya, Barnaby. Picked setting: \\\"Whispering Woods - One chilly autumn evening\\\".\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "mr. finch",
+       "maya",
+       "barnaby",
+       "an unknown city - long ago",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found both characters, Maya and Barnaby, and matched the setting to Whispering Woods on that chilly autumn evening!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both Maya and Barnaby, and matched the Whispering Woods setting on that chilly autumn evening!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both characters, Maya and Barnaby, and matched the setting to Whispering Woods on that chilly autumn evening. Excellent job reading closely and updating your picks!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both characters, Maya and Barnaby, and matched the setting to Whispering Woods on that chilly autumn evening!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both Maya and Barnaby, and picked Whispering Woods on a chilly autumn evening. Nice work checking the story to spot both characters!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "story-map.plot_diagram",
+   "primitiveId": "story-map",
+   "evalMode": "plot_diagram",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "identify",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "officer higgins",
+       "buster",
+       "sarah",
+       "an unknown city - long ago",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Read the story carefully, then tap the characters you meet and where the adventure happens.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Read the story to see who is in it and where it happens, then tap the characters and setting on your screen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the story, then tap each character and the setting where it takes place.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take your time reading the story, then tap each character and the setting when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take your time reading the story, then tap each character and the setting where it takes place.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "identify",
+     "trigger": "The learner submitted \"Picked characters: Sarah. Picked setting: \\\"Whispering Woods and backyard - One chilly autumn evening\\\".\". The board checked it: not right.",
+     "miss": "missed_character",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "officer higgins",
+       "buster",
+       "sarah",
+       "an unknown city - long ago",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You have two character spaces to fill because this story has two characters. Take another look at who is in the story and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found Sarah and the setting! Take another look at the story to see who else takes part in the adventure, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the two spaces that appeared\u2014this story actually has two characters. Take another look at who takes action in the story and try tapping them!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the setting and one character, Sarah, and now there are two empty spaces showing the story has two characters. Who else has an adventure in the story?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have two character spaces to fill, so the story has two characters. Take another look at who else is doing something in the story.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "identify",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "officer higgins",
+       "buster",
+       "sarah",
+       "an unknown city - long ago",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You can see two spaces under the names showing that the story has two characters. Who else besides Sarah has an adventure in the story?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Two person spaces appeared on your screen to show the story has two characters. Which other name from the story should fill the second spot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You now have two empty spaces under the names to show both characters. Who else besides Sarah is in the story?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now two person spaces appeared on your screen to show there are two characters to find. Who else is in the story besides Sarah?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look right under the names\u2014now there are two person spaces showing you need to find two characters in total. Who else is in the story with Sarah?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "identify",
+     "trigger": "The learner said they were stuck, so the host pulled character_count (help). It is on screen now: Shows a row of empty person spaces, one for each character in the story, filling one per name picked. It counts the picks; it never marks which names are right. You may say how many characters the story has. First point the learner to it: say what is now drawn and where to look, as a change to the pic",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "officer higgins",
+       "buster",
+       "sarah",
+       "an unknown city - long ago",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look right under the names\u2014there are two empty person spaces now, showing there are two characters to find. Look back at the beginning of the story to see who is getting lost in the woods.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the names\u2014two empty person outlines just appeared! That shows there are two characters to find in the story, so try picking who is with Sarah.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the names\u2014you can see two empty spaces showing that this story has two characters. Which other name from the story belongs in that second space?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the names: there are now two empty person spaces showing that our story has two characters. Which other character from the story can you tap to fill that second space?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the names\u2014two empty person spaces have appeared, showing that the story has two characters. Tap the names of the two characters from the story and check again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "identify",
+     "trigger": "The learner submitted \"Picked characters: Buster, Sarah. Picked setting: \\\"Whispering Woods and backyard - One chilly autumn evening\\\".\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "officer higgins",
+       "buster",
+       "sarah",
+       "an unknown city - long ago",
+       "a spaceship - in the future",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found both characters by adding Buster alongside Sarah, and matched the setting to Whispering Woods and the backyard!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both Buster and Sarah, and matched the setting to Whispering Woods on an autumn evening!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You added Buster to join Sarah and matched both characters and the setting. Nicely done working that out!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both Buster and Sarah, and matched the autumn evening setting right from the text. Excellent work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both Buster and Sarah, and picked the exact setting from the woods to the backyard!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "story-map.story_mountain",
+   "primitiveId": "story-map",
+   "evalMode": "story_mountain",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "identify",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "mr. finch",
+       "leo",
+       "a spaceship - in the future",
+       "an unknown city - long ago",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Read the story about the little lost puppy, then tap the characters and where the story takes place.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our story activity! Read the story, then tap each character you see and choose where and when it takes place.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our story activity! Whenever you are ready, read about the little lost puppy, pick the characters and the setting, and tap Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the story! Read about Max the puppy, and tap the characters and setting you see in the story.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's read about the little lost puppy, and then you can choose who is in the story and where it happens.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "identify",
+     "trigger": "The learner submitted \"Picked characters: Leo. Picked setting: \\\"The neighborhood park - One sunny afternoon\\\".\". The board checked it: not right.",
+     "miss": "missed_character",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "mr. finch",
+       "leo",
+       "a spaceship - in the future",
+       "an unknown city - long ago",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There are two character spaces to fill for this story. Who else was in the story besides Leo?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are two character spaces to fill, showing this story has two characters. Take another look at the story to see who else is in it!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now there are two character spaces to fill, showing this story has two characters. Take another look at the story to see who else is in it.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the names: there are two spaces showing the story has two characters. Take another look at the story to see who else is in it.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the names: there are two spaces for characters in this story, and you have picked one so far. Who else does something in the story?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "identify",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "mr. finch",
+       "leo",
+       "a spaceship - in the future",
+       "an unknown city - long ago",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Now you can see two person spaces under the names, showing there are two characters to find in this story. Look back at the first sentence to see who wandered away into the park.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Two empty spaces appeared below the names to show how many characters are in this story. Look back at the first sentence to see who else is in the story with Leo.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the spaces that appeared under the names: they show our story has two characters in all. Take another look at the story to see who is doing things with Leo.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look under the names: there are two empty spaces, showing this story has two characters. You can tap the other name you see in the story and check again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "character_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look under the names: there are two empty person spaces, showing our story has two characters. Take another peek at the story to see who is missing.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "character_count",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "identify",
+     "trigger": "The learner said they were stuck, so the host pulled character_count (help). It is on screen now: Shows a row of empty person spaces, one for each character in the story, filling one per name picked. It counts the picks; it never marks which names are right. You may say how many characters the story has. First point the learner to it: say what is now drawn and where to look, as a change to the pic",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "mr. finch",
+       "leo",
+       "a spaceship - in the future",
+       "an unknown city - long ago",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the names: there are now two empty person spaces, showing our story has two characters. Take another look at the story to see who else is in it, tap your choices, and try checking again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the names, you can now see two empty person spaces, showing there are two characters in this story. Look back at who was doing things in the story, pick two names, and try checking again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the names: two person spaces have appeared, showing that this story has two characters. Tap the names you think belong in the story and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the names: there are two empty person spaces, showing our story has two characters. Tap the names you think belong in the story to fill both spaces, then try checking again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Two empty person spaces appeared right under the names, showing there are two characters to find. Who else is in the story with Leo?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "identify",
+     "trigger": "The learner submitted \"Picked characters: Max, Leo. Picked setting: \\\"The neighborhood park - One sunny afternoon\\\".\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Read the story. Pick every character in it, and pick where and when it takes place.",
+      "leakTokens": [],
+      "menu": [
+       "hide passage",
+       "max",
+       "mr. finch",
+       "leo",
+       "a spaceship - in the future",
+       "an unknown city - long ago",
+       "check answers"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found both characters, Max and Leo, and matched the setting to the neighborhood park on a sunny afternoon!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both characters, Max and Leo, and matched the setting to the neighborhood park on one sunny afternoon!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both characters, Max and Leo, and matched the setting to the neighborhood park!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both characters, Max and Leo, and you picked the right setting at the park on a sunny afternoon!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both characters, Max and Leo, and you picked the right setting at the neighborhood park on a sunny afternoon!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const NAMES = ['ay', 'bee', 'see', 'dee', 'ee', 'eff', 'jee', 'aitch', 'eye', 'jay', 'kay', 'ell', 'em', 'en', 'oh', 'pee', 'cue', 'ar', 'ess', 'tee', 'you', 'vee', 'double you', 'ex', 'why', 'zee'];
 
+/** How a letter's NAME is said ("bee"), so the tutor never says its sound. */
+export const letterNameSaid = (letter: string) => NAMES[letter.toLowerCase().charCodeAt(0) - 97] ?? letter;
+
 export type LetterCueState = 'idle' | 'speaking' | 'ready' | 'error';
 
 /**

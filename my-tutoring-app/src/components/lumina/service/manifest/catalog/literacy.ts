@@ -22,6 +22,7 @@ import type { SpokenLetterSpotterMiss } from '../../../primitives/visual-primiti
 import type { SpokenInteractiveBookMiss } from '../../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
 import type { LetterSoundMiss, SpokenLetterMiss } from '../../../primitives/visual-primitives/literacy/letterSoundLinkDomain';
 import type { LetterSpotterMiss } from '../../../primitives/visual-primitives/literacy/letterSpotterWorkspace';
+import type { LetterWorkshopMiss } from '../../../primitives/visual-primitives/literacy/letterWorkshopWorkspace';
 import type { WordWorkoutMiss } from '../../../primitives/visual-primitives/literacy/wordWorkoutWorkspace';
 import type { InteractiveBookMiss } from '../../../primitives/visual-primitives/literacy/interactiveBookWorkspace';
 import type { SpokenStoryBridgeMiss, StoryBridgeMiss } from '../../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
@@ -46,6 +47,7 @@ import type { PicturePairMiss } from '../../../primitives/visual-primitives/lite
 import type { SpokenYouAndMeMiss } from '../../../primitives/visual-primitives/literacy/youAndMeWorkspace';
 import type { SpokenOralSentenceMiss } from '../../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
 import type { SpokenStoryRibbonMiss } from '../../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
+import type { StoryMapMiss } from '../../../primitives/visual-primitives/literacy/storyMapWorkspace';
 import { missLists, sameMisses } from './missLists';
 
 export const LITERACY_CATALOG: ComponentDefinition[] = [
@@ -516,6 +518,24 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         { title: 'MODE AND TARGET BOUNDARY', instruction: 'Trace has an intentional visible guide; copy has a separate model, never an overlaid guide. In write, letter and letterCase are withheld even after feedback. Never infer the target from lesson history, a previous item, or objective metadata. Only a [SAY_LETTER] message supplies the name: say its quoted line exactly, once, then stay silent. Never repeat that name, its sound, or its shape in any other turn. With no model visible, all hints stay procedural. Never claim unaided performance after a model was shown.' },
         { title: 'MOMENTS', instruction: 'For [ACTIVITY_START] and [NEXT_ITEM], use only the current supplied instruction and assistance; never reuse a previous target. For [READ_ALOUD], read the supplied instruction once without elaboration. For [SAY_LETTER], say only its quoted line. For [ANSWER_CORRECT] or [ANSWER_INCORRECT], use the supplied provisional feedback without inventing a diagnosis. For [ALL_COMPLETE], acknowledge practice without claiming mastery or prompting another task. Bracketed tags are private and must never be spoken.' },
       ],
+    },
+    // The scripted fallback (withWorkspaceController) still sends the tutoring block above.
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'The learner writes the letter on the writing paper with a finger, pen or mouse and presses Check; the paper '
+        + 'checks the writing itself, and talk about a half-written letter is teaching, not a verdict. On trace the dotted '
+        + 'letter is on the paper; on copy a model is beside it. On write nothing on the screen shows or names the letter: '
+        + 'the learner knows it only from you. Say its case and NAME as the task gives it, at the start and whenever asked, '
+        + 'never its sound, a word that starts with it, or how its strokes go. After a write check a model appears beside '
+        + 'the paper. You cannot draw, trace or clear.',
+      // Levers: `letterWorkshopLevers.ts`; every miss in every mode has a help lever, so nothing is unanswered.
+      levers: true,
+      // The paper's own check (`letterWorkshopMiss`). Trace is geometry alone; copy and write also read the vision judge.
+      misses: missLists<LetterWorkshopMiss>({
+        trace: ['stroke_count', 'start_or_order', 'part_left_out', 'extra_ink', 'direction_or_shape'],
+        copy: ['other_letter', 'reversed', 'wrong_case', 'stroke_count', 'start_or_order', 'part_left_out', 'extra_ink', 'direction_or_shape'],
+        write: ['other_letter', 'reversed', 'wrong_case', 'stroke_count', 'start_or_order', 'part_left_out', 'extra_ink', 'direction_or_shape'],
+      }),
     },
     supportsEvaluation: true,
     affordances: { representation: 'symbolic', answers: ['manipulate'], role: 'apply', minutes: 5 },
@@ -3808,6 +3828,34 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'heros_journey', label: 'Hero\'s Journey (Tier 5)', beta: 6.5, scaffoldingMode: 5, challengeTypes: ['heros-journey'], description: 'Complex narrative structure (5-6).' },
     ],
     supportsEvaluation: true,
+    // W1 plain shape (batch C13): each phase of the one story is a checked item (identify, sequence, and analyze at
+    // Grade 4+ with a conflict); `storyMapWorkspace.ts` owns the check, the scene and `storyMapMiss`.
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'The activity checks every answer itself, and you are not told the answers. First the learner taps every '
+        + 'printed name that is a character in the story (some printed names are not in it) and one setting, then '
+        + 'checks. Next they tap an event card and then a part of the story arc, and with every card placed they '
+        + 'check; the cards are listed mixed up on purpose. At Grade 4 and up they then pick the kind of conflict. '
+        + 'Never say which names are characters (reading the story is fine, but never say a printed name is or is not '
+        + 'in it), which setting is right, which part an event goes in, or the kind of conflict, before a check or '
+        + 'after a wrong one. After a sequence '
+        + 'check the screen marks each card green or red; you may say how many are right, not where the red ones go. '
+        + 'Teaching is asking about the story: who did something, where they were, what happened first or after the '
+        + 'problem, how it ended, who or what the main character struggles against. You may read the story and the '
+        + 'choices aloud, and must for a Kindergarten or Grade 1 learner. You cannot tap or place for the learner.',
+      // The activity's own check (`storyMapMiss`); the conflict phase is asked on the Grade 4+ structures only.
+      misses: missLists<StoryMapMiss>({
+        bme: ['picked_not_in_story', 'missed_character', 'wrong_setting', 'one_part', 'reversed', 'next_part', 'far_part'],
+        story_mountain: ['picked_not_in_story', 'missed_character', 'wrong_setting', 'one_part', 'reversed', 'next_part', 'far_part'],
+        plot_diagram: ['picked_not_in_story', 'missed_character', 'wrong_setting', 'one_part', 'reversed', 'next_part', 'far_part',
+          'inside_outside', 'other_outside'],
+        heros_journey: ['picked_not_in_story', 'missed_character', 'wrong_setting', 'one_part', 'reversed', 'next_part', 'far_part',
+          'inside_outside', 'other_outside'],
+      }),
+      // character_count, part_pictures, arc_arrow, conflict_pictures, easier_story, easier_conflict
+      // (`storyMapLevers.ts`); every miss answered on every mode.
+      levers: true,
+    },
     tutoring: {
       taskDescription: 'Map story elements to {{structureType}} structure. Current phase: {{currentPhase}}. Elements found: {{elementsIdentified}}.',
       contextKeys: ['structureType', 'currentPhase', 'elementsIdentified'],

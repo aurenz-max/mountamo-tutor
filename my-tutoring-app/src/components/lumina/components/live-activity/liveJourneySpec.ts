@@ -21,6 +21,8 @@
  */
 import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
+import type { ClassificationItem } from '../../primitives/visual-primitives/biology/ClassificationSorter';
+import { sortHarnessTargets } from '../../primitives/visual-primitives/biology/classificationSorterWorkspace';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
 import { simplerFromId as simplerShapeFromId } from '../../primitives/visual-primitives/math/shapeSorterLevers';
 import { simplerItem } from '../../primitives/visual-primitives/math/numberLineLevers';
@@ -87,6 +89,8 @@ import { expandNumberBondInteractions } from '../../primitives/visual-primitives
 import { buildCompareItems, compareObjectsHarnessAnswers } from '../../primitives/visual-primitives/math/compareObjectsScript';
 import { itemsFromChallenges as placeValueItems, placeValueHarnessAnswers } from '../../primitives/visual-primitives/math/placeValueScript';
 import { getDigitPaths } from '../../primitives/visual-primitives/math/numberTracerPaths';
+import { letterWorkshopHarnessStrokes } from '../../primitives/visual-primitives/literacy/letterWorkshopWorkspace';
+import { practiceItem as letterPracticeItem, practiceParent as letterPracticeParent } from '../../primitives/visual-primitives/literacy/letterWorkshopLevers';
 import { tracePart } from '../../primitives/visual-primitives/math/numberTracerLevers';
 import { drawCorners as shapeTracerDrawCorners } from '../../primitives/visual-primitives/math/shapeTracerWorkspace';
 import { itemsFromChallenges as sortingItems, sortingStationHarnessAnswers } from '../../primitives/visual-primitives/math/sortingStationScript';
@@ -138,6 +142,11 @@ import { itemsFromChallenges as bridgeItems } from '../../primitives/visual-prim
 import { storyBridgeJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyBridgeWorkspace';
 import { itemsFromChallenges as ribbonItems } from '../../primitives/visual-primitives/literacy/storyRibbonScript';
 import { storyRibbonJourneyAnswers } from '../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
+import type { StoryMapData } from '../../primitives/visual-primitives/literacy/StoryMap';
+import { CONFLICT_LABELS as STORY_CONFLICT_LABELS, arcLabels as storyArcLabels, eventBank as storyEventBank, settingChoices }
+  from '../../primitives/visual-primitives/literacy/storyMapWorkspace';
+import { practiceFor as storyPracticeFor, practicePhase as storyPracticePhase, type PracticeStory }
+  from '../../primitives/visual-primitives/literacy/storyMapLevers';
 import { itemsFromChallenges as addSubItems } from '../../primitives/visual-primitives/math/additionSubtractionSceneScript';
 import { additionSubtractionJourneyAnswers } from '../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
 import { practiceParent as addSubPracticeParent, smallerStory as addSubSmallerStory }
@@ -150,6 +159,8 @@ import { calendarSequenceItemsFromChallenges, calendarSequenceJourneyAnswers, is
   from '../../primitives/visual-primitives/calendar/calendarExplorerWorkspace';
 import { calendarPracticeItem, calendarPracticeParent } from '../../primitives/visual-primitives/calendar/calendarExplorerLevers';
 import { practiceParentId as timelinePracticeParent, practiceTimeline } from '../../primitives/visual-primitives/calendar/timelineBuilderLevers';
+import { tapPlaces as lifeCycleTapPlaces } from '../../primitives/visual-primitives/biology/lifeCycleSequencerWorkspace';
+import { lifeCycleJourneyItem } from '../../primitives/visual-primitives/biology/lifeCycleSequencerLevers';
 import { itemsFromChallenges as arenaItems } from '../../primitives/visual-primitives/physics/pushPullArenaScript';
 import { pushPullArenaJourneyAnswers } from '../../primitives/visual-primitives/physics/pushPullArenaWorkspace';
 import { ARENA_SIMPLER, arenaPracticeItem } from '../../primitives/visual-primitives/physics/pushPullArenaLevers';
@@ -196,6 +207,9 @@ import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemist
 import { practiceItem as statesPracticeItem, practiceParent as statesPracticeParent, statesLeverSession } from '../../primitives/visual-primitives/chemistry/statesOfMatterLevers';
 import { solarJourneyItem } from './adapters/solarSystemExplorerLive';
 import { solarJourneyAnswers } from '../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
+import { shadowHarnessAnswers } from '../../primitives/visual-primitives/astronomy/lightShadowWorkspace';
+import { practiceItem as shadowPracticeItem, practiceParent as shadowPracticeParent }
+  from '../../primitives/visual-primitives/astronomy/lightShadowLevers';
 import { easierComparisonChoice, maxWorkableAngle, minimumPushSetting, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { practiceFromId as rampPracticeFromId } from '../../primitives/visual-primitives/engineering/rampLabLevers';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
@@ -240,8 +254,9 @@ export type DriverInput =
   | { type: 'choose'; label: string }
   /** Text typed into the input (or textarea) with this `aria-label`. */
   | { type: 'write'; label: string; text: string }
-  /** Strokes drawn on the canvas, in canvas pixel coordinates. */
-  | { type: 'draw'; strokes: { x: number; y: number }[][] }
+  /** Strokes drawn on the canvas, in canvas pixel coordinates; or, with `target`, on the SVG with that `data-pip-object`
+   *  id, with pointer events, in its viewBox coordinates. */
+  | { type: 'draw'; strokes: { x: number; y: number }[][]; target?: string }
   | { type: 'answer'; text: string };
 
 /** What the program is asking the learner to do, independent of how this primitive does it. */
@@ -658,6 +673,28 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'draw', strokes }, { type: 'choose', label: 'Check' }];
     },
     probes: { mounted: { selector: 'canvas' } },
+  },
+  'letter-workshop': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/LetterWorkshop.tsx',
+    instanceId: 'letters',
+    defaults: { grade: 'Kindergarten', mode: 'trace', di: false, topic: 'Writing lowercase letters' },
+    leakTokens: ['SAY_LETTER', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'ACTIVITY_START', 'READ_ALOUD'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode on the writing paper with pointer strokes: the right answer is the letter's own model strokes, which
+    // every mode's check accepts; the wrong one draws each stroke backwards (`start_or_order`), which geometry fails
+    // and the vision judge (no 2D canvas in the driver) never overrides.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const all = ctx.data.challenges ?? [];
+      // A practice item (`~simpler`, letterWorkshopLevers.ts) is rebuilt from its parent with the same builder.
+      const parent = letterPracticeParent(all, ctx.itemId);
+      const c = parent ? letterPracticeItem(parent, all) : all.find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current letter-workshop challenge');
+      return [{ type: 'draw', target: 'paper', strokes: letterWorkshopHarnessStrokes(c, intent === 'wrong') },
+        { type: 'choose', label: c.type === 'trace' ? 'Check my tracing' : 'Check my writing' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="paper"]' } },
   },
   'shape-tracer': {
     execution: 'workspace',
@@ -2267,6 +2304,57 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="ribbon"]' } },
   },
+  'story-map': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/StoryMap.tsx',
+    instanceId: 'storymap',
+    defaults: { grade: 'Grade 2', mode: 'story_mountain', di: false, topic: 'A lost puppy finds its way home' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // Each phase through its real controls. identify: tap every character and the setting, then Check; a wrong one
+    // leaves out a character (`missed_character`), or with one character picks another setting. sequence: tap each
+    // card, then its part of the arc, then Check; a wrong one puts the first event in the last part. analyze: tap
+    // the conflict, then Check; a wrong one crosses inside and outside (`inside_outside`).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // A practice story (`<phase>~simpler`, storyMapLevers.ts) is rebuilt from the session story with the same builder.
+      const phase = storyPracticePhase(ctx.itemId) ?? ctx.itemId;
+      const practice = storyPracticePhase(ctx.itemId) ? storyPracticeFor({ id: phase as never }, ctx.data as StoryMapData) : null;
+      const d = (practice ?? ctx.data) as PracticeStory;
+      const wrong = intent === 'wrong';
+      if (phase === 'identify') {
+        const names = d.elements.characters.map(c => c.name);
+        const setting = settingChoices(d);
+        const right = setting.find(s => s.isCorrect)!, other = setting.find(s => !s.isCorrect)!;
+        const picked = wrong && names.length > 1 ? names.slice(1) : names;
+        const where = wrong && names.length === 1 ? other : right;
+        return [...picked.map((label): DriverInput => ({ type: 'choose', label })), { type: 'choose', label: where.text }, { type: 'check' }];
+      }
+      if (phase === 'sequence') {
+        const parts = storyArcLabels(d).map(z => z.key);
+        const first = [...d.events].sort((a, b) => a.order - b.order)[0];
+        return [...storyEventBank(d).flatMap((e): DriverInput[] => [{ type: 'choose', label: e.text },
+          { type: 'touch', target: `zone-${wrong && e.id === first.id ? parts[parts.length - 1] : e.arcPosition}` }]), { type: 'check' }];
+      }
+      if (phase === 'analyze') {
+        const type = d.elements.conflict?.type;
+        if (!type) throw new Error('story-map analyze: the story has no conflict');
+        // A practice story prints three choices; the crossed one (inside for outside) is always among them.
+        const pick = !wrong ? type : type === 'person-vs-self' ? 'person-vs-nature' : 'person-vs-self';
+        return [{ type: 'choose', label: STORY_CONFLICT_LABELS[pick] }, { type: 'check' }];
+      }
+      throw new Error(`story-map: no input for item ${ctx.itemId}`);
+    },
+    // The replay's word check. identify's key is a character's name, which the story itself says, so reading the
+    // story (allowed, required at K-1) reads as the key: identify's replies are read by hand. sequence's touches
+    // name no word. analyze: the conflict's printed label.
+    replayKeys: ctx => {
+      const type = (ctx.data as StoryMapData).elements?.conflict?.type;
+      return (storyPracticePhase(ctx.itemId) ?? ctx.itemId) === 'analyze' && type && !storyPracticePhase(ctx.itemId)
+        ? [STORY_CONFLICT_LABELS[type]] : [];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
   'addition-subtraction-scene': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/AdditionSubtractionScene.tsx',
@@ -2379,6 +2467,28 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
+  'life-cycle-sequencer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/biology/LifeCycleSequencer.tsx',
+    instanceId: 'cycle',
+    defaults: { grade: 'Grade 1', mode: 'sequence', di: false, topic: 'The life cycle of a butterfly' },
+    leakTokens: ['CYCLE_ORIENT', 'CYCLE_STAGE_PLACED', 'CYCLE_READ_ALOUD'],
+    prompts: WORKSPACE_PROMPTS,
+    // The one item through its real controls: at K-2 a tap on a picture places it in the next empty slot; older bands
+    // tap the card, then its slot. Then Check Answer. A wrong order trades the first two stages (`adjacent_swap`).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = lifeCycleJourneyItem(ctx.data as never, ctx.itemId);
+      if (!c) throw new Error(`No life-cycle-sequencer item ${ctx.itemId}`);
+      const ordered = [...c.stages].sort((a, b) => a.correctPosition - b.correctPosition);
+      if (ordered.length < 2) throw new Error('life-cycle-sequencer: fewer than two stages');
+      const order = intent === 'wrong' ? [ordered[1], ordered[0], ...ordered.slice(2)] : ordered;
+      const card = (id: string): DriverInput => ({ type: 'touch', target: `card-${id}` });
+      return [...order.flatMap((s, i): DriverInput[] => (lifeCycleTapPlaces(c) ? [card(s.id)]
+        : [card(s.id), { type: 'touch', target: `slot-${i + 1}` }])), { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
   'fast-fact': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/core/FastFact.tsx',
@@ -2463,6 +2573,25 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [item.answerKind === 'gesture' ? { type: 'choose', label: pick } : { type: 'answer', text: pick }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'classification-sorter': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/biology/ClassificationSorter.tsx',
+    instanceId: 'sorter-bio',
+    defaults: { grade: 'Kindergarten', mode: 'sort', di: false, topic: 'Animals with wings and animals without wings' },
+    leakTokens: ['SORT_ORIENT', 'SORT_ITEM_STAGED', 'SORT_INCORRECT', 'SORT_READ_ALOUD', 'SORT_ITEM_TAP', 'SORT_ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Each item is staged alone: tap its group card (wrong: the first other group).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = (ctx.data.items ?? []).find((i: ClassificationItem) => i.id === ctx.itemId);
+      if (!item) throw new Error('No current classification-sorter item');
+      const targets = sortHarnessTargets(ctx.data.categories ?? [], item);
+      const target = intent === 'wrong' ? targets.wrong : targets.correct;
+      if (!target) throw new Error('classification-sorter: no wrong group to tap');
+      return [{ type: 'touch', target }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="card"]' } },
   },
   'food-web-builder': {
     execution: 'workspace',
@@ -2611,6 +2740,26 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
+  },
+  'light-shadow-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/astronomy/LightShadowLab.tsx',
+    instanceId: 'shadow',
+    defaults: { grade: 'Grade 2', mode: 'predict', di: false, topic: 'How shadows change during the day' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE', 'NEXT_ITEM', 'SUPPORT='],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode is one tapped choice and Check Answer. A wrong answer is the most telling error `shadowMiss` names on
+    // that item: the shadow on the sun's side, the time on the other side of noon, the length of a high sun for a low one.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier item (`~easier`) is rebuilt from its parent with the same builder.
+      const parent = shadowPracticeParent(ctx.itemId, ctx.data.challenges ?? []);
+      const c: any = parent ? shadowPracticeItem(parent) : (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current light-shadow-lab challenge');
+      const answers = shadowHarnessAnswers(c, ctx.data.sunPositions ?? []);
+      return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'genre-explorer': {
     execution: 'workspace',

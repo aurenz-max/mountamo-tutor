@@ -1,0 +1,71 @@
+{
+ "source": "qa/tutor-reports/story-map-runtime-story_mountain-payload-2026-10-09.json",
+ "primitiveId": "story-map",
+ "evalMode": "story_mountain",
+ "data": {
+  "title": "Story Mountain: Max Finds Home",
+  "gradeLevel": "2",
+  "structureType": "story-mountain",
+  "passage": {
+   "title": "The Little Lost Puppy",
+   "text": "One sunny afternoon, a fluffy brown puppy named Max wandered away from his yard into the busy neighborhood park. Max sniffed the green grass and chased a bright yellow butterfly, but soon he realized he was all alone and did not know the way back. Panicked, Max began to whimper softly while searching under every park bench. Suddenly, his owner Leo called out his name from across the playground. Max perked up his floppy ears, barked with joy, and ran straight into Leo's open arms.",
+   "author": "Teacher Sarah"
+  },
+  "elements": {
+   "characters": [
+    {
+     "name": "Max",
+     "description": "A fluffy brown puppy who wanders away and gets lost.",
+     "role": "protagonist"
+    },
+    {
+     "name": "Leo",
+     "description": "Max's loving owner who comes to the rescue.",
+     "role": "supporting"
+    }
+   ],
+   "setting": {
+    "place": "The neighborhood park",
+    "time": "One sunny afternoon",
+    "description": "A bright park with green grass and a playground during the daytime."
+   },
+   "conflict": {
+    "type": "person-vs-nature",
+    "description": "Max gets lost in the park and cannot find his way home."
+   }
+  },
+  "events": [
+   {
+    "id": "event1",
+    "text": "A fluffy brown puppy named Max wandered away from his yard into the busy neighborhood park.",
+    "arcPosition": "beginning",
+    "order": 0
+   },
+   {
+    "id": "event2",
+    "text": "Max sniffed the green grass and chased a bright yellow butterfly.",
+    "arcPosition": "rising-action",
+    "order": 1
+   },
+   {
+    "id": "event3",
+    "text": "Max realized he was all alone and began to whimper softly while searching under every park bench.",
+    "arcPosition": "climax",
+    "order": 2
+   },
+   {
+    "id": "event4",
+    "text": "Suddenly, his owner Leo called out his name from across the playground.",
+    "arcPosition": "falling-action",
+    "order": 3
+   },
+   {
+    "id": "event5",
+    "text": "Max perked up his floppy ears, barked with joy, and ran straight into Leo's open arms.",
+    "arcPosition": "resolution",
+    "order": 4
+   }
+  ],
+  "objectiveGrade": "2"
+ }
+}

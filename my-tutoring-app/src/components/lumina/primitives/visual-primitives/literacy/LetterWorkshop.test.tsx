@@ -9,7 +9,8 @@ import { judgeAcceptsLetter } from './letterWorkshopJudge';
 const { submit, sendText, evaluationOptions, tutor, judge } = vi.hoisted(() => ({ submit: vi.fn(), sendText: vi.fn(), evaluationOptions: vi.fn(), judge: vi.fn(), tutor: { isConnected: false, isAudioPlaying: false, requestHint: vi.fn(), data: vi.fn() } }));
 vi.mock('../../../evaluation', () => ({ usePrimitiveEvaluation: (options: unknown) => { evaluationOptions(options); return { submitResult: submit, elapsedMs: 100 }; } }));
 vi.mock('../../../hooks/useLuminaAI', () => ({ useLuminaAI: (options: unknown) => { tutor.data(options); return { sendText, isConnected: tutor.isConnected, requestHint: tutor.requestHint, isAudioPlaying: tutor.isAudioPlaying, isAIResponding: false, sessionMode: 'standalone' }; } }));
-vi.mock('./letterWorkshopJudge', async (original) => ({ ...(await original<typeof import('./letterWorkshopJudge')>()), judgeLetterDrawing: judge }));
+// jsdom has no 2D canvas; a stand-in image lets the component ask the (mocked) judge.
+vi.mock('./letterWorkshopJudge', async (original) => ({ ...(await original<typeof import('./letterWorkshopJudge')>()), judgeLetterDrawing: judge, renderLetterInkForJudge: () => 'data:image/png;base64,ink' }));
 vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { navigate: vi.fn() } }));
 vi.mock('../../../components/PhaseSummaryPanel', () => ({ default: () => <div>Tracing session complete</div> }));
 

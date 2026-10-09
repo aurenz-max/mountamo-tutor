@@ -1,0 +1,713 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ],
+   "no_change_before_receipt": [
+    0,
+    5
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    5
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    5
+   ],
+   "no_protocol_leak": [
+    0,
+    5
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "classification-sorter.sort",
+   "primitiveId": "classification-sorter",
+   "evalMode": "sort",
+   "keys": [
+    "has wings",
+    "put it in has wings"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "item1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "has wings",
+       "put it in has wings"
+      ],
+      "ask": "Which group does \"Robin\" go in?",
+      "leakTokens": [
+       "SORT_ORIENT",
+       "SORT_ITEM_STAGED",
+       "SORT_INCORRECT",
+       "SORT_READ_ALOUD",
+       "SORT_ITEM_TAP",
+       "SORT_ALL_COMPLETE"
+      ],
+      "menu": [
+       "robin",
+       "has wingsno wings",
+       "has wings",
+       "put it in has wings",
+       "no wings",
+       "put it in no wings"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Our card is a Robin! We are sorting animals into \"Has Wings\" and \"No Wings.\" Tap the group where Robin belongs.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We are sorting animals into Has Wings or No Wings. Our animal is a Robin\u2014tap the group where it belongs!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Our card is Robin! We are sorting animals into \"Has Wings\" or \"No Wings.\" Tap the group where Robin belongs.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We are sorting animals into Has Wings or No Wings. Our animal is Robin\u2014does a robin have wings, or no wings?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We are sorting animals into \"Has Wings\" and \"No Wings.\" Our card shows a Robin\u2014tap the group where the Robin belongs!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "item1",
+     "trigger": "The learner submitted \"Put \\\"Robin\\\" in \\\"No Wings\\\"\". The board checked it: not right.",
+     "miss": "sibling_group",
+     "scoredWith": {
+      "keys": [
+       "has wings",
+       "put it in has wings"
+      ],
+      "ask": "Which group does \"Robin\" go in?",
+      "leakTokens": [
+       "SORT_ORIENT",
+       "SORT_ITEM_STAGED",
+       "SORT_INCORRECT",
+       "SORT_READ_ALOUD",
+       "SORT_ITEM_TAP",
+       "SORT_ALL_COMPLETE"
+      ],
+      "menu": [
+       "robin",
+       "has wingsno wings",
+       "has wings",
+       "put it in has wings",
+       "no wings",
+       "put it in no wings"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new clue under Robin showing its feathered body and wings spread out. Let's try again\u2014which group should Robin go into?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "card_clue",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A robin is a little bird that flies up in the trees. Let's try again\u2014which group does Robin go in?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "card_clue",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look closely at the Robin. Think about how a robin flies through the air, and try tapping a group again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "card_clue",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try again! Think about a robin flying in the sky\u2014which group should it go to?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "card_clue",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's try again! What do you notice about the robin when it flies in the sky?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "card_clue",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "item1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "has wings",
+       "put it in has wings"
+      ],
+      "ask": "Which group does \"Robin\" go in?",
+      "leakTokens": [
+       "SORT_ORIENT",
+       "SORT_ITEM_STAGED",
+       "SORT_INCORRECT",
+       "SORT_READ_ALOUD",
+       "SORT_ITEM_TAP",
+       "SORT_ALL_COMPLETE"
+      ],
+      "menu": [
+       "robin",
+       "has wingsno wings",
+       "has wings",
+       "put it in has wings",
+       "no wings",
+       "put it in no wings"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A clue appeared under Robin showing how it flies through the air. Does a Robin have wings or no wings?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "card_clue"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A clue just appeared under Robin to help us! Think about how a robin flies up into a tree\u2014which group matches?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "card_clue"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A clue popped up under the card to help us look closely at Robin. Does a robin use wings to fly through the air?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "card_clue"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A clue popped up under Robin that shows it flapping through the sky! Does a Robin have wings or no wings?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/2/0",
+          "lever": "card_clue"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A clue just popped up under Robin showing how it flies through the air. Does a robin have wings or no wings?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "card_clue",
+          "actionId": "test/2/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "item1",
+     "trigger": "The learner said they were stuck, so the host pulled group_meaning (help). It is on screen now: Shows under each group name what that group means. Say it aloud for a learner who cannot read. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for them.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "has wings",
+       "put it in has wings"
+      ],
+      "ask": "Which group does \"Robin\" go in?",
+      "leakTokens": [
+       "SORT_ORIENT",
+       "SORT_ITEM_STAGED",
+       "SORT_INCORRECT",
+       "SORT_READ_ALOUD",
+       "SORT_ITEM_TAP",
+       "SORT_ALL_COMPLETE"
+      ],
+      "menu": [
+       "robin",
+       "has wingsno wings",
+       "has wings",
+       "put it in has wings",
+       "no wings",
+       "put it in no wings"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look, words appeared under each group! One says \"Animals that have wings on their bodies,\" and the other says \"Animals that do not have wings.\" Go ahead and tap the group where Robin belongs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the group names! One side says \"Animals that have wings on their bodies,\" and the other side says \"Animals that do not have wings.\" Tap where you think the Robin goes.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Words appeared under each group! One says \"Animals that have wings on their bodies,\" and the other says \"Animals that do not have wings.\" Go ahead and tap where Robin belongs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now words appeared under our groups: this one says \"Animals that have wings on their bodies,\" and this one says \"Animals that do not have wings.\" Go ahead and choose which group Robin belongs in.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under each group name\u2014words appeared to help us! One side says \"Animals that have wings on their bodies,\" and the other says \"Animals that do not have wings.\" Go ahead and choose which group Robin belongs in.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "item1",
+     "trigger": "The learner submitted \"Put \\\"Robin\\\" in \\\"Has Wings\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "has wings",
+       "put it in has wings"
+      ],
+      "ask": "Which group does \"Robin\" go in?",
+      "leakTokens": [
+       "SORT_ORIENT",
+       "SORT_ITEM_STAGED",
+       "SORT_INCORRECT",
+       "SORT_READ_ALOUD",
+       "SORT_ITEM_TAP",
+       "SORT_ALL_COMPLETE"
+      ],
+      "menu": [
+       "robin",
+       "has wingsno wings",
+       "has wings",
+       "put it in has wings",
+       "no wings",
+       "put it in no wings"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You fixed your mistake and sorted Robin into \"Has Wings\"!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You sorted Robin into \"Has Wings\"! You checked the group meanings and matched Robin right where it belongs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You sorted Robin into \"Has Wings\" after checking the descriptions! That is where Robin belongs.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You placed Robin into \"Has Wings\"! You checked the group descriptions and found the right match.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You put Robin in \"Has Wings\"! You checked the group descriptions, fixed your choice, and sorted Robin right into the wings group.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

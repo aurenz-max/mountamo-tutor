@@ -1,0 +1,93 @@
+{
+ "source": "qa/tutor-reports/classification-sorter-runtime-sort-payload-2026-10-09.json",
+ "primitiveId": "classification-sorter",
+ "evalMode": "sort",
+ "data": {
+  "title": "Animals With Wings and Without Wings",
+  "instructions": "Drag each animal to the correct group based on whether it has wings.",
+  "categories": [
+   {
+    "id": "has_wings",
+    "label": "Has Wings",
+    "description": "Animals that have wings on their bodies",
+    "parentId": "null"
+   },
+   {
+    "id": "no_wings",
+    "label": "No Wings",
+    "description": "Animals that do not have wings",
+    "parentId": "null"
+   }
+  ],
+  "items": [
+   {
+    "id": "item1",
+    "label": "Robin",
+    "hint": "Look closely at its sides. Can it fly using feathers?",
+    "correctCategoryId": "has_wings",
+    "distractorReasoning": "Clear example of an animal with wings",
+    "imagePrompt": "null"
+   },
+   {
+    "id": "item2",
+    "label": "Dog",
+    "hint": "Dogs run on four legs and have fur, but do they have wings?",
+    "correctCategoryId": "no_wings",
+    "distractorReasoning": "Clear example of an animal without wings",
+    "imagePrompt": "null"
+   },
+   {
+    "id": "item3",
+    "label": "Butterfly",
+    "hint": "Look at the pretty patterns on its sides that help it fly!",
+    "correctCategoryId": "has_wings",
+    "distractorReasoning": "Insect example with prominent wings",
+    "imagePrompt": "null"
+   },
+   {
+    "id": "item4",
+    "label": "Cat",
+    "hint": "Cats are furry pets, but do they have wings to fly?",
+    "correctCategoryId": "no_wings",
+    "distractorReasoning": "Clear land animal example",
+    "imagePrompt": "null"
+   },
+   {
+    "id": "item5",
+    "label": "Penguin",
+    "hint": "Even though it is a bird that cannot fly in the air, does it still have wings on its body?",
+    "correctCategoryId": "has_wings",
+    "distractorReasoning": "Boundary case: Students often think because it cannot fly, it has no wings",
+    "imagePrompt": "null"
+   },
+   {
+    "id": "item6",
+    "label": "Bat",
+    "hint": "Even though it flies in the night sky like a bird, look at its skin wings and furry body.",
+    "correctCategoryId": "has_wings",
+    "distractorReasoning": "Boundary case: Mammal that flies, often confused with birds",
+    "imagePrompt": "null"
+   },
+   {
+    "id": "item7",
+    "label": "Frog",
+    "hint": "Frogs jump and swim, but do they have wings?",
+    "correctCategoryId": "no_wings",
+    "distractorReasoning": "Amphibian without wings",
+    "imagePrompt": "null"
+   },
+   {
+    "id": "item8",
+    "label": "Spider",
+    "hint": "Spiders have many legs and make webs, but do they have wings?",
+    "correctCategoryId": "no_wings",
+    "distractorReasoning": "Often grouped with flying bugs because it is a small creepy-crawly",
+    "imagePrompt": "null"
+   }
+  ],
+  "sortingRule": "Sort by whether the animal has wings or does not have wings",
+  "gradeBand": "K-2",
+  "allowPartialCredit": true,
+  "objectiveGrade": "K"
+ }
+}

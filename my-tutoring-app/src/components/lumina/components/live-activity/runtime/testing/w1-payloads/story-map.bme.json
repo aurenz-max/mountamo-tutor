@@ -1,0 +1,59 @@
+{
+ "source": "qa/tutor-reports/story-map-runtime-bme-payload-2026-10-09.json",
+ "primitiveId": "story-map",
+ "evalMode": "bme",
+ "data": {
+  "title": "Story Map: The Lost Puppy",
+  "gradeLevel": "K",
+  "structureType": "bme",
+  "passage": {
+   "title": "Max Finds Home",
+   "text": "One sunny morning, a little brown puppy named Max got lost in the big green park. Max began to cry because he could not see his owner. Suddenly, his kind friend Sam heard him bark and ran over to help him go home.",
+   "author": "Teacher Sarah"
+  },
+  "elements": {
+   "characters": [
+    {
+     "name": "Max",
+     "description": "A little brown puppy who gets lost.",
+     "role": "protagonist"
+    },
+    {
+     "name": "Sam",
+     "description": "A kind friend who helps the puppy.",
+     "role": "supporting"
+    }
+   ],
+   "setting": {
+    "place": "the big green park",
+    "time": "One sunny morning",
+    "description": "A bright morning at the local park where Max gets lost."
+   },
+   "conflict": {
+    "type": "person-vs-nature",
+    "description": "Max gets lost in the park and cannot find his way home."
+   }
+  },
+  "events": [
+   {
+    "id": "event1",
+    "text": "Max the puppy gets lost in the big green park one sunny morning.",
+    "arcPosition": "beginning",
+    "order": 0
+   },
+   {
+    "id": "event2",
+    "text": "Max cries because he is lost and cannot see his owner.",
+    "arcPosition": "climax",
+    "order": 1
+   },
+   {
+    "id": "event3",
+    "text": "His kind friend Sam hears him bark and helps him go home.",
+    "arcPosition": "resolution",
+    "order": 2
+   }
+  ],
+  "objectiveGrade": "K"
+ }
+}

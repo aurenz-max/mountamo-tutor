@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/light-shadow-lab-runtime-predict-payload-2026-10-09.json",
+ "primitiveId": "light-shadow-lab",
+ "evalMode": "predict",
+ "data": {
+  "title": "Playground Shadow Detectives",
+  "description": "Explore the playground and discover how shadows change length and direction as the sun moves across the sky from morning to afternoon!",
+  "theme": "playground",
+  "gradeLevel": "1",
+  "objects": [
+   {
+    "type": "stick_figure",
+    "height": 5,
+    "label": "Maya"
+   },
+   {
+    "type": "tree",
+    "height": 8,
+    "label": "Oak Tree"
+   }
+  ],
+  "sunPositions": [
+   {
+    "time": "8:00 AM",
+    "altitude": 20,
+    "azimuth": 25
+   },
+   {
+    "time": "12:00 PM",
+    "altitude": 65,
+    "azimuth": 90
+   },
+   {
+    "time": "4:00 PM",
+    "altitude": 20,
+    "azimuth": 155
+   }
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "predict",
+    "instruction": "Look at where the sun is in the sky at 8:00 AM. What will Maya's shadow look like?",
+    "sunPosition": {
+     "time": "8:00 AM",
+     "altitude": 20,
+     "azimuth": 25
+    },
+    "correctShadow": {
+     "direction": "W",
+     "relativeLength": "long"
+    },
+    "distractor0": "East (left), Short",
+    "distractor1": "North (below), Short",
+    "distractor2": "West (right), Short",
+    "hint": "Remember, when the sun is low in the morning sky, shadows stretch out far on the opposite side!"
+   },
+   {
+    "id": "c2",
+    "type": "predict",
+    "instruction": "The clock hits 12:00 PM and the sun is high overhead. Predict Maya's shadow now!",
+    "sunPosition": {
+     "time": "12:00 PM",
+     "altitude": 65,
+     "azimuth": 90
+    },
+    "correctShadow": {
+     "direction": "N",
+     "relativeLength": "short"
+    },
+    "distractor0": "West (right), Long",
+    "distractor1": "East (left), Long",
+    "distractor2": "North (below), Long",
+    "hint": "Think about what happens to your shadow when the sun shines straight down from high up in the sky at lunchtime."
+   },
+   {
+    "id": "c3",
+    "type": "predict",
+    "instruction": "It is now 4:00 PM and the sun is getting lower on the other side. What is your prediction for Maya's shadow?",
+    "sunPosition": {
+     "time": "4:00 PM",
+     "altitude": 20,
+     "azimuth": 155
+    },
+    "correctShadow": {
+     "direction": "E",
+     "relativeLength": "long"
+    },
+    "distractor0": "West (right), Short",
+    "distractor1": "North (below), Medium",
+    "distractor2": "East (left), Short",
+    "hint": "When the sun is low in the late afternoon, shadows stretch out long towards the side where the sun is setting."
+   }
+  ]
+ }
+}

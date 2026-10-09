@@ -1,11 +1,20 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { LifeCycleSequencerMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
 import { LuminaDropZone, LuminaReadAloud, type DropZoneState } from '../../../ui';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { Clock, ArrowRight, CheckCircle2, XCircle, RotateCcw, Lightbulb, Sparkles, RefreshCw, GripVertical, ChevronDown, ChevronUp, HelpCircle, Zap } from 'lucide-react';
+import { Clock, ArrowRight, CheckCircle2, XCircle, RotateCcw, Lightbulb, Sparkles, GripVertical, ChevronDown, ChevronUp, HelpCircle, Zap } from 'lucide-react';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useTeachingEvaluation';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { bankOrder, cycleCorrect, cycleMiss, describeCycleWork, lifeCycleItem, workspaceAssignment, workspaceScene,
+  type LifeCycleItem } from './lifeCycleSequencerWorkspace';
+import { ARROW_LEVER, KEEP_LEVER, PRACTICE_NOTE, cycleLeverFacts, cycleLevers, keptSlots, practiceAssignment, practiceCycle }
+  from './lifeCycleSequencerLevers';
 
 /**
  * Life Cycle Sequencer - Enhanced Interactive Biology Primitive
@@ -17,6 +26,13 @@ import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
  * 4. Touch support with tap-to-place
  * 5. Visual timeline with connection lines
  * 6. Animated hints and better onboarding
+ *
+ * Teaching workspace (W1, plain shape): with a live runtime the tutor owns the lesson. The payload is one
+ * sequence, so the session has one item (`lifeCycleSequencerWorkspace.ts`); Check Answer commits through
+ * `progress.commitCheck` with the named miss, the shell's Try again clears the board, and the Hint, the
+ * misconception card, the read-aloud and the scripted sends are off (each can name the order). In-item levers
+ * (`lifeCycleSequencerLevers.ts`): an earlier-to-later arrow, locking the stages a check marked right, and an easier
+ * practice sequence.
  */
 
 // ============================================================================
@@ -57,6 +73,10 @@ export interface LifeCycleSequencerData {
 interface LifeCycleSequencerProps {
   data: LifeCycleSequencerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 interface StageAttempt {
@@ -80,7 +100,8 @@ const GRADE_BAND_COLORS: Record<string, { primary: string; secondary: string; rg
 // Main Component
 // ============================================================================
 
-const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className = '' }) => {
+const LifeCycleSequencerSurface = ({ data, className = '', runtimePlanItemId, tutorOwned, useController }:
+  LifeCycleSequencerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<LifeCycleItem>) => Progress }) => {
   // Defensive check for undefined or invalid data
   if (!data || !data.stages || !Array.isArray(data.stages) || data.stages.length === 0) {
     return (
@@ -99,10 +120,10 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     );
   }
 
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const [startTime] = useState(Date.now());
-  const [shuffledStages, setShuffledStages] = useState<LifeCycleStage[]>(() =>
-    [...data.stages].sort(() => Math.random() - 0.5)
-  );
+  const sessionItem = useMemo(() => lifeCycleItem(data), [data]);
+  const items = useMemo(() => [sessionItem], [sessionItem]);
   const [timelineStages, setTimelineStages] = useState<(LifeCycleStage | null)[]>(() =>
     new Array(data.stages.length).fill(null)
   );
@@ -115,10 +136,24 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
   const [showMisconception, setShowMisconception] = useState(false);
   const [attemptsCount, setAttemptsCount] = useState(0);
   const [showHint, setShowHint] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(true);
+  const [showTutorial, setShowTutorial] = useState(!tutorOwned);
   const [showGradingFlash, setShowGradingFlash] = useState(false);
   const gradingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** The last check's per-stage record and the first check's right count, for the workspace path's submission. */
+  const lastAttempts = useRef<StageAttempt[]>([]);
+  const firstCheckCorrect = useRef<number | null>(null);
 
+  // In-item levers, keyed by the session item they were pulled on; the stages `keep_right` locked in their slots; and
+  // the easier practice sequence a simplify lever puts in place of the session item until the observer returns to it.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [kept, setKept] = useState<{ item: string; slots: Record<number, string> }>({ item: '', slots: {} });
+  const [practice, setPractice] = useState<LifeCycleItem | null>(null);
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = !practice && leverState.item === sessionItem.id ? leverState.pulled : [];
+  const keptHere: Record<number, string> = !practice && kept.item === sessionItem.id ? kept.slots : {};
+  const isKept = (index: number) => keptHere[index] !== undefined;
+  const itemLevers = tutorOwned && !practice ? cycleLevers(sessionItem, pulledLevers) : [];
+  const arrowOn = itemLevers.some(l => l.id === ARROW_LEVER && l.pulled);
   const colors = GRADE_BAND_COLORS[data.gradeBand] || GRADE_BAND_COLORS['3-5'];
 
   // Evaluation hook
@@ -150,6 +185,23 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     onSubmit: onEvaluationSubmit,
   });
 
+  // ── Progress. On the workspace path the runtime owns the item; bound below, once the setters exist. ──
+  const openItem = useRef<(retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: (item) => item.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (_index, retry) => openItem.current(retry),
+    onFinished: result => finish.current(result),
+  });
+  /** Workspace path: a checked answer stays closed until Try again on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  const locked = () => hasSubmitted || learnerBlocked();
+
   // ============================================================================
   // Reading band
   // ============================================================================
@@ -176,12 +228,17 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     placedCount, selectedStage, isChecked,
   ]);
 
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Scripted path only: on the workspace the tutor reads the task and the scene, and this context carries the stages.
+  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'life-cycle-sequencer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Read-aloud: silent like every system trigger — `silent` suppresses only the
   // chat-transcript entry; the socket payload is unchanged, so the tutor speaks.
@@ -213,15 +270,38 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
 
   // Dismiss tutorial after 5 seconds
   useEffect(() => {
+    if (tutorOwned) return;
     const timer = setTimeout(() => setShowTutorial(false), 5000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [tutorOwned]);
 
   useEffect(
     () => () => {
       if (gradingFlashTimer.current) clearTimeout(gradingFlashTimer.current);
     },
     []
+  );
+
+  /** A fresh item, or the same one reopened by Try again: the board starts blank but for stages a lever locked. */
+  const clearBoard = useCallback((item: LifeCycleItem, locked: Readonly<Record<number, string>> = {}) => {
+    setTimelineStages(item.stages.map((_, i) => item.stages.find(s => s.id === locked[i]) ?? null));
+    setSelectedStage(null);
+    setIsChecked(false);
+    setStageResults(new Map());
+    setShowMisconception(false);
+    setShowGradingFlash(false);
+  }, []);
+  // Try again keeps a practice sequence; a fresh item, or the full item back after practice, drops it.
+  openItem.current = (retry) => {
+    if (retry && practice) { clearBoard(practice); return; }
+    setPractice(null);
+    clearBoard(sessionItem, kept.item === sessionItem.id ? kept.slots : {});
+  };
+
+  // The bank never shows the stages in order (`bankOrder`); a placed card leaves it.
+  const shuffledStages = useMemo(
+    () => bankOrder(currentItem).filter(s => !timelineStages.some(t => t?.id === s.id)),
+    [currentItem, timelineStages],
   );
 
   // ============================================================================
@@ -254,7 +334,6 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     const newTimeline = [...timelineStages];
     newTimeline[index] = stage;
     setTimelineStages(newTimeline);
-    setShuffledStages(prev => prev.filter(s => s.id !== stage.id));
     setSelectedStage(null);
     setIsChecked(false);
     setStageResults(new Map());
@@ -269,7 +348,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
 
   // Touch/Click to select and place
   const handleStageClick = (stage: LifeCycleStage, fromTimeline: boolean = false) => {
-    if (hasSubmitted) return;
+    if (locked()) return;
 
     // PRE: one tap = placed. No selection state to understand or undo-target.
     if (isPreReader && !fromTimeline) {
@@ -278,13 +357,14 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     }
 
     if (fromTimeline) {
-      // Remove from timeline and return to shuffled pool
+      // Remove from timeline and return to the pool (a stage a lever locked stays)
       const timelineIndex = timelineStages.findIndex(s => s?.id === stage.id);
-      if (timelineIndex !== -1) {
+      if (timelineIndex !== -1 && !isKept(timelineIndex)) {
         const newTimeline = [...timelineStages];
         newTimeline[timelineIndex] = null;
         setTimelineStages(newTimeline);
-        setShuffledStages(prev => [...prev, stage]);
+        setIsChecked(false);
+        setStageResults(new Map());
       }
       setSelectedStage(null);
     } else {
@@ -293,20 +373,13 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
   };
 
   const handleDropZoneClick = (index: number) => {
-    if (!selectedStage || hasSubmitted) return;
+    if (!selectedStage || locked() || isKept(index)) return;
 
-    // Place selected stage in timeline
-    const newTimeline = [...timelineStages];
-    const newShuffled = shuffledStages.filter(s => s.id !== selectedStage.id);
-
-    // If slot is occupied, swap back to shuffled pool
-    if (newTimeline[index]) {
-      newShuffled.push(newTimeline[index]!);
-    }
-
+    // Place selected stage in timeline; an occupied slot's card goes back to the pool
+    const newTimeline = timelineStages.map(s => (s?.id === selectedStage.id ? null : s));
     newTimeline[index] = selectedStage;
+    SoundManager.snap();
     setTimelineStages(newTimeline);
-    setShuffledStages(newShuffled);
     setSelectedStage(null);
     setIsChecked(false);
     setStageResults(new Map());
@@ -314,6 +387,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
 
   // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, stage: LifeCycleStage) => {
+    if (locked()) { e.preventDefault(); return; }
     setDraggedStage(stage);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', stage.id);
@@ -337,31 +411,22 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
 
-    if (!draggedStage || hasSubmitted) return;
+    const fromIndex = timelineStages.findIndex(s => s?.id === draggedStage?.id);
+    if (!draggedStage || locked() || isKept(dropIndex) || (fromIndex !== -1 && isKept(fromIndex))) return;
     SoundManager.snap();
 
     const newTimeline = [...timelineStages];
-    const isFromTimeline = timelineStages.some(s => s?.id === draggedStage.id);
 
-    if (isFromTimeline) {
+    if (fromIndex !== -1) {
       // Moving within timeline
-      const fromIndex = timelineStages.findIndex(s => s?.id === draggedStage.id);
-      if (fromIndex !== -1 && fromIndex !== dropIndex) {
+      if (fromIndex !== dropIndex) {
         const temp = newTimeline[dropIndex];
         newTimeline[dropIndex] = newTimeline[fromIndex];
         newTimeline[fromIndex] = temp;
       }
     } else {
-      // Adding from shuffled pool
-      const newShuffled = shuffledStages.filter(s => s.id !== draggedStage.id);
-
-      // If slot occupied, return it to pool
-      if (newTimeline[dropIndex]) {
-        newShuffled.push(newTimeline[dropIndex]!);
-      }
-
+      // Adding from the pool; an occupied slot's card goes back to the pool
       newTimeline[dropIndex] = draggedStage;
-      setShuffledStages(newShuffled);
     }
 
     setTimelineStages(newTimeline);
@@ -377,7 +442,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
 
   const handleCheckAnswer = () => {
     // Prevent checking if already submitted
-    if (hasSubmitted) return;
+    if (locked()) return;
 
     const attempts: StageAttempt[] = [];
     const results = new Map<string, boolean>();
@@ -405,11 +470,22 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     setShowGradingFlash(true);
     gradingFlashTimer.current = setTimeout(() => setShowGradingFlash(false), 900);
 
+    const slots = timelineStages.map(s => s?.id ?? null);
     const allPlaced = timelineStages.every(s => s !== null);
-    const allCorrect = correctCount === data.stages.length && allPlaced;
+    const allCorrect = cycleCorrect(currentItem, slots);
+    if (!practice) {
+      lastAttempts.current = attempts;
+      if (firstCheckCorrect.current === null) firstCheckCorrect.current = correctCount;
+    }
+
+    // The activity's own check is the workspace's checked gesture (counts the attempt on both paths).
+    progress.commitCheck(describeCycleWork(currentItem, slots), allCorrect,
+      allCorrect ? undefined : cycleMiss(currentItem, slots));
 
     if (allCorrect) SoundManager.playCorrect(); else SoundManager.playIncorrect();
 
+    // The workspace path submits from the finished record (`finish`); the misconception card can state the order.
+    if (tutorOwned) return;
     if (allCorrect && !hasSubmitted) {
       setShowMisconception(false);
       handleSubmit(attempts, correctCount);
@@ -441,9 +517,27 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     });
   };
 
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose evidence carries each
+  // wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false) return;
+    const metrics: LifeCycleSequencerMetrics = {
+      type: 'life-cycle-sequencer',
+      cycleType: data.cycleType,
+      totalStages: data.stages.length,
+      stageAttempts: lastAttempts.current,
+      totalCorrectFirstAttempt: firstCheckCorrect.current ?? 0,
+      completionTimeMs: Date.now() - startTime,
+      allStagesCorrect: result.solvedCount === 1,
+      attemptsBeforeSuccess: Math.max(0, result.attemptsCount - 1),
+    };
+    submitResult(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
   const handleReset = () => {
-    const shuffled = [...data.stages].sort(() => Math.random() - 0.5);
-    setShuffledStages(shuffled);
     setTimelineStages(new Array(data.stages.length).fill(null));
     setSelectedStage(null);
     setIsChecked(false);
@@ -477,6 +571,8 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     return (
       <div
         key={stage.id}
+        data-pip-object={`card-${stage.id}`}
+        aria-label={stage.label}
         draggable={!hasSubmitted}
         onDragStart={(e) => handleDragStart(e, stage)}
         onDragEnd={handleDragEnd}
@@ -522,6 +618,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
                 e.stopPropagation();
                 toggleCardExpansion(stage.id);
               }}
+              aria-label={`More about ${stage.label}`}
               className="text-slate-400 hover:text-slate-200 transition-colors"
             >
               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -583,6 +680,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     return (
       <LuminaDropZone
         key={`drop-zone-${index}`}
+        data-pip-object={`slot-${index + 1}`}
         state={zoneState}
         emptyPrompt={(
           <div className="flex flex-col items-center justify-center p-4">
@@ -607,6 +705,11 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
       >
         {!isEmpty && (
           <div
+            data-pip-object={`card-${stage.id}`}
+            aria-label={stage.label}
+            draggable={!hasSubmitted && !isKept(index)}
+            onDragStart={(e) => handleDragStart(e, stage)}
+            onDragEnd={handleDragEnd}
             onClick={(e) => {
               e.stopPropagation();
               handleStageClick(stage, true);
@@ -618,6 +721,13 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
               ${!hasSubmitted ? 'cursor-pointer hover:bg-slate-800/60' : 'cursor-default'}
             `}
           >
+            {/* The help lever `keep_right`: a stage the check marked right, locked in its slot. */}
+            {isKept(index) && (
+              <div data-lever="kept" aria-label="Locked: marked right" className="absolute top-2 right-2 z-10 text-base">
+                <span aria-hidden>🔒</span>
+              </div>
+            )}
+
             {/* Status Badge */}
             {showStatus && (
               <div className="absolute top-2 right-2 z-10">
@@ -657,7 +767,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
             )}
 
             {/* Transition Arrow (when correct and not last) */}
-            {showStatus && isCorrect && index < data.stages.length - 1 && data.cycleType === 'linear' && (
+            {showStatus && isCorrect && index < currentItem.stages.length - 1 && currentItem.cycleType === 'linear' && (
               <div className="absolute -right-6 top-1/2 -translate-y-1/2 z-20">
                 <ArrowRight className="w-5 h-5 text-green-400" />
               </div>
@@ -674,7 +784,53 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
 
   const allPlaced = timelineStages.every(s => s !== null);
   const correctCount = Array.from(stageResults.values()).filter(v => v).length;
-  const progress = (timelineStages.filter(s => s !== null).length / data.stages.length) * 100;
+  const progressPct = (timelineStages.filter(s => s !== null).length / currentItem.stages.length) * 100;
+  const solved = isChecked && allPlaced && correctCount === currentItem.stages.length;
+  const checkDisabled = hasSubmitted || !allPlaced || isChecked || (tutorOwned && progress.canAttempt === false);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstrations.
+  useLayoutEffect(() => {
+    if (!tutorOwned) return;
+    const marked = isChecked
+      ? {
+        right: timelineStages.flatMap((s, i) => (s && stageResults.get(s.id) === true ? [i] : [])),
+        wrong: timelineStages.flatMap((s, i) => (s && stageResults.get(s.id) === false ? [i] : [])),
+      }
+      : null;
+    const scene = workspaceScene(currentItem, { slots: timelineStages.map(s => s?.id ?? null), marked });
+    const levers = itemLevers;
+    const onScreen = practice ? ''
+      : cycleLeverFacts(sessionItem, levers.filter(l => l.kind === 'help' && l.pulled).map(l => l.id), keptHere);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this sequence.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceCycle(sessionItem);
+          if (!easier) return 'This sequence is already the plainest of its kind.';
+          setLeverState(next); setPractice(easier); clearBoard(easier);
+          return { practice: practiceAssignment(easier) };
+        }
+        if (id === KEEP_LEVER) {
+          const slots = keptSlots(sessionItem, timelineStages.map(s => s?.id ?? null), marked);
+          if (!slots) return 'Nothing to lock yet: pull this after a check that marks some slots right and some wrong.';
+          setKept({ item: sessionItem.id, slots });
+          // The stages marked wrong go back to the cards now; the marks clear with them.
+          setTimelineStages(timelineStages.map((s, i) => (slots[i] ? s : null)));
+          setIsChecked(false); setStageResults(new Map()); setShowGradingFlash(false);
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      // Back to the full item: the practice sequence is not the learner's work on it.
+      endPractice: () => { setPractice(null); clearBoard(sessionItem, keptHere); },
+    };
+  });
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
@@ -684,14 +840,14 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     instanceId: resolvedInstanceId,
     scopeId: 'sequence',
     label: 'The stage cards and your timeline',
-    solved: isChecked && correctCount === data.stages.length,
+    solved,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
   return (
     <div className={`relative ${className}`}>
       {/* Tutorial Overlay */}
-      {showTutorial && (
+      {showTutorial && !tutorOwned && (
         <div className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-slate-900/95 to-transparent p-6 rounded-xl backdrop-blur-sm">
           <div className="flex items-start gap-3">
             <Zap className="w-6 h-6 text-yellow-400 flex-shrink-0" />
@@ -716,16 +872,19 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-slate-100 mb-2">{data.title}</h3>
         <div className="flex items-start gap-3 mb-2">
-          <p className="text-slate-400 flex-1">{data.instructions}</p>
-          <LuminaReadAloud
-            iconOnly
-            size={isPreReader ? 'lg' : 'sm'}
-            accent="cyan"
-            speaking={isAudioPlaying}
-            aria-label="Read the instructions to me"
-            className="flex-shrink-0"
-            onClick={() => readAloud(`${data.title}. ${data.instructions}`)}
-          />
+          <p className="text-slate-400 flex-1">{currentItem.instructions}</p>
+          {/* With the tutor, the learner asks the tutor to read it. */}
+          {!tutorOwned && (
+            <LuminaReadAloud
+              iconOnly
+              size={isPreReader ? 'lg' : 'sm'}
+              accent="cyan"
+              speaking={isAudioPlaying}
+              aria-label="Read the instructions to me"
+              className="flex-shrink-0"
+              onClick={() => readAloud(`${data.title}. ${data.instructions}`)}
+            />
+          )}
         </div>
         <div className="flex items-center gap-4 text-sm text-slate-500">
           {/* scaleContext is prose ("about 4 weeks from egg to butterfly") and
@@ -763,7 +922,8 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
             <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
               {isPreReader ? '' : `Available Cards (${shuffledStages.length})`}
             </h4>
-            {!isChecked && shuffledStages.length > 0 && (
+            {/* The Hint selects the first stage: a piece of the answer, so not with the tutor. */}
+            {!tutorOwned && !isChecked && shuffledStages.length > 0 && (
               <button
                 onClick={handleShowHint}
                 className="text-xs text-slate-500 hover:text-yellow-400 transition-colors flex items-center gap-1"
@@ -784,7 +944,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
             )}
           </div>
 
-          {showHint && (
+          {showHint && !tutorOwned && (
             <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
               <div className="flex items-start gap-2">
                 <Lightbulb className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
@@ -811,20 +971,39 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
                 <div
                   className="h-full transition-all duration-500"
                   style={{
-                    width: `${progress}%`,
+                    width: `${progressPct}%`,
                     backgroundColor: colors.primary,
                   }}
                 />
               </div>
               <span className="text-xs text-slate-500">
-                {timelineStages.filter(s => s).length}/{data.stages.length}
+                {timelineStages.filter(s => s).length}/{currentItem.stages.length}
               </span>
             </div>
           </div>
 
+          {practice && (
+            <p className="mb-2 text-xs text-amber-300" data-practice>Practice: {practice.title}</p>
+          )}
+          {/* The help lever `time_arrow`: which way time runs over the slots, drawn on no stage. */}
+          {arrowOn && (
+            <div data-lever="time-arrow" aria-label="Start to later" className="mb-2 flex items-center gap-2 text-sm text-cyan-200">
+              <span aria-hidden>🚩</span>
+              <span className="text-xs">start</span>
+              <div className="relative h-0.5 flex-1 bg-cyan-300/70">
+                <span aria-hidden className="absolute -right-1 -top-[9px] text-base leading-none">▶</span>
+              </div>
+              <span className="text-xs">later</span>
+              {currentItem.cycleType === 'circular' && (
+                <span data-lever="time-arrow-return" aria-label="Back to the start" className="text-lg">
+                  <span aria-hidden>↩</span>
+                </span>
+              )}
+            </div>
+          )}
           <div className={`
             grid gap-4
-            ${data.cycleType === 'circular'
+            ${currentItem.cycleType === 'circular'
               ? 'grid-cols-2'
               : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
             }
@@ -836,8 +1015,8 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
 
       </div>
 
-      {/* Misconception Trap */}
-      {showMisconception && !hasSubmitted && (
+      {/* Misconception Trap (scripted path: its correction can state the order) */}
+      {showMisconception && !hasSubmitted && !tutorOwned && (
         <div
           className="mb-6 p-4 rounded-xl border-2 animate-slideIn"
           style={{
@@ -867,23 +1046,24 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
         <div className="flex gap-3">
           <button
             onClick={handleCheckAnswer}
-            disabled={hasSubmitted || !allPlaced || isChecked}
+            disabled={checkDisabled}
             className={`
               px-6 py-3 rounded-lg font-semibold
               transition-all duration-200
-              ${hasSubmitted || !allPlaced || isChecked
+              ${checkDisabled
                 ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                 : 'text-white shadow-lg hover:shadow-xl hover:scale-105'
               }
             `}
             style={{
-              backgroundColor: hasSubmitted || !allPlaced || isChecked ? undefined : colors.primary,
+              backgroundColor: checkDisabled ? undefined : colors.primary,
             }}
           >
             {!allPlaced ? 'Place all cards' : isChecked ? 'Checked' : 'Check Answer'}
           </button>
 
-          {(isChecked || hasSubmitted) && (
+          {/* With the tutor, Try again is on the shell. */}
+          {!tutorOwned && (isChecked || hasSubmitted) && (
             <button
               onClick={handleReset}
               className="px-6 py-3 bg-slate-700 text-slate-300 rounded-lg font-semibold hover:bg-slate-600 transition-all duration-200 flex items-center gap-2"
@@ -897,8 +1077,8 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
         {/* Score Display */}
         {isChecked && (
           <div className="text-right">
-            <p className="text-2xl font-bold" style={{ color: correctCount === data.stages.length ? '#10b981' : '#f59e0b' }}>
-              {correctCount} / {data.stages.length}
+            <p className="text-2xl font-bold" style={{ color: correctCount === currentItem.stages.length ? '#10b981' : '#f59e0b' }}>
+              {correctCount} / {currentItem.stages.length}
             </p>
             <p className="text-xs text-slate-500">correct</p>
           </div>
@@ -906,7 +1086,7 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
       </div>
 
       {/* Success Message */}
-      {hasSubmitted && correctCount === data.stages.length && (
+      {(hasSubmitted || tutorOwned) && solved && (
         <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-xl animate-slideIn">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="w-6 h-6 text-green-400" />
@@ -947,5 +1127,9 @@ const LifeCycleSequencer: React.FC<LifeCycleSequencerProps> = ({ data, className
     </div>
   );
 };
+
+// The workspace path never mounts the scripted progress.
+const LifeCycleSequencer = withWorkspaceController<LifeCycleSequencerProps, ProgressOptions<LifeCycleItem>, Progress>(
+  'life-cycle-sequencer', LifeCycleSequencerSurface, useScriptedProgress, useWorkspaceProgressFor('life-cycle-sequencer'));
 
 export default LifeCycleSequencer;

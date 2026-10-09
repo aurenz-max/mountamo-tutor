@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/light-shadow-lab-runtime-observe-payload-2026-10-09.json",
+ "primitiveId": "light-shadow-lab",
+ "evalMode": "observe",
+ "data": {
+  "title": "Playground Shadow Safari",
+  "description": "Explore the sunny playground and discover how our friendly stick figure's shadow changes from morning to afternoon!",
+  "theme": "playground",
+  "gradeLevel": "1",
+  "objects": [
+   {
+    "type": "stick_figure",
+    "height": 5,
+    "label": "Sammy"
+   },
+   {
+    "type": "tree",
+    "height": 8,
+    "label": "Big Oak Tree"
+   }
+  ],
+  "sunPositions": [
+   {
+    "time": "8:00 AM",
+    "altitude": 20,
+    "azimuth": 25
+   },
+   {
+    "time": "12:00 PM",
+    "altitude": 70,
+    "azimuth": 90
+   },
+   {
+    "time": "4:00 PM",
+    "altitude": 20,
+    "azimuth": 155
+   }
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "observe",
+    "instruction": "Drag the sun to the 8:00 AM mark and look closely at Sammy's shadow. What do you notice about its direction and length?",
+    "sunPosition": {
+     "time": "8:00 AM",
+     "altitude": 20,
+     "azimuth": 25
+    },
+    "correctShadow": {
+     "direction": "W",
+     "relativeLength": "long"
+    },
+    "distractor0": "E, Short",
+    "distractor1": "N, Short",
+    "distractor2": "E, Long",
+    "hint": "When the sun is low in the morning sky, check which side of Sammy the shadow falls on!"
+   },
+   {
+    "id": "c2",
+    "type": "observe",
+    "instruction": "Now, drag the sun to the 12:00 PM midday mark. What happens to Sammy's shadow when the sun is way up high?",
+    "sunPosition": {
+     "time": "12:00 PM",
+     "altitude": 70,
+     "azimuth": 90
+    },
+    "correctShadow": {
+     "direction": "N",
+     "relativeLength": "short"
+    },
+    "distractor0": "W, Long",
+    "distractor1": "E, Long",
+    "distractor2": "W, Medium",
+    "hint": "Think about where the sun shines from at noon. Is the shadow big or small?"
+   },
+   {
+    "id": "c3",
+    "type": "observe",
+    "instruction": "Finally, drag the sun to the 4:00 PM afternoon mark. How has Sammy's shadow changed compared to the morning?",
+    "sunPosition": {
+     "time": "4:00 PM",
+     "altitude": 20,
+     "azimuth": 155
+    },
+    "correctShadow": {
+     "direction": "E",
+     "relativeLength": "long"
+    },
+    "distractor0": "W, Long",
+    "distractor1": "N, Short",
+    "distractor2": "E, Short",
+    "hint": "In the afternoon, the sun moves over to the other side of the sky. Where does the shadow point now?"
+   }
+  ]
+ }
+}

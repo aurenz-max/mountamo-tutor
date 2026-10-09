@@ -168,6 +168,7 @@ const sentText = (from: number) => seam.send.mock.calls.slice(from).map(c => typ
 function perform(h: WorkspaceHarness, inputs: DriverInput[]): string | null {
   let spoken: string | null = null;
   let strokes: Array<{ canvas: HTMLCanvasElement; stroke: { x: number; y: number }[] }> = [];
+  let svgDraw: (() => void) | null = null;
   const root = h.view.container;
   const buttons = () => Array.from(root.querySelectorAll('button'));
   for (const a of inputs) {
@@ -200,6 +201,11 @@ function perform(h: WorkspaceHarness, inputs: DriverInput[]): string | null {
         const input = Array.from(root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea')).find(i => i.getAttribute('aria-label') === a.label);
         if (!input || input.disabled) throw new Error(`write: no enabled input "${a.label}"`);
         fireEvent.change(input, { target: { value: a.text } });
+      } else if (a.type === 'draw' && a.target) {
+        // An SVG drawn on with pointer events, in its viewBox coordinates (the letter workshop's paper).
+        const svg = root.querySelector(`[data-pip-object="${a.target}"]`) as SVGSVGElement | null;
+        if (!svg) throw new Error(`draw: no ${a.target}`);
+        svgDraw = () => drawOnSvg(svg, a.strokes);
       } else if (a.type === 'draw') {
         const canvas = (root.querySelector('canvas[data-pip-object="canvas"]') ?? root.querySelector('canvas')) as HTMLCanvasElement | null;
         if (!canvas) throw new Error('draw: no canvas');
@@ -208,6 +214,7 @@ function perform(h: WorkspaceHarness, inputs: DriverInput[]): string | null {
         strokes = a.strokes.map(stroke => ({ canvas, stroke }));
       }
     });
+    (svgDraw as (() => void) | null)?.(); svgDraw = null;
     // One act per pointer event: a move renders before the next one, as the driver yields a task per move.
     for (const { canvas, stroke } of strokes) {
       act(() => { fireEvent.mouseDown(canvas, { clientX: stroke[0].x, clientY: stroke[0].y }); });
@@ -217,6 +224,23 @@ function perform(h: WorkspaceHarness, inputs: DriverInput[]): string | null {
     strokes = [];
   }
   return spoken;
+}
+
+/** Pointer strokes on an SVG in its own viewBox coordinates: its screen matrix is the identity, its pointer capture a no-op. */
+function drawOnSvg(svg: SVGSVGElement, strokes: { x: number; y: number }[][]) {
+  Object.assign(svg, { getScreenCTM: () => ({ inverse: () => ({}) }),
+    createSVGPoint: () => ({ x: 0, y: 0, matrixTransform() { return this; } }),
+    setPointerCapture: () => {}, hasPointerCapture: () => false, releasePointerCapture: () => {} });
+  const at = (type: string, p: { x: number; y: number }) => {
+    const e = new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX: p.x, clientY: p.y });
+    Object.assign(e, { pointerId: 1, pointerType: 'pen', isPrimary: true });
+    svg.dispatchEvent(e);
+  };
+  for (const stroke of strokes) {
+    act(() => { at('pointerdown', stroke[0]); });
+    for (const p of stroke.slice(1)) act(() => { at('pointermove', p); });
+    act(() => { at('pointerup', stroke[stroke.length - 1]); });
+  }
 }
 
 /**

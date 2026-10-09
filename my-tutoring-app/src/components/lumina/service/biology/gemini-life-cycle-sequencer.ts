@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { resolveBiologyBand } from './gradeBand';
+import { logEvalModeResolution } from '../evalMode';
 
 // Import the data type from the component (single source of truth)
 import { LifeCycleSequencerData } from "../../primitives/visual-primitives/biology/LifeCycleSequencer";
@@ -118,6 +119,8 @@ export const generateLifeCycleSequencer = async (
 ): Promise<LifeCycleSequencerData> => {
   const { topic } = ctx;
   const config = ctx.raw as Partial<LifeCycleSequencerData>;
+  // Single mode (`sequence`): every payload is the one task identity, so the pin only reaches the log.
+  logEvalModeResolution('LifeCycleSequencer', ctx.targetEvalMode, null);
 
   // Map grade context to grade band
   // Canonical-first band resolution. The map this replaces was keyed on bare

@@ -1,0 +1,115 @@
+{
+ "source": "qa/tutor-reports/light-shadow-lab-runtime-observe-easy-payload-2026-10-09.json",
+ "primitiveId": "light-shadow-lab",
+ "evalMode": "observe",
+ "data": {
+  "title": "Fun on the Playground: Watching Our Shadows!",
+  "description": "Come play on the sunny playground! Move the sun across the sky and watch how our friendly stick figure and tree shadows grow long, get short, and point in different directions all day long.",
+  "theme": "playground",
+  "gradeLevel": "K",
+  "objects": [
+   {
+    "type": "stick_figure",
+    "height": 5,
+    "label": "My Friend"
+   },
+   {
+    "type": "tree",
+    "height": 8,
+    "label": "Playground Tree"
+   }
+  ],
+  "sunPositions": [
+   {
+    "time": "8:00 AM",
+    "altitude": 17,
+    "azimuth": 20
+   },
+   {
+    "time": "12:00 PM",
+    "altitude": 73,
+    "azimuth": 90
+   },
+   {
+    "time": "4:00 PM",
+    "altitude": 17,
+    "azimuth": 160
+   }
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "observe",
+    "instruction": "Drag the sun to the 8:00 AM mark in the morning sky. Look at the shadow on the ground. Which way does it point and how long is it?",
+    "sunPosition": {
+     "time": "8:00 AM",
+     "altitude": 17,
+     "azimuth": 20
+    },
+    "correctShadow": {
+     "direction": "W",
+     "relativeLength": "long"
+    },
+    "distractor0": "East (left), Short",
+    "distractor1": "North, Short",
+    "distractor2": "East (left), Long",
+    "hint": "Remember, when the sun is low in the morning sky, it makes a very long shadow on the opposite side!",
+    "showLiveShadowReadout": true,
+    "showSunPath": true,
+    "showDirectionLabels": true,
+    "startLevers": [
+     "shadow_zones"
+    ]
+   },
+   {
+    "id": "c2",
+    "type": "observe",
+    "instruction": "Drag the sun to the 12:00 PM mark right overhead at lunchtime. Look closely at the shadow. Which way does it point and how long is it now?",
+    "sunPosition": {
+     "time": "12:00 PM",
+     "altitude": 73,
+     "azimuth": 90
+    },
+    "correctShadow": {
+     "direction": "N",
+     "relativeLength": "short"
+    },
+    "distractor0": "West (right), Long",
+    "distractor1": "East (left), Long",
+    "distractor2": "West (right), Medium",
+    "hint": "When the sun is high up in the middle of the day, shadows hide underneath and look very short!",
+    "showLiveShadowReadout": true,
+    "showSunPath": true,
+    "showDirectionLabels": true,
+    "startLevers": [
+     "shadow_zones"
+    ]
+   },
+   {
+    "id": "c3",
+    "type": "observe",
+    "instruction": "Drag the sun to the 4:00 PM mark in the afternoon. Check out the shadow on the playground. Which way does it point and how long is it?",
+    "sunPosition": {
+     "time": "4:00 PM",
+     "altitude": 17,
+     "azimuth": 160
+    },
+    "correctShadow": {
+     "direction": "E",
+     "relativeLength": "long"
+    },
+    "distractor0": "West (right), Short",
+    "distractor1": "North, Medium",
+    "distractor2": "West (right), Long",
+    "hint": "As the sun goes down in the late afternoon, the shadow stretches out long again on the other side!",
+    "showLiveShadowReadout": true,
+    "showSunPath": true,
+    "showDirectionLabels": true,
+    "startLevers": [
+     "shadow_zones"
+    ]
+   }
+  ],
+  "supportTier": "easy"
+ }
+}

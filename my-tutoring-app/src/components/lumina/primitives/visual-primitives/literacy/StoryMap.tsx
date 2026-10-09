@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { StoryMapMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -24,6 +24,42 @@ import {
   accentSolidBg,
 } from '../../../ui';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useTeachingEvaluation';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  CONFLICT_LABELS,
+  conflictOptions,
+  arcLabels as arcLabelsFor,
+  asksConflict,
+  characterChoices,
+  describeStoryWork,
+  eventBank,
+  settingChoices,
+  storyMapCorrect,
+  storyMapItems,
+  storyMapMiss,
+  workspaceAssignment,
+  workspaceScene,
+  type StoryMapItem,
+  type StoryMapView,
+} from './storyMapWorkspace';
+import {
+  ARROW_LEVER,
+  CONFLICT_PICTURES,
+  CONFLICT_PICTURES_LEVER,
+  COUNT_LEVER,
+  PARTS_LEVER,
+  PRACTICE_NOTE,
+  partPicture,
+  practiceAssignment,
+  practiceFor,
+  storyMapLeverFacts,
+  storyMapLevers,
+  type PracticeStory,
+} from './storyMapLevers';
 
 // =============================================================================
 // Type Definitions
@@ -91,6 +127,10 @@ export interface StoryMapData {
 interface StoryMapProps {
   data: StoryMapData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 type Phase = 'identify' | 'sequence' | 'analyze';
@@ -110,27 +150,6 @@ interface PlacedEvent {
 // =============================================================================
 // Constants
 // =============================================================================
-
-const ARC_LABELS_BME: { key: ArcPosition; label: string }[] = [
-  { key: 'beginning', label: 'Beginning' },
-  { key: 'climax', label: 'Middle' },
-  { key: 'resolution', label: 'End' },
-];
-
-const ARC_LABELS_MOUNTAIN: { key: ArcPosition; label: string }[] = [
-  { key: 'beginning', label: 'Introduction' },
-  { key: 'rising-action', label: 'Rising Action' },
-  { key: 'climax', label: 'Climax' },
-  { key: 'falling-action', label: 'Falling Action' },
-  { key: 'resolution', label: 'Resolution' },
-];
-
-const CONFLICT_LABELS: Record<string, string> = {
-  'person-vs-person': 'Character vs. Character',
-  'person-vs-self': 'Character vs. Self',
-  'person-vs-nature': 'Character vs. Nature',
-  'person-vs-society': 'Character vs. Society',
-};
 
 // Role chips use the shared accent palette: protagonist→emerald,
 // antagonist→rose, supporting→blue.
@@ -476,23 +495,33 @@ function StoryMountainArc({
 // Main Component
 // =============================================================================
 
-const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
-  // Defensive check
-  if (!data || !data.events || !Array.isArray(data.events) || data.events.length === 0) {
-    return (
-      <LuminaCard>
-        <LuminaCardContent className="p-8">
-          <h3 className="text-lg font-semibold text-rose-400 mb-2">Invalid Data</h3>
-          <p className="text-slate-300">
-            The story map received invalid data. Please regenerate the content.
-          </p>
-        </LuminaCardContent>
-      </LuminaCard>
-    );
-  }
+const InvalidStoryMap = () => (
+  <LuminaCard>
+    <LuminaCardContent className="p-8">
+      <h3 className="text-lg font-semibold text-rose-400 mb-2">Invalid Data</h3>
+      <p className="text-slate-300">
+        The story map received invalid data. Please regenerate the content.
+      </p>
+    </LuminaCardContent>
+  </LuminaCard>
+);
 
+type StoryMapSurfaceProps = StoryMapProps & {
+  tutorOwned: boolean;
+  useController: (options: ProgressOptions<StoryMapItem>) => Progress;
+};
+
+const StoryMapSurface = (props: StoryMapSurfaceProps) => {
+  const { data } = props;
+  // Defensive check
+  if (!data || !data.events || !Array.isArray(data.events) || data.events.length === 0) return <InvalidStoryMap />;
+  return <StoryMapBoard {...props} />;
+};
+
+const StoryMapBoard = ({ data, className = '', runtimePlanItemId, tutorOwned, useController }: StoryMapSurfaceProps) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const [startTime] = useState(Date.now());
-  const [phase, setPhase] = useState<Phase>('identify');
+  const [scriptedPhase, setPhase] = useState<Phase>('identify');
   const [showPassage, setShowPassage] = useState(true);
 
   // Phase 1: Identify state
@@ -531,12 +560,14 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
     exhibitId,
     onEvaluationSubmit,
   } = data;
+  const stableInstanceId = useRef(instanceId || `story-map-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
 
   // Initialize evaluation hook
   const { submitResult, hasSubmitted, resetAttempt } =
     usePrimitiveEvaluation<StoryMapMetrics>({
       primitiveType: 'story-map',
-      instanceId: instanceId || `story-map-${Date.now()}`,
+      instanceId: resolvedInstanceId,
       skillId,
       subskillId,
       objectiveId,
@@ -544,48 +575,48 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
       onSubmit: onEvaluationSubmit,
     });
 
-  // Determine arc labels based on structure type
-  const arcLabels = useMemo(() => {
-    if (data.structureType === 'bme') return ARC_LABELS_BME;
-    return ARC_LABELS_MOUNTAIN;
-  }, [data.structureType]);
+  // ── Progress. Each phase is one checked item; on the workspace path the runtime moves the index. ──
+  const items = useMemo(() => storyMapItems(data), [data]);
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: (item) => item.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: (item) => workspaceAssignment(item, data),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  const sessionItem: StoryMapItem | undefined = tutorOwned ? items[progress.currentIndex] : items.find((i) => i.id === scriptedPhase);
+  const phase: Phase = tutorOwned ? (sessionItem?.id ?? items[items.length - 1].id) : scriptedPhase;
+  const workspaceDone = tutorOwned && progress.isComplete;
 
-  // Create shuffled events for placing
-  const [shuffledEvents] = useState(() =>
-    [...data.events].sort(() => Math.random() - 0.5)
-  );
+  // In-item levers (`storyMapLevers.ts`), keyed by the phase they were pulled on, and the shorter practice story a
+  // simplify lever puts in place of this one until the observer returns to it. `shown` is the story on screen.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<PracticeStory | null>(null);
+  const shown: PracticeStory = practice ?? data;
+  const pulledLevers = !practice && sessionItem && leverState.item === sessionItem.id ? leverState.pulled : [];
+  const itemLevers = tutorOwned && !practice && !workspaceDone ? storyMapLevers(sessionItem, data, pulledLevers) : [];
+  /** A help lever is drawn on the session story while pulled, never on a practice story. */
+  const helpOn = (id: string) => itemLevers.some((l) => l.id === id && l.kind === 'help' && l.pulled);
 
-  // Build character options (include all from data.elements plus 2 distractors by label)
-  const characterOptions = useMemo(() => {
-    return data.elements.characters.map((c) => ({
-      name: c.name,
-      role: c.role,
-      description: c.description,
-    }));
-  }, [data.elements.characters]);
+  // Arc labels for the structure type
+  const arcLabels = useMemo(() => arcLabelsFor(shown), [shown]);
 
-  // Build setting options - the correct one plus distractors from passage
-  const settingOptions = useMemo(() => {
-    const correct = data.elements.setting;
-    const options = [
-      {
-        id: 'correct',
-        text: `${correct.place} - ${correct.time}`,
-        isCorrect: true,
-      },
-      {
-        id: 'distractor-1',
-        text: `An unknown city - Long ago`,
-        isCorrect: false,
-      },
-      {
-        id: 'distractor-2',
-        text: `A spaceship - In the future`,
-        isCorrect: false,
-      },
-    ];
-    return options.sort(() => Math.random() - 0.5);
-  }, [data.elements.setting]);
+  // The event bank, never in story order (`eventBank`).
+  const shuffledEvents = useMemo(() => eventBank(shown), [shown]);
+
+  // The printed character names: the story's characters and, at the medium and hard tiers, names not in it.
+  const characterOptions = useMemo(() => characterChoices(shown), [shown]);
+
+  // The printed settings: the story's own and two that fit no story here.
+  const settingOptions = useMemo(() => settingChoices(shown), [shown]);
 
   // Compute unplaced events
   const unplacedEvents = useMemo(() => {
@@ -593,14 +624,34 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
     return shuffledEvents.filter((e) => !placedIds.has(e.id));
   }, [shuffledEvents, placedEvents]);
 
-  // Determine if grades 4+ show conflict phase
-  const showConflictPhase = useMemo(() => {
-    const grade = parseInt(data.gradeLevel.replace(/[^0-9]/g, ''), 10);
-    return grade >= 4 && !!data.elements.conflict;
-  }, [data.gradeLevel, data.elements.conflict]);
+  // Grades 4+ with a conflict add the analyze phase
+  const showConflictPhase = asksConflict(data);
+
+  // The learner's work as the check and the tutor read it.
+  const view: StoryMapView = {
+    selectedCharacters: characterOptions.map((c) => c.name).filter((n) => selectedCharacters.has(n)),
+    selectedSetting,
+    placed: Object.fromEntries(placedEvents.map((pe) => [pe.eventId, pe.arcPosition])),
+    selectedConflict,
+    marked: phase2Checked
+      ? {
+          right: placedEvents.filter((pe) => shown.events.find((e) => e.id === pe.eventId)?.arcPosition === pe.arcPosition).map((pe) => pe.eventId),
+          wrong: placedEvents.filter((pe) => shown.events.find((e) => e.id === pe.eventId)?.arcPosition !== pe.arcPosition).map((pe) => pe.eventId),
+        }
+      : null,
+  };
+
+  /** The activity's check of the open phase: counts the attempt and, on the workspace path, commits it with its miss. */
+  const commitPhase = (id: Phase): boolean => {
+    const item = { id } as StoryMapItem;
+    const correct = storyMapCorrect(item, shown, view);
+    progress.commitCheck(describeStoryWork(item, shown, view), correct, correct ? undefined : storyMapMiss(item, shown, view));
+    return correct;
+  };
 
   // Phase helpers
   const isPhaseComplete = (p: Phase): boolean => {
+    if (tutorOwned) return progress.results.some((r) => r.challengeId === p && r.correct);
     switch (p) {
       case 'identify':
         return phase1Checked;
@@ -614,11 +665,47 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
   };
 
   // ============================================================================
+  // Phase clearing (a fresh item, or Try again on the workspace path)
+  // ============================================================================
+
+  const clearIdentify = () => {
+    setSelectedCharacters(new Set());
+    setSelectedSetting(null);
+    setPhase1Checked(false);
+  };
+  const clearSequence = () => {
+    setPhase2Checked(false);
+    setShowZoneFlash(false);
+    if (zoneFlashTimer.current) {
+      clearTimeout(zoneFlashTimer.current);
+      zoneFlashTimer.current = null;
+    }
+    setPlacedEvents([]);
+    setSelectedEventId(null);
+    setActiveDropZone(null);
+  };
+  const clearAnalyze = () => {
+    setSelectedConflict(null);
+    setPhase3Checked(false);
+  };
+  // Only the opened phase's own work is cleared: the earlier phases' answers stay for the record.
+  const clearPhase = (id: Phase | undefined) => {
+    if (id === 'identify') clearIdentify();
+    else if (id === 'sequence') clearSequence();
+    else if (id === 'analyze') clearAnalyze();
+  };
+  // Try again keeps a practice story; a fresh item, or the full story back after practice, drops it.
+  openItem.current = (index, retry) => {
+    clearPhase(items[index]?.id);
+    if (!retry) setPractice(null);
+  };
+
+  // ============================================================================
   // Phase 1: Identify Handlers
   // ============================================================================
 
   const toggleCharacter = (name: string) => {
-    if (phase1Checked) return;
+    if (phase1Checked || learnerBlocked()) return;
     setSelectedCharacters((prev) => {
       const next = new Set(prev);
       if (next.has(name)) {
@@ -631,25 +718,20 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
   };
 
   const selectSetting = (id: string) => {
-    if (phase1Checked) return;
+    if (phase1Checked || learnerBlocked()) return;
     setSelectedSetting(id);
   };
 
   const checkPhase1 = () => {
+    if (learnerBlocked()) return;
     setPhase1Checked(true);
     setAttemptsCount((prev) => prev + 1);
+    const correct = commitPhase('identify');
 
-    // Check if all characters identified
-    const allCharsSelected = characterOptions.every((c) =>
-      selectedCharacters.has(c.name)
-    );
-    const noExtraChars = selectedCharacters.size === characterOptions.length;
-    const settingCorrect = selectedSetting === 'correct';
-
-    if (allCharsSelected && noExtraChars && settingCorrect) {
+    if (correct) {
       SoundManager.playCorrect();
-      // Auto-advance to phase 2
-      setTimeout(() => setPhase('sequence'), 1200);
+      // Scripted path: auto-advance to phase 2. The workspace's runtime moves on from the committed check.
+      if (!tutorOwned) setTimeout(() => setPhase('sequence'), 1200);
     } else {
       SoundManager.playIncorrect();
     }
@@ -660,12 +742,12 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
   // ============================================================================
 
   const handleEventClick = (eventId: string) => {
-    if (hasSubmitted || phase2Checked) return;
+    if (hasSubmitted || phase2Checked || learnerBlocked()) return;
     setSelectedEventId(selectedEventId === eventId ? null : eventId);
   };
 
   const handleArcZoneClick = (zoneKey: ArcPosition) => {
-    if (hasSubmitted || phase2Checked) return;
+    if (hasSubmitted || phase2Checked || learnerBlocked()) return;
 
     if (selectedEventId) {
       SoundManager.snap();
@@ -703,11 +785,12 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
   };
 
   const handleRemoveEvent = (eventId: string) => {
-    if (hasSubmitted || phase2Checked) return;
+    if (hasSubmitted || phase2Checked || learnerBlocked()) return;
     setPlacedEvents((prev) => prev.filter((pe) => pe.eventId !== eventId));
   };
 
   const checkPhase2 = () => {
+    if (learnerBlocked()) return;
     setPhase2Checked(true);
     setAttemptsCount((prev) => prev + 1);
 
@@ -715,19 +798,11 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
     setShowZoneFlash(true);
     zoneFlashTimer.current = setTimeout(() => setShowZoneFlash(false), 900);
 
-    // Compute correctness
-    let allCorrect = true;
-    placedEvents.forEach((pe) => {
-      const eventData = data.events.find((e) => e.id === pe.eventId);
-      if (!eventData || eventData.arcPosition !== pe.arcPosition) {
-        allCorrect = false;
-      }
-    });
+    const correct = commitPhase('sequence');
 
-    const allPlaced = placedEvents.length === data.events.length;
-
-    if (allCorrect && allPlaced) {
+    if (correct) {
       SoundManager.playCorrect();
+      if (tutorOwned) return;
       if (showConflictPhase) {
         setTimeout(() => setPhase('analyze'), 1200);
       } else {
@@ -744,29 +819,32 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
   // ============================================================================
 
   const selectConflictType = (type: string) => {
-    if (phase3Checked) return;
+    if (phase3Checked || learnerBlocked()) return;
     setSelectedConflict(type);
   };
 
   const checkPhase3 = () => {
+    if (learnerBlocked()) return;
     setPhase3Checked(true);
     setAttemptsCount((prev) => prev + 1);
-    handleFinalSubmit();
+    const correct = commitPhase('analyze');
+    if (correct) SoundManager.playCorrect();
+    else SoundManager.playIncorrect();
+    // Scripted path: the analysis is the last step either way. The workspace path reopens a miss.
+    if (!tutorOwned) handleFinalSubmit();
   };
 
   // ============================================================================
   // Final Submission
   // ============================================================================
 
-  const handleFinalSubmit = () => {
-    if (hasSubmitted) return;
-
+  const buildMetrics = (totalAttempts: number, overallAccuracy?: number): { metrics: StoryMapMetrics; overallSuccess: boolean; totalScore: number } => {
     const completionTime = Date.now() - startTime;
+    const realNames = data.elements.characters.map((c) => c.name);
 
     // Phase 1 metrics
-    const charactersCorrect = characterOptions.every((c) =>
-      selectedCharacters.has(c.name)
-    );
+    const charactersCorrect = realNames.every((n) => selectedCharacters.has(n))
+      && selectedCharacters.size === realNames.length;
     const settingCorrect = selectedSetting === 'correct';
 
     // Phase 2 metrics
@@ -807,7 +885,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
       ? { identify: 0.25, sequence: 0.5, analyze: 0.25 }
       : { identify: 0.3, sequence: 0.7, analyze: 0 };
 
-    const totalScore = Math.round(
+    const totalScore = overallAccuracy ?? Math.round(
       identifyScore * weights.identify +
         sequenceScore * weights.sequence +
         analyzeScore * weights.analyze
@@ -826,65 +904,102 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
 
       // Phase 1
       charactersIdentified: selectedCharacters.size,
-      totalCharacters: characterOptions.length,
+      totalCharacters: realNames.length,
       charactersCorrect,
       settingCorrect,
-      identifyPhaseComplete: phase1Checked,
+      identifyPhaseComplete: tutorOwned ? isPhaseComplete('identify') : phase1Checked,
 
       // Phase 2
       totalEvents: data.events.length,
       eventsPlaced: placedEvents.length,
       eventsCorrectlyPlaced: eventsCorrectCount,
       allEventsCorrect,
-      sequencePhaseComplete: phase2Checked,
+      sequencePhaseComplete: tutorOwned ? isPhaseComplete('sequence') : phase2Checked,
       eventPlacementResults: eventResults,
 
       // Phase 3
       conflictTypeCorrect: conflictCorrect,
       selectedConflictType: selectedConflict || undefined,
       correctConflictType: data.elements.conflict?.type,
-      analyzePhaseComplete: showConflictPhase ? phase3Checked : true,
+      analyzePhaseComplete: showConflictPhase ? (tutorOwned ? isPhaseComplete('analyze') : phase3Checked) : true,
 
       // Overall
-      totalAttempts: attemptsCount,
+      totalAttempts,
       completionTimeMs: completionTime,
       overallAccuracy: totalScore,
     };
+    return { metrics, overallSuccess, totalScore };
+  };
 
-    submitResult(overallSuccess, totalScore, metrics, {
-      studentWork: {
-        selectedCharacters: Array.from(selectedCharacters),
-        selectedSetting,
-        placedEvents,
-        selectedConflict,
-      },
-    });
+  const studentWork = () => ({
+    selectedCharacters: Array.from(selectedCharacters),
+    selectedSetting,
+    placedEvents,
+    selectedConflict,
+  });
+
+  /** Scripted path: one submission for the whole map. */
+  const handleFinalSubmit = () => {
+    if (hasSubmitted || tutorOwned) return;
+    const { metrics, overallSuccess, totalScore } = buildMetrics(attemptsCount + 1);
+    submitResult(overallSuccess, totalScore, metrics, { studentWork: studentWork() });
+  };
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false) return;
+    const { metrics } = buildMetrics(result.attemptsCount, result.accuracy);
+    submitResult(result.passed, result.accuracy, metrics,
+      { studentWork: studentWork(), challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
   };
 
   // ============================================================================
-  // Reset
+  // Reset (scripted path)
   // ============================================================================
 
   const handleReset = () => {
     setPhase('identify');
     setShowPassage(true);
-    setSelectedCharacters(new Set());
-    setSelectedSetting(null);
-    setPhase1Checked(false);
-    setSelectedEventId(null);
-    setPlacedEvents([]);
-    setActiveDropZone(null);
-    setPhase2Checked(false);
-    setShowZoneFlash(false);
-    if (zoneFlashTimer.current) {
-      clearTimeout(zoneFlashTimer.current);
-      zoneFlashTimer.current = null;
-    }
-    setSelectedConflict(null);
-    setPhase3Checked(false);
+    clearIdentify();
+    clearSequence();
+    clearAnalyze();
     setAttemptsCount(0);
     resetAttempt();
   };
+
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !sessionItem || workspaceDone) return;
+    const scene = workspaceScene(sessionItem, shown, view);
+    const levers = itemLevers;
+    const onScreen = practice ? ''
+      : storyMapLeverFacts(sessionItem, data, levers.filter((l) => l.kind === 'help' && l.pulled).map((l) => l.id));
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id: string) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this part of the story map.`;
+        if (lever.pulled) return `${id} is already on screen.`;
+        const next = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceFor(sessionItem, data);
+          if (!easier) return 'There is no shorter practice story for this part.';
+          setLeverState(next); setPractice(easier); clearPhase(sessionItem.id);
+          return { practice: practiceAssignment(sessionItem, easier) };
+        }
+        setLeverState(next);
+        return true as const;
+      },
+      // Back to the full story, blank: the practice story is not the learner's work on it.
+      endPractice: () => { setPractice(null); clearPhase(sessionItem.id); },
+    };
+  });
 
   // ============================================================================
   // Render
@@ -903,11 +1018,11 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
 
   const currentPhaseLabel = phaseSteps.find((ps) => ps.key === phase)?.activeLabel || '';
 
-  // Phase 1 success condition (reused by feedback + advance button).
-  const phase1Success =
-    characterOptions.every((c) => selectedCharacters.has(c.name)) &&
-    selectedCharacters.size === characterOptions.length &&
-    selectedSetting === 'correct';
+  // Phase success conditions (reused by feedback + advance buttons), from the activity's own check.
+  const phase1Success = storyMapCorrect({ id: 'identify' }, shown, view);
+  const phase2Success = storyMapCorrect({ id: 'sequence' }, shown, view);
+  const phase3Success = storyMapCorrect({ id: 'analyze' }, shown, view);
+  const finished = hasSubmitted || workspaceDone;
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
@@ -915,9 +1030,9 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
   // chooses, checks, or advances.
   const pip = useWorkspacePipSurface({
     instanceId: instanceId || 'story-map',
-    scopeId: hasSubmitted ? null : phase,
+    scopeId: finished ? null : phase,
     label: 'The story and the story map',
-    solved: phase === 'identify' ? phase1Checked && phase1Success : phase === 'sequence' ? phase2Checked && placedEvents.length === data.events.length && placedEvents.every((pe) => data.events.find((e) => e.id === pe.eventId)?.arcPosition === pe.arcPosition) : phase3Checked && selectedConflict === data.elements.conflict?.type,
+    solved: phase === 'identify' ? phase1Checked && phase1Success : phase === 'sequence' ? phase2Checked && phase2Success : phase3Checked && phase3Success,
     tutorSpeaking: false,
   });
 
@@ -943,7 +1058,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
         {/* Phase Progress Indicator */}
         <div className="flex items-center gap-2 mt-4">
           {phaseSteps.map((step, idx) => {
-            const isActive = phase === step.key;
+            const isActive = phase === step.key && !finished;
             const isComplete = isPhaseComplete(step.key);
             const pillAccent: 'blue' | 'emerald' | null = isActive
               ? 'blue'
@@ -992,6 +1107,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
 
       <LuminaCardContent className="space-y-6">
         {/* Phase Instructions */}
+        {!workspaceDone && (
         <LuminaPrompt accent="blue">
           <p className="text-sm text-blue-200 font-medium">{currentPhaseLabel}</p>
           <p className="text-xs text-slate-400 mt-1">
@@ -1003,9 +1119,10 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
               'Based on the story, select the type of conflict the main character faces.'}
           </p>
         </LuminaPrompt>
+        )}
 
         {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !hasSubmitted && <div {...pip.dock} />}
+        {pip.store && !finished && <div {...pip.dock} />}
         <div {...pip.workspace} className="space-y-6">
         {/* Passage Section */}
         <div>
@@ -1031,19 +1148,22 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
             </svg>
           </LuminaButton>
 
+          {practice && (
+            <p className="text-xs text-amber-300 mb-1" data-practice>Practice story</p>
+          )}
           {showPassage && (
             <LuminaPanel>
               {/* Passage body — the reading surface; text kept bespoke. */}
               <h4 className="text-base font-semibold text-slate-100 mb-1">
-                {data.passage.title}
+                {shown.passage.title}
               </h4>
-              {data.passage.author && (
+              {shown.passage.author && (
                 <p className="text-xs text-slate-500 mb-3">
-                  by {data.passage.author}
+                  by {shown.passage.author}
                 </p>
               )}
               <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
-                {data.passage.text}
+                {shown.passage.text}
               </p>
             </LuminaPanel>
           )}
@@ -1052,7 +1172,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
         {/* ================================================================== */}
         {/* Phase 1: Identify Characters & Setting */}
         {/* ================================================================== */}
-        {phase === 'identify' && (
+        {phase === 'identify' && !workspaceDone && (
           <div className="space-y-5">
             {/* Characters */}
             <div>
@@ -1065,23 +1185,25 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {characterOptions.map((char) => {
                   const isSelected = selectedCharacters.has(char.name);
-                  const showResult = phase1Checked;
-                  const isMissed = showResult && !isSelected;
+                  // Only a correct check grades the tiles: a miss marks nothing, so it never shows which names
+                  // are characters (Try again clears the picks).
+                  const solved = phase1Checked && phase1Success;
 
                   // Graded selection tile — use the shared answer-state colors.
                   const stateClass = isSelected
-                    ? showResult
+                    ? solved
                       ? answerStateClasses.correct
                       : answerStateClasses.selected
-                    : showResult && isMissed
-                    ? `${accentSoftBorder.amber} bg-amber-500/5`
                     : answerStateClasses.idle;
 
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={char.name}
+                      aria-label={char.name}
+                      aria-pressed={isSelected}
                       onClick={() => toggleCharacter(char.name)}
-                      className={`p-3 rounded-lg border-2 transition-all duration-200 ${stateClass} ${
+                      className={`p-3 rounded-lg border-2 text-left transition-all duration-200 ${stateClass} ${
                         phase1Checked ? 'cursor-default' : 'cursor-pointer'
                       }`}
                     >
@@ -1089,7 +1211,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                         <span className="text-sm font-medium text-slate-100">
                           {char.name}
                         </span>
-                        {showResult && isSelected && (
+                        {solved && isSelected && (
                           <svg
                             className="w-4 h-4 text-emerald-400"
                             fill="none"
@@ -1105,8 +1227,12 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                           </svg>
                         )}
                       </div>
-                      <p className="text-xs text-slate-400">{char.description}</p>
-                      {showResult && (
+                      {/* A character's description and role print once the picks are right: printed before,
+                          they would mark which names are in the story. */}
+                      {solved && char.description && (
+                        <p className="text-xs text-slate-400">{char.description}</p>
+                      )}
+                      {solved && char.role && (
                         <LuminaBadge
                           accent={ROLE_ACCENT[char.role]}
                           className="mt-2 text-xs"
@@ -1114,11 +1240,34 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                           {char.role}
                         </LuminaBadge>
                       )}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
             </div>
+
+            {/* The help lever `character_count`: one empty person space per character, filled one per pick. It counts
+                picks and never marks which names. */}
+            {helpOn(COUNT_LEVER) && (
+              <div data-lever="character-count" aria-label="Character spaces" className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-slate-400">Characters in this story:</span>
+                {data.elements.characters.map((_, i) => (
+                  <span
+                    key={i}
+                    data-lever="character-space"
+                    data-filled={i < selectedCharacters.size ? 'true' : 'false'}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full border-2 text-lg ${
+                      i < selectedCharacters.size ? 'border-violet-400 bg-violet-500/20' : 'border-dashed border-white/20'
+                    }`}
+                  >
+                    <span aria-hidden="true" className={i < selectedCharacters.size ? '' : 'opacity-30'}>🧍</span>
+                  </span>
+                ))}
+                {selectedCharacters.size > data.elements.characters.length && (
+                  <span className="text-xs text-amber-300">More picks than spaces</span>
+                )}
+              </div>
+            )}
 
             {/* Setting */}
             <div>
@@ -1128,35 +1277,34 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {settingOptions.map((opt) => {
                   const isSelected = selectedSetting === opt.id;
-                  const showResult = phase1Checked;
+                  const solved = phase1Checked && phase1Success;
 
-                  // Graded single-select option — shared answer-state colors.
+                  // Graded single-select option — shared answer-state colors, only once the picks are right.
                   const stateClass = isSelected
-                    ? showResult
-                      ? opt.isCorrect
-                        ? answerStateClasses.correct
-                        : answerStateClasses.incorrect
+                    ? solved
+                      ? answerStateClasses.correct
                       : answerStateClasses.selected
-                    : showResult && opt.isCorrect
-                    ? `${accentSoftBorder.emerald} bg-emerald-500/5`
                     : answerStateClasses.idle;
 
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={opt.id}
+                      aria-label={opt.text}
+                      aria-pressed={isSelected}
                       onClick={() => selectSetting(opt.id)}
-                      className={`p-3 rounded-lg border-2 transition-all duration-200 ${stateClass} ${
+                      className={`p-3 rounded-lg border-2 text-left transition-all duration-200 ${stateClass} ${
                         phase1Checked ? 'cursor-default' : 'cursor-pointer'
                       }`}
                     >
                       <span className="text-sm text-slate-200">{opt.text}</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
-              {phase1Checked && selectedSetting === 'correct' && (
+              {phase1Checked && phase1Success && (
                 <p className="mt-2 text-xs text-slate-400">
-                  {data.elements.setting.description}
+                  {shown.elements.setting.description}
                 </p>
               )}
             </div>
@@ -1167,7 +1315,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                 action="check"
                 onClick={checkPhase1}
                 disabled={
-                  selectedCharacters.size === 0 || selectedSetting === null
+                  selectedCharacters.size === 0 || selectedSetting === null || (tutorOwned && progress.canAttempt === false)
                 }
               >
                 Check Answers
@@ -1185,23 +1333,19 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                 ) : (
                   <LuminaFeedbackCard status="incorrect">
                     Not quite right. Look at the passage again carefully.
-                    <div className="mt-3">
-                      <LuminaActionButton
-                        action="retry"
-                        onClick={() => {
-                          setPhase1Checked(false);
-                          setSelectedCharacters(new Set());
-                          setSelectedSetting(null);
-                        }}
-                      />
-                    </div>
+                    {/* The workspace's Try again is on the shell. */}
+                    {!tutorOwned && (
+                      <div className="mt-3">
+                        <LuminaActionButton action="retry" onClick={clearIdentify} />
+                      </div>
+                    )}
                   </LuminaFeedbackCard>
                 )}
               </div>
             )}
 
-            {/* Manual advance button (if they got it right) */}
-            {phase1Checked && phase1Success && (
+            {/* Manual advance button (if they got it right; scripted path) */}
+            {phase1Checked && phase1Success && !tutorOwned && (
               <LuminaActionButton
                 action="next"
                 onClick={() => setPhase('sequence')}
@@ -1215,21 +1359,21 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
         {/* ================================================================== */}
         {/* Phase 2: Sequence Events on Arc */}
         {/* ================================================================== */}
-        {phase === 'sequence' && (
+        {phase === 'sequence' && !workspaceDone && (
           <div className="space-y-5">
             {/* Story Arc SVG — bespoke interaction-surface canvas. */}
             <LuminaPanel className="overflow-hidden">
-              {data.structureType === 'bme' ? (
+              {shown.structureType === 'bme' ? (
                 <BMEArc
                   placedEvents={placedEvents}
-                  events={data.events}
+                  events={shown.events}
                   activeDropZone={activeDropZone}
                   isChecked={phase2Checked}
                 />
               ) : (
                 <StoryMountainArc
                   placedEvents={placedEvents}
-                  events={data.events}
+                  events={shown.events}
                   activeDropZone={activeDropZone}
                   isChecked={phase2Checked}
                 />
@@ -1241,9 +1385,19 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
               <LuminaSectionLabel accent="blue" size="sm" className="mb-3">
                 Story Arc Positions
               </LuminaSectionLabel>
+              {/* The help lever `arc_arrow`: which way the story runs along the parts, drawn on no event. */}
+              {helpOn(ARROW_LEVER) && (
+                <div data-lever="arc-arrow" aria-label="Story starts to story ends" className="mb-2 flex items-center gap-2 text-xs text-sky-300">
+                  <span aria-hidden="true">🚩</span>
+                  <span>Story starts</span>
+                  <span aria-hidden="true" className="h-0.5 flex-1 bg-gradient-to-r from-sky-400/60 to-sky-300" />
+                  <span aria-hidden="true">➜</span>
+                  <span>Story ends</span>
+                </div>
+              )}
               <div
                 className={`grid gap-2 ${
-                  data.structureType === 'bme'
+                  shown.structureType === 'bme'
                     ? 'grid-cols-3'
                     : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'
                 }`}
@@ -1256,7 +1410,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                   const zoneIsCorrect =
                     eventsInZone.length > 0 &&
                     eventsInZone.every((pe) => {
-                      const eventData = data.events.find(
+                      const eventData = shown.events.find(
                         (event) => event.id === pe.eventId,
                       );
                       return eventData?.arcPosition === zone.key;
@@ -1277,6 +1431,13 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                       <span className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                         {zone.label}
                       </span>
+                      {/* The help lever `part_pictures`: what this part of any story does, never an event. */}
+                      {helpOn(PARTS_LEVER) && (
+                        <span data-lever="part-picture" className="text-center text-xs text-slate-300">
+                          <span aria-hidden="true" className="mr-1 text-base">{partPicture(shown, zone.key).icon}</span>
+                          {partPicture(shown, zone.key).words}
+                        </span>
+                      )}
                       <LuminaDropZone
                         state={zoneState}
                         emptyPrompt={
@@ -1288,6 +1449,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                         tabIndex={phase2Checked ? -1 : 0}
                         aria-disabled={phase2Checked}
                         aria-label={`${zone.label} story arc position`}
+                        data-pip-object={`zone-${zone.key}`}
                         onClick={() => handleArcZoneClick(zone.key)}
                         onKeyDown={(event) => {
                           if (event.target !== event.currentTarget) return;
@@ -1310,7 +1472,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                         {eventsInZone.length > 0 ? (
                         <div className="space-y-1 w-full">
                           {eventsInZone.map((pe) => {
-                            const eventData = data.events.find(
+                            const eventData = shown.events.find(
                               (e) => e.id === pe.eventId
                             );
                             const isCorrect =
@@ -1339,6 +1501,8 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                                 </span>
                                 {!phase2Checked && (
                                   <button
+                                    type="button"
+                                    aria-label={`Take off: ${eventData?.text ?? pe.eventId}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleRemoveEvent(pe.eventId);
@@ -1394,11 +1558,14 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                       : answerStateClasses.idle;
 
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={event.id}
+                        aria-label={event.text}
+                        aria-pressed={isSelected}
                         onClick={() => handleEventClick(event.id)}
                         className={`
-                          p-3 rounded-lg border-2 transition-all duration-200 ${eventStateClass}
+                          p-3 rounded-lg border-2 text-left transition-all duration-200 ${eventStateClass}
                           ${phase2Checked ? 'cursor-default' : 'cursor-pointer'}
                         `}
                       >
@@ -1408,7 +1575,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                             Now click a position on the story arc above
                           </p>
                         )}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -1428,7 +1595,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
               <LuminaActionButton
                 action="check"
                 onClick={checkPhase2}
-                disabled={placedEvents.length !== data.events.length}
+                disabled={placedEvents.length !== shown.events.length || (tutorOwned && progress.canAttempt === false)}
               >
                 Check Sequence
               </LuminaActionButton>
@@ -1437,103 +1604,60 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
             {/* Phase 2 result feedback */}
             {phase2Checked && (
               <div className="space-y-2">
-                {(() => {
-                  let correct = 0;
-                  placedEvents.forEach((pe) => {
-                    const eventData = data.events.find(
-                      (e) => e.id === pe.eventId
-                    );
-                    if (
-                      eventData &&
-                      eventData.arcPosition === pe.arcPosition
-                    ) {
-                      correct++;
-                    }
-                  });
-                  const allCorrect =
-                    correct === data.events.length &&
-                    placedEvents.length === data.events.length;
-
-                  return allCorrect ? (
-                    <LuminaFeedbackCard status="correct">
-                      Perfect! You placed all events in the correct positions on
-                      the story arc.
-                    </LuminaFeedbackCard>
-                  ) : (
-                    <LuminaFeedbackCard status="incorrect">
-                      {correct} of {data.events.length} events are in the right
-                      place. Try again!
+                {phase2Success ? (
+                  <LuminaFeedbackCard status="correct">
+                    Perfect! You placed all events in the correct positions on
+                    the story arc.
+                  </LuminaFeedbackCard>
+                ) : (
+                  <LuminaFeedbackCard status="incorrect">
+                    {view.marked?.right.length ?? 0} of {shown.events.length} events are in the right
+                    place. Try again!
+                    {/* The workspace's Try again is on the shell. */}
+                    {!tutorOwned && (
                       <div className="mt-3">
-                        <LuminaActionButton
-                          action="retry"
-                          onClick={() => {
-                            setPhase2Checked(false);
-                            setShowZoneFlash(false);
-                            if (zoneFlashTimer.current) {
-                              clearTimeout(zoneFlashTimer.current);
-                              zoneFlashTimer.current = null;
-                            }
-                            setPlacedEvents([]);
-                            setSelectedEventId(null);
-                          }}
-                        />
+                        <LuminaActionButton action="retry" onClick={clearSequence} />
                       </div>
-                    </LuminaFeedbackCard>
-                  );
-                })()}
+                    )}
+                  </LuminaFeedbackCard>
+                )}
               </div>
             )}
 
-            {/* Manual advance button */}
-            {phase2Checked &&
-              showConflictPhase &&
-              (() => {
-                let correct = 0;
-                placedEvents.forEach((pe) => {
-                  const eventData = data.events.find(
-                    (e) => e.id === pe.eventId
-                  );
-                  if (
-                    eventData &&
-                    eventData.arcPosition === pe.arcPosition
-                  ) {
-                    correct++;
-                  }
-                });
-                return (
-                  correct === data.events.length &&
-                  placedEvents.length === data.events.length
-                );
-              })() && (
-                <LuminaActionButton
-                  action="next"
-                  onClick={() => setPhase('analyze')}
-                >
-                  Continue to Analysis →
-                </LuminaActionButton>
-              )}
+            {/* Manual advance button (scripted path) */}
+            {phase2Checked && showConflictPhase && phase2Success && !tutorOwned && (
+              <LuminaActionButton
+                action="next"
+                onClick={() => setPhase('analyze')}
+              >
+                Continue to Analysis →
+              </LuminaActionButton>
+            )}
           </div>
         )}
 
         {/* ================================================================== */}
         {/* Phase 3: Analyze (Conflict type) */}
         {/* ================================================================== */}
-        {phase === 'analyze' && showConflictPhase && (
+        {phase === 'analyze' && showConflictPhase && !workspaceDone && (
           <div className="space-y-5">
             <div>
               <LuminaSectionLabel accent="blue" size="sm" className="mb-3">
                 What type of conflict does the main character face?
               </LuminaSectionLabel>
-              {data.elements.conflict && (
+              {shown.elements.conflict && (
                 <p className="text-sm text-slate-400 mb-4">
-                  {data.elements.conflict.description}
+                  {shown.elements.conflict.description}
                 </p>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {Object.entries(CONFLICT_LABELS).map(([type, label]) => {
+                {conflictOptions(shown).map((type) => {
+                  const label = CONFLICT_LABELS[type];
                   const isSelected = selectedConflict === type;
                   const showResult = phase3Checked;
-                  const isCorrectAnswer = type === data.elements.conflict?.type;
+                  const isCorrectAnswer = type === shown.elements.conflict?.type;
+                  // The workspace reopens a miss, so a wrong check marks only the pick, never the answer.
+                  const revealKey = !tutorOwned || phase3Success;
 
                   let choiceState:
                     | 'idle'
@@ -1543,7 +1667,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                     | 'dimmed';
                   if (!showResult) {
                     choiceState = isSelected ? 'selected' : 'idle';
-                  } else if (isCorrectAnswer) {
+                  } else if (isCorrectAnswer && revealKey) {
                     choiceState = 'correct';
                   } else if (isSelected) {
                     choiceState = 'incorrect';
@@ -1554,6 +1678,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                   return (
                     <LuminaAnswerChoice
                       key={type}
+                      aria-label={label}
                       state={choiceState}
                       disabled={phase3Checked}
                       onClick={() => selectConflictType(type)}
@@ -1562,6 +1687,13 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
                       <span className="text-sm font-medium text-slate-200">
                         {label}
                       </span>
+                      {/* The help lever `conflict_pictures`: a picture on every choice, so none is marked. */}
+                      {helpOn(CONFLICT_PICTURES_LEVER) && (
+                        <span aria-hidden="true" data-lever="conflict-picture" className="mt-1 block text-xs text-slate-400">
+                          <span className="mr-1 text-base">{CONFLICT_PICTURES[type].icon}</span>
+                          {CONFLICT_PICTURES[type].words}
+                        </span>
+                      )}
                     </LuminaAnswerChoice>
                   );
                 })}
@@ -1573,7 +1705,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
               <LuminaActionButton
                 action="check"
                 onClick={checkPhase3}
-                disabled={selectedConflict === null}
+                disabled={selectedConflict === null || (tutorOwned && progress.canAttempt === false)}
               >
                 Check Answer
               </LuminaActionButton>
@@ -1582,15 +1714,19 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
             {/* Phase 3 result feedback */}
             {phase3Checked && (
               <div className="space-y-2">
-                {selectedConflict === data.elements.conflict?.type ? (
+                {phase3Success ? (
                   <LuminaFeedbackCard status="correct">
                     Correct! This is a{' '}
-                    {CONFLICT_LABELS[data.elements.conflict?.type || '']} conflict.
+                    {CONFLICT_LABELS[shown.elements.conflict!.type]} conflict.
+                  </LuminaFeedbackCard>
+                ) : tutorOwned ? (
+                  <LuminaFeedbackCard status="incorrect">
+                    Not quite. Think about who or what the main character struggles against.
                   </LuminaFeedbackCard>
                 ) : (
                   <LuminaFeedbackCard status="incorrect">
                     Not quite. The correct answer is{' '}
-                    {CONFLICT_LABELS[data.elements.conflict?.type || '']}.
+                    {shown.elements.conflict ? CONFLICT_LABELS[shown.elements.conflict.type] : ''}.
                   </LuminaFeedbackCard>
                 )}
               </div>
@@ -1603,7 +1739,7 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
 
         {/* Success / Final Section */}
         {/* ================================================================== */}
-        {hasSubmitted && (
+        {finished && (
           <LuminaFeedbackCard
             status="correct"
             label="Story Map Complete!"
@@ -1613,8 +1749,8 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
           </LuminaFeedbackCard>
         )}
 
-        {/* Action Buttons */}
-        {hasSubmitted && (
+        {/* Action Buttons (scripted path) */}
+        {hasSubmitted && !tutorOwned && (
           <div className="flex gap-3">
             <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
@@ -1623,5 +1759,9 @@ const StoryMap: React.FC<StoryMapProps> = ({ data, className = '' }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const StoryMap = withWorkspaceController<StoryMapProps, ProgressOptions<StoryMapItem>, Progress>(
+  'story-map', StoryMapSurface, useScriptedProgress, useWorkspaceProgressFor('story-map'));
 
 export default StoryMap;

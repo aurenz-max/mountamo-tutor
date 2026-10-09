@@ -52,8 +52,8 @@ export function renderLetterInkForJudge(strokes: TraceStroke[]): string {
 
 /** Null on any failure or after 12s; the caller then keeps its geometric verdict. */
 export async function judgeLetterDrawing(strokes: TraceStroke[], template: LetterTemplate,
-  challengeType: 'trace' | 'copy' | 'write'): Promise<LetterEvaluationResult | null> {
-  const imageBase64 = renderLetterInkForJudge(strokes);
+  challengeType: 'trace' | 'copy' | 'write', image?: string): Promise<LetterEvaluationResult | null> {
+  const imageBase64 = image ?? renderLetterInkForJudge(strokes);
   if (!imageBase64) return null;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 12000);

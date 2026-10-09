@@ -1,0 +1,142 @@
+{
+ "source": "qa/tutor-reports/light-shadow-lab-runtime-apply-payload-2026-10-09.json",
+ "primitiveId": "light-shadow-lab",
+ "evalMode": "apply",
+ "data": {
+  "title": "Shadow Sleuth: Decoding Time with Sun and Shadows",
+  "description": "Investigate how the sun's changing position in the sky alters the direction and length of shadows, and use your detective skills to reverse-engineer the time of day just by looking at a shadow!",
+  "theme": "science_lab",
+  "gradeLevel": "4",
+  "objects": [
+   {
+    "type": "stick_figure",
+    "height": 5,
+    "label": "Lab Assistant"
+   },
+   {
+    "type": "flagpole",
+    "height": 8,
+    "label": "Sun Tracker"
+   }
+  ],
+  "sunPositions": [
+   {
+    "time": "8:00 AM",
+    "altitude": 20,
+    "azimuth": 25
+   },
+   {
+    "time": "10:00 AM",
+    "altitude": 40,
+    "azimuth": 65
+   },
+   {
+    "time": "12:00 PM",
+    "altitude": 65,
+    "azimuth": 90
+   },
+   {
+    "time": "2:00 PM",
+    "altitude": 40,
+    "azimuth": 120
+   },
+   {
+    "time": "4:00 PM",
+    "altitude": 20,
+    "azimuth": 155
+   }
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "apply",
+    "instruction": "The shadow of the flagpole is very long and points toward the west (right). What time of day could this be?",
+    "sunPosition": {
+     "time": "8:00 AM",
+     "altitude": 20,
+     "azimuth": 25
+    },
+    "correctShadow": {
+     "direction": "W",
+     "relativeLength": "long"
+    },
+    "distractor0": "12:00 PM",
+    "distractor1": "2:00 PM",
+    "distractor2": "4:00 PM",
+    "hint": "Remember that when the sun is low in the sky, shadows stretch out to their maximum length."
+   },
+   {
+    "id": "c2",
+    "type": "apply",
+    "instruction": "Look at the shadow cast by the flagpole. It is medium in length and still points toward the west (right). Can you determine the time?",
+    "sunPosition": {
+     "time": "10:00 AM",
+     "altitude": 40,
+     "azimuth": 65
+    },
+    "correctShadow": {
+     "direction": "W",
+     "relativeLength": "medium"
+    },
+    "distractor0": "8:00 AM",
+    "distractor1": "12:00 PM",
+    "distractor2": "4:00 PM",
+    "hint": "As the morning progresses and the sun climbs higher, shadows get shorter than they were at sunrise."
+   },
+   {
+    "id": "c3",
+    "type": "apply",
+    "instruction": "The shadow is very short and points directly north (below the object). What time is indicated by this position?",
+    "sunPosition": {
+     "time": "12:00 PM",
+     "altitude": 65,
+     "azimuth": 90
+    },
+    "correctShadow": {
+     "direction": "N",
+     "relativeLength": "short"
+    },
+    "distractor0": "8:00 AM",
+    "distractor1": "10:00 AM",
+    "distractor2": "4:00 PM",
+    "hint": "When the sun reaches its highest point overhead, shadows are at their shortest."
+   },
+   {
+    "id": "c4",
+    "type": "apply",
+    "instruction": "The shadow has moved to the other side and is now medium in length, pointing toward the east (left). What time is it?",
+    "sunPosition": {
+     "time": "2:00 PM",
+     "altitude": 40,
+     "azimuth": 120
+    },
+    "correctShadow": {
+     "direction": "E",
+     "relativeLength": "medium"
+    },
+    "distractor0": "8:00 AM",
+    "distractor1": "12:00 PM",
+    "distractor2": "4:00 PM",
+    "hint": "Once the sun passes midday and moves toward the west, the shadows flip to point toward the east."
+   },
+   {
+    "id": "c5",
+    "type": "apply",
+    "instruction": "The shadow is very long and points sharply toward the east (left). Using your knowledge of the sun's path, identify the time.",
+    "sunPosition": {
+     "time": "4:00 PM",
+     "altitude": 20,
+     "azimuth": 155
+    },
+    "correctShadow": {
+     "direction": "E",
+     "relativeLength": "long"
+    },
+    "distractor0": "8:00 AM",
+    "distractor1": "10:00 AM",
+    "distractor2": "12:00 PM",
+    "hint": "As the sun gets low in the western sky near the end of the day, shadows lengthen dramatically again."
+   }
+  ]
+ }
+}

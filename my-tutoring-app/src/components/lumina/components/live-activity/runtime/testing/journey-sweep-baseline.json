@@ -131,5 +131,13 @@
   },
   "decodable-reader.read_along": {
     "J13-help-lever-keeps-item": "by design 10-09: story_region quotes the story, the stimulus already on screen; the key is a story word. Not a leak."
+  },
+  "letter-workshop.copy": {
+    "J10-clean-record": "docs/contracts/letter-workshop.md: copy/write sessions are localOnly (provisional formation scoring, no adaptive record until /student-data-loop calibration; user ruling owed)",
+    "J11-recovery-record": "docs/contracts/letter-workshop.md: copy/write sessions are localOnly (provisional formation scoring, no adaptive record until /student-data-loop calibration; user ruling owed)"
+  },
+  "letter-workshop.write": {
+    "J10-clean-record": "docs/contracts/letter-workshop.md: copy/write sessions are localOnly (provisional formation scoring, no adaptive record until /student-data-loop calibration; user ruling owed)",
+    "J11-recovery-record": "docs/contracts/letter-workshop.md: copy/write sessions are localOnly (provisional formation scoring, no adaptive record until /student-data-loop calibration; user ruling owed)"
   }
 }

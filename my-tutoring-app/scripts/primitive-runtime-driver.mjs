@@ -169,7 +169,26 @@ const PERFORM = {
   // Strokes on the canvas, in its own pixel coordinates: its client rect is pinned to its size.
   // `mousemove` is a continuous event, so React schedules its render rather than flushing it:
   // each move yields a task, as a real pointer does, or `mouseup` reads a one-point stroke.
-  draw: async ({ strokes }) => {
+  draw: async ({ strokes, target }) => {
+    if (target) {
+      // An SVG drawn on with pointer events, in its viewBox coordinates: identity screen matrix, no-op pointer capture.
+      const svg = document.querySelector(`[data-pip-object="${target}"]`);
+      if (!svg) throw new Error('No ' + target + ' to draw on');
+      Object.assign(svg, { getScreenCTM: () => ({ inverse: () => ({}) }),
+        createSVGPoint: () => ({ x: 0, y: 0, matrixTransform() { return this; } }),
+        setPointerCapture: () => {}, hasPointerCapture: () => false, releasePointerCapture: () => {} });
+      const on = (type, p) => flushSync(() => {
+        const e = new dom.window.MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX: p.x, clientY: p.y });
+        Object.assign(e, { pointerId: 1, pointerType: 'pen', isPrimary: true });
+        svg.dispatchEvent(e);
+      });
+      for (const stroke of strokes) {
+        on('pointerdown', stroke[0]);
+        for (const p of stroke.slice(1)) { on('pointermove', p); await new Promise(resolve => setTimeout(resolve, 0)); }
+        on('pointerup', stroke[stroke.length - 1]);
+      }
+      return;
+    }
     const canvas = document.querySelector('canvas[data-pip-object="canvas"]') ?? document.querySelector('canvas');
     if (!canvas) throw new Error('No canvas to draw on');
     canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: canvas.width, height: canvas.height, right: canvas.width, bottom: canvas.height });

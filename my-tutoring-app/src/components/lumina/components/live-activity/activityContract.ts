@@ -54,10 +54,12 @@ import { wordBuilderLiveDomain } from './adapters/wordBuilderLive';
 import { wordSorterLiveDomain } from './adapters/wordSorterLive';
 import { pictureVocabularyLiveDomain } from './adapters/pictureVocabularyLive';
 import { letterSpotterLiveDomain } from './adapters/letterSpotterLive';
+import { letterWorkshopLiveDomain } from './adapters/letterWorkshopLive';
 import { decodableReaderLiveDomain } from './adapters/decodableReaderLive';
 import { interactiveBookLiveDomain } from './adapters/interactiveBookLive';
 import { storyBridgeLiveDomain } from './adapters/storyBridgeLive';
 import { storyRibbonLiveDomain } from './adapters/storyRibbonLive';
+import { storyMapLiveDomain } from './adapters/storyMapLive';
 import { additionSubtractionSceneLiveDomain } from './adapters/additionSubtractionSceneLive';
 import { threeDShapeExplorerLiveDomain } from './adapters/threeDShapeExplorerLive';
 import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
@@ -66,6 +68,8 @@ import { fastFactLiveDomain } from './adapters/fastFactLive';
 import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
 import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
 import { foodWebBuilderLiveDomain } from './adapters/foodWebBuilderLive';
+import { lifeCycleSequencerLiveDomain } from './adapters/lifeCycleSequencerLive';
+import { classificationSorterLiveDomain } from './adapters/classificationSorterLive';
 import { towerStackerLiveDomain } from './adapters/towerStackerLive';
 import { gearTrainBuilderLiveDomain } from './adapters/gearTrainBuilderLive';
 import { matterExplorerLiveDomain } from './adapters/matterExplorerLive';
@@ -81,6 +85,7 @@ import { readAloudStudioLiveDomain } from './adapters/readAloudStudioLive';
 import { oralSentenceStudioLiveDomain } from './adapters/oralSentenceStudioLive';
 import { statesOfMatterLiveDomain } from './adapters/statesOfMatterLive';
 import { solarSystemExplorerLiveDomain } from './adapters/solarSystemExplorerLive';
+import { lightShadowLabLiveDomain } from './adapters/lightShadowLabLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { trainYardLiveDomain } from './adapters/trainYardLive';
@@ -167,10 +172,12 @@ export const LIVE_ADAPTERS = {
   'word-sorter': workspaceAdapter('word-sorter', wordSorterLiveDomain),
   'picture-vocabulary': workspaceAdapter('picture-vocabulary', pictureVocabularyLiveDomain),
   'letter-spotter': workspaceAdapter('letter-spotter', letterSpotterLiveDomain),
+  'letter-workshop': workspaceAdapter('letter-workshop', letterWorkshopLiveDomain),
   'decodable-reader': workspaceAdapter('decodable-reader', decodableReaderLiveDomain),
   'interactive-book': workspaceAdapter('interactive-book', interactiveBookLiveDomain),
   'story-bridge': workspaceAdapter('story-bridge', storyBridgeLiveDomain),
   'story-ribbon': workspaceAdapter('story-ribbon', storyRibbonLiveDomain),
+  'story-map': workspaceAdapter('story-map', storyMapLiveDomain),
   'addition-subtraction-scene': workspaceAdapter('addition-subtraction-scene', additionSubtractionSceneLiveDomain),
   '3d-shape-explorer': workspaceAdapter('3d-shape-explorer', threeDShapeExplorerLiveDomain),
   'calendar-explorer': workspaceAdapter('calendar-explorer', calendarExplorerLiveDomain),
@@ -179,6 +186,8 @@ export const LIVE_ADAPTERS = {
   'push-pull-arena': workspaceAdapter('push-pull-arena', pushPullArenaLiveDomain),
   'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
   'food-web-builder': workspaceAdapter('food-web-builder', foodWebBuilderLiveDomain),
+  'life-cycle-sequencer': workspaceAdapter('life-cycle-sequencer', lifeCycleSequencerLiveDomain),
+  'classification-sorter': workspaceAdapter('classification-sorter', classificationSorterLiveDomain),
   'tower-stacker': workspaceAdapter('tower-stacker', towerStackerLiveDomain),
   'gear-train-builder': workspaceAdapter('gear-train-builder', gearTrainBuilderLiveDomain),
   'matter-explorer': workspaceAdapter('matter-explorer', matterExplorerLiveDomain),
@@ -194,6 +203,7 @@ export const LIVE_ADAPTERS = {
   'oral-sentence-studio': workspaceAdapter('oral-sentence-studio', oralSentenceStudioLiveDomain),
   'states-of-matter': workspaceAdapter('states-of-matter', statesOfMatterLiveDomain),
   'solar-system-explorer': workspaceAdapter('solar-system-explorer', solarSystemExplorerLiveDomain),
+  'light-shadow-lab': workspaceAdapter('light-shadow-lab', lightShadowLabLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'train-yard': workspaceAdapter('train-yard', trainYardLiveDomain),

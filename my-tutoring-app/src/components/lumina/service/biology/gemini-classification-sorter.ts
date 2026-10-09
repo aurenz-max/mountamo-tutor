@@ -3,6 +3,7 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
 import { type BiologyBand, biologyBandFromGrade, biologyBandFromProse } from './gradeBand';
+import { logEvalModeResolution } from '../evalMode';
 
 // Import the data type from the component (single source of truth)
 import { ClassificationSorterData } from "../../primitives/visual-primitives/biology/ClassificationSorter";
@@ -143,6 +144,8 @@ export const generateClassificationSorter = async (
   const { topic } = ctx;
   const scopeSection = buildScopePromptSection(ctx.scope);
   const config = ctx.raw as Partial<ClassificationSorterData>;
+  // One task identity, `sort` (each item into its group): the pin is logged, nothing is constrained.
+  logEvalModeResolution('ClassificationSorter', ctx.targetEvalMode, null);
 
   // Canonical-first, prose as fallback. See classificationBandFromGrade — the
   // band used to be looked up with `gradeBandMap[ctx.gradeContext]`, and
@@ -382,9 +385,10 @@ CRITICAL REMINDERS:
     const result = JSON.parse(text) as ClassificationSorterData;
 
     // Merge with any config overrides
+    const { targetEvalMode: _pin, ...overrides } = config as Partial<ClassificationSorterData> & { targetEvalMode?: string };
     const finalData: ClassificationSorterData = {
       ...result,
-      ...config,
+      ...overrides,
     };
 
     console.log('🔍 Classification Sorter Generated:', {

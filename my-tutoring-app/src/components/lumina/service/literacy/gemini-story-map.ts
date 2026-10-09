@@ -252,14 +252,11 @@ export function normalizeSupportTier(difficulty?: string): SupportTier | null {
 /**
  * Post-parse tier application (nothing tier-shaped reaches the prompt).
  *
- * Stamps `supportTier` for any valid tier and, at medium/hard, up to 1/2
- * VALIDATED distractor character names (L4 answer-form lever). The LLM always
- * proposes distractors (the schema is tier-independent); CODE decides how many
- * ship. Validation drops any proposal that (case-insensitively) matches a true
- * character name or appears anywhere in the passage text; if too few survive,
- * what's valid ships (degrade gracefully — names are NEVER invented in code).
- * Absent/unknown tier → the payload is returned untouched (byte-identical legacy);
- * easy stamps `supportTier` only (0 distractors = legacy truth-only pool).
+ * Stamps `supportTier` for any valid tier and ships VALIDATED distractor character names: 1 with no tier, easy or
+ * medium, 2 at hard (never 0: with only real characters printed, "select all" passes identify). The LLM always
+ * proposes distractors (the schema is tier-independent); CODE decides how many ship. Validation drops any proposal
+ * that (case-insensitively) matches a true character name or appears anywhere in the passage text. A shortfall is
+ * filled at render from a fixed code pool of names checked against the story (`characterChoices`).
  */
 export function applyStoryMapSupportTier(
   finalData: StoryMapData,
@@ -267,12 +264,12 @@ export function applyStoryMapSupportTier(
   difficulty?: string,
 ): StoryMapData {
   const tier = normalizeSupportTier(difficulty);
-  if (!tier) return finalData;
+  if (tier) finalData.supportTier = tier;
 
-  finalData.supportTier = tier;
-
-  const includeCount = tier === 'hard' ? 2 : tier === 'medium' ? 1 : 0;
-  if (includeCount === 0) return finalData;
+  // Never 0: with only real characters printed, "select all" passes identify (product rule 1). No tier, easy and
+  // medium ship 1 validated name, hard 2; the component fills any shortfall from a fixed code pool
+  // (`characterChoices` in storyMapWorkspace.ts).
+  const includeCount = tier === 'hard' ? 2 : 1;
 
   const trueNames = new Set(
     (finalData.elements?.characters ?? []).map((c) => c.name.toLowerCase().trim()),
@@ -521,9 +518,12 @@ Generate a complete, engaging story that is age-appropriate and educational. The
     }
 
     // Merge with any config overrides, excluding targetEvalMode
-    const { targetEvalMode: _targetEvalMode, ...configRest } = config || {};
+    // The raw distractor proposals and the tier string never reach component data: the tier decides how many
+    // VALIDATED distractors ship (`applyStoryMapSupportTier`), and the component prints every one it gets.
+    const { targetEvalMode: _targetEvalMode, difficulty, ...configRest } = config || {};
+    const { distractorCharacters: rawDistractors, ...story } = result;
     const finalData: StoryMapData = {
-      ...result,
+      ...story,
       ...configRest,
       // Preserve nested objects unless explicitly overridden
       passage: config?.passage || result.passage,
@@ -532,6 +532,7 @@ Generate a complete, engaging story that is age-appropriate and educational. The
       // Ensure correct structure type
       structureType: config?.structureType || structureType,
     };
+    applyStoryMapSupportTier(finalData, rawDistractors, difficulty);
 
     console.log("Story Map Generated:", {
       title: finalData.title,

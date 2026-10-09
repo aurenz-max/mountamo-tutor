@@ -10,6 +10,8 @@ import type { HabitatMiss, SpokenHabitatMiss } from '../../../primitives/visual-
 import type { HabitatBuildMiss } from '../../../primitives/visual-primitives/biology/habitatBuild';
 import { missLists } from './missLists';
 import type { FoodChainMiss, FoodWebMiss } from '../../../primitives/visual-primitives/biology/foodWebWorkspace';
+import type { CycleMiss } from '../../../primitives/visual-primitives/biology/lifeCycleSequencerWorkspace';
+import type { SortMiss } from '../../../primitives/visual-primitives/biology/classificationSorterWorkspace';
 
 export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   {
@@ -216,6 +218,30 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    // One task identity (/add-eval-modes single-mode): each item into its group by the rule. Backend prior 2.5.
+    evalModes: [
+      {
+        evalMode: 'sort',
+        label: 'Sort into Groups',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['sort'],
+        description: 'Put each organism or trait into the group the sorting rule says it belongs in.',
+      },
+    ],
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'One card at a time comes on stage under the sorting rule and the group cards. The learner taps the group '
+        + 'the card belongs in, and the activity checks it against the lesson’s key, which you are not told. The rule and '
+        + 'the group names are the question: say them freely, and say the card’s name aloud for a learner who cannot read. '
+        + 'Never name the group a card goes in, and never rule a group out ("it is not that one"). When the rule is a '
+        + 'feature a thing has or lacks, saying whether the card’s thing has it is the answer too. Ask what the learner '
+        + 'knows about the thing on the card and whether that fits the rule. You cannot tap or place for the learner.',
+      // Help levers only (`classificationSorterLevers.ts`); every miss is answered by card_clue or group_meaning.
+      levers: true,
+      // The activity's own check (`sortMiss`).
+      misses: missLists<SortMiss>({ sort: ['repeated_group', 'parent_group', 'sibling_group', 'wrong_group'] }),
+    },
     supportsEvaluation: true,
   },
   {
@@ -223,6 +249,30 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     description: 'Interactive temporal sequencing activity where students arrange stages of a biological process in correct temporal order. The CORE "what happens next?" primitive for biology. Covers organismal life cycles (butterfly metamorphosis, frog development, plant growth, human lifecycle), cellular processes (mitosis phases, meiosis, cell cycle), and ecological cycles (water cycle, carbon cycle, nitrogen cycle, rock cycle). PERFECT for teaching temporal relationships, transformation, developmental sequences, and understanding change over time. Features drag-and-drop stage cards with visual placeholders, descriptions, durations, and transition explanations. Linear layout for developmental sequences (embryo → adult), circular layout for repeating cycles (water cycle, seasons). Shows connecting arrows with transition explanations when correct. Includes misconception traps to address common errors. ESSENTIAL for K-8 biology whenever students need to understand sequences, life stages, cycles, or temporal processes.',
     constraints: 'Use for K-8 students learning life cycles, developmental sequences, or cyclical processes. K-2: Simple linear sequences (4-6 stages, basic vocabulary, observable changes like "seed grows into plant"). 3-5: More complex linear or circular cycles (5-7 stages, scientific terms introduced, mechanisms explained like "tadpole loses tail and grows legs"). 6-8: Complex cycles with molecular details (6-8 stages, cellular/molecular mechanisms, precise scientific terminology like "chromatin condenses into chromosomes"). Linear for one-direction processes (embryo to adult), circular for repeating cycles (water cycle, cell division). Always include stage durations, transition explanations, and one common misconception with correction. Perfect for any temporal biology topic: metamorphosis, germination, human development, cellular processes, biogeochemical cycles, seasonal changes, etc.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
+    // One task identity: order every stage of one process. Linear and circular payloads share the check.
+    evalModes: [
+      { evalMode: 'sequence', label: 'Sequence the stages', beta: 3.0, scaffoldingMode: 3, challengeTypes: ['sequence'],
+        description: 'Put every stage of a life cycle or biological process in the order it happens.' },
+    ],
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'The activity checks the order itself, and you are not told it. The cards are mixed up on purpose: when '
+        + 'you name them, name them in the order given, never sorted, and never list more than two stages in order (that '
+        + 'is the answer). Before the check, and after a wrong one, never say which stage comes first, next or last, which '
+        + 'slot a card belongs in, which two to trade, or what a stage turns into or came from. After a check each slot '
+        + 'shows a green check or a red cross; you may say how many are right, not where the red ones go. Describing '
+        + 'what is happening in one picture, and asking what a living thing can do at that stage or how big it is, is '
+        + 'teaching; linking two pictures (that vapor, then it), calling one the beginning or the end, or asking which '
+        + 'of two comes first is the answer. A Kindergarten to Grade 2 learner may not read: say the instruction and each card\'s name aloud, and '
+        + 'describe its picture from the card facts. On a cycle that starts again, slot 1 is the stage the item starts '
+        + 'from. You cannot place cards for the learner.',
+      // The activity's own check (`cycleMiss`), read from the placed order; `cycle_rotated` only on a circle.
+      misses: missLists<CycleMiss>({ sequence: ['cycle_rotated', 'reversed', 'adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order'] }),
+      // time_arrow, keep_right, fewer_stages (`lifeCycleSequencerLevers.ts`). `cycle_rotated` has none: which stage a
+      // circle starts from is the item's own choice, and a lever that shows it places a stage.
+      unanswered: { sequence: ['cycle_rotated'] },
+      levers: true,
+    },
     tutoring: {
       taskDescription:
         'Student is putting the stages of {{title}} in the order they really happen. '

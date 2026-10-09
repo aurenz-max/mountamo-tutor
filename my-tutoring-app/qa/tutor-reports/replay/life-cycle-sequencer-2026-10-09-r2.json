@@ -1,0 +1,1029 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    10
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    10
+   ],
+   "no_protocol_leak": [
+    0,
+    10
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "life-cycle-sequencer.sequence-circular",
+   "primitiveId": "life-cycle-sequencer",
+   "evalMode": "sequence",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "cycle",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Drag the stages into the correct order to show how water moves around Earth",
+      "leakTokens": [
+       "CYCLE_ORIENT",
+       "CYCLE_STAGE_PLACED",
+       "CYCLE_READ_ALOUD"
+      ],
+      "menu": [
+       "evaporationvaries from minutes to days",
+       "evaporation",
+       "more about evaporation",
+       "precipitationminutes to hours",
+       "precipitation",
+       "more about precipitation",
+       "condensationhours to days",
+       "condensation",
+       "more about condensation",
+       "collection and runoff",
+       "more about collection and runoff",
+       "1drop stage here",
+       "2drop stage here",
+       "3drop stage here",
+       "4drop stage here",
+       "place all cards"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's put the water cycle in order! We have four cards: Evaporation, Precipitation, Condensation, and Collection and Runoff. Tap or drag a card into slot 1 to begin.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Drag the stages into the correct order to show how water moves around Earth! Our cards are Evaporation, Precipitation, Condensation, and Collection and Runoff.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Drag the cards into the numbered slots to show the journey of water. Our cards show Evaporation, Precipitation, Condensation, and Collection and Runoff.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Drag the stages into the correct order to show how water moves around Earth! Our cards show Evaporation, Precipitation, Condensation, and Collection and Runoff.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Drag the cards into order to show how water moves around Earth. Our cards are Evaporation, Precipitation, Condensation, and Collection and Runoff!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "cycle",
+     "trigger": "The learner submitted \"Placed: slot 1 \\\"Condensation\\\", slot 2 \\\"Evaporation\\\", slot 3 \\\"Precipitation\\\", slot 4 \\\"Collection and Runoff\\\"\". The board checked it: not right.",
+     "miss": "adjacent_swap",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Drag the stages into the correct order to show how water moves around Earth",
+      "leakTokens": [
+       "CYCLE_ORIENT",
+       "CYCLE_STAGE_PLACED",
+       "CYCLE_READ_ALOUD"
+      ],
+      "menu": [
+       "evaporationvaries from minutes to days",
+       "evaporation",
+       "more about evaporation",
+       "precipitationminutes to hours",
+       "precipitation",
+       "more about precipitation",
+       "condensationhours to days",
+       "condensation",
+       "more about condensation",
+       "collection and runoff",
+       "more about collection and runoff",
+       "1drop stage here",
+       "2drop stage here",
+       "3drop stage here",
+       "4drop stage here",
+       "place all cards"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got 2 out of 4 slots right! Take a close look at the cards with red crosses and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have 2 slots right and 2 slots to fix! Take another look and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got two of the stages right! Take a look at the cards with red crosses and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got two of the slots right! Take a look at the cards with red crosses and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got two of the stages right! Take a look at the other two and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "cycle",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Drag the stages into the correct order to show how water moves around Earth",
+      "leakTokens": [
+       "CYCLE_ORIENT",
+       "CYCLE_STAGE_PLACED",
+       "CYCLE_READ_ALOUD"
+      ],
+      "menu": [
+       "evaporationvaries from minutes to days",
+       "evaporation",
+       "more about evaporation",
+       "precipitationminutes to hours",
+       "precipitation",
+       "more about precipitation",
+       "condensationhours to days",
+       "condensation",
+       "more about condensation",
+       "collection and runoff",
+       "more about collection and runoff",
+       "1drop stage here",
+       "2drop stage here",
+       "3drop stage here",
+       "4drop stage here",
+       "place all cards"
+      ]
+     },
+     "samples": [
+      {
+       "text": "In the Evaporation picture, the sun warms the water so it rises up into the air as invisible vapor. What do you see happening in the Condensation picture?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "In the Evaporation card, the sun warms up liquid water and it turns into invisible vapor that rises into the air. What do you see happening in the other cards?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "In the Evaporation picture, the warm sun heats the water until it rises up into the air as vapor. What do you see happening in the Condensation picture?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "In Evaporation, the warm sun heats liquid water into an invisible gas called water vapor that rises up into the sky. In Condensation, cold air turns that water vapor into tiny water droplets that form clouds. Which picture shows the sun warming up the water?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "In Evaporation, the warm sun turns liquid water into invisible gas rising into the air, while in Condensation, cold air turns that gas into tiny drops that make clouds. What happens to the water in the Evaporation picture?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "cycle",
+     "trigger": "The learner submitted \"Placed: slot 1 \\\"Evaporation\\\", slot 2 \\\"Condensation\\\", slot 3 \\\"Precipitation\\\", slot 4 \\\"Collection and Runoff\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Drag the stages into the correct order to show how water moves around Earth",
+      "leakTokens": [
+       "CYCLE_ORIENT",
+       "CYCLE_STAGE_PLACED",
+       "CYCLE_READ_ALOUD"
+      ],
+      "menu": [
+       "evaporationvaries from minutes to days",
+       "evaporation",
+       "more about evaporation",
+       "precipitationminutes to hours",
+       "precipitation",
+       "more about precipitation",
+       "condensationhours to days",
+       "condensation",
+       "more about condensation",
+       "collection and runoff",
+       "more about collection and runoff",
+       "1drop stage here",
+       "2drop stage here",
+       "3drop stage here",
+       "4drop stage here",
+       "place all cards"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You switched Evaporation and Condensation and got all four in the right order! Fantastic work solving the water cycle.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You switched Evaporation and Condensation into the right order and solved all 4 stages!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You switched the cards and put all four stages\u2014Evaporation, Condensation, Precipitation, and Collection and Runoff\u2014in the right order.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You switched Evaporation and Condensation to get all four stages in the right order.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You switched Evaporation and Condensation to fix the order and got all four stages right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "life-cycle-sequencer.sequence",
+   "primitiveId": "life-cycle-sequencer",
+   "evalMode": "sequence",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "cycle",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put the pictures in order from start to finish",
+      "leakTokens": [
+       "CYCLE_ORIENT",
+       "CYCLE_STAGE_PLACED",
+       "CYCLE_READ_ALOUD"
+      ],
+      "menu": [
+       "caterpillar2 weeks",
+       "caterpillar",
+       "more about caterpillar",
+       "butterfly2 to 4 weeks",
+       "butterfly",
+       "more about butterfly",
+       "chrysalis2 weeks",
+       "chrysalis",
+       "more about chrysalis",
+       "egg1 week",
+       "egg",
+       "more about egg",
+       "1",
+       "2",
+       "3",
+       "4",
+       "place all cards"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's put the pictures in order from start to finish! We have Caterpillar eating leaves, Butterfly drinking nectar, Chrysalis resting in a shell, and Egg on a leaf.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's put the pictures in order to show the life cycle of a butterfly! We have a Caterpillar munching leaves, a Butterfly flying with wings, a Chrysalis resting in a shell, and a tiny Egg on a leaf.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Put the pictures in order from start to finish! Our cards show a Caterpillar eating leaves, a Butterfly flying with sweet wings, a Chrysalis resting in its shell, and a tiny Egg on a leaf.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Put the pictures in order from start to finish! Our cards are Caterpillar eating leaves, Butterfly flying with wings, Chrysalis resting in a shell, and Egg on a leaf.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! We are looking at the life cycle of a butterfly. Our cards show a caterpillar eating leaves, a butterfly with wings, a resting chrysalis, and a tiny egg on a leaf. Tap a card to put it in the first slot!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "cycle",
+     "trigger": "The learner submitted \"Placed: slot 1 \\\"Caterpillar\\\", slot 2 \\\"Egg\\\", slot 3 \\\"Chrysalis\\\", slot 4 \\\"Butterfly\\\"\". The board checked it: not right.",
+     "miss": "adjacent_swap",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put the pictures in order from start to finish",
+      "leakTokens": [
+       "CYCLE_ORIENT",
+       "CYCLE_STAGE_PLACED",
+       "CYCLE_READ_ALOUD"
+      ],
+      "menu": [
+       "caterpillar2 weeks",
+       "caterpillar",
+       "more about caterpillar",
+       "butterfly2 to 4 weeks",
+       "butterfly",
+       "more about butterfly",
+       "chrysalis2 weeks",
+       "chrysalis",
+       "more about chrysalis",
+       "egg1 week",
+       "egg",
+       "more about egg",
+       "1",
+       "2",
+       "3",
+       "4",
+       "place all cards"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got two of the slots right! Take another look and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got two slots right! Take another look and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got two of the slots right! Tap the cards to move them and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have two slots right! Take another look and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got two of the spots right! Let's take another look and try again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "cycle",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put the pictures in order from start to finish",
+      "leakTokens": [
+       "CYCLE_ORIENT",
+       "CYCLE_STAGE_PLACED",
+       "CYCLE_READ_ALOUD"
+      ],
+      "menu": [
+       "caterpillar2 weeks",
+       "caterpillar",
+       "more about caterpillar",
+       "butterfly2 to 4 weeks",
+       "butterfly",
+       "more about butterfly",
+       "chrysalis2 weeks",
+       "chrysalis",
+       "more about chrysalis",
+       "egg1 week",
+       "egg",
+       "more about egg",
+       "1",
+       "2",
+       "3",
+       "4",
+       "place all cards"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Think about where a baby caterpillar begins growing before it starts eating leaves. What do you notice on the Egg card?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Inside the tiny egg on the leaf, a brand new baby caterpillar is just starting to grow. What do you think happens when that tiny egg hatches?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's look at the egg card, where a tiny baby caterpillar is just starting to grow inside. What do you think happens when a tiny creature is first starting out?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "What is growing inside that tiny egg on the leaf?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Think about where a baby caterpillar begins growing before it crawls out into the world.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "cycle",
+     "trigger": "The learner submitted \"Placed: slot 1 \\\"Egg\\\", slot 2 \\\"Caterpillar\\\", slot 3 \\\"Chrysalis\\\", slot 4 \\\"Butterfly\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Put the pictures in order from start to finish",
+      "leakTokens": [
+       "CYCLE_ORIENT",
+       "CYCLE_STAGE_PLACED",
+       "CYCLE_READ_ALOUD"
+      ],
+      "menu": [
+       "caterpillar2 weeks",
+       "caterpillar",
+       "more about caterpillar",
+       "butterfly2 to 4 weeks",
+       "butterfly",
+       "more about butterfly",
+       "chrysalis2 weeks",
+       "chrysalis",
+       "more about chrysalis",
+       "egg1 week",
+       "egg",
+       "more about egg",
+       "1",
+       "2",
+       "3",
+       "4",
+       "place all cards"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You fixed the order and put Egg, Caterpillar, Chrysalis, and Butterfly in place! You got all four right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You switched the cards to put Egg first, and now all four stages are in the right order!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You put Egg first, then Caterpillar, Chrysalis, and Butterfly, and fixed the order all by yourself!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the order and got all four stages right: Egg, Caterpillar, Chrysalis, and Butterfly! You figured out that the baby caterpillar starts inside the egg.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed your order and placed Egg, Caterpillar, Chrysalis, and Butterfly\u2014all four slots are correct!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

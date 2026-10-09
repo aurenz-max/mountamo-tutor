@@ -1,0 +1,71 @@
+{
+ "source": "qa/tutor-reports/story-map-runtime-heros_journey-payload-2026-10-09.json",
+ "primitiveId": "story-map",
+ "evalMode": "heros_journey",
+ "data": {
+  "title": "Story Map: The Lost Puppy's Journey Home",
+  "gradeLevel": "6",
+  "structureType": "heros-journey",
+  "passage": {
+   "title": "Barnaby's Brave Return",
+   "text": "One chilly autumn evening, a frightened golden retriever puppy named Barnaby found himself hopelessly lost in the dense, twisting shadows of Whispering Woods. Leaving behind the safety of his warm porch, Barnaby embarked on an epic quest to navigate the treacherous forest and reunite with his owner, Maya. As howling winds whispered through the ancient pines, the brave little pup faced his deepest fears of the dark and bravely crossed a rushing, turbulent stream. At the heart of the forest, Barnaby encountered a looming, thorny briar patch that completely blocked his only path forward, testing his resolve to the absolute limit. Summoning every ounce of courage, he carefully squeezed through a narrow opening in the briars, narrowly escaping the obstacles in his way. Finally, guided by the familiar scent of woodsmoke and Maya calling his name, Barnaby trotted triumphantly out of the tree line and leaped joyfully into her outstretched arms.",
+   "author": "Elena Vance"
+  },
+  "elements": {
+   "characters": [
+    {
+     "name": "Barnaby",
+     "description": "A brave golden retriever puppy on a quest to find his way home.",
+     "role": "protagonist"
+    },
+    {
+     "name": "Maya",
+     "description": "Barnaby's loving owner who searches for him.",
+     "role": "supporting"
+    }
+   ],
+   "setting": {
+    "place": "Whispering Woods",
+    "time": "One chilly autumn evening",
+    "description": "A dense, twisting forest filled with ancient pines, rushing streams, and looming briars."
+   },
+   "conflict": {
+    "type": "person-vs-nature",
+    "description": "Barnaby must battle the harsh elements, dark woods, and natural obstacles of the forest to return home."
+   }
+  },
+  "events": [
+   {
+    "id": "event1",
+    "text": "Barnaby finds himself lost in the dense shadows of Whispering Woods on a chilly autumn evening.",
+    "arcPosition": "beginning",
+    "order": 0
+   },
+   {
+    "id": "event2",
+    "text": "The brave pup faces his fears of the dark and crosses a rushing, turbulent stream.",
+    "arcPosition": "rising-action",
+    "order": 1
+   },
+   {
+    "id": "event3",
+    "text": "Barnaby encounters a looming, thorny briar patch that tests his resolve to the limit.",
+    "arcPosition": "climax",
+    "order": 2
+   },
+   {
+    "id": "event4",
+    "text": "He carefully squeezes through a narrow opening in the briars to escape the obstacle.",
+    "arcPosition": "falling-action",
+    "order": 3
+   },
+   {
+    "id": "event5",
+    "text": "Guided by woodsmoke and Maya's voice, Barnaby reunites with his owner joyfully.",
+    "arcPosition": "resolution",
+    "order": 4
+   }
+  ],
+  "objectiveGrade": "6"
+ }
+}
