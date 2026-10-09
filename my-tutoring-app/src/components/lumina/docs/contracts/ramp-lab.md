@@ -66,7 +66,26 @@ pause timing, tutor handoff, and tablet acceptance remain OPEN in HUMAN-CHECKS #
 The semantic harness sends synthetic learner answers and does not establish child
 audio recognition reliability.
 
+## In-item levers (2026-10-08, `/add-support-tiers`)
+
+`rampLabLevers.ts` declares the levers; `RampLab.levers.workspace.test.tsx` and `rampLabLevers.test.ts` hold each rule.
+
+- Help levers describe what is drawn, never the key: `both_ramps` draws both compare setups at one scale with no force,
+  arrow or mark; `test_log` lists only values the learner checked (refused before the first check); `same_or_changed`
+  tags every setting of setup B alike; `push_bars` draws the two recorded trials with no ranking words (refused before
+  both trials). Model levers (`model_pair`, `model_plan`, `model_explain`) use a condition the item does not touch, and
+  their `does` text forbids carrying the model over to the learner's setups.
+- Simplify levers (`lighter_load`, `fewer_angles`, `two_settings`) open an ungraded `<id>~simpler` item of the same mode
+  built by code, never the parent's setup or answer. A practice plan is checked at the plan (a fair plan is its success)
+  and leaves no `investigations` record. The full item comes back blank; a plan item keeps its rejected plans from before
+  the practice in its record.
+- A start from `supportTier` easy is not a recorded pull. The step buttons (Less/More push, Gentler/Steeper) move the same
+  value as the slider, one slider step at a time.
+- explain_from_trials publishes its known spoken misses (`rampSpokenMisses`: `reversed_comparison`, `said_same`,
+  `one_setup`) on the assignment; they are never sent to the tutor. Compare and explain have no simplify (see the report).
+
 ## Changelog
 
 - 2026-09-27 — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.
 - 2026-09-27 — handoff 20 A4 (`/add-support-tiers`, misses): the lab's checks name what a wrong answer shows (`rampMiss` in `rampLabWorkspace.ts`: compare_conditions 3, find_threshold 2, design_with_budget 2, plan_fair_test 3), listed in the catalog `teachingWorkspace.misses`. The verdicts, feedback text and the key the tutor is never told are unchanged; explain_from_trials stays spoken. Compatible: no requirement changed.
+- 2026-10-08 — `/add-support-tiers` (class sweep): levers on all five modes (section above), step buttons beside the push and angle sliders, explain spoken misses, `editable` on an investigation challenge (absent = all three settings, so existing payloads are unchanged). Verdicts, feedback, keys and the investigation record of an unassisted session are unchanged. Compatible: no requirement changed. Report: qa/eval-reports/ramp-lab-levers-2026-10-08.md.

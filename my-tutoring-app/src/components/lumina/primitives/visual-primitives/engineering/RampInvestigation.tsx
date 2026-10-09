@@ -4,6 +4,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { LuminaButton, LuminaFeedbackCard, LuminaPanel } from '../../../ui';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isFairRampTest, measureRampTrial, type RampInvestigationChallenge, type RampInvestigationResult, type RampScenario, type RampTrial } from './rampChallenges';
+import { pushBars, settingMarks, VARIABLE_NAME } from './rampLabLevers';
 
 const surfaces = { none: 'Frictionless', low: 'Smooth', medium: 'Grippy', high: 'Rough' };
 
@@ -73,8 +74,14 @@ export type InvestigationEvidence = Omit<RampInvestigationResult, 'solved' | 'fi
  * (`onRecord`), and an explanation is spoken to the tutor once `phase` reaches `explain`.
  */
 export default function RampInvestigation({ challenge, supportTier, canAttempt, credited, onPhase, onPlanChecked,
-  onRecord, onEvidence, onHearQuestion }: {
+  onRecord, onEvidence, onHearQuestion, showMarks = false, showBars = false, priorPlanAttempts }: {
   challenge: RampInvestigationChallenge; supportTier?: 'easy' | 'medium' | 'hard';
+  /** `same_or_changed` lever: each setting of setup B is tagged same as A or changed. */
+  showMarks?: boolean;
+  /** `push_bars` lever: one bar per recorded trial beside the notebook. */
+  showBars?: boolean;
+  /** Plans rejected before a practice item replaced this one: they stay in the record when it comes back. */
+  priorPlanAttempts?: RampInvestigationResult['planAttempts'];
   /** The learner may act (false while a checked miss waits for Try again). */
   canAttempt: boolean;
   /** The workspace credited this item. */
@@ -88,7 +95,7 @@ export default function RampInvestigation({ challenge, supportTier, canAttempt, 
   const planning = challenge.mode === 'plan_fair_test';
   const [setupB, setSetupB] = useState(challenge.scenarios.b);
   const [phase, setPhase] = useState<InvestigationPhase>(planning ? 'plan' : 'predict');
-  const [planAttempts, setPlanAttempts] = useState<RampInvestigationResult['planAttempts']>([]);
+  const [planAttempts, setPlanAttempts] = useState<RampInvestigationResult['planAttempts']>(() => priorPlanAttempts ?? []);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<'a' | 'b' | 'same' | null>(null);
   const [running, setRunning] = useState<'a' | 'b' | null>(null);
@@ -115,6 +122,11 @@ export default function RampInvestigation({ challenge, supportTier, canAttempt, 
     onPlanChecked(fair, setupB);
   }
   const measurementsComplete = trials.length === 2;
+  const editable = new Set(challenge.editable ?? ['angle', 'mass', 'surface']);
+  const marks = settingMarks(challenge.scenarios.a, setupB);
+  const mark = (v: 'angle' | 'mass' | 'surface') => showMarks && planning
+    ? <span data-lever="setting-mark" className={`mt-1 block text-xs ${marks[v] === 'changed' ? 'text-amber-300' : 'text-slate-400'}`}>{marks[v]}</span> : null;
+  const bars = showBars ? pushBars(challenge, trials) : [];
   return <fieldset disabled={!canAttempt} className="m-0 min-w-0 space-y-5 border-0 p-0" data-testid="ramp-investigation">
     <p className="text-sm text-cyan-200">{phase === 'plan' ? '1 · Set up a fair comparison' : phase === 'predict' ? '2 · Make a prediction' : phase === 'test' ? '3 · Collect your evidence' : phase === 'explain' ? '4 · Explain from evidence' : 'Investigation recorded'}</p>
     {supportTier !== 'hard' && <p className="text-sm text-slate-300">{phase === 'plan' ? 'Keep the box type the same. Change only the condition you are investigating.' : 'The test bench raises the push in 0.5 N steps until the box moves. Record both setups before drawing a conclusion.'}</p>}
@@ -127,12 +139,15 @@ export default function RampInvestigation({ challenge, supportTier, canAttempt, 
             setTrials(previous => previous.some(t => t.side === trial.side) ? previous : [...previous, trial]); setRunning(null); SoundManager.tick();
           }} />
           {side === 'b' && planning && <fieldset disabled={phase !== 'plan'} className="grid grid-cols-3 gap-2 text-sm text-slate-200">
-            <label>Angle<select aria-label="Setup B angle" className="mt-1 block w-full rounded bg-slate-800 p-2" value={setupB.angle} onChange={e => { setSetupB({ ...setupB, angle: Number(e.target.value) }); setFeedback(null); }}>
-              {[15, 25, 35].map(n => <option key={n} value={n}>{n}°</option>)}</select></label>
-            <label>Mass<select aria-label="Setup B mass" className="mt-1 block w-full rounded bg-slate-800 p-2" value={setupB.loadWeight} onChange={e => { setSetupB({ ...setupB, loadWeight: Number(e.target.value) }); setFeedback(null); }}>
-              {[2, 4, 6].map(n => <option key={n} value={n}>{n} kg</option>)}</select></label>
-            <label>Surface<select aria-label="Setup B surface" className="mt-1 block w-full rounded bg-slate-800 p-2" value={setupB.frictionLevel} onChange={e => { setSetupB({ ...setupB, frictionLevel: e.target.value as RampScenario['frictionLevel'] }); setFeedback(null); }}>
-              {(['low', 'medium', 'high'] as const).map(s => <option key={s} value={s}>{surfaces[s]}</option>)}</select></label>
+            {editable.has('angle') ? <label>Angle<select aria-label="Setup B angle" className="mt-1 block w-full rounded bg-slate-800 p-2" value={setupB.angle} onChange={e => { setSetupB({ ...setupB, angle: Number(e.target.value) }); setFeedback(null); }}>
+              {[15, 25, 35].map(n => <option key={n} value={n}>{n}°</option>)}</select>{mark('angle')}</label>
+              : <p>Angle<span className="mt-1 block p-2 text-slate-400">{setupB.angle}° (fixed)</span></p>}
+            {editable.has('mass') ? <label>Mass<select aria-label="Setup B mass" className="mt-1 block w-full rounded bg-slate-800 p-2" value={setupB.loadWeight} onChange={e => { setSetupB({ ...setupB, loadWeight: Number(e.target.value) }); setFeedback(null); }}>
+              {[2, 4, 6].map(n => <option key={n} value={n}>{n} kg</option>)}</select>{mark('mass')}</label>
+              : <p>Mass<span className="mt-1 block p-2 text-slate-400">{setupB.loadWeight} kg (fixed)</span></p>}
+            {editable.has('surface') ? <label>Surface<select aria-label="Setup B surface" className="mt-1 block w-full rounded bg-slate-800 p-2" value={setupB.frictionLevel} onChange={e => { setSetupB({ ...setupB, frictionLevel: e.target.value as RampScenario['frictionLevel'] }); setFeedback(null); }}>
+              {(['low', 'medium', 'high'] as const).map(s => <option key={s} value={s}>{surfaces[s]}</option>)}</select>{mark('surface')}</label>
+              : <p>Surface<span className="mt-1 block p-2 text-slate-400">{surfaces[setupB.frictionLevel]} (fixed)</span></p>}
           </fieldset>}
           {phase === 'test' && <LuminaButton tone="primary" disabled={running !== null || trials.some(t => t.side === side)} onClick={() => setRunning(side)}>Run trial {side.toUpperCase()}</LuminaButton>}
         </LuminaPanel>;
@@ -148,6 +163,13 @@ export default function RampInvestigation({ challenge, supportTier, canAttempt, 
     {trials.length > 0 && <div className="overflow-x-auto"><table className="w-full text-left text-sm text-slate-200"><caption className="mb-2 text-left font-semibold text-white">Your trial notebook</caption><thead><tr><th className="p-2">Setup</th><th className="p-2">Last still</th><th className="p-2">First moving</th></tr></thead><tbody>
       {[...trials].sort((a, b) => a.side.localeCompare(b.side)).map(trial => <tr key={trial.side} className="border-t border-white/10"><th className="p-2">{trial.side.toUpperCase()}</th><td className="p-2">{trial.lastStillForce.toFixed(1)} N</td><td className="p-2">{trial.firstMovingForce.toFixed(1)} N</td></tr>)}
     </tbody></table></div>}
+    {bars.length > 0 && <div data-lever="push-bars" className="space-y-2" aria-label="First moving push of each trial">
+      {bars.map(bar => <div key={bar.side} className="flex items-center gap-3 text-sm text-slate-200">
+        <span className="w-36 shrink-0">{bar.side.toUpperCase()} · {VARIABLE_NAME[challenge.variable]} {bar.label}</span>
+        <span className="h-4 rounded bg-cyan-400/70" style={{ width: `${Math.max(bar.widthPercent, 4) * 0.6}%` }} />
+        <span className="font-mono">{bar.push.toFixed(1)} N</span>
+      </div>)}
+    </div>}
     {phase === 'test' && measurementsComplete && <LuminaButton tone="primary" onClick={() => {
       if (planning) { setPhase('done'); onRecord(evidence()); } else setPhase('explain');
     }}>{planning ? 'Record investigation' : 'Explain my results'}</LuminaButton>}

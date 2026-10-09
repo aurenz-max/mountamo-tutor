@@ -57,6 +57,8 @@ import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
 import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
 import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
 import { foodWebBuilderLiveDomain } from './adapters/foodWebBuilderLive';
+import { towerStackerLiveDomain } from './adapters/towerStackerLive';
+import { gearTrainBuilderLiveDomain } from './adapters/gearTrainBuilderLive';
 import { matterExplorerLiveDomain } from './adapters/matterExplorerLive';
 import { moleculeConstructorLiveDomain } from './adapters/moleculeConstructorLive';
 import { genreExplorerLiveDomain } from './adapters/genreExplorerLive';
@@ -153,6 +155,8 @@ export const LIVE_ADAPTERS = {
   'push-pull-arena': workspaceAdapter('push-pull-arena', pushPullArenaLiveDomain),
   'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
   'food-web-builder': workspaceAdapter('food-web-builder', foodWebBuilderLiveDomain),
+  'tower-stacker': workspaceAdapter('tower-stacker', towerStackerLiveDomain),
+  'gear-train-builder': workspaceAdapter('gear-train-builder', gearTrainBuilderLiveDomain),
   'matter-explorer': workspaceAdapter('matter-explorer', matterExplorerLiveDomain),
   'molecule-constructor': workspaceAdapter('molecule-constructor', moleculeConstructorLiveDomain),
   'genre-explorer': workspaceAdapter('genre-explorer', genreExplorerLiveDomain),

@@ -1,0 +1,91 @@
+{
+ "source": "qa/tutor-reports/ramp-lab-runtime-find_threshold-payload-2026-10-09.json",
+ "primitiveId": "ramp-lab",
+ "evalMode": "find_threshold",
+ "data": {
+  "investigationVariable": "mixed",
+  "title": "Loading Dock Challenge: Find the Threshold!",
+  "description": "Run controlled trials to test how changing the ramp angle and surface affects the push needed to move your load.",
+  "rampLength": 10,
+  "rampAngle": 20,
+  "adjustableAngle": true,
+  "loadWeight": 3,
+  "loadType": "wheel",
+  "showMeasurements": true,
+  "frictionLevel": "low",
+  "theme": "loading_dock",
+  "allowPush": true,
+  "customLoadIcon": null,
+  "customLoadLabel": null,
+  "pushForce": 0,
+  "showForceArrows": false,
+  "showMA": false,
+  "challenges": [
+   {
+    "id": "threshold-wheel-gentle",
+    "title": "Find the First Moving Force",
+    "mode": "find_threshold",
+    "scenario": {
+     "label": "Light wheel",
+     "angle": 18,
+     "loadWeight": 3,
+     "loadType": "wheel",
+     "frictionLevel": "low"
+    },
+    "forceStep": 0.5,
+    "brief": "Find the smallest push setting that makes the wheel climb. Test carefully -- a larger force works, but is not the answer.",
+    "hint": "Start low, then narrow the gap between a force that fails and one that works.",
+    "explainOnSolve": "You found the threshold: the first slider step where push becomes greater than gravity plus friction."
+   },
+   {
+    "id": "threshold-box-medium",
+    "title": "Measure the Threshold",
+    "mode": "find_threshold",
+    "scenario": {
+     "label": "Crate on a ramp",
+     "angle": 30,
+     "loadWeight": 5,
+     "loadType": "box",
+     "frictionLevel": "medium"
+    },
+    "forceStep": 0.5,
+    "brief": "Find the least push that starts this crate moving uphill.",
+    "hint": "Use failed tests as evidence. Increase by smaller amounts when you get close.",
+    "explainOnSolve": "At the threshold, your push just exceeds the two forces opposing motion: downhill gravity and friction."
+   },
+   {
+    "id": "threshold-barrel-steep",
+    "title": "Test a Steeper Ramp",
+    "mode": "find_threshold",
+    "scenario": {
+     "label": "Barrel on a steep ramp",
+     "angle": 40,
+     "loadWeight": 4,
+     "loadType": "barrel",
+     "frictionLevel": "low"
+    },
+    "forceStep": 0.5,
+    "brief": "Measure the smallest push that will move the barrel up this steeper ramp.",
+    "hint": "A steep ramp sends more of gravity down the ramp, even when friction is low.",
+    "explainOnSolve": "The steeper angle raised the threshold because more of the barrel's weight acted downhill."
+   },
+   {
+    "id": "threshold-rough-crate",
+    "title": "Test a Rough Surface",
+    "mode": "find_threshold",
+    "scenario": {
+     "label": "Crate on a rough ramp",
+     "angle": 24,
+     "loadWeight": 4,
+     "loadType": "box",
+     "frictionLevel": "high"
+    },
+    "forceStep": 0.5,
+    "brief": "Find the minimum push for this rough-surface setup.",
+    "hint": "Both the slope and the rough surface oppose your push.",
+    "explainOnSolve": "This threshold includes both downhill gravity and the larger friction force from the rough surface."
+   }
+  ],
+  "gradeLevel": "3"
+ }
+}

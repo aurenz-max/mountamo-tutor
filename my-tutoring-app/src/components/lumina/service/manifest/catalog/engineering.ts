@@ -6,8 +6,10 @@
 
 import { ComponentDefinition } from '../../../types';
 import { JUDGED_AUDIO_INPUT } from '../../../hooks/judgedScriptContract';
-import type { RampMiss } from '../../../primitives/visual-primitives/engineering/rampLabWorkspace';
+import type { RampMiss, RampSpokenMiss } from '../../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { TRAIN_YARD_MISSES, type TrainYardMiss } from '../../../primitives/visual-primitives/engineering/trainYardWorkspace';
+import { TOWER_MISSES, type TowerMiss } from '../../../primitives/visual-primitives/engineering/towerWorkspace';
+import { GEAR_MISSES, type GearMiss } from '../../../primitives/visual-primitives/engineering/gearWorkspace';
 import { missLists } from './missLists';
 
 export const ENGINEERING_CATALOG: ComponentDefinition[] = [
@@ -15,8 +17,33 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
     id: 'lever-lab',
     description: 'Interactive lever/fulcrum simulation for teaching simple machines. Students explore balance, mechanical advantage, and force trade-offs by manipulating loads, fulcrum position, and effort force. Features multiple themes (seesaw, excavator, crowbar) to connect abstract physics to real-world tools. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for elementary engineering and physics.',
     constraints: 'Best for grades K-5. Use for simple machines, balance concepts, mechanical advantage, force multiplication. Themes adapt complexity: seesaw for K-2 (basic balance), excavator/crowbar for 3-5 (mechanical advantage). Supports both exploration (movable fulcrum) and problem-solving (fixed challenges).',
-    affordances: { representation: 'concrete', answers: ['manipulate'], role: ['visualize', 'apply'], minutes: 5 },
+    affordances: { representation: 'concrete', answers: ['manipulate', 'build'], role: ['visualize', 'apply'], minutes: 5 },
     supportsEvaluation: true,
+    // With no mode resolved the activity is the unjudged sandbox (drag loads, move the fulcrum, press the beam).
+    evalModes: [
+      {
+        evalMode: 'build_balance',
+        affordances: { answers: ['build'] },
+        label: 'Balance the Seesaw (open build)',
+        beta: 2.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['build_balance'],
+        description: 'Open build: a kid sits on the left of a seesaw held still by blocks; the student seats kids of their '
+          + 'choosing on the right, and at "I\'m done!" the blocks come away and code checks weight x distance on each side. '
+          + 'Many seatings pass (a heavy kid near the middle, two light kids far out); the next item asks for a different way. K-5.',
+      },
+      {
+        evalMode: 'build_lift',
+        affordances: { answers: ['build'] },
+        label: 'Lift the Rock (open build)',
+        beta: 3.2,
+        scaffoldingMode: 3,
+        challengeTypes: ['build_lift'],
+        description: 'Open build: a rock sits on the end of a bar; the student places the fulcrum and a helper lighter than the '
+          + 'rock, and code checks that the helper is across the fulcrum and helper weight x distance is at least rock weight '
+          + 'x distance. Any fulcrum close enough to the rock passes; the next item asks for a different fulcrum spot. Grades 3-5.',
+      },
+    ],
   },
   {
     id: 'pulley-system-builder',
@@ -84,12 +111,15 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         + 'to the push, using both trial results; a true comparison in their own words counts, and numbers are '
         + 'optional. A reversed comparison, one measurement alone, a slogan, or the question echoed back does not '
         + 'count. Never give the conclusion before an attempt. You cannot move sliders, pick setups or run trials.',
-      // The lab's own checks (`rampMiss`). explain_from_trials is spoken (handoff 20 Part B).
-      misses: missLists<RampMiss>({
+      // Every mode publishes levers (`rampLabLevers.ts`).
+      levers: true,
+      // The lab's own checks (`rampMiss`); explain_from_trials is spoken (`rampSpokenMisses`).
+      misses: missLists<RampMiss | RampSpokenMiss>({
         compare_conditions: ['harder_setup', 'same_for_different', 'one_for_same'],
         find_threshold: ['load_did_not_move', 'more_than_minimum'],
         design_with_budget: ['over_budget', 'not_steepest'],
         plan_fair_test: ['nothing_changed', 'other_condition', 'extra_condition'],
+        explain_from_trials: ['reversed_comparison', 'said_same', 'one_setup'],
       }),
     },
     tutoring: {
@@ -119,10 +149,62 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'gear-train-builder',
-    description: 'Interactive gear train sandbox for teaching speed/torque trade-offs fundamental to all machinery. Students place gears on a grid, connect them by proximity (auto-mesh), rotate driver gear, and watch followers spin. Count teeth and observe speed ratios. Build gear chains for specific ratios. Shows real-world connections: bicycle gears, clock mechanisms, wind-up toys, car transmissions. Features multiple themes (toy, machine, clock, bicycle) to connect engineering to everyday objects. Perfect for K-5 engineering and NGSS simple machines standards. ESSENTIAL for teaching gears, speed ratios, direction changes, and mechanical advantage.',
-    constraints: 'Best for grades K-5. Use for gears, speed ratios, direction changes, torque trade-offs. K-1: gears turn together (toy theme, free play). 1-2: direction changes with each gear (showDirection). 2-3: big gear turns small gear fast (showSpeedRatio). 3-4: counting teeth for ratios (showTeethCount). 4-5: design challenges with specific output speeds (targetRatio). Supports free exploration and guided design challenges.',
-    affordances: { representation: 'concrete', answers: ['build', 'manipulate'], role: ['visualize', 'apply'], minutes: 6 },
+    description: 'Build-a-gear-train challenge for teaching how gears pass motion along: every meshed gear turns the opposite way, a small gear driven by a big one turns faster, and gears in the middle change only the way, never the speed. Each session is 3 trains on an EMPTY track: the student taps gear sizes (8, 12, 16, 24, 32 teeth) to add gears to the end of the train, each meshing with the one before, and taps a gear to take it out. “I’m done!” turns the crank and the code checks the last gear: which way it turns, faster or slower than the first, or exactly how many times per turn of the first. Many trains pass. Real-world connections: clocks, bicycles, wind-up toys, mills. Perfect for K-5 engineering and NGSS simple machines. ESSENTIAL for teaching gears, direction changes and speed ratios.',
+    constraints: 'Best for grades K-5. Code builds every train target (way, speed, ratio, number of gears) from the lesson grade; the manifest must NOT supply gears or ratios. K-1: which way the last gear turns, and faster or slower. Grades 2-3: way and faster or slower. Grades 4-5: faster or slower with a way, and exact ratios (2, 3, 4 times; once per 2 or 3 turns).',
+    affordances: { representation: 'concrete', answers: ['build'], role: ['visualize', 'apply'], minutes: 6 },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'The track starts empty. The learner taps a gear size to add a gear to the end of the train, where it meshes '
+        + 'with the gear before it, and taps a gear to take it out; the first gear has the crank. They press I’m done! and the '
+        + 'activity turns the crank and checks the last gear: which way it turns, and whether it turns faster or slower, or '
+        + 'the asked number of times, for each turn of the first. Many trains pass. Never say which way a gear turns, how fast '
+        + 'it turns, which gear or size to add or take out, or that each gear reverses the way or that a smaller gear turns '
+        + 'faster: that is what they are finding out. Asking which way the gear next to the crank turns, or what they think '
+        + 'the last gear will do, is teaching. You cannot add, remove or turn a gear.',
+      // Every mode publishes levers (`gearLevers.ts`).
+      levers: true,
+      // The activity's own check (`gearMiss`).
+      misses: missLists<GearMiss>({
+        build_direction: [...GEAR_MISSES.build_direction],
+        build_speed: [...GEAR_MISSES.build_speed],
+        build_ratio: [...GEAR_MISSES.build_ratio],
+      }),
+      // `too_few_gears` has no lever: the ask states the number of gears.
+      unanswered: { build_direction: ['too_few_gears'], build_speed: ['too_few_gears'], build_ratio: ['too_few_gears'] },
+    },
+    evalModes: [
+      {
+        evalMode: 'build_direction',
+        affordances: { answers: ['build'] },
+        label: 'Which Way? (open build)',
+        beta: 2.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['build_direction'],
+        description: 'Open build: "Build a gear train of at least 3 gears where the last gear turns the same way as the first." '
+          + 'Any train passes with the right number of gears for the way (odd = same, even = opposite). K-3.',
+      },
+      {
+        evalMode: 'build_speed',
+        affordances: { answers: ['build'] },
+        label: 'Faster or Slower (open build)',
+        beta: 2.8,
+        scaffoldingMode: 2,
+        challengeTypes: ['build_speed'],
+        description: 'Open build: make the last gear turn faster (or slower) than the first, sometimes also a way. A smaller '
+          + 'last gear than the first is faster; middle gears change only the way. Grades 1-5.',
+      },
+      {
+        evalMode: 'build_ratio',
+        affordances: { answers: ['build'] },
+        label: 'Exact Turns (open build)',
+        beta: 3.6,
+        scaffoldingMode: 4,
+        challengeTypes: ['build_ratio'],
+        description: 'Open build: make the last gear turn exactly 3 times for every turn of the first (or once for every 2), '
+          + 'sometimes also a way. Turns = the first gear’s teeth / the last gear’s teeth. Grades 3-5.',
+      },
+    ],
   },
   {
     id: 'bridge-builder',
@@ -133,10 +215,62 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'tower-stacker',
-    description: 'Interactive vertical building challenge for teaching stability and center of gravity. Students stack blocks, beams, triangles, and arches to reach target heights while maintaining stability. Features wind/shake test to check structural integrity. Shows center of gravity indicator to help students understand balance. Teaches wider base = more stable, center of gravity concepts, material efficiency, and wind resistance design. Shows real-world connections: skyscrapers, building construction, architecture. Features multiple themes (blocks, construction, city) to adapt to different age groups. Perfect for K-5 engineering and NGSS standards. ESSENTIAL for teaching structural stability, balance, and physics of building.',
-    constraints: 'Best for grades K-5. Use for stacking, balance, stability, center of gravity, building design. K: simple stacking exploration (blocks theme, no wind). K-1: wider base = more stable (introduce stability concept). 2-3: center of gravity exploration (showCenterOfGravity: true). 3-4: material efficiency - height per piece (limited pieces). 4-5: wind resistance design (high wind strength, optimization). Supports free building and height challenges with piece limits.',
+    description: 'Build-a-tower challenge for teaching structural stability, balance point (center of gravity) and wind loads. Each session is 3 towers on an EMPTY building area with a green goal line: the student picks blocks, big blocks and beams from a tray, may turn a piece on end, and taps where to drop it; it falls until it rests on what is under it. “I’m done!” tests the tower with real statics (each part stays up only if its balance point is over what holds it up) and, on windproof towers, a wind load. Many towers pass. Teaches wider bases, keeping weight over the support, building with fewer, taller pieces, and designing for wind. Real-world connections: skyscrapers, towers, building construction. Perfect for K-5 engineering and NGSS K-2-ETS1, 3-5-ETS1 design standards. ESSENTIAL for teaching structural stability and the physics of building.',
+    constraints: 'Best for grades K-5. Code builds every tower (heights, piece limits, wind) from the lesson grade; the manifest must NOT supply heights, pieces or wind. K-1: reach the line and stand. Grades 2-3: add the few-pieces and windproof towers. Grades 4-5: few pieces and windproof.',
     affordances: { representation: 'concrete', answers: ['build'], role: ['visualize', 'apply'], minutes: 7 },
     supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'The building area starts empty. The learner picks a piece from the tray, may turn it on end, and taps where '
+        + 'to drop it; it falls until it rests on what is under it. They press I’m done! and the activity tests the tower: '
+        + 'whether every part stands and reaches the green line, on few-pieces towers how many pieces it uses, and on windproof '
+        + 'towers whether the wind blows a part over. Many towers pass. Never tell the learner where to put a piece or which '
+        + 'piece to use, and never say the tower needs a wider bottom, more weight lower down or its weight over the middle: '
+        + 'that is what they are finding out. Asking what happened to the part that fell, or what is holding a part up, is '
+        + 'teaching. You cannot place, turn or remove a piece.',
+      // Every mode publishes levers (`towerLevers.ts`).
+      levers: true,
+      // The activity's own check (`towerMiss`).
+      misses: missLists<TowerMiss>({
+        build_tall: [...TOWER_MISSES.build_tall],
+        build_few: [...TOWER_MISSES.build_few],
+        build_windproof: [...TOWER_MISSES.build_windproof],
+      }),
+      // `too_short` has no lever: the green line is on screen.
+      unanswered: { build_tall: ['too_short'], build_few: ['too_short'], build_windproof: ['too_short'] },
+    },
+    evalModes: [
+      {
+        evalMode: 'build_tall',
+        affordances: { answers: ['build'] },
+        label: 'Build a Tall Tower (open build)',
+        beta: 2.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['build_tall'],
+        description: 'Open build: "Build a tower that reaches the green line and stays standing." Any tower passes whose every '
+          + 'part stands and whose top reaches the line. K-2-ETS1.',
+      },
+      {
+        evalMode: 'build_few',
+        affordances: { answers: ['build'] },
+        label: 'Build With Few Pieces (open build)',
+        beta: 3.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['build_few'],
+        description: 'Open build: reach the green line using no more than N pieces (a beam stood on end is 4 tall). '
+          + 'Material efficiency. Grades 2-4.',
+      },
+      {
+        evalMode: 'build_windproof',
+        affordances: { answers: ['build'] },
+        label: 'Build a Windproof Tower (open build)',
+        beta: 3.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['build_windproof'],
+        description: 'Open build: reach the green line and stay up when the strong wind blows. A plain two-wide column blows '
+          + 'over; a wide-based tower stands. Designing for loads. Grades 2-5, 3-5-ETS1.',
+      },
+    ],
   },
   {
     id: 'shape-strength-tester',

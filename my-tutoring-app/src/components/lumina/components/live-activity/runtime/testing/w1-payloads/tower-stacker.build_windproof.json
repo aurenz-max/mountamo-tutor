@@ -1,0 +1,32 @@
+{
+ "source": "qa/open-build/tower-stacker-2026-10-08/generator-run.json",
+ "primitiveId": "tower-stacker",
+ "evalMode": "build_windproof",
+ "data": {
+  "title": "Windy Weather Tower",
+  "challengeType": "build_windproof",
+  "challenges": [
+   {
+    "id": "tower-1",
+    "type": "build_windproof",
+    "targetHeight": 6,
+    "wind": 0.943,
+    "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+   },
+   {
+    "id": "tower-2",
+    "type": "build_windproof",
+    "targetHeight": 7,
+    "wind": 0.873,
+    "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+   },
+   {
+    "id": "tower-3",
+    "type": "build_windproof",
+    "targetHeight": 8,
+    "wind": 0.707,
+    "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+   }
+  ]
+ }
+}

@@ -1,0 +1,170 @@
+{
+ "checks": [
+  {
+   "name": "windproof: 3 towers generated",
+   "pass": true,
+   "detail": "build_windproof@6, build_windproof@7, build_windproof@8"
+  },
+  {
+   "name": "windproof: area starts empty, no readouts",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "windproof: wind arrows drawn",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "windproof: a block column to the line",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "windproof: column is blown over",
+   "pass": true,
+   "detail": "Not yet. The wind blew part of your tower over."
+  },
+  {
+   "name": "windproof: the fallen part is drawn turned",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "windproof: scripted miss keeps the tower",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "windproof: flat beams pass",
+   "pass": true,
+   "detail": "Yes! Your tower stood up to the wind."
+  },
+  {
+   "name": "windproof: next tower opens empty",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "tall: a leaning staircase tips",
+   "pass": true,
+   "detail": "Not yet. Part of your tower tipped over. Look at what is holding that part up."
+  },
+  {
+   "name": "tall: the fallen part is drawn turned",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "tall: steps taken off top first",
+   "pass": true,
+   "detail": "1 left"
+  },
+  {
+   "name": "tall: a straight column passes",
+   "pass": true,
+   "detail": "Yes! Your tower reaches the line and stands."
+  },
+  {
+   "name": "few: the ask states the cap",
+   "pass": true,
+   "detail": "Build a tower that reaches the green line using no more than 4 pieces."
+  },
+  {
+   "name": "few: too many pieces is named",
+   "pass": true,
+   "detail": "Not yet. Your tower uses more pieces than the job allows."
+  },
+  {
+   "name": "few: beams stood on end pass",
+   "pass": true,
+   "detail": "Yes! Your tower reaches the line with few enough pieces."
+  },
+  {
+   "name": "phone: the scene fits a 358px column",
+   "pass": true,
+   "detail": "{\"card\":358,\"scene\":[358,365],\"column\":[22,313],\"trayButton\":[118,44],\"overflow\":[]}"
+  },
+  {
+   "name": "phone: tray buttons are at least 44px tall",
+   "pass": true,
+   "detail": "[118,44]"
+  },
+  {
+   "name": "phone: a tap column is at least 20px wide (full height)",
+   "pass": true,
+   "detail": "[22,313]"
+  },
+  {
+   "name": "watcher: 5 lines, none breaks a leak rule",
+   "pass": true,
+   "detail": "[]"
+  }
+ ],
+ "watcherLines": [
+  {
+   "build": "windproof column of 6 blocks",
+   "line": "",
+   "leaks": []
+  },
+  {
+   "build": "windproof flat beams x6",
+   "line": "Ooh, an orange block pile is rising up from the ground!",
+   "leaks": []
+  },
+  {
+   "build": "tall staircase",
+   "line": "Ooh, red rectangles are stepping up toward the green!",
+   "leaks": []
+  },
+  {
+   "build": "tall straight column",
+   "line": "Ooh, red rectangles are stepping up toward the green!",
+   "leaks": []
+  },
+  {
+   "build": "few small blocks x6",
+   "line": "Ooh, bright blue blocks are stacking up high!",
+   "leaks": []
+  },
+  {
+   "build": "few beams on end",
+   "line": "Ooh, the orange blocks are making a high tower!",
+   "leaks": []
+  }
+ ],
+ "rawWatch": [
+  {
+   "seeing": ""
+  },
+  {
+   "seeing": "Ooh, an orange block pile is rising up from the ground!"
+  },
+  {
+   "seeing": "Ooh, red rectangles are stepping up toward the green!"
+  },
+  {
+   "seeing": ""
+  },
+  {
+   "seeing": "Ooh, bright blue blocks are stacking up high!"
+  },
+  {
+   "seeing": "Ooh, the orange blocks are making a high tower!"
+  }
+ ],
+ "errors": [
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <circle> attribute r: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <circle> attribute r: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <circle> attribute r: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute ry: Expected length, \"undefined\"."
+ ]
+}

@@ -1,0 +1,29 @@
+{
+ "source": "qa/open-build/tower-stacker-2026-10-08/generator-run.json",
+ "primitiveId": "tower-stacker",
+ "evalMode": "build_tall",
+ "data": {
+  "title": "My Tall Block Tower",
+  "challengeType": "build_tall",
+  "challenges": [
+   {
+    "id": "tower-1",
+    "type": "build_tall",
+    "targetHeight": 4,
+    "instruction": "Build a tower that reaches the green line and stays standing."
+   },
+   {
+    "id": "tower-2",
+    "type": "build_tall",
+    "targetHeight": 5,
+    "instruction": "Build a tower that reaches the green line and stays standing."
+   },
+   {
+    "id": "tower-3",
+    "type": "build_tall",
+    "targetHeight": 6,
+    "instruction": "Build a tower that reaches the green line and stays standing."
+   }
+  ]
+ }
+}

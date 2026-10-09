@@ -132,7 +132,7 @@ const PrimitiveRenderer: React.FC<{
 
   switch (componentId) {
     case 'lever-lab':
-      return <LeverLab data={data as Parameters<typeof LeverLab>[0]['data']} />;
+      return <LeverLab data={{ ...(data as Parameters<typeof LeverLab>[0]['data']), instanceId: (data as { instanceId: string }).instanceId, onEvaluationSubmit }} />;
     case 'pulley-system-builder':
       return <PulleySystemBuilder data={data as Parameters<typeof PulleySystemBuilder>[0]['data']} />;
     case 'ramp-lab':
@@ -140,7 +140,7 @@ const PrimitiveRenderer: React.FC<{
     case 'wheel-axle-explorer':
       return <WheelAxleExplorer data={data as Parameters<typeof WheelAxleExplorer>[0]['data']} />;
     case 'gear-train-builder':
-      return <GearTrainBuilder data={data as Parameters<typeof GearTrainBuilder>[0]['data']} />;
+      return <GearTrainBuilder data={{ ...(data as Parameters<typeof GearTrainBuilder>[0]['data']), instanceId: (data as { instanceId: string }).instanceId, onEvaluationSubmit }} />;
     case 'bridge-builder':
       return (
         <BridgeBuilder
@@ -829,6 +829,9 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('tower-stacker');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('elementary');
   const [rampMode, setRampMode] = useState('mixed');
+  const [towerMode, setTowerMode] = useState('mixed');
+  const [gearMode, setGearMode] = useState('mixed');
+  const [leverMode, setLeverMode] = useState('mixed');
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
@@ -866,7 +869,10 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
             componentId: selectedPrimitive,
             topic: currentTopic,
             gradeLevel: selectedGrade,
-            config: selectedPrimitive === 'ramp-lab' ? { targetEvalMode: rampMode } : {},
+            config: selectedPrimitive === 'ramp-lab' ? { targetEvalMode: rampMode }
+              : selectedPrimitive === 'tower-stacker' && towerMode !== 'mixed' ? { targetEvalMode: towerMode }
+              : selectedPrimitive === 'gear-train-builder' && gearMode !== 'mixed' ? { targetEvalMode: gearMode }
+              : selectedPrimitive === 'lever-lab' && leverMode !== 'mixed' ? { targetEvalMode: leverMode } : {},
           },
         }),
       });
@@ -1005,6 +1011,27 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
                 {getComponentById('ramp-lab')?.evalModes?.map(mode => <option key={mode.evalMode} value={mode.evalMode}>{mode.label}</option>)}
               </select>
               <p className="mt-2 text-xs text-slate-400">Investigation tasks: Grades 3–5. Explain from Trials uses the microphone and live tutor.</p>
+            </div>}
+            {selectedPrimitive === 'gear-train-builder' && <div>
+              <label htmlFor="gear-task" className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-400">Gear task</label>
+              <select id="gear-task" value={gearMode} onChange={event => setGearMode(event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white">
+                <option value="mixed">Mixed (every tier for the grade)</option>
+                {getComponentById('gear-train-builder')?.evalModes?.map(mode => <option key={mode.evalMode} value={mode.evalMode}>{mode.label}</option>)}
+              </select>
+            </div>}
+            {selectedPrimitive === 'tower-stacker' && <div>
+              <label htmlFor="tower-task" className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-400">Tower task</label>
+              <select id="tower-task" value={towerMode} onChange={event => setTowerMode(event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white">
+                <option value="mixed">Mixed (every tier for the grade)</option>
+                {getComponentById('tower-stacker')?.evalModes?.map(mode => <option key={mode.evalMode} value={mode.evalMode}>{mode.label}</option>)}
+              </select>
+            </div>}
+            {selectedPrimitive === 'lever-lab' && <div>
+              <label htmlFor="lever-task" className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-400">Lever task</label>
+              <select id="lever-task" value={leverMode} onChange={event => setLeverMode(event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white">
+                <option value="mixed">Sandbox (no mode)</option>
+                {getComponentById('lever-lab')?.evalModes?.map(mode => <option key={mode.evalMode} value={mode.evalMode}>{mode.label}</option>)}
+              </select>
             </div>}
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">

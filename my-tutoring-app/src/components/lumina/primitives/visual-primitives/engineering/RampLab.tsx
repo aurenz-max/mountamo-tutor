@@ -39,6 +39,11 @@ import {
   type RampInvestigationResult,
 } from './rampChallenges';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import {
+  BOTH_RAMPS_LEVER, MODEL_EXPLAIN_LEVER, MODEL_PAIR_LEVER, MODEL_PLAN_LEVER, PUSH_BARS_LEVER, SAME_OR_CHANGED_LEVER, TEST_LOG_LEVER,
+  VARIABLE_NAME, describeSetup, isPracticeRamp, leverFacts, modelConclusion, modelFor, rampLevers, rampSketches, simplerRamp,
+  startLevers, testLog, type RampSketch,
+} from './rampLabLevers';
 
 export { selectMixedRampChallenges, selectRampChallenges } from './rampChallenges';
 export type { RampChallenge, RampChallengeMode } from './rampChallenges';
@@ -156,6 +161,32 @@ const RampLoad: React.FC<{
   </g>
 );
 
+/** `both_ramps` lever: one setup drawn at a fixed scale, its slope, its surface texture and its load. Nothing measured. */
+const RampSketchView: React.FC<{ sketch: RampSketch }> = ({ sketch }) => {
+  const r = (sketch.angle * Math.PI) / 180;
+  const run = 150 * Math.cos(r), rise = 150 * Math.sin(r);
+  const dots = sketch.surface === 'rough' ? 14 : sketch.surface === 'grippy' ? 7 : 0;
+  return (
+    <figure data-lever="ramp-sketch" className="rounded-xl border border-white/10 bg-black/20 p-2 text-center">
+      <svg viewBox="0 0 200 120" className="h-auto w-full" role="img"
+        aria-label={`Setup ${sketch.side.toUpperCase()}: a ${sketch.angle} degree ${sketch.surface} ramp with a ${sketch.mass} kg ${sketch.load}`}>
+        <polygon points={`20,110 ${20 + run},${110 - rise} ${20 + run},110`} fill="#334155" />
+        <line x1={20} y1={110} x2={20 + run} y2={110 - rise} stroke="#93C5FD" strokeWidth={3} />
+        {Array.from({ length: dots }).map((_, i) => {
+          const t = (i + 1) / (dots + 1);
+          return <circle key={i} cx={20 + run * t} cy={110 - rise * t - 3} r={1.6} fill="#FBBF24" />;
+        })}
+        <g transform={`translate(${20 + run * 0.15}, ${110 - rise * 0.15}) rotate(${-sketch.angle})`}>
+          {sketch.load === 'box' || sketch.load === 'load'
+            ? <rect x={-9} y={-18} width={18} height={18} rx={3} fill="#C084FC" />
+            : <circle cy={-9} r={9} fill="#A78BFA" />}
+        </g>
+      </svg>
+      <figcaption className="font-mono text-xs text-slate-400">SETUP {sketch.side.toUpperCase()}</figcaption>
+    </figure>
+  );
+};
+
 function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabProps & {
   useRun: (options: RampRunOptions) => RampRun;
 }) {
@@ -190,15 +221,26 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
   const [reportedPhase, setReportedPhase] = useState<{ id: string; phase: InvestigationPhase } | null>(null);
   const evidenceRef = useRef<InvestigationEvidence | null>(null);
   const finishRef = useRef<(summary: TeachingEvaluationResult) => void>(() => {});
+  // In-item levers (`rampLabLevers.ts`), keyed by the session item they were pulled on, and the easier item a simplify
+  // lever put on screen in its place. `config.difficulty` easy starts some help pulled; a start is not a recorded pull.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<RampChallenge | null>(null);
+  /** The values the learner checked, by item id (`test_log`; a practice item has its own), and the trials recorded (`push_bars`). */
+  const [tested, setTested] = useState<Record<string, number[]>>({});
+  const [trialsSeen, setTrialsSeen] = useState<{ item: string; trials: InvestigationEvidence['trials'] }>({ item: '', trials: [] });
+  /** A plan item's rejected plans, kept while a practice item replaces it (the record keeps every rejected attempt). */
+  const [carriedPlans, setCarriedPlans] = useState<Record<string, InvestigationEvidence['planAttempts']>>({});
   const run = useRun({
     primitiveId: 'ramp-lab', assignment: rampAssignment, items: challenges, workspace,
     objectiveId, planItemId: runtimePlanItemId,
     // The SESSION's mode, from the mount: a mount's identity must not change while the workspace owns it.
     instanceId: instanceId || `ramp-lab-${challenges.map(c => c.id).join('-')}`,
     onFinished: summary => finishRef.current(summary),
-    onItemOpened: () => { evidenceRef.current = null; },
-    // Try again keeps the learner's settings: they adjust and check again.
+    onItemOpened: () => { evidenceRef.current = null; setPractice(null); },
+    // Try again keeps the learner's settings: they adjust and check again (on a practice item too).
     onCorrectionRetry: () => setFeedback(null),
+    // The full item back after its practice item: its own settings, reset when its id comes back on screen.
+    onPracticeClosed: () => { evidenceRef.current = null; setPractice(null); },
     // A spoken explanation, once credited, completes its investigation record.
     onAffirmed: item => {
       if (item.mode === 'explain_from_trials') recordInvestigation(item, true);
@@ -206,7 +248,12 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
     },
   });
   const challengeIndex = run.currentIndex;
-  const currentChallenge = isChallengeSession ? run.currentItem : undefined;
+  const sessionChallenge = isChallengeSession ? run.currentItem : undefined;
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : startLevers(sessionChallenge, data.supportTier);
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  const testedHere = (currentChallenge && tested[currentChallenge.id]) || [];
+  const trialsHere = currentChallenge && trialsSeen.item === currentChallenge.id ? trialsSeen.trials : [];
   const investigationPhase: InvestigationPhase | null = !currentChallenge
     || (currentChallenge.mode !== 'plan_fair_test' && currentChallenge.mode !== 'explain_from_trials') ? null
     : reportedPhase?.id === currentChallenge.id ? reportedPhase.phase
@@ -359,8 +406,12 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
   const handleCheck = () => {
     if (!currentChallenge) return;
     if (currentChallenge.mode === 'plan_fair_test' || currentChallenge.mode === 'explain_from_trials') return;
-    totalChecksRef.current += 1;
-    experimentCountRef.current += 1;
+    // A practice item's checks are ungraded: they do not count toward the session's metrics.
+    if (!practice) { totalChecksRef.current += 1; experimentCountRef.current += 1; }
+    if (currentChallenge.mode === 'find_threshold' || currentChallenge.mode === 'design_with_budget') {
+      const value = currentChallenge.mode === 'find_threshold' ? pushForce : rampAngle, id = currentChallenge.id;
+      setTested(previous => ({ ...previous, [id]: [...(previous[id] ?? []), value] }));
+    }
     if (currentChallenge.mode === 'compare_conditions') {
       if (!compareChoice) return;
       variablesExploredRef.current.add(currentChallenge.changedVariable);
@@ -453,6 +504,8 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
   const currentSolved = !!currentChallenge && solvedIds.has(currentChallenge.id);
   const isInvestigation = currentChallenge?.mode === 'plan_fair_test' || currentChallenge?.mode === 'explain_from_trials';
   function recordInvestigation(challenge: RampChallenge, solved: boolean) {
+    // A practice plan is ungraded: it leaves no investigation record.
+    if (isPracticeRamp(challenge)) return;
     const evidence = evidenceRef.current;
     if (!evidence || evidence.challengeId !== challenge.id) return;
     const planning = challenge.mode === 'plan_fair_test';
@@ -488,9 +541,49 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
     if (!currentChallenge) return;
     // Only item-scoped, render-derived facts: the lab's controls reset in an effect after an item opens, and a fact
     // read from them would publish a revision that supersedes the advance. The checked response names the setting.
-    workspace.current = { ...rampScene(currentChallenge, { phase: investigationPhase ?? undefined }),
-      readyForResponse: currentChallenge.mode !== 'explain_from_trials' || investigationPhase === 'explain' };
+    const scene = rampScene(currentChallenge, { phase: investigationPhase ?? undefined });
+    const session = sessionChallenge!;
+    const onScreen = practice ? '' : leverFacts(session, pulledLevers, { tested: testedHere, trials: trialsHere });
+    const levers = practice ? [] : rampLevers(session, pulledLevers);
+    workspace.current = { ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      readyForResponse: currentChallenge.mode !== 'explain_from_trials' || investigationPhase === 'explain',
+      levers,
+      // A synchronous commit: the screen changes before this returns, or nothing changes and it says why.
+      pullLever: id => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (id === TEST_LOG_LEVER && !testedHere.length) return 'The learner has not checked anything on this item yet, so the log would be empty. Let them test a value first.';
+        if (id === PUSH_BARS_LEVER && trialsHere.length < 2) return 'Both trials are not recorded yet, so there is nothing to draw. Let the learner run both trials first.';
+        const pulled = { item: session.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerRamp(session);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          const evidence = evidenceRef.current;
+          if (evidence?.challengeId === session.id) setCarriedPlans(previous => ({ ...previous, [session.id]: evidence.planAttempts }));
+          setLeverState(pulled); setPractice(easier); setFeedback(null);
+          return { practice: rampAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); setFeedback(null); },
+    };
   });
+  const model = currentChallenge ? modelFor(currentChallenge) : null;
+  const log = currentChallenge ? testLog(currentChallenge, testedHere) : [];
+  const nudge = (control: 'push' | 'angle', direction: 1 | -1) => {
+    if (!run.canAttempt || !currentChallenge) return;
+    if (control === 'push' && currentChallenge.mode === 'find_threshold') {
+      const step = currentChallenge.forceStep;
+      setPushForce(previous => Math.min(100, Math.max(0, Number((previous + direction * step).toFixed(4)))));
+    } else if (control === 'angle' && currentChallenge.mode === 'design_with_budget') {
+      const { min, max } = currentChallenge.angleRange;
+      setRampAngle(previous => Math.min(max, Math.max(min, previous + direction)));
+    } else return;
+    setLoadPosition(0); setIsAnimating(false); setFeedback(null); SoundManager.tick();
+  };
 
   return (
     <div className={`mx-auto my-12 w-full max-w-5xl animate-fade-in ${className || ''}`}>
@@ -516,6 +609,7 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
               </div>
               <h3 className="text-lg font-semibold text-white">{currentChallenge.title}</h3>
               <p className="mt-2 leading-relaxed text-slate-300">{currentChallenge.brief}</p>
+              {practice && <p data-practice-item="true" className="mt-2 font-mono text-xs uppercase tracking-wider text-cyan-300">Practice · not graded · your challenge comes back next</p>}
 
               {currentChallenge.mode === 'compare_conditions' && (
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -541,6 +635,24 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
                 </div>
               )}
 
+              {currentChallenge.mode === 'compare_conditions' && leverOn(BOTH_RAMPS_LEVER) && (
+                <div data-lever="both-ramps" className="mt-4 grid grid-cols-2 gap-3">
+                  {rampSketches(currentChallenge).map(sketch => <RampSketchView key={sketch.side} sketch={sketch} />)}
+                </div>
+              )}
+
+              {model && (leverOn(MODEL_PAIR_LEVER) || leverOn(MODEL_PLAN_LEVER) || leverOn(MODEL_EXPLAIN_LEVER)) && (
+                <div data-lever="model" className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-slate-200">
+                  <p className="font-mono text-xs uppercase tracking-wider text-amber-300">
+                    {leverOn(MODEL_PLAN_LEVER) ? `A fair plan for another question: the ${VARIABLE_NAME[model.variable]}` : 'An example on other ramps'}
+                  </p>
+                  <p className="mt-2">Model setup 1: {describeSetup(model.one)}{leverOn(MODEL_PLAN_LEVER) ? '' : `. First moved at ${model.pushOne.toFixed(1)} N`}.</p>
+                  <p>Model setup 2: {describeSetup(model.two)}{leverOn(MODEL_PLAN_LEVER) ? '' : `. First moved at ${model.pushTwo.toFixed(1)} N`}.</p>
+                  <p className="mt-2 text-amber-200">{leverOn(MODEL_PLAN_LEVER)
+                    ? `Only the ${VARIABLE_NAME[model.variable]} is different. Everything else stays the same.` : modelConclusion(model)}</p>
+                </div>
+              )}
+
               {currentChallenge.mode === 'design_with_budget' && (
                 <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
                   <LuminaStat label="Fixed height" value={`${currentChallenge.targetHeight} units`} accent="blue" />
@@ -554,14 +666,24 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
           {isInvestigation && <>
             <RampInvestigation key={currentChallenge.id} challenge={currentChallenge as RampInvestigationChallenge}
               supportTier={data.supportTier} canAttempt={run.canAttempt} credited={run.revealHeld}
+              showMarks={leverOn(SAME_OR_CHANGED_LEVER)} showBars={leverOn(PUSH_BARS_LEVER)}
+              priorPlanAttempts={practice ? undefined : carriedPlans[currentChallenge.id]}
               onPhase={phase => setReportedPhase({ id: currentChallenge.id, phase })}
-              onEvidence={evidence => { evidenceRef.current = evidence; }}
-              // An unfair plan is a checked miss; a fair one locks and the investigation continues.
+              onEvidence={evidence => {
+                evidenceRef.current = evidence;
+                const id = currentChallenge.id;
+                setTrialsSeen(previous => previous.item === id && previous.trials.length === evidence.trials.length ? previous
+                  : { item: id, trials: evidence.trials });
+              }}
+              // An unfair plan is a checked miss; a fair one locks and the investigation continues. A practice plan
+              // (`two_settings`) is only the plan: a fair one is its checked success.
               onPlanChecked={(fair, setupB) => {
+                if (practice) { commitCheck(currentChallenge, fair, describeRampCheck('plan_fair_test', { planB: setupB }), { planB: setupB }); return; }
                 totalChecksRef.current += 1;
                 if (!fair) commitCheck(currentChallenge, false, describeRampCheck('plan_fair_test', { planB: setupB }), { planB: setupB });
               }}
               onRecord={evidence => {
+                if (practice) return;
                 evidenceRef.current = evidence;
                 recordInvestigation(currentChallenge, true);
                 run.commitGesture({ response: describeRampCheck('plan_fair_test', { prediction: evidence.prediction,
@@ -645,6 +767,12 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
                   onValueChange={([value]) => { setRampAngle(value); setLoadPosition(0); setIsAnimating(false); setFeedback(null); SoundManager.tick(); }}
                 />
                 <div className="mt-1 flex justify-between text-xs text-slate-500"><span>gentler / longer</span><span>steeper / shorter</span></div>
+                {isDesign && (
+                  <div className="mt-3 flex gap-2">
+                    <LuminaButton tone="subtle" disabled={!run.canAttempt} onClick={() => nudge('angle', -1)}>Gentler</LuminaButton>
+                    <LuminaButton tone="subtle" disabled={!run.canAttempt} onClick={() => nudge('angle', 1)}>Steeper</LuminaButton>
+                  </div>
+                )}
               </LuminaPanel>
             )}
 
@@ -660,9 +788,30 @@ function RampLabSurface({ data, className, runtimePlanItemId, useRun }: RampLabP
                   onValueChange={([value]) => { setPushForce(value); setLoadPosition(0); setIsAnimating(false); setFeedback(null); SoundManager.tick(); }}
                 />
                 <div className="mt-1 flex justify-between text-xs text-slate-500"><span>none</span><span>maximum</span></div>
+                {currentChallenge?.mode === 'find_threshold' && (
+                  <div className="mt-3 flex gap-2">
+                    <LuminaButton tone="subtle" disabled={!run.canAttempt} onClick={() => nudge('push', -1)}>Less push</LuminaButton>
+                    <LuminaButton tone="subtle" disabled={!run.canAttempt} onClick={() => nudge('push', 1)}>More push</LuminaButton>
+                  </div>
+                )}
               </LuminaPanel>
             )}
           </div>
+
+          {leverOn(TEST_LOG_LEVER) && (
+            <div data-lever="test-log" className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <p className="font-mono text-xs uppercase tracking-wider text-slate-400">Your tests, smallest first</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {log.length ? log.map(entry => (
+                  <span key={entry.value} data-log-entry={entry.result}
+                    className={`rounded-full border px-3 py-1 font-mono text-xs ${entry.result === 'moved' || entry.result === 'climbs'
+                      ? 'border-emerald-400/50 text-emerald-200' : 'border-rose-400/50 text-rose-200'}`}>
+                    {currentChallenge?.mode === 'find_threshold' ? `${entry.value.toFixed(1)} N` : `${entry.value}°`} · {entry.result}
+                  </span>
+                )) : <span className="text-xs text-slate-500">Each value you test will show here.</span>}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <LuminaStat label="Load" value={currentScenario.label} accent="blue" />

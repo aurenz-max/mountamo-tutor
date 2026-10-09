@@ -2,38 +2,69 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
+import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
+
+import type { LeverLabData, LeverLoad } from '../../primitives/visual-primitives/engineering/LeverLab';
+import {
+  LEVER_BUILD_MODES, leverBand, leverChallenges, type LeverBuildMode,
+} from '../../primitives/visual-primitives/engineering/leverLabBuild';
+
+export type { LeverLabData, LeverLoad };
 
 /**
- * Lever Load - represents objects placed on the lever
+ * Open builds (/add-eval-modes references/build-mode.md). Code owns every weight, seat, rock and ask
+ * (`leverChallenges`); the model writes only a title. With no mode resolved (no pin, broad intent) the generator
+ * returns the sandbox below, exactly as before.
  */
-export interface LeverLoad {
-  position: number;      // Distance from left end (0-beamLength)
-  weight: number;        // Weight in arbitrary units
-  icon?: string;         // Emoji or icon identifier
-  label?: string;        // Optional label for the load
-  color?: string;        // Optional color for the load
-  isDraggable?: boolean; // Whether user can drag this load
-}
+const CHALLENGE_TYPE_DOCS: Record<LeverBuildMode, ChallengeTypeDoc> = {
+  build_balance: {
+    promptDoc: '"build_balance": seat kids on the right of a seesaw so it balances a kid on the left, then a different way (K-5).',
+    schemaDescription: "'build_balance' (balance a seesaw by weight and distance)",
+  },
+  build_lift: {
+    promptDoc: '"build_lift": place a fulcrum and a lighter helper on a bar so the helper lifts a rock, then with the fulcrum somewhere else (grades 3-5).',
+    schemaDescription: "'build_lift' (a lever that lifts a heavier load)",
+  },
+};
 
-/**
- * Lever Lab Data - complete configuration for lever/fulcrum visualization
- */
-export interface LeverLabData {
-  title: string;
-  description: string;
-  beamLength: number;           // Length of lever in units
-  fulcrumPosition: number;      // Initial fulcrum placement (distance from left)
-  fixedFulcrum: boolean;        // Lock fulcrum in place
-  loads: LeverLoad[];           // Objects on the lever
-  showDistances: boolean;       // Display measurement labels
-  showMA: boolean;              // Display mechanical advantage ratio
-  effortInput: 'drag' | 'slider' | 'numeric';  // How to apply effort
-  theme: 'seesaw' | 'excavator' | 'crowbar' | 'generic';
-  effortPosition?: number;      // Where effort is applied
-  effortForce?: number;         // Initial effort force
-  showTorque?: boolean;         // Show torque calculations (grades 4-5)
-  allowAddLoads?: boolean;      // Allow adding new loads
-  maxLoads?: number;            // Maximum number of loads allowed
+const titleSchema: Schema = {
+  type: Type.OBJECT,
+  properties: { title: { type: Type.STRING, description: 'A short, engaging title for a lever activity on this topic (2-6 words).' } },
+  required: ['title'],
+};
+
+async function generateLeverBuild(ctx: GenerationContext, modes: LeverBuildMode[]): Promise<LeverLabData> {
+  const band = leverBand(ctx.grade, ctx.gradeContext);
+  const challenges = leverChallenges(modes, band);
+  console.log(`[LeverLab] build ${modes.join('+')} band ${band} -> ${challenges.map(c => c.type === 'build_balance'
+    ? `balance:${(c.given ?? []).map(k => `${k.weight}@${k.seat}`).join('+')}${c.differentFrom ? '(again)' : ''}`
+    : `lift:${c.rockWeight}/${c.pusherWeight}${c.differentFrom ? '(again)' : ''}`).join(', ')}`);
+  const lift = modes.includes('build_lift') && !modes.includes('build_balance');
+  let title = lift ? 'Lift the Rock!' : 'Seesaw Balance';
+  try {
+    const result = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: `Write a title for a ${lift ? 'lever (lifting a rock with a bar)' : 'seesaw balancing'} activity for ${ctx.gradeContext} students, `
+        + `on the topic "${ctx.topic}"
+${buildScopePromptSection(ctx.scope)}.
+The title names the place or the job (a playground, a garden), `
+        + 'never where to sit, which side is heavier, or how to balance or lift it.',
+      config: { responseMimeType: 'application/json', responseSchema: titleSchema },
+    });
+    const t = result.text ? String(JSON.parse(result.text).title ?? '').trim() : '';
+    if (t && t.length <= 60) title = t;
+  } catch (e) {
+    console.warn('[LeverLab] title call failed; using the default title', e);
+  }
+  return {
+    title,
+    description: lift ? 'Build a lever that lifts the rock.' : 'Seat kids so the seesaw balances.',
+    // The sandbox fields stay filled so the payload is a whole LeverLabData; the build scene ignores them.
+    beamLength: 10, fulcrumPosition: 5, fixedFulcrum: true, loads: [], showDistances: false, showMA: false,
+    effortInput: 'slider', theme: lift ? 'crowbar' : 'seesaw',
+    challengeType: modes.length === 1 ? modes[0] : 'mixed',
+    challenges,
+  };
 }
 
 /**
@@ -166,6 +197,15 @@ const leverLabSchema: Schema = {
 export const generateLeverLab = async (
   ctx: GenerationContext,
 ): Promise<LeverLabData> => {
+  const resolution = await resolveEvalModes(
+    'lever-lab',
+    { targetEvalMode: ctx.targetEvalMode, intent: ctx.intent, objectiveText: ctx.objective?.text },
+    CHALLENGE_TYPE_DOCS,
+  );
+  const buildModes = (resolution?.allowedTypes ?? [])
+    .filter((t): t is LeverBuildMode => (LEVER_BUILD_MODES as readonly string[]).includes(t));
+  if (buildModes.length) return generateLeverBuild(ctx, buildModes);
+
   const { topic } = ctx;
   const scopeSection = buildScopePromptSection(ctx.scope);
   const gradeLevel = ctx.gradeContext;

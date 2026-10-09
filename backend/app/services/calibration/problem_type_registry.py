@@ -882,11 +882,27 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # -----------------------------------------------------------------
     # Engineering primitives
     # -----------------------------------------------------------------
-    "tower-stacker":              {"default": PriorConfig(3.0, "Build stable tower")},
+    "tower-stacker": {
+        "build_tall":      PriorConfig(2.5, "Open build: a tower that reaches the goal line and stands"),
+        "build_few":       PriorConfig(3.0, "Open build: reach the goal line with no more than N pieces"),
+        "build_windproof": PriorConfig(3.5, "Open build: reach the goal line and stand in a strong wind"),
+        # Sessions generated before the eval modes (one open tower with a wind test).
+        "default":         PriorConfig(3.0, "Build stable tower"),
+    },
     "bridge-builder":             {"default": PriorConfig(4.0, "Build load-bearing bridge")},
-    "lever-lab":                  {"default": PriorConfig(3.5, "Balance a lever")},
+    "lever-lab": {
+        "build_balance": PriorConfig(2.5, "Open build: seat kids so a seesaw balances by weight x distance, then a different way"),
+        "build_lift":    PriorConfig(3.2, "Open build: place a fulcrum and a lighter helper so a lever lifts a rock"),
+        "default":       PriorConfig(3.5, "Balance a lever"),
+    },
     "pulley-system":              {"default": PriorConfig(4.0, "Design pulley system")},
-    "gear-train":                 {"default": PriorConfig(4.5, "Connect gears for target ratio")},
+    # Keyed by the component id (was "gear-train", which no primitive sends, so the prior never matched).
+    "gear-train-builder": {
+        "build_direction": PriorConfig(2.0, "Open build: a gear train whose last gear turns a given way"),
+        "build_speed":     PriorConfig(2.8, "Open build: a gear train whose last gear turns faster or slower"),
+        "build_ratio":     PriorConfig(3.6, "Open build: a gear train whose last gear turns an exact number of times"),
+        "default":         PriorConfig(2.8, "Build a gear train"),
+    },
     "ramp-lab": {
         "compare_conditions": PriorConfig(-1.0, "Compare matched ramp conditions one variable at a time"),
         "find_threshold":     PriorConfig(0.0, "Measure the least push that moves a fixed load"),

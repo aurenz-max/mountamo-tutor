@@ -1,0 +1,52 @@
+[
+  {
+    "build": "balance-one-heavy-near",
+    "line": "",
+    "leaks": []
+  },
+  {
+    "build": "balance-one-heavy-near",
+    "line": "Ooh, a pink kid is sitting near the middle!",
+    "leaks": []
+  },
+  {
+    "build": "balance-plus-light-far",
+    "line": "",
+    "leaks": []
+  },
+  {
+    "build": "balance-plus-light-far",
+    "line": "Ooh, colorful kids are joining the fun on the seesaw!",
+    "leaks": []
+  },
+  {
+    "build": "balance-three-kids",
+    "line": "Ooh, colorful kids are gathering on the seesaw!",
+    "leaks": []
+  },
+  {
+    "build": "balance-three-kids",
+    "line": "Ooh, colorful kids are gathering all along the board!",
+    "leaks": []
+  },
+  {
+    "build": "lift-fulcrum-helper",
+    "line": "",
+    "leaks": []
+  },
+  {
+    "build": "lift-fulcrum-helper",
+    "line": "Ooh, the triangle shape is resting near the rock!",
+    "leaks": []
+  },
+  {
+    "build": "lift-fulcrum-only",
+    "line": "Ooh, the triangle fulcrum is tucked under the bar near the rock!",
+    "leaks": []
+  },
+  {
+    "build": "lift-fulcrum-only",
+    "line": "",
+    "leaks": []
+  }
+]

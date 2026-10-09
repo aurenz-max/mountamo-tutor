@@ -1,890 +1,388 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { SoundManager } from '../../../utils/SoundManager';
-import {
-  LuminaCard,
-  LuminaCardContent,
-  LuminaButton,
-  LuminaBadge,
-  LuminaPanel,
-} from '../../../ui';
-
 /**
- * Gear Train Builder - Interactive gear system sandbox for teaching simple machines
+ * Gear Train Builder - build a gear train that makes the last gear turn the way, and at the speed, the job asks
+ * (K-5 engineering: meshed gears reverse, small gears driven by big ones turn faster, idlers change only the way).
  *
- * K-5 Engineering Primitive for understanding:
- * - Gears turn together (K-1)
- * - Direction changes with each gear (1-2)
- * - Big gear turns slow gear fast (2-3)
- * - Counting teeth for ratios (3-4)
- * - Design challenges: specific output speed (4-5)
+ * Three open builds (/add-eval-modes references/build-mode.md), each on an EMPTY track:
+ * - `build_direction`: the last gear turns the same way as (or opposite to) the first, with at least N gears.
+ * - `build_speed`: the last gear turns faster (or slower) than the first, sometimes also a way.
+ * - `build_ratio`: the last gear turns exactly 3 times per turn of the first (or once per 2...), sometimes also a way.
+ * The learner taps a gear size to add it to the end of the train, where it meshes with the gear before; tapping a
+ * gear takes it out. "I'm done!" turns the crank and checks the last gear with code (`gearMiss`). Many trains pass.
+ * Code owns every target (`gearChallenges`); the model writes only the title.
  *
- * Real-world connections: bicycle gears, clock mechanisms, wind-up toys, car transmissions
+ * On the shared teaching workspace (W1) every check commits through `progress.commitCheck` with the train in words and
+ * a named miss; the runtime owns progression, so the scripted Next is hidden there and the scored session is
+ * submitted from `onFinished`.
  */
 
-export interface Gear {
-  id: string;
-  x: number;           // Grid column position
-  y: number;           // Grid row position
-  teeth: number;       // Number of teeth (determines size)
-  color: string;       // Gear color
-  isDriver?: boolean;  // Is this the input gear?
-}
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  LuminaActionButton, LuminaButton, LuminaCallout, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
+  LuminaCardTitle, LuminaFeedbackCard,
+} from '../../../ui';
+import { usePrimitiveEvaluation, type GearTrainMetrics, type PrimitiveEvaluationResult } from '../../../evaluation';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
+import {
+  MAX_GEARS, TEETH, WATCH_NEVER_SAY, describeTrain, gearMiss, workspaceAssignment, workspaceScene,
+  type GearChallenge, type GearMiss, type GearMode, type TrainGear,
+} from './gearWorkspace';
+import { ARROWS_LEVER, SPIN_LEVER, gearLevers, leverFacts, simplerTrain } from './gearLevers';
+import { GearScene } from './GearScene';
+
+export type { GearChallenge, GearMode, TrainGear } from './gearWorkspace';
 
 export interface GearTrainBuilderData {
   title: string;
-  description: string;
-  availableGears: number[];      // Gear sizes available (by tooth count)
-  gridSize: [number, number];    // [rows, cols] workspace dimensions
-  initialGears?: Gear[];         // Pre-placed gears for guided scenarios
-  driverGearId?: string;         // Which gear receives input (by id)
-  showTeethCount: boolean;       // Label gear teeth
-  showSpeedRatio: boolean;       // Display rotation ratio
-  showDirection: boolean;        // Indicate CW/CCW
-  targetRatio?: number;          // Goal for design challenges (null = free play)
-  maxGears: number;              // Limit for scaffolded problems
-  theme: 'toy' | 'machine' | 'clock' | 'bicycle';
-  allowAddGears?: boolean;       // Can students add new gears
-  allowRemoveGears?: boolean;    // Can students remove gears
+  /** The eval mode pinned for this session; 'mixed' when the session holds every tier the band builds. */
+  challengeType?: GearMode | 'mixed';
+  /** The trains to build, written by code (`gearChallenges`). */
+  challenges: GearChallenge[];
+
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<GearTrainMetrics>) => void;
 }
 
-interface GearTrainBuilderProps {
+export interface GearTrainBuilderProps {
   data: GearTrainBuilderData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
 
-// Constants for gear visualization
-const CELL_SIZE = 80;
-const TOOTH_SIZE_FACTOR = 4; // pixels per tooth for radius calculation
-const MIN_TEETH = 8;
-const MAX_TEETH = 32;
+const PHASE_CONFIG: Record<string, PhaseConfig> = {
+  build_direction: { label: 'Which way', icon: '🔄', accentColor: 'purple' },
+  build_speed: { label: 'Faster or slower', icon: '⚙️', accentColor: 'blue' },
+  build_ratio: { label: 'Exact turns', icon: '🔢', accentColor: 'amber' },
+};
 
-const GearTrainBuilder: React.FC<GearTrainBuilderProps> = ({ data, className }) => {
-  const {
-    title,
-    description,
-    availableGears = [8, 12, 16, 24],
-    gridSize = [4, 6],
-    initialGears = [],
-    driverGearId,
-    showTeethCount = true,
-    showSpeedRatio = true,
-    showDirection = true,
-    targetRatio,
-    maxGears = 6,
-    theme = 'toy',
-    allowAddGears = true,
-    allowRemoveGears = true,
-  } = data;
+const phaseScore = (attempts: number) => (attempts <= 0 ? 0 : Math.max(20, 100 - (attempts - 1) * 20));
 
-  const [gears, setGears] = useState<Gear[]>(initialGears);
-  const [selectedGearSize, setSelectedGearSize] = useState<number>(availableGears[0] || 12);
-  const [driverId, setDriverId] = useState<string | null>(driverGearId || null);
-  const [driverRotation, setDriverRotation] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
+/** The check's words: what the last gear did wrong, never which gear to add or change. */
+const GEAR_FEEDBACK: Record<GearMiss, string> = {
+  too_few_gears: 'Not yet. Your train needs more gears for this job.',
+  not_faster: 'Not yet. Your last gear does not turn faster than the first gear.',
+  not_slower: 'Not yet. Your last gear does not turn slower than the first gear.',
+  too_fast: 'Not yet. Your last gear turns too many times for each turn of the first gear.',
+  too_slow: 'Not yet. Your last gear turns too few times for each turn of the first gear.',
+  wrong_direction: 'Not yet. Your last gear turns the wrong way.',
+};
+const PASS_FEEDBACK = 'Yes! Your last gear does just what the job asks.';
+
+/** A check spins the crank twice; the lever's trial spin six times (whole turns for every ratio asked). */
+const CHECK_TURNS = 2, TRY_TURNS = 6, SPIN_MS_PER_TURN = 600;
+
+const GearTrainBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  GearTrainBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<GearChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const challenges = useMemo(() => (data.challenges ?? []).filter(c => PHASE_CONFIG[c.type]), [data.challenges]);
+
+  const stableInstanceId = useRef(instanceId || `gear-train-builder-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: c => c.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, results, isComplete, mergeResult, advance } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<GearChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+
+  // ── Per-item state ────────────────────────────────────────────
+  const [train, setTrain] = useState<TrainGear[]>([]);
+  const [crank, setCrank] = useState(0);
+  const [counts, setCounts] = useState<{ first: number; last: number } | null>(null);
   const [hint, setHint] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [feedback, setFeedback] = useState<{ text: string; correct: boolean } | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [challengeDone, setChallengeDone] = useState(false);
+  const recordedRef = useRef(false);
+  const nextId = useRef(0);
+  const spinFrame = useRef<number | null>(null);
 
-  const svgRef = useRef<SVGSVGElement>(null);
-  const animationRef = useRef<number | null>(null);
+  const stopSpin = () => { if (spinFrame.current !== null && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(spinFrame.current); spinFrame.current = null; };
+  useEffect(() => stopSpin, []);
 
-  const [rows, cols] = gridSize;
-  const svgWidth = cols * CELL_SIZE + 100;
-  const svgHeight = rows * CELL_SIZE + 100;
-
-  // Calculate gear radius from tooth count
-  const getGearRadius = (teeth: number) => teeth * TOOTH_SIZE_FACTOR / 2;
-
-  // Get theme-specific colors
-  const getThemeStyles = () => {
-    switch (theme) {
-      case 'toy':
-        return {
-          backgroundColor: '#1E1B4B',
-          gridColor: '#4338CA',
-          accentColor: '#F472B6',
-          gearColors: ['#F472B6', '#A78BFA', '#60A5FA', '#34D399', '#FBBF24'],
-          icon: '🧸',
-        };
-      case 'machine':
-        return {
-          backgroundColor: '#18181B',
-          gridColor: '#3F3F46',
-          accentColor: '#F59E0B',
-          gearColors: ['#71717A', '#A1A1AA', '#52525B', '#78716C', '#6B7280'],
-          icon: '🏭',
-        };
-      case 'clock':
-        return {
-          backgroundColor: '#1C1917',
-          gridColor: '#44403C',
-          accentColor: '#D4AF37',
-          gearColors: ['#D4AF37', '#B8860B', '#DAA520', '#CD853F', '#DEB887'],
-          icon: '🕐',
-        };
-      case 'bicycle':
-        return {
-          backgroundColor: '#0F172A',
-          gridColor: '#1E40AF',
-          accentColor: '#22D3EE',
-          gearColors: ['#94A3B8', '#64748B', '#475569', '#334155', '#6B7280'],
-          icon: '🚲',
-        };
-      default:
-        return {
-          backgroundColor: '#0F172A',
-          gridColor: '#1E3A8A',
-          accentColor: '#22D3EE',
-          gearColors: ['#22D3EE', '#A78BFA', '#F472B6', '#34D399', '#FBBF24'],
-          icon: '⚙️',
-        };
-    }
+  const resetFor = useRef<string | null>(null);
+  const resetItem = (challenge: GearChallenge) => {
+    resetFor.current = challenge.id;
+    stopSpin();
+    setTrain([]); setCrank(0); setCounts(null); setHint(null); setFeedback(null); setAttempts(0); setChallengeDone(false);
+    recordedRef.current = false;
   };
-
-  const themeStyles = getThemeStyles();
-
-  // Check if two gears are meshed (touching)
-  const areGearsMeshed = (gear1: Gear, gear2: Gear): boolean => {
-    const r1 = getGearRadius(gear1.teeth);
-    const r2 = getGearRadius(gear2.teeth);
-    const x1 = gear1.x * CELL_SIZE + CELL_SIZE / 2;
-    const y1 = gear1.y * CELL_SIZE + CELL_SIZE / 2;
-    const x2 = gear2.x * CELL_SIZE + CELL_SIZE / 2;
-    const y2 = gear2.y * CELL_SIZE + CELL_SIZE / 2;
-
-    const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    const meshDistance = r1 + r2;
-
-    // Allow 20% tolerance for meshing
-    return distance <= meshDistance * 1.2 && distance >= meshDistance * 0.8;
-  };
-
-  // Build connected gear graph from driver
-  const buildGearChain = useCallback((): Map<string, { gear: Gear; speedRatio: number; direction: 1 | -1 }> => {
-    const chain = new Map<string, { gear: Gear; speedRatio: number; direction: 1 | -1 }>();
-
-    if (!driverId) return chain;
-
-    const driverGear = gears.find(g => g.id === driverId);
-    if (!driverGear) return chain;
-
-    // BFS to find all connected gears
-    const visited = new Set<string>();
-    const queue: Array<{ gear: Gear; speedRatio: number; direction: 1 | -1 }> = [
-      { gear: driverGear, speedRatio: 1, direction: 1 }
-    ];
-
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      if (visited.has(current.gear.id)) continue;
-
-      visited.add(current.gear.id);
-      chain.set(current.gear.id, current);
-
-      // Find meshed gears
-      for (const otherGear of gears) {
-        if (visited.has(otherGear.id)) continue;
-        if (areGearsMeshed(current.gear, otherGear)) {
-          // Speed ratio: driven teeth / driver teeth
-          const newSpeedRatio = current.speedRatio * (current.gear.teeth / otherGear.teeth);
-          // Direction reverses with each mesh
-          const newDirection: 1 | -1 = current.direction === 1 ? -1 : 1;
-
-          queue.push({
-            gear: otherGear,
-            speedRatio: newSpeedRatio,
-            direction: newDirection,
-          });
-        }
-      }
-    }
-
-    return chain;
-  }, [gears, driverId]);
-
-  // Calculate gear rotations based on chain
-  const calculateGearRotations = useCallback((driverAngle: number) => {
-    const chain = buildGearChain();
-    const rotations: Map<string, number> = new Map();
-
-    chain.forEach((info, gearId) => {
-      rotations.set(gearId, driverAngle * info.speedRatio * info.direction);
-    });
-
-    return rotations;
-  }, [buildGearChain]);
-
-  // Animation loop
   useEffect(() => {
-    if (!isAnimating) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
+    if (currentChallenge && resetFor.current !== currentChallenge.id) resetItem(currentChallenge);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id]);
+
+  // Try again KEEPS the train and the verdict's words, so the learner revises it.
+  openItem.current = (index, retry) => {
+    if (!retry) {
+      setPractice(null);
+      if (challenges[index]) resetItem(challenges[index]);
       return;
     }
-
-    const animate = () => {
-      setDriverRotation(prev => (prev + 2) % 360);
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isAnimating]);
-
-  // Get overall gear ratio (last gear speed / driver speed)
-  const getOverallRatio = (): number | null => {
-    const chain = buildGearChain();
-    if (chain.size < 2) return null;
-
-    const chainValues = Array.from(chain.values());
-    const lastGearInfo = chainValues[chainValues.length - 1];
-
-    return lastGearInfo ? Math.abs(lastGearInfo.speedRatio) : null;
+    stopSpin(); setCounts(null);
   };
 
-  // Check if target ratio is achieved
-  const checkTargetRatio = useCallback(() => {
-    if (!targetRatio) return;
+  // ── Evaluation ────────────────────────────────────────────────
+  const { submitResult, hasSubmitted, submittedResult, elapsedMs } = usePrimitiveEvaluation<GearTrainMetrics>({
+    primitiveType: 'gear-train-builder',
+    instanceId: resolvedInstanceId,
+    skillId, subskillId, objectiveId, exhibitId,
+    onSubmit: onEvaluationSubmit,
+  });
 
-    const currentRatio = getOverallRatio();
-    if (currentRatio && Math.abs(currentRatio - targetRatio) < 0.1) {
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    }
-  }, [targetRatio]);
+  const phaseResults = usePhaseResults({
+    challenges, results, isComplete,
+    getChallengeType: c => c.type,
+    phaseConfig: PHASE_CONFIG,
+    getScore: rs => (rs.length ? Math.round(rs.reduce((s, r) => s + Number(r.score ?? 0), 0) / rs.length) : 0),
+  });
 
+  const sessionMetrics = (built: number, accuracy: number, attemptsCount: number, firstTry: number): GearTrainMetrics => ({
+    type: 'gear-train-builder', challengeType: data.challengeType ?? 'mixed', totalTrains: challenges.length, trainsBuilt: built,
+    accuracy, attemptsCount, firstTryCount: firstTry,
+  });
+
+  const sessionSubmitted = useRef(false);
   useEffect(() => {
-    checkTargetRatio();
-  }, [gears, checkTargetRatio]);
+    if (!isComplete || sessionSubmitted.current || tutorOwned || hasSubmitted) return;
+    sessionSubmitted.current = true;
+    const built = results.filter(r => r.correct).length;
+    const accuracy = Math.round(results.reduce((s, r) => s + Number(r.score ?? 0), 0) / Math.max(1, results.length));
+    submitResult(built === challenges.length, accuracy, sessionMetrics(built, accuracy, results.reduce((s, r) => s + r.attempts, 0),
+      results.filter(r => Number(r.score ?? 0) === 100).length), { studentWork: { targets: challenges } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete, results, challenges, tutorOwned, hasSubmitted, submitResult]);
 
-  // Add gear at position
-  const handleAddGear = (gridX: number, gridY: number) => {
-    if (!allowAddGears) return;
-    if (gears.length >= maxGears) {
-      SoundManager.invalid();
-      setHint(`Maximum ${maxGears} gears allowed!`);
-      setTimeout(() => setHint(null), 2000);
-      return;
-    }
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false) return;
+    submitResult(result.passed, result.accuracy,
+      sessionMetrics(result.solvedCount, result.accuracy, result.attemptsCount, result.firstTryCount),
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
-    // Check if position is occupied
-    const occupied = gears.some(g => g.x === gridX && g.y === gridY);
-    if (occupied) {
-      SoundManager.invalid();
-      setHint('This spot is already taken!');
-      setTimeout(() => setHint(null), 2000);
-      return;
-    }
+  // ── Building ──────────────────────────────────────────────────
+  const buildOpen = !challengeDone && !learnerBlocked();
+  const changed = () => { stopSpin(); setCrank(0); setCounts(null); setHint(null); };
 
+  const addGear = (teeth: number) => {
+    if (!buildOpen) return;
+    if (train.length >= MAX_GEARS) { SoundManager.invalid(); setHint(`The track holds ${MAX_GEARS} gears.`); return; }
     SoundManager.snap();
+    changed();
+    setTrain(prev => [...prev, { id: `g${++nextId.current}`, teeth }]);
+  };
+  const removeGear = (id: string) => {
+    if (!buildOpen) return;
+    SoundManager.tap();
+    changed();
+    setTrain(prev => prev.filter(g => g.id !== id));
+  };
+  const clearAll = () => { if (!buildOpen) return; changed(); setTrain([]); };
 
-    const newGear: Gear = {
-      id: `gear-${Date.now()}`,
-      x: gridX,
-      y: gridY,
-      teeth: selectedGearSize,
-      color: themeStyles.gearColors[gears.length % themeStyles.gearColors.length],
-      isDriver: gears.length === 0,
+  /** Turn the crank `turns` times over time; with `count`, show the first and last gear's whole turns as they go. */
+  const spin = (turns: number, count: boolean) => {
+    stopSpin();
+    const ratio = train.length > 1 ? train[0].teeth / train[train.length - 1].teeth : 1;
+    const total = turns * SPIN_MS_PER_TURN;
+    if (typeof requestAnimationFrame !== 'function') {
+      setCrank(turns * 360);
+      if (count) setCounts({ first: turns, last: Math.floor(turns * ratio + 1e-9) });
+      return;
+    }
+    const start = performance.now();
+    const step = (now: number) => {
+      const f = Math.min(1, (now - start) / total), deg = f * turns * 360;
+      setCrank(deg);
+      if (count) setCounts({ first: Math.floor(deg / 360 + 1e-9), last: Math.floor((deg * ratio) / 360 + 1e-9) });
+      spinFrame.current = f < 1 ? requestAnimationFrame(step) : null;
     };
+    spinFrame.current = requestAnimationFrame(step);
+  };
 
-    setGears(prev => [...prev, newGear]);
+  // ── Check ─────────────────────────────────────────────────────
+  const completeCurrent = (attemptsCount: number) => {
+    if (!currentChallenge || recordedRef.current) return;
+    recordedRef.current = true;
+    setChallengeDone(true);
+    if (!practice) mergeResult({ challengeId: currentChallenge.id, correct: true, attempts: attemptsCount, score: phaseScore(attemptsCount) });
+  };
 
-    // Set as driver if first gear
-    if (gears.length === 0) {
-      setDriverId(newGear.id);
+  const checkTrain = () => {
+    if (!currentChallenge || !buildOpen || !train.length) return;
+    const miss = gearMiss(currentChallenge, train);
+    const next = attempts + 1;
+    setAttempts(next);
+    setHint(null); setCounts(null);
+    spin(CHECK_TURNS, false);
+    progress.commitCheck(describeTrain(train), !miss, miss);
+    if (!miss) {
+      SoundManager.playCorrect();
+      setFeedback({ text: PASS_FEEDBACK, correct: true });
+      completeCurrent(next);
+      return;
     }
+    SoundManager.playIncorrect();
+    setFeedback({ text: GEAR_FEEDBACK[miss], correct: false });
   };
 
-  // Remove gear
-  const handleRemoveGear = (gearId: string) => {
-    if (!allowRemoveGears) return;
-
-    setGears(prev => prev.filter(g => g.id !== gearId));
-
-    if (driverId === gearId) {
-      setDriverId(gears.length > 1 ? gears[0].id : null);
-    }
-  };
-
-  // Set driver gear
-  const handleSetDriver = (gearId: string) => {
-    setDriverId(gearId);
-    setGears(prev => prev.map(g => ({
-      ...g,
-      isDriver: g.id === gearId,
-    })));
-  };
-
-  // Manual rotation
-  const handleRotate = (degrees: number) => {
-    setDriverRotation(prev => prev + degrees);
-  };
-
-  // Reset
-  const handleReset = () => {
-    setGears(initialGears);
-    setDriverId(driverGearId || null);
-    setDriverRotation(0);
-    setIsAnimating(false);
-    setHint(null);
-    setShowSuccess(false);
-  };
-
-  // Hint
-  const handleGetHint = () => {
-    const chain = buildGearChain();
-    if (gears.length === 0) {
-      setHint('Click on the grid to place your first gear! It will be the driver gear.');
-    } else if (chain.size < 2) {
-      setHint('Place gears close together so their teeth mesh. Connected gears spin together!');
-    } else if (targetRatio) {
-      const currentRatio = getOverallRatio();
-      if (currentRatio) {
-        if (currentRatio < targetRatio) {
-          setHint(`Current ratio: ${currentRatio.toFixed(2)}:1. Add a bigger gear to increase the ratio!`);
-        } else {
-          setHint(`Current ratio: ${currentRatio.toFixed(2)}:1. Add a smaller gear to decrease the ratio!`);
+  // ── Workspace path ────────────────────────────────────────────
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, train);
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : gearLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerTrain(sessionChallenge);
+          if (!easier) return 'This item has no easier ask; try a help lever.';
+          setLeverState(pulled); resetItem(easier); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
         }
-      }
-    } else {
-      setHint('Great gear train! Try making a gear spin faster or slower than the driver.');
-    }
-    setTimeout(() => setHint(null), 4000);
-  };
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { resetItem(sessionChallenge); setPractice(null); },
+    };
+  });
 
-  // Render a single gear
-  const renderGear = (gear: Gear, rotation: number, direction: 1 | -1) => {
-    const centerX = gear.x * CELL_SIZE + CELL_SIZE / 2 + 50;
-    const centerY = gear.y * CELL_SIZE + CELL_SIZE / 2 + 50;
-    const radius = getGearRadius(gear.teeth);
-    const toothDepth = radius * 0.15;
-    const toothWidth = (2 * Math.PI * radius) / (gear.teeth * 2);
+  // ── The live line: what the train looks like, never how the last gear turns ──
+  const sceneRef = useRef<SVGSVGElement | null>(null);
+  const buildSeeing = useBuildWatcher({
+    buildKey: train.map(g => `${g.id}:${g.teeth}`).join('|'),
+    enabled: buildOpen && train.length > 0,
+    svg: sceneRef,
+    request: {
+      task: currentChallenge?.instruction ?? '',
+      sceneNote: 'A dark track with a dashed line. The learner adds coloured gears in a row; the first gear has a white crank handle.',
+      numbers: 'never',
+      neverSay: WATCH_NEVER_SAY,
+    },
+  });
 
-    // Generate gear teeth path
-    const teethPath: string[] = [];
-    for (let i = 0; i < gear.teeth; i++) {
-      const angle = (i * 2 * Math.PI) / gear.teeth;
-      const nextAngle = ((i + 0.5) * 2 * Math.PI) / gear.teeth;
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: isComplete ? null : currentChallenge?.id ?? null,
+    label: 'The gear train and the gear tray',
+    solved: challengeDone,
+    tutorSpeaking: false,
+  });
 
-      const innerX1 = centerX + Math.cos(angle) * (radius - toothDepth);
-      const innerY1 = centerY + Math.sin(angle) * (radius - toothDepth);
-      const outerX1 = centerX + Math.cos(angle + 0.1) * (radius + toothDepth);
-      const outerY1 = centerY + Math.sin(angle + 0.1) * (radius + toothDepth);
-      const outerX2 = centerX + Math.cos(nextAngle - 0.1) * (radius + toothDepth);
-      const outerY2 = centerY + Math.sin(nextAngle - 0.1) * (radius + toothDepth);
-      const innerX2 = centerX + Math.cos(nextAngle) * (radius - toothDepth);
-      const innerY2 = centerY + Math.sin(nextAngle) * (radius - toothDepth);
-
-      if (i === 0) {
-        teethPath.push(`M ${innerX1} ${innerY1}`);
-      }
-      teethPath.push(`L ${outerX1} ${outerY1}`);
-      teethPath.push(`L ${outerX2} ${outerY2}`);
-      teethPath.push(`L ${innerX2} ${innerY2}`);
-    }
-    teethPath.push('Z');
-
-    const isDriver = gear.id === driverId;
-    const chain = buildGearChain();
-    const gearInfo = chain.get(gear.id);
-    const speedRatio = gearInfo?.speedRatio || 1;
-
+  // ── Render ─────────────────────────────────────────────────────
+  if (!challenges.length) return <div className={`w-full p-8 text-center text-slate-400 ${className ?? ''}`}>No gear trains to build.</div>;
+  if (isComplete) {
     return (
-      <g key={gear.id} style={{ cursor: 'pointer' }}>
-        {/* Gear body with rotation */}
-        <g transform={`rotate(${rotation}, ${centerX}, ${centerY})`}>
-          {/* Gear teeth */}
-          <path
-            d={teethPath.join(' ')}
-            fill={gear.color}
-            stroke={isDriver ? themeStyles.accentColor : '#1E293B'}
-            strokeWidth={isDriver ? 3 : 2}
-            opacity={0.9}
-          />
-
-          {/* Inner circle */}
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r={radius * 0.6}
-            fill={gear.color}
-            stroke="#1E293B"
-            strokeWidth={2}
-            opacity={0.95}
-          />
-
-          {/* Spokes */}
-          {[0, 60, 120, 180, 240, 300].map((spokeAngle, i) => (
-            <line
-              key={i}
-              x1={centerX}
-              y1={centerY}
-              x2={centerX + Math.cos(spokeAngle * Math.PI / 180) * radius * 0.55}
-              y2={centerY + Math.sin(spokeAngle * Math.PI / 180) * radius * 0.55}
-              stroke="#1E293B"
-              strokeWidth={3}
-              strokeLinecap="round"
-            />
-          ))}
-
-          {/* Center hub */}
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r={radius * 0.2}
-            fill="#1E293B"
-            stroke={gear.color}
-            strokeWidth={2}
-          />
-
-          {/* Center axle hole */}
-          <circle
-            cx={centerX}
-            cy={centerY}
-            r={radius * 0.08}
-            fill={themeStyles.backgroundColor}
-          />
-        </g>
-
-        {/* Labels (don't rotate) */}
-        {showTeethCount && (
-          <text
-            x={centerX}
-            y={centerY + radius + 20}
-            textAnchor="middle"
-            fontSize={11}
-            fill="#94A3B8"
-            fontFamily="monospace"
-          >
-            {gear.teeth} teeth
-          </text>
-        )}
-
-        {/* Speed ratio indicator */}
-        {showSpeedRatio && gearInfo && !isDriver && (
-          <g transform={`translate(${centerX}, ${centerY - radius - 15})`}>
-            <rect
-              x={-25}
-              y={-10}
-              width={50}
-              height={20}
-              rx={10}
-              fill="rgba(20,184,166,0.2)"
-              stroke="rgba(20,184,166,0.5)"
-              strokeWidth={1}
-            />
-            <text
-              textAnchor="middle"
-              y={4}
-              fontSize={10}
-              fill="#14B8A6"
-              fontWeight="bold"
-              fontFamily="monospace"
-            >
-              {speedRatio.toFixed(1)}x
-            </text>
-          </g>
-        )}
-
-        {/* Direction indicator */}
-        {showDirection && gearInfo && (
-          <g transform={`translate(${centerX + radius + 10}, ${centerY})`}>
-            <text
-              textAnchor="start"
-              fontSize={16}
-              fill={direction === 1 ? '#22C55E' : '#EF4444'}
-            >
-              {direction === 1 ? '↻' : '↺'}
-            </text>
-          </g>
-        )}
-
-        {/* Driver indicator */}
-        {isDriver && (
-          <g transform={`translate(${centerX}, ${centerY})`}>
-            <circle
-              r={radius * 0.25}
-              fill={themeStyles.accentColor}
-              opacity={0.3}
-            />
-            <text
-              textAnchor="middle"
-              y={-radius - 25}
-              fontSize={10}
-              fill={themeStyles.accentColor}
-              fontWeight="bold"
-            >
-              DRIVER
-            </text>
-          </g>
-        )}
-
-        {/* Click handler for removal/driver selection */}
-        <circle
-          cx={centerX}
-          cy={centerY}
-          r={radius + toothDepth}
-          fill="transparent"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (e.shiftKey && allowRemoveGears) {
-              handleRemoveGear(gear.id);
-            } else {
-              handleSetDriver(gear.id);
-            }
-          }}
-        />
-      </g>
+      <div className={`w-full max-w-5xl mx-auto my-8 ${className ?? ''}`}>
+        <PhaseSummaryPanel phases={phaseResults} overallScore={submittedResult?.score} durationMs={elapsedMs}
+          heading="Gear Trains Complete" celebrationMessage="You built every gear train!" />
+      </div>
     );
-  };
+  }
 
-  // Calculate all gear rotations
-  const gearRotations = calculateGearRotations(driverRotation);
-  const chain = buildGearChain();
-  const overallRatio = getOverallRatio();
-
-  const onTarget = !!(overallRatio && targetRatio && Math.abs(overallRatio - targetRatio) < 0.1);
+  const angles = train.map((g, i) => crank * (train[0].teeth / g.teeth) * (i % 2 === 0 ? 1 : -1));
+  const arrows = leverOn(ARROWS_LEVER) ? train.map((_, i) => (i % 2 === 0 ? 1 : -1) as 1 | -1) : null;
 
   return (
-    <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8 justify-center">
-        <div className="w-12 h-12 rounded-xl bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
-          <span className="text-2xl">{themeStyles.icon}</span>
-        </div>
-        <div className="text-left">
-          <h2 className="text-2xl font-bold text-white tracking-tight">{title}</h2>
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
-            <p className="text-xs text-cyan-400 font-mono uppercase tracking-wider">
-              Interactive Gear Train Lab
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{title || 'Gear Train Builder'}</LuminaCardTitle>
+        <LuminaCardDescription>Tap a gear to add it to the end of your train. Tap a gear in the train to take it out.</LuminaCardDescription>
+      </LuminaCardHeader>
+      <LuminaCardContent className="space-y-5">
+        <div className="space-y-1 text-center">
+          {challenges.length > 1 && (
+            <p className="text-xs font-mono uppercase tracking-wider text-slate-400">
+              Train {currentIndex + 1} / {challenges.length}{practice ? ' · practice' : ''}
             </p>
+          )}
+          <h4 className="text-lg font-semibold text-violet-200">{currentChallenge?.instruction}</h4>
+        </div>
+
+        {pip.store && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
+          <GearScene ref={sceneRef} train={train} angles={angles} arrows={arrows} counts={counts} disabled={!buildOpen} onTapGear={removeGear} />
+          <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+            {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-violet-100">👀 {buildSeeing}</span>}
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2" role="group" aria-label="Gear tray">
+            {TEETH.map(t => (
+              <LuminaButton key={t} tone="ghost" disabled={!buildOpen} aria-label={`Add a ${t}-tooth gear`} data-pip-object={`tray-${t}`}
+                onClick={() => addGear(t)} className="min-h-11 !h-auto gap-2 px-3 py-2">
+                <svg width={Math.round(t * 0.9) + 6} height={Math.round(t * 0.9) + 6} aria-hidden="true">
+                  <circle cx={(t * 0.9 + 6) / 2} cy={(t * 0.9 + 6) / 2} r={t * 0.45} fill="#a78bfa" />
+                </svg>
+                <span>{t} teeth</span>
+              </LuminaButton>
+            ))}
           </div>
         </div>
-      </div>
 
-      <LuminaCard topAccent="cyan" className="relative overflow-hidden">
-        {/* Background Texture */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: 'radial-gradient(#06B6D4 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-        ></div>
+        {hint && <LuminaCallout accent="amber" label="Hint" className="p-3">{hint}</LuminaCallout>}
+        {feedback && (
+          <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'} label={feedback.correct ? 'Yes' : 'Not yet'}>
+            {feedback.text}
+          </LuminaFeedbackCard>
+        )}
 
-        <LuminaCardContent className="relative z-10 p-6 md:p-8">
-          {/* Description */}
-          <div className="mb-6 text-center max-w-2xl mx-auto">
-            <p className="text-slate-300 font-light">{description}</p>
-          </div>
-
-          {/* Stats Display */}
-          <div className="mb-4 flex justify-center gap-4 flex-wrap">
-            <LuminaBadge className="px-4 py-2 text-sm font-mono">
-              Gears: <span className="font-bold text-white ml-1">{gears.length}/{maxGears}</span>
-            </LuminaBadge>
-
-            {overallRatio && (
-              <LuminaBadge accent="cyan" className="px-4 py-2 text-sm font-mono">
-                Output Ratio: <span className="font-bold ml-1">{overallRatio.toFixed(2)}:1</span>
-              </LuminaBadge>
-            )}
-
-            {targetRatio && (
-              <LuminaBadge accent={onTarget ? 'emerald' : 'amber'} className="px-4 py-2 text-sm font-mono">
-                Target: <span className="font-bold ml-1">{targetRatio}:1</span>
-              </LuminaBadge>
-            )}
-          </div>
-
-          {/* Gear Size Selector — tool selection (interaction surface, stays bespoke) */}
-          {allowAddGears && (
-            <div className="mb-4 flex justify-center gap-2 flex-wrap">
-              <span className="text-slate-400 text-sm self-center mr-2">Select gear size:</span>
-              {availableGears.map((teeth) => (
-                <button
-                  key={teeth}
-                  onClick={() => { SoundManager.select(); setSelectedGearSize(teeth); }}
-                  className={`px-4 py-2 rounded-lg font-mono text-sm transition-all ${
-                    selectedGearSize === teeth
-                      ? 'bg-cyan-500/30 border-cyan-500 text-cyan-300 border-2'
-                      : 'bg-slate-700/50 border-slate-600 text-slate-400 border hover:bg-slate-700'
-                  }`}
-                >
-                  {teeth}T
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* SVG Canvas — bespoke interaction surface */}
-          <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
-            <svg
-              ref={svgRef}
-              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-              className="w-full h-auto select-none"
-              style={{ maxHeight: '500px' }}
-              onClick={(e) => {
-                if (!allowAddGears) return;
-                const rect = svgRef.current?.getBoundingClientRect();
-                if (!rect) return;
-
-                const scaleX = svgWidth / rect.width;
-                const scaleY = svgHeight / rect.height;
-                const x = (e.clientX - rect.left) * scaleX - 50;
-                const y = (e.clientY - rect.top) * scaleY - 50;
-
-                const gridX = Math.floor(x / CELL_SIZE);
-                const gridY = Math.floor(y / CELL_SIZE);
-
-                if (gridX >= 0 && gridX < cols && gridY >= 0 && gridY < rows) {
-                  handleAddGear(gridX, gridY);
-                }
-              }}
-            >
-              {/* Background */}
-              <rect x={0} y={0} width={svgWidth} height={svgHeight} fill={themeStyles.backgroundColor} />
-
-              {/* Grid */}
-              <g opacity={0.3}>
-                {Array.from({ length: rows + 1 }).map((_, i) => (
-                  <line
-                    key={`h${i}`}
-                    x1={50}
-                    y1={50 + i * CELL_SIZE}
-                    x2={50 + cols * CELL_SIZE}
-                    y2={50 + i * CELL_SIZE}
-                    stroke={themeStyles.gridColor}
-                    strokeWidth={1}
-                  />
-                ))}
-                {Array.from({ length: cols + 1 }).map((_, i) => (
-                  <line
-                    key={`v${i}`}
-                    x1={50 + i * CELL_SIZE}
-                    y1={50}
-                    x2={50 + i * CELL_SIZE}
-                    y2={50 + rows * CELL_SIZE}
-                    stroke={themeStyles.gridColor}
-                    strokeWidth={1}
-                  />
-                ))}
-              </g>
-
-              {/* Grid dots (peg positions) */}
-              {Array.from({ length: rows }).map((_, row) =>
-                Array.from({ length: cols }).map((_, col) => (
-                  <circle
-                    key={`dot-${row}-${col}`}
-                    cx={50 + col * CELL_SIZE + CELL_SIZE / 2}
-                    cy={50 + row * CELL_SIZE + CELL_SIZE / 2}
-                    r={4}
-                    fill={themeStyles.gridColor}
-                    opacity={0.5}
-                  />
-                ))
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {!challengeDone ? (
+            <>
+              <LuminaButton disabled={!buildOpen || !train.length} onClick={clearAll}>Clear</LuminaButton>
+              {leverOn(SPIN_LEVER) && (
+                <LuminaButton disabled={!buildOpen || train.length < 2} onClick={() => spin(TRY_TURNS, true)}>Turn the crank</LuminaButton>
               )}
-
-              {/* Mesh lines between connected gears */}
-              {gears.map((gear1, i) =>
-                gears.slice(i + 1).map((gear2) => {
-                  if (areGearsMeshed(gear1, gear2)) {
-                    const x1 = gear1.x * CELL_SIZE + CELL_SIZE / 2 + 50;
-                    const y1 = gear1.y * CELL_SIZE + CELL_SIZE / 2 + 50;
-                    const x2 = gear2.x * CELL_SIZE + CELL_SIZE / 2 + 50;
-                    const y2 = gear2.y * CELL_SIZE + CELL_SIZE / 2 + 50;
-                    return (
-                      <line
-                        key={`mesh-${gear1.id}-${gear2.id}`}
-                        x1={x1}
-                        y1={y1}
-                        x2={x2}
-                        y2={y2}
-                        stroke={themeStyles.accentColor}
-                        strokeWidth={2}
-                        strokeDasharray="4 4"
-                        opacity={0.3}
-                      />
-                    );
-                  }
-                  return null;
-                })
-              )}
-
-              {/* Render gears */}
-              {gears.map((gear) => {
-                const rotation = gearRotations.get(gear.id) || 0;
-                const gearInfo = chain.get(gear.id);
-                const direction = gearInfo?.direction || 1;
-                return renderGear(gear, rotation, direction);
-              })}
-
-              {/* Instructions overlay when empty */}
-              {gears.length === 0 && (
-                <g transform={`translate(${svgWidth / 2}, ${svgHeight / 2})`}>
-                  <rect
-                    x={-150}
-                    y={-40}
-                    width={300}
-                    height={80}
-                    rx={16}
-                    fill="rgba(6,182,212,0.1)"
-                    stroke="rgba(6,182,212,0.3)"
-                    strokeWidth={2}
-                    strokeDasharray="8 4"
-                  />
-                  <text
-                    textAnchor="middle"
-                    y={-10}
-                    fontSize={14}
-                    fill="#06B6D4"
-                    fontWeight="bold"
-                  >
-                    Click on the grid to place gears!
-                  </text>
-                  <text
-                    textAnchor="middle"
-                    y={15}
-                    fontSize={12}
-                    fill="#94A3B8"
-                  >
-                    First gear becomes the driver
-                  </text>
-                </g>
-              )}
-            </svg>
-
-            {/* Success animation overlay */}
-            {showSuccess && (
-              <div className="absolute inset-0 flex items-center justify-center bg-cyan-500/10 backdrop-blur-sm animate-fade-in">
-                <div className="bg-gradient-to-br from-cyan-500 to-emerald-600 text-white px-8 py-4 rounded-2xl font-bold text-xl shadow-[0_0_40px_rgba(6,182,212,0.5)] animate-bounce">
-                  Target Ratio Achieved!
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Controls */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {/* Rotation Controls — direct manipulation of the sim, stays bespoke */}
-            <LuminaPanel accent="cyan">
-              <label className="block text-sm font-mono text-slate-300 mb-3">
-                Rotate Driver Gear
-              </label>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => handleRotate(-45)}
-                  className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 rounded-lg font-semibold transition-all"
-                >
-                  ↺ -45°
-                </button>
-                <button
-                  onClick={() => handleRotate(45)}
-                  className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 rounded-lg font-semibold transition-all"
-                >
-                  +45° ↻
-                </button>
-                <button
-                  onClick={() => setIsAnimating(!isAnimating)}
-                  className={`px-4 py-2 ${
-                    isAnimating
-                      ? 'bg-red-500/20 border-red-500/50 text-red-300'
-                      : 'bg-green-500/20 border-green-500/50 text-green-300'
-                  } border rounded-lg font-semibold transition-all`}
-                >
-                  {isAnimating ? '⏹ Stop' : '▶ Animate'}
-                </button>
-              </div>
-            </LuminaPanel>
-
-            {/* Rotation slider — direct manipulation of the sim, stays bespoke */}
-            <LuminaPanel accent="cyan">
-              <label className="block text-sm font-mono text-slate-300 mb-3">
-                Driver Rotation: <span className="text-cyan-400 font-bold">{driverRotation.toFixed(0)}°</span>
-              </label>
-              <input
-                type="range"
-                min={0}
-                max={720}
-                step={15}
-                value={driverRotation % 720}
-                onChange={(e) => setDriverRotation(parseFloat(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-              />
-            </LuminaPanel>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3 mb-6">
-            <LuminaButton onClick={handleGetHint} className="gap-2">
-              <span>💡</span> Hint
-            </LuminaButton>
-
-            <LuminaButton tone="danger" onClick={handleReset} className="gap-2">
-              <span>↺</span> Reset
-            </LuminaButton>
-          </div>
-
-          {/* Hint Display */}
-          {hint && (
-            <LuminaPanel accent="amber" className="mb-6 animate-fade-in">
-              <div className="flex items-start gap-3">
-                <span className="text-amber-400 text-lg">💡</span>
-                <p className="text-amber-200 text-sm">{hint}</p>
-              </div>
-            </LuminaPanel>
-          )}
-
-          {/* Instructions */}
-          <LuminaPanel className="mb-6">
-            <h4 className="text-white font-semibold mb-2">How to Use:</h4>
-            <ul className="text-slate-400 text-sm space-y-1">
-              <li>• <span className="text-cyan-400">Click on grid</span> to place a gear (first gear = driver)</li>
-              <li>• <span className="text-cyan-400">Click on a gear</span> to make it the driver</li>
-              {allowRemoveGears && <li>• <span className="text-cyan-400">Shift+Click</span> to remove a gear</li>}
-              <li>• Place gears close together to mesh their teeth</li>
-            </ul>
-          </LuminaPanel>
-
-          {/* Educational Info */}
-          <LuminaPanel>
-            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              How Gears Work
-            </h4>
-            <div className="space-y-2">
-              <p className="text-slate-300 text-sm">
-                Gears are <span className="text-cyan-400 font-semibold">toothed wheels</span> that mesh together
-                to transfer motion and force. When gears connect, they spin together!
-              </p>
-              <p className="text-slate-300 text-sm">
-                <span className="text-amber-400 font-semibold">Direction:</span> Each gear reverses direction.
-                If the driver spins clockwise (↻), the next gear spins counter-clockwise (↺).
-              </p>
-              <p className="text-slate-300 text-sm">
-                <span className="text-green-400 font-semibold">Speed Ratio:</span> A small gear meshed with a big gear
-                spins faster! The ratio equals (driver teeth) ÷ (driven teeth).
-              </p>
-              {targetRatio && (
-                <p className="text-slate-300 text-sm">
-                  <span className="text-purple-400 font-semibold">Challenge:</span> Build a gear train with
-                  an output ratio of {targetRatio}:1!
-                </p>
-              )}
-            </div>
-          </LuminaPanel>
-        </LuminaCardContent>
-      </LuminaCard>
-    </div>
+              <LuminaButton tone="primary" disabled={!buildOpen || !train.length} onClick={checkTrain}>I&apos;m done!</LuminaButton>
+            </>
+          ) : !tutorOwned && currentIndex + 1 < challenges.length && !practice ? (
+            <LuminaActionButton action="next" onClick={() => advance()}>Next train →</LuminaActionButton>
+          ) : null}
+        </div>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
+
+const GearTrainBuilder = withWorkspaceController<GearTrainBuilderProps, ProgressOptions<GearChallenge>, Progress>(
+  'gear-train-builder', GearTrainBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('gear-train-builder'));
 
 export default GearTrainBuilder;

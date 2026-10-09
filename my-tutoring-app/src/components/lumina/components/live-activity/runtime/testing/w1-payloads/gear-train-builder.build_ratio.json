@@ -1,0 +1,35 @@
+{
+ "source": "qa/open-build/gear-train-builder-2026-10-08/generator-run.json",
+ "primitiveId": "gear-train-builder",
+ "evalMode": "build_ratio",
+ "data": {
+  "title": "Clockwork Tooth Counter",
+  "challengeType": "build_ratio",
+  "challenges": [
+   {
+    "type": "build_ratio",
+    "ratio": 2,
+    "way": "same",
+    "minGears": 3,
+    "id": "gears-1",
+    "instruction": "Build a gear train where the last gear turns 2 times for every 1 turn of the first gear, and turns the same way."
+   },
+   {
+    "type": "build_ratio",
+    "ratio": 0.3333333333333333,
+    "way": "same",
+    "minGears": 3,
+    "id": "gears-2",
+    "instruction": "Build a gear train where the last gear turns once for every 3 turns of the first gear, and turns the same way."
+   },
+   {
+    "type": "build_ratio",
+    "ratio": 0.5,
+    "way": "opposite",
+    "minGears": 2,
+    "id": "gears-3",
+    "instruction": "Build a gear train where the last gear turns once for every 2 turns of the first gear, and turns the opposite way."
+   }
+  ]
+ }
+}

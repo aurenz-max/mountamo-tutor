@@ -1,0 +1,105 @@
+{
+ "checks": [
+  {
+   "name": "direction: 3 trains generated",
+   "pass": true,
+   "detail": "Build a gear train of at least 3 gears where the last gear turns the same way as the first gear. | Build a gear train of at least 4 gears where the last gear turns the opposite way to the first gear. | Build a gear train of at least 5 gears where the last gear turns the same way as the first gear."
+  },
+  {
+   "name": "direction: track starts empty, no arrows",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "direction: the wrong count of gears turns the last gear the wrong way",
+   "pass": true,
+   "detail": "Not yet. Your last gear turns the wrong way."
+  },
+  {
+   "name": "direction: tapping a gear takes it out",
+   "pass": true,
+   "detail": ""
+  },
+  {
+   "name": "direction: one gear fewer passes",
+   "pass": true,
+   "detail": "Yes! Your last gear does just what the job asks."
+  },
+  {
+   "name": "speed: the pair the wrong way round is not faster",
+   "pass": true,
+   "detail": "Not yet. Your last gear does not turn faster than the first gear."
+  },
+  {
+   "name": "speed: the pair the right way round passes",
+   "pass": true,
+   "detail": "Yes! Your last gear does just what the job asks."
+  },
+  {
+   "name": "ratio: first and last swapped turns too slowly",
+   "pass": true,
+   "detail": "Build a gear train where the last gear turns 2 times for every 1 turn of the first gear. :: Not yet. Your last gear turns too few times for each turn of the first gear."
+  },
+  {
+   "name": "ratio: the reference train passes",
+   "pass": true,
+   "detail": "Yes! Your last gear does just what the job asks."
+  },
+  {
+   "name": "phone: six 32-tooth gears fit a 358px column",
+   "pass": true,
+   "detail": "{\"card\":358,\"scene\":[358,104],\"gears\":[[61,61],[61,61],[61,61],[61,61],[61,61],[61,61]],\"trayButton\":[92,44],\"overflow\":[]}"
+  },
+  {
+   "name": "phone: tray buttons are at least 44px tall",
+   "pass": true,
+   "detail": "[92,44]"
+  },
+  {
+   "name": "watcher: 5 lines, none breaks a leak rule",
+   "pass": true,
+   "detail": "[]"
+  }
+ ],
+ "watcherLines": [
+  {
+   "build": "direction 4 gears (wrong way)",
+   "line": "Ooh, bright pink, purple, blue, and green spiky shapes line up nicely!",
+   "leaks": []
+  },
+  {
+   "build": "direction one gear fewer",
+   "line": "Ooh, a pink gear with a white handle leads a colorful line!",
+   "leaks": []
+  },
+  {
+   "build": "speed backwards pair",
+   "line": "Ooh, a big purple gear is touching the pink crank gear!",
+   "leaks": []
+  },
+  {
+   "build": "speed revised",
+   "line": "Ooh, a small purple gear is touching the big pink gear!",
+   "leaks": []
+  },
+  {
+   "build": "ratio reference",
+   "line": "Ooh, a purple spiky gear is touching the big pink gear!",
+   "leaks": []
+  }
+ ],
+ "errors": [
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <circle> attribute r: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <circle> attribute r: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <circle> attribute r: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute ry: Expected length, \"undefined\"."
+ ]
+}

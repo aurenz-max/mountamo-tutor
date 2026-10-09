@@ -8,6 +8,8 @@ import {
   LuminaPanel,
   LuminaCallout,
 } from '../../../ui';
+import LeverBuild, { type LeverBuildData } from './LeverBuild';
+import { torquesAbout, isBalanced as torquesBalanced, type LeverBuildChallenge } from './leverLabBuild';
 
 /**
  * Lever Lab - Interactive lever/fulcrum system for teaching simple machines
@@ -46,6 +48,16 @@ export interface LeverLabData {
   showTorque?: boolean;         // Show torque calculations (grades 4-5)
   allowAddLoads?: boolean;      // Allow adding new loads
   maxLoads?: number;            // Maximum number of loads allowed
+  /** Open builds (build_balance / build_lift). Present: the build scene runs; absent: the sandbox below, as before. */
+  challenges?: LeverBuildChallenge[];
+  challengeType?: string;
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: LeverBuildData['onEvaluationSubmit'];
 }
 
 interface LeverLabProps {
@@ -53,7 +65,13 @@ interface LeverLabProps {
   className?: string;
 }
 
-const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
+/** Older payloads (no `challenges`) keep the sandbox; a build payload gets the open-build scene. */
+const LeverLab: React.FC<LeverLabProps> = ({ data, className }) =>
+  data.challenges?.length
+    ? <LeverBuild data={{ ...data, challenges: data.challenges }} className={className} />
+    : <LeverSandbox data={data} className={className} />;
+
+const LeverSandbox: React.FC<LeverLabProps> = ({ data, className }) => {
   const {
     title,
     description,
@@ -96,38 +114,12 @@ const LeverLab: React.FC<LeverLabProps> = ({ data, className }) => {
   const unitToPixel = beamVisualLength / beamLength;
 
   // Calculate torque on each side of fulcrum
-  const calculateTorques = useCallback(() => {
-    let leftTorque = 0;
-    let rightTorque = 0;
-
-    loads.forEach(load => {
-      const distanceFromFulcrum = load.position - fulcrumPosition;
-      const torque = load.weight * Math.abs(distanceFromFulcrum);
-
-      if (distanceFromFulcrum < 0) {
-        leftTorque += torque;
-      } else if (distanceFromFulcrum > 0) {
-        rightTorque += torque;
-      }
-    });
-
-    // Add effort force contribution
-    if (effortForce > 0 && effortPosition !== undefined) {
-      const effortDistanceFromFulcrum = effortPosition - fulcrumPosition;
-      const effortTorque = effortForce * Math.abs(effortDistanceFromFulcrum);
-
-      if (effortDistanceFromFulcrum < 0) {
-        leftTorque += effortTorque;
-      } else if (effortDistanceFromFulcrum > 0) {
-        rightTorque += effortTorque;
-      }
-    }
-
-    return { leftTorque, rightTorque };
-  }, [loads, fulcrumPosition, effortForce, effortPosition]);
-
-  const { leftTorque, rightTorque } = calculateTorques();
-  const isBalanced = Math.abs(leftTorque - rightTorque) < 0.1;
+  // Torque on each side of the fulcrum (shared rule, `leverLabBuild.ts`); the pressed effort is one more load.
+  const torques = torquesAbout(
+    effortForce > 0 ? [...loads, { position: effortPosition, weight: effortForce }] : loads, fulcrumPosition);
+  const leftTorque = torques.left;
+  const rightTorque = torques.right;
+  const isBalanced = torquesBalanced(torques);
 
   // Calculate tilt angle based on torque difference
   const tiltAngle = (() => {

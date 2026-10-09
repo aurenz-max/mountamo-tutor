@@ -1,0 +1,783 @@
+{
+ "results": [
+  {
+   "lesson": {
+    "pin": "build_tall",
+    "grade": "K",
+    "topic": "Building with blocks",
+    "intent": "Stack blocks to build a tall tower"
+   },
+   "title": "My Tall Block Tower",
+   "challengeType": "build_tall",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "tower-1",
+     "type": "build_tall",
+     "targetHeight": 4,
+     "instruction": "Build a tower that reaches the green line and stays standing.",
+     "pass": {
+      "miss": null,
+      "work": "4 pieces: 4 beams. 4 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "3 pieces: 3 blocks. 3 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-2",
+     "type": "build_tall",
+     "targetHeight": 5,
+     "instruction": "Build a tower that reaches the green line and stays standing.",
+     "pass": {
+      "miss": null,
+      "work": "5 pieces: 5 beams. 5 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "4 pieces: 4 blocks. 4 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-3",
+     "type": "build_tall",
+     "targetHeight": 6,
+     "instruction": "Build a tower that reaches the green line and stays standing.",
+     "pass": {
+      "miss": null,
+      "work": "6 pieces: 6 beams. 6 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "5 pieces: 5 blocks. 5 tall, 2 wide at the bottom"
+     }
+    }
+   ],
+   "data": {
+    "title": "My Tall Block Tower",
+    "challengeType": "build_tall",
+    "challenges": [
+     {
+      "id": "tower-1",
+      "type": "build_tall",
+      "targetHeight": 4,
+      "instruction": "Build a tower that reaches the green line and stays standing."
+     },
+     {
+      "id": "tower-2",
+      "type": "build_tall",
+      "targetHeight": 5,
+      "instruction": "Build a tower that reaches the green line and stays standing."
+     },
+     {
+      "id": "tower-3",
+      "type": "build_tall",
+      "targetHeight": 6,
+      "instruction": "Build a tower that reaches the green line and stays standing."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": "build_tall",
+    "grade": "2",
+    "topic": "Towers and buildings",
+    "intent": "Build a tower that does not fall"
+   },
+   "title": "Strong Standing Skyscrapers",
+   "challengeType": "build_tall",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "tower-1",
+     "type": "build_tall",
+     "targetHeight": 6,
+     "instruction": "Build a tower that reaches the green line and stays standing.",
+     "pass": {
+      "miss": null,
+      "work": "6 pieces: 6 beams. 6 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "5 pieces: 5 blocks. 5 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-2",
+     "type": "build_tall",
+     "targetHeight": 7,
+     "instruction": "Build a tower that reaches the green line and stays standing.",
+     "pass": {
+      "miss": null,
+      "work": "7 pieces: 7 beams. 7 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "6 pieces: 6 blocks. 6 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-3",
+     "type": "build_tall",
+     "targetHeight": 8,
+     "instruction": "Build a tower that reaches the green line and stays standing.",
+     "pass": {
+      "miss": null,
+      "work": "8 pieces: 8 beams. 8 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "7 pieces: 7 blocks. 7 tall, 2 wide at the bottom"
+     }
+    }
+   ],
+   "data": {
+    "title": "Strong Standing Skyscrapers",
+    "challengeType": "build_tall",
+    "challenges": [
+     {
+      "id": "tower-1",
+      "type": "build_tall",
+      "targetHeight": 6,
+      "instruction": "Build a tower that reaches the green line and stays standing."
+     },
+     {
+      "id": "tower-2",
+      "type": "build_tall",
+      "targetHeight": 7,
+      "instruction": "Build a tower that reaches the green line and stays standing."
+     },
+     {
+      "id": "tower-3",
+      "type": "build_tall",
+      "targetHeight": 8,
+      "instruction": "Build a tower that reaches the green line and stays standing."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": "build_few",
+    "grade": "3",
+    "topic": "Engineering design with limited materials",
+    "intent": "Reach a height using as few pieces as possible"
+   },
+   "title": "Minimalist Material Skyscraper",
+   "challengeType": "build_few",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "tower-1",
+     "type": "build_few",
+     "targetHeight": 6,
+     "maxPieces": 4,
+     "instruction": "Build a tower that reaches the green line using no more than 4 pieces.",
+     "pass": {
+      "miss": null,
+      "work": "2 pieces: 2 beams (2 stood on end). 8 tall, 1 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "5 pieces: 5 blocks. 5 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-2",
+     "type": "build_few",
+     "targetHeight": 7,
+     "maxPieces": 4,
+     "instruction": "Build a tower that reaches the green line using no more than 4 pieces.",
+     "pass": {
+      "miss": null,
+      "work": "2 pieces: 2 beams (2 stood on end). 8 tall, 1 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "6 pieces: 6 blocks. 6 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-3",
+     "type": "build_few",
+     "targetHeight": 8,
+     "maxPieces": 4,
+     "instruction": "Build a tower that reaches the green line using no more than 4 pieces.",
+     "pass": {
+      "miss": null,
+      "work": "2 pieces: 2 beams (2 stood on end). 8 tall, 1 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "7 pieces: 7 blocks. 7 tall, 2 wide at the bottom"
+     }
+    }
+   ],
+   "data": {
+    "title": "Minimalist Material Skyscraper",
+    "challengeType": "build_few",
+    "challenges": [
+     {
+      "id": "tower-1",
+      "type": "build_few",
+      "targetHeight": 6,
+      "maxPieces": 4,
+      "instruction": "Build a tower that reaches the green line using no more than 4 pieces."
+     },
+     {
+      "id": "tower-2",
+      "type": "build_few",
+      "targetHeight": 7,
+      "maxPieces": 4,
+      "instruction": "Build a tower that reaches the green line using no more than 4 pieces."
+     },
+     {
+      "id": "tower-3",
+      "type": "build_few",
+      "targetHeight": 8,
+      "maxPieces": 4,
+      "instruction": "Build a tower that reaches the green line using no more than 4 pieces."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": "build_few",
+    "grade": "5",
+    "topic": "Material efficiency in structures",
+    "intent": "Design a tall structure with limited materials"
+   },
+   "title": "Minimal Material Skyscraper Challenge",
+   "challengeType": "build_few",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "tower-1",
+     "type": "build_few",
+     "targetHeight": 8,
+     "maxPieces": 3,
+     "instruction": "Build a tower that reaches the green line using no more than 3 pieces.",
+     "pass": {
+      "miss": null,
+      "work": "2 pieces: 2 beams (2 stood on end). 8 tall, 1 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "7 pieces: 7 blocks. 7 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-2",
+     "type": "build_few",
+     "targetHeight": 9,
+     "maxPieces": 4,
+     "instruction": "Build a tower that reaches the green line using no more than 4 pieces.",
+     "pass": {
+      "miss": null,
+      "work": "3 pieces: 3 beams (3 stood on end). 12 tall, 1 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "8 pieces: 8 blocks. 8 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-3",
+     "type": "build_few",
+     "targetHeight": 10,
+     "maxPieces": 4,
+     "instruction": "Build a tower that reaches the green line using no more than 4 pieces.",
+     "pass": {
+      "miss": null,
+      "work": "3 pieces: 3 beams (3 stood on end). 12 tall, 1 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "9 pieces: 9 blocks. 9 tall, 2 wide at the bottom"
+     }
+    }
+   ],
+   "data": {
+    "title": "Minimal Material Skyscraper Challenge",
+    "challengeType": "build_few",
+    "challenges": [
+     {
+      "id": "tower-1",
+      "type": "build_few",
+      "targetHeight": 8,
+      "maxPieces": 3,
+      "instruction": "Build a tower that reaches the green line using no more than 3 pieces."
+     },
+     {
+      "id": "tower-2",
+      "type": "build_few",
+      "targetHeight": 9,
+      "maxPieces": 4,
+      "instruction": "Build a tower that reaches the green line using no more than 4 pieces."
+     },
+     {
+      "id": "tower-3",
+      "type": "build_few",
+      "targetHeight": 10,
+      "maxPieces": 4,
+      "instruction": "Build a tower that reaches the green line using no more than 4 pieces."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": "build_windproof",
+    "grade": "2",
+    "topic": "Strong buildings",
+    "intent": "Build a tower that stays up in the wind"
+   },
+   "title": "Windy Weather Tower",
+   "challengeType": "build_windproof",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "tower-1",
+     "type": "build_windproof",
+     "targetHeight": 6,
+     "wind": 0.943,
+     "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows.",
+     "pass": {
+      "miss": null,
+      "work": "6 pieces: 6 beams. 6 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "blown_over",
+      "work": "6 pieces: 6 blocks. 6 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-2",
+     "type": "build_windproof",
+     "targetHeight": 7,
+     "wind": 0.873,
+     "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows.",
+     "pass": {
+      "miss": null,
+      "work": "7 pieces: 7 beams. 7 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "blown_over",
+      "work": "7 pieces: 7 blocks. 7 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-3",
+     "type": "build_windproof",
+     "targetHeight": 8,
+     "wind": 0.707,
+     "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows.",
+     "pass": {
+      "miss": null,
+      "work": "8 pieces: 8 beams. 8 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "blown_over",
+      "work": "8 pieces: 8 blocks. 8 tall, 2 wide at the bottom"
+     }
+    }
+   ],
+   "data": {
+    "title": "Windy Weather Tower",
+    "challengeType": "build_windproof",
+    "challenges": [
+     {
+      "id": "tower-1",
+      "type": "build_windproof",
+      "targetHeight": 6,
+      "wind": 0.943,
+      "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+     },
+     {
+      "id": "tower-2",
+      "type": "build_windproof",
+      "targetHeight": 7,
+      "wind": 0.873,
+      "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+     },
+     {
+      "id": "tower-3",
+      "type": "build_windproof",
+      "targetHeight": 8,
+      "wind": 0.707,
+      "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": "build_windproof",
+    "grade": "4",
+    "topic": "Designing for wind and weather",
+    "intent": "Design a tower that resists wind (3-5-ETS1)"
+   },
+   "title": "Wind-Resistant Weather Tower",
+   "challengeType": "build_windproof",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "tower-1",
+     "type": "build_windproof",
+     "targetHeight": 8,
+     "wind": 0.707,
+     "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows.",
+     "pass": {
+      "miss": null,
+      "work": "8 pieces: 8 beams. 8 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "blown_over",
+      "work": "8 pieces: 8 blocks. 8 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-2",
+     "type": "build_windproof",
+     "targetHeight": 9,
+     "wind": 0.667,
+     "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows.",
+     "pass": {
+      "miss": null,
+      "work": "9 pieces: 9 beams. 9 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "blown_over",
+      "work": "9 pieces: 9 blocks. 9 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-3",
+     "type": "build_windproof",
+     "targetHeight": 10,
+     "wind": 0.566,
+     "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows.",
+     "pass": {
+      "miss": null,
+      "work": "10 pieces: 10 beams. 10 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "blown_over",
+      "work": "10 pieces: 10 blocks. 10 tall, 2 wide at the bottom"
+     }
+    }
+   ],
+   "data": {
+    "title": "Wind-Resistant Weather Tower",
+    "challengeType": "build_windproof",
+    "challenges": [
+     {
+      "id": "tower-1",
+      "type": "build_windproof",
+      "targetHeight": 8,
+      "wind": 0.707,
+      "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+     },
+     {
+      "id": "tower-2",
+      "type": "build_windproof",
+      "targetHeight": 9,
+      "wind": 0.667,
+      "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+     },
+     {
+      "id": "tower-3",
+      "type": "build_windproof",
+      "targetHeight": 10,
+      "wind": 0.566,
+      "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": null,
+    "expect": "build_windproof",
+    "grade": "4",
+    "topic": "Skyscrapers and wind",
+    "intent": "Test whether a tower can survive strong wind"
+   },
+   "title": "Windproof Skyscraper Challenge",
+   "challengeType": "build_windproof",
+   "routed": "build_windproof",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "tower-1",
+     "type": "build_windproof",
+     "targetHeight": 8,
+     "wind": 0.707,
+     "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows.",
+     "pass": {
+      "miss": null,
+      "work": "8 pieces: 8 beams. 8 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "blown_over",
+      "work": "8 pieces: 8 blocks. 8 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-2",
+     "type": "build_windproof",
+     "targetHeight": 9,
+     "wind": 0.667,
+     "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows.",
+     "pass": {
+      "miss": null,
+      "work": "9 pieces: 9 beams. 9 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "blown_over",
+      "work": "9 pieces: 9 blocks. 9 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-3",
+     "type": "build_windproof",
+     "targetHeight": 10,
+     "wind": 0.566,
+     "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows.",
+     "pass": {
+      "miss": null,
+      "work": "10 pieces: 10 beams. 10 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "blown_over",
+      "work": "10 pieces: 10 blocks. 10 tall, 2 wide at the bottom"
+     }
+    }
+   ],
+   "data": {
+    "title": "Windproof Skyscraper Challenge",
+    "challengeType": "build_windproof",
+    "challenges": [
+     {
+      "id": "tower-1",
+      "type": "build_windproof",
+      "targetHeight": 8,
+      "wind": 0.707,
+      "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+     },
+     {
+      "id": "tower-2",
+      "type": "build_windproof",
+      "targetHeight": 9,
+      "wind": 0.667,
+      "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+     },
+     {
+      "id": "tower-3",
+      "type": "build_windproof",
+      "targetHeight": 10,
+      "wind": 0.566,
+      "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": null,
+    "expect": "build_few",
+    "grade": "3",
+    "topic": "Saving materials",
+    "intent": "Build tall while using the fewest pieces"
+   },
+   "title": "Minimalist Material Skyscraper",
+   "challengeType": "mixed",
+   "routed": "mixed",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "tower-1",
+     "type": "build_tall",
+     "targetHeight": 7,
+     "instruction": "Build a tower that reaches the green line and stays standing.",
+     "pass": {
+      "miss": null,
+      "work": "7 pieces: 7 beams. 7 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "6 pieces: 6 blocks. 6 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-2",
+     "type": "build_tall",
+     "targetHeight": 8,
+     "instruction": "Build a tower that reaches the green line and stays standing.",
+     "pass": {
+      "miss": null,
+      "work": "8 pieces: 8 beams. 8 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "7 pieces: 7 blocks. 7 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-3",
+     "type": "build_few",
+     "targetHeight": 8,
+     "maxPieces": 4,
+     "instruction": "Build a tower that reaches the green line using no more than 4 pieces.",
+     "pass": {
+      "miss": null,
+      "work": "2 pieces: 2 beams (2 stood on end). 8 tall, 1 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "7 pieces: 7 blocks. 7 tall, 2 wide at the bottom"
+     }
+    }
+   ],
+   "data": {
+    "title": "Minimalist Material Skyscraper",
+    "challengeType": "mixed",
+    "challenges": [
+     {
+      "id": "tower-1",
+      "type": "build_tall",
+      "targetHeight": 7,
+      "instruction": "Build a tower that reaches the green line and stays standing."
+     },
+     {
+      "id": "tower-2",
+      "type": "build_tall",
+      "targetHeight": 8,
+      "instruction": "Build a tower that reaches the green line and stays standing."
+     },
+     {
+      "id": "tower-3",
+      "type": "build_few",
+      "targetHeight": 8,
+      "maxPieces": 4,
+      "instruction": "Build a tower that reaches the green line using no more than 4 pieces."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": null,
+    "expect": null,
+    "grade": "3",
+    "topic": "Structures and stability",
+    "intent": "Explore what makes structures stable"
+   },
+   "title": "Strong Scout Lookout",
+   "challengeType": "mixed",
+   "routed": "mixed",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "tower-1",
+     "type": "build_tall",
+     "targetHeight": 8,
+     "instruction": "Build a tower that reaches the green line and stays standing.",
+     "pass": {
+      "miss": null,
+      "work": "8 pieces: 8 beams. 8 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "7 pieces: 7 blocks. 7 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-2",
+     "type": "build_few",
+     "targetHeight": 6,
+     "maxPieces": 4,
+     "instruction": "Build a tower that reaches the green line using no more than 4 pieces.",
+     "pass": {
+      "miss": null,
+      "work": "2 pieces: 2 beams (2 stood on end). 8 tall, 1 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "too_short",
+      "work": "5 pieces: 5 blocks. 5 tall, 2 wide at the bottom"
+     }
+    },
+    {
+     "id": "tower-3",
+     "type": "build_windproof",
+     "targetHeight": 7,
+     "wind": 0.873,
+     "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows.",
+     "pass": {
+      "miss": null,
+      "work": "7 pieces: 7 beams. 7 tall, 4 wide at the bottom"
+     },
+     "wrong": {
+      "miss": "blown_over",
+      "work": "7 pieces: 7 blocks. 7 tall, 2 wide at the bottom"
+     }
+    }
+   ],
+   "data": {
+    "title": "Strong Scout Lookout",
+    "challengeType": "mixed",
+    "challenges": [
+     {
+      "id": "tower-1",
+      "type": "build_tall",
+      "targetHeight": 8,
+      "instruction": "Build a tower that reaches the green line and stays standing."
+     },
+     {
+      "id": "tower-2",
+      "type": "build_few",
+      "targetHeight": 6,
+      "maxPieces": 4,
+      "instruction": "Build a tower that reaches the green line using no more than 4 pieces."
+     },
+     {
+      "id": "tower-3",
+      "type": "build_windproof",
+      "targetHeight": 7,
+      "wind": 0.873,
+      "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
+     }
+    ]
+   }
+  }
+ ],
+ "logs": [
+  "[TowerStacker] modes: build_tall (explicit) band K-1 -> build_tall@4, build_tall@5, build_tall@6",
+  "[TowerStacker] modes: build_tall (explicit) band 2-3 -> build_tall@6, build_tall@7, build_tall@8",
+  "[TowerStacker] modes: build_few (explicit) band 2-3 -> build_few@6/4, build_few@7/4, build_few@8/4",
+  "[TowerStacker] modes: build_few (explicit) band 4-5 -> build_few@8/3, build_few@9/4, build_few@10/4",
+  "[TowerStacker] modes: build_windproof (explicit) band 2-3 -> build_windproof@6, build_windproof@7, build_windproof@8",
+  "[TowerStacker] modes: build_windproof (explicit) band 4-5 -> build_windproof@8, build_windproof@9, build_windproof@10",
+  "[TowerStacker] modes: build_windproof (resolved) band 4-5 -> build_windproof@8, build_windproof@9, build_windproof@10",
+  "[TowerStacker] modes: build_tall+build_few (resolved) band 2-3 -> build_tall@7, build_tall@8, build_few@8/4",
+  "[TowerStacker] modes: mixed band 2-3 -> build_tall@8, build_few@6/4, build_windproof@7"
+ ]
+}

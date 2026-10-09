@@ -1,4 +1,7 @@
 {
+  "ramp-lab.plan_fair_test": {
+    "J1-drivable": "the dry sweep has no select input for setup B; RampLab.workspace.test.tsx and RampLab.levers.workspace.test.tsx drive the miss, the levers, the practice plan and the pass through the real runtime"
+  },
   "balance-scale.equality_hard": {
     "J6-completes-once": "EVAL_TRACKER BS-3: driver cap, MAX_ITEMS 24 < 25 items (5 x 5 stages); completes at 40"
   },

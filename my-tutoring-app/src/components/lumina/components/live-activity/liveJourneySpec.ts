@@ -145,6 +145,10 @@ import { FEWER_SUFFIX as HABITAT_FEWER, animalById as habitatAnimalById, pieceBy
   from '../../primitives/visual-primitives/biology/habitatBuild';
 import { feedingRelations as foodWebRelations, foodWebHarnessInputs } from '../../primitives/visual-primitives/biology/foodWebWorkspace';
 import { shorterChain, smallerWeb } from '../../primitives/visual-primitives/biology/foodWebLevers';
+import { towerHarnessInputs } from '../../primitives/visual-primitives/engineering/towerWorkspace';
+import { shorterTower } from '../../primitives/visual-primitives/engineering/towerLevers';
+import { gearHarnessInputs } from '../../primitives/visual-primitives/engineering/gearWorkspace';
+import { simplerTrain } from '../../primitives/visual-primitives/engineering/gearLevers';
 import type { FoodWebChallenge } from '../../primitives/visual-primitives/biology/FoodWebBuilder';
 import { matterItems } from './adapters/matterExplorerLive';
 import { matterJourneyAnswers } from '../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
@@ -175,7 +179,8 @@ import { statesJourneyAnswers } from '../../primitives/visual-primitives/chemist
 import { practiceItem as statesPracticeItem, practiceParent as statesPracticeParent, statesLeverSession } from '../../primitives/visual-primitives/chemistry/statesOfMatterLevers';
 import { solarJourneyItem } from './adapters/solarSystemExplorerLive';
 import { solarJourneyAnswers } from '../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
-import { easierComparisonChoice, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
+import { easierComparisonChoice, maxWorkableAngle, minimumPushSetting, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
+import { practiceFromId as rampPracticeFromId } from '../../primitives/visual-primitives/engineering/rampLabLevers';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { diSpokenPracticeHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeWorkspace';
 import { diDiceRollHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
@@ -1428,13 +1433,27 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     leakTokens: ['RAMP_EVIDENCE_ITEM', 'RAMP_EVIDENCE_HEAR', 'RAMP_EVIDENCE_MOVE', 'RAMP_EVIDENCE_DONE', 'RAMP_PLAN_RETRY'],
     prompts: WORKSPACE_PROMPTS,
     // Compare: pick a setup and reveal. Explain: predict and run both trials once, then speak the
-    // supported comparison or its reverse. The slider and select modes have no driver input.
+    // supported comparison or its reverse. Threshold and design: Reset Challenge, then the step buttons to one
+    // step short of the answer (one step too steep) or to it, then check. The plan's selects have no driver input.
+    // A practice item (`~simpler`, rampLabLevers.ts) is rebuilt from its parent with the same builder.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       const challenges = ctx.data.challenges ?? [];
-      const c = challenges.find((x: { id: string }) => x.id === ctx.itemId);
+      const c = challenges.find((x: { id: string }) => x.id === ctx.itemId) ?? rampPracticeFromId(challenges, ctx.itemId ?? '');
       if (!c) throw new Error('No current ramp-lab challenge');
       const wrong = intent === 'wrong';
+      const steps = (n: number, up: string, down: string): DriverInput[] =>
+        Array.from({ length: Math.abs(n) }, () => ({ type: 'choose', label: n > 0 ? up : down }));
+      if (c.mode === 'find_threshold') {
+        const answer = minimumPushSetting(c.scenario, c.forceStep);
+        const n = Math.round(((wrong ? answer - c.forceStep : answer) - (ctx.data.pushForce ?? 0)) / c.forceStep);
+        return [{ type: 'choose', label: 'Reset Challenge' }, ...steps(n, 'More push', 'Less push'), { type: 'choose', label: 'Test This Force' }];
+      }
+      if (c.mode === 'design_with_budget') {
+        const answer = maxWorkableAngle(c.scenario, c.forceBudget, c.angleRange);
+        return [{ type: 'choose', label: 'Reset Challenge' }, ...steps((wrong ? answer + 1 : answer) - c.scenario.angle, 'Steeper', 'Gentler'),
+          { type: 'choose', label: 'Check This Design' }];
+      }
       if (c.mode === 'compare_conditions') {
         const right = easierComparisonChoice(c);
         const pick = wrong ? (right === 'a' ? 'b' : 'a') : right;
@@ -1449,7 +1468,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
           { type: 'choose', label: 'Run trial A' }, { type: 'choose', label: 'Run trial B' },
           { type: 'choose', label: 'Explain my results' }, speak];
       }
-      throw new Error(`ramp-lab ${c.mode} uses a slider or select the driver cannot set; not driven at W1`);
+      throw new Error(`ramp-lab ${c.mode} uses selects the driver cannot set; RampLab.levers.workspace.test.tsx drives it`);
     },
     probes: { mounted: { selector: '[data-testid="ramp-investigation"], svg' } },
   },
@@ -2060,6 +2079,46 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         : all.find(x => x.id === ctx.itemId);
       if (!c) throw new Error('No current food-web-builder challenge');
       return foodWebHarnessInputs(ctx.data as never, c, intent === 'wrong', ctx.demand);
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'gear-train-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/GearTrainBuilder.tsx',
+    instanceId: 'gears',
+    defaults: { grade: 'Grade 4', mode: 'build_ratio', di: false, topic: 'Gears in clocks and bicycles' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // Clear a kept train, add a train that passes and press I'm done!. Wrong: one gear more where a way is asked
+    // (the last gear turns the other way), else the first and last gear swapped (the speed turned round).
+    // The easier practice train is rebuilt from its parent.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const all = ctx.data.challenges ?? [];
+      const parent = ctx.itemId?.endsWith('~simpler') ? all.find((x: { id: string }) => `${x.id}~simpler` === ctx.itemId) : undefined;
+      const c = parent ? simplerTrain(parent) : all.find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current gear-train-builder train');
+      return gearHarnessInputs(c, intent === 'wrong', ctx.demand);
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'tower-stacker': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/TowerStacker.tsx',
+    instanceId: 'tower',
+    defaults: { grade: 'Grade 3', mode: 'build_windproof', di: false, topic: 'Building towers that stay up' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // Clear a kept build, drop a tower that passes (flat beams; on build_few beams stood on end) and press I'm done!.
+    // Wrong: a block column one short of the line, and on windproof a block column to the line the wind blows over.
+    // The easier practice tower is rebuilt from its parent.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const all = ctx.data.challenges ?? [];
+      const parent = ctx.itemId?.endsWith('~shorter') ? all.find((x: { id: string }) => `${x.id}~shorter` === ctx.itemId) : undefined;
+      const c = parent ? shorterTower(parent) : all.find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current tower-stacker tower');
+      return towerHarnessInputs(c, intent === 'wrong', ctx.demand);
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

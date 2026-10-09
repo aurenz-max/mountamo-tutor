@@ -1,0 +1,212 @@
+{
+  "generatedAt": "2026-10-09T03:58:37.913Z",
+  "runs": [
+    {
+      "name": "k-balance",
+      "grade": "K",
+      "pin": "build_balance",
+      "intent": "Balance a seesaw",
+      "issues": [],
+      "title": "The Playground Seesaw",
+      "challengeType": "build_balance",
+      "challenges": [
+        {
+          "id": "lever-0",
+          "type": "build_balance",
+          "instruction": "Make the seesaw balance. A kid sits on the left. Seat kids on the right so the seesaw stays level when the blocks come away.",
+          "given": [
+            {
+              "seat": -4,
+              "weight": 2,
+              "icon": "👧"
+            }
+          ],
+          "palette": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "id": "lever-1",
+          "type": "build_balance",
+          "instruction": "Balance it a different way. A kid sits on the left again. Seat kids on the right in a new way so the seesaw stays level.",
+          "given": [
+            {
+              "seat": -4,
+              "weight": 2,
+              "icon": "👧"
+            }
+          ],
+          "palette": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "differentFrom": "lever-0"
+        },
+        {
+          "id": "lever-2",
+          "type": "build_balance",
+          "instruction": "Make the seesaw balance. A kid sits on the left. Seat kids on the right so the seesaw stays level when the blocks come away.",
+          "given": [
+            {
+              "seat": -2,
+              "weight": 4,
+              "icon": "👧"
+            }
+          ],
+          "palette": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "name": "g4-lift",
+      "grade": "4",
+      "pin": "build_lift",
+      "intent": "Use a lever to lift a heavy load with less force",
+      "issues": [],
+      "title": "The Playground Rock Lifter",
+      "challengeType": "build_lift",
+      "challenges": [
+        {
+          "id": "lever-0",
+          "type": "build_lift",
+          "instruction": "Build a lever that lifts the rock. The rock weighs 4 and the helper weighs 2. Put the fulcrum under the bar, then put the helper on the bar.",
+          "rockWeight": 4,
+          "pusherWeight": 2
+        },
+        {
+          "id": "lever-1",
+          "type": "build_lift",
+          "instruction": "Lift the rock again, with the fulcrum in a different place.",
+          "rockWeight": 4,
+          "pusherWeight": 2,
+          "differentFrom": "lever-0"
+        },
+        {
+          "id": "lever-2",
+          "type": "build_lift",
+          "instruction": "Build a lever that lifts the rock. The rock weighs 9 and the helper weighs 4. Put the fulcrum under the bar, then put the helper on the bar.",
+          "rockWeight": 9,
+          "pusherWeight": 4
+        }
+      ]
+    },
+    {
+      "name": "g3-intent",
+      "grade": "3",
+      "pin": null,
+      "intent": "Balance a seesaw by changing where heavier and lighter kids sit",
+      "issues": [],
+      "title": "Playground Seesaw Fun",
+      "challengeType": "build_balance",
+      "challenges": [
+        {
+          "id": "lever-0",
+          "type": "build_balance",
+          "instruction": "Make the seesaw balance. A kid sits on the left. Seat kids on the right so the seesaw stays level when the blocks come away.",
+          "given": [
+            {
+              "seat": -3,
+              "weight": 4,
+              "icon": "🧒"
+            }
+          ],
+          "palette": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "id": "lever-1",
+          "type": "build_balance",
+          "instruction": "Balance it a different way. A kid sits on the left again. Seat kids on the right in a new way so the seesaw stays level.",
+          "given": [
+            {
+              "seat": -3,
+              "weight": 4,
+              "icon": "🧒"
+            }
+          ],
+          "palette": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "differentFrom": "lever-0"
+        },
+        {
+          "id": "lever-2",
+          "type": "build_balance",
+          "instruction": "Make the seesaw balance. Two kids sit on the left. Seat kids on the right so the seesaw stays level when the blocks come away.",
+          "given": [
+            {
+              "seat": -5,
+              "weight": 3,
+              "icon": "👧"
+            },
+            {
+              "seat": -2,
+              "weight": 2,
+              "icon": "👦"
+            }
+          ],
+          "palette": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "name": "g2-broad",
+      "grade": "2",
+      "pin": null,
+      "intent": null,
+      "issues": [],
+      "title": "Seesaw Balance Challenge!",
+      "challengeType": null,
+      "challenges": [],
+      "sandboxLoads": [
+        {
+          "position": 4,
+          "weight": 2,
+          "color": "#3B82F6",
+          "icon": "🧸",
+          "isDraggable": true,
+          "label": "Teddy Bear"
+        },
+        {
+          "position": 8,
+          "weight": 5,
+          "color": "#EF4444",
+          "icon": "🎁",
+          "isDraggable": true,
+          "label": "Gift Box"
+        }
+      ]
+    }
+  ],
+  "logs": [
+    "[LeverLab] build build_balance band K-2 -> balance:2@-4, balance:2@-4(again), balance:4@-2",
+    "[LeverLab] build build_lift band 3-5 -> lift:4/2, lift:4/2(again), lift:9/4",
+    "[resolveEvalModes] lever-lab: intent → [build_balance]",
+    "[LeverLab] build build_balance band 3-5 -> balance:4@-3, balance:4@-3(again), balance:3@-5+2@-2"
+  ]
+}

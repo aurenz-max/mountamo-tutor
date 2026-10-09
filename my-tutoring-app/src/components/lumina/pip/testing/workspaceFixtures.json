@@ -8810,55 +8810,31 @@
   ]
  },
  "tower-stacker": {
-  "title": "Stability & Balance Tower Challenge",
-  "description": "Explore how center of gravity and base width affect structural stability. Build a balanced tower that stays upright under pressure!",
-  "availablePieces": [
+  "title": "Windy Weather Tower",
+  "challengeType": "build_windproof",
+  "challenges": [
    {
-    "type": "block",
-    "count": 6,
-    "width": 2,
-    "height": 2,
-    "weight": 6,
-    "color": "#3B82F6",
-    "icon": "🧱"
+    "id": "tower-1",
+    "type": "build_windproof",
+    "targetHeight": 6,
+    "wind": 0.943,
+    "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
    },
    {
-    "type": "block",
-    "count": 4,
-    "width": 1,
-    "height": 1,
-    "weight": 2,
-    "color": "#EF4444",
-    "icon": "🧱"
+    "id": "tower-2",
+    "type": "build_windproof",
+    "targetHeight": 7,
+    "wind": 0.873,
+    "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
    },
    {
-    "type": "beam",
-    "count": 4,
-    "width": 3,
-    "height": 1,
-    "weight": 4,
-    "color": "#D97706",
-    "icon": "📏"
-   },
-   {
-    "type": "triangle",
-    "count": 3,
-    "width": 2,
-    "height": 2,
-    "weight": 3,
-    "color": "#8B5CF6",
-    "icon": "🔺"
+    "id": "tower-3",
+    "type": "build_windproof",
+    "targetHeight": 8,
+    "wind": 0.707,
+    "instruction": "Build a tower that reaches the green line and stays up when the strong wind blows."
    }
-  ],
-  "targetHeight": 8,
-  "gridMode": true,
-  "enableWind": true,
-  "windStrength": 40,
-  "showCenterOfGravity": true,
-  "showHeight": true,
-  "groundWidth": 10,
-  "maxHeight": 15,
-  "theme": "construction"
+  ]
  },
  "transport-challenge": {
   "title": "Transport Challenge: Single Constraint & Multi-Constraint & Full Optimization",

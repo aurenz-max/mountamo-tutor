@@ -1,0 +1,33 @@
+{
+ "source": "qa/open-build/gear-train-builder-2026-10-08/generator-run.json",
+ "primitiveId": "gear-train-builder",
+ "evalMode": "build_speed",
+ "data": {
+  "title": "Build a Whirling Windmill",
+  "challengeType": "build_speed",
+  "challenges": [
+   {
+    "type": "build_speed",
+    "speed": "faster",
+    "minGears": 2,
+    "id": "gears-1",
+    "instruction": "Build a gear train where the last gear turns faster than the first gear."
+   },
+   {
+    "type": "build_speed",
+    "speed": "slower",
+    "minGears": 2,
+    "id": "gears-2",
+    "instruction": "Build a gear train where the last gear turns slower than the first gear."
+   },
+   {
+    "type": "build_speed",
+    "speed": "faster",
+    "way": "opposite",
+    "minGears": 2,
+    "id": "gears-3",
+    "instruction": "Build a gear train where the last gear turns faster than the first gear, and turns the opposite way."
+   }
+  ]
+ }
+}

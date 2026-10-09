@@ -64,6 +64,8 @@ export interface RampInvestigationChallenge extends RampChallengeBase {
   mode: 'plan_fair_test' | 'explain_from_trials';
   variable: InvestigationVariable;
   scenarios: { a: RampScenario; b: RampScenario };
+  /** The settings of setup B the learner may change; all three when absent (a `two_settings` practice plan has two). */
+  editable?: InvestigationVariable[];
 }
 
 export interface RampTrial {

@@ -10,6 +10,7 @@
  * Free exploration (`freeExplore`) is an ungraded sandbox and binds nothing.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { changedRampVariables, DEFAULT_RAMP_CHALLENGES, easierComparisonChoice, maxWorkableAngle, measureRampTrial, minimumPushSetting,
   type RampChallenge, type RampInvestigationChallenge, type RampScenario } from './rampChallenges';
 
@@ -31,7 +32,8 @@ export const explainAsk = (c: RampInvestigationChallenge) =>
 export function rampAssignment(c: RampChallenge | RampInvestigationChallenge): TeachingAssignment {
   if (c.mode === 'explain_from_trials') {
     return { id: c.id, task: `${c.brief} Predict, run both trials, then explain aloud: ${explainAsk(c)}`, response: 'speech',
-      expectedAnswer: `A true comparison that connects the changed ${VARIABLE[c.variable]} to both trials: ${rampConclusion(c)}` };
+      expectedAnswer: `A true comparison that connects the changed ${VARIABLE[c.variable]} to both trials: ${rampConclusion(c)}`,
+      misses: rampSpokenMisses(c) };
   }
   return { id: c.id, task: c.brief, response: 'gesture' };
 }
@@ -46,10 +48,34 @@ export function rampAssignment(c: RampChallenge | RampInvestigationChallenge): T
  *     steeper ramp would too);
  *   - plan_fair_test: `nothing_changed` (setup B equals A), `other_condition` (the requested condition is
  *     unchanged, another one changed), `extra_condition` (the requested condition and another one changed).
- * explain_from_trials is spoken (Part B).
+ * explain_from_trials is spoken: `rampSpokenMisses` below.
  */
 export type RampMiss = 'harder_setup' | 'same_for_different' | 'one_for_same' | 'load_did_not_move' | 'more_than_minimum'
   | 'over_budget' | 'not_steepest' | 'nothing_changed' | 'other_condition' | 'extra_condition';
+
+/**
+ * What a not-credited spoken explanation shows (handoff 20 Part B), from the contract's refusal list: `reversed_comparison`
+ * (says the setup that needed more push needed less), `said_same` (says both needed the same push when the trials differ),
+ * `one_setup` (talks about one trial only). Slogans, echoes and off-task talk are not a pattern of the comparison.
+ */
+export type RampSpokenMiss = 'reversed_comparison' | 'said_same' | 'one_setup';
+
+export function rampSpokenMisses(c: RampInvestigationChallenge): KnownMiss[] {
+  if (c.mode !== 'explain_from_trials') return [];
+  const a = measureRampTrial('a', c.scenarios.a), b = measureRampTrial('b', c.scenarios.b);
+  const evidence = `A first moved at ${a.firstMovingForce.toFixed(1)} newtons and B at ${b.firstMovingForce.toFixed(1)} newtons`;
+  const one = { id: 'one_setup', pattern: `The trials show ${evidence}. The learner talks about one setup or one trial only, `
+    + 'with no comparison to the other.', examples: [`Setup A moved at ${a.firstMovingForce.toFixed(1)} newtons.`] };
+  if (a.firstMovingForce === b.firstMovingForce) return [one];
+  const [less, more] = a.firstMovingForce < b.firstMovingForce ? ['A', 'B'] : ['B', 'A'];
+  return [
+    { id: 'reversed_comparison', pattern: `The trials show ${evidence}, so setup ${less} needed less push. The learner says setup `
+      + `${more} needed less push, or that setup ${less} needed more.`, examples: [`Setup ${more} needed less push.`] },
+    { id: 'said_same', pattern: `The trials show ${evidence}. The learner says both setups needed the same push, or that the `
+      + `${VARIABLE[c.variable]} made no difference.`, examples: ['They both needed the same push.'] },
+    one,
+  ];
+}
 
 const PLAN_KEY = { angle: 'angle', surface: 'frictionLevel', mass: 'loadWeight' } as const;
 

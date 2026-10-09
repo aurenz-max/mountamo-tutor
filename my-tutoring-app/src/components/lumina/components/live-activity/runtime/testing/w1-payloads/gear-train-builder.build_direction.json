@@ -1,0 +1,32 @@
+{
+ "source": "qa/open-build/gear-train-builder-2026-10-08/generator-run.json",
+ "primitiveId": "gear-train-builder",
+ "evalMode": "build_direction",
+ "data": {
+  "title": "Spinning Toy Clock",
+  "challengeType": "build_direction",
+  "challenges": [
+   {
+    "type": "build_direction",
+    "way": "opposite",
+    "minGears": 2,
+    "id": "gears-1",
+    "instruction": "Build a gear train of at least 2 gears where the last gear turns the opposite way to the first gear."
+   },
+   {
+    "type": "build_direction",
+    "way": "same",
+    "minGears": 3,
+    "id": "gears-2",
+    "instruction": "Build a gear train of at least 3 gears where the last gear turns the same way as the first gear."
+   },
+   {
+    "type": "build_direction",
+    "way": "opposite",
+    "minGears": 4,
+    "id": "gears-3",
+    "instruction": "Build a gear train of at least 4 gears where the last gear turns the opposite way to the first gear."
+   }
+  ]
+ }
+}

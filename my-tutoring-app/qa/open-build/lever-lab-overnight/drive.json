@@ -1,0 +1,186 @@
+{
+  "checks": [
+    {
+      "name": "balance: 3 items, all build_balance, item 2 a different way on item 1",
+      "pass": true,
+      "detail": "Make the seesaw balance. A kid sits on the left. Seat kids on the right so the seesaw stays level when the blocks come away. | Balance it a different way. A kid sits on the left again. Seat kids on the right in a new way so the seesaw stays level. | Make the seesaw balance. A kid sits on the left. Seat kids on the right so the seesaw stays level when the blocks come away."
+    },
+    {
+      "name": "balance: opens empty, blocks under the seesaw, I'm done! off",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "balance: no running total or target on screen",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "balance: one over -> tipped down on the right",
+      "pass": true,
+      "detail": "target 8, built 20"
+    },
+    {
+      "name": "balance: the bar tips after the blocks come away",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "balance: Try again keeps the build",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "balance: a levelling seating passes",
+      "pass": true,
+      "detail": "[{\"seat\":4,\"weight\":2}]"
+    },
+    {
+      "name": "balance item 2 opens empty",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "balance: the same seating again -> same way",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "balance: Start over clears",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "balance: a different levelling seating passes",
+      "pass": true,
+      "detail": "[{\"seat\":2,\"weight\":4}]"
+    },
+    {
+      "name": "balance: one under -> tipped down on the left",
+      "pass": true,
+      "detail": "target 12"
+    },
+    {
+      "name": "balance item 3 passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "balance: results panel after See results",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "lift: 3 items, all build_lift, helper lighter than the rock",
+      "pass": true,
+      "detail": "6/2 6/2 5/2"
+    },
+    {
+      "name": "lift: fulcrum too far from the rock -> rock stayed down",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "lift: Try again keeps the helper and fulcrum",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "lift: a lever that lifts passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "lift: the rock end comes up",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "lift item 2: the same fulcrum spot -> same place",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "lift item 2: a different fulcrum spot passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "lift item 3: helper on the rock side -> named",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "lift item 3 passes",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "watcher produced lines",
+      "pass": false,
+      "detail": "2 of 5 looks"
+    },
+    {
+      "name": "watcher lines pass the leak rules",
+      "pass": true,
+      "detail": "[{\"build\":\"balance item 1: one big kid at the far end\",\"line\":\"\",\"leaks\":[]},{\"build\":\"balance item 1: reference seating\",\"line\":\"\",\"leaks\":[]},{\"build\":\"balance item 2: a different seating\",\"line\":\"Ooh, a yellow kid is sitting across from the orange kid!\",\"leaks\":[]},{\"build\":\"lift item 1: fulcrum one past the last spot\",\"line\":\"Ooh, the triangle fulcrum is under the bar by the rock!\",\"leaks\":[]},{\"build\":\"lift item 1: fulcrum close to the rock\",\"line\":\"\",\"leaks\":[]}]"
+    },
+    {
+      "name": "phone column: seat tap target at least 28 x 44 px",
+      "pass": false,
+      "detail": "{\"x\":681.8656005859375,\"y\":532.2937622070312,\"width\":25.81878662109375,\"height\":40.1624755859375}"
+    },
+    {
+      "name": "phone column: tray buttons 44 px tall",
+      "pass": true,
+      "detail": "{\"x\":525.609375,\"y\":665,\"width\":64,\"height\":44}"
+    },
+    {
+      "name": "no page errors",
+      "pass": false,
+      "detail": "Error: <ellipse> attribute rx: Expected length, \"undefined\". | Error: <ellipse> attribute rx: Expected length, \"undefined\". | Error: <ellipse> attribute ry: Expected length, \"undefined\"."
+    }
+  ],
+  "watcherLines": [
+    {
+      "build": "balance item 1: one big kid at the far end",
+      "line": "",
+      "leaks": []
+    },
+    {
+      "build": "balance item 1: reference seating",
+      "line": "",
+      "leaks": []
+    },
+    {
+      "build": "balance item 2: a different seating",
+      "line": "Ooh, a yellow kid is sitting across from the orange kid!",
+      "leaks": []
+    },
+    {
+      "build": "lift item 1: fulcrum one past the last spot",
+      "line": "Ooh, the triangle fulcrum is under the bar by the rock!",
+      "leaks": []
+    },
+    {
+      "build": "lift item 1: fulcrum close to the rock",
+      "line": "",
+      "leaks": []
+    }
+  ],
+  "errors": [
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+    "[evaluationApi] Failed to submit evaluation: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts",
+    "[EvaluationContext] Submission failed: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:71:44",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+    "[evaluationApi] Failed to submit evaluation: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts",
+    "[EvaluationContext] Submission failed: Error: User not authenticated\n    at AuthenticatedApiClient.getAuthHeaders (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:13:19)\n    at AuthenticatedApiClient.request (webpack-internal:///(app-pages-browser)/./src/lib/authApiClient.ts:71:44",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+    "Error: <ellipse> attribute ry: Expected length, \"undefined\"."
+  ]
+}

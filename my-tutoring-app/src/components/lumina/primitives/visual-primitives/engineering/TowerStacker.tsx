@@ -1,1031 +1,454 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
-import {
-  usePrimitiveEvaluation,
-  type TowerStackerMetrics,
-} from '../../../evaluation';
-import { SoundManager } from '../../../utils/SoundManager';
-import {
-  LuminaCard,
-  LuminaCardContent,
-  LuminaButton,
-  LuminaPanel,
-  LuminaCallout,
-} from '../../../ui';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-
 /**
- * Tower Stacker - Interactive vertical building challenge for teaching structural engineering
+ * Tower Stacker - build a tower that stays up (K-5 engineering: stability, balance point, wind loads).
  *
- * K-5 Engineering Primitive for understanding:
- * - Stacking and balance (K)
- * - Wider base = more stable (K-1)
- * - Center of gravity exploration (2-3)
- * - Material efficiency (height per piece) (3-4)
- * - Wind resistance design (4-5)
+ * Three open builds (/add-eval-modes references/build-mode.md), each on an EMPTY building area with a green goal line:
+ * - `build_tall`: reach the line and stay standing.
+ * - `build_few`: reach the line with no more than N pieces (a beam stood on end is 4 tall).
+ * - `build_windproof`: reach the line and stay up when the strong wind blows.
+ * The learner picks a piece, may turn it, and taps a column to drop it; it falls until it rests on what is under it.
+ * "I'm done!" tests the tower with code (`towerMiss`): plain statics, and on windproof a wind load. Many towers pass.
+ * Code owns every target (`towerChallenges`); the model writes only the title.
  *
- * Real-world connections: buildings, skyscrapers, construction, architecture
- *
- * EVALUATION INTEGRATION:
- * - Tracks height achievement, stability scores, and wind test results
- * - Submits evaluation metrics on wind test completion
- * - Supports competency tracking via skillId/subskillId/objectiveId
+ * On the shared teaching workspace (W1) every check commits through `progress.commitCheck` with the tower in words and
+ * a named miss; the runtime owns progression, so the scripted Next is hidden there and the scored session is
+ * submitted from `onFinished`.
  */
 
-export interface BuildingPiece {
-  id: string;
-  type: 'block' | 'beam' | 'triangle' | 'arch';
-  width: number;          // Width in grid units (1-4)
-  height: number;         // Height in grid units (1-2)
-  weight: number;         // Relative weight (affects stability)
-  color: string;
-  icon?: string;
-}
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  LuminaActionButton, LuminaButton, LuminaCallout, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
+  LuminaCardTitle, LuminaFeedbackCard,
+} from '../../../ui';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult, type TowerStackerMetrics } from '../../../evaluation';
+import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
+import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { useBuildWatcher } from '../../build-layer/buildLayer';
+import {
+  PIECE_KINDS, PIECES, WATCH_NEVER_SAY, blownCut, describeTower, dropPiece, fallingPart, leftEdgeFor, pieceSize, restingOn,
+  towerCuts, towerMiss, workspaceAssignment, workspaceScene,
+  type PieceKind, type TowerChallenge, type TowerMiss, type TowerMode, type TowerPiece,
+} from './towerWorkspace';
+import { BALANCE_LEVER, COUNT_LEVER, GUST_LEVER, leverFacts, shorterTower, towerLevers } from './towerLevers';
+import { TowerScene, type FallingPart } from './TowerScene';
 
-export interface PlacedPiece {
-  id: string;
-  pieceType: string;
-  x: number;              // X position in grid units
-  y: number;              // Y position in grid units (bottom of piece)
-  width: number;
-  height: number;
-  weight: number;
-  color: string;
-  rotation: number;       // 0 or 90 degrees
-}
+// ============================================================================
+// Data Types (Single Source of Truth)
+// ============================================================================
 
-export interface AvailablePiece {
-  type: 'block' | 'beam' | 'triangle' | 'arch';
-  count: number;
-  width: number;
-  height: number;
-  weight: number;
-  color: string;
-  icon?: string;
-}
+export type { TowerChallenge, TowerMode, TowerPiece } from './towerWorkspace';
 
 export interface TowerStackerData {
   title: string;
-  description: string;
-  availablePieces: AvailablePiece[];      // Block types and quantities
-  targetHeight: number;                    // Goal height to reach (in grid units)
-  gridMode: boolean;                       // Snap to grid vs freeform
-  enableWind: boolean;                     // Apply lateral force test
-  windStrength: number;                    // Force of wind test (0-100)
-  showCenterOfGravity: boolean;            // Display CoG indicator
-  showHeight: boolean;                     // Display height measurement
-  groundWidth: number;                     // Available foundation space (grid units, typically 6-12)
-  maxHeight: number;                       // Maximum build height (grid units, typically 10-20)
-  theme: 'construction' | 'blocks' | 'city' | 'generic';
+  description?: string;
+  /** The eval mode pinned for this session; 'mixed' when the session holds every tier the band builds. */
+  challengeType?: TowerMode | 'mixed';
+  /** The towers to build, written by code (`towerChallenges`). */
+  challenges: TowerChallenge[];
 
-  // Evaluation integration (optional)
-  instanceId?: string;                     // Unique instance ID for tracking
-  skillId?: string;                        // Associated skill for competency tracking
-  subskillId?: string;                     // Associated subskill
-  objectiveId?: string;                    // Learning objective this primitive addresses
-  exhibitId?: string;                      // Parent exhibit ID
-  onEvaluationSubmit?: (result: import('../../../evaluation').PrimitiveEvaluationResult<TowerStackerMetrics>) => void;
+  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  instanceId?: string;
+  skillId?: string;
+  subskillId?: string;
+  objectiveId?: string;
+  exhibitId?: string;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<TowerStackerMetrics>) => void;
 }
 
-interface TowerStackerProps {
+export interface TowerStackerProps {
   data: TowerStackerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const TowerStacker: React.FC<TowerStackerProps> = ({ data, className }) => {
-  const {
-    title,
-    description,
-    availablePieces = [],
-    targetHeight = 10,
-    gridMode = true,
-    enableWind = true,
-    windStrength = 50,
-    showCenterOfGravity = true,
-    showHeight = true,
-    groundWidth = 8,
-    maxHeight = 15,
-    theme = 'generic',
-    // Evaluation props
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
+const PHASE_CONFIG: Record<string, PhaseConfig> = {
+  build_tall: { label: 'Tall towers', icon: '🏗️', accentColor: 'amber' },
+  build_few: { label: 'Few pieces', icon: '🧱', accentColor: 'orange' },
+  build_windproof: { label: 'Windproof', icon: '💨', accentColor: 'blue' },
+};
 
-  // Calculate total available pieces for efficiency metric
-  const totalAvailablePieces = availablePieces.reduce((sum, p) => sum + p.count, 0);
+/** Per-tower score: 100 first try, then -20 per extra attempt, floored at 20. */
+const phaseScore = (attempts: number) => (attempts <= 0 ? 0 : Math.max(20, 100 - (attempts - 1) * 20));
 
-  // State
-  const [placedPieces, setPlacedPieces] = useState<PlacedPiece[]>([]);
-  const [selectedPieceType, setSelectedPieceType] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPreview, setDragPreview] = useState<{ x: number; y: number } | null>(null);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [towerFell, setTowerFell] = useState(false);
-  const [towerStood, setTowerStood] = useState(false);
-  const [windOffset, setWindOffset] = useState(0);
+/** The check's words: what happened, never where a piece should go or what would hold it. */
+const TOWER_FEEDBACK: Record<TowerMiss, string> = {
+  tips_over: 'Not yet. Part of your tower tipped over. Look at what is holding that part up.',
+  too_short: 'Not yet. Your tower does not reach the green line.',
+  too_many_pieces: 'Not yet. Your tower uses more pieces than the job allows.',
+  blown_over: 'Not yet. The wind blew part of your tower over.',
+};
+const PASS_FEEDBACK: Record<TowerMode, string> = {
+  build_tall: 'Yes! Your tower reaches the line and stands.',
+  build_few: 'Yes! Your tower reaches the line with few enough pieces.',
+  build_windproof: 'Yes! Your tower stood up to the wind.',
+};
+
+// ============================================================================
+// Component
+// ============================================================================
+
+const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  TowerStackerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TowerChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const challenges = useMemo(() => (data.challenges ?? []).filter(c => PHASE_CONFIG[c.type]), [data.challenges]);
+
+  const stableInstanceId = useRef(instanceId || `tower-stacker-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+
+  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: c => c.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, results, isComplete, mergeResult, advance } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  // Levers (`towerLevers.ts`), keyed by the session item they were pulled on, and the easier ask a simplify lever put
+  // on screen in its place. The item starts bare: no lever comes from the tier.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<TowerChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+
+  // ── Per-item state ────────────────────────────────────────────
+  const [pieces, setPieces] = useState<TowerPiece[]>([]);
+  const [selected, setSelected] = useState<PieceKind | null>(null);
+  const [turned, setTurned] = useState(false);
+  const [hoverColumn, setHoverColumn] = useState<number | null>(null);
+  /** The part that fell at the last check or gust, drawn turned until the build changes. */
+  const [falling, setFalling] = useState<FallingPart | null>(null);
   const [hint, setHint] = useState<string | null>(null);
-  const [currentRotation, setCurrentRotation] = useState(0);
+  const [gust, setGust] = useState<'held' | 'blew' | null>(null);
+  const [feedback, setFeedback] = useState<{ text: string; correct: boolean } | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [challengeDone, setChallengeDone] = useState(false);
+  const recordedRef = useRef(false);
+  const nextId = useRef(0);
 
-  const svgRef = useRef<SVGSVGElement>(null);
+  const resetFor = useRef<string | null>(null);
+  const resetItem = (challenge: TowerChallenge) => {
+    resetFor.current = challenge.id;
+    setPieces([]); setSelected(null); setTurned(false); setFalling(null); setHint(null); setGust(null);
+    setFeedback(null); setAttempts(0); setChallengeDone(false);
+    recordedRef.current = false;
+  };
+  useEffect(() => {
+    if (currentChallenge && resetFor.current !== currentChallenge.id) resetItem(currentChallenge);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChallenge?.id]);
 
-  // Evaluation hook - tracks timing and handles submission
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    resetAttempt: resetEvaluationAttempt,
-  } = usePrimitiveEvaluation<TowerStackerMetrics>({
+  // Workspace path: a fresh item ends any practice. Try again KEEPS the tower and the verdict's words, so the learner
+  // revises it; the fallen part stands back up.
+  openItem.current = (index, retry) => {
+    if (!retry) {
+      setPractice(null);
+      if (challenges[index]) resetItem(challenges[index]);
+      return;
+    }
+    setFalling(null); setGust(null);
+  };
+
+  // ── Evaluation ────────────────────────────────────────────────
+  const { submitResult, hasSubmitted, submittedResult, elapsedMs } = usePrimitiveEvaluation<TowerStackerMetrics>({
     primitiveType: 'tower-stacker',
-    instanceId: instanceId || `tower-stacker-${Date.now()}`,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit as ((result: import('../../../evaluation').PrimitiveEvaluationResult) => void) | undefined,
+    instanceId: resolvedInstanceId,
+    skillId, subskillId, objectiveId, exhibitId,
+    onSubmit: onEvaluationSubmit,
   });
 
-  // SVG dimensions
-  const svgWidth = 600;
-  const svgHeight = 500;
-  const gridUnitSize = 30;
-  const groundY = svgHeight - 60;
-  const buildAreaStartX = (svgWidth - groundWidth * gridUnitSize) / 2;
+  const phaseResults = usePhaseResults({
+    challenges, results, isComplete,
+    getChallengeType: c => c.type,
+    phaseConfig: PHASE_CONFIG,
+    getScore: rs => (rs.length ? Math.round(rs.reduce((s, r) => s + Number(r.score ?? 0), 0) / rs.length) : 0),
+  });
 
-  // Convert grid units to SVG coordinates
-  const toSvgX = (gridX: number) => buildAreaStartX + gridX * gridUnitSize;
-  const toSvgY = (gridY: number) => groundY - gridY * gridUnitSize;
+  const sessionMetrics = (built: number, accuracy: number, attemptsCount: number, firstTry: number): TowerStackerMetrics => ({
+    type: 'tower-stacker', challengeType: data.challengeType ?? 'mixed', totalTowers: challenges.length, towersBuilt: built,
+    accuracy, attemptsCount, firstTryCount: firstTry,
+  });
 
-  // Convert SVG coordinates to grid units
-  const toGridX = (svgX: number) => Math.round((svgX - buildAreaStartX) / gridUnitSize);
-  const toGridY = (svgY: number) => Math.round((groundY - svgY) / gridUnitSize);
+  // ── Scripted session complete → submit (the workspace path submits from `onFinished`) ──
+  const sessionSubmitted = useRef(false);
+  useEffect(() => {
+    if (!isComplete || sessionSubmitted.current || tutorOwned || hasSubmitted) return;
+    sessionSubmitted.current = true;
+    const built = results.filter(r => r.correct).length;
+    const accuracy = Math.round(results.reduce((s, r) => s + Number(r.score ?? 0), 0) / Math.max(1, results.length));
+    submitResult(built === challenges.length, accuracy, sessionMetrics(built, accuracy, results.reduce((s, r) => s + r.attempts, 0),
+      results.filter(r => Number(r.score ?? 0) === 100).length), { studentWork: { targets: challenges } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete, results, challenges, tutorOwned, hasSubmitted, submitResult]);
 
-  // Get piece count used
-  const getPieceUsedCount = (type: string) => {
-    return placedPieces.filter(p => p.pieceType === type).length;
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false) return;
+    submitResult(result.passed, result.accuracy,
+      sessionMetrics(result.solvedCount, result.accuracy, result.attemptsCount, result.firstTryCount),
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
   };
 
-  // Get available count for piece type
-  const getAvailableCount = (type: string) => {
-    const piece = availablePieces.find(p => p.type === type);
-    if (!piece) return 0;
-    return piece.count - getPieceUsedCount(type);
+  // ── Building ──────────────────────────────────────────────────
+  const buildOpen = !challengeDone && !learnerBlocked();
+  const changed = () => { setFalling(null); setGust(null); setHint(null); };
+
+  const pick = (kind: PieceKind) => {
+    if (!buildOpen) return;
+    SoundManager.select();
+    setSelected(prev => (prev === kind ? null : kind));
+    setTurned(false);
   };
 
-  // Calculate tower height
-  const calculateTowerHeight = useCallback(() => {
-    if (placedPieces.length === 0) return 0;
-    const maxY = Math.max(...placedPieces.map(p => p.y + p.height));
-    return maxY;
-  }, [placedPieces]);
-
-  // Calculate center of gravity
-  const calculateCenterOfGravity = useCallback(() => {
-    if (placedPieces.length === 0) return null;
-
-    let totalWeight = 0;
-    let weightedX = 0;
-    let weightedY = 0;
-
-    placedPieces.forEach(piece => {
-      const centerX = piece.x + piece.width / 2;
-      const centerY = piece.y + piece.height / 2;
-      totalWeight += piece.weight;
-      weightedX += centerX * piece.weight;
-      weightedY += centerY * piece.weight;
-    });
-
-    return {
-      x: weightedX / totalWeight,
-      y: weightedY / totalWeight,
-    };
-  }, [placedPieces]);
-
-  // Check if piece placement is valid
-  const isValidPlacement = useCallback((x: number, y: number, width: number, height: number) => {
-    // Check bounds
-    if (x < 0 || x + width > groundWidth) return false;
-    if (y < 0 || y + height > maxHeight) return false;
-
-    // Check overlap with existing pieces
-    for (const piece of placedPieces) {
-      const overlapsX = x < piece.x + piece.width && x + width > piece.x;
-      const overlapsY = y < piece.y + piece.height && y + height > piece.y;
-      if (overlapsX && overlapsY) return false;
-    }
-
-    // If on ground level, always valid
-    if (y === 0) return true;
-
-    // Must be supported by piece(s) below
-    let supportWidth = 0;
-    for (const piece of placedPieces) {
-      // Check if this piece is directly below
-      if (piece.y + piece.height === y) {
-        const overlapStart = Math.max(x, piece.x);
-        const overlapEnd = Math.min(x + width, piece.x + piece.width);
-        if (overlapEnd > overlapStart) {
-          supportWidth += overlapEnd - overlapStart;
-        }
-      }
-    }
-
-    // Need at least 50% support
-    return supportWidth >= width * 0.5;
-  }, [placedPieces, groundWidth, maxHeight]);
-
-  // Calculate stability score (0-100)
-  const calculateStability = useCallback(() => {
-    if (placedPieces.length === 0) return 100;
-
-    const cog = calculateCenterOfGravity();
-    if (!cog) return 100;
-
-    // Find base width
-    const basePieces = placedPieces.filter(p => p.y === 0);
-    if (basePieces.length === 0) return 0;
-
-    const baseLeft = Math.min(...basePieces.map(p => p.x));
-    const baseRight = Math.max(...basePieces.map(p => p.x + p.width));
-    const baseWidth = baseRight - baseLeft;
-    const baseCenter = baseLeft + baseWidth / 2;
-
-    // How centered is the CoG?
-    const cogOffset = Math.abs(cog.x - baseCenter);
-    const maxOffset = baseWidth / 2;
-    const centeredness = 1 - Math.min(cogOffset / maxOffset, 1);
-
-    // Height penalty (taller = less stable)
-    const height = calculateTowerHeight();
-    const heightPenalty = Math.min(height / maxHeight, 1) * 0.3;
-
-    // Base width bonus (wider = more stable)
-    const widthBonus = Math.min(baseWidth / groundWidth, 1) * 0.2;
-
-    const stability = (centeredness * 0.7 + widthBonus - heightPenalty) * 100;
-    return Math.max(0, Math.min(100, stability));
-  }, [placedPieces, calculateCenterOfGravity, calculateTowerHeight, groundWidth, maxHeight]);
-
-  // Calculate base width for metrics
-  const calculateBaseWidth = useCallback(() => {
-    const basePieces = placedPieces.filter(p => p.y === 0);
-    if (basePieces.length === 0) return 0;
-    const baseLeft = Math.min(...basePieces.map(p => p.x));
-    const baseRight = Math.max(...basePieces.map(p => p.x + p.width));
-    return baseRight - baseLeft;
-  }, [placedPieces]);
-
-  // Calculate base center for CoG offset
-  const calculateBaseCenter = useCallback(() => {
-    const basePieces = placedPieces.filter(p => p.y === 0);
-    if (basePieces.length === 0) return groundWidth / 2;
-    const baseLeft = Math.min(...basePieces.map(p => p.x));
-    const baseRight = Math.max(...basePieces.map(p => p.x + p.width));
-    return baseLeft + (baseRight - baseLeft) / 2;
-  }, [placedPieces, groundWidth]);
-
-  // Wind test simulation
-  const runWindTest = useCallback(() => {
-    setIsSimulating(true);
-    setTowerFell(false);
-    setTowerStood(false);
-    setWindOffset(0);
-
-    const stability = calculateStability();
-    const windThreshold = 100 - windStrength;
-    const currentHeight = calculateTowerHeight();
-    const heightGoalMet = currentHeight >= targetHeight;
-
-    // Animate wind effect
-    let frame = 0;
-    const maxFrames = 60;
-    const peakOffset = (windStrength / 100) * 30;
-
-    const animate = () => {
-      frame++;
-      const progress = frame / maxFrames;
-
-      // Oscillating wind effect
-      const oscillation = Math.sin(progress * Math.PI * 4) * (1 - progress * 0.5);
-      setWindOffset(oscillation * peakOffset);
-
-      if (frame < maxFrames) {
-        requestAnimationFrame(animate);
-      } else {
-        setWindOffset(0);
-
-        const windTestPassed = stability >= windThreshold;
-
-        // Determine if tower survives
-        if (windTestPassed) {
-          setTowerStood(true);
-          setHint("Your tower stood strong against the wind!");
-        } else {
-          setTowerFell(true);
-          setHint("The tower was too unstable and fell! Try building a wider base.");
-        }
-
-        // Submit evaluation if not already submitted
-        if (!hasSubmittedEvaluation) {
-          const cog = calculateCenterOfGravity();
-          const baseCenter = calculateBaseCenter();
-          const baseWidth = calculateBaseWidth();
-
-          // Calculate overall success (both height and wind test)
-          const success = heightGoalMet && windTestPassed;
-
-          // Calculate score: 50% height achievement + 50% stability
-          const heightScore = Math.min(currentHeight / targetHeight, 1) * 50;
-          const stabilityScore = (stability / 100) * 50;
-          const score = heightScore + stabilityScore;
-
-          const metrics: TowerStackerMetrics = {
-            type: 'tower-stacker',
-            targetHeight,
-            achievedHeight: currentHeight,
-            heightGoalMet,
-            stabilityScore: stability,
-            windTestPassed,
-            windStrength,
-            piecesUsed: placedPieces.length,
-            piecesAvailable: totalAvailablePieces,
-            efficiency: placedPieces.length > 0 ? currentHeight / placedPieces.length : 0,
-            baseWidth,
-            centerOfGravityOffset: cog ? Math.abs(cog.x - baseCenter) : 0,
-            placedPieces: [...placedPieces], // Clone for immutability
-          };
-
-          submitEvaluation(success, score, metrics, { placedPieces });
-        }
-
-        setTimeout(() => {
-          setIsSimulating(false);
-        }, 1500);
-      }
-    };
-
-    requestAnimationFrame(animate);
-  }, [
-    calculateStability,
-    calculateTowerHeight,
-    calculateCenterOfGravity,
-    calculateBaseWidth,
-    calculateBaseCenter,
-    windStrength,
-    targetHeight,
-    placedPieces,
-    totalAvailablePieces,
-    hasSubmittedEvaluation,
-    submitEvaluation,
-  ]);
-
-  // Handle canvas click to place piece
-  const handleCanvasClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    if (!selectedPieceType || isSimulating) return;
-
-    const svg = svgRef.current;
-    if (!svg) return;
-
-    const rect = svg.getBoundingClientRect();
-    const scaleX = svgWidth / rect.width;
-    const scaleY = svgHeight / rect.height;
-
-    const svgX = (e.clientX - rect.left) * scaleX;
-    const svgY = (e.clientY - rect.top) * scaleY;
-
-    // Find the piece config
-    const pieceConfig = availablePieces.find(p => p.type === selectedPieceType);
-    if (!pieceConfig) return;
-
-    // Check availability
-    if (getAvailableCount(selectedPieceType) <= 0) {
+  const tapColumn = (column: number) => {
+    if (!buildOpen) return;
+    if (!selected) { setHint('Pick a piece from the tray first.'); return; }
+    const { w } = pieceSize(selected, turned);
+    const landed = dropPiece(pieces, selected, turned, leftEdgeFor(column, w), `p${++nextId.current}`);
+    if ('blocked' in landed) {
       SoundManager.invalid();
-      setHint(`No more ${selectedPieceType}s available!`);
-      setTimeout(() => setHint(null), 2000);
+      setHint(landed.blocked === 'too_high' ? 'That would stick out above the top of the building area.'
+        : 'That piece needs something under at least half of it.');
       return;
     }
-
-    // Calculate grid position (adjust for rotation)
-    const effectiveWidth = currentRotation === 90 ? pieceConfig.height : pieceConfig.width;
-    const effectiveHeight = currentRotation === 90 ? pieceConfig.width : pieceConfig.height;
-
-    let gridX = toGridX(svgX - (effectiveWidth * gridUnitSize) / 2);
-    let gridY = toGridY(svgY + (effectiveHeight * gridUnitSize) / 2);
-
-    // Snap to grid if enabled
-    if (gridMode) {
-      gridX = Math.round(gridX);
-      gridY = Math.max(0, Math.round(gridY));
-    }
-
-    // Clamp to valid range
-    gridX = Math.max(0, Math.min(groundWidth - effectiveWidth, gridX));
-
-    // Find lowest valid Y position (gravity)
-    let targetY = 0;
-    for (let y = gridY; y >= 0; y--) {
-      if (isValidPlacement(gridX, y, effectiveWidth, effectiveHeight)) {
-        targetY = y;
-        break;
-      }
-    }
-
-    // Final validation
-    if (!isValidPlacement(gridX, targetY, effectiveWidth, effectiveHeight)) {
-      SoundManager.invalid();
-      setHint("Can't place here - needs support!");
-      setTimeout(() => setHint(null), 2000);
-      return;
-    }
-
-    // Place the piece
-    const newPiece: PlacedPiece = {
-      id: `piece-${Date.now()}`,
-      pieceType: selectedPieceType,
-      x: gridX,
-      y: targetY,
-      width: effectiveWidth,
-      height: effectiveHeight,
-      weight: pieceConfig.weight,
-      color: pieceConfig.color,
-      rotation: currentRotation,
-    };
-
     SoundManager.snap();
-    setPlacedPieces([...placedPieces, newPiece]);
-    setTowerFell(false);
-    setTowerStood(false);
-  }, [selectedPieceType, isSimulating, availablePieces, currentRotation, gridMode, groundWidth, placedPieces, isValidPlacement, getAvailableCount]);
+    changed();
+    setPieces(prev => [...prev, landed.piece]);
+  };
 
-  // Handle mouse move for drag preview
-  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    if (!selectedPieceType || isSimulating) {
-      setDragPreview(null);
+  const tapPiece = (id: string) => {
+    if (!buildOpen) return;
+    const p = pieces.find(x => x.id === id);
+    if (!p) return;
+    if (restingOn(pieces, p).length) { SoundManager.invalid(); setHint('Take off the pieces on top of it first.'); return; }
+    SoundManager.tap();
+    changed();
+    setPieces(prev => prev.filter(x => x.id !== id));
+  };
+
+  const clearAll = () => {
+    if (!buildOpen) return;
+    changed();
+    setPieces([]);
+  };
+
+  // ── Check ─────────────────────────────────────────────────────
+  const completeCurrent = (attemptsCount: number) => {
+    if (!currentChallenge || recordedRef.current) return;
+    recordedRef.current = true;
+    setChallengeDone(true);
+    if (!practice) mergeResult({ challengeId: currentChallenge.id, correct: true, attempts: attemptsCount, score: phaseScore(attemptsCount) });
+  };
+
+  const checkTower = () => {
+    if (!currentChallenge || !buildOpen || !pieces.length) return;
+    const miss = towerMiss(currentChallenge, pieces);
+    const next = attempts + 1;
+    setAttempts(next);
+    setSelected(null); setHint(null); setGust(null);
+    setFalling(fallingPart(currentChallenge, pieces, miss));
+    progress.commitCheck(describeTower(pieces), !miss, miss);
+    if (!miss) {
+      SoundManager.playCorrect();
+      setFeedback({ text: PASS_FEEDBACK[currentChallenge.type], correct: true });
+      completeCurrent(next);
       return;
     }
-
-    const svg = svgRef.current;
-    if (!svg) return;
-
-    const rect = svg.getBoundingClientRect();
-    const scaleX = svgWidth / rect.width;
-    const scaleY = svgHeight / rect.height;
-
-    const svgX = (e.clientX - rect.left) * scaleX;
-    const svgY = (e.clientY - rect.top) * scaleY;
-
-    const pieceConfig = availablePieces.find(p => p.type === selectedPieceType);
-    if (!pieceConfig) return;
-
-    const effectiveWidth = currentRotation === 90 ? pieceConfig.height : pieceConfig.width;
-    const effectiveHeight = currentRotation === 90 ? pieceConfig.width : pieceConfig.height;
-
-    let gridX = toGridX(svgX - (effectiveWidth * gridUnitSize) / 2);
-    let gridY = toGridY(svgY + (effectiveHeight * gridUnitSize) / 2);
-
-    if (gridMode) {
-      gridX = Math.round(gridX);
-      gridY = Math.max(0, Math.round(gridY));
-    }
-
-    gridX = Math.max(0, Math.min(groundWidth - effectiveWidth, gridX));
-
-    setDragPreview({ x: gridX, y: gridY });
-  }, [selectedPieceType, isSimulating, availablePieces, currentRotation, gridMode, groundWidth]);
-
-  // Delete piece
-  const deletePiece = (pieceId: string) => {
-    // Check if other pieces depend on this one
-    const pieceToDelete = placedPieces.find(p => p.id === pieceId);
-    if (!pieceToDelete) return;
-
-    // Remove the piece and any unsupported pieces above
-    const newPieces = placedPieces.filter(p => p.id !== pieceId);
-    setPlacedPieces(newPieces);
-    setTowerFell(false);
-    setTowerStood(false);
+    SoundManager.playIncorrect();
+    setFeedback({ text: TOWER_FEEDBACK[miss], correct: false });
   };
 
-  // Reset
-  const handleReset = () => {
-    SoundManager.tap();
-    setPlacedPieces([]);
-    setSelectedPieceType(null);
-    setTowerFell(false);
-    setTowerStood(false);
-    setWindOffset(0);
-    setIsSimulating(false);
-    // Reset evaluation for a new attempt
-    resetEvaluationAttempt();
+  /** The gust lever: the same wind, ungraded. */
+  const tryGust = () => {
+    if (!currentChallenge || !buildOpen || !pieces.length) return;
+    const cut = blownCut(pieces, currentChallenge.wind ?? 0);
+    setGust(cut ? 'blew' : 'held');
+    setFalling(cut ? { ids: cut.ids, pivotX: cut.hi, pivotY: cut.level, toRight: true } : null);
   };
 
-  // Rotate selected piece
-  const handleRotate = () => {
-    setCurrentRotation(prev => (prev + 90) % 180);
-  };
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, pieces);
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : towerLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = shorterTower(sessionChallenge);
+          if (!easier) return 'This item has no easier ask; try a help lever.';
+          setLeverState(pulled); resetItem(easier); setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { resetItem(sessionChallenge); setPractice(null); },
+    };
+  });
 
-  // Get theme colors
-  const getThemeColors = () => {
-    switch (theme) {
-      case 'construction':
-        return { ground: '#92400E', sky: '#0369A1', grid: '#F59E0B' };
-      case 'blocks':
-        return { ground: '#16A34A', sky: '#7C3AED', grid: '#A855F7' };
-      case 'city':
-        return { ground: '#374151', sky: '#1E3A5F', grid: '#3B82F6' };
-      default:
-        return { ground: '#475569', sky: '#0F172A', grid: '#6366F1' };
-    }
-  };
+  // ── The live line (shared build layer): what the tower looks like, never a number, a verdict or how to keep it up ──
+  const sceneRef = useRef<SVGSVGElement | null>(null);
+  const buildSeeing = useBuildWatcher({
+    buildKey: pieces.map(p => `${p.kind}@${p.x},${p.y}${p.h > PIECES[p.kind].height ? 't' : ''}`).join('|'),
+    enabled: buildOpen && pieces.length > 0,
+    svg: sceneRef,
+    request: {
+      task: currentChallenge?.instruction ?? '',
+      sceneNote: 'A building area on the ground with a dashed green goal line across it'
+        + (currentChallenge?.type === 'build_windproof' ? ' and light blue wind arrows on the left' : '')
+        + '. The learner drops coloured blocks and beams into it.',
+      numbers: 'never',
+      neverSay: WATCH_NEVER_SAY,
+    },
+  });
 
-  const themeColors = getThemeColors();
-  const currentHeight = calculateTowerHeight();
-  const cog = calculateCenterOfGravity();
-  const stability = calculateStability();
-  const heightAchieved = currentHeight >= targetHeight;
-
-  // Get piece shape path
-  const getPieceShape = (piece: PlacedPiece) => {
-    const x = toSvgX(piece.x) + windOffset * (piece.y / maxHeight);
-    const y = toSvgY(piece.y + piece.height);
-    const w = piece.width * gridUnitSize;
-    const h = piece.height * gridUnitSize;
-
-    switch (piece.pieceType) {
-      case 'triangle':
-        return `M ${x + w / 2} ${y} L ${x} ${y + h} L ${x + w} ${y + h} Z`;
-      case 'arch':
-        return `M ${x} ${y + h} L ${x} ${y + h / 2} Q ${x + w / 2} ${y} ${x + w} ${y + h / 2} L ${x + w} ${y + h} Z`;
-      default:
-        return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} Z`;
-    }
-  };
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
+  // ── Pip shared surface ─────────────────────────────────────────
   const pip = useWorkspacePipSurface({
-    instanceId: (instanceId || 'tower-stacker'),
-    scopeId: 'tower',
+    instanceId: resolvedInstanceId,
+    scopeId: isComplete ? null : currentChallenge?.id ?? null,
     label: 'The tower and the building pieces',
-    solved: towerStood && heightAchieved,
+    solved: challengeDone,
     tutorSpeaking: false,
   });
 
-  return (
-    <div className={`w-full max-w-4xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8 justify-center">
-        <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-          <svg className="w-7 h-7 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-        </div>
-        <div className="text-left">
-          <h2 className="text-2xl font-bold text-white tracking-tight">{title}</h2>
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-            <p className="text-xs text-amber-400 font-mono uppercase tracking-wider">
-              Tower Building Lab
-            </p>
-          </div>
-        </div>
+  // ── Render ─────────────────────────────────────────────────────
+  if (!challenges.length) {
+    return <div className={`w-full p-8 text-center text-slate-400 ${className ?? ''}`}>No towers to build.</div>;
+  }
+  if (isComplete) {
+    return (
+      <div className={`w-full max-w-5xl mx-auto my-8 ${className ?? ''}`}>
+        <PhaseSummaryPanel phases={phaseResults} overallScore={submittedResult?.score} durationMs={elapsedMs}
+          heading="Towers Complete" celebrationMessage="You built every tower!" />
       </div>
+    );
+  }
 
-      <LuminaCard topAccent="amber" className="relative overflow-hidden rounded-3xl">
-        {/* Background */}
-        <div
-          className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(#f59e0b 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-        ></div>
+  const preview = (() => {
+    if (!selected || hoverColumn === null || !buildOpen) return null;
+    const { w } = pieceSize(selected, turned);
+    const landed = dropPiece(pieces, selected, turned, leftEdgeFor(hoverColumn, w), 'preview');
+    return 'piece' in landed ? landed.piece : null;
+  })();
+  const balance = leverOn(BALANCE_LEVER)
+    ? towerCuts(pieces).filter(c => c.level === 0 || (falling && c.ids.join() === [...falling.ids].sort().join()))
+    : null;
+  const turnable = selected !== null && PIECES[selected].width !== PIECES[selected].height;
 
-        <LuminaCardContent className="relative z-10 p-6 md:p-8">
-          {/* Description */}
-          <div className="mb-6 text-center max-w-2xl mx-auto">
-            <p className="text-slate-300 font-light">{description}</p>
+  return (
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{title || 'Tower Stacker'}</LuminaCardTitle>
+        <LuminaCardDescription>Pick a piece, then tap where to drop it. Tap a piece with nothing on it to take it off.</LuminaCardDescription>
+      </LuminaCardHeader>
+      <LuminaCardContent className="space-y-5">
+        <div className="space-y-1 text-center">
+          {challenges.length > 1 && (
+            <p className="text-xs font-mono uppercase tracking-wider text-slate-400">
+              Tower {currentIndex + 1} / {challenges.length}{practice ? ' · practice' : ''}
+            </p>
+          )}
+          <h4 className="text-lg font-semibold text-amber-200">{currentChallenge?.instruction}</h4>
+        </div>
+
+        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
+        {pip.store && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
+          <TowerScene ref={sceneRef} pieces={pieces} targetHeight={currentChallenge?.targetHeight ?? 0}
+            windy={currentChallenge?.type === 'build_windproof'} preview={preview} falling={falling} balance={balance}
+            disabled={!buildOpen} onTapColumn={tapColumn} onHoverColumn={setHoverColumn} onTapPiece={tapPiece} />
+          <div className="flex min-h-8 items-center justify-center" aria-live="polite" data-testid="build-watcher">
+            {buildSeeing && <span className="rounded-full bg-white/10 px-4 py-1.5 text-base text-amber-100">👀 {buildSeeing}</span>}
           </div>
-
-          {/* Status Bar — live simulation readouts (bespoke interaction-surface chrome) */}
-          <div className="mb-4 flex justify-center gap-4 flex-wrap">
-            {showHeight && (
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
-                heightAchieved ? 'bg-green-500/20 border border-green-500/50' : 'bg-slate-700/50 border border-slate-600/50'
-              }`}>
-                <span className="text-sm font-mono">
-                  Height: <span className={heightAchieved ? 'text-green-300' : 'text-slate-300'}>{currentHeight}</span>/{targetHeight}
-                </span>
-              </div>
-            )}
-
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
-              stability >= 70 ? 'bg-green-500/20 border border-green-500/50' :
-              stability >= 40 ? 'bg-amber-500/20 border border-amber-500/50' :
-              'bg-red-500/20 border border-red-500/50'
-            }`}>
-              <span className="text-sm font-mono">
-                Stability: <span className={
-                  stability >= 70 ? 'text-green-300' :
-                  stability >= 40 ? 'text-amber-300' :
-                  'text-red-300'
-                }>{Math.round(stability)}%</span>
-              </span>
-            </div>
-
-            {towerStood && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/20 border border-green-500/50 animate-pulse">
-                <span className="text-green-300 font-bold">Tower Stands!</span>
-              </div>
-            )}
-
-            {towerFell && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/20 border border-red-500/50 animate-pulse">
-                <span className="text-red-300 font-bold">Tower Fell!</span>
-              </div>
-            )}
-          </div>
-
-          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-          {pip.store && <div {...pip.dock} />}
-          <div {...pip.workspace}>
-          {/* SVG Canvas — bespoke interaction surface, left untouched */}
-          <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden mb-6 border border-slate-700/50">
-            <svg
-              ref={svgRef}
-              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-              className="w-full h-auto select-none"
-              style={{ maxHeight: '400px', cursor: selectedPieceType ? 'crosshair' : 'default' }}
-              onClick={handleCanvasClick}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={() => setDragPreview(null)}
-            >
-              {/* Defs */}
-              <defs>
-                <linearGradient id="skyGradientTower" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor={themeColors.sky} />
-                  <stop offset="100%" stopColor="#1E293B" />
-                </linearGradient>
-                <pattern id="gridPattern" width={gridUnitSize} height={gridUnitSize} patternUnits="userSpaceOnUse">
-                  <rect width={gridUnitSize} height={gridUnitSize} fill="none" stroke={themeColors.grid} strokeWidth="0.5" opacity="0.2" />
-                </pattern>
-              </defs>
-
-              {/* Sky */}
-              <rect x={0} y={0} width={svgWidth} height={svgHeight} fill="url(#skyGradientTower)" />
-
-              {/* Grid */}
-              <rect
-                x={buildAreaStartX}
-                y={groundY - maxHeight * gridUnitSize}
-                width={groundWidth * gridUnitSize}
-                height={maxHeight * gridUnitSize}
-                fill="url(#gridPattern)"
-              />
-
-              {/* Target height line */}
-              <line
-                x1={buildAreaStartX - 20}
-                y1={toSvgY(targetHeight)}
-                x2={buildAreaStartX + groundWidth * gridUnitSize + 20}
-                y2={toSvgY(targetHeight)}
-                stroke="#22C55E"
-                strokeWidth={2}
-                strokeDasharray="8,4"
-                opacity={0.6}
-              />
-              <text
-                x={buildAreaStartX - 25}
-                y={toSvgY(targetHeight) + 4}
-                fill="#22C55E"
-                fontSize="12"
-                textAnchor="end"
-                fontFamily="monospace"
-              >
-                Goal: {targetHeight}
-              </text>
-
-              {/* Ground */}
-              <rect
-                x={0}
-                y={groundY}
-                width={svgWidth}
-                height={60}
-                fill={themeColors.ground}
-              />
-
-              {/* Build area border */}
-              <rect
-                x={buildAreaStartX}
-                y={groundY - maxHeight * gridUnitSize}
-                width={groundWidth * gridUnitSize}
-                height={maxHeight * gridUnitSize}
-                fill="none"
-                stroke={themeColors.grid}
-                strokeWidth="2"
-                opacity="0.3"
-              />
-
-              {/* Placed pieces */}
-              {placedPieces.map(piece => (
-                <g
-                  key={piece.id}
-                  style={{ cursor: isSimulating ? 'default' : 'pointer' }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isSimulating) deletePiece(piece.id);
-                  }}
-                >
-                  {/* Piece shadow */}
-                  <path
-                    d={getPieceShape({ ...piece, x: piece.x + 0.1, y: piece.y - 0.1 })}
-                    fill="black"
-                    opacity={0.3}
-                  />
-
-                  {/* Piece */}
-                  <path
-                    d={getPieceShape(piece)}
-                    fill={piece.color}
-                    stroke="white"
-                    strokeWidth={1.5}
-                    className={`transition-all duration-150 ${towerFell ? 'animate-pulse opacity-50' : ''}`}
-                  />
-
-                  {/* Delete indicator on hover */}
-                  {!isSimulating && (
-                    <text
-                      x={toSvgX(piece.x + piece.width / 2) + windOffset * (piece.y / maxHeight)}
-                      y={toSvgY(piece.y + piece.height / 2) + 5}
-                      textAnchor="middle"
-                      fontSize="12"
-                      fill="white"
-                      opacity={0.5}
-                      className="pointer-events-none"
-                    >
-                      click to remove
-                    </text>
-                  )}
-                </g>
-              ))}
-
-              {/* Drag preview */}
-              {dragPreview && selectedPieceType && (
-                (() => {
-                  const pieceConfig = availablePieces.find(p => p.type === selectedPieceType);
-                  if (!pieceConfig) return null;
-
-                  const effectiveWidth = currentRotation === 90 ? pieceConfig.height : pieceConfig.width;
-                  const effectiveHeight = currentRotation === 90 ? pieceConfig.width : pieceConfig.height;
-
-                  const previewPiece: PlacedPiece = {
-                    id: 'preview',
-                    pieceType: selectedPieceType,
-                    x: dragPreview.x,
-                    y: dragPreview.y,
-                    width: effectiveWidth,
-                    height: effectiveHeight,
-                    weight: pieceConfig.weight,
-                    color: pieceConfig.color,
-                    rotation: currentRotation,
-                  };
-
-                  const isValid = isValidPlacement(dragPreview.x, 0, effectiveWidth, effectiveHeight) ||
-                                  isValidPlacement(dragPreview.x, dragPreview.y, effectiveWidth, effectiveHeight);
-
-                  return (
-                    <path
-                      d={getPieceShape(previewPiece)}
-                      fill={isValid ? pieceConfig.color : '#EF4444'}
-                      opacity={0.5}
-                      stroke={isValid ? 'white' : '#EF4444'}
-                      strokeWidth={2}
-                      strokeDasharray="4,4"
-                      className="pointer-events-none"
-                    />
-                  );
-                })()
-              )}
-
-              {/* Center of gravity indicator */}
-              {showCenterOfGravity && cog && placedPieces.length > 0 && (
-                <g>
-                  <line
-                    x1={toSvgX(cog.x) + windOffset * (cog.y / maxHeight)}
-                    y1={toSvgY(cog.y) - 10}
-                    x2={toSvgX(cog.x) + windOffset * (cog.y / maxHeight)}
-                    y2={groundY}
-                    stroke="#F59E0B"
-                    strokeWidth={2}
-                    strokeDasharray="4,4"
-                    opacity={0.7}
-                  />
-                  <circle
-                    cx={toSvgX(cog.x) + windOffset * (cog.y / maxHeight)}
-                    cy={toSvgY(cog.y)}
-                    r={8}
-                    fill="#F59E0B"
-                    stroke="white"
-                    strokeWidth={2}
-                  />
-                  <text
-                    x={toSvgX(cog.x) + windOffset * (cog.y / maxHeight)}
-                    y={toSvgY(cog.y) + 4}
-                    textAnchor="middle"
-                    fontSize="10"
-                    fill="white"
-                    fontWeight="bold"
-                  >
-                    CG
-                  </text>
-                </g>
-              )}
-
-              {/* Wind indicator */}
-              {isSimulating && enableWind && (
-                <g>
-                  <text
-                    x={30}
-                    y={svgHeight / 2}
-                    fontSize="32"
-                    className="animate-pulse"
-                  >
-                    💨
-                  </text>
-                  <text
-                    x={30}
-                    y={svgHeight / 2 + 40}
-                    fontSize="12"
-                    fill="#94A3B8"
-                    fontFamily="monospace"
-                  >
-                    Wind: {windStrength}%
-                  </text>
-                </g>
-              )}
-
-              {/* Height ruler */}
-              {showHeight && (
-                <g>
-                  {Array.from({ length: maxHeight + 1 }).map((_, i) => (
-                    <g key={i}>
-                      <line
-                        x1={buildAreaStartX - 15}
-                        y1={toSvgY(i)}
-                        x2={buildAreaStartX - 5}
-                        y2={toSvgY(i)}
-                        stroke="#64748B"
-                        strokeWidth={1}
-                      />
-                      {i % 2 === 0 && (
-                        <text
-                          x={buildAreaStartX - 20}
-                          y={toSvgY(i) + 4}
-                          textAnchor="end"
-                          fontSize="10"
-                          fill="#64748B"
-                          fontFamily="monospace"
-                        >
-                          {i}
-                        </text>
-                      )}
-                    </g>
-                  ))}
-                </g>
-              )}
-
-              {/* Instructions */}
-              {!isSimulating && placedPieces.length === 0 && (
-                <text x={svgWidth / 2} y={60} textAnchor="middle" fill="#94A3B8" fontSize="14" fontFamily="monospace">
-                  Select a piece below, then click to place it!
-                </text>
-              )}
-            </svg>
-          </div>
-
-          {/* Piece Selector — bespoke build-interaction surface, left untouched */}
-          <div className="mb-6 flex flex-wrap justify-center gap-3">
-            {availablePieces.map(piece => {
-              const available = getAvailableCount(piece.type);
-              const isSelected = selectedPieceType === piece.type;
-
-              return (
-                <button
-                  key={piece.type}
-                  onClick={() => {
-                    SoundManager.select();
-                    setSelectedPieceType(isSelected ? null : piece.type);
-                  }}
-                  disabled={available <= 0}
-                  className={`px-4 py-3 rounded-xl border transition-all flex items-center gap-3 ${
-                    isSelected
-                      ? 'bg-amber-500/30 border-amber-500 text-amber-300'
-                      : available > 0
-                        ? 'bg-slate-800/40 border-slate-600 text-slate-300 hover:bg-slate-700/40'
-                        : 'bg-slate-800/20 border-slate-700 text-slate-500 opacity-50'
-                  }`}
-                >
-                  <div
-                    className="w-6 h-6 rounded"
-                    style={{ backgroundColor: piece.color }}
-                  />
-                  <div className="text-left">
-                    <div className="font-semibold capitalize">{piece.type}</div>
-                    <div className="text-xs opacity-75">
-                      {available} left ({piece.width}x{piece.height})
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-
-            {/* Rotate button — part of the placement interaction */}
-            {selectedPieceType && (
-              <button
-                onClick={handleRotate}
-                className="px-4 py-3 rounded-xl border border-slate-600 bg-slate-800/40 text-slate-300 hover:bg-slate-700/40 transition-all flex items-center gap-2"
-              >
-                <span>🔄</span>
-                <span className="text-sm">Rotate</span>
-              </button>
-            )}
-          </div>
-
-          </div>
-
-          {/* Controls */}
-          <div className="flex flex-wrap gap-3 justify-center">
-            {enableWind && (
-              <LuminaButton
-                tone="primary"
-                onClick={runWindTest}
-                disabled={isSimulating || placedPieces.length === 0}
-                className="px-6 py-3 rounded-xl font-semibold flex items-center gap-2"
-              >
-                {isSimulating ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-cyan-300/30 border-t-cyan-300 rounded-full animate-spin" />
-                    Testing...
-                  </>
-                ) : (
-                  <>
-                    <span>💨</span>
-                    Wind Test
-                  </>
-                )}
-              </LuminaButton>
-            )}
-
-            <LuminaButton
-              tone="danger"
-              onClick={handleReset}
-              disabled={isSimulating}
-              className="px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2"
-            >
-              <span>↺</span> Reset
-            </LuminaButton>
-          </div>
-
-          {/* Hint */}
-          {hint && (
-            <LuminaCallout
-              accent="amber"
-              label="Hint"
-              icon={<span className="text-lg">💡</span>}
-              className="mt-6 p-4 animate-fade-in"
-            >
-              {hint}
-            </LuminaCallout>
+          {leverOn(COUNT_LEVER) && (
+            <p className="text-center text-sm text-slate-300" data-lever="piece-count">
+              Pieces in your tower: <span className="text-orange-300 font-bold text-lg">{pieces.length}</span>
+            </p>
           )}
 
-          {/* Educational Info */}
-          <LuminaPanel accent="amber" className="mt-6 p-5 rounded-xl">
-            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Tower Building Tips
-            </h4>
-            <div className="space-y-2 text-sm">
-              <p className="text-slate-300">
-                <span className="text-amber-400 font-semibold">Build a wide base!</span> A wider foundation makes your tower more stable.
-              </p>
-              <p className="text-slate-300">
-                <span className="text-green-400 font-semibold">Center of Gravity (CG)</span> should stay over your base. If it goes too far to one side, the tower will tip!
-              </p>
-              {enableWind && (
-                <p className="text-slate-300">
-                  <span className="text-cyan-400 font-semibold">Wind test</span> pushes on your tower. Shorter, wider towers resist wind better than tall, skinny ones.
-                </p>
+          {/* The tray: every piece, as many as the learner wants. */}
+          <div className="flex flex-wrap items-center justify-center gap-2" role="group" aria-label="Building pieces">
+            {PIECE_KINDS.map(kind => {
+              const spec = PIECES[kind], on = selected === kind;
+              return (
+                <LuminaButton key={kind} tone={on ? 'primary' : 'ghost'} disabled={!buildOpen} aria-pressed={on}
+                  aria-label={`Pick ${spec.label.toLowerCase()}`} data-pip-object={`tray-${kind}`} onClick={() => pick(kind)}
+                  className="min-h-11 !h-auto gap-2 px-3 py-2">
+                  <svg width={spec.width * 12} height={spec.height * 12} aria-hidden="true">
+                    <rect width={spec.width * 12} height={spec.height * 12} rx={2} fill={spec.color} />
+                  </svg>
+                  <span>{spec.label}</span>
+                </LuminaButton>
+              );
+            })}
+            {turnable && (
+              <LuminaButton tone={turned ? 'primary' : 'subtle'} aria-pressed={turned} onClick={() => setTurned(t => !t)}
+                disabled={!buildOpen} className="min-h-11">Turn</LuminaButton>
+            )}
+          </div>
+        </div>
+
+        {hint && <LuminaCallout accent="amber" label="Hint" className="p-3">{hint}</LuminaCallout>}
+        {gust && (
+          <p className="text-center text-sm text-sky-200" data-lever="gust-result">
+            {gust === 'held' ? 'Your tower held in the gust.' : 'The gust blew part of your tower over.'}
+          </p>
+        )}
+        {feedback && (
+          <LuminaFeedbackCard status={feedback.correct ? 'correct' : 'incorrect'} label={feedback.correct ? 'Yes' : 'Not yet'}>
+            {feedback.text}
+          </LuminaFeedbackCard>
+        )}
+
+        {/* Actions. The build commits with "I'm done!"; there is no auto-check. */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {!challengeDone ? (
+            <>
+              <LuminaButton disabled={!buildOpen || !pieces.length} onClick={clearAll}>Clear</LuminaButton>
+              {leverOn(GUST_LEVER) && (
+                <LuminaButton disabled={!buildOpen || !pieces.length} onClick={tryGust}>💨 Try a gust</LuminaButton>
               )}
-            </div>
-          </LuminaPanel>
-        </LuminaCardContent>
-      </LuminaCard>
-    </div>
+              <LuminaButton tone="primary" disabled={!buildOpen || !pieces.length} onClick={checkTower}>I&apos;m done!</LuminaButton>
+            </>
+          ) : !tutorOwned && currentIndex + 1 < challenges.length && !practice ? (
+            <LuminaActionButton action="next" onClick={() => advance()}>Next tower →</LuminaActionButton>
+          ) : null}
+        </div>
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const TowerStacker = withWorkspaceController<TowerStackerProps, ProgressOptions<TowerChallenge>, Progress>(
+  'tower-stacker', TowerStackerSurface, useScriptedProgress, useWorkspaceProgressFor('tower-stacker'));
 
 export default TowerStacker;

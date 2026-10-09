@@ -23,6 +23,8 @@ import { equationWorkspaceOracle } from './equation-workspace';
 import { factorTreeOracle } from './factor-tree';
 import { fastFactOracle } from './fast-fact';
 import { foodWebBuilderOracle } from './food-web-builder';
+import { towerStackerOracle } from './tower-stacker';
+import { gearTrainBuilderOracle } from './gear-train-builder';
 import { functionMachineOracle } from './function-machine';
 import { functionSketchOracle } from './function-sketch';
 import { fractionBarOracle } from './fraction-bar';
@@ -88,6 +90,8 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   factorTreeOracle,
   fastFactOracle,
   foodWebBuilderOracle,
+  towerStackerOracle,
+  gearTrainBuilderOracle,
   functionMachineOracle,
   functionSketchOracle,
   fractionBarOracle,

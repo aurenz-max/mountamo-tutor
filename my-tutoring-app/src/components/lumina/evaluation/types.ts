@@ -6,7 +6,6 @@
  */
 
 import type { ComponentId } from '../types';
-import type { PlacedPiece } from '../primitives/visual-primitives/engineering/TowerStacker';
 
 // =============================================================================
 // Lesson Context (for curriculum mapping)
@@ -123,28 +122,13 @@ export interface BasePrimitiveMetrics {
 
 export interface TowerStackerMetrics extends BasePrimitiveMetrics {
   type: 'tower-stacker';
-
-  // Goal achievement
-  targetHeight: number;
-  achievedHeight: number;
-  heightGoalMet: boolean;
-
-  // Stability analysis
-  stabilityScore: number;       // 0-100
-  windTestPassed: boolean;
-  windStrength: number;
-
-  // Efficiency
-  piecesUsed: number;
-  piecesAvailable: number;
-  efficiency: number;           // height / pieces used
-
-  // Engineering concepts demonstrated
-  baseWidth: number;
-  centerOfGravityOffset: number;
-
-  // Final state for replay
-  placedPieces: PlacedPiece[];
+  /** The eval mode the session was pinned to, or 'mixed'. */
+  challengeType: string;
+  totalTowers: number;
+  towersBuilt: number;
+  accuracy: number;
+  attemptsCount: number;
+  firstTryCount: number;
 }
 
 export interface BridgeBuilderMetrics extends BasePrimitiveMetrics {
@@ -181,27 +165,18 @@ export interface BridgeBuilderMetrics extends BasePrimitiveMetrics {
   finalMembers: Array<{ id: string; type: string; startJointId: string; endJointId: string }>;
 }
 
+/** Lever Lab open builds (build_balance / build_lift). The sandbox submits nothing. */
 export interface LeverLabMetrics extends BasePrimitiveMetrics {
   type: 'lever-lab';
-
-  // Balance achievement
-  isBalanced: boolean;
-  balanceError: number;         // How far from balanced (0 = perfect)
-
-  // Problem solving
-  targetConfiguration: string;  // e.g., "lift 10N with 5N effort"
-  solutionFound: boolean;
-
-  // Efficiency
-  attemptsToSolve: number;
-  hintsUsed: number;
-
-  // Concept demonstration
-  mechanicalAdvantageCalculated: number;
-  mechanicalAdvantageTarget: number;
-  fulcrumPosition: number;
-  effortDistance: number;
-  loadDistance: number;
+  evalMode: string;
+  /** Mean item score: 100 first try, 67 after one miss, 33 after more. */
+  accuracy: number;
+  challengesTotal: number;
+  challengesSolved: number;
+  firstTryCorrect: number;
+  totalAttempts: number;
+  /** Misses by kind (left_down, right_down, same_side, too_weak, same_way). */
+  misses: Record<string, number>;
 }
 
 export interface PulleySystemMetrics extends BasePrimitiveMetrics {
@@ -224,25 +199,14 @@ export interface PulleySystemMetrics extends BasePrimitiveMetrics {
 }
 
 export interface GearTrainMetrics extends BasePrimitiveMetrics {
-  type: 'gear-train';
-
-  // Goal achievement
-  targetGearRatio: number;
-  achievedGearRatio: number;
-  ratioGoalMet: boolean;
-
-  // Direction
-  targetOutputDirection: 'clockwise' | 'counter-clockwise';
-  achievedOutputDirection: 'clockwise' | 'counter-clockwise';
-  directionCorrect: boolean;
-
-  // Configuration
-  gearCount: number;
-  gearSizes: number[];
-
-  // Speed/torque tradeoff understanding
-  speedMultiplier: number;
-  torqueMultiplier: number;
+  type: 'gear-train-builder';
+  /** The eval mode the session was pinned to, or 'mixed'. */
+  challengeType: string;
+  totalTrains: number;
+  trainsBuilt: number;
+  accuracy: number;
+  attemptsCount: number;
+  firstTryCount: number;
 }
 
 export interface RampLabMetrics extends BasePrimitiveMetrics {

@@ -1,0 +1,111 @@
+{
+ "source": "qa/tutor-reports/ramp-lab-runtime-design_with_budget-payload-2026-10-09.json",
+ "primitiveId": "ramp-lab",
+ "evalMode": "design_with_budget",
+ "data": {
+  "investigationVariable": "mixed",
+  "title": "Loading Dock Challenge!",
+  "description": "Find the steepest whole-degree ramp that your fixed force budget can handle to help load the cargo.",
+  "rampLength": 10,
+  "rampAngle": 35,
+  "adjustableAngle": true,
+  "loadWeight": 5,
+  "loadType": "box",
+  "showMeasurements": true,
+  "frictionLevel": "medium",
+  "theme": "loading_dock",
+  "allowPush": true,
+  "customLoadIcon": null,
+  "customLoadLabel": null,
+  "pushForce": 0,
+  "showForceArrows": true,
+  "showMA": true,
+  "challenges": [
+   {
+    "id": "design-loading-dock",
+    "title": "Loading Dock Limit",
+    "mode": "design_with_budget",
+    "scenario": {
+     "label": "Your design",
+     "angle": 33,
+     "loadWeight": 5,
+     "loadType": "box",
+     "frictionLevel": "medium"
+    },
+    "forceBudget": 33.7,
+    "angleRange": {
+     "min": 10,
+     "max": 50
+    },
+    "targetHeight": 3,
+    "brief": "Build the steepest whole-degree ramp this push budget can handle. The dock height must stay fixed.",
+    "hint": "If the load cannot climb, make the ramp gentler. If it can, see whether one more degree still works.",
+    "explainOnSolve": "You found the boundary design: any steeper would exceed the force budget, while any gentler would use more ramp length than necessary."
+   },
+   {
+    "id": "design-wheelchair-ramp",
+    "title": "Smooth Access Ramp",
+    "mode": "design_with_budget",
+    "scenario": {
+     "label": "Your design",
+     "angle": 39,
+     "loadWeight": 4,
+     "loadType": "wheel",
+     "frictionLevel": "low"
+    },
+    "forceBudget": 23.27,
+    "angleRange": {
+     "min": 10,
+     "max": 50
+    },
+    "targetHeight": 3,
+    "brief": "Use the available push to make the steepest workable ramp to the fixed platform.",
+    "hint": "Search for the boundary between works and does not work, then choose the steepest working angle.",
+    "explainOnSolve": "The design balances two constraints: enough push to climb and no extra ramp length beyond what the budget requires."
+   },
+   {
+    "id": "design-rough-site",
+    "title": "Rough-Site Ramp",
+    "mode": "design_with_budget",
+    "scenario": {
+     "label": "Your design",
+     "angle": 28,
+     "loadWeight": 6,
+     "loadType": "box",
+     "frictionLevel": "high"
+    },
+    "forceBudget": 47.34,
+    "angleRange": {
+     "min": 10,
+     "max": 50
+    },
+    "targetHeight": 3.5,
+    "brief": "The site surface is rough. Find the steepest ramp that still reaches the platform within the force budget.",
+    "hint": "Roughness uses part of the force budget before the load even fights the slope.",
+    "explainOnSolve": "Because friction consumed more of the budget, this design needed a gentler, longer ramp."
+   },
+   {
+    "id": "design-barrel-route",
+    "title": "Barrel Delivery Route",
+    "mode": "design_with_budget",
+    "scenario": {
+     "label": "Your design",
+     "angle": 45,
+     "loadWeight": 5,
+     "loadType": "barrel",
+     "frictionLevel": "low"
+    },
+    "forceBudget": 33.08,
+    "angleRange": {
+     "min": 10,
+     "max": 50
+    },
+    "targetHeight": 4,
+    "brief": "Choose the steepest whole-degree route the crew can use without exceeding its push limit.",
+    "hint": "Try a working angle, then increase one degree at a time until the next step fails.",
+    "explainOnSolve": "The last working angle is the efficient boundary: it reaches the same height with the shortest feasible ramp."
+   }
+  ],
+  "gradeLevel": "3"
+ }
+}

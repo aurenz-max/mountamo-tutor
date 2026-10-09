@@ -1,0 +1,821 @@
+{
+ "results": [
+  {
+   "lesson": {
+    "pin": "build_direction",
+    "grade": "K",
+    "topic": "Toys that use gears",
+    "intent": "Gears that touch turn opposite ways"
+   },
+   "title": "Spinning Toy Clock",
+   "challengeType": "build_direction",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "gears-1",
+     "type": "build_direction",
+     "way": "opposite",
+     "minGears": 2,
+     "instruction": "Build a gear train of at least 2 gears where the last gear turns the opposite way to the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 16 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "wrong_direction",
+      "work": "3 gears, first to last: 16 teeth, 16 teeth, 16 teeth"
+     }
+    },
+    {
+     "id": "gears-2",
+     "type": "build_direction",
+     "way": "same",
+     "minGears": 3,
+     "instruction": "Build a gear train of at least 3 gears where the last gear turns the same way as the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "3 gears, first to last: 16 teeth, 16 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "wrong_direction",
+      "work": "4 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     }
+    },
+    {
+     "id": "gears-3",
+     "type": "build_direction",
+     "way": "opposite",
+     "minGears": 4,
+     "instruction": "Build a gear train of at least 4 gears where the last gear turns the opposite way to the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "4 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "wrong_direction",
+      "work": "5 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     }
+    }
+   ],
+   "data": {
+    "title": "Spinning Toy Clock",
+    "challengeType": "build_direction",
+    "challenges": [
+     {
+      "type": "build_direction",
+      "way": "opposite",
+      "minGears": 2,
+      "id": "gears-1",
+      "instruction": "Build a gear train of at least 2 gears where the last gear turns the opposite way to the first gear."
+     },
+     {
+      "type": "build_direction",
+      "way": "same",
+      "minGears": 3,
+      "id": "gears-2",
+      "instruction": "Build a gear train of at least 3 gears where the last gear turns the same way as the first gear."
+     },
+     {
+      "type": "build_direction",
+      "way": "opposite",
+      "minGears": 4,
+      "id": "gears-3",
+      "instruction": "Build a gear train of at least 4 gears where the last gear turns the opposite way to the first gear."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": "build_direction",
+    "grade": "2",
+    "topic": "How gears work",
+    "intent": "Each gear turns the other way from the one it touches"
+   },
+   "title": "Build a Spinning Toy Clock",
+   "challengeType": "build_direction",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "gears-1",
+     "type": "build_direction",
+     "way": "same",
+     "minGears": 3,
+     "instruction": "Build a gear train of at least 3 gears where the last gear turns the same way as the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "3 gears, first to last: 16 teeth, 16 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "wrong_direction",
+      "work": "4 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     }
+    },
+    {
+     "id": "gears-2",
+     "type": "build_direction",
+     "way": "opposite",
+     "minGears": 4,
+     "instruction": "Build a gear train of at least 4 gears where the last gear turns the opposite way to the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "4 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "wrong_direction",
+      "work": "5 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     }
+    },
+    {
+     "id": "gears-3",
+     "type": "build_direction",
+     "way": "same",
+     "minGears": 5,
+     "instruction": "Build a gear train of at least 5 gears where the last gear turns the same way as the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "5 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "wrong_direction",
+      "work": "6 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     }
+    }
+   ],
+   "data": {
+    "title": "Build a Spinning Toy Clock",
+    "challengeType": "build_direction",
+    "challenges": [
+     {
+      "type": "build_direction",
+      "way": "same",
+      "minGears": 3,
+      "id": "gears-1",
+      "instruction": "Build a gear train of at least 3 gears where the last gear turns the same way as the first gear."
+     },
+     {
+      "type": "build_direction",
+      "way": "opposite",
+      "minGears": 4,
+      "id": "gears-2",
+      "instruction": "Build a gear train of at least 4 gears where the last gear turns the opposite way to the first gear."
+     },
+     {
+      "type": "build_direction",
+      "way": "same",
+      "minGears": 5,
+      "id": "gears-3",
+      "instruction": "Build a gear train of at least 5 gears where the last gear turns the same way as the first gear."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": "build_speed",
+    "grade": "1",
+    "topic": "Big gears and small gears",
+    "intent": "A small gear turns faster than a big one"
+   },
+   "title": "Build a Whirling Windmill",
+   "challengeType": "build_speed",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "gears-1",
+     "type": "build_speed",
+     "speed": "faster",
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns faster than the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 24 teeth, 12 teeth"
+     },
+     "wrong": {
+      "miss": "not_faster",
+      "work": "2 gears, first to last: 12 teeth, 24 teeth"
+     }
+    },
+    {
+     "id": "gears-2",
+     "type": "build_speed",
+     "speed": "slower",
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns slower than the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 12 teeth, 24 teeth"
+     },
+     "wrong": {
+      "miss": "not_slower",
+      "work": "2 gears, first to last: 24 teeth, 12 teeth"
+     }
+    },
+    {
+     "id": "gears-3",
+     "type": "build_speed",
+     "way": "opposite",
+     "speed": "faster",
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns faster than the first gear, and turns the opposite way.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 24 teeth, 12 teeth"
+     },
+     "wrong": {
+      "miss": "not_faster",
+      "work": "2 gears, first to last: 12 teeth, 24 teeth"
+     }
+    }
+   ],
+   "data": {
+    "title": "Build a Whirling Windmill",
+    "challengeType": "build_speed",
+    "challenges": [
+     {
+      "type": "build_speed",
+      "speed": "faster",
+      "minGears": 2,
+      "id": "gears-1",
+      "instruction": "Build a gear train where the last gear turns faster than the first gear."
+     },
+     {
+      "type": "build_speed",
+      "speed": "slower",
+      "minGears": 2,
+      "id": "gears-2",
+      "instruction": "Build a gear train where the last gear turns slower than the first gear."
+     },
+     {
+      "type": "build_speed",
+      "speed": "faster",
+      "way": "opposite",
+      "minGears": 2,
+      "id": "gears-3",
+      "instruction": "Build a gear train where the last gear turns faster than the first gear, and turns the opposite way."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": "build_speed",
+    "grade": "3",
+    "topic": "Bicycle gears",
+    "intent": "Make a gear turn faster or slower"
+   },
+   "title": "Build a Bicycle Speedometer",
+   "challengeType": "build_speed",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "gears-1",
+     "type": "build_speed",
+     "speed": "faster",
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns faster than the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 24 teeth, 12 teeth"
+     },
+     "wrong": {
+      "miss": "not_faster",
+      "work": "2 gears, first to last: 12 teeth, 24 teeth"
+     }
+    },
+    {
+     "id": "gears-2",
+     "type": "build_speed",
+     "speed": "slower",
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns slower than the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 12 teeth, 24 teeth"
+     },
+     "wrong": {
+      "miss": "not_slower",
+      "work": "2 gears, first to last: 24 teeth, 12 teeth"
+     }
+    },
+    {
+     "id": "gears-3",
+     "type": "build_speed",
+     "way": "same",
+     "speed": "slower",
+     "minGears": 3,
+     "instruction": "Build a gear train where the last gear turns slower than the first gear, and turns the same way.",
+     "pass": {
+      "miss": null,
+      "work": "3 gears, first to last: 12 teeth, 16 teeth, 24 teeth"
+     },
+     "wrong": {
+      "miss": "not_slower",
+      "work": "3 gears, first to last: 24 teeth, 16 teeth, 12 teeth"
+     }
+    }
+   ],
+   "data": {
+    "title": "Build a Bicycle Speedometer",
+    "challengeType": "build_speed",
+    "challenges": [
+     {
+      "type": "build_speed",
+      "speed": "faster",
+      "minGears": 2,
+      "id": "gears-1",
+      "instruction": "Build a gear train where the last gear turns faster than the first gear."
+     },
+     {
+      "type": "build_speed",
+      "speed": "slower",
+      "minGears": 2,
+      "id": "gears-2",
+      "instruction": "Build a gear train where the last gear turns slower than the first gear."
+     },
+     {
+      "type": "build_speed",
+      "speed": "slower",
+      "way": "same",
+      "minGears": 3,
+      "id": "gears-3",
+      "instruction": "Build a gear train where the last gear turns slower than the first gear, and turns the same way."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": "build_ratio",
+    "grade": "4",
+    "topic": "Gear ratios in clocks",
+    "intent": "Count teeth to work out how many times a gear turns"
+   },
+   "title": "Clockwork Tooth Counter",
+   "challengeType": "build_ratio",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "gears-1",
+     "type": "build_ratio",
+     "way": "same",
+     "ratio": 2,
+     "minGears": 3,
+     "instruction": "Build a gear train where the last gear turns 2 times for every 1 turn of the first gear, and turns the same way.",
+     "pass": {
+      "miss": null,
+      "work": "3 gears, first to last: 16 teeth, 16 teeth, 8 teeth"
+     },
+     "wrong": {
+      "miss": "too_slow",
+      "work": "3 gears, first to last: 8 teeth, 16 teeth, 16 teeth"
+     }
+    },
+    {
+     "id": "gears-2",
+     "type": "build_ratio",
+     "way": "same",
+     "ratio": 0.3333333333333333,
+     "minGears": 3,
+     "instruction": "Build a gear train where the last gear turns once for every 3 turns of the first gear, and turns the same way.",
+     "pass": {
+      "miss": null,
+      "work": "3 gears, first to last: 8 teeth, 16 teeth, 24 teeth"
+     },
+     "wrong": {
+      "miss": "too_fast",
+      "work": "3 gears, first to last: 24 teeth, 16 teeth, 8 teeth"
+     }
+    },
+    {
+     "id": "gears-3",
+     "type": "build_ratio",
+     "way": "opposite",
+     "ratio": 0.5,
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns once for every 2 turns of the first gear, and turns the opposite way.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 8 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "too_fast",
+      "work": "2 gears, first to last: 16 teeth, 8 teeth"
+     }
+    }
+   ],
+   "data": {
+    "title": "Clockwork Tooth Counter",
+    "challengeType": "build_ratio",
+    "challenges": [
+     {
+      "type": "build_ratio",
+      "ratio": 2,
+      "way": "same",
+      "minGears": 3,
+      "id": "gears-1",
+      "instruction": "Build a gear train where the last gear turns 2 times for every 1 turn of the first gear, and turns the same way."
+     },
+     {
+      "type": "build_ratio",
+      "ratio": 0.3333333333333333,
+      "way": "same",
+      "minGears": 3,
+      "id": "gears-2",
+      "instruction": "Build a gear train where the last gear turns once for every 3 turns of the first gear, and turns the same way."
+     },
+     {
+      "type": "build_ratio",
+      "ratio": 0.5,
+      "way": "opposite",
+      "minGears": 2,
+      "id": "gears-3",
+      "instruction": "Build a gear train where the last gear turns once for every 2 turns of the first gear, and turns the opposite way."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": "build_ratio",
+    "grade": "5",
+    "topic": "Machines and gear ratios",
+    "intent": "Design a gear train for a given speed ratio"
+   },
+   "title": "Build a Gear-Driven Toy Clock",
+   "challengeType": "build_ratio",
+   "routed": null,
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "gears-1",
+     "type": "build_ratio",
+     "way": "same",
+     "ratio": 2,
+     "minGears": 3,
+     "instruction": "Build a gear train where the last gear turns 2 times for every 1 turn of the first gear, and turns the same way.",
+     "pass": {
+      "miss": null,
+      "work": "3 gears, first to last: 16 teeth, 16 teeth, 8 teeth"
+     },
+     "wrong": {
+      "miss": "too_slow",
+      "work": "3 gears, first to last: 8 teeth, 16 teeth, 16 teeth"
+     }
+    },
+    {
+     "id": "gears-2",
+     "type": "build_ratio",
+     "ratio": 3,
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns 3 times for every 1 turn of the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 24 teeth, 8 teeth"
+     },
+     "wrong": {
+      "miss": "too_slow",
+      "work": "2 gears, first to last: 8 teeth, 24 teeth"
+     }
+    },
+    {
+     "id": "gears-3",
+     "type": "build_ratio",
+     "way": "opposite",
+     "ratio": 0.5,
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns once for every 2 turns of the first gear, and turns the opposite way.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 8 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "too_fast",
+      "work": "2 gears, first to last: 16 teeth, 8 teeth"
+     }
+    }
+   ],
+   "data": {
+    "title": "Build a Gear-Driven Toy Clock",
+    "challengeType": "build_ratio",
+    "challenges": [
+     {
+      "type": "build_ratio",
+      "ratio": 2,
+      "way": "same",
+      "minGears": 3,
+      "id": "gears-1",
+      "instruction": "Build a gear train where the last gear turns 2 times for every 1 turn of the first gear, and turns the same way."
+     },
+     {
+      "type": "build_ratio",
+      "ratio": 3,
+      "minGears": 2,
+      "id": "gears-2",
+      "instruction": "Build a gear train where the last gear turns 3 times for every 1 turn of the first gear."
+     },
+     {
+      "type": "build_ratio",
+      "ratio": 0.5,
+      "way": "opposite",
+      "minGears": 2,
+      "id": "gears-3",
+      "instruction": "Build a gear train where the last gear turns once for every 2 turns of the first gear, and turns the opposite way."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": null,
+    "expect": "build_ratio",
+    "grade": "5",
+    "topic": "Gear ratios",
+    "intent": "Make the output gear turn exactly three times for each turn of the input"
+   },
+   "title": "The Triple-Turn Music Box",
+   "challengeType": "build_ratio",
+   "routed": "build_ratio",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "gears-1",
+     "type": "build_ratio",
+     "way": "same",
+     "ratio": 2,
+     "minGears": 3,
+     "instruction": "Build a gear train where the last gear turns 2 times for every 1 turn of the first gear, and turns the same way.",
+     "pass": {
+      "miss": null,
+      "work": "3 gears, first to last: 16 teeth, 16 teeth, 8 teeth"
+     },
+     "wrong": {
+      "miss": "too_slow",
+      "work": "3 gears, first to last: 8 teeth, 16 teeth, 16 teeth"
+     }
+    },
+    {
+     "id": "gears-2",
+     "type": "build_ratio",
+     "way": "opposite",
+     "ratio": 4,
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns 4 times for every 1 turn of the first gear, and turns the opposite way.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 32 teeth, 8 teeth"
+     },
+     "wrong": {
+      "miss": "too_slow",
+      "work": "2 gears, first to last: 8 teeth, 32 teeth"
+     }
+    },
+    {
+     "id": "gears-3",
+     "type": "build_ratio",
+     "way": "opposite",
+     "ratio": 0.5,
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns once for every 2 turns of the first gear, and turns the opposite way.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 8 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "too_fast",
+      "work": "2 gears, first to last: 16 teeth, 8 teeth"
+     }
+    }
+   ],
+   "data": {
+    "title": "The Triple-Turn Music Box",
+    "challengeType": "build_ratio",
+    "challenges": [
+     {
+      "type": "build_ratio",
+      "ratio": 2,
+      "way": "same",
+      "minGears": 3,
+      "id": "gears-1",
+      "instruction": "Build a gear train where the last gear turns 2 times for every 1 turn of the first gear, and turns the same way."
+     },
+     {
+      "type": "build_ratio",
+      "ratio": 4,
+      "way": "opposite",
+      "minGears": 2,
+      "id": "gears-2",
+      "instruction": "Build a gear train where the last gear turns 4 times for every 1 turn of the first gear, and turns the opposite way."
+     },
+     {
+      "type": "build_ratio",
+      "ratio": 0.5,
+      "way": "opposite",
+      "minGears": 2,
+      "id": "gears-3",
+      "instruction": "Build a gear train where the last gear turns once for every 2 turns of the first gear, and turns the opposite way."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": null,
+    "expect": "build_direction",
+    "grade": "2",
+    "topic": "Gears turning",
+    "intent": "Predict which way the last gear turns"
+   },
+   "title": "Spinning Toy Clock",
+   "challengeType": "build_direction",
+   "routed": "build_direction",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "gears-1",
+     "type": "build_direction",
+     "way": "same",
+     "minGears": 3,
+     "instruction": "Build a gear train of at least 3 gears where the last gear turns the same way as the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "3 gears, first to last: 16 teeth, 16 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "wrong_direction",
+      "work": "4 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     }
+    },
+    {
+     "id": "gears-2",
+     "type": "build_direction",
+     "way": "opposite",
+     "minGears": 4,
+     "instruction": "Build a gear train of at least 4 gears where the last gear turns the opposite way to the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "4 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "wrong_direction",
+      "work": "5 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     }
+    },
+    {
+     "id": "gears-3",
+     "type": "build_direction",
+     "way": "same",
+     "minGears": 5,
+     "instruction": "Build a gear train of at least 5 gears where the last gear turns the same way as the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "5 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "wrong_direction",
+      "work": "6 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     }
+    }
+   ],
+   "data": {
+    "title": "Spinning Toy Clock",
+    "challengeType": "build_direction",
+    "challenges": [
+     {
+      "type": "build_direction",
+      "way": "same",
+      "minGears": 3,
+      "id": "gears-1",
+      "instruction": "Build a gear train of at least 3 gears where the last gear turns the same way as the first gear."
+     },
+     {
+      "type": "build_direction",
+      "way": "opposite",
+      "minGears": 4,
+      "id": "gears-2",
+      "instruction": "Build a gear train of at least 4 gears where the last gear turns the opposite way to the first gear."
+     },
+     {
+      "type": "build_direction",
+      "way": "same",
+      "minGears": 5,
+      "id": "gears-3",
+      "instruction": "Build a gear train of at least 5 gears where the last gear turns the same way as the first gear."
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "pin": null,
+    "expect": null,
+    "grade": "3",
+    "topic": "Simple machines: gears",
+    "intent": "Explore how gears work"
+   },
+   "title": "Building a Toy Clock",
+   "challengeType": "mixed",
+   "routed": "mixed",
+   "oracle": [],
+   "adapter": "ok",
+   "items": [
+    {
+     "id": "gears-1",
+     "type": "build_direction",
+     "way": "opposite",
+     "minGears": 4,
+     "instruction": "Build a gear train of at least 4 gears where the last gear turns the opposite way to the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "4 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     },
+     "wrong": {
+      "miss": "wrong_direction",
+      "work": "5 gears, first to last: 16 teeth, 16 teeth, 16 teeth, 16 teeth, 16 teeth"
+     }
+    },
+    {
+     "id": "gears-2",
+     "type": "build_speed",
+     "speed": "faster",
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns faster than the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 24 teeth, 12 teeth"
+     },
+     "wrong": {
+      "miss": "not_faster",
+      "work": "2 gears, first to last: 12 teeth, 24 teeth"
+     }
+    },
+    {
+     "id": "gears-3",
+     "type": "build_speed",
+     "speed": "slower",
+     "minGears": 2,
+     "instruction": "Build a gear train where the last gear turns slower than the first gear.",
+     "pass": {
+      "miss": null,
+      "work": "2 gears, first to last: 12 teeth, 24 teeth"
+     },
+     "wrong": {
+      "miss": "not_slower",
+      "work": "2 gears, first to last: 24 teeth, 12 teeth"
+     }
+    }
+   ],
+   "data": {
+    "title": "Building a Toy Clock",
+    "challengeType": "mixed",
+    "challenges": [
+     {
+      "type": "build_direction",
+      "way": "opposite",
+      "minGears": 4,
+      "id": "gears-1",
+      "instruction": "Build a gear train of at least 4 gears where the last gear turns the opposite way to the first gear."
+     },
+     {
+      "type": "build_speed",
+      "speed": "faster",
+      "minGears": 2,
+      "id": "gears-2",
+      "instruction": "Build a gear train where the last gear turns faster than the first gear."
+     },
+     {
+      "type": "build_speed",
+      "speed": "slower",
+      "minGears": 2,
+      "id": "gears-3",
+      "instruction": "Build a gear train where the last gear turns slower than the first gear."
+     }
+    ]
+   }
+  }
+ ],
+ "logs": [
+  "[GearTrainBuilder] modes: build_direction (explicit) band K-1 -> build_direction:opposite/2, build_direction:same/3, build_direction:opposite/4",
+  "[GearTrainBuilder] modes: build_direction (explicit) band 2-3 -> build_direction:same/3, build_direction:opposite/4, build_direction:same/5",
+  "[GearTrainBuilder] modes: build_speed (explicit) band K-1 -> build_speed:faster/2, build_speed:slower/2, build_speed:oppositefaster/2",
+  "[GearTrainBuilder] modes: build_speed (explicit) band 2-3 -> build_speed:faster/2, build_speed:slower/2, build_speed:sameslower/3",
+  "[GearTrainBuilder] modes: build_ratio (explicit) band 4-5 -> build_ratio:samex2.00/3, build_ratio:samex0.33/3, build_ratio:oppositex0.50/2",
+  "[GearTrainBuilder] modes: build_ratio (explicit) band 4-5 -> build_ratio:samex2.00/3, build_ratio:x3.00/2, build_ratio:oppositex0.50/2",
+  "[GearTrainBuilder] modes: build_ratio (resolved) band 4-5 -> build_ratio:samex2.00/3, build_ratio:oppositex4.00/2, build_ratio:oppositex0.50/2",
+  "[GearTrainBuilder] modes: build_direction (resolved) band 2-3 -> build_direction:same/3, build_direction:opposite/4, build_direction:same/5",
+  "[GearTrainBuilder] modes: mixed band 2-3 -> build_direction:opposite/4, build_speed:faster/2, build_speed:slower/2"
+ ]
+}

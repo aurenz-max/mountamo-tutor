@@ -1,0 +1,127 @@
+{
+ "source": "qa/tutor-reports/ramp-lab-runtime-plan_fair_test-payload-2026-10-09.json",
+ "primitiveId": "ramp-lab",
+ "evalMode": "plan_fair_test",
+ "data": {
+  "investigationVariable": "mixed",
+  "title": "Ramp Investigation",
+  "description": "Plan, predict, and collect evidence about how a box moves up a ramp.",
+  "rampLength": 10,
+  "rampAngle": 15,
+  "adjustableAngle": true,
+  "loadWeight": 2,
+  "loadType": "wheel",
+  "showMeasurements": true,
+  "frictionLevel": "none",
+  "theme": "loading_dock",
+  "allowPush": true,
+  "customLoadIcon": null,
+  "customLoadLabel": null,
+  "pushForce": 0,
+  "showForceArrows": true,
+  "showMA": true,
+  "challenges": [
+   {
+    "id": "plan_fair_test-surface-0",
+    "mode": "plan_fair_test",
+    "variable": "surface",
+    "title": "Plan your investigation",
+    "brief": "Investigate how the ramp surface affects the push needed to start the box moving uphill.",
+    "hint": "A fair test changes one thing. Compare every setting before committing.",
+    "explainOnSolve": "A controlled comparison connects a change in one condition to the measured result.",
+    "scenarios": {
+     "a": {
+      "label": "Setup A",
+      "angle": 25,
+      "loadWeight": 4,
+      "loadType": "box",
+      "frictionLevel": "low"
+     },
+     "b": {
+      "label": "Setup B",
+      "angle": 25,
+      "loadWeight": 4,
+      "loadType": "box",
+      "frictionLevel": "low"
+     }
+    }
+   },
+   {
+    "id": "plan_fair_test-surface-1",
+    "mode": "plan_fair_test",
+    "variable": "surface",
+    "title": "Plan your investigation",
+    "brief": "Investigate how the ramp surface affects the push needed to start the box moving uphill.",
+    "hint": "A fair test changes one thing. Compare every setting before committing.",
+    "explainOnSolve": "A controlled comparison connects a change in one condition to the measured result.",
+    "scenarios": {
+     "a": {
+      "label": "Setup A",
+      "angle": 25,
+      "loadWeight": 2,
+      "loadType": "box",
+      "frictionLevel": "low"
+     },
+     "b": {
+      "label": "Setup B",
+      "angle": 25,
+      "loadWeight": 2,
+      "loadType": "box",
+      "frictionLevel": "low"
+     }
+    }
+   },
+   {
+    "id": "plan_fair_test-surface-2",
+    "mode": "plan_fair_test",
+    "variable": "surface",
+    "title": "Plan your investigation",
+    "brief": "Investigate how the ramp surface affects the push needed to start the box moving uphill.",
+    "hint": "A fair test changes one thing. Compare every setting before committing.",
+    "explainOnSolve": "A controlled comparison connects a change in one condition to the measured result.",
+    "scenarios": {
+     "a": {
+      "label": "Setup A",
+      "angle": 35,
+      "loadWeight": 4,
+      "loadType": "box",
+      "frictionLevel": "low"
+     },
+     "b": {
+      "label": "Setup B",
+      "angle": 35,
+      "loadWeight": 4,
+      "loadType": "box",
+      "frictionLevel": "low"
+     }
+    }
+   },
+   {
+    "id": "plan_fair_test-angle-3",
+    "mode": "plan_fair_test",
+    "variable": "angle",
+    "title": "Plan your investigation",
+    "brief": "Investigate how the ramp angle affects the push needed to start the box moving uphill.",
+    "hint": "A fair test changes one thing. Compare every setting before committing.",
+    "explainOnSolve": "A controlled comparison connects a change in one condition to the measured result.",
+    "scenarios": {
+     "a": {
+      "label": "Setup A",
+      "angle": 35,
+      "loadWeight": 4,
+      "loadType": "box",
+      "frictionLevel": "medium"
+     },
+     "b": {
+      "label": "Setup B",
+      "angle": 35,
+      "loadWeight": 4,
+      "loadType": "box",
+      "frictionLevel": "medium"
+     }
+    }
+   }
+  ],
+  "gradeLevel": "3"
+ }
+}
