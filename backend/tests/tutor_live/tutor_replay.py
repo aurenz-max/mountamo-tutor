@@ -372,6 +372,10 @@ async def main():
                     print(f"  {r['payload']} {m['kind']}: {missed} {s.get('evidence')} :: {s['text'][:160]!r}")
     name = '+'.join(args.primitive) if args.primitive and len(args.primitive) <= 3 else 'sweep'
     report = args.output or REPORTS / f'{name}-{stamp}.json'
+    # A second run the same day keeps the first (a lever gate overwrote the W1 replay it followed, 10-09).
+    run = 2
+    while not args.output and report.exists():
+        report, run = REPORTS / f'{name}-{stamp}-r{run}.json', run + 1
     report.write_text(json.dumps({'model': MODEL, 'samples': args.samples, 'checks': CHECKS, 'rates': table, 'results': results}, indent=1), encoding='utf-8')
     print(report)
     return 1 if any(missed for kind in table.values() for missed, _ in kind.values()) else 0
