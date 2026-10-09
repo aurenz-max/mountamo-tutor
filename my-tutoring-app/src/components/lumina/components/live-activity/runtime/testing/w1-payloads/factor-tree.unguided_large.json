@@ -1,0 +1,35 @@
+{
+ "source": "qa/tutor-reports/factor-tree-runtime-unguided_large-payload-2026-10-09.json",
+ "primitiveId": "factor-tree",
+ "evalMode": "unguided_large",
+ "data": {
+  "title": "Big Factor Trees",
+  "description": "Practice breaking down larger numbers into their prime building blocks to master prime factorization.",
+  "challenges": [
+   {
+    "id": "ft-1",
+    "rootValue": 63
+   },
+   {
+    "id": "ft-2",
+    "rootValue": 70
+   },
+   {
+    "id": "ft-3",
+    "rootValue": 40
+   },
+   {
+    "id": "ft-4",
+    "rootValue": 54
+   },
+   {
+    "id": "ft-5",
+    "rootValue": 72
+   }
+  ],
+  "highlightPrimes": true,
+  "showExponentForm": true,
+  "guidedMode": false,
+  "allowReset": true
+ }
+}

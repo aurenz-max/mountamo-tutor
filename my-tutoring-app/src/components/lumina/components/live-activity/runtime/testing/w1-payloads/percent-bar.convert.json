@@ -1,0 +1,256 @@
+{
+ "source": "qa/tutor-reports/percent-bar-runtime-convert-payload-2026-10-09.json",
+ "primitiveId": "percent-bar",
+ "evalMode": "convert",
+ "data": {
+  "title": "Smart Shopper: Comparing Discounts and Final Prices",
+  "description": "Analyze multi-step shopping scenarios by calculating sale prices on percent bars to determine which deal is truly the best bargain.",
+  "challenges": [
+   {
+    "id": "pb-1",
+    "type": "comparison",
+    "scenario": "Outfitters sells a jacket for $30 at 10% off. StyleCo sells the same a jacket for $50 at 50% off.",
+    "wholeValue": 30,
+    "wholeValueLabel": "Outfitters Price ($)",
+    "question": "Step 1 \u2014 Outfitters: place the sale price as a percent of its original ($30).",
+    "targetPercent": 90,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 Outfitters: place the sale price as a percent of its original ($30).",
+      "wholeValue": 30,
+      "wholeValueLabel": "Outfitters Original ($)",
+      "targetPercent": 90,
+      "maxPercent": 100,
+      "valueLabel": "Sale Price ($)",
+      "recapLabel": "Outfitters",
+      "hint": "10% off means you pay 100% \u2212 10% = 90%. The value shows the sale price."
+     },
+     {
+      "kind": "place",
+      "prompt": "Step 2 \u2014 StyleCo: place the sale price as a percent of its original ($50).",
+      "wholeValue": 50,
+      "wholeValueLabel": "StyleCo Original ($)",
+      "targetPercent": 50,
+      "maxPercent": 100,
+      "valueLabel": "Sale Price ($)",
+      "recapLabel": "StyleCo",
+      "hint": "50% off means you pay 100% \u2212 50% = 50%. The value shows the sale price."
+     },
+     {
+      "kind": "choice",
+      "prompt": "Step 3 \u2014 which is more expensive?",
+      "options": [
+       {
+        "id": "A",
+        "label": "Outfitters",
+        "sublabel": "$27.00"
+       },
+       {
+        "id": "B",
+        "label": "StyleCo",
+        "sublabel": "$25.00"
+       }
+      ],
+      "correctOptionId": "A",
+      "hint": "Compare the two sale prices you found. The larger price costs more \u2014 a bigger % off is not always the better deal."
+     }
+    ],
+    "hint": "10% off means you pay 100% \u2212 10% = 90%. The value shows the sale price.",
+    "context": {
+     "problemType": "comparison",
+     "initialValue": 25,
+     "changeRate": 2,
+     "discountFactor": 0.9,
+     "finalValue": 27
+    }
+   },
+   {
+    "id": "pb-2",
+    "type": "comparison",
+    "scenario": "AudioMart sells headphones for $60 at 10% off. SoundCity sells the same headphones for $80 at 25% off.",
+    "wholeValue": 60,
+    "wholeValueLabel": "AudioMart Price ($)",
+    "question": "Step 1 \u2014 AudioMart: place the sale price as a percent of its original ($60).",
+    "targetPercent": 90,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 AudioMart: place the sale price as a percent of its original ($60).",
+      "wholeValue": 60,
+      "wholeValueLabel": "AudioMart Original ($)",
+      "targetPercent": 90,
+      "maxPercent": 100,
+      "valueLabel": "Sale Price ($)",
+      "recapLabel": "AudioMart",
+      "hint": "10% off means you pay 100% \u2212 10% = 90%. The value shows the sale price."
+     },
+     {
+      "kind": "place",
+      "prompt": "Step 2 \u2014 SoundCity: place the sale price as a percent of its original ($80).",
+      "wholeValue": 80,
+      "wholeValueLabel": "SoundCity Original ($)",
+      "targetPercent": 75,
+      "maxPercent": 100,
+      "valueLabel": "Sale Price ($)",
+      "recapLabel": "SoundCity",
+      "hint": "25% off means you pay 100% \u2212 25% = 75%. The value shows the sale price."
+     },
+     {
+      "kind": "choice",
+      "prompt": "Step 3 \u2014 which is cheaper?",
+      "options": [
+       {
+        "id": "A",
+        "label": "AudioMart",
+        "sublabel": "$54.00"
+       },
+       {
+        "id": "B",
+        "label": "SoundCity",
+        "sublabel": "$60.00"
+       }
+      ],
+      "correctOptionId": "A",
+      "hint": "Compare the two sale prices you found. The smaller price is cheaper \u2014 a bigger % off is not always the better deal."
+     }
+    ],
+    "hint": "10% off means you pay 100% \u2212 10% = 90%. The value shows the sale price.",
+    "context": {
+     "problemType": "comparison",
+     "initialValue": 54,
+     "changeRate": 6,
+     "discountFactor": 0.9,
+     "finalValue": 54
+    }
+   },
+   {
+    "id": "pb-3",
+    "type": "comparison",
+    "scenario": "SneakerHub sells sneakers for $30 at 25% off. FootZone sells the same sneakers for $80 at 50% off.",
+    "wholeValue": 30,
+    "wholeValueLabel": "SneakerHub Price ($)",
+    "question": "Step 1 \u2014 SneakerHub: place the sale price as a percent of its original ($30).",
+    "targetPercent": 50,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 SneakerHub: place the sale price as a percent of its original ($30).",
+      "wholeValue": 30,
+      "wholeValueLabel": "SneakerHub Original ($)",
+      "targetPercent": 75,
+      "maxPercent": 100,
+      "valueLabel": "Sale Price ($)",
+      "recapLabel": "SneakerHub",
+      "hint": "25% off means you pay 100% \u2212 25% = 75%. The value shows the sale price."
+     },
+     {
+      "kind": "place",
+      "prompt": "Step 2 \u2014 FootZone: place the sale price as a percent of its original ($80).",
+      "wholeValue": 80,
+      "wholeValueLabel": "FootZone Original ($)",
+      "targetPercent": 50,
+      "maxPercent": 100,
+      "valueLabel": "Sale Price ($)",
+      "recapLabel": "FootZone",
+      "hint": "50% off means you pay 100% \u2212 50% = 50%. The value shows the sale price."
+     },
+     {
+      "kind": "choice",
+      "prompt": "Step 3 \u2014 which is more expensive?",
+      "options": [
+       {
+        "id": "A",
+        "label": "SneakerHub",
+        "sublabel": "$22.50"
+       },
+       {
+        "id": "B",
+        "label": "FootZone",
+        "sublabel": "$40.00"
+       }
+      ],
+      "correctOptionId": "B",
+      "hint": "Compare the two sale prices you found. The larger price costs more \u2014 a bigger % off is not always the better deal."
+     }
+    ],
+    "hint": "25% off means you pay 100% \u2212 25% = 75%. The value shows the sale price.",
+    "context": {
+     "problemType": "comparison",
+     "initialValue": 22.5,
+     "changeRate": 17.5,
+     "discountFactor": 0.5,
+     "finalValue": 40
+    }
+   },
+   {
+    "id": "pb-4",
+    "type": "comparison",
+    "scenario": "Outfitters sells a jacket for $20 at 20% off. StyleCo sells the same a jacket for $50 at 20% off.",
+    "wholeValue": 20,
+    "wholeValueLabel": "Outfitters Price ($)",
+    "question": "Step 1 \u2014 Outfitters: place the sale price as a percent of its original ($20).",
+    "targetPercent": 80,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 Outfitters: place the sale price as a percent of its original ($20).",
+      "wholeValue": 20,
+      "wholeValueLabel": "Outfitters Original ($)",
+      "targetPercent": 80,
+      "maxPercent": 100,
+      "valueLabel": "Sale Price ($)",
+      "recapLabel": "Outfitters",
+      "hint": "20% off means you pay 100% \u2212 20% = 80%. The value shows the sale price."
+     },
+     {
+      "kind": "place",
+      "prompt": "Step 2 \u2014 StyleCo: place the sale price as a percent of its original ($50).",
+      "wholeValue": 50,
+      "wholeValueLabel": "StyleCo Original ($)",
+      "targetPercent": 80,
+      "maxPercent": 100,
+      "valueLabel": "Sale Price ($)",
+      "recapLabel": "StyleCo",
+      "hint": "20% off means you pay 100% \u2212 20% = 80%. The value shows the sale price."
+     },
+     {
+      "kind": "choice",
+      "prompt": "Step 3 \u2014 which is more expensive?",
+      "options": [
+       {
+        "id": "A",
+        "label": "Outfitters",
+        "sublabel": "$16.00"
+       },
+       {
+        "id": "B",
+        "label": "StyleCo",
+        "sublabel": "$40.00"
+       }
+      ],
+      "correctOptionId": "B",
+      "hint": "Compare the two sale prices you found. The larger price costs more \u2014 a bigger % off is not always the better deal."
+     }
+    ],
+    "hint": "20% off means you pay 100% \u2212 20% = 80%. The value shows the sale price.",
+    "context": {
+     "problemType": "comparison",
+     "initialValue": 16,
+     "changeRate": 24,
+     "discountFactor": 0.8,
+     "finalValue": 40
+    }
+   }
+  ],
+  "showPercentLabels": true,
+  "showValueLabels": true,
+  "benchmarkLines": [
+   25,
+   50,
+   75
+  ],
+  "doubleBar": false,
+  "showCalculation": true
+ }
+}

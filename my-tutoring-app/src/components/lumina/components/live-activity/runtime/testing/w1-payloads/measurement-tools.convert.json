@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/measurement-tools-runtime-convert-payload-2026-10-09.json",
+ "primitiveId": "measurement-tools",
+ "evalMode": "convert",
+ "data": {
+  "title": "Shape Measurement and Conversion",
+  "description": "Measure each shape with the ruler and convert your length from inches to centimeters.",
+  "challengeType": "convert",
+  "challenges": [
+   {
+    "id": "mt-1",
+    "shapeType": "rectangle",
+    "widthInches": 10,
+    "heightInches": 1.5,
+    "color": "rgba(239,68,68,0.35)",
+    "label": "Red Rectangle",
+    "hint": "Measure from 0, not from 1. Where does the shape end?"
+   },
+   {
+    "id": "mt-2",
+    "shapeType": "rectangle",
+    "widthInches": 2,
+    "heightInches": 1,
+    "color": "rgba(99,102,241,0.35)",
+    "label": "Blue Rectangle",
+    "hint": "The small marks between the numbers are halves. Count carefully."
+   },
+   {
+    "id": "mt-3",
+    "shapeType": "square",
+    "widthInches": 4,
+    "heightInches": 4,
+    "color": "rgba(16,185,129,0.35)",
+    "label": "Green Square",
+    "hint": "Line the left edge up with 0, then read where the right edge lands."
+   },
+   {
+    "id": "mt-4",
+    "shapeType": "rectangle",
+    "widthInches": 8,
+    "heightInches": 1,
+    "color": "rgba(14,165,233,0.35)",
+    "label": "Sky Rectangle",
+    "hint": "Count the big tick marks from 0 to the edge of the shape."
+   }
+  ],
+  "rulerLengthInches": 12,
+  "unit": "inches",
+  "precision": "whole",
+  "gradeBand": "3-5",
+  "convertToUnit": "centimeters"
+ }
+}

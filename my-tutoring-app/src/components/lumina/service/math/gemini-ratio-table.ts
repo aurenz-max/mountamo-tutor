@@ -1,5 +1,6 @@
 import { Type, Schema } from "@google/genai";
 import { RatioTableData, RatioTableChallenge } from "../../primitives/visual-primitives/math/RatioTable";
+import { buildRatioAsk } from "../../primitives/visual-primitives/math/ratioTableWorkspace";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import {
@@ -47,6 +48,8 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 type ChallengeType = 'missing-value' | 'find-multiplier' | 'build-ratio' | 'unit-rate';
+
+// The build-ratio ask is built by code (`buildRatioAsk`, ratioTableWorkspace.ts): it never names the multiplier.
 
 // ---------------------------------------------------------------------------
 // Within-mode difficulty = structural SUPPORT tier (config.difficulty)
@@ -446,6 +449,14 @@ Return the complete ratio table configuration.
     // Ensure hint exists
     if (!c.hint) {
       c.hint = 'Think about the relationship between the two quantities.';
+    }
+
+    // build-ratio: the answer IS the multiplier, so the ask must name the scaled value to reach and never the factor.
+    // Flash-lite wrote "scale this recipe by a factor of 2.5" on 4/4 items (payload 2026-10-09), which put the answer
+    // in the question. Code builds the ask from the ratio; the hint is rebuilt the same way.
+    if (c.type === 'build-ratio') {
+      c.instruction = buildRatioAsk(c);
+      c.hint = 'Compare the target with the base value in the same row: how many times bigger is it? Slide to that multiplier.';
     }
   }
 

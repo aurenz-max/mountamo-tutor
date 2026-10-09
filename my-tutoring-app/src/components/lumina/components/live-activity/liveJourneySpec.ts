@@ -39,11 +39,19 @@ import { threeCards } from '../../primitives/visual-primitives/math/numberSequen
 import { threePlaces } from '../../primitives/visual-primitives/math/ordinalLineLevers';
 import { COIN_CENTS, fewestCoins } from '../../primitives/visual-primitives/math/coinCounterWorkspace';
 import { operandsOf as regroupOperands, regroupingHarnessDigits } from '../../primitives/visual-primitives/math/regroupingWorkbenchWorkspace';
+import { percentHarnessSteps } from '../../primitives/visual-primitives/math/percentBarWorkspace';
+import { practiceParent as percentPracticeParent, simplerPercent } from '../../primitives/visual-primitives/math/percentBarLevers';
+import { factorHarnessSplits, factorizationForms } from '../../primitives/visual-primitives/math/factorTreeWorkspace';
+import { practiceParent as factorPracticeParent, smallerTree } from '../../primitives/visual-primitives/math/factorTreeLevers';
+import { ratioHarnessInput } from '../../primitives/visual-primitives/math/ratioTableWorkspace';
+import { practiceParent as ratioPracticeParent, simplerRatio } from '../../primitives/visual-primitives/math/ratioTableLevers';
 import { practiceParent as regroupPracticeParent, smallerProblem as smallerRegroupProblem }
   from '../../primitives/visual-primitives/math/regroupingWorkbenchLevers';
 import { practiceItem as coinPracticeItem, practiceParent as coinPracticeParent } from '../../primitives/visual-primitives/math/coinCounterLevers';
 import { practiceItem as clockPracticeItem, practiceParent as clockPracticeParent } from '../../primitives/visual-primitives/math/analogClockLevers';
 import { practiceItem as measurePracticeItem, practiceParent as measurePracticeParent } from '../../primitives/visual-primitives/math/measureLabLevers';
+import { practiceItem as rulerPracticeItem, practiceParent as rulerPracticeParent } from '../../primitives/visual-primitives/math/measurementToolsLevers';
+import { lessonOf as rulerLessonOf, measurementItems } from '../../primitives/visual-primitives/math/measurementToolsWorkspace';
 import { cellProducts as areaCellProducts, partsFit as areaPartsFit } from '../../primitives/visual-primitives/math/areaModelWorkspace';
 import { practiceItem as areaPracticeItem, practiceParent as areaPracticeParent } from '../../primitives/visual-primitives/math/areaModelLevers';
 import { practiceItem as timePracticeItem, practiceParent as timePracticeParent } from '../../primitives/visual-primitives/math/timeSequencerLevers';
@@ -53,6 +61,11 @@ import { fastFactMiss, isAnswerCorrect as isFactCorrect } from '../../primitives
 import { arraysOf, gridFor } from '../../primitives/visual-primitives/math/arrayGridWorkspace';
 import { smallerArray } from '../../primitives/visual-primitives/math/arrayGridLevers';
 import type { ArrayGridChallenge } from '../../primitives/visual-primitives/math/ArrayGrid';
+import type { MultiplicationExplorerChallenge } from '../../primitives/visual-primitives/math/MultiplicationExplorer';
+import { askedSlot as explorerSlot, expectedAnswer as explorerAnswer, resolveChallengeFact as explorerFact }
+  from '../../primitives/visual-primitives/math/multiplicationExplorerWorkspace';
+import { practiceParent as explorerPracticeParent, smallerFact as explorerSmallerFact }
+  from '../../primitives/visual-primitives/math/multiplicationExplorerLevers';
 import { smallerArea, smallerPerimeter } from '../../primitives/visual-primitives/math/polygonAreaBuild';
 import { smallerFigure } from '../../primitives/visual-primitives/math/polygonAreaLevers';
 import { askOf } from '../../primitives/visual-primitives/math/shapeBuilderWorkspace';
@@ -243,6 +256,10 @@ import { practiceItem as strategyPracticeItem, practiceParent as strategyPractic
   from '../../primitives/visual-primitives/math/strategyPickerLevers';
 import { carButtonName, carFor as trainCarFor, fewestCars as trainFewestCars, fewestEngines as trainFewestEngines } from '../../primitives/visual-primitives/engineering/trainYardModel';
 import { simplerJob as simplerTrainJob } from '../../primitives/visual-primitives/engineering/trainYardLevers';
+import { answerLabel as dnlAnswerLabel, ratioLineHarnessValues as dnlHarnessValues }
+  from '../../primitives/visual-primitives/math/doubleNumberLineWorkspace';
+import { practiceParent as dnlPracticeParent, simplerLine as dnlSimplerLine }
+  from '../../primitives/visual-primitives/math/doubleNumberLineLevers';
 
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
@@ -325,6 +342,13 @@ export interface LiveJourney {
 const WORKSPACE_PROMPTS = { opening: 'What do I do?', hint: 'Can you help me?', example: 'Can you show me what you mean?' };
 
 /** regrouping-workbench's current item; an easier practice problem (`~simpler`) is rebuilt from its parent with the same builder. */
+/** percent-bar's current challenge; an easier one (`~simpler`) is rebuilt from its parent with the same builder. */
+function percentBarItem(ctx: JourneyContext): any {
+  const parentId = percentPracticeParent(String(ctx.itemId ?? ''));
+  const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+  return parent && parentId !== ctx.itemId ? simplerPercent(parent) : parent;
+}
+
 function regroupItem(ctx: JourneyContext): any {
   const parentId = regroupPracticeParent(String(ctx.itemId ?? ''));
   const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
@@ -914,6 +938,110 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
+  'percent-bar': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/PercentBar.tsx',
+    instanceId: 'percent',
+    defaults: { grade: 'Grade 6', mode: 'find_part', di: false, topic: 'Percents of a whole: discounts, tax and tips' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_INCORRECT', 'NEXT_STEP', 'CHALLENGE_CORRECT', 'NEXT_ITEM', 'ALL_COMPLETE',
+      'HINT_REQUESTED', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls, from the step the scene reports (Try again keeps the steps already right):
+    // each place step sets the bar's slider ("Percent on the bar") and presses Check; the compare step taps an option.
+    // A wrong answer is the step's signature error from `percentMiss`: the discount placed, the rate not added to the
+    // whole, the rest of the whole, or the other option; else ten points off.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c: any = percentBarItem(ctx);
+      if (!c) throw new Error('No current percent-bar challenge');
+      const from = Math.max(0, Number(String(ctx.demand?.step ?? '1').split(' ')[0]) - 1);
+      return percentHarnessSteps(c, from, intent === 'wrong' ? 'wrong' : 'correct').flatMap((s): DriverInput[] => s.kind === 'place'
+        ? [{ type: 'write', label: 'Percent on the bar', text: String(s.percent) }, { type: 'check' }]
+        : [{ type: 'choose', label: s.label }, { type: 'check' }]);
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'ratio-table': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/RatioTable.tsx',
+    instanceId: 'ratio',
+    defaults: { grade: 'Grade 6', mode: 'missing_value', di: false, topic: 'Equivalent ratios and unit rates' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_CLOSE', 'HINT_REQUESTED', 'NEXT_ITEM',
+      'ALL_COMPLETE', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: a number typed into "Your answer" and Check, or the multiplier slider
+    // ("Multiplier") set and Check. A wrong answer is the item's signature error from `ratioMiss` (the change added,
+    // the multiplier upside down, the rate inverted, one step off), else half again too high.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier practice problem (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = ratioPracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? simplerRatio(parent) : parent;
+      if (!c) throw new Error('No current ratio-table challenge');
+      const input = ratioHarnessInput(c, intent === 'wrong' ? 'wrong' : 'correct', ctx.data.maxMultiplier ?? 10);
+      return input.kind === 'type'
+        ? [{ type: 'write', label: 'Your answer', text: input.text }, { type: 'check' }]
+        : [{ type: 'write', label: 'Multiplier', text: String(input.value) }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'double-number-line': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/DoubleNumberLine.tsx',
+    instanceId: 'dnl',
+    defaults: { grade: 'Grade 6', mode: 'find_missing', di: false, topic: 'Ratios on a double number line' },
+    leakTokens: ['ACTIVITY_START', 'CHALLENGE_START', 'PHASE_COMPLETE', 'WRONG_ANSWER', 'ALL_COMPLETE', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real control: the bottom value typed into the box named for the asked point ("<bottom>
+    // when <top> is <n>") and Check. A wrong answer is the item's signature error from `ratioLineMiss`: the given
+    // bottom value on a find-the-rate item, else the top value plus the rate (added once, not scaled).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier item (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = dnlPracticeParent(String(ctx.itemId ?? ''));
+      const parent: any = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId
+        ? dnlSimplerLine(parent, { topLabel: ctx.data.topLabel, bottomLabel: ctx.data.bottomLabel }) : parent;
+      if (!c) throw new Error('No current double-number-line challenge');
+      const values = dnlHarnessValues(c, intent === 'wrong' ? 'wrong' : 'correct');
+      return [...c.targetPoints.map((t: { topValue: number }, i: number): DriverInput => ({ type: 'write',
+        label: dnlAnswerLabel(ctx.data.bottomLabel, ctx.data.topLabel, t.topValue), text: values[i] })), { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'factor-tree': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/FactorTree.tsx',
+    instanceId: 'factor',
+    defaults: { grade: 'Grade 5', mode: 'unguided', di: false, topic: 'Prime factorization with factor trees' },
+    leakTokens: ['ACTIVITY_START', 'SPLIT_INVALID', 'SPLIT_CORRECT', 'NODE_SELECTED', 'TREE_RESET', 'TREE_COMPLETE',
+      'HINT_USED', 'ALL_COMPLETE', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls, from the leaves the scene reports (Try again keeps the right splits): tap
+    // a number that is not prime ("Split 36"), type "Factor 1" and "Factor 2", press Split, until every leaf is prime.
+    // A wrong answer is the first composite leaf split into its smallest prime and the partner plus one (`factorMiss`).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const leaves = String(ctx.demand?.leaves ?? '').split(',').map(s => Number(s.trim())).filter(n => n > 0);
+      if (!leaves.length) throw new Error('No factor-tree leaves in the scene');
+      return factorHarnessSplits(leaves, intent === 'wrong' ? 'wrong' : 'correct').flatMap((s): DriverInput[] => [
+        { type: 'choose', label: `Split ${s.value}` },
+        { type: 'write', label: 'Factor 1', text: String(s.factor1) },
+        { type: 'write', label: 'Factor 2', text: String(s.factor2) },
+        { type: 'choose', label: 'Split' },
+      ]);
+    },
+    // The typed factors are steps; the answer is the factorization the finished tree prints.
+    replayKeys: ctx => {
+      // A practice tree (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = factorPracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c = parent && parentId !== ctx.itemId ? smallerTree(parent) : parent;
+      return c ? factorizationForms(c.rootValue) : [];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
   'measure-lab': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/MeasureLab.tsx',
@@ -953,6 +1081,51 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         return ids.map(id => choose(String(byId.get(id))));
       }
       throw new Error(`measure-lab: no driver for ${c.type}`);
+    },
+    probes: { mounted: { selector: '[data-pip-object]' } },
+  },
+  'measurement-tools': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/MeasurementTools.tsx',
+    instanceId: 'ruler',
+    defaults: { grade: 'Grade 2', mode: 'measure', di: false, topic: 'Measuring length with a ruler' },
+    leakTokens: ['ACTIVITY_START', 'SHAPE_PLACED', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'MEASURE_CORRECT', 'CONVERT_CORRECT',
+      'CONVERT_INCORRECT', 'COMPARE_CORRECT', 'COMPARE_INCORRECT', 'MEASURE_PHASE_DONE', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: Put it on the ruler, the length typed into its box, Check Answer; convert
+    // then types the converted length and presses Check Conversion; compare's last item taps the shapes shortest to
+    // longest. A wrong answer is the mode's signature error from `measurementMiss`: one unit over (measure, compare),
+    // the whole number above the half (estimate), the measured number kept (convert), the order reversed. Try again on
+    // a conversion keeps the checked measurement (the scene's `step` says which step is open).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const wrong = intent === 'wrong';
+      const d = ctx.data as { challengeType: string; unit: string; convertToUnit?: string;
+        challenges: Array<{ id: string; label: string; widthInches: number }> };
+      const choose = (label: string): DriverInput => ({ type: 'choose', label });
+      // An easier practice item (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = rulerPracticeParent(ctx.itemId);
+      const all = measurementItems(d.challengeType as 'measure', (d.challenges ?? []) as any);
+      const item = parentId ? rulerPracticeItem(all.find(i => i.id === parentId)!, rulerLessonOf(ctx.data as any))
+        : all.find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current measurement-tools item');
+      if (item.kind === 'order') {
+        const sorted = [...(item.shapes ?? d.challenges ?? [])].sort((a, b) => a.widthInches - b.widthInches).map(s => s.label);
+        return [...(wrong ? sorted.reverse() : sorted).map(choose), choose('Check Order')];
+      }
+      const c = item.challenge;
+      const toUnit = d.convertToUnit || (d.unit === 'inches' ? 'centimeters' : 'inches');
+      const measure = (value: number): DriverInput[] => [
+        ...(String(ctx.demand?.placed ?? '').startsWith('on the ruler') ? [] : [choose('Put it on the ruler')]),
+        { type: 'write', label: `Length in ${d.unit}`, text: String(value) }, choose('Check Answer')];
+      if (d.challengeType === 'convert') {
+        const exact = d.unit === 'inches' ? c.widthInches * 2.54 : c.widthInches / 2.54;
+        const converted = wrong ? c.widthInches : Math.round(exact * 10) / 10;
+        const convert: DriverInput[] = [{ type: 'write', label: `Length in ${toUnit}`, text: String(converted) }, choose('Check Conversion')];
+        return ctx.demand?.step === 'convert' ? convert : [...measure(c.widthInches), ...convert];
+      }
+      if (!wrong) return measure(c.widthInches);
+      return measure(c.widthInches + (d.challengeType === 'estimate' ? 0.5 : 1));
     },
     probes: { mounted: { selector: '[data-pip-object]' } },
   },
@@ -1154,6 +1327,32 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         { type: 'choose', label: `Columns: ${cols}` }, write('Total', total), check];
       if (ctx.data.challengeType === 'count_array') return [write('Total', total), check];
       return [write('Rows', String(r)), write('Columns', String(cols)), write('Total', total), check];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'multiplication-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/MultiplicationExplorer.tsx',
+    instanceId: 'multiply',
+    defaults: { grade: 'Grade 3', mode: 'build', di: false, topic: 'Multiplication facts' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_CHALLENGE', 'PHASE_CHANGE', 'SESSION_COMPLETE', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode types one number into "Your answer" and presses Check. Wrong is the mode's signature error from
+    // `multiplicationMiss`: the two factors added when the product is asked (one more when that is the product), the
+    // product typed back when a factor is asked.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const all: MultiplicationExplorerChallenge[] = ctx.data.challenges ?? [];
+      // An easier fact (the simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = explorerPracticeParent(ctx.itemId ?? undefined, all);
+      const c = parent ? explorerSmallerFact(parent, ctx.data.fact) : all.find(x => x.id === ctx.itemId);
+      if (!c) throw new Error('No current multiplication-explorer challenge');
+      if (!['build', 'connect', 'commutative', 'distributive', 'missing_factor', 'fluency'].includes(c.type))
+        throw new Error(`multiplication-explorer: no driver for ${c.type}`);
+      const f = explorerFact(c, ctx.data.fact ?? { factor1: NaN, factor2: NaN, product: NaN });
+      const key = explorerAnswer(c, f);
+      const wrong = explorerSlot(c) !== 'product' ? f.product : f.factor1 + f.factor2 !== f.product ? f.factor1 + f.factor2 : f.product + 1;
+      return [{ type: 'write', label: 'Your answer', text: String(intent === 'wrong' ? wrong : key) }, { type: 'check' }];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

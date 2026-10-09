@@ -1,0 +1,184 @@
+{
+ "source": "qa/tutor-reports/percent-bar-runtime-find_whole-payload-2026-10-09.json",
+ "primitiveId": "percent-bar",
+ "evalMode": "find_whole",
+ "data": {
+  "title": "Mastering Totals with Tax and Tip",
+  "description": "Practice calculating added tip and tax amounts, and find the final totals on extended percent bars for real-world financial scenarios.",
+  "challenges": [
+   {
+    "id": "pb-1",
+    "type": "addition",
+    "scenario": "A store buys an item for $40 and adds a 18% markup.",
+    "wholeValue": 40,
+    "wholeValueLabel": "Cost ($)",
+    "question": "Step 1 \u2014 the markup: what percent of the cost is the markup? Place it on the bar.",
+    "targetPercent": 118,
+    "maxPercent": 150,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 the markup: what percent of the cost is the markup? Place it on the bar.",
+      "wholeValue": 40,
+      "wholeValueLabel": "Cost ($)",
+      "targetPercent": 18,
+      "maxPercent": 100,
+      "valueLabel": "Markup ($)",
+      "recapLabel": "Markup",
+      "hint": "The markup rate is stated in the scenario \u2014 18%. Place 18%; the value shows it in dollars."
+     },
+     {
+      "kind": "place",
+      "prompt": "Step 2 \u2014 the total: including the markup, the total is what percent of the cost? Place the TOTAL on the bar.",
+      "wholeValue": 40,
+      "wholeValueLabel": "Cost ($)",
+      "targetPercent": 118,
+      "maxPercent": 150,
+      "valueLabel": "Total ($)",
+      "hint": "Add the markup to the whole: 100% + 18% = 118%."
+     }
+    ],
+    "hint": "The markup rate is stated in the scenario \u2014 18%. Place 18%; the value shows it in dollars.",
+    "context": {
+     "problemType": "addition",
+     "initialValue": 40,
+     "changeRate": 18,
+     "discountFactor": 1.18,
+     "finalValue": 47.2
+    }
+   },
+   {
+    "id": "pb-2",
+    "type": "addition",
+    "scenario": "An online order of $100 adds a 18% delivery fee.",
+    "wholeValue": 100,
+    "wholeValueLabel": "Order ($)",
+    "question": "Step 1 \u2014 the delivery fee: what percent of the order is the delivery fee? Place it on the bar.",
+    "targetPercent": 118,
+    "maxPercent": 150,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 the delivery fee: what percent of the order is the delivery fee? Place it on the bar.",
+      "wholeValue": 100,
+      "wholeValueLabel": "Order ($)",
+      "targetPercent": 18,
+      "maxPercent": 100,
+      "valueLabel": "Fee ($)",
+      "recapLabel": "Fee",
+      "hint": "The delivery fee rate is stated in the scenario \u2014 18%. Place 18%; the value shows it in dollars."
+     },
+     {
+      "kind": "place",
+      "prompt": "Step 2 \u2014 the total: including the delivery fee, the total is what percent of the order? Place the TOTAL on the bar.",
+      "wholeValue": 100,
+      "wholeValueLabel": "Order ($)",
+      "targetPercent": 118,
+      "maxPercent": 150,
+      "valueLabel": "Total ($)",
+      "hint": "Add the delivery fee to the whole: 100% + 18% = 118%."
+     }
+    ],
+    "hint": "The delivery fee rate is stated in the scenario \u2014 18%. Place 18%; the value shows it in dollars.",
+    "context": {
+     "problemType": "addition",
+     "initialValue": 100,
+     "changeRate": 18,
+     "discountFactor": 1.18,
+     "finalValue": 118
+    }
+   },
+   {
+    "id": "pb-3",
+    "type": "addition",
+    "scenario": "You are buying a $60 item. The sales tax in your state is 5%.",
+    "wholeValue": 60,
+    "wholeValueLabel": "Price ($)",
+    "question": "Step 1 \u2014 the sales tax: what percent of the price is the sales tax? Place it on the bar.",
+    "targetPercent": 105,
+    "maxPercent": 150,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 the sales tax: what percent of the price is the sales tax? Place it on the bar.",
+      "wholeValue": 60,
+      "wholeValueLabel": "Price ($)",
+      "targetPercent": 5,
+      "maxPercent": 100,
+      "valueLabel": "Tax ($)",
+      "recapLabel": "Tax",
+      "hint": "The sales tax rate is stated in the scenario \u2014 5%. Place 5%; the value shows it in dollars."
+     },
+     {
+      "kind": "place",
+      "prompt": "Step 2 \u2014 the total: including the sales tax, the total is what percent of the price? Place the TOTAL on the bar.",
+      "wholeValue": 60,
+      "wholeValueLabel": "Price ($)",
+      "targetPercent": 105,
+      "maxPercent": 150,
+      "valueLabel": "Total ($)",
+      "hint": "Add the sales tax to the whole: 100% + 5% = 105%."
+     }
+    ],
+    "hint": "The sales tax rate is stated in the scenario \u2014 5%. Place 5%; the value shows it in dollars.",
+    "context": {
+     "problemType": "addition",
+     "initialValue": 60,
+     "changeRate": 5,
+     "discountFactor": 1.05,
+     "finalValue": 63
+    }
+   },
+   {
+    "id": "pb-4",
+    "type": "addition",
+    "scenario": "You are buying a $30 item. The sales tax in your state is 20%.",
+    "wholeValue": 30,
+    "wholeValueLabel": "Price ($)",
+    "question": "Step 1 \u2014 the sales tax: what percent of the price is the sales tax? Place it on the bar.",
+    "targetPercent": 120,
+    "maxPercent": 150,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 the sales tax: what percent of the price is the sales tax? Place it on the bar.",
+      "wholeValue": 30,
+      "wholeValueLabel": "Price ($)",
+      "targetPercent": 20,
+      "maxPercent": 100,
+      "valueLabel": "Tax ($)",
+      "recapLabel": "Tax",
+      "hint": "The sales tax rate is stated in the scenario \u2014 20%. Place 20%; the value shows it in dollars."
+     },
+     {
+      "kind": "place",
+      "prompt": "Step 2 \u2014 the total: including the sales tax, the total is what percent of the price? Place the TOTAL on the bar.",
+      "wholeValue": 30,
+      "wholeValueLabel": "Price ($)",
+      "targetPercent": 120,
+      "maxPercent": 150,
+      "valueLabel": "Total ($)",
+      "hint": "Add the sales tax to the whole: 100% + 20% = 120%."
+     }
+    ],
+    "hint": "The sales tax rate is stated in the scenario \u2014 20%. Place 20%; the value shows it in dollars.",
+    "context": {
+     "problemType": "addition",
+     "initialValue": 30,
+     "changeRate": 20,
+     "discountFactor": 1.2,
+     "finalValue": 36
+    }
+   }
+  ],
+  "showPercentLabels": true,
+  "showValueLabels": true,
+  "benchmarkLines": [
+   25,
+   50,
+   75
+  ],
+  "doubleBar": false,
+  "showCalculation": true
+ }
+}

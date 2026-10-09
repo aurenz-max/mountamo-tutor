@@ -1,0 +1,74 @@
+{
+ "source": "qa/tutor-reports/ratio-table-runtime-find_multiplier-payload-2026-10-09.json",
+ "primitiveId": "ratio-table",
+ "evalMode": "find_multiplier",
+ "data": {
+  "title": "Advanced Ratio Reasoning: Scaling in Real-World Contexts",
+  "description": "Explore equivalent ratios and unit rates through complex real-world applications including culinary science, chemical solutions, and cartography, determining scale factors to analyze proportional relationships.",
+  "challenges": [
+   {
+    "id": "rt1",
+    "type": "find-multiplier",
+    "instruction": "A bakery scales up a signature pastry recipe. If the base recipe calls for 4 cups of flour and yields 12 servings, and the new batch uses 14 cups of flour, what is the scaling multiplier applied to the recipe?",
+    "baseRatio": [
+     4,
+     12
+    ],
+    "rowLabels": [
+     "Cups of Flour",
+     "Servings Produced"
+    ],
+    "targetMultiplier": 3.5,
+    "hint": "Divide the scaled quantity by the base quantity for either row to find the proportional multiplier."
+   },
+   {
+    "id": "rt2",
+    "type": "find-multiplier",
+    "instruction": "In a metallurgical alloy mixture, the baseline ratio requires 5 parts copper to 8 parts zinc. If a manufacturing run uses 22.5 parts of copper, determine the scale factor used for this production cycle.",
+    "baseRatio": [
+     5,
+     8
+    ],
+    "rowLabels": [
+     "Parts Copper",
+     "Parts Zinc"
+    ],
+    "targetMultiplier": 4.5,
+    "hint": "Compare the current copper amount to the base copper amount to find how much the mixture was multiplied."
+   },
+   {
+    "id": "rt3",
+    "type": "find-multiplier",
+    "instruction": "A cartographer reads a regional map where the baseline scale factor indicates that 2.5 inches represents 45 miles of actual terrain. If a measured distance on the map spans 11.25 inches, what scale multiplier was used?",
+    "baseRatio": [
+     2.5,
+     45
+    ],
+    "rowLabels": [
+     "Map Distance (inches)",
+     "Actual Distance (miles)"
+    ],
+    "targetMultiplier": 4.5,
+    "hint": "Find the ratio of the new map measurement to the baseline map measurement."
+   },
+   {
+    "id": "rt4",
+    "type": "find-multiplier",
+    "instruction": "During a chemical titration experiment, a baseline reaction mixes 3.2 milliliters of acid with 12.8 milliliters of water. If a complex trial utilizes 24 milliliters of acid, calculate the exact scaling multiplier of the solution.",
+    "baseRatio": [
+     3.2,
+     12.8
+    ],
+    "rowLabels": [
+     "Milliliters of Acid",
+     "Milliliters of Water"
+    ],
+    "targetMultiplier": 7.5,
+    "hint": "Divide the experimental acid volume by the base acid volume to isolate the scale factor."
+   }
+  ],
+  "maxMultiplier": 10,
+  "showBarChart": true,
+  "showUnitRate": true
+ }
+}

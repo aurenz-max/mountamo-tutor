@@ -221,6 +221,8 @@ interface DirectTemplate {
   build: (rate: number, base: number) => ScenarioParts;
 }
 
+// The question states the rate: it is the stimulus identify_percent places. 1c3e774d replaced it with "the stated
+// percent", which no line on screen stated, so the mode could not be answered until the hint (W1 2026-10-09).
 const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
   {
     id: 'cookies',
@@ -228,7 +230,7 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `A batch of ${base} cookies is on the table.`,
       wholeValue: base,
       wholeValueLabel: 'Total Cookies',
-      question: `Show the stated percent on the bar to mark that portion of the batch.`,
+      question: `Show ${rate}% on the bar to mark that portion of the batch.`,
       hintExplicit: `${rate}% means ${rate} out of every 100 cookies. Slide the bar until it reads ${rate}%.`,
       hintStrategy: `The percent in the question tells you how far along the 0%–100% bar to slide.`,
     }),
@@ -239,7 +241,7 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `There are ${base} students in the class.`,
       wholeValue: base,
       wholeValueLabel: 'Total Students',
-      question: `Show what the stated percent of the class looks like on the bar.`,
+      question: `Show what ${rate}% of the class looks like on the bar.`,
       hintExplicit: `Think of the bar as the whole class (100%). Where is ${rate}% of that?`,
       hintStrategy: `The bar is the whole class (100%). Place the part the question names.`,
     }),
@@ -250,7 +252,7 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `You took a ${base}-point test.`,
       wholeValue: base,
       wholeValueLabel: 'Total Points',
-      question: `You scored the stated percent on the test. Show that percent on the bar.`,
+      question: `You scored ${rate}% on the test. Show that percent on the bar.`,
       hintExplicit: `${rate}% of ${base} points — slide the bar to ${rate}%.`,
       hintStrategy: `Find the score percent in the question and place it on the bar.`,
     }),
@@ -261,7 +263,7 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `Your book has ${base} pages.`,
       wholeValue: base,
       wholeValueLabel: 'Total Pages',
-      question: `You have read the stated percent of the book so far. Show that percent on the bar.`,
+      question: `You have read ${rate}% of the book so far. Show that percent on the bar.`,
       hintExplicit: `Slide the bar to ${rate}% — the value display tells you how many pages that is.`,
       hintStrategy: `Place the percent of the book you have read; the whole book is 100%.`,
     }),
@@ -272,7 +274,7 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `A party platter has ${base} slices of pizza.`,
       wholeValue: base,
       wholeValueLabel: 'Total Slices',
-      question: `The stated percent of the slices have been eaten. Show that percent on the bar.`,
+      question: `${rate}% of the slices have been eaten. Show that percent on the bar.`,
       hintExplicit: `${rate}% out of the ${base} slices — slide the bar to ${rate}%.`,
       hintStrategy: `Place the percent of slices eaten; the full platter is 100%.`,
     }),
@@ -283,7 +285,7 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `A jar holds ${base} marbles.`,
       wholeValue: base,
       wholeValueLabel: 'Total Marbles',
-      question: `The stated percent of the marbles are blue. Show that percent on the bar.`,
+      question: `${rate}% of the marbles are blue. Show that percent on the bar.`,
       hintExplicit: `Where on the 0%–100% bar does ${rate}% sit?`,
       hintStrategy: `Place the percent of marbles that are blue on the 0%–100% bar.`,
     }),
@@ -294,7 +296,7 @@ const DIRECT_TEMPLATES: readonly DirectTemplate[] = [
       scenario: `A sticker sheet has ${base} stickers.`,
       wholeValue: base,
       wholeValueLabel: 'Total Stickers',
-      question: `You have already used the stated percent of them. Show that percent on the bar.`,
+      question: `You have already used ${rate}% of them. Show that percent on the bar.`,
       hintExplicit: `${rate} out of every 100 stickers — that is where the bar should land.`,
       hintStrategy: `Place the percent of stickers you have used on the bar.`,
     }),

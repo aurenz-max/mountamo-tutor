@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/multiplication-explorer-runtime-connect-payload-2026-10-09.json",
+ "primitiveId": "multiplication-explorer",
+ "evalMode": "connect",
+ "data": {
+  "title": "Sticker Packs",
+  "description": "Explore multiplication facts using sticker packs, arrays, repeated addition, number lines, and area models to find the total number of stickers.",
+  "fact": {
+   "factor1": 2,
+   "factor2": 4,
+   "product": 8
+  },
+  "representations": {
+   "equalGroups": true,
+   "array": true,
+   "repeatedAddition": true,
+   "numberLine": true,
+   "areaModel": true
+  },
+  "activeRepresentation": "groups",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "connect",
+    "instruction": "Look at all the representations for 2 packs with 4 stickers each. What is the total product?",
+    "targetFact": "2 \u00d7 4 = 8",
+    "hint": "Count all the stickers across the groups or add 4 plus 4.",
+    "narration": "Let us connect equal groups, arrays, and number lines to find the total.",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 2,
+     "factor2": 4
+    },
+    "representation": "all"
+   },
+   {
+    "id": "c2",
+    "type": "connect",
+    "instruction": "Examine the 5 rows with 6 stickers each across all models. How many stickers are there in total?",
+    "targetFact": "5 \u00d7 6 = 30",
+    "hint": "Count by sixes five times or add 6 five times.",
+    "narration": "Notice how the array matches the repeated addition and area model.",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 5,
+     "factor2": 6
+    },
+    "representation": "all"
+   },
+   {
+    "id": "c3",
+    "type": "connect",
+    "instruction": "Study the 8 groups of 4 shown in all five views. What is the final product?",
+    "targetFact": "8 \u00d7 4 = 32",
+    "hint": "Count the jumps on the number line or add 4 eight times.",
+    "narration": "You are doing great connecting these different ways to show multiplication.",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 8,
+     "factor2": 4
+    },
+    "representation": "all"
+   },
+   {
+    "id": "c4",
+    "type": "connect",
+    "instruction": "Look at the 7 groups of 3 across the representations. What is the total count?",
+    "targetFact": "7 \u00d7 3 = 21",
+    "hint": "Add 3 seven times or look at the area model dimensions.",
+    "narration": "Every representation tells the same story. Find the total product.",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 7,
+     "factor2": 3
+    },
+    "representation": "all"
+   },
+   {
+    "id": "c5",
+    "type": "connect",
+    "instruction": "Analyze the 5 groups with 8 items each in all models. What is the total?",
+    "targetFact": "5 \u00d7 8 = 40",
+    "hint": "Count by eights five times to find the grand total.",
+    "narration": "You have mastered connecting all five representations of multiplication.",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 5,
+     "factor2": 8
+    },
+    "representation": "all"
+   }
+  ],
+  "showOptions": {
+   "showProduct": false,
+   "showFactFamily": true,
+   "showCommutativeFlip": true,
+   "showDistributiveBreakdown": true
+  },
+  "gradeBand": "2-3",
+  "imagePrompt": "colorful sticker packs arranged in neat rows on a table"
+ }
+}

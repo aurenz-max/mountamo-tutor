@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/percent-bar-runtime-find_part-payload-2026-10-09.json",
+ "primitiveId": "percent-bar",
+ "evalMode": "find_part",
+ "data": {
+  "title": "Calculating Remaining Percentages in Discounts",
+  "description": "Practice determining the remaining percentage of an original price after a markdown by subtracting discount rates from one hundred percent.",
+  "challenges": [
+   {
+    "id": "pb-1",
+    "type": "subtraction",
+    "scenario": "A $20 backpack is on clearance \u2014 25% off.",
+    "wholeValue": 20,
+    "wholeValueLabel": "Original Price ($)",
+    "question": "What percent of the original price remains after the discount?",
+    "targetPercent": 75,
+    "hint": "Subtract the discount from 100%. 100 - 25 = ?",
+    "context": {
+     "problemType": "subtraction",
+     "initialValue": 20,
+     "changeRate": -25,
+     "discountFactor": 0.75,
+     "finalValue": 15
+    }
+   },
+   {
+    "id": "pb-2",
+    "type": "subtraction",
+    "scenario": "A bookstore has a 15% off coupon on a $120 book.",
+    "wholeValue": 120,
+    "wholeValueLabel": "Original Price ($)",
+    "question": "What percent of the price will you pay with the coupon? Place that percent on the bar.",
+    "targetPercent": 85,
+    "hint": "If 15% is removed, then 100% - 15% remains.",
+    "context": {
+     "problemType": "subtraction",
+     "initialValue": 120,
+     "changeRate": -15,
+     "discountFactor": 0.85,
+     "finalValue": 102
+    }
+   },
+   {
+    "id": "pb-3",
+    "type": "subtraction",
+    "scenario": "A $100 backpack is on clearance \u2014 40% off.",
+    "wholeValue": 100,
+    "wholeValueLabel": "Original Price ($)",
+    "question": "What percent of the original price remains after the discount?",
+    "targetPercent": 60,
+    "hint": "Subtract the discount from 100%. 100 - 40 = ?",
+    "context": {
+     "problemType": "subtraction",
+     "initialValue": 100,
+     "changeRate": -40,
+     "discountFactor": 0.6,
+     "finalValue": 60
+    }
+   },
+   {
+    "id": "pb-4",
+    "type": "subtraction",
+    "scenario": "A bookstore has a 50% off coupon on a $40 book.",
+    "wholeValue": 40,
+    "wholeValueLabel": "Original Price ($)",
+    "question": "What percent of the price will you pay with the coupon? Place that percent on the bar.",
+    "targetPercent": 50,
+    "hint": "If 50% is removed, then 100% - 50% remains.",
+    "context": {
+     "problemType": "subtraction",
+     "initialValue": 40,
+     "changeRate": -50,
+     "discountFactor": 0.5,
+     "finalValue": 20
+    }
+   }
+  ],
+  "showPercentLabels": true,
+  "showValueLabels": true,
+  "benchmarkLines": [
+   25,
+   50,
+   75
+  ],
+  "doubleBar": false,
+  "showCalculation": true
+ }
+}

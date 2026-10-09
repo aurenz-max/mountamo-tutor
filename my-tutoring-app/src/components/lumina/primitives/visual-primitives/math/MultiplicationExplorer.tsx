@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   LuminaCard,
@@ -12,16 +12,29 @@ import {
   LuminaBadge,
   LuminaPanel,
   LuminaActionButton,
+  LuminaInput,
 } from '../../../ui';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MultiplicationExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
-import CalculatorInput from '../../input-primitives/CalculatorInput';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askFor, askedSlot, describeAnswer, distributiveSplit, equationText, expectedAnswer, hintFor, modelShown,
+  multiplicationAnswerCorrect, multiplicationMiss, resolveChallengeFact, workspaceAssignment, workspaceScene,
+  type ExplorerView,
+} from './multiplicationExplorerWorkspace';
+import {
+  BREAK_APART_LEVER, SHOW_MODEL_LEVER, SKIP_LINE_LEVER, SKIP_STRIP_LEVER, leverFacts, multiplicationLevers, skipLine,
+  skipStripTotals, smallerFact,
+} from './multiplicationExplorerLevers';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -108,6 +121,10 @@ export interface MultiplicationExplorerData {
 interface MultiplicationExplorerProps {
   data: MultiplicationExplorerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // =============================================================================
@@ -230,7 +247,10 @@ const RepeatedAdditionPanel: React.FC<{
   );
 };
 
-/** Number Line with jumps */
+/**
+ * Number Line with jumps. The landing point is labelled only when the product may be shown: the multiples before it are
+ * the skip count the learner reads, the last one is the answer.
+ */
 const NumberLinePanel: React.FC<{
   factor1: number;
   factor2: number;
@@ -270,7 +290,7 @@ const NumberLinePanel: React.FC<{
                   x1={x} y1={lineY - (isMajor ? 8 : 4)} x2={x} y2={lineY + (isMajor ? 8 : 4)}
                   stroke={isMajor ? '#94a3b8' : '#475569'} strokeWidth={isMajor ? 2 : 1}
                 />
-                {isMajor && (
+                {isMajor && (i !== product || showProduct) && (
                   <text x={x} y={lineY + 20} textAnchor="middle" className="fill-slate-400" fontSize="10">
                     {i}
                   </text>
@@ -397,15 +417,14 @@ const FactFamilyDisplay: React.FC<{
   </div>
 );
 
-/** Distributive property visual: e.g. 7×6 = 5×6 + 2×6 */
+/** Distributive property visual: e.g. 7×6 = 5×6 + 2×6. The sum is `?` until the item is solved: it is the answer. */
 const DistributiveDisplay: React.FC<{
   factor1: number;
   factor2: number;
   product: number;
-}> = ({ factor1, factor2, product }) => {
-  // Split factor1 into 5 + remainder (or another convenient split)
-  const a = Math.min(5, factor1 - 1);
-  const b = factor1 - a;
+  showProduct: boolean;
+}> = ({ factor1, factor2, product, showProduct }) => {
+  const [a, b] = distributiveSplit({ factor1, factor2, product });
 
   return (
     <LuminaPanel className="space-y-2 p-3">
@@ -426,10 +445,51 @@ const DistributiveDisplay: React.FC<{
           <span className="text-slate-500"> + </span>
           <span className="text-amber-300">{b * factor2}</span>
           <span className="text-slate-500"> = </span>
-          <span className="text-emerald-300 font-bold">{product}</span>
+          <span className="text-emerald-300 font-bold">{showProduct ? product : '?'}</span>
         </p>
       </div>
     </LuminaPanel>
+  );
+};
+
+/**
+ * The skip_strip lever: one box per group holding the group size, the running total under every box but the last,
+ * which shows `?`. The count stops one group short of the product.
+ */
+const SkipStrip: React.FC<{ groups: number; each: number; totals: number[] }> = ({ groups, each, totals }) => (
+  <div className="flex flex-wrap justify-center gap-2" data-lever="skip-strip">
+    {Array.from({ length: groups }).map((_, i) => (
+      <div key={i} className="flex flex-col items-center gap-1">
+        <span className="rounded-md border border-violet-400/40 bg-violet-500/15 px-2 py-1 font-mono text-violet-200">{each}</span>
+        <span className="text-xs font-mono text-slate-400">{i < totals.length ? totals[i] : '?'}</span>
+      </div>
+    ))}
+  </div>
+);
+
+/**
+ * The skip_line lever (missing factor): equal jumps of the known factor from 0, two past the product. Only 0 and the
+ * product are labelled; the learner counts the jumps it takes to reach the product.
+ */
+const SkipLine: React.FC<{ step: number; jumps: number; product: number }> = ({ step, jumps, product }) => {
+  const width = 500, margin = 24, lineY = 60, end = step * jumps;
+  const toX = (v: number) => margin + (v / end) * (width - 2 * margin);
+  return (
+    <svg viewBox={`0 0 ${width} 90`} className="w-full max-w-[500px] mx-auto" data-lever="skip-line">
+      <line x1={margin} y1={lineY} x2={width - margin} y2={lineY} stroke="#64748b" strokeWidth="2" />
+      {Array.from({ length: jumps }).map((_, i) => {
+        const sx = toX(i * step), ex = toX((i + 1) * step), mid = (sx + ex) / 2;
+        return (
+          <g key={i}>
+            <path d={`M ${sx} ${lineY} Q ${mid} ${lineY - 26} ${ex} ${lineY}`} fill="none" stroke="#38bdf8" strokeWidth="2" strokeDasharray="4 2" />
+            <line x1={ex} y1={lineY - 6} x2={ex} y2={lineY + 6} stroke="#94a3b8" strokeWidth="2" />
+          </g>
+        );
+      })}
+      <text x={toX(0)} y={lineY + 22} textAnchor="middle" className="fill-slate-400" fontSize="11">0</text>
+      <circle cx={toX(product)} cy={lineY} r="5" className="fill-amber-400" />
+      <text x={toX(product)} y={lineY + 22} textAnchor="middle" className="fill-amber-300" fontSize="12" fontWeight="bold">{product}</text>
+    </svg>
   );
 };
 
@@ -545,51 +605,17 @@ function tutorRevealPolicy(
 }
 
 /**
- * Parse a per-challenge `targetFact` string ("3 × 4 = 12") into its factors.
- * Back-compat path only: pre-redesign data carries the fact as prose. New data
- * ships the structured `challenge.fact`, which needs no parsing. Product is
- * recomputed from the factors — a shipped "= p" that disagrees is never trusted.
- */
-function parseTargetFact(
-  targetFact?: string,
-): { factor1: number; factor2: number; product: number } | null {
-  if (!targetFact) return null;
-  const nums = targetFact.match(/-?\d+/g);
-  if (!nums || nums.length < 2) return null;
-  const factor1 = parseInt(nums[0], 10);
-  const factor2 = parseInt(nums[1], 10);
-  if (!Number.isFinite(factor1) || !Number.isFinite(factor2)) return null;
-  return { factor1, factor2, product: factor1 * factor2 };
-}
-
-/**
- * The fact a challenge is asked, drawn, AND judged on — the single source of
- * truth for all three, so they can never disagree.
+ * On the shared teaching workspace (W1, plain shape) the typed answer commits through `progress.commitCheck` with its
+ * named miss (`multiplicationMiss`), the runtime owns the challenge index, and Next, Submit Results and the scripted
+ * tutor cues are off. The scripted path keeps its own Next and Submit Results.
  *
- * Resolution order: the structured per-challenge `fact` (code-owned, current) →
- * a parsed `targetFact` (pre-redesign data) → the session `data.fact` (last
- * resort). Product is always recomputed from the factors.
- *
- * HISTORY — why this must feed the VISUALS too: a 2026-07-07 fix moved grading
- * and the headline equation onto the per-challenge fact but left every
- * representation panel rendering the shared `data.fact`. That left the primitive
- * split-brain: with per-challenge facts a student saw one equation, a picture of
- * a DIFFERENT fact, and was graded on the first. It stayed invisible only because
- * the generator forced every challenge onto one fact — which is exactly what made
- * a session "3 × 4 asked five ways". Both are fixed together or neither is.
+ * On both paths the open item never shows its answer: the asked value is `?` in the equation, a picture that would
+ * show it is not drawn (`modelShown`), and the product readouts, the landing label, the break-apart sum and the fact
+ * family wait until the item is solved.
  */
-function resolveChallengeFact(
-  challenge: MultiplicationExplorerChallenge | null,
-  sessionFact: { factor1: number; factor2: number; product: number },
-): { factor1: number; factor2: number; product: number } {
-  const own = challenge?.fact;
-  if (own && Number.isFinite(own.factor1) && Number.isFinite(own.factor2)) {
-    return { factor1: own.factor1, factor2: own.factor2, product: own.factor1 * own.factor2 };
-  }
-  return parseTargetFact(challenge?.targetFact) ?? sessionFact;
-}
-
-const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, className }) => {
+const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  MultiplicationExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<MultiplicationExplorerChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     fact,
     challenges,
@@ -605,19 +631,30 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     onEvaluationSubmit,
   } = data;
 
-  const resolvedInstanceId = instanceId || `multiplication-explorer-${Date.now()}`;
+  const stableInstanceIdRef = useRef(instanceId || `multiplication-explorer-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (c) => c.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: (c) => workspaceAssignment(c, fact),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
+  const { currentIndex: challengeIndex, results: challengeResults, mergeResult } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
   // State
   const [currentPhase, setCurrentPhase] = useState<Phase>('groups');
-  const [challengeIndex, setChallengeIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
   const [attemptsCount, setAttemptsCount] = useState(0);
-  // Per-challenge attempt counter (resets on advance) — drives per-challenge scoring.
-  const [challengeAttempts, setChallengeAttempts] = useState(0);
-  // Per-challenge results, recorded once on first correct answer. Feeds PhaseSummaryPanel.
-  const [challengeResults, setChallengeResults] = useState<ChallengeResult[]>([]);
   const [factsCorrect, setFactsCorrect] = useState(0);
   const [factsTotal, setFactsTotal] = useState(0);
   const [missingFactorCorrect, setMissingFactorCorrect] = useState(0);
@@ -629,7 +666,17 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   const [fluencyTimes, setFluencyTimes] = useState<number[]>([]);
   const [fluencyStart, setFluencyStart] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<string>(data.activeRepresentation === 'all' ? 'groups' : data.activeRepresentation);
-  const currentChallenge = challenges[challengeIndex] ?? null;
+  /** A wrong check in the learner's terms, for the tutor, until Try again clears it. */
+  const [lastWrong, setLastWrong] = useState<string | null>(null);
+  // Levers (`multiplicationExplorerLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place. The item starts bare: no lever comes from the tier.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<MultiplicationExplorerChallenge | null>(null);
+  const sessionChallenge = challenges[challengeIndex] ?? null;
+  /** What is on screen: the easier fact while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   // The fact the CURRENT challenge asks about — drives the equation display, EVERY
   // representation panel, and grading, so all three always agree. See
@@ -638,6 +685,14 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     () => resolveChallengeFact(currentChallenge, fact),
     [currentChallenge, fact],
   );
+
+  /** This item is solved: what it asked may now be shown. */
+  const solved = feedback?.correct === true;
+  const slot = currentChallenge ? askedSlot(currentChallenge) : 'product';
+  /** The product readouts: the session's choice where the product is given, and always once the item is solved. */
+  const productShown = solved || (showOptions.showProduct && slot !== 'product');
+  /** The panels: never while they would show the asked value (`modelShown`). */
+  const picturesShown = !currentChallenge || solved || modelShown(currentChallenge);
 
   // The modality THIS challenge is seen through. Pinning one representation per
   // challenge is what makes a session COVER the modalities (fact A as groups, fact
@@ -649,7 +704,26 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   const showAllRepresentations =
     challengeRepresentation === 'all' || currentPhase === 'connect';
 
-  // AI tutoring integration
+  // Workspace path: a fresh item and Try again both clear what was typed and the verdict. The scripted path resets in
+  // its Next handler.
+  const clearItem = () => {
+    setAnswer('');
+    setFeedback(null);
+    setLastWrong(null);
+  };
+  openItem.current = (index, retry) => {
+    clearItem();
+    // Try again on an easier item keeps it; a fresh item, or the full item back after it, ends it.
+    if (retry) return;
+    setPractice(null);
+    setFluencyStart(null);
+    // The item's own picture, in the same update that opens it: a tab set by the effect below would republish the
+    // scene one render later and supersede the item's visible receipt.
+    const representation = challenges[index]?.representation;
+    if (representation && representation !== 'all') setActiveTab(representation);
+  };
+
+  // AI tutoring integration (scripted path only: its context carries the fact and the product).
   const aiPrimitiveData = useMemo(() => ({
     fact: `${activeFact.factor1} × ${activeFact.factor2} = ${activeFact.product}`,
     currentPhase,
@@ -664,12 +738,16 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     supportTier: supportTier ?? null,
   }), [activeFact, currentPhase, challengeIndex, currentChallenge, flipped, attemptsCount, factsCorrect, factsTotal, gradeBand, supportTier]);
 
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'multiplication-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === '2-3' ? '2nd Grade' : '4th Grade',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Evaluation
   const { submitResult, hasSubmitted, submittedResult, elapsedMs, resetAttempt } = usePrimitiveEvaluation<MultiplicationExplorerMetrics>({
@@ -682,13 +760,15 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // Per-challenge-type breakdown for the end-of-session summary. Computes once
-  // the student submits; groups recorded results by challenge type. Per-challenge
+  /** The summary: after Submit Results on the scripted path; on the workspace path once every item is solved. */
+  const showSummary = hasSubmitted || (tutorOwned && progress.isComplete);
+
+  // Per-challenge-type breakdown for the end-of-session summary. Per-challenge
   // score: 100 first try, then -20 per extra attempt, floored at 20.
   const phaseResults = usePhaseResults<MultiplicationExplorerChallenge>({
     challenges,
     results: challengeResults,
-    isComplete: hasSubmitted,
+    isComplete: showSummary,
     getChallengeType: (c) => c.type,
     phaseConfig: PHASE_TYPE_CONFIG,
     getScore: (rs) =>
@@ -723,111 +803,92 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     }
   }, [currentChallenge, fluencyStart]);
 
-  const getExpectedAnswer = useCallback((): number | null => {
-    if (!currentChallenge) return null;
-    const { hiddenValue } = currentChallenge;
-    if (hiddenValue === 'product') return activeFact.product;
-    if (hiddenValue === 'factor1') return activeFact.factor1;
-    if (hiddenValue === 'factor2') return activeFact.factor2;
-    return activeFact.product; // default: product is the answer
-  }, [currentChallenge, activeFact]);
-
-  const handleSubmitAnswer = useCallback(() => {
-    const expected = getExpectedAnswer();
-    if (expected === null) return;
+  const handleSubmitAnswer = () => {
+    if (!currentChallenge || solved || learnerBlocked() || !answer.trim()) return;
+    const expected = expectedAnswer(currentChallenge, activeFact);
     const userAnswer = parseInt(answer, 10);
-    const isCorrect = userAnswer === expected;
+    const isCorrect = multiplicationAnswerCorrect(currentChallenge, activeFact, answer);
+    const nextChallengeAttempts = progress.currentAttempts + 1;
 
+    // An easier item (the simplify lever) is practice: it counts toward no session tally.
     setAttemptsCount((a) => a + 1);
-    setFactsTotal((t) => t + 1);
-    const nextChallengeAttempts = challengeAttempts + 1;
-    setChallengeAttempts(nextChallengeAttempts);
-
-    if (currentChallenge?.type === 'missing_factor') {
+    if (!practice) setFactsTotal((t) => t + 1);
+    if (!practice && currentChallenge.type === 'missing_factor') {
       setMissingFactorTotal((t) => t + 1);
     }
+    progress.commitCheck(describeAnswer(currentChallenge, answer), isCorrect,
+      isCorrect ? undefined : multiplicationMiss(currentChallenge, activeFact, answer));
 
     if (isCorrect) {
       SoundManager.playCorrect();
-      setFactsCorrect((c) => c + 1);
-      if (currentChallenge?.type === 'missing_factor') {
+      if (!practice) setFactsCorrect((c) => c + 1);
+      if (!practice && currentChallenge.type === 'missing_factor') {
         setMissingFactorCorrect((c) => c + 1);
       }
-
-      // Record this challenge's result once (first correct), for the phase summary.
-      if (currentChallenge && !challengeResults.some((r) => r.challengeId === currentChallenge.id)) {
-        const score = Math.max(20, 100 - (nextChallengeAttempts - 1) * 20);
-        setChallengeResults((prev) => [
-          ...prev,
-          {
-            challengeId: currentChallenge.id,
-            correct: true,
-            attempts: nextChallengeAttempts,
-            score,
-          },
-        ]);
-      }
+      // This challenge's score (first correct), for the phase summary.
+      if (!practice) mergeResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts: nextChallengeAttempts,
+        score: Math.max(20, 100 - (nextChallengeAttempts - 1) * 20),
+      });
 
       // Fluency timing
-      if (currentChallenge?.type === 'fluency' && fluencyStart) {
+      if (currentChallenge.type === 'fluency' && fluencyStart) {
         const elapsed = (Date.now() - fluencyStart) / 1000;
         setFluencyTimes((prev) => [...prev, elapsed]);
         setFluencyStart(null);
       }
 
       setFeedback({ correct: true, message: 'Correct!' });
+      setLastWrong(null);
 
       // AI: celebrate
       sendText(
         `[ANSWER_CORRECT] Student answered ${activeFact.factor1} × ${activeFact.factor2} = ${userAnswer} correctly ` +
-        `on attempt ${attemptsCount + 1}. Challenge: "${currentChallenge?.instruction}". ` +
+        `on attempt ${attemptsCount + 1}. Challenge: "${currentChallenge.instruction}". ` +
         `Congratulate briefly and introduce the next step.` +
-        tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'build'),
+        tutorRevealPolicy(supportTier, currentChallenge.type),
         { silent: true }
       );
     } else {
       SoundManager.playIncorrect();
-      setFeedback({
-        correct: false,
-        message: currentChallenge?.hint || `Not quite. Try again!`,
-      });
+      setFeedback({ correct: false, message: hintFor(currentChallenge, activeFact) });
+      setLastWrong(describeAnswer(currentChallenge, answer));
 
       // AI: hint
       sendText(
         `[ANSWER_INCORRECT] Student answered "${userAnswer}" but correct is ${expected}. ` +
         `Fact: ${activeFact.factor1} × ${activeFact.factor2} = ${activeFact.product}. ` +
-        `Challenge: "${currentChallenge?.instruction}". Attempt ${attemptsCount + 1}. ` +
+        `Challenge: "${currentChallenge.instruction}". Attempt ${attemptsCount + 1}. ` +
         `Give a brief hint without revealing the answer.` +
-        tutorRevealPolicy(supportTier, currentChallenge?.type ?? 'build'),
+        tutorRevealPolicy(supportTier, currentChallenge.type),
         { silent: true }
       );
     }
-  }, [answer, getExpectedAnswer, currentChallenge, activeFact, attemptsCount, challengeAttempts, challengeResults, fluencyStart, sendText, supportTier]);
+  };
 
-  const handleNextChallenge = useCallback(() => {
-    if (challengeIndex < challenges.length - 1) {
-      SoundManager.navigate();
-      setChallengeIndex((i) => i + 1);
-      setAnswer('');
-      setFeedback(null);
-      setChallengeAttempts(0);
-      setFluencyStart(null);
+  /** Scripted path only: the workspace hides Next, and the runtime opens the next item. */
+  const handleNextChallenge = () => {
+    if (challengeIndex >= challenges.length - 1) return;
+    SoundManager.navigate();
+    progress.advance();
+    clearItem();
+    setFluencyStart(null);
 
-      // AI: next challenge
-      const next = challenges[challengeIndex + 1];
-      sendText(
-        `[NEXT_CHALLENGE] Moving to challenge ${challengeIndex + 2} of ${challenges.length}: ` +
-        `"${next.instruction}". Type: ${next.type}. Briefly introduce it.` +
-        tutorRevealPolicy(supportTier, next.type),
-        { silent: true }
-      );
-    }
-  }, [challengeIndex, challenges, sendText, supportTier]);
+    // AI: next challenge
+    const next = challenges[challengeIndex + 1];
+    sendText(
+      `[NEXT_CHALLENGE] Moving to challenge ${challengeIndex + 2} of ${challenges.length}: ` +
+      `"${next.instruction}". Type: ${next.type}. Briefly introduce it.` +
+      tutorRevealPolicy(supportTier, next.type),
+      { silent: true }
+    );
+  };
 
   const handlePhaseTransition = useCallback((newPhase: Phase) => {
     SoundManager.navigate();
     setCurrentPhase(newPhase);
-    setFeedback(null);
 
     sendText(
       `[PHASE_CHANGE] Student moved to phase: ${newPhase}. ` +
@@ -874,8 +935,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     SoundManager.pop();
     setDistributiveUsed(true);
 
-    const a = Math.min(5, activeFact.factor1 - 1);
-    const b = activeFact.factor1 - a;
+    const [a, b] = distributiveSplit(activeFact);
     sendText(
       `[DISTRIBUTIVE_STRATEGY] Student explored distributive property: ` +
       `${activeFact.factor1}×${activeFact.factor2} = ${a}×${activeFact.factor2} + ${b}×${activeFact.factor2} = ${a * activeFact.factor2} + ${b * activeFact.factor2} = ${activeFact.product}. ` +
@@ -884,43 +944,36 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     );
   }, [activeFact, sendText]);
 
-  const handleComplete = useCallback(() => {
+  const metricsFor = (correct: number, total: number, attempts: number): MultiplicationExplorerMetrics => ({
+    type: 'multiplication-explorer',
+    factsCorrect: correct,
+    factsTotal: total,
+    representationsUsed: Array.from(representationsUsed),
+    commutativePropertyExplored: commutativeExplored,
+    distributiveStrategyUsed: distributiveUsed,
+    factFamilyCompleted,
+    fluencySpeed: fluencyTimes.length > 0 ? fluencyTimes.reduce((s, t) => s + t, 0) / fluencyTimes.length : 0,
+    missingFactorCorrect,
+    missingFactorTotal,
+    attemptsCount: attempts,
+  });
+
+  const studentWork = () => ({
+    // Every fact the session practiced — one per challenge.
+    facts: challenges.map((c) => {
+      const f = resolveChallengeFact(c, fact);
+      return { type: c.type, fact: `${f.factor1} × ${f.factor2} = ${f.product}` };
+    }),
+    phases: currentPhase,
+    challengeIndex,
+    flipped,
+  });
+
+  /** Scripted path: Submit Results. */
+  const handleComplete = () => {
     if (hasSubmitted) return;
-
-    const avgFluency = fluencyTimes.length > 0
-      ? fluencyTimes.reduce((s, t) => s + t, 0) / fluencyTimes.length
-      : 0;
-
     const score = factsTotal > 0 ? Math.round((factsCorrect / factsTotal) * 100) : 0;
-    const success = score >= 70;
-
-    const metrics: MultiplicationExplorerMetrics = {
-      type: 'multiplication-explorer',
-      factsCorrect,
-      factsTotal,
-      representationsUsed: Array.from(representationsUsed),
-      commutativePropertyExplored: commutativeExplored,
-      distributiveStrategyUsed: distributiveUsed,
-      factFamilyCompleted,
-      fluencySpeed: avgFluency,
-      missingFactorCorrect,
-      missingFactorTotal,
-      attemptsCount,
-    };
-
-    submitResult(success, score, metrics, {
-      studentWork: {
-        // Every fact the session practiced — one per challenge, not a single
-        // session fact, now that each challenge carries its own.
-        facts: challenges.map((c) => {
-          const f = resolveChallengeFact(c, fact);
-          return { type: c.type, fact: `${f.factor1} × ${f.factor2} = ${f.product}` };
-        }),
-        phases: currentPhase,
-        challengeIndex,
-        flipped,
-      },
-    });
+    submitResult(score >= 70, score, metricsFor(factsCorrect, factsTotal, attemptsCount), { studentWork: studentWork() });
 
     sendText(
       `[SESSION_COMPLETE] Student finished multiplication explorer. ` +
@@ -930,20 +983,22 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
       `Celebrate their work and summarize what they learned!`,
       { silent: true }
     );
-  }, [
-    hasSubmitted, fluencyTimes, factsCorrect, factsTotal, representationsUsed,
-    commutativeExplored, distributiveUsed, factFamilyCompleted,
-    missingFactorCorrect, missingFactorTotal, attemptsCount,
-    fact, challenges, currentPhase, challengeIndex, flipped, submitResult, sendText,
-  ]);
+  };
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose evidence carries each wrong
+  // check's named miss.
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false) return;
+    submitResult(result.passed, result.accuracy, metricsFor(result.solvedCount, result.attemptsCount, result.attemptsCount),
+      { studentWork: studentWork(), challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   const handleReset = useCallback(() => {
-    setChallengeIndex(0);
-    setAnswer('');
-    setFeedback(null);
+    progress.reset();
+    clearItem();
     setAttemptsCount(0);
-    setChallengeAttempts(0);
-    setChallengeResults([]);
     setFactsCorrect(0);
     setFactsTotal(0);
     setMissingFactorCorrect(0);
@@ -957,7 +1012,8 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     setCurrentPhase('groups');
     setFlipped(false);
     resetAttempt();
-  }, [resetAttempt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetAttempt, progress.reset]);
 
   // Determine which representations to show based on tab
   const representationTabs = useMemo(() => {
@@ -971,15 +1027,16 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     return tabs.filter((t) => t.enabled);
   }, [representations]);
 
+  // activeFact, not the session fact — the picture must show the fact being asked.
+  const panelProps = {
+    factor1: activeFact.factor1,
+    factor2: activeFact.factor2,
+    product: activeFact.product,
+    showProduct: productShown,
+    flipped,
+  };
+
   const renderRepresentation = (tabValue: string) => {
-    // activeFact, not the session fact — the picture must show the fact being asked.
-    const panelProps = {
-      factor1: activeFact.factor1,
-      factor2: activeFact.factor2,
-      product: activeFact.product,
-      showProduct: showOptions.showProduct,
-      flipped,
-    };
     switch (tabValue) {
       case 'groups': return <EqualGroupsPanel {...panelProps} />;
       case 'array': return <ArrayPanel {...panelProps} />;
@@ -993,49 +1050,79 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   // Connect: the five representations of ONE fact, side by side. This is the one
   // place a constant fact IS the pedagogy — the insight is that they all encode the
   // same thing — so it still renders a single fact, just the ACTIVE challenge's.
-  const renderAllRepresentations = () => {
-    const panelProps = {
-      factor1: activeFact.factor1,
-      factor2: activeFact.factor2,
-      product: activeFact.product,
-      showProduct: showOptions.showProduct,
+  const renderAllRepresentations = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {representations.equalGroups && (
+        <LuminaPanel className="p-3">
+          <p className="text-xs font-medium text-violet-400 mb-2">Equal Groups</p>
+          <EqualGroupsPanel {...panelProps} />
+        </LuminaPanel>
+      )}
+      {representations.array && (
+        <LuminaPanel className="p-3">
+          <p className="text-xs font-medium text-emerald-400 mb-2">Array</p>
+          <ArrayPanel {...panelProps} />
+        </LuminaPanel>
+      )}
+      {representations.repeatedAddition && (
+        <LuminaPanel className="p-3">
+          <p className="text-xs font-medium text-amber-400 mb-2">Repeated Addition</p>
+          <RepeatedAdditionPanel {...panelProps} />
+        </LuminaPanel>
+      )}
+      {representations.numberLine && (
+        <LuminaPanel className="p-3">
+          <p className="text-xs font-medium text-sky-400 mb-2">Number Line</p>
+          <NumberLinePanel {...panelProps} />
+        </LuminaPanel>
+      )}
+      {representations.areaModel && (
+        <LuminaPanel className="p-3">
+          <p className="text-xs font-medium text-rose-400 mb-2">Area Model</p>
+          <AreaModelPanel {...panelProps} />
+        </LuminaPanel>
+      )}
+    </div>
+  );
+
+  const breakdownShown = picturesShown && showOptions.showDistributiveBreakdown && currentPhase === 'strategy' && distributiveUsed;
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // W1 offers no demonstration targets and no presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge) return;
+    const view: ExplorerView = {
+      answer,
+      representation: showAllRepresentations ? 'all' : (activeTab as ExplorerView['representation']),
       flipped,
+      breakdownShown,
+      lastWrong,
     };
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {representations.equalGroups && (
-          <LuminaPanel className="p-3">
-            <p className="text-xs font-medium text-violet-400 mb-2">Equal Groups</p>
-            <EqualGroupsPanel {...panelProps} />
-          </LuminaPanel>
-        )}
-        {representations.array && (
-          <LuminaPanel className="p-3">
-            <p className="text-xs font-medium text-emerald-400 mb-2">Array</p>
-            <ArrayPanel {...panelProps} />
-          </LuminaPanel>
-        )}
-        {representations.repeatedAddition && (
-          <LuminaPanel className="p-3">
-            <p className="text-xs font-medium text-amber-400 mb-2">Repeated Addition</p>
-            <RepeatedAdditionPanel {...panelProps} />
-          </LuminaPanel>
-        )}
-        {representations.numberLine && (
-          <LuminaPanel className="p-3">
-            <p className="text-xs font-medium text-sky-400 mb-2">Number Line</p>
-            <NumberLinePanel {...panelProps} />
-          </LuminaPanel>
-        )}
-        {representations.areaModel && (
-          <LuminaPanel className="p-3">
-            <p className="text-xs font-medium text-rose-400 mb-2">Area Model</p>
-            <AreaModelPanel {...panelProps} />
-          </LuminaPanel>
-        )}
-      </div>
-    );
-  };
+    const scene = workspaceScene(currentChallenge, activeFact, view);
+    const sessionFact = sessionChallenge ? resolveChallengeFact(sessionChallenge, fact) : activeFact;
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, sessionFact, pulledLevers);
+    const levers = practice ? [] : multiplicationLevers(sessionChallenge, fact, pulledLevers, { breakdownShown });
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever || !sessionChallenge) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = smallerFact(sessionChallenge, fact);
+          if (!easier) return 'This item has no smaller fact; try a help lever.';
+          setLeverState(pulled); clearItem(); setPractice(easier);
+          return { practice: workspaceAssignment(easier, fact) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { clearItem(); setPractice(null); },
+    };
+  });
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
@@ -1043,11 +1130,13 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
   // chooses, checks, or advances.
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: hasSubmitted ? null : currentChallenge?.id ?? 'explore',
+    scopeId: showSummary ? null : currentChallenge?.id ?? 'explore',
     label: 'The multiplication models',
-    solved: feedback?.correct === true,
+    solved,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
+
+  const inputClosed = showSummary || solved || learnerBlocked();
 
   return (
     <LuminaCard className={className}>
@@ -1073,16 +1162,17 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Fact Display */}
+        {/* Fact Display: the asked value is `?` until the item is solved. */}
         <div className="text-center py-2">
-          <p className="text-3xl font-bold text-slate-100 font-mono tracking-wider">
-            {flipped ? activeFact.factor2 : activeFact.factor1} &times; {flipped ? activeFact.factor1 : activeFact.factor2}
-            {showOptions.showProduct && <span> = {activeFact.product}</span>}
+          <p className="text-3xl font-bold text-slate-100 font-mono tracking-wider" data-equation>
+            {currentChallenge && !solved
+              ? equationText(currentChallenge, activeFact, flipped)
+              : `${flipped ? activeFact.factor2 : activeFact.factor1} × ${flipped ? activeFact.factor1 : activeFact.factor2}${productShown ? ` = ${activeFact.product}` : ''}`}
           </p>
         </div>
 
-        {/* Commutative Flip Button */}
-        {showOptions.showCommutativeFlip && (
+        {/* Commutative Flip Button (not on a missing factor: its label would print the factor) */}
+        {showOptions.showCommutativeFlip && picturesShown && slot === 'product' && (
           <div className="flex justify-center">
             <LuminaButton className="text-sm" onClick={handleFlip}>
               Flip: {activeFact.factor1} &times; {activeFact.factor2} ↔ {activeFact.factor2} &times; {activeFact.factor1}
@@ -1091,10 +1181,10 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         )}
 
         {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !hasSubmitted && <div {...pip.dock} />}
+        {pip.store && !showSummary && <div {...pip.dock} />}
         <div {...pip.workspace} className="space-y-4">
         {/* Representations */}
-        {showAllRepresentations ? (
+        {!picturesShown ? null : showAllRepresentations ? (
           /* Connect: the five representations of one fact, side by side */
           renderAllRepresentations()
         ) : (
@@ -1121,8 +1211,8 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
           </Tabs>
         )}
 
-        {/* Fact Family */}
-        {showOptions.showFactFamily && (
+        {/* Fact Family: every equation in it is an answer, so it opens once the item is solved. */}
+        {showOptions.showFactFamily && solved && (
           <div className="space-y-2">
             <LuminaButton className="text-xs w-full" onClick={handleShowFactFamily}>
               Show Fact Family (× and ÷)
@@ -1134,7 +1224,7 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
         )}
 
         {/* Distributive Property (Strategy phase) */}
-        {showOptions.showDistributiveBreakdown && currentPhase === 'strategy' && (
+        {showOptions.showDistributiveBreakdown && currentPhase === 'strategy' && picturesShown && (
           <div className="space-y-2">
             <LuminaButton className="text-xs w-full" onClick={handleShowDistributive}>
               Break It Up! (Distributive Property)
@@ -1144,17 +1234,32 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
                 factor1={activeFact.factor1}
                 factor2={activeFact.factor2}
                 product={activeFact.product}
+                showProduct={productShown}
               />
             )}
           </div>
         )}
 
+        {/* Levers the tutor pulled on this item (`multiplicationExplorerLevers.ts`); none on an easier item. */}
+        {currentChallenge && !solved && leverOn(SHOW_MODEL_LEVER) && (
+          <ArrayPanel factor1={activeFact.factor1} factor2={activeFact.factor2} product={activeFact.product} showProduct={false} flipped={false} />
+        )}
+        {currentChallenge && !solved && leverOn(BREAK_APART_LEVER) && !breakdownShown && (
+          <div data-lever="break-apart">
+            <DistributiveDisplay factor1={activeFact.factor1} factor2={activeFact.factor2} product={activeFact.product} showProduct={false} />
+          </div>
+        )}
+        {currentChallenge && !solved && leverOn(SKIP_STRIP_LEVER) && (
+          <SkipStrip groups={activeFact.factor1} each={activeFact.factor2} totals={skipStripTotals(activeFact)} />
+        )}
+        {currentChallenge && !solved && leverOn(SKIP_LINE_LEVER) && <SkipLine {...skipLine(currentChallenge, activeFact)} />}
+
         {/* Challenge Area */}
-        {currentChallenge && (
+        {currentChallenge && !showSummary && (
           <LuminaPanel className="rounded-xl space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-slate-200">
-                {currentChallenge.instruction}
+                {askFor(currentChallenge, activeFact)}
               </p>
               <LuminaBadge className="text-slate-400 text-[10px]">
                 {challengeIndex + 1}/{challenges.length}
@@ -1162,17 +1267,20 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
             </div>
 
             {/* Answer Input */}
-            <CalculatorInput
-              label="Your answer"
-              value={answer}
-              onChange={setAnswer}
-              onSubmit={handleSubmitAnswer}
-              showSubmitButton={true}
-              allowNegative={false}
-              allowDecimal={false}
-              maxLength={3}
-              disabled={hasSubmitted}
-            />
+            <div className="flex items-center justify-center gap-2">
+              <LuminaInput
+                type="number"
+                inputMode="numeric"
+                aria-label="Your answer"
+                placeholder="?"
+                value={answer}
+                onChange={(e) => { if (!learnerBlocked()) setAnswer(e.target.value.replace(/[^0-9]/g, '').slice(0, 3)); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSubmitAnswer(); }}
+                disabled={inputClosed}
+                className="w-28 text-center text-2xl font-mono font-bold"
+              />
+              <LuminaActionButton action="check" onClick={handleSubmitAnswer} disabled={inputClosed || !answer.trim()}>Check</LuminaActionButton>
+            </div>
 
             {/* Feedback */}
             {feedback && (
@@ -1187,8 +1295,8 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
               </div>
             )}
 
-            {/* Next Challenge Button */}
-            {feedback?.correct && challengeIndex < challenges.length - 1 && (
+            {/* Next Challenge Button (scripted path; the workspace's shell offers Next challenge) */}
+            {!tutorOwned && feedback?.correct && challengeIndex < challenges.length - 1 && (
               <LuminaActionButton
                 action="next"
                 className="w-full"
@@ -1230,8 +1338,8 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
           </LuminaButton>
         </div>
 
-        {/* Score Summary */}
-        {factsTotal > 0 && !hasSubmitted && (
+        {/* Score Summary (scripted path: on the workspace a running tally beside the item is not its work) */}
+        {!tutorOwned && factsTotal > 0 && !showSummary && (
           <div className="flex items-center justify-center gap-4 text-sm text-slate-400">
             <span>Score: {factsCorrect}/{factsTotal}</span>
             <span>Reps: {representationsUsed.size}/5</span>
@@ -1240,22 +1348,24 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
           </div>
         )}
 
-        {/* Submit / Reset */}
-        <div className="flex gap-2 justify-center">
-          <LuminaActionButton
-            action="check"
-            onClick={handleComplete}
-            disabled={hasSubmitted || factsTotal === 0}
-          >
-            {hasSubmitted ? 'Submitted!' : 'Submit Results'}
-          </LuminaActionButton>
-          {hasSubmitted && (
-            <LuminaActionButton action="retry" onClick={handleReset} />
-          )}
-        </div>
+        {/* Submit / Reset (scripted path; the workspace submits from the runtime's finish) */}
+        {!tutorOwned && (
+          <div className="flex gap-2 justify-center">
+            <LuminaActionButton
+              action="check"
+              onClick={handleComplete}
+              disabled={hasSubmitted || factsTotal === 0}
+            >
+              {hasSubmitted ? 'Submitted!' : 'Submit Results'}
+            </LuminaActionButton>
+            {hasSubmitted && (
+              <LuminaActionButton action="retry" onClick={handleReset} />
+            )}
+          </div>
+        )}
 
         {/* End-of-session phase breakdown (by challenge type) */}
-        {hasSubmitted && phaseResults.length > 0 && (
+        {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={submittedResult?.score}
@@ -1273,5 +1383,9 @@ const MultiplicationExplorer: React.FC<MultiplicationExplorerProps> = ({ data, c
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const MultiplicationExplorer = withWorkspaceController<MultiplicationExplorerProps, ProgressOptions<MultiplicationExplorerChallenge>, Progress>(
+  'multiplication-explorer', MultiplicationExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('multiplication-explorer'));
 
 export default MultiplicationExplorer;

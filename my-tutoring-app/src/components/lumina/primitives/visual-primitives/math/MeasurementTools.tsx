@@ -1,6 +1,19 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * Measurement Tools — a ruler session: each shape is put on the ruler (it snaps
+ * with its left edge at 0), its length is read and checked; convert then changes
+ * the checked length to the other unit, and compare ends by ordering the measured
+ * shapes shortest to longest.
+ *
+ * Shared teaching workspace (W1, plain shape): `measurementToolsWorkspace.ts`
+ * holds the items (one per shape, plus compare's ordering), the assignment, the
+ * scene, the learner's work in words and the named miss. Under a live runtime the
+ * tutor owns the item; the activity's own check commits through
+ * `progress.commitCheck`, and the runtime owns Try again and Next.
+ */
+
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -12,6 +25,7 @@ import {
   LuminaButton,
   LuminaActionButton,
   LuminaFeedbackCard,
+  LuminaInput,
 } from '../../../ui';
 import {
   usePrimitiveEvaluation,
@@ -19,11 +33,25 @@ import {
 } from '../../../evaluation';
 import type { MeasurementToolsMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress, type ChallengeResult } from '../../../hooks/useChallengeProgress';
+import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  INCH_TO_CM, ORDER_ITEM_ID, conversionCorrect, conversionTarget, describeMeasurementWork, lessonOf,
+  measureCorrect, measurementItems, measurementMiss, orderChoices, orderCorrect, orderShapes, workspaceAssignment, workspaceScene,
+  type MeasurementItem, type MeasurementView,
+} from './measurementToolsWorkspace';
+import {
+  EDGE_LINE_LEVER, HALF_MARKS_LEVER, INCH_MODEL_LEVER, ORDER_STEPS_LEVER, OWN_LENGTHS_LEVER, PRACTICE_NOTE,
+  SPACE_SHADING_LEVER, leverFacts, measurementLevers, practiceItem,
+} from './measurementToolsLevers';
 
 // =============================================================================
 // Data Interface (Single Source of Truth)
@@ -81,6 +109,10 @@ export interface MeasurementToolsData {
 interface MeasurementToolsProps {
   data: MeasurementToolsData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // =============================================================================
@@ -93,7 +125,6 @@ const CANVAS_WIDTH = 660;
 const RULER_LEFT_PAD = 40;
 const SHAPE_RULER_GAP = 12;
 const BOTTOM_PAD = 20;
-const INCH_TO_CM = 2.54;
 
 const PHASE_CONFIG: Record<string, PhaseConfig> = {
   measure: { label: 'Measure', icon: '📏', accentColor: 'blue' },
@@ -109,15 +140,11 @@ const PHASE_CONFIG: Record<string, PhaseConfig> = {
 const phaseScore = (attempts: number): number =>
   Math.max(20, 100 - Math.max(0, attempts - 1) * 20);
 
-const convertValue = (value: number, fromUnit: string, toUnit: string): number => {
-  if (fromUnit === toUnit) return value;
-  if (fromUnit === 'inches' && toUnit === 'centimeters') return value * INCH_TO_CM;
-  if (fromUnit === 'centimeters' && toUnit === 'inches') return value / INCH_TO_CM;
-  return value;
+/** A typed or stepped length; null while the box is empty or not a number. */
+const parseLength = (text: string): number | null => {
+  const n = parseFloat(text);
+  return Number.isFinite(n) ? n : null;
 };
-
-const getCorrectOrder = (challenges: MeasurementToolsChallenge[]): string[] =>
-  [...challenges].sort((a, b) => a.widthInches - b.widthInches).map((c) => c.id);
 
 // =============================================================================
 // Ruler Component (SVG)
@@ -133,9 +160,14 @@ interface RulerProps {
   /** Tick-label density (support-tier perception aid). 'all' labels half ticks
    *  too; 'sparse' labels only even wholes; 'whole' labels every whole. */
   labelMode?: 'all' | 'whole' | 'sparse';
+  /** space_shading lever: every other whole-unit space tinted, the whole ruler's length (never the shape's). */
+  shadeSpaces?: boolean;
+  /** half_marks lever: the half ticks drawn taller and brighter. No label is added. */
+  halfMarks?: boolean;
 }
 
-const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerUnit, leftPad, rulerY, labelMode = 'whole' }) => {
+const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerUnit, leftPad, rulerY, labelMode = 'whole',
+  shadeSpaces = false, halfMarks = false }) => {
   const totalWidth = lengthInches * pixelsPerUnit;
   const step = precision === 'half' ? 0.5 : 1;
   const tickCount = Math.round(lengthInches / step);
@@ -152,6 +184,10 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
         stroke="rgba(200,160,80,0.5)"
         strokeWidth={1.5}
       />
+      {shadeSpaces && Array.from({ length: Math.floor(lengthInches) }, (_, i) => i).filter((i) => i % 2 === 0).map((i) => (
+        <rect key={`shade-${i}`} data-lever="space-shade" x={leftPad + i * pixelsPerUnit} y={rulerY + 1}
+          width={pixelsPerUnit} height={28} fill="rgba(251,191,36,0.22)" />
+      ))}
       {Array.from({ length: tickCount + 1 }, (_, i) => {
         const tickValue = i * step;
         if (tickValue > lengthInches) return null;
@@ -172,9 +208,10 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
               x1={x}
               y1={rulerY}
               x2={x}
-              y2={rulerY + (isWhole ? 28 : 16)}
-              stroke="rgba(255,255,255,0.6)"
-              strokeWidth={isWhole ? 1.5 : 0.8}
+              y2={rulerY + (isWhole ? 28 : halfMarks ? 24 : 16)}
+              stroke={!isWhole && halfMarks ? 'rgba(251,191,36,0.95)' : 'rgba(255,255,255,0.6)'}
+              strokeWidth={isWhole ? 1.5 : halfMarks ? 2 : 0.8}
+              {...(!isWhole && halfMarks ? { 'data-lever': 'half-mark' } : {})}
             />
             {showLabel && (
               <text
@@ -382,10 +419,45 @@ const ShapePreview: React.FC<{
 };
 
 // =============================================================================
+// Lever pictures (`measurementToolsLevers.ts`). Each is drawn only while its lever is pulled; none writes a number.
+// =============================================================================
+
+/** inch_model: a bar one inch long over a centimeter scale, outside the item. Words only, no digit. */
+const InchModel: React.FC = () => {
+  const cm = 34;
+  const inch = cm * 2.54;
+  return (
+    <div data-lever="inch-model" className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+      <svg width={cm * 3 + 24} height={64} viewBox={`0 0 ${cm * 3 + 24} 64`} aria-hidden="true">
+        <rect x={12} y={6} width={inch} height={16} rx={3} fill="rgba(59,130,246,0.45)" stroke="rgba(147,197,253,0.8)" />
+        <line x1={12} y1={34} x2={12 + cm * 3} y2={34} stroke="rgba(255,255,255,0.6)" strokeWidth={1.5} />
+        {[0, 1, 2, 3].map((i) => (
+          <line key={i} x1={12 + i * cm} y1={30} x2={12 + i * cm} y2={46} stroke="rgba(251,191,36,0.9)" strokeWidth={1.5} />
+        ))}
+        <line x1={12 + inch} y1={4} x2={12 + inch} y2={50} stroke="rgba(147,197,253,0.8)" strokeDasharray="3 3" />
+      </svg>
+      <span className="text-xs text-slate-300">The blue bar is one inch. Each yellow space is one centimeter.</span>
+    </div>
+  );
+};
+
+/** order_steps: wordless bars growing short to long, the way the order runs. */
+const OrderSteps: React.FC<{ count: number }> = ({ count }) => (
+  <div data-lever="order-steps" aria-hidden="true" className="flex items-end gap-1.5 pl-1">
+    {Array.from({ length: count }, (_, i) => (
+      <div key={i} className="h-2 rounded-sm bg-purple-300/60" style={{ width: `${14 + i * 14}px` }} />
+    ))}
+    <span className="text-purple-300/80 text-xs ml-1">→</span>
+  </div>
+);
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
-const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) => {
+const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  MeasurementToolsProps & { tutorOwned: boolean; useController: (options: ProgressOptions<MeasurementItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     challengeType,
@@ -411,6 +483,13 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   const stableInstanceIdRef = useRef<string>(instanceId || `measurement-tools-${Date.now()}`);
   const resolvedInstanceId = stableInstanceIdRef.current;
 
+  /** What every item's check, scene and miss read from the session. */
+  const lesson = useMemo(() => lessonOf(data), [data]);
+  const lessonRef = useRef(lesson);
+  lessonRef.current = lesson;
+  /** One item per shape, then compare's ordering. Memoized: a new array restarts the scripted progress. */
+  const items = useMemo(() => measurementItems(challengeType, challenges), [challengeType, challenges]);
+
   const pixelsPerUnit = Math.min(
     (CANVAS_WIDTH - RULER_LEFT_PAD - 40) / rulerLengthInches,
     60,
@@ -427,18 +506,53 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   const rulerY = SHAPE_AREA_Y + maxShapeH + SHAPE_RULER_GAP + 50;
   const canvasHeight = rulerY + RULER_HEIGHT + BOTTOM_PAD;
 
-  // -- Shared hooks ---------------------------------------------------------
-  const {
-    currentIndex,
-    results: challengeResults,
-    isComplete: measureComplete,
-    recordResult,
-    advance,
-    reset,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (c) => c.id,
+  // -- Progress. On the workspace path the runtime moves the index. ---------
+  /** Bound below, once the setters exist; the progress hook calls them only after render. */
+  const openItem = useRef<(retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: (item) => item.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: (item) => workspaceAssignment(item, lessonRef.current),
+    onItemOpened: (_index, retry) => openItem.current(retry),
+    onFinished: (result) => finish.current(result),
   });
+  const { currentIndex, results: itemResults, isComplete: allItemsDone, mergeResult, advance, reset } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const learnerBlocked = () => workspaceClosed.current;
+  /** The activity's own check is the workspace's checked gesture. A ref, so delayed callbacks read the latest. */
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
+
+  // Levers (`measurementToolsLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place. The tier's ruler labels and conversion hint are starting positions.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<MeasurementItem | null>(null);
+  const sessionItem = items[currentIndex] ?? null;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentItem = practice ?? sessionItem;
+  const pulledLevers = leverState.item === sessionItem?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice item. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  const currentChallenge = currentItem?.kind === 'shape' ? currentItem.challenge : null;
+  const currentChallengeId = currentChallenge?.id ?? null;
+  const inOrderPhase = currentItem?.kind === 'order';
+  /** The shapes the ordering asks about: a practice set, or the session's. */
+  const orderList = useMemo(() => currentItem?.kind === 'order' ? orderShapes(currentItem, lesson) : [], [currentItem, lesson]);
+
+  /** Per-shape results (the ordering is its own item). */
+  const challengeResults = useMemo(
+    () => itemResults.filter((r) => r.challengeId !== ORDER_ITEM_ID),
+    [itemResults],
+  );
+  const orderResult = itemResults.find((r) => r.challengeId === ORDER_ITEM_ID);
+  const measureComplete = challenges.length > 0
+    && challenges.every((c) => challengeResults.some((r) => r.challengeId === c.id && r.correct));
+  const comparisonDone = !!orderResult?.correct;
+  const isFullyComplete = allItemsDone && measureComplete && (challengeType !== 'compare' || comparisonDone || challenges.length < 2);
 
   // Each challenge's effective phase label (used by PhaseSummaryPanel).
   // For a single-mode session this is always the same key, which renders as
@@ -446,7 +560,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   const phaseResults = usePhaseResults({
     challenges,
     results: challengeResults,
-    isComplete: measureComplete,
+    isComplete: isFullyComplete,
     getChallengeType: () => challengeType,
     phaseConfig: PHASE_CONFIG,
     getScore: (rs: ChallengeResult[]) =>
@@ -498,59 +612,79 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   const [convertAttempts, setConvertAttempts] = useState(0);
   const convertAttemptsRef = useRef(0);
 
-  // Compare mode session-level state
+  // Compare mode ordering state (its own item)
   const [selectedOrder, setSelectedOrder] = useState<string[]>([]);
   const [compareFeedback, setCompareFeedback] = useState<{ message: string; correct: boolean } | null>(null);
-  const [comparisonDone, setComparisonDone] = useState(false);
   const [compareAttempts, setCompareAttempts] = useState(0);
   const [hintsViewedSession, setHintsViewedSession] = useState(0);
 
-  // -- Derived state --------------------------------------------------------
-  const currentChallenge = challenges[currentIndex] ?? null;
-  const currentChallengeId = currentChallenge?.id ?? null;
+  /** The compare buttons' order: never shortest to longest. */
+  const orderButtons = useMemo(() => orderChoices(orderList), [orderList]);
 
-  const isFullyComplete = useMemo(() => {
-    if (!measureComplete) return false;
-    if (challengeType === 'compare' && !comparisonDone) return false;
-    return true;
-  }, [measureComplete, challengeType, comparisonDone]);
+  /** The shape back above the ruler. */
+  const homePosition = useCallback((c: MeasurementToolsChallenge) => ({
+    x: CANVAS_WIDTH / 2 - (c.widthInches * pixelsPerUnit) / 2, y: SHAPE_AREA_Y,
+  }), [pixelsPerUnit]);
+  /** Where the shape is drawn: where it was dragged or snapped, else home. */
+  const positionOf = (c: MeasurementToolsChallenge) => shapePositions[c.id] ?? homePosition(c);
 
-  // -- Per-challenge reset (canonical pattern, §6c) -------------------------
-  // Runs whenever advance() flips the index — resets every per-challenge slot.
-  useEffect(() => {
-    if (!currentChallenge) return;
+  /**
+   * The item blank: a fresh shape or the scripted reset. Try again on the workspace path (`retry`) clears only the
+   * checked answer: the shape stays on the ruler (the snap puts its left edge at 0, so the placement is never the
+   * miss), and after a wrong conversion the checked measurement stays, so only the conversion is asked again.
+   */
+  const clearWork = useCallback((retry: boolean) => {
     setAnswerInput('');
     setFeedback(null);
+    setConvertInput('');
+    setConvertFeedback(null);
+    setSelectedOrder([]);
+    setCompareFeedback(null);
+    recordedRef.current = false;
+    setIsDragging(false);
+    if (!retry) {
+      setConvertStep(false);
+      setMeasuredValue(0);
+      // Every shape back above the ruler (a missing position is the home one), so a practice shape and the full
+      // item it stands in for both open blank.
+      setShapePositions({});
+      setOnRuler({});
+    }
+  }, []);
+  // A fresh item (or the full item back after a practice item) drops the practice; Try again keeps it.
+  openItem.current = (retry) => { clearWork(retry); if (!retry) setPractice(null); };
+
+  // -- Per-challenge reset (canonical pattern, §6c) -------------------------
+  // Runs whenever the index moves — resets every per-item slot.
+  useEffect(() => {
+    if (!currentItem) return;
     setShowHint(false);
     setMeasureAttempts(0);
     measureAttemptsRef.current = 0;
-    setConvertStep(false);
-    setConvertInput('');
-    setConvertFeedback(null);
-    setMeasuredValue(0);
     setConvertAttempts(0);
     convertAttemptsRef.current = 0;
     hintViewedRef.current = false;
-    recordedRef.current = false;
-
-    const w = currentChallenge.widthInches * pixelsPerUnit;
-    setShapePositions((prev) => ({
-      ...prev,
-      [currentChallenge.id]: { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y },
-    }));
-    setOnRuler((prev) => ({ ...prev, [currentChallenge.id]: false }));
-  }, [currentChallengeId, pixelsPerUnit]);
+    clearWork(false);
+  }, [currentItem?.id, pixelsPerUnit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize shape positions for all challenges on mount / data swap
   useEffect(() => {
     const positions: Record<string, { x: number; y: number }> = {};
-    challenges.forEach((c) => {
-      const w = c.widthInches * pixelsPerUnit;
-      positions[c.id] = { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y };
-    });
+    challenges.forEach((c) => { positions[c.id] = homePosition(c); });
     setShapePositions(positions);
     setOnRuler({});
-  }, [challenges, pixelsPerUnit]);
+  }, [challenges, homePosition]);
+
+  /** The learner's work as the check reads it, as of the last render. */
+  const view: MeasurementView = {
+    onRuler: !!(currentChallenge && onRuler[currentChallenge.id]),
+    measure: parseLength(answerInput),
+    convertStep,
+    converted: parseLength(convertInput),
+    order: selectedOrder,
+  };
+  const viewRef = useRef(view);
+  viewRef.current = view;
 
   // -- Support-tier reveal calibration for the live tutor (Gotcha #2) -------
   // The tutor sees the full challenge data and could leak what a hard tier hid
@@ -572,7 +706,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     return ' (Tier MEDIUM: nudge the operation and rough size without restating the full rule or the answer.)';
   }, [supportTier]);
 
-  // -- AI Tutoring ----------------------------------------------------------
+  // -- AI Tutoring (scripted path) ------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     challengeType,
     currentChallengeIndex: currentIndex,
@@ -587,19 +721,24 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     currentAttempts: measureAttempts + convertAttempts,
     convertStep,
     convertToUnit: effectiveConvertToUnit,
-    comparePhase: measureComplete && challengeType === 'compare' && !comparisonDone,
+    comparePhase: inOrderPhase,
   }), [
     challengeType, currentIndex, challenges.length, currentChallenge, unit, precision,
     gradeBand, supportTier, onRuler, measureAttempts, convertAttempts, convertStep,
-    effectiveConvertToUnit, measureComplete, comparisonDone,
+    effectiveConvertToUnit, inOrderPhase,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Its context carries the widths, so it is off on the workspace path, and its scripted cues send nothing there.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'measurement-tools',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: gradeBand === 'K-2' ? '1st Grade' : '3rd Grade',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Introduction (session-level)
   useEffect(() => {
@@ -620,6 +759,26 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     );
   }, [isConnected, currentChallenge, challenges.length, unit, effectiveConvertToUnit, challengeType, sendText]);
 
+  // -- Placing the shape ----------------------------------------------------
+  /** Snaps the current shape onto the ruler, its left edge at 0. */
+  const placeOnRuler = useCallback(() => {
+    if (!currentChallenge || hasSubmitted || convertStep || learnerBlocked()) return;
+    SoundManager.snap();
+    const shapeH = Math.max(currentChallenge.heightInches * pixelsPerUnit, 36);
+    setShapePositions((prev) => ({
+      ...prev,
+      [currentChallenge.id]: { x: RULER_LEFT_PAD, y: rulerY - shapeH - 2 },
+    }));
+    setOnRuler((prev) => ({ ...prev, [currentChallenge.id]: true }));
+    if (!onRuler[currentChallenge.id]) {
+      sendText(
+        `[SHAPE_PLACED] Student placed "${currentChallenge.label}" on the ruler. ` +
+        `Ask: "How many ${unit} long is this shape?"`,
+        { silent: true },
+      );
+    }
+  }, [currentChallenge, hasSubmitted, convertStep, pixelsPerUnit, rulerY, onRuler, sendText, unit]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // -- Drag handlers --------------------------------------------------------
   const getSVGPoint = useCallback((clientX: number, clientY: number) => {
     const svg = svgRef.current;
@@ -634,15 +793,15 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   }, []);
 
   const handleDragStart = useCallback((e: React.PointerEvent) => {
-    if (!currentChallenge || hasSubmitted || convertStep) return;
+    if (!currentChallenge || hasSubmitted || convertStep || learnerBlocked()) return;
     e.preventDefault();
     const svgPt = getSVGPoint(e.clientX, e.clientY);
-    const pos = shapePositions[currentChallenge.id];
+    const pos = positionOf(currentChallenge);
     if (!pos) return;
     setDragOffset({ x: svgPt.x - pos.x, y: svgPt.y - pos.y });
     setIsDragging(true);
     (e.target as SVGElement).setPointerCapture?.(e.pointerId);
-  }, [currentChallenge, hasSubmitted, convertStep, getSVGPoint, shapePositions]);
+  }, [currentChallenge, hasSubmitted, convertStep, getSVGPoint, shapePositions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDragMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging || !currentChallenge) return;
@@ -662,7 +821,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     e.preventDefault();
     setIsDragging(false);
 
-    const pos = shapePositions[currentChallenge.id];
+    const pos = positionOf(currentChallenge);
     if (!pos) return;
 
     const shapeH = Math.max(currentChallenge.heightInches * pixelsPerUnit, 36);
@@ -670,68 +829,66 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     const snapZoneTop = rulerY - 50;
 
     if (shapeBottom >= snapZoneTop && pos.y < rulerY) {
-      SoundManager.snap();
-      const snappedY = rulerY - shapeH - 2;
-      setShapePositions((prev) => ({
-        ...prev,
-        [currentChallenge.id]: { x: RULER_LEFT_PAD, y: snappedY },
-      }));
-      setOnRuler((prev) => ({ ...prev, [currentChallenge.id]: true }));
-
-      if (!onRuler[currentChallenge.id]) {
-        sendText(
-          `[SHAPE_PLACED] Student placed "${currentChallenge.label}" on the ruler. ` +
-          `Ask: "How many ${unit} long is this shape?"`,
-          { silent: true },
-        );
-      }
+      placeOnRuler();
     } else if (pos.y >= rulerY + RULER_HEIGHT) {
-      const w = currentChallenge.widthInches * pixelsPerUnit;
-      setShapePositions((prev) => ({
-        ...prev,
-        [currentChallenge.id]: { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y },
-      }));
+      setShapePositions((prev) => ({ ...prev, [currentChallenge.id]: homePosition(currentChallenge) }));
       setOnRuler((prev) => ({ ...prev, [currentChallenge.id]: false }));
     }
-  }, [isDragging, currentChallenge, shapePositions, pixelsPerUnit, rulerY, onRuler, sendText, unit]);
+  }, [isDragging, currentChallenge, shapePositions, pixelsPerUnit, rulerY, placeOnRuler, homePosition]);
 
   // -- Helpers --------------------------------------------------------------
   /**
-   * Compute and record the final per-challenge score, then advance.
+   * The shape's own score fields beside the result `commitCheck` records, then (scripted path) the move on.
    * Stale-state guard (§6a #8): bail if already recorded for this challenge.
    */
-  const completeChallenge = useCallback((opts: { correct: boolean; studentMeasure: number }) => {
+  const completeChallenge = useCallback((opts: { studentMeasure: number }) => {
     if (!currentChallenge) return;
     if (recordedRef.current) return;
     recordedRef.current = true;
+    // An easier practice item (a simplify lever) is not the session's shape: it records nothing.
+    if (practice) return;
 
     const mAttempts = Math.max(1, measureAttemptsRef.current);
-    let score: number;
-    if (challengeType === 'convert') {
-      const cAttempts = Math.max(1, convertAttemptsRef.current);
-      score = opts.correct
-        ? Math.round(phaseScore(mAttempts) * 0.5 + phaseScore(cAttempts) * 0.5)
-        : 0;
-    } else {
-      score = opts.correct ? phaseScore(mAttempts) : 0;
-    }
+    const score = challengeType === 'convert'
+      ? Math.round(phaseScore(mAttempts) * 0.5 + phaseScore(Math.max(1, convertAttemptsRef.current)) * 0.5)
+      : phaseScore(mAttempts);
 
-    recordResult({
+    mergeResult({
       challengeId: currentChallenge.id,
-      correct: opts.correct,
+      correct: true,
       attempts: mAttempts + (challengeType === 'convert' ? convertAttemptsRef.current : 0),
       score,
       studentAnswer: opts.studentMeasure,
       targetAnswer: currentChallenge.widthInches,
     });
-  }, [currentChallenge, challengeType, recordResult]);
 
-  // -- Answer checking (measure phase) --------------------------------------
+    // The runtime advances on the workspace path; the scripted path moves on after the celebration.
+    if (tutorOwned) return;
+    setTimeout(() => {
+      if (!advance()) return;
+      const next = items[currentIndex + 1];
+      if (next?.kind === 'shape') {
+        sendText(
+          `[NEXT_ITEM] Shape ${currentIndex + 2} of ${challenges.length}: "${next.challenge.label}". ` +
+          (challengeType === 'convert' ? 'Measure it and convert!' : 'Say: "Next shape! Drag it onto the ruler to measure."'),
+          { silent: true },
+        );
+      } else if (next?.kind === 'order') {
+        sendText(
+          `[MEASURE_PHASE_DONE] All shapes measured. Comparison phase begins. ` +
+          `Explain: "Great measuring! Now order the shapes shortest to longest."`,
+          { silent: true },
+        );
+      }
+    }, 1100);
+  }, [currentChallenge, practice, challengeType, mergeResult, tutorOwned, advance, items, currentIndex, challenges.length, sendText]);
+
+  // -- Answer checking (measure step) ---------------------------------------
   const checkAnswer = useCallback(() => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || learnerBlocked() || recordedRef.current) return;
 
-    const studentNum = parseFloat(answerInput);
-    if (isNaN(studentNum)) {
+    const studentNum = parseLength(answerInput);
+    if (studentNum === null) {
       setFeedback({ message: 'Please enter a number!', correct: false });
       return;
     }
@@ -740,34 +897,32 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     measureAttemptsRef.current = nextAttempts;
     setMeasureAttempts(nextAttempts);
 
-    const tolerance = precision === 'half' ? 0.25 : 0.5;
-    const isCorrect = Math.abs(studentNum - currentChallenge.widthInches) <= tolerance;
+    const isCorrect = measureCorrect(currentChallenge, lesson, studentNum);
+    const work = { ...viewRef.current, measure: studentNum };
 
     if (challengeType === 'convert' && isCorrect) {
-      // Correct measurement → switch to convert step (per-challenge multi-step)
+      // The measurement is the first step of a convert item, not its answer: the conversion opens, nothing commits.
       SoundManager.playCorrect();
       setMeasuredValue(currentChallenge.widthInches);
-      setFeedback({
-        message: `Yes! The ${currentChallenge.label} is ${currentChallenge.widthInches} ${unit} long. Now convert it!`,
-        correct: true,
-      });
+      setFeedback(null);
+      setConvertStep(true);
+      setConvertInput('');
+      setConvertFeedback(null);
       sendText(
         `[MEASURE_CORRECT] Student measured "${currentChallenge.label}" as ${studentNum} ${unit}. ` +
         `Now convert to ${effectiveConvertToUnit}. Encourage them.`,
         { silent: true },
       );
-      setTimeout(() => {
-        setFeedback(null);
-        setConvertStep(true);
-        setConvertInput('');
-        setConvertFeedback(null);
-      }, 1200);
       return;
     }
 
+    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    commitCheck.current(describeMeasurementWork(currentItem!, lesson, work), isCorrect,
+      isCorrect ? undefined : measurementMiss(currentItem, lesson, work));
+
     if (isCorrect) {
       SoundManager.playCorrect();
-      completeChallenge({ correct: true, studentMeasure: studentNum });
+      completeChallenge({ studentMeasure: studentNum });
       setFeedback({
         message: `Yes! The ${currentChallenge.label} is ${currentChallenge.widthInches} ${unit} long!`,
         correct: true,
@@ -777,27 +932,6 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
         `Correct: ${currentChallenge.widthInches} ${unit}. Attempts: ${nextAttempts}. Brief celebration.`,
         { silent: true },
       );
-
-      setTimeout(() => {
-        const advanced = advance();
-        if (advanced) {
-          const nextIdx = currentIndex + 1;
-          const nextChallenge = challenges[nextIdx];
-          if (nextChallenge) {
-            sendText(
-              `[NEXT_ITEM] Shape ${nextIdx + 1} of ${challenges.length}: "${nextChallenge.label}". ` +
-              `Say: "Next shape! Drag it onto the ruler to measure."`,
-              { silent: true },
-            );
-          }
-        } else if (challengeType === 'compare') {
-          sendText(
-            `[MEASURE_PHASE_DONE] All shapes measured. Comparison phase begins. ` +
-            `Explain: "Great measuring! Now order the shapes shortest to longest."`,
-            { silent: true },
-          );
-        }
-      }, 1100);
     } else {
       SoundManager.playIncorrect();
       setFeedback({
@@ -812,16 +946,16 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
       );
     }
   }, [
-    currentChallenge, answerInput, precision, unit, challengeType, effectiveConvertToUnit,
-    completeChallenge, advance, currentIndex, challenges, sendText, measureRevealClause,
-  ]);
+    currentChallenge, currentItem, answerInput, lesson, unit, challengeType, effectiveConvertToUnit,
+    completeChallenge, sendText, measureRevealClause,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -- Conversion checking (convert mode) -----------------------------------
   const checkConversion = useCallback(() => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || learnerBlocked() || recordedRef.current) return;
 
-    const studentNum = parseFloat(convertInput);
-    if (isNaN(studentNum)) {
+    const studentNum = parseLength(convertInput);
+    if (studentNum === null) {
       setConvertFeedback({ message: 'Please enter a number!', correct: false });
       return;
     }
@@ -830,13 +964,15 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     convertAttemptsRef.current = nextAttempts;
     setConvertAttempts(nextAttempts);
 
-    const correctConverted = convertValue(measuredValue, unit, effectiveConvertToUnit);
-    const tolerance = Math.max(0.5, correctConverted * 0.1);
-    const isCorrect = Math.abs(studentNum - correctConverted) <= tolerance;
+    const correctConverted = conversionTarget(currentChallenge, lesson);
+    const isCorrect = conversionCorrect(currentChallenge, lesson, studentNum);
+    const work = { ...viewRef.current, convertStep: true, converted: studentNum };
+    commitCheck.current(describeMeasurementWork(currentItem!, lesson, work), isCorrect,
+      isCorrect ? undefined : measurementMiss(currentItem, lesson, work));
 
     if (isCorrect) {
       SoundManager.playCorrect();
-      completeChallenge({ correct: true, studentMeasure: measuredValue });
+      completeChallenge({ studentMeasure: measuredValue });
       setConvertFeedback({
         message: `Correct! ${measuredValue} ${unit} = ${Math.round(correctConverted * 10) / 10} ${effectiveConvertToUnit}!`,
         correct: true,
@@ -846,27 +982,15 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
         `Brief celebration.`,
         { silent: true },
       );
-
-      setTimeout(() => {
-        const advanced = advance();
-        if (advanced) {
-          const nextIdx = currentIndex + 1;
-          const nextChallenge = challenges[nextIdx];
-          if (nextChallenge) {
-            sendText(
-              `[NEXT_ITEM] Shape ${nextIdx + 1} of ${challenges.length}: "${nextChallenge.label}". ` +
-              `Measure it and convert!`,
-              { silent: true },
-            );
-          }
-        }
-      }, 1100);
     } else {
       SoundManager.playIncorrect();
+      // The rule is named only where the session shows it; at the hard tier the learner recalls it.
       setConvertFeedback({
-        message: effectiveConvertToUnit === 'centimeters'
-          ? `Not quite. Remember: 1 inch = ${INCH_TO_CM} centimeters. Try multiplying!`
-          : `Not quite. Remember: 1 inch = ${INCH_TO_CM} centimeters. Try dividing!`,
+        message: !showConversionFactor
+          ? 'Not quite. Think about how inches and centimeters compare.'
+          : effectiveConvertToUnit === 'centimeters'
+            ? `Not quite. Remember: 1 inch = ${INCH_TO_CM} centimeters. Try multiplying!`
+            : `Not quite. Remember: 1 inch = ${INCH_TO_CM} centimeters. Try dividing!`,
         correct: false,
       });
       sendText(
@@ -877,21 +1001,31 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
       );
     }
   }, [
-    currentChallenge, convertInput, measuredValue, unit, effectiveConvertToUnit,
-    completeChallenge, advance, currentIndex, challenges, sendText, convertRevealClause,
-  ]);
+    currentChallenge, currentItem, convertInput, measuredValue, unit, effectiveConvertToUnit, lesson,
+    showConversionFactor, completeChallenge, sendText, convertRevealClause,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // -- Comparison checking (compare mode session-level) ---------------------
+  // -- Comparison checking (compare mode's last item) -----------------------
+  /** The ordering on screen is solved: the session's, or a practice set's. */
+  const orderSolved = compareFeedback?.correct === true || (!practice && comparisonDone);
+  const handleOrderTap = (id: string) => {
+    if (learnerBlocked() || orderSolved || selectedOrder.includes(id)) return;
+    SoundManager.select();
+    setSelectedOrder((prev) => [...prev, id]);
+  };
+
   const handleComparisonCheck = useCallback(() => {
-    const correctOrder = getCorrectOrder(challenges);
-    const isCorrect = selectedOrder.every((id, i) => id === correctOrder[i]);
-    setCompareAttempts((a) => a + 1);
+    if (!currentItem || currentItem.kind !== 'order' || learnerBlocked() || orderSolved) return;
+    const isCorrect = orderCorrect(orderList, selectedOrder);
+    const work = { ...viewRef.current, order: selectedOrder };
+    if (!practice) setCompareAttempts((a) => a + 1);
+    commitCheck.current(describeMeasurementWork(currentItem, lesson, work), isCorrect,
+      isCorrect ? undefined : measurementMiss(currentItem, lesson, work));
 
     if (isCorrect) {
       SoundManager.playCorrect();
       setCompareFeedback({ message: 'Perfect! You ordered them shortest to longest!', correct: true });
-      setComparisonDone(true);
-      const orderLabels = selectedOrder.map((id) => challenges.find((c) => c.id === id)?.label).join(' → ');
+      const orderLabels = selectedOrder.map((id) => orderList.find((c) => c.id === id)?.label).join(' → ');
       sendText(
         `[COMPARE_CORRECT] Student ordered shapes correctly: ${orderLabels}. Celebrate!`,
         { silent: true },
@@ -899,13 +1033,14 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     } else {
       SoundManager.playIncorrect();
       setCompareFeedback({ message: 'Not quite! Think back to which shapes were shorter.', correct: false });
-      setSelectedOrder([]);
+      // The scripted path starts the order over; the workspace keeps the taps on screen until Try again.
+      if (!tutorOwned) setSelectedOrder([]);
       sendText(
         `[COMPARE_INCORRECT] Student ordered incorrectly. Attempt ${compareAttempts + 1}. Remind without revealing.`,
         { silent: true },
       );
     }
-  }, [challenges, selectedOrder, compareAttempts, sendText]);
+  }, [currentItem, practice, lesson, orderList, selectedOrder, orderSolved, compareAttempts, tutorOwned, sendText]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -- Hint tracking --------------------------------------------------------
   const showHintHandler = useCallback(() => {
@@ -916,10 +1051,11 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     }
   }, []);
 
-  // -- Evaluation on completion ---------------------------------------------
+  // -- Evaluation on completion (scripted path) -----------------------------
   const submittedRef = useRef(false);
   useEffect(() => {
-    if (!isFullyComplete || hasSubmitted || submittedRef.current) return;
+    // The workspace path submits the scored session from `onFinished` (below), not this tally.
+    if (tutorOwned || !isFullyComplete || hasSubmitted || submittedRef.current) return;
     submittedRef.current = true;
 
     const totalChallenges = challenges.length;
@@ -972,42 +1108,85 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
       { silent: true },
     );
   }, [
-    isFullyComplete, hasSubmitted, challengeResults, challenges.length, challengeType,
+    tutorOwned, isFullyComplete, hasSubmitted, challengeResults, challenges.length, challengeType,
     comparisonDone, compareAttempts, hintsViewedSession, submitResult, phaseResults, sendText,
   ]);
 
-  // -- Reset ----------------------------------------------------------------
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmitted || submittedRef.current || items.length === 0) return;
+    submittedRef.current = true;
+    const metrics: MeasurementToolsMetrics = {
+      type: 'measurement-tools',
+      challengeType,
+      totalChallenges: items.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: hintsViewedSession,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / items.length) * 10) / 10,
+    };
+    submitResult(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // -- Reset (scripted path) ------------------------------------------------
   const handleReset = () => {
     reset();
     resetAttempt();
     submittedRef.current = false;
-    setAnswerInput('');
-    setFeedback(null);
     setShowHint(false);
     setMeasureAttempts(0);
     measureAttemptsRef.current = 0;
-    setConvertStep(false);
-    setConvertInput('');
-    setConvertFeedback(null);
-    setMeasuredValue(0);
     setConvertAttempts(0);
     convertAttemptsRef.current = 0;
-    setSelectedOrder([]);
-    setCompareFeedback(null);
-    setComparisonDone(false);
     setCompareAttempts(0);
     setHintsViewedSession(0);
     hintViewedRef.current = false;
-    recordedRef.current = false;
     hasIntroducedRef.current = false;
+    clearWork(false);
     const positions: Record<string, { x: number; y: number }> = {};
-    challenges.forEach((c) => {
-      const w = c.widthInches * pixelsPerUnit;
-      positions[c.id] = { x: CANVAS_WIDTH / 2 - w / 2, y: SHAPE_AREA_Y };
-    });
+    challenges.forEach((c) => { positions[c.id] = homePosition(c); });
     setShapePositions(positions);
     setOnRuler({});
   };
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation; every mode declares levers (`measurementToolsLevers.ts`), none during a practice item.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentItem || !sessionItem) return;
+    const scene = workspaceScene(currentItem, lesson, viewRef.current);
+    const leverView = { convertStep: viewRef.current.convertStep };
+    const onScreen = practice ? '' : leverFacts(sessionItem, pulledLevers, leverView);
+    const levers = practice ? [] : measurementLevers(sessionItem, lesson, pulledLevers, leverView);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (id === EDGE_LINE_LEVER && !viewRef.current.onRuler)
+          return 'The shape is not on the ruler yet: the learner puts it on first, then the line can drop from its edge.';
+        const pulled = { item: sessionItem.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = practiceItem(sessionItem, lesson);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          // The practice item and the full item share no work: both start blank.
+          setLeverState(pulled); clearWork(false); setPractice(easier);
+          return { practice: workspaceAssignment(easier, lesson) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { clearWork(false); setPractice(null); },
+    };
+  });
 
   // -- Completed IDs --------------------------------------------------------
   const completedIds = useMemo(
@@ -1039,22 +1218,22 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     if (!currentChallenge) return '';
     if (challengeType === 'compare') {
       if (instructionDetail === 'minimal') return `Measure each shape with the ruler. Then you'll compare them.`;
-      return `Measure each shape by dragging it onto the ruler.${methodCue} After measuring all shapes, you'll compare them!`;
+      return `Measure each shape by putting it on the ruler.${methodCue} After measuring all shapes, you'll compare them!`;
     }
     if (challengeType === 'convert') {
       if (convertStep) return `Convert your measurement of the ${currentChallenge.label} from ${unit} to ${effectiveConvertToUnit}.`;
       if (instructionDetail === 'minimal') return `Measure the ${currentChallenge.label} in ${unit}.`;
-      return `Drag the ${currentChallenge.label} onto the ruler and measure it in ${unit}.${methodCue}`;
+      return `Put the ${currentChallenge.label} on the ruler and measure it in ${unit}.${methodCue}`;
     }
     if (instructionDetail === 'minimal') return `Measure the ${currentChallenge.label} in ${unit}.`;
-    return `Drag the ${currentChallenge.label} onto the ruler, then tell me how many ${unit} long it is.${methodCue}`;
+    return `Put the ${currentChallenge.label} on the ruler, then tell me how many ${unit} long it is.${methodCue}`;
   };
 
   const getSubtitle = (): string => {
     if (isFullyComplete) return 'Complete!';
-    if (challengeType === 'compare' && measureComplete && !comparisonDone) return 'Order the shapes from shortest to longest';
+    if (inOrderPhase) return 'Order the shapes from shortest to longest';
     if (challengeType === 'convert' && convertStep) return 'Convert your measurement';
-    return 'Drag the shape onto the ruler to measure it';
+    return 'Put the shape on the ruler to measure it';
   };
 
   const getModeIcon = (): string => {
@@ -1080,6 +1259,9 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
 
   const measureStep = precision === 'half' ? 0.5 : 1;
   const convertStepSize = 0.5;
+  const shapeRecorded = !!currentChallenge && completedIds.has(currentChallenge.id);
+  const measureLocked = hasSubmitted || shapeRecorded || feedback?.correct === true;
+  const convertLocked = hasSubmitted || shapeRecorded || convertFeedback?.correct === true;
 
   // -- Render ---------------------------------------------------------------
   // ── Pip shared surface ───────────────────────────────────────────
@@ -1088,9 +1270,9 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
   // chooses, checks, or advances.
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: isFullyComplete || hasSubmitted ? null : measureComplete ? 'compare' : currentChallenge?.id ?? null,
+    scopeId: isFullyComplete || hasSubmitted ? null : inOrderPhase ? 'compare' : currentChallenge?.id ?? null,
     label: 'The measuring workspace',
-    solved: measureComplete ? comparisonDone : convertStep ? convertFeedback?.correct === true : feedback?.correct === true,
+    solved: inOrderPhase ? comparisonDone : convertStep ? convertFeedback?.correct === true : feedback?.correct === true,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
@@ -1118,13 +1300,13 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
 
         {/* Progress dots — bespoke interaction-state strip (per-shape + compare phase) */}
         <div className="flex items-center gap-2 mt-4">
-          {challenges.map((c, i) => (
+          {challenges.map((c) => (
             <div
               key={c.id}
               className={`h-2 flex-1 rounded-full transition-all ${
                 completedIds.has(c.id)
                   ? 'bg-emerald-500'
-                  : i === currentIndex && !measureComplete
+                  : c.id === currentChallengeId
                     ? 'bg-blue-500'
                     : 'bg-slate-700'
               }`}
@@ -1135,7 +1317,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
               className={`h-2 flex-1 rounded-full transition-all ${
                 comparisonDone
                   ? 'bg-purple-500'
-                  : measureComplete
+                  : inOrderPhase
                     ? 'bg-purple-400 animate-pulse'
                     : 'bg-slate-700'
               }`}
@@ -1160,22 +1342,25 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
         {/* Pip's dock sits above the workspace, which it outlines as a region. */}
         {pip.store && !isFullyComplete && <div {...pip.dock} />}
         <div {...pip.workspace} className="space-y-4">
-        {/* COMPARE — Comparison phase (after all shapes measured) */}
-        {challengeType === 'compare' && measureComplete && !comparisonDone && !isFullyComplete && (
+        {/* COMPARE — ordering, the session's last item */}
+        {inOrderPhase && !isFullyComplete && (
           <div className="space-y-4">
             <LuminaPrompt accent="purple">
               <p className="text-purple-200 font-medium mb-1">Order the shapes from shortest to longest</p>
               <p className="text-slate-400 text-sm font-normal">
-                Each shape is shown at the size you measured. Click the shortest first, then the next shortest, and so on.
+                {practice ? 'Practice: each shape is drawn to scale.' : 'Each shape is shown at the size you measured.'}{' '}
+                Click the shortest first, then the next shortest, and so on.
               </p>
             </LuminaPrompt>
+
+            {leverOn(ORDER_STEPS_LEVER) && <OrderSteps count={orderList.length} />}
 
             {selectedOrder.length > 0 && (
               <div className="space-y-1.5">
                 <span className="text-slate-500 text-xs">Your order (shortest → longest):</span>
                 <div className="space-y-1.5">
                   {selectedOrder.map((id, i) => {
-                    const c = challenges.find((c) => c.id === id);
+                    const c = orderList.find((c) => c.id === id);
                     if (!c) return null;
                     return (
                       <LuminaPanel
@@ -1186,6 +1371,9 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                         <span className="text-purple-300 text-sm font-bold w-5 flex-shrink-0">{i + 1}.</span>
                         <ShapePreview challenge={c} />
                         <span className="text-slate-200 text-sm">{c.label}</span>
+                        {leverOn(OWN_LENGTHS_LEVER) && (
+                          <span data-lever="own-length" className="text-blue-300 text-xs ml-auto">{c.widthInches} {unit}</span>
+                        )}
                       </LuminaPanel>
                     );
                   })}
@@ -1193,7 +1381,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
               </div>
             )}
 
-            {challenges.some((c) => !selectedOrder.includes(c.id)) && (
+            {orderButtons.some((c) => !selectedOrder.includes(c.id)) && (
               <div className="space-y-1.5">
                 <span className="text-slate-500 text-xs">
                   {selectedOrder.length === 0
@@ -1201,17 +1389,21 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                     : 'Click the next shortest:'}
                 </span>
                 <div className="space-y-1.5">
-                  {challenges
+                  {orderButtons
                     .filter((c) => !selectedOrder.includes(c.id))
                     .map((c) => (
                       <LuminaButton
                         key={c.id}
                         type="button"
-                        onClick={() => { SoundManager.select(); setSelectedOrder((prev) => [...prev, c.id]); }}
+                        aria-label={c.label}
+                        onClick={() => handleOrderTap(c.id)}
                         className="w-full flex items-center justify-start gap-3 h-auto pl-3 pr-4 py-1.5 text-left hover:border-purple-400/40"
                       >
                         <ShapePreview challenge={c} interactive />
                         <span className="text-slate-200 text-sm">{c.label}</span>
+                        {leverOn(OWN_LENGTHS_LEVER) && (
+                          <span data-lever="own-length" className="text-blue-300 text-xs ml-auto">{c.widthInches} {unit}</span>
+                        )}
                       </LuminaButton>
                     ))}
                 </div>
@@ -1219,15 +1411,15 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
             )}
 
             <div className="flex gap-2 justify-center">
-              {selectedOrder.length > 0 && (
+              {selectedOrder.length > 0 && !orderSolved && (
                 <LuminaButton
                   tone="subtle"
-                  onClick={() => { setSelectedOrder([]); setCompareFeedback(null); }}
+                  onClick={() => { if (learnerBlocked()) return; setSelectedOrder([]); setCompareFeedback(null); }}
                 >
                   Reset Order
                 </LuminaButton>
               )}
-              {selectedOrder.length === challenges.length && (
+              {selectedOrder.length === orderList.length && !orderSolved && (
                 <LuminaActionButton action="check" onClick={handleComparisonCheck}>
                   Check Order
                 </LuminaActionButton>
@@ -1242,12 +1434,12 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
           </div>
         )}
 
-        {/* ACTIVE WORKSPACE — Measure phase (all modes) */}
-        {currentChallenge && !measureComplete && (
+        {/* ACTIVE WORKSPACE — Measure step (all modes) */}
+        {currentChallenge && !isFullyComplete && (
           <>
             <LuminaPrompt accent="blue">
               <p className="text-blue-200 text-sm font-medium">
-                Shape {currentIndex + 1} of {challenges.length}
+                {practice ? <span data-practice>Practice shape</span> : <>Shape {currentIndex + 1} of {challenges.length}</>}
               </p>
               <p className="text-slate-200 mt-1 font-normal">{getInstructionText()}</p>
             </LuminaPrompt>
@@ -1291,25 +1483,42 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                     leftPad={RULER_LEFT_PAD}
                     rulerY={rulerY}
                     labelMode={rulerLabels}
+                    shadeSpaces={leverOn(SPACE_SHADING_LEVER)}
+                    halfMarks={leverOn(HALF_MARKS_LEVER)}
                   />
 
-                  {shapePositions[currentChallenge.id] && (
+                  {currentChallenge && (
                     <DraggableShape
                       challenge={currentChallenge}
                       pixelsPerUnit={pixelsPerUnit}
                       isOnRuler={!!onRuler[currentChallenge.id]}
-                      position={shapePositions[currentChallenge.id]}
+                      position={positionOf(currentChallenge)}
                       onDragStart={handleDragStart}
                       isDragging={isDragging}
                       isActive={true}
                       isCompleted={false}
                     />
                   )}
+                  {leverOn(EDGE_LINE_LEVER) && onRuler[currentChallenge.id] && (
+                    <line data-lever="edge-line" x1={RULER_LEFT_PAD + currentChallenge.widthInches * pixelsPerUnit}
+                      x2={RULER_LEFT_PAD + currentChallenge.widthInches * pixelsPerUnit}
+                      y1={positionOf(currentChallenge).y} y2={rulerY + RULER_HEIGHT}
+                      stroke="rgba(251,191,36,0.9)" strokeWidth={2} strokeDasharray="5 4" pointerEvents="none" />
+                  )}
                 </svg>
               </div>
             )}
 
-            {/* Measure stepper (shape on ruler, not in convert step) */}
+            {/* The drag's tap-and-keyboard twin: the same snap, left edge at 0. */}
+            {!onRuler[currentChallenge.id] && !convertStep && (
+              <div className="flex justify-center">
+                <LuminaButton tone="subtle" onClick={placeOnRuler} disabled={hasSubmitted}>
+                  Put it on the ruler
+                </LuminaButton>
+              </div>
+            )}
+
+            {/* Measure entry (shape on ruler, not in convert step) */}
             {onRuler[currentChallenge.id] && !convertStep && (
               <div className="space-y-3">
                 <div className="flex flex-col items-center gap-2">
@@ -1317,26 +1526,37 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                   <div className="flex items-center gap-2">
                     <LuminaButton
                       className="h-11 w-11 text-slate-200 text-lg font-bold p-0"
+                      aria-label={`Less, by ${measureStep === 0.5 ? 'a half' : 'one'}`}
                       onClick={() => {
+                        if (learnerBlocked()) return;
                         SoundManager.tick();
-                        const cur = parseFloat(answerInput) || 0;
+                        const cur = parseLength(answerInput) ?? 0;
                         setAnswerInput(String(Math.max(0, +(cur - measureStep).toFixed(1))));
                       }}
-                      disabled={hasSubmitted || (parseFloat(answerInput) || 0) <= 0}
+                      disabled={measureLocked || (parseLength(answerInput) ?? 0) <= 0}
                     >
                       &minus;
                     </LuminaButton>
-                    <span className="w-16 text-center text-3xl font-bold text-blue-300 tabular-nums select-none">
-                      {parseFloat(answerInput) || 0}
-                    </span>
+                    <LuminaInput
+                      type="text"
+                      inputMode="decimal"
+                      aria-label={`Length in ${unit}`}
+                      value={answerInput}
+                      placeholder="0"
+                      disabled={measureLocked}
+                      onChange={(e) => { if (!learnerBlocked()) setAnswerInput(e.target.value.replace(/[^0-9.]/g, '')); }}
+                      className="w-20 text-center text-2xl font-bold text-blue-300 tabular-nums px-2"
+                    />
                     <LuminaButton
                       className="h-11 w-11 text-slate-200 text-lg font-bold p-0"
+                      aria-label={`More, by ${measureStep === 0.5 ? 'a half' : 'one'}`}
                       onClick={() => {
+                        if (learnerBlocked()) return;
                         SoundManager.tick();
-                        const cur = parseFloat(answerInput) || 0;
+                        const cur = parseLength(answerInput) ?? 0;
                         setAnswerInput(String(Math.min(rulerLengthInches, +(cur + measureStep).toFixed(1))));
                       }}
-                      disabled={hasSubmitted}
+                      disabled={measureLocked}
                     >
                       +
                     </LuminaButton>
@@ -1345,7 +1565,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                     action="check"
                     className="mt-1"
                     onClick={checkAnswer}
-                    disabled={hasSubmitted || (parseFloat(answerInput) || 0) <= 0}
+                    disabled={measureLocked || (parseLength(answerInput) ?? 0) <= 0}
                   >
                     Check Answer
                   </LuminaActionButton>
@@ -1394,30 +1614,44 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                   )}
                 </LuminaPrompt>
 
+                {leverOn(INCH_MODEL_LEVER) && <InchModel />}
+
                 <div className="flex flex-col items-center gap-2">
                   <span className="text-slate-300 text-sm">How many {effectiveConvertToUnit}?</span>
                   <div className="flex items-center gap-2">
                     <LuminaButton
                       className="h-11 w-11 text-slate-200 text-lg font-bold p-0"
+                      aria-label="Less, by a half"
                       onClick={() => {
+                        if (learnerBlocked()) return;
                         SoundManager.tick();
-                        const cur = parseFloat(convertInput) || 0;
+                        const cur = parseLength(convertInput) ?? 0;
                         setConvertInput(String(Math.max(0, +(cur - convertStepSize).toFixed(1))));
                       }}
-                      disabled={(parseFloat(convertInput) || 0) <= 0}
+                      disabled={convertLocked || (parseLength(convertInput) ?? 0) <= 0}
                     >
                       &minus;
                     </LuminaButton>
-                    <span className="w-16 text-center text-3xl font-bold text-amber-300 tabular-nums select-none">
-                      {parseFloat(convertInput) || 0}
-                    </span>
+                    <LuminaInput
+                      type="text"
+                      inputMode="decimal"
+                      aria-label={`Length in ${effectiveConvertToUnit}`}
+                      value={convertInput}
+                      placeholder="0"
+                      disabled={convertLocked}
+                      onChange={(e) => { if (!learnerBlocked()) setConvertInput(e.target.value.replace(/[^0-9.]/g, '')); }}
+                      className="w-24 text-center text-2xl font-bold text-amber-300 tabular-nums px-2"
+                    />
                     <LuminaButton
                       className="h-11 w-11 text-slate-200 text-lg font-bold p-0"
+                      aria-label="More, by a half"
                       onClick={() => {
+                        if (learnerBlocked()) return;
                         SoundManager.tick();
-                        const cur = parseFloat(convertInput) || 0;
+                        const cur = parseLength(convertInput) ?? 0;
                         setConvertInput(String(+(cur + convertStepSize).toFixed(1)));
                       }}
+                      disabled={convertLocked}
                     >
                       +
                     </LuminaButton>
@@ -1426,7 +1660,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
                     action="check"
                     className="mt-1"
                     onClick={checkConversion}
-                    disabled={(parseFloat(convertInput) || 0) <= 0}
+                    disabled={convertLocked || (parseLength(convertInput) ?? 0) <= 0}
                   >
                     Check Conversion
                   </LuminaActionButton>
@@ -1444,7 +1678,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
 
         </div>
 
-        {isFullyComplete && (
+        {isFullyComplete && !tutorOwned && (
           <div className="flex justify-center">
             <LuminaActionButton action="retry" onClick={handleReset} />
           </div>
@@ -1453,5 +1687,9 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({ data, className }) 
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose auto-advance would compete with the observer.
+const MeasurementTools = withWorkspaceController<MeasurementToolsProps, ProgressOptions<MeasurementItem>, Progress>(
+  'measurement-tools', MeasurementToolsSurface, useScriptedProgress, useWorkspaceProgressFor('measurement-tools'));
 
 export default MeasurementTools;

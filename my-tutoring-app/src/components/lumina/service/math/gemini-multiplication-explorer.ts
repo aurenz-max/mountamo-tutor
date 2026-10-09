@@ -28,13 +28,13 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
     promptDoc:
       `"connect": Same fact shown in all 5 representations simultaneously (groups, array, `
       + `repeated addition, number line, area model). Student identifies the connection between them. `
-      + `hiddenValue = null. Pictorial with prompts — linking visual models.`,
+      + `hiddenValue = "product". Pictorial with prompts — linking visual models.`,
     schemaDescription: "'connect' (link representations)",
   },
   commutative: {
     promptDoc:
       `"commutative": Flip the factors — is the product the same? Student explores `
-      + `a×b vs b×a. hiddenValue = null or "product". `
+      + `a×b vs b×a. hiddenValue = "product". `
       + `Pictorial with reduced prompts — apply commutative property. `
       + `Show the array rotated to demonstrate rows↔columns swap.`,
     schemaDescription: "'commutative' (apply commutative property)",
@@ -160,9 +160,9 @@ const factShape = (f: ExplorerFact) =>
 export function selectFacts(
   band: { min: number; max: number; maxProduct: number },
   count: number,
-  opts: { pinnedFactor1?: number; pinnedFactor2?: number } = {},
+  opts: { pinnedFactor1?: number; pinnedFactor2?: number; distinctFactors?: boolean } = {},
 ): ExplorerFact[] {
-  const admissible: ExplorerFact[] = [];
+  let admissible: ExplorerFact[] = [];
   const f1Lo = opts.pinnedFactor1 ?? band.min;
   const f1Hi = opts.pinnedFactor1 ?? band.max;
   const f2Lo = opts.pinnedFactor2 ?? band.min;
@@ -174,6 +174,12 @@ export function selectFacts(
       if (f1 * f2 > band.maxProduct) continue;
       admissible.push({ factor1: f1, factor2: f2 });
     }
+  }
+  // A missing factor on a square (? × 6 = 36) prints its own answer as the given factor; drop squares while enough
+  // other facts remain.
+  if (opts.distinctFactors) {
+    const unequal = admissible.filter((f) => f.factor1 !== f.factor2);
+    if (unequal.length >= count) admissible = unequal;
   }
 
   const picked: ExplorerFact[] = [];
@@ -373,8 +379,8 @@ function resolveSupportStructure(
       );
       break;
     case 'connect':
-      // hiddenValue = null → the product is NOT the asked value, so showProduct is a
-      // legitimate "same fact" linking cue at easy and not a leak.
+      // The typed answer is the product (hiddenValue is stamped 'product'), so the leak guard below turns
+      // this preference off; the component also hides product readouts until the item is solved.
       scaffold.showProduct = tier === 'easy';
       scaffold.promptLines.push(
         tier === 'easy'
@@ -385,7 +391,7 @@ function resolveSupportStructure(
       );
       break;
     case 'commutative':
-      // hiddenValue = null → product not asked; flip is the scaffold lever.
+      // The typed answer is the product (stamped 'product'); flip is the scaffold lever, the readout stays off.
       scaffold.showCommutativeFlip = tier !== 'hard';
       scaffold.showProduct = tier === 'easy';
       scaffold.promptLines.push(
@@ -595,6 +601,7 @@ export const generateMultiplicationExplorer = async (
   const sessionFacts = selectFacts(FACT_BAND[factBandKey], instanceCount, {
     pinnedFactor1: config?.factor1,
     pinnedFactor2: config?.factor2,
+    distinctFactors: pinnedType === 'missing_factor',
   });
   const factsSection = sessionFacts.length
     ? `\n## THE FACTS FOR THIS SESSION (assigned — do not choose your own)\n`
@@ -693,7 +700,7 @@ REQUIREMENTS:
 6. Each challenge's instruction must be answerable by typing ONE number on a keypad.
    Never phrase a challenge as a yes/no question ("Do they show the same amount?") —
    the student answers with a number, so ask for one ("...how many in total?").
-7. hiddenValue should be null for build/connect, 'product' for fluency, 'factor1' or 'factor2' for missing_factor
+7. hiddenValue is 'product' for every type except missing_factor, which hides 'factor1' or 'factor2' (write its instruction with "?" in that slot)
 8. Include warm, encouraging hint and narration text
 9. All 5 representations should generally be true (set false only if factor is too large for visual)
 10. Set activeRepresentation to 'groups' as the starting view
@@ -777,9 +784,16 @@ Return the complete multiplication explorer configuration.
     data.challenges = challengeList.map((c, i) => {
       const f = sessionFacts[i];
       const product = f.factor1 * f.factor2;
+      // The asked value is the type's, not the model's: missing_factor hides a factor (the model's choice of which,
+      // else factor1, which the "? × b = p" wording asks); every other type asks the product. A null or mismatched
+      // hiddenValue used to grade the product while the leak guards below read "nothing hidden".
+      const hiddenValue = c.type === 'missing_factor'
+        ? (c.hiddenValue === 'factor2' ? 'factor2' : 'factor1')
+        : 'product';
       return {
         ...c,
         id: String(c.id ?? `c${i + 1}`),
+        hiddenValue,
         fact: { factor1: f.factor1, factor2: f.factor2 },
         targetFact: `${f.factor1} × ${f.factor2} = ${product}`,
       };

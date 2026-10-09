@@ -1,0 +1,1546 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "double-number-line.equivalent_ratios",
+   "primitiveId": "double-number-line",
+   "evalMode": "equivalent_ratios",
+   "keys": [
+    "36"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dnl-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "36"
+      ],
+      "ask": "The unit rate is 1 Solar Panels = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 3.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The unit rate is 1 Solar Panel = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 3.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The unit rate is 1 Solar Panel = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 3.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! The unit rate is 1 Solar Panel = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 3.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The unit rate is 1 Solar Panel = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 3.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The unit rate is 1 Solar Panel = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 3.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dnl-1",
+     "trigger": "The learner submitted \"typed 15 for Kilowatts Generated at Solar Panels = 3\". The board checked it: not right.",
+     "miss": "added_rate",
+     "scoredWith": {
+      "keys": [
+       "36"
+      ],
+      "ask": "The unit rate is 1 Solar Panels = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 3.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Not quite, but good try! Since each panel gives 12 kilowatts, what jump do we make on the bottom line for 3 panels?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each panel adds another 12 kilowatts, so 3 panels means 3 jumps of 12. Try another number in the box!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each solar panel gives 12 kilowatts, so jumping to 3 panels means taking that 12-kilowatt jump 3 times. Try giving it another shot!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each solar panel gives 12 kilowatts, so 3 solar panels means 3 groups of 12. Take another look and try again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each panel adds a jump of 12 kilowatts, so the number line grows by multiplying. If 1 panel gives 12 kilowatts, how many kilowatts do 3 panels make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dnl-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "36"
+      ],
+      "ask": "The unit rate is 1 Solar Panels = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 3.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "On the top line, 3 is 3 times as big as 1. What do you get when you multiply 12 by 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "On the top line, 3 is 3 times as much as 1. What do you get when you multiply 12 by 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "When the top line triples from 1 panel to 3 panels, the bottom line multiplies by that same number of jumps.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "When we go from 1 panel to 3 panels, we multiply the panels by 3. To keep the ratio equivalent, multiply the kilowatts by 3 as well.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Going from 1 panel to 3 panels means multiplying by 3. Try multiplying the bottom line by 3 as well!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dnl-1",
+     "trigger": "The learner submitted \"typed 36 for Kilowatts Generated at Solar Panels = 3\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "36"
+      ],
+      "ask": "The unit rate is 1 Solar Panels = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 3.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You scaled 12 by 3 to find 36.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You scaled 12 by 3 to find 36.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found 36 by multiplying the unit rate by 3!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked that out and typed 36! Scaling the unit rate by 3 got you right to it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You scaled up by multiplying 12 by 3 to get 36.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "double-number-line.find_missing",
+   "primitiveId": "double-number-line",
+   "evalMode": "find_missing",
+   "keys": [
+    "45"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dnl-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Given 2 Hours = 30 Cell Count, find Cell Count when Hours = 3.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Given 2 Hours = 30 Cell Count, find Cell Count when Hours = 3. Take your time to think about what 1 hour would be first.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Given 2 hours equals 30 cell count, find the cell count when hours equals 3.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Given 2 Hours equals 30 Cell Count, find the Cell Count when Hours equals 3.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Given 2 Hours equals 30 Cell Count, find the Cell Count when Hours equals 3. You can type your answer in the box and press Check whenever you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the double number line: given 2 hours equals 30 cell count, what is the cell count when hours equals 3?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dnl-1",
+     "trigger": "The learner submitted \"typed 18 for Cell Count at Hours = 3\". The board checked it: not right.",
+     "miss": "added_rate",
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Given 2 Hours = 30 Cell Count, find Cell Count when Hours = 3.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "If 2 hours matches 30 cells, how many cells would grow in just 1 hour? Once you find that, you can find the count for 3 hours.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "If 2 hours matches 30 cells, how many cells would grow in just 1 hour? Once you find that, you can find the count for 3 hours.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! If 2 hours gives 30 cells, how many cells would there be in just 1 hour?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's think about 1 hour: if 2 hours gives 30 cells, how many cells are produced in 1 hour?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! If 2 hours gives 30 cells, how many cells would there be in just 1 hour?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dnl-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Given 2 Hours = 30 Cell Count, find Cell Count when Hours = 3.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Since 2 hours gives 30 cells, split that 30 into 2 equal parts to see what 1 hour gives. Then you can take 3 of those parts.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Since 2 hours gives 30 cells, split that 30 into 2 equal parts to find 1 hour. Once you have that jump size, take 3 of those jumps.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find 1 hour, split the 30 cells into 2 equal parts. Then each 1-hour jump adds that same amount below.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find 1 hour, divide the 30 cells into 2 equal parts. What does that give you for each hour?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find 1 hour, split the 30 cells into 2 equal parts. What is 30 divided by 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dnl-1",
+     "trigger": "The learner submitted \"typed 45 for Cell Count at Hours = 3\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Given 2 Hours = 30 Cell Count, find Cell Count when Hours = 3.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You solved it! You found that each hour grows by 15 cells and multiplied to get 45.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found that each hour grows by 15 cells and multiplied to get 45.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked that out and typed 45 to get it right! By finding what matched 1 hour and scaling it to 3, you solved it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found 45 by figuring out the rate for one hour and scaling it up to three. Fantastic job working through that!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found that each hour grows by 15 cells and multiplied to get 45.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "double-number-line.unit_rate",
+   "primitiveId": "double-number-line",
+   "evalMode": "unit_rate",
+   "keys": [
+    "3.5"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "dnl-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3.5"
+      ],
+      "ask": "Given 2 Solar Panels = 7 Kilowatts Generated, find the unit rate: when Solar Panels = 1, what is Kilowatts Generated?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Given 2 Solar Panels = 7 Kilowatts Generated, find the unit rate: when Solar Panels = 1, what is Kilowatts Generated?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Given 2 solar panels make 7 kilowatts generated, what is the kilowatts generated when there is 1 solar panel?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Given 2 Solar Panels = 7 Kilowatts Generated, find the unit rate: when Solar Panels = 1, what is Kilowatts Generated?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Given 2 solar panels make 7 kilowatts, what is the kilowatts generated for 1 solar panel?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Given that 2 solar panels generate 7 kilowatts, what is the kilowatts generated for 1 solar panel?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "dnl-1",
+     "trigger": "The learner submitted \"typed 7 for Kilowatts Generated at Solar Panels = 1\". The board checked it: not right.",
+     "miss": "gave_given",
+     "scoredWith": {
+      "keys": [
+       "3.5"
+      ],
+      "ask": "Given 2 Solar Panels = 7 Kilowatts Generated, find the unit rate: when Solar Panels = 1, what is Kilowatts Generated?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "7 kilowatts is the amount for 2 solar panels, but we want the amount for just 1 panel. If we split those 7 kilowatts equally between the 2 panels, how much power does 1 panel make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that 7 kilowatts matches 2 solar panels. If 2 panels share that amount equally, what does 1 panel get?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that 2 solar panels match 7 kilowatts, so 1 solar panel will be split into equal parts. How many kilowatts would that be for just 1 panel?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that 7 kilowatts lines up with 2 solar panels. If 2 panels make 7 kilowatts, how much does just 1 panel make when you split that into equal parts?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "7 kilowatts is the total for 2 solar panels. How much would just 1 panel generate if we split that evenly?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "dnl-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3.5"
+      ],
+      "ask": "Given 2 Solar Panels = 7 Kilowatts Generated, find the unit rate: when Solar Panels = 1, what is Kilowatts Generated?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "To find the amount for 1 panel, cut the 7 kilowatts in half. What do you get when you divide 7 by 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find what 1 panel makes, divide the 7 kilowatts into 2 equal parts. Try dividing 7 by 2 and type that number into the box!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To go from 2 solar panels down to 1, we divide by 2. Do the exact same thing to the 7 kilowatts below to find what matches 1.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find what 1 panel makes, we cut the 7 kilowatts in half. What do you get when you divide 7 by 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To go from 2 solar panels down to 1 panel, we cut that number in half. Try taking half of the 7 kilowatts to find what 1 panel makes.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "dnl-1",
+     "trigger": "The learner submitted \"typed 3.5 for Kilowatts Generated at Solar Panels = 1\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3.5"
+      ],
+      "ask": "Given 2 Solar Panels = 7 Kilowatts Generated, find the unit rate: when Solar Panels = 1, what is Kilowatts Generated?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "CHALLENGE_START",
+       "PHASE_COMPLETE",
+       "WRONG_ANSWER",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "\u2212",
+       "+",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You divided the 7 kilowatts by 2 to find 3.5 for 1 solar panel.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked through it and found 3.5 kilowatts per panel by dividing the total across the two panels.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You divided 7 by 2 to find 3.5 kilowatts per panel.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out\u2014splitting 7 into 2 equal parts gave you 3.5 kilowatts for 1 panel!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You found that 1 solar panel generates 3.5 kilowatts by dividing the 7 kilowatts across the 2 panels.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

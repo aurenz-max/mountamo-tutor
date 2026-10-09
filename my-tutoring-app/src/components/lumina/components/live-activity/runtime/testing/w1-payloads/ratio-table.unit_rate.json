@@ -1,0 +1,75 @@
+{
+ "source": "qa/tutor-reports/ratio-table-runtime-unit_rate-payload-2026-10-09.json",
+ "primitiveId": "ratio-table",
+ "evalMode": "unit_rate",
+ "data": {
+  "title": "Advanced Ratio Reasoning: Unit Rates in Real-World Contexts",
+  "description": "Explore equivalent ratios and calculate unit rates across various real-world scenarios including recipes, commercial pricing, velocity, and chemical solutions to develop critical proportional reasoning.",
+  "challenges": [
+   {
+    "id": "rt1",
+    "type": "unit-rate",
+    "instruction": "If 4 cups of organic flour produce 52 artisanal crackers, determine the unit rate of crackers per single cup of flour.",
+    "baseRatio": [
+     4,
+     52
+    ],
+    "rowLabels": [
+     "Cups of Flour",
+     "Crackers Produced"
+    ],
+    "targetMultiplier": 1,
+    "hint": "Divide the total number of crackers by the number of cups of flour to find the yield for exactly 1 cup."
+   },
+   {
+    "id": "rt2",
+    "type": "unit-rate",
+    "instruction": "A bulk supplier sells 15 kilograms of specialty coffee beans for $225. Calculate the unit price per kilogram.",
+    "baseRatio": [
+     15,
+     225
+    ],
+    "rowLabels": [
+     "Kilograms of Coffee",
+     "Total Cost ($)"
+    ],
+    "targetMultiplier": 1,
+    "hint": "Divide the total cost by the number of kilograms to establish the cost per single kilogram."
+   },
+   {
+    "id": "rt3",
+    "type": "unit-rate",
+    "instruction": "A high-speed train travels 350 miles in 3.5 hours. Determine the average speed in miles per hour as your unit rate.",
+    "baseRatio": [
+     3.5,
+     350
+    ],
+    "rowLabels": [
+     "Time Elapsed (Hours)",
+     "Distance Traveled (Miles)"
+    ],
+    "targetMultiplier": 1,
+    "hint": "Divide the total distance by the total hours to find how many miles are covered in 1 hour."
+   },
+   {
+    "id": "rt4",
+    "type": "unit-rate",
+    "instruction": "In a laboratory chemical mixture, 12 milliliters of solute are dissolved in 80 milliliters of solvent. Find the unit rate of solute per 1 milliliter of solvent.",
+    "baseRatio": [
+     80,
+     12
+    ],
+    "rowLabels": [
+     "Solvent (mL)",
+     "Solute (mL)"
+    ],
+    "targetMultiplier": 1,
+    "hint": "Divide the amount of solute by the amount of solvent to determine the fractional ratio per 1 mL of solvent.",
+    "tolerance": 2
+   }
+  ],
+  "maxMultiplier": 10,
+  "showBarChart": true,
+  "showUnitRate": true
+ }
+}

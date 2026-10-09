@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/multiplication-explorer-runtime-missing_factor-payload-2026-10-09.json",
+ "primitiveId": "multiplication-explorer",
+ "evalMode": "missing_factor",
+ "data": {
+  "title": "Sticker Packs",
+  "description": "Explore multiplication facts using equal groups, arrays, repeated addition, number lines, and area models to solve for missing factors.",
+  "fact": {
+   "factor1": 5,
+   "factor2": 4,
+   "product": 20
+  },
+  "representations": {
+   "equalGroups": true,
+   "array": true,
+   "repeatedAddition": true,
+   "numberLine": true,
+   "areaModel": true
+  },
+  "activeRepresentation": "groups",
+  "challenges": [
+   {
+    "id": "ch_1",
+    "type": "missing_factor",
+    "instruction": "Find the missing factor: ? \u00d7 4 = 20",
+    "targetFact": "5 \u00d7 4 = 20",
+    "hint": "Count by fours until you reach twenty, or think about what number multiplied by four gives twenty.",
+    "narration": "Let us find the missing factor. What number multiplied by four gives twenty?",
+    "hiddenValue": "factor1",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 5,
+     "factor2": 4
+    },
+    "representation": "groups"
+   },
+   {
+    "id": "ch_2",
+    "type": "missing_factor",
+    "instruction": "Find the missing factor: 7 \u00d7 ? = 21",
+    "targetFact": "7 \u00d7 3 = 21",
+    "hint": "Think about your threes or sevens. How many groups of three make twenty-one?",
+    "narration": "Time for the next puzzle. Seven times what number equals twenty-one?",
+    "hiddenValue": "factor2",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 7,
+     "factor2": 3
+    },
+    "representation": "array"
+   },
+   {
+    "id": "ch_3",
+    "type": "missing_factor",
+    "instruction": "Find the missing factor: ? \u00d7 7 = 28",
+    "targetFact": "4 \u00d7 7 = 28",
+    "hint": "Skip count by sevens: seven, fourteen, twenty-one, twenty-eight. How many jumps was that?",
+    "narration": "Keep going! What number multiplied by seven equals twenty-eight?",
+    "hiddenValue": "factor1",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 4,
+     "factor2": 7
+    },
+    "representation": "repeated_addition"
+   },
+   {
+    "id": "ch_4",
+    "type": "missing_factor",
+    "instruction": "Find the missing factor: 2 \u00d7 ? = 14",
+    "targetFact": "2 \u00d7 7 = 14",
+    "hint": "Double what number gives you fourteen? Or count by twos up to fourteen.",
+    "narration": "Almost there. Two times what number equals fourteen?",
+    "hiddenValue": "factor2",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 2,
+     "factor2": 7
+    },
+    "representation": "number_line"
+   },
+   {
+    "id": "ch_5",
+    "type": "missing_factor",
+    "instruction": "Find the missing factor: ? \u00d7 8 = 48",
+    "targetFact": "6 \u00d7 8 = 48",
+    "hint": "Think about your eights multiplication facts. What number times eight is forty-eight?",
+    "narration": "Here is our final challenge. What number multiplied by eight gives forty-eight?",
+    "hiddenValue": "factor1",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 6,
+     "factor2": 8
+    },
+    "representation": "area_model"
+   }
+  ],
+  "showOptions": {
+   "showProduct": true,
+   "showFactFamily": true,
+   "showCommutativeFlip": true,
+   "showDistributiveBreakdown": true
+  },
+  "gradeBand": "2-3",
+  "imagePrompt": "colorful sticker packs arranged in neat rows on a bright table"
+ }
+}

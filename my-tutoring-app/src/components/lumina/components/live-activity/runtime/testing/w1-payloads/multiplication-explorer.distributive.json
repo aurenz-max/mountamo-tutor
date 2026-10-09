@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/multiplication-explorer-runtime-distributive-payload-2026-10-09.json",
+ "primitiveId": "multiplication-explorer",
+ "evalMode": "distributive",
+ "data": {
+  "title": "Sticker Packs",
+  "description": "Explore multiplication facts using equal groups, arrays, repeated addition, number lines, and area models with the distributive property.",
+  "fact": {
+   "factor1": 10,
+   "factor2": 4,
+   "product": 40
+  },
+  "representations": {
+   "equalGroups": true,
+   "array": true,
+   "repeatedAddition": true,
+   "numberLine": true,
+   "areaModel": true
+  },
+  "activeRepresentation": "groups",
+  "challenges": [
+   {
+    "id": "ch-1",
+    "type": "distributive",
+    "instruction": "Break apart the area model into 5 x 4 and 5 x 4 to find the total for 10 x 4. What is the total product?",
+    "targetFact": "10 \u00d7 4 = 40",
+    "hint": "Think of 10 rows of 4 as 5 rows of 4 plus another 5 rows of 4.",
+    "narration": "Let's break 10 groups of 4 into two smaller parts of 5 groups of 4 to solve it easily!",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 10,
+     "factor2": 4
+    },
+    "representation": "area_model"
+   },
+   {
+    "id": "ch-2",
+    "type": "distributive",
+    "instruction": "Break apart the area model into 2 x 10 and 1 x 10 to find the total for 3 x 10. What is the total product?",
+    "targetFact": "3 \u00d7 10 = 30",
+    "hint": "Split 3 rows of 10 into 2 rows of 10 and 1 row of 10.",
+    "narration": "You can break 3 into 2 and 1 to make multiplication easier!",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 3,
+     "factor2": 10
+    },
+    "representation": "area_model"
+   },
+   {
+    "id": "ch-3",
+    "type": "distributive",
+    "instruction": "Break apart the area model into 2 x 7 and 2 x 7 to find the total for 4 x 7. What is the total product?",
+    "targetFact": "4 \u00d7 7 = 28",
+    "hint": "Split 4 rows of 7 into two equal parts of 2 rows of 7.",
+    "narration": "Breaking 4 into 2 and 2 helps us find 4 times 7 step by step.",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 4,
+     "factor2": 7
+    },
+    "representation": "area_model"
+   },
+   {
+    "id": "ch-4",
+    "type": "distributive",
+    "instruction": "Break apart the area model into 5 x 5 and 2 x 5 to find the total for 7 x 5. What is the total product?",
+    "targetFact": "7 \u00d7 5 = 35",
+    "hint": "Split 7 rows of 5 into 5 rows of 5 and 2 rows of 5.",
+    "narration": "Use the friendly 5 times 5 fact, then add the remaining 2 times 5 part!",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 7,
+     "factor2": 5
+    },
+    "representation": "area_model"
+   },
+   {
+    "id": "ch-5",
+    "type": "distributive",
+    "instruction": "Break apart the area model into 2 x 4 and 2 x 4 to find the total for 4 x 4. What is the total product?",
+    "targetFact": "4 \u00d7 4 = 16",
+    "hint": "Split 4 into 2 and 2.",
+    "narration": "Double 2 times 4 to find the final product for 4 times 4.",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 4,
+     "factor2": 4
+    },
+    "representation": "area_model"
+   }
+  ],
+  "showOptions": {
+   "showProduct": false,
+   "showFactFamily": true,
+   "showCommutativeFlip": true,
+   "showDistributiveBreakdown": true
+  },
+  "gradeBand": "2-3",
+  "imagePrompt": "colorful sticker sheets arranged in neat rows and columns"
+ }
+}

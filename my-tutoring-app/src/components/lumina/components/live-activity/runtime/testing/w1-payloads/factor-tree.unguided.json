@@ -1,0 +1,35 @@
+{
+ "source": "qa/tutor-reports/factor-tree-runtime-unguided-payload-2026-10-09.json",
+ "primitiveId": "factor-tree",
+ "evalMode": "unguided",
+ "data": {
+  "title": "Prime Factorization Practice",
+  "description": "Discover how numbers are built by breaking down composite numbers into their prime factors using factor trees.",
+  "challenges": [
+   {
+    "id": "ft-1",
+    "rootValue": 33
+   },
+   {
+    "id": "ft-2",
+    "rootValue": 27
+   },
+   {
+    "id": "ft-3",
+    "rootValue": 30
+   },
+   {
+    "id": "ft-4",
+    "rootValue": 45
+   },
+   {
+    "id": "ft-5",
+    "rootValue": 48
+   }
+  ],
+  "highlightPrimes": true,
+  "showExponentForm": true,
+  "guidedMode": false,
+  "allowReset": true
+ }
+}

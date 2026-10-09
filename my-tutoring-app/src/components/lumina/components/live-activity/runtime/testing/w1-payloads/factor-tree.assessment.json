@@ -1,0 +1,35 @@
+{
+ "source": "qa/tutor-reports/factor-tree-runtime-assessment-payload-2026-10-09.json",
+ "primitiveId": "factor-tree",
+ "evalMode": "assessment",
+ "data": {
+  "title": "Prime Factorization Challenge",
+  "description": "Test your factoring skills by finding the prime building blocks of larger numbers independently. Show what you know by completing factor trees all the way down to prime numbers.",
+  "challenges": [
+   {
+    "id": "ft-1",
+    "rootValue": 63
+   },
+   {
+    "id": "ft-2",
+    "rootValue": 70
+   },
+   {
+    "id": "ft-3",
+    "rootValue": 54
+   },
+   {
+    "id": "ft-4",
+    "rootValue": 84
+   },
+   {
+    "id": "ft-5",
+    "rootValue": 100
+   }
+  ],
+  "highlightPrimes": true,
+  "showExponentForm": true,
+  "guidedMode": false,
+  "allowReset": false
+ }
+}

@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/percent-bar-runtime-identify_percent-payload-2026-10-09.json",
+ "primitiveId": "percent-bar",
+ "evalMode": "identify_percent",
+ "data": {
+  "title": "Real-World Percents: Discounts, Tax, and Tips",
+  "description": "Practice calculating and visualizing practical financial scenarios involving discounts, taxes, and tips using a percent bar model.",
+  "challenges": [
+   {
+    "id": "pb-1",
+    "type": "direct",
+    "scenario": "A sticker sheet has 20 stickers.",
+    "wholeValue": 20,
+    "wholeValueLabel": "Total Stickers",
+    "question": "You have already used 60% of them. Show that percent on the bar.",
+    "targetPercent": 60,
+    "hint": "60 out of every 100 stickers \u2014 that is where the bar should land.",
+    "context": {
+     "problemType": "direct",
+     "initialValue": 20,
+     "changeRate": 0,
+     "discountFactor": 0.6,
+     "finalValue": 12
+    }
+   },
+   {
+    "id": "pb-2",
+    "type": "direct",
+    "scenario": "A batch of 60 cookies is on the table.",
+    "wholeValue": 60,
+    "wholeValueLabel": "Total Cookies",
+    "question": "Show 60% on the bar to mark that portion of the batch.",
+    "targetPercent": 60,
+    "hint": "60% means 60 out of every 100 cookies. Slide the bar until it reads 60%.",
+    "context": {
+     "problemType": "direct",
+     "initialValue": 60,
+     "changeRate": 0,
+     "discountFactor": 0.6,
+     "finalValue": 36
+    }
+   },
+   {
+    "id": "pb-3",
+    "type": "direct",
+    "scenario": "Your book has 50 pages.",
+    "wholeValue": 50,
+    "wholeValueLabel": "Total Pages",
+    "question": "You have read 75% of the book so far. Show that percent on the bar.",
+    "targetPercent": 75,
+    "hint": "Slide the bar to 75% \u2014 the value display tells you how many pages that is.",
+    "context": {
+     "problemType": "direct",
+     "initialValue": 50,
+     "changeRate": 0,
+     "discountFactor": 0.75,
+     "finalValue": 37.5
+    }
+   },
+   {
+    "id": "pb-4",
+    "type": "direct",
+    "scenario": "A jar holds 50 marbles.",
+    "wholeValue": 50,
+    "wholeValueLabel": "Total Marbles",
+    "question": "75% of the marbles are blue. Show that percent on the bar.",
+    "targetPercent": 75,
+    "hint": "Where on the 0%\u2013100% bar does 75% sit?",
+    "context": {
+     "problemType": "direct",
+     "initialValue": 50,
+     "changeRate": 0,
+     "discountFactor": 0.75,
+     "finalValue": 37.5
+    }
+   }
+  ],
+  "showPercentLabels": true,
+  "showValueLabels": true,
+  "benchmarkLines": [
+   25,
+   50,
+   75
+  ],
+  "doubleBar": false,
+  "showCalculation": true
+ }
+}

@@ -1,0 +1,157 @@
+{
+ "source": "qa/tutor-reports/double-number-line-runtime-equivalent_ratios-payload-2026-10-09.json",
+ "primitiveId": "double-number-line",
+ "evalMode": "equivalent_ratios",
+ "data": {
+  "title": "Solar Energy Output: Panels to Kilowatts",
+  "description": "Students will scale given unit rates to determine cumulative energy production across multiple photovoltaic panels.",
+  "topLabel": "Solar Panels",
+  "bottomLabel": "Kilowatts Generated",
+  "unitRate": 12,
+  "contextQuestion": "1 photovoltaic solar panel generates 12 kilowatts of clean energy per hour. Use this constant rate of proportionality to calculate energy yields for various array sizes.",
+  "challenges": [
+   {
+    "id": "dnl-1",
+    "challengeType": "equivalent_ratios",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 1,
+      "bottomValue": 12,
+      "label": "Unit Rate"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 3,
+      "bottomValue": 36,
+      "label": "Find for 3"
+     }
+    ],
+    "prompt": "The unit rate is 1 Solar Panels = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 3.",
+    "hint": "Multiply 3 \u00d7 12 (the unit rate).",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 96,
+     "interval": 10
+    }
+   },
+   {
+    "id": "dnl-2",
+    "challengeType": "equivalent_ratios",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 1,
+      "bottomValue": 12,
+      "label": "Unit Rate"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 4,
+      "bottomValue": 48,
+      "label": "Find for 4"
+     }
+    ],
+    "prompt": "The unit rate is 1 Solar Panels = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 4.",
+    "hint": "Multiply 4 \u00d7 12 (the unit rate).",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 96,
+     "interval": 10
+    }
+   },
+   {
+    "id": "dnl-3",
+    "challengeType": "equivalent_ratios",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 1,
+      "bottomValue": 12,
+      "label": "Unit Rate"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 5,
+      "bottomValue": 60,
+      "label": "Find for 5"
+     }
+    ],
+    "prompt": "The unit rate is 1 Solar Panels = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 5.",
+    "hint": "Multiply 5 \u00d7 12 (the unit rate).",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 96,
+     "interval": 10
+    }
+   },
+   {
+    "id": "dnl-4",
+    "challengeType": "equivalent_ratios",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 1,
+      "bottomValue": 12,
+      "label": "Unit Rate"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 6,
+      "bottomValue": 72,
+      "label": "Find for 6"
+     }
+    ],
+    "prompt": "The unit rate is 1 Solar Panels = 12 Kilowatts Generated. Use it to find Kilowatts Generated when Solar Panels = 6.",
+    "hint": "Multiply 6 \u00d7 12 (the unit rate).",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 96,
+     "interval": 10
+    }
+   }
+  ],
+  "showVerticalGuides": true,
+  "showUnitRate": true
+ }
+}

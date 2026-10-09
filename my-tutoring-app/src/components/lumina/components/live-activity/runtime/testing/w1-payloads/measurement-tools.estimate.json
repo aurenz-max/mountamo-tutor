@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/measurement-tools-runtime-estimate-payload-2026-10-09.json",
+ "primitiveId": "measurement-tools",
+ "evalMode": "estimate",
+ "data": {
+  "title": "Half-Inch Ruler Challenge",
+  "description": "Practice measuring shapes to the nearest half-inch by carefully reading the tick marks on the ruler.",
+  "challengeType": "estimate",
+  "challenges": [
+   {
+    "id": "mt-1",
+    "shapeType": "rectangle",
+    "widthInches": 2.5,
+    "heightInches": 1,
+    "color": "rgba(168,85,247,0.35)",
+    "label": "Purple Rectangle",
+    "hint": "Count the big tick marks from 0 to the edge of the shape."
+   },
+   {
+    "id": "mt-2",
+    "shapeType": "square",
+    "widthInches": 3.5,
+    "heightInches": 3.5,
+    "color": "rgba(99,102,241,0.35)",
+    "label": "Blue Square",
+    "hint": "Find the number on the ruler where the shape ends."
+   },
+   {
+    "id": "mt-3",
+    "shapeType": "rectangle",
+    "widthInches": 8.5,
+    "heightInches": 1.5,
+    "color": "rgba(14,165,233,0.35)",
+    "label": "Sky Rectangle",
+    "hint": "The small marks between the numbers are halves. Count carefully."
+   },
+   {
+    "id": "mt-4",
+    "shapeType": "rectangle",
+    "widthInches": 5.5,
+    "heightInches": 1,
+    "color": "rgba(239,68,68,0.35)",
+    "label": "Red Rectangle",
+    "hint": "Measure from 0, not from 1. Where does the shape end?"
+   }
+  ],
+  "rulerLengthInches": 12,
+  "unit": "inches",
+  "precision": "half",
+  "gradeBand": "3-5",
+  "convertToUnit": "centimeters"
+ }
+}

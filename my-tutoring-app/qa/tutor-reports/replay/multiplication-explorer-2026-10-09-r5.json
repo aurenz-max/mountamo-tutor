@@ -1,0 +1,3809 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ],
+   "no_change_before_receipt": [
+    0,
+    30
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "multiplication-explorer.build",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "build",
+   "keys": [
+    "10"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "Build 5 groups with 2 stickers in each group. How many stickers in total?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 2 \u2194 2 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to our multiplication lesson! Take a look at the groups on your screen and see how many stickers there are in all.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the Multiplication Explorer! Take a look at the groups on your screen and see how many stickers there are in total.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! We have 5 groups with 2 stickers in each group. When you are ready, type how many stickers there are in total and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the 5 groups of 2 stickers and see how many you have in total.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the groups on your screen to find how many stickers there are in total.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 7 as the answer\". The board checked it: not right.",
+     "miss": "added_factors",
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "Build 5 groups with 2 stickers in each group. How many stickers in total?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 2 \u2194 2 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the row of boxes that appeared below the groups. What does the last box add to the total?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the row of boxes that appeared below the problem. What number does that last box with the question mark make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes that appeared below, showing the running total. What number goes in that last box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the groups: there is a strip showing the running total under each box of 2. What number should go where the question mark is?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes that appeared below the circles. What total do you get when you add that last box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "Build 5 groups with 2 stickers in each group. How many stickers in total?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 2 \u2194 2 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A row of boxes just appeared under the groups, showing the running total as you go. Look at where it stops before the question mark, and see what the last box makes.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the row of boxes that just appeared with running totals underneath. What total do you get when you add that last box of 2?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A row of boxes just appeared under the groups, showing the running total as we count by 2. What number belongs where the question mark is?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A row of boxes appeared showing groups of 2, with the running totals underneath. What does the question mark box make when you add its 2 stickers?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A row of boxes just appeared under the groups showing the counts for each group of 2. What number belongs where the question mark is in the last box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled skip_strip (help). It is on screen now: Puts a row of boxes under the fact, one box per group, each holding the group size, with the running total under every box except the last, which shows a question mark. The learner adds the last group. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "Build 5 groups with 2 stickers in each group. How many stickers in total?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 2 \u2194 2 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the circles\u2014there is a row of boxes showing the count so far! What does that last box of 2 make when you add it on?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the circles: there is now a row of boxes showing the count so far! What number will the last box make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the row of boxes under the fact showing each group of 2 with the count so far. What number belongs where that question mark is in the last box?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a new row of boxes under the fact, showing the running total under each box until the question mark. What does that last box of 2 make the total?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a strip of boxes under the circles showing the count as each group is added. Look at the number under the fourth box and see what the last box of 2 brings the total to!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 10 as the answer\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "Build 5 groups with 2 stickers in each group. How many stickers in total?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 2 \u2194 2 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it\u201410 is correct! Adding that last group of 2 brought you right to the total.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You typed 10 and got it right! You used the running count in the boxes to finish the whole row.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You used the skip-counting boxes to find 10 stickers in all.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked out the last box and typed 10\u2014great job finding the total!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted that last group of 2 and typed 10\u2014great job working it out!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "multiplication-explorer.commutative",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "commutative",
+   "keys": [
+    "45"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Rotate the array to find 9 groups of 5. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 9 \u2194 9 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Let's explore multiplication facts together. Take a look at the groups on your screen and see what product they make.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the groups on screen, and try rotating the array to help find the total.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Look at the groups on your screen to find the total product.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's explore this multiplication challenge together! Take a look at the groups on screen whenever you're ready to start.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the groups on your screen to find the total product.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 14 as the answer\". The board checked it: not right.",
+     "miss": "added_factors",
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Rotate the array to find 9 groups of 5. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 9 \u2194 9 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the row of boxes under the fact now. What number goes in that last box with the question mark?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the row of boxes underneath showing the running totals. What does the running total become when you add that last box with the question mark?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the row of boxes that appeared below the groups. What total do you get when you add that last box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the row of boxes that appeared below the problem. What number belongs in that last box with the question mark?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes that appeared below the circles. What total do you get when you add that last box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Rotate the array to find 9 groups of 5. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 9 \u2194 9 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the strip of boxes that appeared below the problem. What number do you get when you add the last group of 9 to the total before it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look below the problem: each box holds a group of 9, and the running total counts up under them. What does that running total reach when you add the last group?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the row of boxes that appeared below the problem. What number do you get when you add the last group of 9 to the total before it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look under the problem\u2014a strip of boxes just popped up showing the totals step by step. What number do you get when you add the last group to the running total?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the boxes that appeared under the problem. Each box shows a group of 9, and the numbers underneath keep the running total\u2014what does adding that last group make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled skip_strip (help). It is on screen now: Puts a row of boxes under the fact, one box per group, each holding the group size, with the running total under every box except the last, which shows a question mark. The learner adds the last group. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Rotate the array to find 9 groups of 5. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 9 \u2194 9 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is a row of boxes showing each group of 9 and the running total underneath. What number completes the pattern at that question mark?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a row of five boxes of 9 underneath the circles, showing the count until the last box with a question mark. What number belongs in that last spot?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a row of five boxes showing groups of 9 with running totals underneath. What total belongs under that last box with the question mark?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the problem, there is now a row of five boxes showing groups of 9, with running totals underneath and a question mark at the end. What total do you get when you add that final 9?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A row of boxes has appeared under the problem showing the running total for each group of 9. What number belongs under that last box with the question mark?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 45 as the answer\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Rotate the array to find 9 groups of 5. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 9 \u2194 9 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found 45 by finishing the skip-counting strip and adding that last group. Great job working through that!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the product by completing the total to get 45. Great work working through that!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found 45 by following that skip-counting pattern all the way to the end! Excellent work working through it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it with 45 by following the running total across each group. Great job working that through!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the total by adding that final group to reach 45. Nicely done!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "multiplication-explorer.connect",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "connect",
+   "keys": [
+    "8"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Look at all the representations for 2 packs with 4 stickers each. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 2 \u00d7 4 \u2194 4 \u00d7 2",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the pictures showing 2 packs with 4 stickers each, and see what total product they show.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the pictures showing 2 packs with 4 stickers each, and type your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our multiplication lesson! Take a look at the pictures on your screen to find the total product for 2 packs of 4 stickers.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the pictures showing 2 groups of 4 stickers, and see what total product they make together.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the pictures showing 2 packs with 4 stickers each, and type your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 6 as the answer\". The board checked it: not right.",
+     "miss": "added_factors",
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Look at all the representations for 2 packs with 4 stickers each. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 2 \u00d7 4 \u2194 4 \u00d7 2",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the boxes below: each box holds a group of 4. What does the running total reach when you add the last group?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes that appeared below, showing 4 in each box. What does that last box make for the total?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the row of boxes that appeared below the fact. What does adding that last group of 4 give you?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new row of boxes under the fact showing each group of 4. What does the question mark in that last box make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the row of boxes that just appeared below the fact. What does that last box with the question mark make when you add the second group of 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Look at all the representations for 2 packs with 4 stickers each. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 2 \u00d7 4 \u2194 4 \u00d7 2",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the row of boxes that appeared below: each holds 4, and the first box has 4 underneath it. What number belongs under that last box with the question mark?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A row of boxes appeared below the problem. Look at the two boxes with 4 in each: what does the running total become at the question mark?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the strip of boxes that appeared below: the first box has 4, and the question mark shows where the next group of 4 lands. What number goes under that last box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A strip of boxes just appeared below the fact showing 2 groups of 4. What number belongs under that last box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A row of boxes appeared below the problem showing your groups of 4. What does the running total reach at the question mark?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled skip_strip (help). It is on screen now: Puts a row of boxes under the fact, one box per group, each holding the group size, with the running total under every box except the last, which shows a question mark. The learner adds the last group. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Look at all the representations for 2 packs with 4 stickers each. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 2 \u00d7 4 \u2194 4 \u00d7 2",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A row of boxes has appeared right under the fact, showing 4 in each box with 4 underneath the first one. What total belongs under that last box with the question mark?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the fact: there is a strip of boxes showing your groups of 4, with 4 under the first box. What total do you get when you count on 4 more for the box with the question mark?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A row of boxes has appeared right under the fact, showing 4 under the first box. What number comes next when you count on 4 more?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new row of boxes under the fact showing groups of 4 with the running total underneath. What number does that last box reach?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the problem: there is now a row of boxes showing each group of 4, with 4 under the first box and a question mark under the last. What number goes under that last box?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 8 as the answer\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Look at all the representations for 2 packs with 4 stickers each. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 2 \u00d7 4 \u2194 4 \u00d7 2",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it, 8 is the total product! You used the boxes to add that second group of 4 right on.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right with 8 by adding that second pack of 4 stickers!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out and typed 8, putting the two groups of 4 together!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by adding that last group of 4 to get 8!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You added that next group of 4 to get 8, and checked it yourself!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "multiplication-explorer.distributive",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "distributive",
+   "keys": [
+    "40"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "40"
+      ],
+      "ask": "Break apart the area model into 5 x 4 and 5 x 4 to find the total for 10 x 4. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 10 \u00d7 4 \u2194 4 \u00d7 10",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the area model broken into two smaller parts, and see what they make together.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the area model broken into two smaller parts of 5 \u00d7 4. What total product do those parts make together?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at how the area model splits into two smaller parts.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the activity! Take a look at the area model broken into two smaller parts to find the total product.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the area model broken into two smaller parts. What do the two parts make when you put them together?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch-1",
+     "trigger": "The learner submitted \"Typed 14 as the answer\". The board checked it: not right.",
+     "miss": "added_factors",
+     "scoredWith": {
+      "keys": [
+       "40"
+      ],
+      "ask": "Break apart the area model into 5 x 4 and 5 x 4 to find the total for 10 x 4. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 10 \u00d7 4 \u2194 4 \u00d7 10",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look below the picture to see the two smaller parts worked out. What do those two parts make when you combine them?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "break_apart",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The screen now shows the two broken-apart facts with their parts worked out. What do those two parts make when you put them together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "break_apart",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the picture: the model is split into two smaller facts. What do those two parts make when you combine them?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "break_apart"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the two smaller parts shown under the picture. What do those two parts make when you put them together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "break_apart",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the picture to see how the rectangle is split into two smaller parts. What do those two parts make when you combine them?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "break_apart"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "40"
+      ],
+      "ask": "Break apart the area model into 5 x 4 and 5 x 4 to find the total for 10 x 4. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 10 \u00d7 4 \u2194 4 \u00d7 10",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look under the picture where the fact is split into two smaller parts. What total do those two parts make together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "break_apart",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows the rectangle split into two parts with their values worked out. What do those two parts make when you put them together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "break_apart",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look under the picture: the big rectangle is split into two smaller facts, each already worked out. What do those two parts make together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "break_apart",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look under the picture: the large area model is split into two smaller parts with their values shown. What do those two parts make altogether?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "break_apart"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the two smaller facts shown under the picture. What do those two parts make when you put them together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "break_apart"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch-1",
+     "trigger": "The learner said they were stuck, so the host pulled skip_strip (help). It is on screen now: Puts a row of boxes under the fact, one box per group, each holding the group size, with the running total under every box except the last, which shows a question mark. The learner adds the last group. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "40"
+      ],
+      "ask": "Break apart the area model into 5 x 4 and 5 x 4 to find the total for 10 x 4. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 10 \u00d7 4 \u2194 4 \u00d7 10",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the row of boxes under the fact showing each group of 4. What number belongs in the last box where the question mark is?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A row of boxes just appeared under the fact showing each group of 4 and the running total up to the last box. What does that last box with the question mark make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the fact at the row of boxes showing the running totals. What number goes in that very last box with the question mark?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new row of boxes under the fact, showing the running totals all the way across. What does that last box with the question mark make?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A row of boxes just appeared under the fact, showing the running total up to that last question mark. What number belongs in that last spot?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch-1",
+     "trigger": "The learner submitted \"Typed 40 as the answer\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "40"
+      ],
+      "ask": "Break apart the area model into 5 x 4 and 5 x 4 to find the total for 10 x 4. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 10 \u00d7 4 \u2194 4 \u00d7 10",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found the final total and entered 40! You used that last group to complete the whole fact.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it, 40 was the right total! You used the skip strip to finish the groups.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it by adding that last group of 4 to find 40!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out and typed 40 to complete the total!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it by adding the final group of 4 to reach 40. Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "multiplication-explorer.fluency",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "fluency",
+   "keys": [
+    "24"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "24"
+      ],
+      "ask": "Calculate the total for 6 times 4.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the equation on your screen, and type your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you're ready, take a look at the fact on screen and give it your best shot.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you're ready, take a look at the fact on screen and try typing in your answer.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you're ready, take a look at the fact on screen and give it a try.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen, and type your answer whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 10 as the answer\". The board checked it: not right.",
+     "miss": "added_factors",
+     "scoredWith": {
+      "keys": [
+       "24"
+      ],
+      "ask": "Calculate the total for 6 times 4.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the row of boxes that appeared below the problem. What number do you get when you include that last box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the row of boxes underneath with the running totals. What does adding that last group of 4 make?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes below the equation showing groups of 4. What number belongs in the last box with the question mark?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I've added a row of boxes showing groups of 4 with the running total underneath. What number goes under the last box?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the row of boxes that just appeared below the equation. What number should go in place of that question mark?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "24"
+      ],
+      "ask": "Calculate the total for 6 times 4.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A strip of boxes appeared showing each group of 4. What number do you reach when you add the last 4 to the running total?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_strip",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A strip of boxes just appeared below the fact showing groups of 4 with the running totals. What total do you get when you add the last group of 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An array has appeared showing the rows and columns for this fact. How many items do you see in each row?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "show_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A strip of boxes just appeared under the problem showing the totals as you go. What number belongs in place of that question mark?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the row of boxes with 4 in each one. What number does the running total reach when you add the last box with the question mark?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "show_model"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_strip"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "c1",
+     "trigger": "The learner said they were stuck, so the host pulled skip_strip (help). It is on screen now: Puts a row of boxes under the fact, one box per group, each holding the group size, with the running total under every box except the last, which shows a question mark. The learner adds the last group. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "24"
+      ],
+      "ask": "Calculate the total for 6 times 4.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the problem at the boxes showing groups of 4 and their running totals. What does the running total become with that last box included?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a strip of boxes under the fact showing groups of 4 with the running count beneath them. What number goes where that question mark is under the last box?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the row of boxes that appeared below the problem. What number belongs where that question mark is?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the fact: there is a row of boxes holding 4s, with totals counting up underneath. What number goes where the question mark is?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the problem at the row of boxes: each box holds 4, and the numbers underneath show the running count right up to that last question mark. What number belongs in that last spot?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 24 as the answer\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "24"
+      ],
+      "ask": "Calculate the total for 6 times 4.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You solved it and found 24 by adding that last group of 4 to the running total!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked it out and found 24 using the running total! Excellent job sticking with it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by adding that last group of 4 to get 24!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! By using the running totals and adding that last group of 4, you got 24.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out and typed 24 by adding that last group of 4! Great job working through that.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "multiplication-explorer.missing_factor",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "missing_factor",
+   "keys": [
+    "5"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch_1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "Find the missing factor: ? \u00d7 4 = 20",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the equation on your screen and see what number makes it true.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen and see what number makes it true.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take your time and type your answer whenever you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen and see what number makes it true.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take your time looking at the equation, and type your answer when you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch_1",
+     "trigger": "The learner submitted \"Typed 20 as the missing factor\". The board checked it: not right.",
+     "miss": "gave_product",
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "Find the missing factor: ? \u00d7 4 = 20",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the number line that just appeared below the equation. How many jumps of 4 does it take to reach 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_line"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A number line appeared below with jumps of 4. How many jumps does it take to reach 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A number line just popped up below your equation with jumps of 4! How many of those jumps does it take to reach 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_line"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the number line that just appeared below the equation. How many jumps of 4 does it take to land on 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the number line that just popped up below the equation. How many jumps of 4 does it take to reach 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_line"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch_1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "Find the missing factor: ? \u00d7 4 = 20",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A number line just popped up under your equation with jumps of 4 starting from 0. How many of those jumps does it take to reach 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A number line with jumps of 4 just appeared under your equation. How many jumps does it take to reach 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "skip_line"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look below the equation: a number line just appeared with jumps of 4 starting from 0. How many jumps does it take to reach 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A number line just popped up under the equation with jumps of 4 starting from 0. How many jumps does it take to reach 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A number line just popped up under your equation with jumps of 4 starting from 0. How many jumps do you see leading up to 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "skip_line",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch_1",
+     "trigger": "The learner said they were stuck, so the host pulled skip_line (help). It is on screen now: Draws a number line under the equation with equal jumps of the factor that is shown, starting at zero and running past the product. Only zero and the product are labelled; the learner counts the jumps it takes to reach the product. First point the learner to it: say what is now drawn and where to look, as a",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "Find the missing factor: ? \u00d7 4 = 20",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is a number line drawn right beneath the equation with jumps of 4 starting at 0. How many jumps does it take to land on 20?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a number line right under the equation showing jumps of 4 from 0 up to 20. Count how many jumps it takes to get there, type that number in the box, and press Check.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the equation at the new number line with the jumps of 4. How many jumps do you see from 0 to 20?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the equation at the new number line with jumps of 4 starting from 0. How many jumps does it take to reach 20?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the equation\u2014a number line is drawn with jumps of 4 from 0 all the way to 20. Count how many jumps reach 20 and try typing that in!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch_1",
+     "trigger": "The learner submitted \"Typed 5 as the missing factor\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "Find the missing factor: ? \u00d7 4 = 20",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it, 5 is the missing factor! You used the jumps on the number line to reach 20.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted the jumps and typed 5 to find the missing factor!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted the jumps on the number line and typed 5 to make the equation true!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted the jumps on the number line and typed 5 to solve it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted the jumps on the number line and typed 5 to solve it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

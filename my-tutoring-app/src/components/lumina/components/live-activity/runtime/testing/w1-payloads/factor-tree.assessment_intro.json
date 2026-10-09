@@ -1,0 +1,35 @@
+{
+ "source": "qa/tutor-reports/factor-tree-runtime-assessment_intro-payload-2026-10-09.json",
+ "primitiveId": "factor-tree",
+ "evalMode": "assessment_intro",
+ "data": {
+  "title": "Prime Factorization Challenge",
+  "description": "Build factor trees for larger numbers to find their prime factors and learn how to write the final prime factorization.",
+  "challenges": [
+   {
+    "id": "ft-1",
+    "rootValue": 42
+   },
+   {
+    "id": "ft-2",
+    "rootValue": 63
+   },
+   {
+    "id": "ft-3",
+    "rootValue": 40
+   },
+   {
+    "id": "ft-4",
+    "rootValue": 72
+   },
+   {
+    "id": "ft-5",
+    "rootValue": 80
+   }
+  ],
+  "highlightPrimes": true,
+  "showExponentForm": true,
+  "guidedMode": false,
+  "allowReset": false
+ }
+}

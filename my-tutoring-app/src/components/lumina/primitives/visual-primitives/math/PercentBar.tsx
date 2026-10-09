@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -21,11 +21,23 @@ import {
 } from '../../../evaluation';
 import type { PercentBarMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  challengeSteps, describePercentWork, percentMiss, stepCorrect, workspaceAssignment, workspaceScene,
+  type PercentWork,
+} from './percentBarWorkspace';
+import {
+  ADDED_MODEL_LEVER, BAR_LEVERS, COMPARE_MODEL_LEVER, DISCOUNT_MODEL_LEVER, FILL_NAMES_LEVER, TENTHS_LEVER, VALUE_BAR_LEVER,
+  isPracticePercent, leverFacts, percentLevers, simplerPercent,
+} from './percentBarLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -149,33 +161,9 @@ const PHASE_CONFIG: Record<PercentBarChallengeType, PhaseConfig> = {
   comparison: { label: 'Compare', icon: '⚖️', accentColor: 'amber' },
 };
 
-const TOLERANCE = 2; // ±2% for accepting answers
-
-/** Synthesize the step list for a challenge. Single-step (direct/subtraction)
- *  challenges have no `steps` array — build one place-step from legacy fields. */
-function challengeToSteps(ch: PercentBarChallenge): PercentBarStep[] {
-  if (ch.steps && ch.steps.length > 0) return ch.steps;
-  return [
-    {
-      kind: 'place',
-      prompt: ch.question,
-      wholeValue: ch.wholeValue,
-      wholeValueLabel: ch.wholeValueLabel,
-      targetPercent: ch.targetPercent,
-      maxPercent: ch.maxPercent,
-      hint: ch.hint,
-    },
-  ];
-}
-
 /**
  * Mode-aware tutor reveal clause — keeps the AI tutor in sync with the on-screen
- * support tier so it does not leak what the tier withheld.
- *  - easy: tutor may name the percent-of-whole strategy and walk the setup.
- *  - medium: nudge execution; do not solve.
- *  - hard: never gift the target percent or the answer arithmetic — ask what the
- *    student sees / reads in the scenario. (subtraction never states the 100-rate
- *    answer; comparison never names which is larger.)
+ * support tier so it does not leak what the tier withheld (scripted path only).
  */
 function tierRevealClause(
   tier: 'easy' | 'medium' | 'hard' | undefined,
@@ -190,7 +178,6 @@ function tierRevealClause(
   if (tier === 'medium') {
     return ' SUPPORT TIER medium: the on-screen aids are partly withdrawn — nudge the student toward the next step, do not solve it for them.';
   }
-  // hard
   return ' SUPPORT TIER hard: aids are off. Do NOT name the target percent or the arithmetic that produces it. Ask what the scenario states and where that lands on the bar; the student works unaided.';
 }
 
@@ -208,13 +195,19 @@ const FEEDBACK_STATUS: Record<'success' | 'error' | 'info', FeedbackStatus> = {
 interface PercentBarProps {
   data: PercentBarData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
+const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  PercentBarProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PercentBarChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -233,19 +226,35 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
+  const stableInstanceIdRef = useRef(instanceId || `percent-bar-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
   // -------------------------------------------------------------------------
-  // Shared hooks for challenge progression
+  // Challenge progress. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
     advance: advanceProgress,
-  } = useChallengeProgress<PercentBarChallenge>({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -265,7 +274,8 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Local state (per-challenge / per-step)
   // -------------------------------------------------------------------------
-  const [currentPercent, setCurrentPercent] = useState(50);
+  // The bar starts empty: a start at 50% put the answer on screen whenever a step's percent was 50.
+  const [currentPercent, setCurrentPercent] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
@@ -281,8 +291,6 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   >([]);
 
   // Refs
-  const stableInstanceIdRef = useRef(instanceId || `percent-bar-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   const recordedRef = useRef(false);
   const hintViewedRef = useRef(false);
   const hintsViewedRef = useRef(0);
@@ -292,11 +300,20 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Derived state — challenge + active step
   // -------------------------------------------------------------------------
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // In-item levers (`percentBarLevers.ts`), keyed by the session item they were pulled on, and the easier problem a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<PercentBarChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier problem while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice problem. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   const challengeType = currentChallenge?.type ?? challenges[0]?.type ?? 'direct';
 
   const steps = useMemo(
-    () => (currentChallenge ? challengeToSteps(currentChallenge) : []),
+    () => (currentChallenge ? challengeSteps(currentChallenge) : []),
     [currentChallenge],
   );
   const currentStep = steps[currentStepIndex] ?? null;
@@ -315,6 +332,34 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   const isCurrentChallengeComplete = challengeResults.some(
     (r) => r.challengeId === currentChallenge?.id && r.correct,
   );
+
+  // -------------------------------------------------------------------------
+  // Resets. A fresh challenge opens at step 1 with the bar empty; Try again keeps the steps already right and
+  // clears only the current step's work.
+  // -------------------------------------------------------------------------
+  const resetStep = () => {
+    setCurrentPercent(0);
+    setSelectedOption(null);
+    setFeedback('');
+    setFeedbackType('');
+    setShowHint(false);
+    setIsDragging(false);
+    setHoveredBenchmark(null);
+    hintViewedRef.current = false;
+  };
+  const resetChallenge = () => {
+    setCurrentStepIndex(0);
+    setEstablished([]);
+    setStepAttempts(0);
+    stepLogRef.current = [];
+    recordedRef.current = false;
+    resetStep();
+  };
+  openItem.current = (_index, retry) => {
+    // Try again on a practice problem keeps it; a fresh item (or the full item back after practice) drops it.
+    if (retry) resetStep();
+    else { setPractice(null); resetChallenge(); }
+  };
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -346,11 +391,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     scenario: currentChallenge?.scenario ?? '',
     wholeValue,
     wholeValueLabel,
-    question: currentStep
-      ? currentStep.kind === 'choice'
-        ? currentStep.prompt
-        : currentStep.prompt
-      : currentChallenge?.question ?? '',
+    question: currentStep ? currentStep.prompt : currentChallenge?.question ?? '',
     targetPercent: placeStep?.targetPercent ?? 0,
     currentPercent,
     currentValue,
@@ -362,12 +403,17 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     currentPercent, currentValue, stepAttempts, supportTier,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // The legacy context carries the target percent; on the workspace path the tutor reads the scene instead.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'percent-bar',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: 'Grade 5-8',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Activity introduction (fires once on connect)
   const hasIntroducedRef = useRef(false);
@@ -375,9 +421,8 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     if (!isConnected || hasIntroducedRef.current || challenges.length === 0) return;
     hasIntroducedRef.current = true;
     const first = challenges[0];
-    const firstSteps = challengeToSteps(first);
-    const firstPrompt = firstSteps[0]?.kind === 'place' ? firstSteps[0].prompt
-      : firstSteps[0]?.kind === 'choice' ? firstSteps[0].prompt : first.question;
+    const firstSteps = challengeSteps(first);
+    const firstPrompt = firstSteps[0]?.prompt ?? first.question;
     sendText(
       `[ACTIVITY_START] Percent bar session: ${challenges.length} ${CHALLENGE_TYPE_LABEL[challengeType]} problems`
       + `${firstSteps.length > 1 ? ` (each is a ${firstSteps.length}-step problem)` : ''}. `
@@ -389,7 +434,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   }, [isConnected, challenges, challengeType, title, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
-  // Per-challenge reset — fires whenever advance() flips currentChallenge.id
+  // Per-challenge reset — fires whenever the challenge id changes (both paths)
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (!currentChallenge) return;
@@ -398,50 +443,48 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     stepLogRef.current = [];
     recordedRef.current = false;
     hintViewedRef.current = false;
-  }, [currentChallenge?.id]);
+  }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
   // Per-step reset — fires on challenge change AND on step change
   // -------------------------------------------------------------------------
   useEffect(() => {
-    setCurrentPercent(50);
-    setSelectedOption(null);
+    resetStep();
     setStepAttempts(0);
-    setFeedback('');
-    setFeedbackType('');
-    setShowHint(false);
-    setIsDragging(false);
-    setHoveredBenchmark(null);
-    hintViewedRef.current = false;
-  }, [currentChallenge?.id, currentStepIndex]);
+  }, [currentChallenge?.id, currentStepIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
-  const isWithinTolerance = (studentPct: number, targetPct: number): boolean =>
-    Math.abs(studentPct - targetPct) <= TOLERANCE;
-
   const getAccuracyScore = (studentPct: number, targetPct: number): number => {
     const error = Math.abs(studentPct - targetPct);
     if (error === 0) return 100;
-    if (error <= TOLERANCE) return 100 - (error / TOLERANCE) * 10;
+    if (error <= 2) return 100 - (error / 2) * 10;
     return Math.max(0, 100 - error * 2);
+  };
+
+  /** Input on the bar, the slider or the options: closed once the item is done, and on the workspace path while a
+   *  checked answer waits for Try again. */
+  const inputClosed = allChallengesComplete || hasSubmittedEvaluation || isCurrentChallengeComplete || blocked;
+
+  const setPercent = (value: number) => {
+    if (inputClosed || learnerBlocked() || !placeStep) return;
+    const rounded = Math.max(0, Math.min(maxPercent, Math.round(value)));
+    if (rounded !== currentPercent) SoundManager.tick(); // slider-style increment
+    setCurrentPercent(rounded);
+    setFeedback('');
+    setFeedbackType('');
   };
 
   // -------------------------------------------------------------------------
   // Bar interaction handlers
   // -------------------------------------------------------------------------
   const handleBarInteraction = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (allChallengesComplete || hasSubmittedEvaluation || isCurrentChallengeComplete || !placeStep) return;
+    if (inputClosed || learnerBlocked() || !placeStep) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     // The bar's pixel width maps to 0..maxPercent (100 normally, more for "total" modes).
-    const percentage = Math.max(0, Math.min(maxPercent, (x / rect.width) * maxPercent));
-    const rounded = Math.round(percentage);
-    if (rounded !== currentPercent) SoundManager.tick(); // slider-style increment
-    setCurrentPercent(rounded);
-    setFeedback('');
-    setFeedbackType('');
+    setPercent((x / rect.width) * maxPercent);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -467,7 +510,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   };
 
   // -------------------------------------------------------------------------
-  // Finalize the whole challenge once its last step is correct.
+  // Finalize the whole challenge once its last step is correct (the primitive's own score fields).
   // -------------------------------------------------------------------------
   const finalizeChallenge = useCallback((challenge: PercentBarChallenge) => {
     const log = stepLogRef.current;
@@ -480,7 +523,8 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     // attempt (summed across steps), floor 20.
     const extraAttempts = Math.max(0, totalAttempts - numSteps);
     const score = Math.max(20, 100 - extraAttempts * 20);
-    recordedRef.current = true;
+    // An easier practice problem (a simplify lever) is not the session's challenge: it records nothing.
+    if (isPracticePercent(challenge)) return;
     recordResult({
       challengeId: challenge.id,
       correct: true,
@@ -491,10 +535,11 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   }, [recordResult]);
 
   // -------------------------------------------------------------------------
-  // Check answer (handles both place + choice steps)
+  // Check answer (handles both place + choice steps). A right step that is not the last opens the next step and is
+  // not a commit; a wrong step, and the last step right, are the checked gestures.
   // -------------------------------------------------------------------------
   const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge || !currentStep) return;
+    if (!currentChallenge || !currentStep || learnerBlocked()) return;
     if (recordedRef.current) return; // stale-state guard
 
     // Choice step needs a selection before we count an attempt.
@@ -509,19 +554,10 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
 
     const isLastStep = currentStepIndex >= steps.length - 1;
     const stepLabel = isMultiStep ? `Step ${currentStepIndex + 1}/${steps.length}: ` : '';
-
-    // ---- Evaluate the step ----
-    let correct = false;
-    let accuracy = 0;
-
-    if (currentStep.kind === 'place') {
-      const target = currentStep.targetPercent;
-      correct = isWithinTolerance(currentPercent, target);
-      accuracy = getAccuracyScore(currentPercent, target);
-    } else {
-      correct = selectedOption === currentStep.correctOptionId;
-      accuracy = correct ? 100 : 0;
-    }
+    const work: PercentWork = { stepIndex: currentStepIndex, percent: currentPercent, selected: selectedOption };
+    const response = describePercentWork(currentChallenge, work);
+    const correct = stepCorrect(currentChallenge, work);
+    const accuracy = currentStep.kind === 'place' ? getAccuracyScore(currentPercent, currentStep.targetPercent) : correct ? 100 : 0;
 
     if (!correct) {
       SoundManager.playIncorrect();
@@ -554,6 +590,7 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
           { silent: true },
         );
       }
+      progress.commitCheck(response, false, percentMiss(currentChallenge, work));
       return;
     }
 
@@ -586,10 +623,9 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     if (!isLastStep) {
       // Advance to the next sub-step within this challenge.
       const next = steps[currentStepIndex + 1];
-      const nextPrompt = next?.kind === 'place' || next?.kind === 'choice' ? next.prompt : '';
       sendText(
         `[NEXT_STEP] Moving to step ${currentStepIndex + 2} of ${steps.length} in this problem. `
-        + `Next: "${nextPrompt}". Read it to the student.`
+        + `Next: "${next?.prompt ?? ''}". Read it to the student.`
         + tierRevealClause(supportTier, currentChallenge.type),
         { silent: true },
       );
@@ -597,30 +633,32 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
       return;
     }
 
-    // Last step done — finalize the challenge.
+    // Last step done: the checked gesture (counts the attempt, records the verdict), then this primitive's own score.
+    recordedRef.current = true;
+    progress.commitCheck(response, true);
     finalizeChallenge(currentChallenge);
     sendText(
       `[CHALLENGE_CORRECT] Student finished all ${steps.length} step(s) of "${currentChallenge.scenario}". `
       + `Congratulate briefly and reinforce the key idea of this ${CHALLENGE_TYPE_LABEL[currentChallenge.type]} problem.`,
       { silent: true },
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentChallenge, currentStep, currentStepIndex, steps, isMultiStep,
     currentPercent, selectedOption, stepAttempts, supportTier,
-    finalizeChallenge, sendText,
+    finalizeChallenge, sendText, progress.commitCheck,
   ]);
 
   // -------------------------------------------------------------------------
-  // Advance to next challenge
+  // Advance to next challenge (scripted path; the workspace path hides Next and the runtime advances)
   // -------------------------------------------------------------------------
   const advanceToNextChallenge = useCallback(() => {
     if (!advanceProgress()) return;
     const nextIdx = currentChallengeIndex + 1;
     const next = challenges[nextIdx];
     if (next) {
-      const nextSteps = challengeToSteps(next);
-      const firstPrompt = nextSteps[0]?.kind === 'place' || nextSteps[0]?.kind === 'choice'
-        ? nextSteps[0].prompt : next.question;
+      const nextSteps = challengeSteps(next);
+      const firstPrompt = nextSteps[0]?.prompt ?? next.question;
       sendText(
         `[NEXT_ITEM] Moving to challenge ${nextIdx + 1} of ${challenges.length}`
         + `${nextSteps.length > 1 ? ` (${nextSteps.length} steps)` : ''}. `
@@ -631,10 +669,12 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
   }, [advanceProgress, currentChallengeIndex, challenges, sendText]);
 
   // -------------------------------------------------------------------------
-  // Session-complete: build canonical 9-field metrics and submit exactly once.
+  // Session-complete (scripted path): build canonical 9-field metrics and submit exactly once.
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+    // The workspace path submits the scored session from `onFinished` (below), not this tally.
+    if (tutorOwned) return;
 
     const total = challenges.length;
     const correctCount = challengeResults.filter((r) => r.correct).length;
@@ -669,8 +709,29 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     );
   }, [
     allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults,
-    challengeType, submitEvaluation, sendText,
+    challengeType, submitEvaluation, sendText, tutorOwned,
   ]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || challenges.length === 0) return;
+    const metrics: PercentBarMetrics = {
+      type: 'percent-bar',
+      challengeType,
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: hintsViewedRef.current,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // -------------------------------------------------------------------------
   // Overall score (for local display when evaluation hook hasn't settled yet)
@@ -684,6 +745,40 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
       ) / challengeResults.length,
     );
   }, [allChallengesComplete, challengeResults]);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation; every mode declares levers (`percentBarLevers.ts`).
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, {
+      stepIndex: currentStepIndex, percent: currentPercent, selected: selectedOption, established,
+      showPercentLabels, showValueLabels, showCalculation, benchmarkLines, doubleBar: doubleBar || leverOn(VALUE_BAR_LEVER),
+    });
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : percentLevers(sessionChallenge, pulledLevers, { valueBarShown: doubleBar });
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (BAR_LEVERS.includes(id) && !placeStep) return 'The bar is not on screen on this step: the learner is choosing an option.';
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerPercent(sessionChallenge);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetChallenge();
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetChallenge(); },
+    };
+  });
 
   // -------------------------------------------------------------------------
   // Render
@@ -816,11 +911,25 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
                   </div>
                 )}
 
+                {/* The keyboard's way onto the bar (arrow keys), and the journey's: the same percent the bar sets. */}
+                <input
+                  type="range"
+                  className="sr-only"
+                  aria-label="Percent on the bar"
+                  min={0}
+                  max={maxPercent}
+                  step={1}
+                  value={currentPercent}
+                  disabled={inputClosed}
+                  onChange={(e) => setPercent(Number(e.target.value))}
+                />
                 <div
-                  className="relative h-14 bg-slate-700/60 rounded-xl cursor-pointer shadow-inner overflow-hidden border border-white/10"
+                  className={`relative h-14 bg-slate-700/60 rounded-xl shadow-inner overflow-hidden border border-white/10 ${
+                    inputClosed ? 'cursor-default' : 'cursor-pointer'}`}
+                  data-pip-object="bar"
                   onClick={handleBarInteraction}
                   onMouseMove={handleMouseMove}
-                  onMouseDown={() => setIsDragging(true)}
+                  onMouseDown={() => { if (!inputClosed && !learnerBlocked()) setIsDragging(true); }}
                   onMouseUp={() => setIsDragging(false)}
                   onMouseLeave={() => setIsDragging(false)}
                 >
@@ -828,6 +937,14 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
                     className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-150 rounded-l-xl"
                     style={{ width: `${(currentPercent / maxPercent) * 100}%` }}
                   />
+
+                  {/* `tenths` lever: the bar cut into ten equal parts of the whole, unlabelled. */}
+                  {leverOn(TENTHS_LEVER) && Array.from({ length: Math.floor(maxPercent / 10) - 1 }, (_, i) => (i + 1) * 10)
+                    .filter((p) => p !== 100 || !isExtendedBar).map((p) => (
+                      <div key={`tenth-${p}`} data-lever="tenths" aria-hidden="true"
+                        className="absolute top-0 h-full w-0.5 bg-cyan-300/60 z-10 pointer-events-none"
+                        style={{ left: `${(p / maxPercent) * 100}%` }} />
+                    ))}
 
                   {/* Reference line at 100% (the "whole") — anchors the total on extended bars. */}
                   {isExtendedBar && (
@@ -871,7 +988,38 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
                     </>
                   )}
                 </div>
+
+                {/* `fill_names` lever: the filled part and the empty part named in words, following the learner's bar. */}
+                {leverOn(FILL_NAMES_LEVER) && (
+                  <div data-lever="fill-names" className="mt-8 flex h-6 text-[11px] font-semibold rounded overflow-hidden border border-white/10">
+                    <div className="bg-emerald-500/30 text-emerald-100 flex items-center justify-center overflow-hidden whitespace-nowrap"
+                      style={{ width: `${(currentPercent / maxPercent) * 100}%` }}>
+                      the part
+                    </div>
+                    <div className="flex-1 bg-slate-700/40 text-slate-300 flex items-center justify-center overflow-hidden whitespace-nowrap">
+                      the rest of the whole
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* `value_bar` lever: a second bar in the whole's own units, moving with the percent bar, labelled at its ends. */}
+              {leverOn(VALUE_BAR_LEVER) && !doubleBar && (
+                <div className="relative mt-8" data-lever="value-bar">
+                  <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-2">
+                    The same bar in {/\(\$\)/.test(wholeValueLabel) ? 'dollars' : wholeValueLabel.replace(/^total\s+/i, '').toLowerCase()}
+                  </div>
+                  <div className="relative h-8 bg-slate-700/60 rounded-xl shadow-inner border border-white/10">
+                    <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-150 rounded-l-xl"
+                      style={{ width: `${(currentPercent / maxPercent) * 100}%` }} />
+                    <div className="absolute top-0 h-full w-0.5 bg-amber-300/70" style={{ left: `${(100 / maxPercent) * 100}%` }} />
+                  </div>
+                  <div className="relative h-5 text-xs text-slate-400">
+                    <span className="absolute left-0">0</span>
+                    <span className="absolute -translate-x-full" style={{ left: `${(100 / maxPercent) * 100}%` }}>the whole</span>
+                  </div>
+                </div>
+              )}
 
               {/* Double bar: actual value bar */}
               {doubleBar && (
@@ -928,6 +1076,44 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
           </>
         )}
 
+        {/* Lever pictures outside the item: no number of the item, no digit at all. */}
+        {!allChallengesComplete && (leverOn(DISCOUNT_MODEL_LEVER) || leverOn(ADDED_MODEL_LEVER) || leverOn(COMPARE_MODEL_LEVER)) && (
+          <div className="flex flex-wrap justify-center gap-6 py-2">
+            {leverOn(DISCOUNT_MODEL_LEVER) && (
+              <figure data-lever="discount-model" className="w-56 text-center">
+                <div className="flex h-6 rounded overflow-hidden border border-white/10">
+                  <div className="flex-[3] bg-emerald-500/40" />
+                  <div className="flex-1 bg-rose-500/40 bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(255,255,255,0.15)_4px,rgba(255,255,255,0.15)_8px)]" />
+                </div>
+                <div className="flex text-[11px] mt-1 text-slate-300">
+                  <span className="flex-[3]">still paid</span><span className="flex-1">taken off</span>
+                </div>
+                <figcaption className="text-[11px] text-slate-400 mt-1">The whole is the full price. The discount is taken off; the rest is still paid.</figcaption>
+              </figure>
+            )}
+            {leverOn(ADDED_MODEL_LEVER) && (
+              <figure data-lever="added-model" className="w-56 text-center">
+                <div className="flex h-6">
+                  <div className="flex-[4] bg-emerald-500/40 rounded-l border border-white/10" />
+                  <div className="w-0.5 bg-amber-300" />
+                  <div className="flex-1 bg-cyan-500/40 rounded-r border border-white/10" />
+                </div>
+                <div className="flex text-[11px] mt-1 text-slate-300">
+                  <span className="flex-[4]">the whole</span><span className="flex-1">added on top</span>
+                </div>
+                <figcaption className="text-[11px] text-slate-400 mt-1">A tax, tip or fee is added on top of the whole, so the total ends past it.</figcaption>
+              </figure>
+            )}
+            {leverOn(COMPARE_MODEL_LEVER) && (
+              <figure data-lever="compare-model" className="w-64 text-center space-y-1">
+                <div className="flex h-5"><div className="flex-[6] bg-emerald-500/40 rounded-l" /><div className="flex-[4] bg-rose-500/30 rounded-r" /></div>
+                <div className="flex h-5 w-1/2"><div className="flex-[9] bg-emerald-500/40 rounded-l" /><div className="flex-1 bg-rose-500/30 rounded-r" /></div>
+                <figcaption className="text-[11px] text-slate-400">A big piece off a long price can still leave more to pay than a small piece off a short one. Compare what is still paid.</figcaption>
+              </figure>
+            )}
+          </div>
+        )}
+
         {/* ---- CHOICE step: tap-to-choose decision ---- */}
         {choiceStep && !allChallengesComplete && (
           <div className="flex flex-col items-center gap-3 py-2">
@@ -937,8 +1123,10 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
                 <LuminaButton
                   key={opt.id}
                   tone={selected ? 'primary' : 'ghost'}
-                  disabled={isCurrentChallengeComplete}
+                  disabled={inputClosed}
+                  aria-label={opt.sublabel ? `${opt.label} ${opt.sublabel}` : opt.label}
                   onClick={() => {
+                    if (inputClosed || learnerBlocked()) return;
                     setSelectedOption(opt.id);
                     setFeedback('');
                     setFeedbackType('');
@@ -964,17 +1152,17 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
           </LuminaFeedbackCard>
         )}
 
-        {/* Action Buttons */}
+        {/* Action Buttons. On the workspace path the shell's Try again / Next challenge replace Next. */}
         {challenges.length > 0 && !allChallengesComplete && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && (
               <LuminaActionButton
                 action="check"
                 onClick={handleCheckAnswer}
-                disabled={hasSubmittedEvaluation}
+                disabled={hasSubmittedEvaluation || blocked}
               />
             )}
-            {isCurrentChallengeComplete && (
+            {!tutorOwned && isCurrentChallengeComplete && (
               <LuminaActionButton action="next" onClick={advanceToNextChallenge}>
                 {currentChallengeIndex + 1 >= challenges.length ? 'See Results' : 'Next Challenge'}
               </LuminaActionButton>
@@ -982,8 +1170,8 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Hint */}
-        {!allChallengesComplete && currentStep && (
+        {/* Hint (scripted path). The generated hint can name the step's percent; with the tutor, help is the tutor's. */}
+        {!tutorOwned && !allChallengesComplete && currentStep && (
           <div className="flex flex-col items-center gap-2">
             {!showHint ? (
               stepAttempts >= 1 && !isCurrentChallengeComplete && (
@@ -1028,5 +1216,9 @@ const PercentBar: React.FC<PercentBarProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const PercentBar = withWorkspaceController<PercentBarProps, ProgressOptions<PercentBarChallenge>, Progress>(
+  'percent-bar', PercentBarSurface, useScriptedProgress, useWorkspaceProgressFor('percent-bar'));
 
 export default PercentBar;

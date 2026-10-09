@@ -1,0 +1,3745 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ],
+   "no_change_before_receipt": [
+    0,
+    30
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "factor-tree.assessment",
+   "primitiveId": "factor-tree",
+   "evalMode": "assessment",
+   "keys": [
+    "3^2 \u00d7 7",
+    "3 \u00d7 3 \u00d7 7"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ft-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^2 \u00d7 7",
+       "3 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 63: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "63",
+       "split 63"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's break down 63 into prime factors using our factor tree. What two numbers can we multiply together to get 63?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to factor trees! Tap 63 and try splitting it into any two numbers that multiply to make 63.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you are ready, tap 63 to choose your first two factors to split it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap 63 to get started, and think of two numbers that multiply to make 63.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! To find the prime factorization of 63, tap the number and type two factors to split it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Tried to split 63 into 3 \u00d7 22\". The board checked it: not right.",
+     "miss": "wrong_partner",
+     "scoredWith": {
+      "keys": [
+       "3^2 \u00d7 7",
+       "3 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 63: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "63",
+       "split 63"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A helper frame appeared below the tree to help you find the partner factor. What do you get when you divide 63 by 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helper frame is now showing below the tree to help check what 63 divided by 3 equals. Take another look and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the frame under the tree: when you divide 63 by 3, what partner do you get?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There's a frame below the tree to help you find the partner factor. What do you get when you divide 63 by 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helper frame appeared below the tree to help you find the partner factor. What do you get when you divide 63 by 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ft-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^2 \u00d7 7",
+       "3 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 63: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "63",
+       "split 63"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A division helper frame just popped up under your tree to help find the matching partner. Think about dividing 60 by 3 first, then 3 by 3, to see what pairs with 3.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the helper frame under the tree: it shows 63 divided by your first factor. If your first factor is 3, what number multiplied by 3 gives 63?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A partner frame is now showing under the tree to guide you. Try dividing the tens digit and then the ones digit of 63 by 3 to find your other factor.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame has appeared under the tree to help you find the partner factor. Try breaking 63 into smaller parts, like 60 divided by 3 and 3 divided by 3.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame appeared below the tree showing 63 divided by your first factor. Think about how many times 3 fits into 60, and then how many times 3 fits into 3.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ft-1",
+     "trigger": "The learner said they were stuck, so the host pulled partner_frame (help). It is on screen now: Shows a frame under the tree: the selected number divided by the learner's Factor one equals a question mark, and \"multiply back to check\". It never works out the division. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^2 \u00d7 7",
+       "3 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 63: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "63",
+       "split 63"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the tree\u2014there is a new frame showing 63 divided by your first factor with a question mark. You can use that to help find what multiplies with 3 to make 63!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the tree\u2014there is a frame showing the number divided by your first factor to help you find its partner. Try dividing 63 by 3 to find that missing number, then multiply back to check!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a new frame under your tree that shows the number divided by your first factor with a question mark. Use that to check what number pairs with 3 to multiply back to 63, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the tree, there is now a helper frame that shows 63 divided by your first factor with a question mark. Try typing 3 into the first box and see what partner number completes the frame.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the tree: a helper frame shows 63 divided by your factor with a question mark. Try dividing 63 by 3, then type that partner in to split the number.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Finished the tree: 63 = 3 \u00d7 21; 21 = 3 \u00d7 7\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^2 \u00d7 7",
+       "3 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 63: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "63",
+       "split 63"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You split 63 into 3 and 21, and then broke 21 down into 3 and 7 until every leaf was prime!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the partner 21 to split 63 into 3 \u00d7 21, and then broke 21 down into 3 \u00d7 7 until all the leaves were prime!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found the matching partner 21, and then split that into 3 and 7 until every leaf was prime.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the right partner with 3 and 21, and then broke 21 down into 3 and 7 to finish the whole tree!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You split 63 into 3 and 21, and then broke 21 down into 3 and 7 until all the leaves were prime!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "factor-tree.assessment_intro",
+   "primitiveId": "factor-tree",
+   "evalMode": "assessment_intro",
+   "keys": [
+    "2 \u00d7 3 \u00d7 7"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ft-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 42: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "42",
+       "split 42"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Let's find the prime factorization of 42 by splitting it into factors.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! To start our factor tree for 42, tap 42 and find any two factors that multiply to make it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap 42 to pick two factors that multiply to make it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to factor trees! Tap 42 to start, and choose two factors that multiply together to make it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap 42 to pick two factors that multiply to make it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Tried to split 42 into 2 \u00d7 22\". The board checked it: not right.",
+     "miss": "wrong_partner",
+     "scoredWith": {
+      "keys": [
+       "2 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 42: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "42",
+       "split 42"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A partner frame is now shown below the tree to help check what divides into 42. What number multiplies by 2 to make 42?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared below to help you check: what number multiplied by 2 gives 42?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A partner frame has appeared below the tree to help you check your division. What number multiplies with 2 to make 42?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared below the tree to help check what partner pairs with your first factor. What number times 2 gives exactly 42?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared below the tree to help check what partner pairs with your first factor. What number times 2 gives 42?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ft-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 42: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "42",
+       "split 42"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A helper frame has appeared below the tree showing your number divided by your first factor. What do you get when you divide 42 in half?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A division frame appeared under the tree to help you find the partner. What do you get when you divide 42 in half?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A helper frame just appeared underneath to show 42 divided by your first factor. If you pick 2, what is 42 split evenly in half?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame has appeared under the tree to help you find the partner for 2. What do you get when you divide 42 in half?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A partner frame is now shown under the tree to help you find the matching factor. If you divide 42 by 2, what partner do you get?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ft-1",
+     "trigger": "The learner said they were stuck, so the host pulled partner_frame (help). It is on screen now: Shows a frame under the tree: the selected number divided by the learner's Factor one equals a question mark, and \"multiply back to check\". It never works out the division. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 42: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "42",
+       "split 42"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look right under the tree\u2014there's a new frame showing 42 divided by your first factor. What number goes with 2 to make 42?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the tree\u2014a frame has appeared showing 42 divided by your first factor. You can use that to find the partner number and try splitting again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the tree\u2014there is a helper frame showing 42 divided by your first factor. Think about what 42 divided by 2 gives you, and type those two factors to try again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the frame that just appeared below the tree showing your number divided by your first factor. Think about what partner multiplies with 2 to give 42, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the tree: a new frame shows 42 divided by your first factor with a question mark. Think about what number times 2 gives exactly 42, and give that split a try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Finished the tree: 42 = 2 \u00d7 21; 21 = 3 \u00d7 7\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 42: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "42",
+       "split 42"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it\u2014you found that 42 splits into 2 and 21, and then broke 21 down into 3 and 7 until every leaf was prime!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found that 2 times 21 makes 42, and then split 21 into 3 and 7 to finish the whole tree!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You split 42 into 2 and 21, and then broke 21 into 3 and 7 to find all the prime leaves!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You split 42 into 2 and 21, and then broke 21 down into 3 and 7 to finish the tree!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found that 2 times 21 makes 42, and then split 21 into 3 and 7 until all the leaves were prime.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "factor-tree.guided_medium",
+   "primitiveId": "factor-tree",
+   "evalMode": "guided_medium",
+   "keys": [
+    "3^3",
+    "3 \u00d7 3 \u00d7 3"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ft-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^3",
+       "3 \u00d7 3 \u00d7 3"
+      ],
+      "ask": "Find the prime factorization of 27: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "27",
+       "split 27",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Tap 27 to see its factor pairs and get started on our tree.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to factor trees! Tap 27 to find two factors that multiply to make it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "To find the prime factorization of 27, tap the number to start splitting it into two factors.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "To find the prime factorization of 27, tap the number to start splitting it into factors.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap 27 to see its factor pairs and choose a split to start your tree.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Tried to split 27 into 3 \u00d7 10\". The board checked it: not right.",
+     "miss": "wrong_partner",
+     "scoredWith": {
+      "keys": [
+       "3^3",
+       "3 \u00d7 3 \u00d7 3"
+      ],
+      "ask": "Find the prime factorization of 27: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "27",
+       "split 27",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A helpful frame appeared below the tree to help you find the partner factor. What number multiplies with 3 to make 27?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame popped up below the tree to help you find the partner. What number multiplied by 3 gives 27?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helper frame appeared below the tree to help you find the partner factor. What number multiplies with 3 to make 27?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the division frame below the tree to help check what multiplies with 3 to make 27. What number times 3 gives 27?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the tree\u2014there's a new frame showing the division to check your partner factor. What number multiplied by 3 gives 27?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ft-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^3",
+       "3 \u00d7 3 \u00d7 3"
+      ],
+      "ask": "Find the prime factorization of 27: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "27",
+       "split 27",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the frame under the tree showing 27 divided by your first factor. Count up by 3s to find what multiplies with 3 to reach 27.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame is now showing under the tree to help you divide 27 by your first factor. What number times 3 gives you 27?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame opened below the tree showing the number divided by your first factor. Count up by threes to see what multiplies with 3 to reach 27.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame is now showing under the tree to help you divide 27 by your first factor. What number times 3 equals 27?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame appeared below the tree showing 27 divided by your first factor. What number times 3 gives exactly 27?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ft-1",
+     "trigger": "The learner said they were stuck, so the host pulled partner_frame (help). It is on screen now: Shows a frame under the tree: the selected number divided by the learner's Factor one equals a question mark, and \"multiply back to check\". It never works out the division. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^3",
+       "3 \u00d7 3 \u00d7 3"
+      ],
+      "ask": "Find the prime factorization of 27: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "27",
+       "split 27",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new frame has appeared right under the tree showing 27 divided by your first factor. Give that division a try to find the matching partner.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look under the tree\u2014there's now a frame showing 27 divided by your first factor to help you find its partner. Give it another try by finding what multiplies with 3 to make 27!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the tree: a division frame is showing 27 divided by your first factor with a question mark. Try typing your factor pair to see if they multiply back to 27!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the tree, there's a new division frame to help you check your partner factor. Give it a try by finding what multiplies with 3 to make 27!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the tree: a division frame is showing 27 divided by your first factor. Give that division a try to find the matching partner factor!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Finished the tree: 27 = 3 \u00d7 9; 9 = 3 \u00d7 3\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^3",
+       "3 \u00d7 3 \u00d7 3"
+      ],
+      "ask": "Find the prime factorization of 27: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "27",
+       "split 27",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found that 27 splits into 3 and 9, and then split 9 into 3 and 3 to reach all prime leaves!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You split 27 into 3 and 9, and then split 9 into 3 and 3 until all the leaves were prime.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You found that 27 splits into 3 \u00d7 9, and then broke 9 down into 3 \u00d7 3 until every leaf was prime.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You split 27 into 3 and 9, and then broke 9 down into 3 and 3 until every leaf was prime! Great work finishing the tree.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You split 27 into 3 and 9, and then broke 9 down into 3 and 3 until every branch was prime.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "factor-tree.guided_small",
+   "primitiveId": "factor-tree",
+   "evalMode": "guided_small",
+   "keys": [
+    "2 \u00d7 3"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ft-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2 \u00d7 3"
+      ],
+      "ask": "Find the prime factorization of 6: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "6",
+       "split 6",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to our lesson on factor trees! Go ahead and tap the number 6 on your screen to see how we can split it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you're ready, tap 6 to see its factor pairs and choose a split.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap the number 6 to see how we can start splitting it into factors.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap on the 6 to see how we can split it into factors.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to factor trees! Tap the number 6 to see how we can split it into factors.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Tried to split 6 into 2 \u00d7 4\". The board checked it: not right.",
+     "miss": "added",
+     "scoredWith": {
+      "keys": [
+       "2 \u00d7 3"
+      ],
+      "ask": "Find the prime factorization of 6: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "6",
+       "split 6",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I turned on a check at the bottom that shows what your numbers multiply to. Remember, the two factors need to multiply to make 6, so give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "product_check",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new checker tool is now showing below the tree to help you see what your two numbers multiply to. Remember, the two factors need to multiply to make 6, not add up to it\u2014give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "product_check"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I turned on a multiplication check below the tree so you can see what your factors multiply to. Remember, our two factors need to multiply to make 6, not add.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "product_check",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helper appeared below that shows what your two numbers multiply to. Remember, the two factors need to multiply to make 6, so give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "product_check",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Remember, factors need to multiply to make 6, not add. I turned on a helper below the tree to show what your numbers multiply to, so give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "product_check",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ft-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2 \u00d7 3"
+      ],
+      "ask": "Find the prime factorization of 6: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "6",
+       "split 6",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The screen now shows a multiplication check under the tree to help you test your numbers. What small number times 2 gives us 6?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "product_check"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You now have a multiplication checker under the tree that shows what your numbers multiply to as you type. What small number can you multiply by 2 to get 6?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "product_check",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added some divisibility clues at the bottom of the screen to help you out. Since 6 is an even number, what small prime number can divide into it?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "divisibility_rules",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now there is a readout on the screen that will show what your numbers multiply to as you type them. What small number multiplied by something gives 6?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "product_check"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A product check is now showing under the tree so you can see what your numbers multiply to. What number can you multiply by 2 to get 6?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "product_check",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ft-1",
+     "trigger": "The learner said they were stuck, so the host pulled product_check (help). It is on screen now: Shows what the learner's two typed factors multiply to, beside the number they must make, as they type. It shows nothing until both are typed and never suggests a factor. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2 \u00d7 3"
+      ],
+      "ask": "Find the prime factorization of 6: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "6",
+       "split 6",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look below the tree: there is now a multiplication check that will show what your two numbers multiply to once you type them in. Give another pair a try to see if they multiply to 6!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Right under the tree, a new check area appeared that shows what your two numbers multiply to once you type them. Try typing two numbers that multiply together to make 6, and see what the check shows!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the tree\u2014there is now a space showing what your typed numbers multiply to so you can check them against 6. Go ahead and try typing two factors that multiply together to make 6!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the tree\u2014there is now a box that multiplies your two numbers together so you can see if they equal 6. Go ahead and try typing your two factors to see what happens!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the tree\u2014there's now a space that shows what your two numbers multiply to as you type them. Try typing in two numbers that multiply to 6!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Finished the tree: 6 = 2 \u00d7 3\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2 \u00d7 3"
+      ],
+      "ask": "Find the prime factorization of 6: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "6",
+       "split 6",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found the factors 2 and 3, and since both are prime, you finished the tree!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the factors 2 and 3, and since both are prime, you finished the tree!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found that 2 and 3 multiply to make 6, and since both are prime, you finished the tree!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you split 6 into 2 \u00d7 3, and since both 2 and 3 are prime, your factor tree is complete!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found that 6 splits into 2 and 3, and both leaves turned green because they are prime! Great job checking your multiplication to solve it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "factor-tree.unguided",
+   "primitiveId": "factor-tree",
+   "evalMode": "unguided",
+   "keys": [
+    "3 \u00d7 11"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ft-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3 \u00d7 11"
+      ],
+      "ask": "Find the prime factorization of 33: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "33",
+       "split 33",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to factor trees! Tap 33 to start splitting it into two factors.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's build a factor tree to find the prime factors of 33. Tap 33 to begin splitting it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap 33 to split it into two factors that multiply together to make 33.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you're ready, tap 33 and try splitting it into two factors.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our factor tree practice! Tap 33 to start splitting it into two factors.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Tried to split 33 into 3 \u00d7 12\". The board checked it: not right.",
+     "miss": "wrong_partner",
+     "scoredWith": {
+      "keys": [
+       "3 \u00d7 11"
+      ],
+      "ask": "Find the prime factorization of 33: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "33",
+       "split 33",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the frame below to see what 33 divided by 3 gives you. Try multiplying back to check your partner factor!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame is on screen now to help check what 33 divided by 3 equals. Try typing 3 and its partner to split 33!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A division frame appeared below to help you check your partner factor. What do you get when you divide 33 by 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the division frame below the tree to help check your partner factor. What number multiplied by 3 gives 33?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A partner frame appeared below the tree to help you check your division. What number multiplies by 3 to make 33?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ft-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3 \u00d7 11"
+      ],
+      "ask": "Find the prime factorization of 33: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "33",
+       "split 33",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A frame appeared below the tree to help you find the partner for 3. What number times 3 equals 33?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A helpful division frame is now showing under the tree. What number multiplied by 3 gives 33?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A frame appeared below the tree showing 33 divided by your first factor. What number multiplied by 3 gives 33?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A new frame appeared below the tree showing 33 divided by your first factor. What number multiplied by 3 gives exactly 33?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A partner frame appeared under the tree to help you find the right partner factor. What number multiplied by 3 gives 33?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ft-1",
+     "trigger": "The learner said they were stuck, so the host pulled partner_frame (help). It is on screen now: Shows a frame under the tree: the selected number divided by the learner's Factor one equals a question mark, and \"multiply back to check\". It never works out the division. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3 \u00d7 11"
+      ],
+      "ask": "Find the prime factorization of 33: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "33",
+       "split 33",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the tree\u2014there is a division frame now showing 33 divided by your first factor. Think about what number multiplies by 3 to give 33, and try typing that in!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared under the tree showing 33 divided by your first factor. Think about what number multiplies by 3 to reach 33, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the tree: a new frame shows 33 divided by your factor equals a question mark. You can use that to find the partner factor and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helper frame is now showing right below the tree with a division check. Think about 33 divided by 3, and try typing that partner into the box!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the tree: a new division frame is showing 33 divided by your factor. Think about what number times 3 gives 33, and type that in!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Finished the tree: 33 = 3 \u00d7 11\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3 \u00d7 11"
+      ],
+      "ask": "Find the prime factorization of 33: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "33",
+       "split 33",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found the right partner factor with 11 and completed the tree with 3 and 11.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the partner 11, and both 3 and 11 are prime numbers, so your tree is complete!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found that 3 times 11 makes 33, and since both 3 and 11 are prime, you finished the tree!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you found that 3 and 11 multiply to 33, and both leaves are prime!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the partner 11 to go with 3, and since both 3 and 11 are prime, you finished the tree!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "factor-tree.unguided_large",
+   "primitiveId": "factor-tree",
+   "evalMode": "unguided_large",
+   "keys": [
+    "3^2 \u00d7 7",
+    "3 \u00d7 3 \u00d7 7"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ft-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^2 \u00d7 7",
+       "3 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 63: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "63",
+       "split 63",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Tap 63 to get started, and think of two numbers that multiply to make 63.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to factor trees! Tap 63 and try splitting it into any two factors that multiply together to make it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to prime factor trees! Tap 63 and try splitting it into any two factors that multiply together to make it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the factor tree challenge! Whenever you're ready, tap 63 and enter two factors to make your first split.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you're ready, tap 63 to choose your first two factors to split it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Tried to split 63 into 3 \u00d7 22\". The board checked it: not right.",
+     "miss": "wrong_partner",
+     "scoredWith": {
+      "keys": [
+       "3^2 \u00d7 7",
+       "3 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 63: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "63",
+       "split 63",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A check frame is now below the tree to help you find the partner. What do you get when you divide 63 by 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a helpful frame below the tree to help you check your division. Try multiplying back to see what partner goes with 3 to make 63!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helper frame appeared below the tree to help check division. What number multiplied by 3 gives 63?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the helper frame below: 3 does divide 63, but check what 63 divided by 3 gives.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame is now below the tree to help you divide 63 by 3 to find its partner. What number times 3 gives exactly 63?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ft-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^2 \u00d7 7",
+       "3 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 63: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "63",
+       "split 63",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A helper frame is on the screen showing 63 divided by your factor. Try dividing 63 by 3 one digit at a time to find its partner.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take it one part at a time: break 63 into 60 and 3, and divide each part by 3. What do those two parts give you?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A check frame is now shown under the tree to help you find the partner. Try dividing 63 into 3 equal parts to see what goes with 3.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "partner_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A helper frame has appeared below the tree to guide you. Try dividing 63 by 3 to find its partner.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A partner frame is now shown under the tree to help you divide. What do you get if you divide the tens and ones of 63 by 3?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "partner_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ft-1",
+     "trigger": "The learner said they were stuck, so the host pulled partner_frame (help). It is on screen now: Shows a frame under the tree: the selected number divided by the learner's Factor one equals a question mark, and \"multiply back to check\". It never works out the division. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^2 \u00d7 7",
+       "3 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 63: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "63",
+       "split 63",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is a helper frame right under the tree showing your number divided by your first factor. Take a look at that frame and see what partner goes with 3 to make 63!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the tree, there is now a helper frame that shows 63 divided by your first factor. What number times 3 gives you 63?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look below the tree: a new frame has appeared showing 63 divided by your first factor with a question mark. You can use that to divide 63 by 3 and test out its partner!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A frame appeared under the tree showing 63 divided by your first factor. What number times 3 gives you 63?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right below the tree: there is now a division frame showing 63 divided by your factor. Take your time dividing 63 by 3 to find its partner, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ft-1",
+     "trigger": "The learner submitted \"Finished the tree: 63 = 3 \u00d7 21; 21 = 3 \u00d7 7\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3^2 \u00d7 7",
+       "3 \u00d7 3 \u00d7 7"
+      ],
+      "ask": "Find the prime factorization of 63: split it into two factors, then keep splitting every factor that is not prime until every leaf of the tree is prime.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SPLIT_INVALID",
+       "SPLIT_CORRECT",
+       "NODE_SELECTED",
+       "TREE_RESET",
+       "TREE_COMPLETE",
+       "HINT_USED",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "63",
+       "split 63",
+       "reset tree"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You fixed the partner to split 63 into 3 and 21, and then broke 21 into 3 and 7 to finish the whole tree!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found that 63 splits into 3 and 21, and then broke 21 into 3 and 7 to finish the whole tree!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found that 21 pairs with 3, and then split 21 into 3 and 7 to finish every prime branch! Excellent work breaking it down.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the partner 21 and then broke it down into 3 and 7 until every leaf was prime!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found that 21 pairs with 3, and then split 21 into 3 and 7 until every leaf was prime!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

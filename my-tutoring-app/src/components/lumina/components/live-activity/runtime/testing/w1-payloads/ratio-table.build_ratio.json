@@ -1,0 +1,82 @@
+{
+ "source": "qa/tutor-reports/ratio-table-runtime-build_ratio-payload-2026-10-09.json",
+ "primitiveId": "ratio-table",
+ "evalMode": "build_ratio",
+ "data": {
+  "title": "Advanced Ratio Reasoning: Equivalent Proportions and Unit Rates",
+  "description": "Engage in critical analysis of proportional relationships by scaling complex real-world contexts including chemical solutions, high-speed transit, bulk commercial pricing, and architectural map scaling.",
+  "challenges": [
+   {
+    "id": "rt1",
+    "type": "build-ratio",
+    "instruction": "The base ratio is 4 to 25 (Acid (mL) to Distilled Water (mL)). Move the slider to build an equivalent ratio where Distilled Water (mL) is 87.5.",
+    "baseRatio": [
+     4,
+     25
+    ],
+    "rowLabels": [
+     "Acid (mL)",
+     "Distilled Water (mL)"
+    ],
+    "targetMultiplier": 3.5,
+    "hint": "Compare the target with the base value in the same row: how many times bigger is it? Slide to that multiplier.",
+    "hiddenValue": "scaled-second",
+    "tolerance": 1
+   },
+   {
+    "id": "rt2",
+    "type": "build-ratio",
+    "instruction": "The base ratio is 12 to 45 (Energy (kWh) to Distance (km)). Move the slider to build an equivalent ratio where Distance (km) is 112.5.",
+    "baseRatio": [
+     12,
+     45
+    ],
+    "rowLabels": [
+     "Energy (kWh)",
+     "Distance (km)"
+    ],
+    "targetMultiplier": 2.5,
+    "hint": "Compare the target with the base value in the same row: how many times bigger is it? Slide to that multiplier.",
+    "hiddenValue": "scaled-second",
+    "tolerance": 1
+   },
+   {
+    "id": "rt3",
+    "type": "build-ratio",
+    "instruction": "The base ratio is 8 to 150 (Area (sq meters) to Cost (USD)). Move the slider to build an equivalent ratio where Cost (USD) is 562.5.",
+    "baseRatio": [
+     8,
+     150
+    ],
+    "rowLabels": [
+     "Area (sq meters)",
+     "Cost (USD)"
+    ],
+    "targetMultiplier": 3.75,
+    "hint": "Compare the target with the base value in the same row: how many times bigger is it? Slide to that multiplier.",
+    "hiddenValue": "scaled-second",
+    "tolerance": 1
+   },
+   {
+    "id": "rt4",
+    "type": "build-ratio",
+    "instruction": "The base ratio is 2.5 to 35 (Map Length (inches) to Actual Distance (miles)). Move the slider to build an equivalent ratio where Actual Distance (miles) is 157.5.",
+    "baseRatio": [
+     2.5,
+     35
+    ],
+    "rowLabels": [
+     "Map Length (inches)",
+     "Actual Distance (miles)"
+    ],
+    "targetMultiplier": 4.5,
+    "hint": "Compare the target with the base value in the same row: how many times bigger is it? Slide to that multiplier.",
+    "hiddenValue": "scaled-second",
+    "tolerance": 1
+   }
+  ],
+  "maxMultiplier": 10,
+  "showBarChart": true,
+  "showUnitRate": true
+ }
+}

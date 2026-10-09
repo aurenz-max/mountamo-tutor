@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/multiplication-explorer-runtime-build-payload-2026-10-09.json",
+ "primitiveId": "multiplication-explorer",
+ "evalMode": "build",
+ "data": {
+  "title": "Sticker Packs and Array Fun",
+  "description": "Explore multiplication facts using equal groups, arrays, and repeated addition with fun everyday items like sticker packs and toy cars.",
+  "fact": {
+   "factor1": 5,
+   "factor2": 2,
+   "product": 10
+  },
+  "representations": {
+   "equalGroups": true,
+   "array": true,
+   "repeatedAddition": true,
+   "numberLine": true,
+   "areaModel": true
+  },
+  "activeRepresentation": "groups",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "build",
+    "instruction": "Build 5 groups with 2 stickers in each group. How many stickers in total?",
+    "targetFact": "5 \u00d7 2 = 10",
+    "hint": "Count by twos five times to find the total number of stickers.",
+    "narration": "Let us put 2 stickers into each of 5 groups. How many stickers do we have altogether?",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 5,
+     "factor2": 2
+    },
+    "representation": "groups"
+   },
+   {
+    "id": "c2",
+    "type": "build",
+    "instruction": "Build 3 rows with 8 chairs in each row. How many chairs in total?",
+    "targetFact": "3 \u00d7 8 = 24",
+    "hint": "Count by eights three times or add 8 plus 8 plus 8.",
+    "narration": "Arrange 3 rows of 8 chairs each in the classroom. What is the total number of chairs?",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 3,
+     "factor2": 8
+    },
+    "representation": "array"
+   },
+   {
+    "id": "c3",
+    "type": "build",
+    "instruction": "Build 2 boxes with 6 eggs in each box. How many eggs in total?",
+    "targetFact": "2 \u00d7 6 = 12",
+    "hint": "Double the number 6 to find the total count of eggs.",
+    "narration": "We have 2 boxes with 6 eggs each. How many eggs are there in all?",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 2,
+     "factor2": 6
+    },
+    "representation": "repeated_addition"
+   },
+   {
+    "id": "c4",
+    "type": "build",
+    "instruction": "Build 7 rows with 6 dots in each row. How many dots in total?",
+    "targetFact": "7 \u00d7 6 = 42",
+    "hint": "Count by sixes seven times to get the final product.",
+    "narration": "Create an array with 7 rows and 6 columns. How many dots are in the array?",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 7,
+     "factor2": 6
+    },
+    "representation": "number_line"
+   },
+   {
+    "id": "c5",
+    "type": "build",
+    "instruction": "Build 10 groups with 3 beads in each group. How many beads in total?",
+    "targetFact": "10 \u00d7 3 = 30",
+    "hint": "Count by tens three times or use your tens multiplication patterns.",
+    "narration": "Put 3 beads into each of 10 groups. What is the grand total of beads?",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 10,
+     "factor2": 3
+    },
+    "representation": "area_model"
+   }
+  ],
+  "showOptions": {
+   "showProduct": false,
+   "showFactFamily": true,
+   "showCommutativeFlip": true,
+   "showDistributiveBreakdown": false
+  },
+  "gradeBand": "2-3",
+  "imagePrompt": "colorful sticker packs laid out in equal groups on a desk"
+ }
+}

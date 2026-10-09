@@ -1,0 +1,2056 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "percent-bar.convert",
+   "primitiveId": "percent-bar",
+   "evalMode": "convert",
+   "keys": [
+    "90",
+    "outfitters $27.00"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "pb-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "90",
+       "outfitters $27.00"
+      ],
+      "ask": "Outfitters sells a jacket for $30 at 10% off. StyleCo sells the same a jacket for $50 at 50% off. Work it in 3 steps, pressing Check after each: Step 1 \u2014 Outfitters: place the sale price as a percent of its original ($30). Step 2 \u2014 StyleCo: place the sale price as a percent of its original ($50). Step 3 \u2014 which is more expensive?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Outfitters sells a jacket for $30 at 10% off, and StyleCo sells the same jacket for $50 at 50% off. For Step 1, place Outfitters' sale price as a percent of its original $30 and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Outfitters sells a jacket for $30 at 10% off, and StyleCo sells the same jacket for $50 at 50% off. For Step 1, place Outfitters' sale price as a percent of its original $30 and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Outfitters sells a jacket for $30 at 10% off, and StyleCo sells the same jacket for $50 at 50% off. For Step 1, place the Outfitters sale price as a percent of its original $30, then press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Outfitters sells a jacket for $30 at 10% off, and StyleCo sells the same jacket for $50 at 50% off. For Step 1, place the Outfitters sale price as a percent of its original $30, then press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Outfitters sells a jacket for $30 at 10% off, while StyleCo sells the same jacket for $50 at 50% off. For Step 1, place the sale price for Outfitters as a percent of its original $30, then press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "pb-1",
+     "trigger": "The learner submitted \"Step 1 of 3: the bar is set to 10% of 30\". The board checked it: not right.",
+     "miss": "placed_discount",
+     "scoredWith": {
+      "keys": [
+       "90",
+       "outfitters $27.00"
+      ],
+      "ask": "Outfitters sells a jacket for $30 at 10% off. StyleCo sells the same a jacket for $50 at 50% off. Work it in 3 steps, pressing Check after each: Step 1 \u2014 Outfitters: place the sale price as a percent of its original ($30). Step 2 \u2014 StyleCo: place the sale price as a percent of its original ($50). Step 3 \u2014 which is more expensive?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Remember, the whole bar is 100%, and a 10% discount is taken off of that whole. If 10% is taken off, what percent do you actually pay?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The whole original price is 100%. If you take 10% off for the discount, what percent of the original price do you actually pay?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The full original price is 100%, and a discount takes 10% off of that. What percent of the original price do you still have to pay?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That 10% is the discount being taken off the full 100% price. If you take 10% off the whole, what percent do you still pay?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The 10% is the discount taken off the full 100% price. If 10% is taken away, what percent of the original price do you actually pay?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "pb-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "90",
+       "outfitters $27.00"
+      ],
+      "ask": "Outfitters sells a jacket for $30 at 10% off. StyleCo sells the same a jacket for $50 at 50% off. Work it in 3 steps, pressing Check after each: Step 1 \u2014 Outfitters: place the sale price as a percent of its original ($30). Step 2 \u2014 StyleCo: place the sale price as a percent of its original ($50). Step 3 \u2014 which is more expensive?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Start with the full original price at 100%. Since a discount takes 10% away, what is 100% minus 10%?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Start at 100% for the full original price, and count backward by the 10% discount to find the sale price. Move the bar to that spot and press Check!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Start at 100% for the full price, and take away the 10% discount. What percent remains?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Start with the full price at 100%, and take away the 10% discount. Set the bar to what remains and hit Check!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Start with the whole 100% and subtract the 10% discount from it. Move the bar to that remaining percentage and tap Check.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "pb-1",
+     "trigger": "The learner submitted \"Step 3 of 3: chose Outfitters\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "90",
+       "outfitters $27.00"
+      ],
+      "ask": "Outfitters sells a jacket for $30 at 10% off. StyleCo sells the same a jacket for $50 at 50% off. Work it in 3 steps, pressing Check after each: Step 1 \u2014 Outfitters: place the sale price as a percent of its original ($30). Step 2 \u2014 StyleCo: place the sale price as a percent of its original ($50). Step 3 \u2014 which is more expensive?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You worked out both sale prices and compared them to choose Outfitters correctly!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked through all the steps and correctly chose Outfitters by comparing their actual prices of $27 and $25.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You compared the two final prices and correctly chose Outfitters as the more expensive jacket!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You compared the two final prices and correctly picked Outfitters as the more expensive one!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked through the steps and chose Outfitters, comparing the two prices to find the more expensive one!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "percent-bar.find_part",
+   "primitiveId": "percent-bar",
+   "evalMode": "find_part",
+   "keys": [
+    "75"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "pb-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "75"
+      ],
+      "ask": "A $20 backpack is on clearance \u2014 25% off. What percent of the original price remains after the discount?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A $20 backpack is on clearance \u2014 25% off. What percent of the original price remains after the discount?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A $20 backpack is on clearance \u2014 25% off. What percent of the original price remains after the discount?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A twenty-dollar backpack is on clearance for twenty-five percent off. What percent of the original price remains after the discount?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A $20 backpack is on clearance for 25% off. What percent of the original price remains after the discount?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A $20 backpack is on clearance for 25% off. What percent of the original price remains after the discount?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "pb-1",
+     "trigger": "The learner submitted \"the bar is set to 25% of 20\". The board checked it: not right.",
+     "miss": "placed_discount",
+     "scoredWith": {
+      "keys": [
+       "75"
+      ],
+      "ask": "A $20 backpack is on clearance \u2014 25% off. What percent of the original price remains after the discount?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That 25% is the discount taken off the full 100%. What percent is left of the whole bar after taking that part away?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The whole bar represents 100%. If 25% is taken off for the discount, how much percent is left?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The whole original price is 100%, and 25% is taken off. Where on the bar shows what remains?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That 25% is the amount taken off the whole price of 100%. If you start at 100% and take away 25%, what percent remains?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The full original price starts at 100%. If 25% is taken off for the discount, what percent is left?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "pb-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "75"
+      ],
+      "ask": "A $20 backpack is on clearance \u2014 25% off. What percent of the original price remains after the discount?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The whole price starts at 100%. If you take away 25%, what number do you get from 100 minus 25?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The full price starts at 100%. If you take 25% away from 100%, what percent remains?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The full price is 100%. If you subtract the 25% discount from 100%, what percent remains?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The entire original price starts at 100%. If you take away 25% for the discount, think about what 100 minus 25 leaves on the bar.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The whole original price is 100%. If you take away 25% for the discount, what number do you get from 100 minus 25?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "pb-1",
+     "trigger": "The learner submitted \"the bar is set to 75% of 20\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "75"
+      ],
+      "ask": "A $20 backpack is on clearance \u2014 25% off. What percent of the original price remains after the discount?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You set the bar to 75% by taking the 25% discount away from 100%!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted the bar right to 75% and checked it. That shows exactly what remains of the original price.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set the bar right to 75% and checked it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted the bar to 75% and checked it! That leaves 75% of the original price.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set the bar to 75% and checked it, finding the remaining part of the price.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "percent-bar.find_whole",
+   "primitiveId": "percent-bar",
+   "evalMode": "find_whole",
+   "keys": [
+    "118"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "pb-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "118"
+      ],
+      "ask": "A store buys an item for $40 and adds a 18% markup. Work it in 2 steps, pressing Check after each: Step 1 \u2014 the markup: what percent of the cost is the markup? Place it on the bar. Step 2 \u2014 the total: including the markup, the total is what percent of the cost? Place the TOTAL on the bar.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A store buys an item for $40 and adds an 18% markup. For Step 1, what percent of the cost is the markup? Place it on the bar and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A store buys an item for $40 and adds an 18% markup. For Step 1, what percent of the cost is the markup? Place it on the bar and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A store buys an item for $40 and adds an 18% markup. \n\nStep 1 asks: what percent of the cost is the markup? Place it on the bar and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A store buys an item for $40 and adds an 18% markup. For Step 1, what percent of the cost is the markup? Place it on the bar and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A store buys an item for $40 and adds an 18% markup. \n\nFor Step 1, what percent of the cost is the markup? Move the bar to place it, then press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "pb-1",
+     "trigger": "The learner submitted \"Step 1 of 2: the bar is set to 28% of 40\". The board checked it: not right.",
+     "miss": "too_high",
+     "scoredWith": {
+      "keys": [
+       "118"
+      ],
+      "ask": "A store buys an item for $40 and adds a 18% markup. Work it in 2 steps, pressing Check after each: Step 1 \u2014 the markup: what percent of the cost is the markup? Place it on the bar. Step 2 \u2014 the total: including the markup, the total is what percent of the cost? Place the TOTAL on the bar.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take another look at the problem: what percent markup did the store add to the cost? Adjust the bar to match that percent and try checking again.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take another look at the story: what percent does it say the store adds as a markup? Try setting the bar to match that percent.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take another look at the problem statement to see what percent markup the store adds. Adjust the bar and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take another look at the problem to see what percent the store is adding for the markup. Give it another try on the bar!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take another look at the problem: what percent does the scenario say the store adds as a markup? Try setting the bar to that percent.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "pb-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "118"
+      ],
+      "ask": "A store buys an item for $40 and adds a 18% markup. Work it in 2 steps, pressing Check after each: Step 1 \u2014 the markup: what percent of the cost is the markup? Place it on the bar. Step 2 \u2014 the total: including the markup, the total is what percent of the cost? Place the TOTAL on the bar.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The problem states that the store adds an 18% markup. What percent on the bar matches that markup amount?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The story says the store adds an 18% markup. What number between 0% and 100% on the bar shows just that markup?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The whole cost of $40 is 100% on the bar. How many percent is just the markup that the store adds?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The problem tells us the store adds an 18% markup. Try moving the bar so it points directly to 18%.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The problem says the store adds an 18% markup. What number percent should the bar point to for just that markup?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "pb-1",
+     "trigger": "The learner submitted \"Step 2 of 2: the bar is set to 118% of 40\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "118"
+      ],
+      "ask": "A store buys an item for $40 and adds a 18% markup. Work it in 2 steps, pressing Check after each: Step 1 \u2014 the markup: what percent of the cost is the markup? Place it on the bar. Step 2 \u2014 the total: including the markup, the total is what percent of the cost? Place the TOTAL on the bar.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You placed 118% on the bar by adding the 18% markup onto the whole 100%, and checked it to find the total. Great work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You placed 118% on the bar to include the original whole plus the markup, and that gives the total. Nicely done!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set the total to 118% by adding the 18% markup onto 100%, and checked it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You placed 118% on the bar and checked it, adding the 18% markup right on top of 100%. Nicely done!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set the total to 118% by adding that 18% markup on top of the 100% cost, and checked it. Excellent work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "percent-bar.identify_percent",
+   "primitiveId": "percent-bar",
+   "evalMode": "identify_percent",
+   "keys": [
+    "60"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "pb-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "60"
+      ],
+      "ask": "A sticker sheet has 20 stickers. You have already used 60% of them. Show that percent on the bar.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A sticker sheet has 20 stickers. You have already used 60% of them. Show that percent on the bar.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A sticker sheet has 20 stickers. You have already used 60% of them. Show that percent on the bar.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A sticker sheet has 20 stickers. You have already used 60% of them. Show that percent on the bar.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A sticker sheet has 20 stickers. You have already used 60% of them. Show that percent on the bar.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A sticker sheet has 20 stickers. You have already used 60% of them. Show that percent on the bar.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "pb-1",
+     "trigger": "The learner submitted \"the bar is set to 40% of 20\". The board checked it: not right.",
+     "miss": "complement",
+     "scoredWith": {
+      "keys": [
+       "60"
+      ],
+      "ask": "A sticker sheet has 20 stickers. You have already used 60% of them. Show that percent on the bar.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the percent in the question. Give it another try on the bar!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take another look at the number in the problem. Where would that percent fall along the bar from 0% to 100%?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take another look at the percent in the problem. Where does that land between 0% and 100%?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the percent we want to show from the story. Where does 60% land on the bar?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take another look at the percent you used. Where does that number sit along the bar?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "pb-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "60"
+      ],
+      "ask": "A sticker sheet has 20 stickers. You have already used 60% of them. Show that percent on the bar.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The bar goes from 0% to 100%. Look at the percent asked for in the problem and slide the bar right to that mark.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The question asks to show the 60% of stickers you used directly on the bar. Look at the numbers along the bar and drag it until the readout matches that percent.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "What percent does the problem say you have used so far?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The problem asks for 60%. Try sliding the bar until the percent readout matches 60%.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "The whole bar represents 100%. What percent does the problem say you have already used?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "pb-1",
+     "trigger": "The learner submitted \"the bar is set to 60% of 20\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "60"
+      ],
+      "ask": "A sticker sheet has 20 stickers. You have already used 60% of them. Show that percent on the bar.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_INCORRECT",
+       "NEXT_STEP",
+       "CHALLENGE_CORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "HINT_REQUESTED",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "25%50%75%0%100%",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You fixed it and set the bar right to 60%!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set the bar right to 60% and checked it. Excellent work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set the bar right to 60%! That shows 12 stickers used.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set the bar right to 60%! That shows 12 stickers used.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted the bar right to 60% and got it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

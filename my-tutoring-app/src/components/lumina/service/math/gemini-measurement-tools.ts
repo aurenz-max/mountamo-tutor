@@ -226,7 +226,7 @@ const pickShapeType = (idx: number): ShapeType => {
  * Guarantees:
  * - All widths are distinct (no duplicate sizes per session).
  * - Widths fall within the mode's pedagogical range.
- * - Shapes are ordered smallest → largest for ruler workflow consistency.
+ * - Shapes are presented in a shuffled order, never smallest → largest (compare orders them).
  * - Colors cycle through the pool, no repeats within a session up to its size.
  */
 const selectMeasurementChallenges = (
@@ -260,7 +260,7 @@ const selectMeasurementChallenges = (
   const colors = shuffle(COLOR_POOL).slice(0, target);
   const hints = shuffle(HINT_POOL);
 
-  return widths.map((w, idx) => {
+  const built = widths.map((w, idx) => {
     const shapeType = pickShapeType(idx);
     const widthInches = Math.round(w / config.precisionStep) * config.precisionStep;
     const color = colors[idx] ?? COLOR_POOL[idx % COLOR_POOL.length];
@@ -279,6 +279,13 @@ const selectMeasurementChallenges = (
       hint: hints[idx % hints.length],
     };
   });
+  // Presented in a shuffled order, never shortest first: compare's ordering task lists the shapes in session order,
+  // so a sorted session handed the learner the answer. Ids follow the presented order, so they carry no rank either.
+  const shuffled = shuffle(built);
+  if (shuffled.length > 1 && shuffled.every((c, i) => i === 0 || shuffled[i - 1].widthInches <= c.widthInches)) {
+    shuffled.push(shuffled.shift()!);
+  }
+  return shuffled.map((c, idx) => ({ ...c, id: `mt-${idx + 1}` }));
 };
 
 // ---------------------------------------------------------------------------

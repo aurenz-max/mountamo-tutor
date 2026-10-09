@@ -1,0 +1,82 @@
+{
+ "source": "qa/tutor-reports/ratio-table-runtime-missing_value-payload-2026-10-09.json",
+ "primitiveId": "ratio-table",
+ "evalMode": "missing_value",
+ "data": {
+  "title": "Proportional Reasoning: Recipes, Rates, and Scientific Ratios",
+  "description": "Engage in advanced proportional reasoning across real-world scenarios including culinary scaling, retail economics, kinematic speed calculations, and chemical solution preparation. Analyze equivalent ratios and derive unit rates to solve complex missing-value problems.",
+  "challenges": [
+   {
+    "id": "rt1",
+    "type": "missing-value",
+    "instruction": "A classic artisan sourdough recipe utilizes a base ratio of 4 cups of unbleached flour to 1.5 cups of filtered water. If you scale up the production to yield a larger batch requiring 6 cups of water, how many cups of flour must you incorporate to maintain the exact structural hydration ratio?",
+    "baseRatio": [
+     4,
+     1.5
+    ],
+    "rowLabels": [
+     "Cups of Flour",
+     "Cups of Water"
+    ],
+    "targetMultiplier": 4,
+    "hint": "Determine the scalar factor by comparing your target water to the base water amount, then apply that same factor to the flour.",
+    "hiddenValue": "scaled-first",
+    "tolerance": 1
+   },
+   {
+    "id": "rt2",
+    "type": "missing-value",
+    "instruction": "Bulk purchasing analysis reveals a wholesale pricing structure where 3 kilograms of organic coffee beans cost $42.75. Operating under this constant unit rate, what will be the total cost required to acquire a commercial supply of 7.5 kilograms?",
+    "baseRatio": [
+     3,
+     42.75
+    ],
+    "rowLabels": [
+     "Kilograms of Coffee",
+     "Total Cost in USD"
+    ],
+    "targetMultiplier": 2.5,
+    "hint": "Calculate the unit price per single kilogram first, or find the combined multiplier linking 3 kg to 7.5 kg.",
+    "hiddenValue": "scaled-second",
+    "tolerance": 1
+   },
+   {
+    "id": "rt3",
+    "type": "missing-value",
+    "instruction": "During a deep-space telemetry test, a probe maintains a constant velocity traveling 125.5 miles in 2.5 hours. At this unwavering cruise velocity, how many total miles will the probe traverse if the observation window extends to 6 hours?",
+    "baseRatio": [
+     2.5,
+     125.5
+    ],
+    "rowLabels": [
+     "Elapsed Time in Hours",
+     "Distance Traveled in Miles"
+    ],
+    "targetMultiplier": 2.4,
+    "hint": "Find the unit rate of miles per hour by dividing the distance by the hours, then multiply by the new time duration.",
+    "hiddenValue": "scaled-second",
+    "tolerance": 1
+   },
+   {
+    "id": "rt4",
+    "type": "missing-value",
+    "instruction": "In a biochemical laboratory experiment, a neutralizing aqueous solution requires a strict mixing ratio of 5 milliliters of acid concentrate to 12.5 milliliters of distilled water. If a researcher measures out precisely 14 milliliters of acid concentrate, how many milliliters of distilled water are needed to preserve chemical equilibrium?",
+    "baseRatio": [
+     5,
+     12.5
+    ],
+    "rowLabels": [
+     "Milliliters of Acid",
+     "Milliliters of Water"
+    ],
+    "targetMultiplier": 2.8,
+    "hint": "Determine the multiplier by dividing the new amount of acid by the base amount of acid (14 divided by 5).",
+    "hiddenValue": "scaled-second",
+    "tolerance": 1
+   }
+  ],
+  "maxMultiplier": 10,
+  "showBarChart": true,
+  "showUnitRate": true
+ }
+}

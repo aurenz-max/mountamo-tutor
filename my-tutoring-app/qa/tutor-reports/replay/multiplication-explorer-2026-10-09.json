@@ -1,0 +1,3145 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    4,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ],
+   "no_key_before_try": [
+    0,
+    30
+   ],
+   "no_fix_before_try": [
+    0,
+    30
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    30
+   ],
+   "no_protocol_leak": [
+    0,
+    30
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "multiplication-explorer.build",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "build",
+   "keys": [
+    "10"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "Build 5 groups with 2 stickers in each group. How many stickers in total?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 2 \u2194 2 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the groups of stickers on your screen. Whenever you are ready, type your answer and press Check Answer!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": false,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_protocol_leak": "press Check Answer"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the multiplication activity! Take a look at the groups on screen, and type your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the groups on your screen to find the total number of stickers.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! You can see 5 groups with 2 stickers in each group. When you're ready, type your answer and press Check Answer!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": false,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_protocol_leak": "press Check Answer"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the groups on your screen and see how many stickers there are in all.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 7 as the answer\". The board checked it: not right.",
+     "miss": "added_factors",
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "Build 5 groups with 2 stickers in each group. How many stickers in total?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 2 \u2194 2 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's count how many stickers are inside each group, and then skip-count by 2s for all 5 groups. How many do you get when you count them up?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! How many stickers are inside each group?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! How many stickers are inside each group?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have 5 groups, and each group has 2 stickers inside. How many stickers do you get if you count by 2s for each group?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We have 5 groups, and each group holds 2 stickers. What do we get if we count up by 2s for each group?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "Build 5 groups with 2 stickers in each group. How many stickers in total?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 2 \u2194 2 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We have 5 groups, and each group has 2 stickers inside. Try skip-counting by twos for each circle: 2, 4, 6... what comes next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We have 5 groups, and each group has 2 stickers inside. Try skip-counting by twos for each of the 5 groups: 2, 4, ... what comes next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You have 5 circles, and each circle has 2 dots. Let's start by skip-counting: 2, 4... what comes next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We have 5 groups, and each group has 2 stickers inside. Try skip-counting by twos\u20142, 4\u2014and keep going for all 5 circles!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "There are 5 circles, and every circle has 2 dots inside. Let's count the dots by 2s: 2, 4, 6... can you keep going to count all 5 groups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 10 as the answer\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "10"
+      ],
+      "ask": "Build 5 groups with 2 stickers in each group. How many stickers in total?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 2 \u2194 2 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You fixed your answer and got 10 by skip-counting those 5 groups of 2! Great job working that out.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You skip-counted by twos to find 10 stickers in all.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and typed 10 by skip-counting those 5 groups of 2! Excellent work.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it\u2014you fixed your answer to 10 by skip-counting those 5 groups of 2!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed your answer and typed 10\u2014that is spot on for 5 groups of 2!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "multiplication-explorer.commutative",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "commutative",
+   "keys": [
+    "45"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Rotate the array to find 9 groups of 5. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 9 \u2194 9 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to our lesson on multiplication! Take a look at the array on your screen and see what happens when you rotate it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Whenever you're ready, take a look at the array on your screen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the array on your screen and see what happens when you rotate it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our lesson on multiplication! Take a look at the groups on your screen and see what you find.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the groups on your screen and see what total product you get.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 14 as the answer\". The board checked it: not right.",
+     "miss": "added_factors",
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Rotate the array to find 9 groups of 5. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 9 \u2194 9 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice that we have 9 groups with 5 in each group, rather than adding 9 plus 5. How many total dots do you get if you count by 5s for all 9 groups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice try! Remember, we are multiplying 9 groups of 5 rather than adding 9 and 5 together. Try skip-counting by 5s for the 9 groups to see what you get!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that we have 9 groups with 5 in each group, rather than adding 9 plus 5. How much do we get if we skip-count by 5 nine times?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was adding the two numbers together, but we want 9 groups of 5. What do you get if you skip-count by 5s nine times?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was adding 5 and 9 together, but multiplication means groups. How many dots are in each of those 5 groups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Rotate the array to find 9 groups of 5. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 9 \u2194 9 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We can count by 5s together: 5, 10, 15, 20... what comes next as you keep counting up to 9 groups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's try counting by fives together: 5, 10, 15, 20... What number comes next if you keep counting up to nine groups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's skip-count by 5 together: 5, 10, 15, 20... can you keep counting by 5s until you have counted 9 times?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's count by 5s together: 5, 10, 15, 20... what comes next as you keep going for all 9 groups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We can count by 5s for each of the 9 groups: 5, 10, 15, 20... What number comes next as you keep going?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 45 as the answer\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "45"
+      ],
+      "ask": "Rotate the array to find 9 groups of 5. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 5 \u00d7 9 \u2194 9 \u00d7 5",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You figured it out and typed 45 by skip-counting those 9 groups of 5!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found 45 by skip-counting your groups of 5 and got it right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You counted by 5s to find 45, showing that 5 times 9 is 45.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted by 5s all the way to 45 and solved it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted all the groups by 5s and typed 45\u2014that's it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "multiplication-explorer.connect",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "connect",
+   "keys": [
+    "8"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Look at all the representations for 2 packs with 4 stickers each. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 2 \u00d7 4 \u2194 4 \u00d7 2",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the pictures showing 2 packs of 4 stickers to find the total product.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to Multiplication Explorer! Take a look at the pictures showing 2 packs with 4 stickers each, and see what total you find.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the pictures showing 2 packs with 4 stickers each, and type your answer whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the pictures showing 2 packs with 4 stickers each, and type your answer whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the pictures showing 2 packs with 4 stickers each, and type your answer when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 6 as the answer\". The board checked it: not right.",
+     "miss": "added_factors",
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Look at all the representations for 2 packs with 4 stickers each. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 2 \u00d7 4 \u2194 4 \u00d7 2",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the two groups with 4 dots in each group, or try skip-counting by 4 two times. How many dots do they make in all?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's check the groups: how many dots are inside each circle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You added 2 and 4, but this is 2 groups of 4. How many dots are there in both circles together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Try looking at the equal groups picture\u2014what happens if you count how many stickers are in both groups altogether?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the two circles: how many stickers are in each circle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Look at all the representations for 2 packs with 4 stickers each. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 2 \u00d7 4 \u2194 4 \u00d7 2",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "We can count by fours: the first pack has 4 stickers, so what do you get when you add 4 more?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can add 4 plus 4, or count all the dots in the two circles. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's look at the repeated addition: it shows 4 + 4. What do you get when you add 4 plus 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "You can think of 2 packs of 4 as adding 4 plus 4. What number do you get when you add 4 and 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look at the repeated addition tab showing 4 + 4. What number do you get when you add 4 and 4 together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 8 as the answer\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "8"
+      ],
+      "ask": "Look at all the representations for 2 packs with 4 stickers each. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 2 \u00d7 4 \u2194 4 \u00d7 2",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You worked through it and typed 8, finding the product for two groups of 4.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found that 2 packs of 4 make 8 stickers in all.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You typed 8 by putting those 2 groups of 4 together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out and typed 8, putting the two groups of 4 together!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted up 4 more and found 8!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "multiplication-explorer.distributive",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "distributive",
+   "keys": [
+    "40"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "40"
+      ],
+      "ask": "Break apart the area model into 5 x 4 and 5 x 4 to find the total for 10 x 4. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 10 \u00d7 4 \u2194 4 \u00d7 10",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to multiplication! Take a look at how the rectangle is split into two smaller parts to find the total.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to multiplication practice! Look at the rectangle broken into two smaller parts: what do you get when you find each part?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the two smaller rectangles, 5 \u00d7 4 and 5 \u00d7 4. What do you get when you combine those two parts?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the area model broken into two smaller parts of 5 \u00d7 4. What do you get when you add those two parts together?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the area model broken into two smaller parts. Type your answer and press Check Answer when you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": false,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_protocol_leak": "press Check Answer"
+       },
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch-1",
+     "trigger": "The learner submitted \"Typed 14 as the answer\". The board checked it: not right.",
+     "miss": "added_factors",
+     "scoredWith": {
+      "keys": [
+       "40"
+      ],
+      "ask": "Break apart the area model into 5 x 4 and 5 x 4 to find the total for 10 x 4. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 10 \u00d7 4 \u2194 4 \u00d7 10",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Good try! Notice that the model breaks into two parts: 5 \u00d7 4 and 5 \u00d7 4. What is the value of each smaller part?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! What is the area of one of the 5 by 4 parts?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "We are multiplying 10 by 4, not adding them together. What do you get when you add the two 5 \u00d7 4 parts together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the two smaller parts: what is the area of each 5 by 4 piece? Try finding those two parts first, then add them together.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's look at the two smaller parts: what is the area of each 5 \u00d7 4 section?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "40"
+      ],
+      "ask": "Break apart the area model into 5 x 4 and 5 x 4 to find the total for 10 x 4. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 10 \u00d7 4 \u2194 4 \u00d7 10",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's take it one part at a time. If you have 5 groups of 4, what does that equal?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We can find the total by solving the two smaller pieces first. What do you get when you count 5 groups of 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's take it one part at a time. If you have 5 groups of 4, what do those equal?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We can break it into two smaller pieces: first find 5 \u00d7 4, and then add the other 5 \u00d7 4 to it. What does 5 \u00d7 4 give you?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We can find 5 \u00d7 4 first. How many is 5 groups of 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch-1",
+     "trigger": "The learner submitted \"Typed 40 as the answer\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "40"
+      ],
+      "ask": "Break apart the area model into 5 x 4 and 5 x 4 to find the total for 10 x 4. What is the total product?",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "flip: 10 \u00d7 4 \u2194 4 \u00d7 10",
+       "equal groups",
+       "array",
+       "repeated addition",
+       "number line",
+       "area model",
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! You fixed your answer and found 40 by putting the parts together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! You worked out the parts and typed 40 to get the correct product.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found 40 by putting the two smaller parts together.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out and typed 40! Adding the two smaller parts together gave you the whole product.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! You worked out the parts and typed 40 to get the correct product.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "multiplication-explorer.fluency",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "fluency",
+   "keys": [
+    "24"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "c1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "24"
+      ],
+      "ask": "Calculate the total for 6 times 4.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Whenever you are ready, type your answer for 6 \u00d7 4 and press Check Answer.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": false,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_protocol_leak": "press Check Answer"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to multiplication practice! Whenever you're ready, try figuring out 6 times 4 and type your answer in the box.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the multiplication problem on your screen whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 10 as the answer\". The board checked it: not right.",
+     "miss": "added_factors",
+     "scoredWith": {
+      "keys": [
+       "24"
+      ],
+      "ask": "Calculate the total for 6 times 4.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That is what we get if we add 6 and 4 together. Remember, 6 \u00d7 4 means 6 groups of 4! What do you get if you count by 4s six times?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Remember, this problem asks for 6 groups of 4 rather than 6 plus 4. How much do 6 groups of 4 make when you skip-count or add them up?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That looks like adding 6 plus 4, but the multiplication symbol means we have 6 groups of 4. How much do you get if you count by 4 six times?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That was adding 6 plus 4. Think of 6 groups of 4 instead, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That looks like adding 6 and 4 together. Remember, 6 times 4 means having 6 groups with 4 in each group, so give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "c1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "24"
+      ],
+      "ask": "Calculate the total for 6 times 4.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's break it down by skip-counting by 4s together: 4, 8, 12... what comes next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's count by 4s together: 4, 8, 12, 16... what comes next when you add 4 more?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's take it one step at a time! We can skip-count together: 4, 8, 12, 16... what comes next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's count by 4s together: 4, 8, 12, 16... what comes next after 16?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's count up by 4s together: 4, 8, 12, 16... what comes next after 16?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "c1",
+     "trigger": "The learner submitted \"Typed 24 as the answer\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "24"
+      ],
+      "ask": "Calculate the total for 6 times 4.",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You solved it and typed 24, fixing your first answer!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked it out and typed 24, fixing your first answer. Great job sticking with it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked through it, typed 24, and got it right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked through it and typed 24, which is exactly right! Fantastic job sticking with it and finding the total.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You fixed your mistake and typed 24 to get the product.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "multiplication-explorer.missing_factor",
+   "primitiveId": "multiplication-explorer",
+   "evalMode": "missing_factor",
+   "keys": [
+    "5"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch_1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "Find the missing factor: ? \u00d7 4 = 20",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to multiplication practice! Whenever you're ready, take a look at the equation and give it a try.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to multiplication practice! Whenever you're ready, take a look at the equation and give it a try.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen, and let me know if you want to talk through it together.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the equation on your screen, and type your answer whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch_1",
+     "trigger": "The learner submitted \"Typed 20 as the missing factor\". The board checked it: not right.",
+     "miss": "gave_product",
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "Find the missing factor: ? \u00d7 4 = 20",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice that 20 is already the total on the other side of the equal sign. How many groups of 4 do we need to reach 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The total is 20, with 4 in each group. How many groups of 4 make 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that 20 is the total we want to reach. How many groups of 4 do we need to make 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that 20 is the total product we want to reach. How many groups of 4 do we need to make 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "20 is our total. How many groups of 4 make 20?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch_1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "Find the missing factor: ? \u00d7 4 = 20",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Try skip-counting by 4 out loud until you land on 20, keeping track of how many 4s you count.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Try skip-counting by 4s on your fingers until you hit 20, and see how many fingers you have up!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We can count by 4s until we hit 20: 4, 8, 12... what comes next?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We can count up by 4s until we hit 20: 4, 8, 12... how many 4s does it take?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Try skip-counting up by 4s until you land on 20, and keep track of how many counts it takes.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch_1",
+     "trigger": "The learner submitted \"Typed 5 as the missing factor\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "5"
+      ],
+      "ask": "Find the missing factor: ? \u00d7 4 = 20",
+      "leakTokens": [
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_CHALLENGE",
+       "PHASE_CHANGE",
+       "SESSION_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer",
+       "1. groups",
+       "2. array",
+       "3. connect",
+       "4. strategy"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You figured it out\u2014typing 5 worked because 5 groups of 4 make 20!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it\u20145 was the missing factor! You counted out five groups of 4 to make 20.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out\u2014typing 5 worked because 5 groups of 4 make 20!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! You typed 5 and checked it, because 5 groups of 4 make 20.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by entering 5, figuring out that 5 groups of 4 make 20!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

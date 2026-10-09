@@ -6,8 +6,14 @@ import type { SpokenBalanceMiss } from '../../../primitives/visual-primitives/ma
 import type { BaseTenMiss, SpokenBaseTenMiss } from '../../../primitives/visual-primitives/math/baseTenWorkspace';
 import type { CoinMiss } from '../../../primitives/visual-primitives/math/coinCounterWorkspace';
 import { REGROUP_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/regroupingWorkbenchWorkspace';
+import { PERCENT_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/percentBarWorkspace';
+import { RATIO_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/ratioTableWorkspace';
+import { RATIO_LINE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/doubleNumberLineWorkspace';
+import { FACTOR_TREE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/factorTreeWorkspace';
 import type { MeasureMiss } from '../../../primitives/visual-primitives/math/measureLabWorkspace';
+import type { MeasurementMiss } from '../../../primitives/visual-primitives/math/measurementToolsWorkspace';
 import type { AreaModelMiss } from '../../../primitives/visual-primitives/math/areaModelWorkspace';
+import type { MultiplicationMiss } from '../../../primitives/visual-primitives/math/multiplicationExplorerWorkspace';
 import type { LengthMiss } from '../../../primitives/visual-primitives/math/lengthLabWorkspace';
 import type { ClockMiss } from '../../../primitives/visual-primitives/math/analogClockWorkspace';
 import type { TimeSequencerMiss } from '../../../primitives/visual-primitives/math/timeSequencerWorkspace';
@@ -1146,6 +1152,23 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'double-number-line',
+    teachingWorkspace: {
+      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'The activity checks each answer itself, and you are not told it: the learner types the bottom-line value '
+        + 'that matches the marked top value and presses Check. Never say that value before the check or after a wrong '
+        + 'one, nor the product or quotient that gives it. On find missing and unit rate items the unit rate is the '
+        + 'learner\'s to find, and on a find-the-unit-rate item it is the answer: do not say it. The given pair, and on '
+        + 'equivalent ratios the unit rate the question states, may be named. Teaching is that the two lines grow by '
+        + 'multiplying: each step of 1 on the top line is the same-size jump on the bottom line, so twice as far on top '
+        + 'is twice as far below; adding the same amount once is not scaling. The unit rate comes from cutting the given '
+        + 'pair into equal parts, one per step of 1 on top. Ask what 1 on the top line matches, how many of those the '
+        + 'asked value is, and what that makes below. When tick labels or guides are not drawn, do not supply what they '
+        + 'would show. Read the question aloud. You cannot type or press Check.',
+      // Every mode declares levers (`doubleNumberLineLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`ratioLineMiss`), every mode.
+      misses: { ...RATIO_LINE_MISSES_BY_MODE },
+    },
     description: 'Multi-challenge double-number-line session: students walk through 3-6 ratio challenges that all share ONE proportional relationship (same topLabel/bottomLabel/unitRate) for context coherence. Each challenge highlights one target ask-point on parallel number lines and the student enters the missing value. Critical bridge from additive to multiplicative reasoning. ESSENTIAL for grades 5-8 ratios and proportions practice.',
     constraints: 'Session-level configuration. The generator produces 3-6 ratio challenges per session sharing one scenario, so do NOT supply specific target points, given points, or per-challenge prompts from the manifest — they are derived from the eval mode + generated unit rate. Supports equivalent_ratios, find_missing, and unit_rate challenge types.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['type'], role: 'apply', minutes: 5 },
@@ -1256,7 +1279,25 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'factor-tree',
-    description: 'Multi-challenge factor-tree session: students factor 3-6 different composite numbers in a row at the same difficulty tier. Each challenge is a fresh tree with its own composite. Perfect for teaching prime numbers, composite numbers, factor decomposition, greatest common factor (GCF), least common multiple (LCM), and divisibility rules. ESSENTIAL for grades 4-6 number theory.',
+    teachingWorkspace: {
+      grades: ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7'],
+      guidance: 'The activity checks every split itself, and you are not told the factorization: the learner taps a '
+        + 'number that is not prime, types two factors and presses Split, or in a guided mode taps one of the factor '
+        + 'pairs listed for it. A split whose factors do not multiply to the number, or that uses 1, is a wrong answer; a '
+        + 'right split stays on the tree, and the item is finished when every leaf is prime. Before the tree is finished '
+        + 'and after a wrong split, never say a factor pair of a number on the tree, the result of a division, whole or '
+        + 'worked out in parts, or the prime factorization, and do not say whether a leaf is prime when the leaves are not '
+        + 'colored. The learner does the division or the multiplying; you ask the question that starts it. Teaching is that a '
+        + 'factor pair multiplies to the number, never adds to it; that if a small prime (2, 3, 5, 7) divides a number, '
+        + 'the number divided by it is its partner; and that a prime has no factor pair without 1. Ask which small prime '
+        + 'divides the number and how they could check. Any first split ends in the same primes. When pairs are listed, '
+        + 'the learner chooses one; never choose it for them. You cannot tap, type or press Split.',
+      // Every mode declares levers (`factorTreeLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`factorMiss`), every mode.
+      misses: { ...FACTOR_TREE_MISSES_BY_MODE },
+    },
+    description:'Multi-challenge factor-tree session: students factor 3-6 different composite numbers in a row at the same difficulty tier. Each challenge is a fresh tree with its own composite. Perfect for teaching prime numbers, composite numbers, factor decomposition, greatest common factor (GCF), least common multiple (LCM), and divisibility rules. ESSENTIAL for grades 4-6 number theory.',
     constraints: 'Composites only (not primes). Session-level configuration; rootValues are selected by the local pool service per eval mode, so do NOT supply specific numbers from the manifest.',
     affordances: { representation: 'symbolic', answers: ['tap', 'type'], role: 'apply', minutes: 5 },
     tutoring: {
@@ -1339,7 +1380,23 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'ratio-table',
-    description: 'Multi-challenge ratio table with 4 challenge types: missing-value (find a hidden scaled value), find-multiplier (determine the scaling factor), build-ratio (use a slider to construct an equivalent ratio), and unit-rate (calculate the unit rate). Structured table showing equivalent ratios with columns for each quantity. Progressive difficulty with scaffolded hints. Perfect for teaching equivalent ratios, unit rates, proportional reasoning, scaling relationships, and ratio problem-solving. ESSENTIAL for grades 5-7 ratios and proportions.',
+    teachingWorkspace: {
+      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'The activity checks each answer itself, and you are not told it: the learner types a number and presses '
+        + 'Check (a missing value, a multiplier, or a unit rate), or on a build item moves the multiplier slider and presses '
+        + 'Check. Before a check and after a wrong one, never say the hidden value, the multiplier a find or build item asks '
+        + 'for, the unit rate a unit-rate item asks for, or the result of the division on screen. Teaching is that '
+        + 'equivalent ratios scale by multiplying: both rows of the base column are multiplied by the same number, never '
+        + 'added to; the multiplier is how many times bigger the scaled column is (scaled divided by base); the unit rate is '
+        + 'how many of the second quantity go with 1 of the first (second divided by first). Ask which row is known, what it '
+        + 'was multiplied by, and what that does to the other row. When the unit-rate banner or the bar chart is not drawn, '
+        + 'do not supply what it would show. Read the question aloud. You cannot type, move the slider, or press Check.',
+      // Every mode declares levers (`ratioTableLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`ratioMiss`), every mode.
+      misses: { ...RATIO_MISSES_BY_MODE },
+    },
+    description:'Multi-challenge ratio table with 4 challenge types: missing-value (find a hidden scaled value), find-multiplier (determine the scaling factor), build-ratio (use a slider to construct an equivalent ratio), and unit-rate (calculate the unit rate). Structured table showing equivalent ratios with columns for each quantity. Progressive difficulty with scaffolded hints. Perfect for teaching equivalent ratios, unit rates, proportional reasoning, scaling relationships, and ratio problem-solving. ESSENTIAL for grades 5-7 ratios and proportions.',
     constraints: 'Requires a ratio relationship between 2-3 quantities. Best with 3-5 rows showing equivalent ratios.',
     affordances: { representation: 'symbolic', answers: ['manipulate', 'type'], role: 'apply', minutes: 5 },
     tutoring: {
@@ -1415,6 +1472,22 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'percent-bar',
+    teachingWorkspace: {
+      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'The activity checks each step itself, and you are not told its answer: the learner sets the bar to a percent '
+        + '(tap, drag or the arrow keys) and presses Check; on a compare step they tap one option and press Check. A right '
+        + 'step opens the next step of the same problem, and only the last step finishes it. Before a check and after a '
+        + 'wrong one, never say the percent a step needs, the value or total it makes, or which option is cheaper or costs '
+        + 'more. Teaching is the whole and its parts: the bar is the whole, 100%; a discount is taken off 100%, and the bar '
+        + 'shows what is still paid; a tax, tip or fee is added on top, so a total lands past the 100% line; a bigger percent '
+        + 'off is not always the lower price, so compare the prices found, not the discounts. Ask what the scenario states '
+        + 'and where that sits between 0% and 100%. When the labels or the calculation panel are hidden, do not supply what '
+        + 'they would show. Read the scenario and each step aloud. You cannot move the bar, choose, or press Check.',
+      // Every mode declares levers (`percentBarLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`percentMiss`), every mode.
+      misses: { ...PERCENT_MISSES_BY_MODE },
+    },
     description: 'Multi-challenge percent-bar session (3-6 percent problems of the same difficulty tier). Each challenge gives a scenario (test score, discount, tax, comparison) and the student drags the bar to the target percent. The generator pre-builds each scenario deterministically; the catalog must NOT supply specific numbers or scenarios. Grade 5-8 percent concepts.',
     constraints: 'The generator pre-selects every scenario (wholeValue, question, targetPercent, hint) per session — the manifest must NOT supply specific numbers, scenarios, questions, or target percents. The manifest may set instanceCount (default 4, max 6), showPercentLabels, showValueLabels, benchmarkLines, doubleBar, and the targetEvalMode.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate'], role: 'apply', minutes: 5 },
@@ -3513,6 +3586,37 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'multiplication-explorer',
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4'],
+      guidance: 'The activity checks the answer itself, and you are not told it. Each item is one fact; the learner types '
+        + 'one number and presses Check. On build, connect, commutative, distributive and fluency the number is the '
+        + 'product; on missing factor it is the factor shown as ? in the equation. Never say the product, or on missing '
+        + 'factor the missing factor, before the check or after a wrong one, and never say whether a typed number is right '
+        + 'before the activity checks it. The factors printed on screen may be named. On build, connect, commutative and '
+        + 'distributive a picture shows the fact (equal groups, an array, repeated addition, a number line or an area '
+        + 'model); teaching how to read it is fine (count the groups, skip-count a row aloud together), saying where the '
+        + 'count ends is not. On fluency and missing factor no picture is drawn, because it would show the answer. On '
+        + 'distributive the break-apart shows two partial products with the sum hidden: ask what each part is worth and how '
+        + 'the parts make the whole fact, and leave the adding to the learner. After a wrong answer, ask a question that '
+        + 'lets the learner find the mistake, such '
+        + 'as how many groups there are or what one group holds; do not say what to change. After a lever too: say where to '
+        + 'look and ask a question (what the last box makes, how many jumps reach the product, what the two parts make '
+        + 'together); do not tell the learner to add or count. A worked example on other numbers is teaching. You cannot '
+        + 'type or press for the learner.',
+      // Every mode publishes levers (`multiplicationExplorerLevers.ts`): product modes skip_strip (+ show_model on fluency,
+      // break_apart on distributive), missing_factor skip_line; smaller_fact everywhere but a 2 × 2. Every miss below is
+      // answered by a help lever on every item (`multiplicationExplorerLevers.test.ts`).
+      levers: true,
+      // The activity's own check (`multiplicationMiss`), every mode.
+      misses: missLists<MultiplicationMiss>({
+        build: ['added_factors', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'],
+        connect: ['added_factors', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'],
+        commutative: ['added_factors', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'],
+        distributive: ['added_factors', 'one_part_only', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'],
+        missing_factor: ['gave_product', 'gave_known_factor', 'subtracted', 'one_jump_off', 'other_factor'],
+        fluency: ['added_factors', 'one_group_short', 'one_group_over', 'off_by_one', 'other_product'],
+      }),
+    },
     description: 'Multi-representation multiplication workspace connecting equal groups, arrays, repeated addition, number line jumps, and area model — all synchronized to the same fact. Students progress through 4 phases: build groups → build arrays → connect all 5 representations → use strategies (distributive property, fact families). Includes commutative property toggle, missing-factor challenges, and fluency quiz mode. ESSENTIAL for grades 2-4 multiplication introduction, fact fluency, and multiplicative thinking.',
     constraints: 'Best for single-digit × single-digit facts (grades 2-3) or multi-digit × single-digit (grade 4). Factors should be reasonable for visual display (≤12 for arrays, ≤50 product for number line). Supports build, connect, commutative, distributive, missing_factor, and fluency challenge types.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 5 },
@@ -3745,6 +3849,30 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Measure and convert between units.',
       },
     ],
+    teachingWorkspace: {
+      grades: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'The activity checks every answer itself, and you are not told the key: no shape\'s length, no converted '
+        + 'length, no shortest-to-longest order. The learner puts the shape on the ruler (it snaps with its left edge at '
+        + '0), reads where the right edge lands, types or steps that number and presses Check. Teach the reading, never '
+        + 'the number: ask where the left edge starts and where the right edge ends; counting the spaces from 0 together '
+        + 'is teaching, saying the length is not. A named miss says which way the answer was off: never turn it into '
+        + 'the length, and never name a number the edge reaches, passes or lies between; the learner reads them. On '
+        + 'estimate the edge lands between two whole marks: ask which marks they are and whether it sits on the half. On convert the learner measures, then changes the checked length '
+        + 'to the other unit. The scene says whether the screen shows 1 inch = 2.54 centimeters; when it does not, ask '
+        + 'what they remember and do not state the rule or whether to multiply or divide. Never say the converted '
+        + 'number. On compare the learner measures every shape, then taps them from shortest to longest: ask them to '
+        + 'look at the drawn lengths or recall their measurements; never say which is shortest or longest. You cannot '
+        + 'place, type, tap or check for the learner.',
+      // Every mode's misses are answered by a drawn lever (`measurementToolsLevers.ts`).
+      levers: true,
+      // The activity's own check (`measurementMiss`), every mode; compare's last item is the ordering.
+      misses: missLists<MeasurementMiss>({
+        measure: ['one_over', 'one_short', 'too_long', 'too_short'],
+        compare: ['one_over', 'one_short', 'too_long', 'too_short', 'longest_first', 'two_swapped', 'out_of_order'],
+        estimate: ['whole_not_half', 'one_over', 'one_short', 'too_long', 'too_short'],
+        convert: ['one_over', 'one_short', 'too_long', 'too_short', 'same_number', 'wrong_operation', 'too_small', 'too_large'],
+      }),
+    },
   },
   {
     id: 'shape-builder',

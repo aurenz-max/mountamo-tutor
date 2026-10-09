@@ -1,0 +1,157 @@
+{
+ "source": "qa/tutor-reports/double-number-line-runtime-find_missing-payload-2026-10-09.json",
+ "primitiveId": "double-number-line",
+ "evalMode": "find_missing",
+ "data": {
+  "title": "Cyanobacterial Growth: Hours to Cell Count",
+  "description": "Students will analyze proportional growth rates to determine missing population values in a controlled biological experiment.",
+  "topLabel": "Hours",
+  "bottomLabel": "Cell Count",
+  "unitRate": 15,
+  "contextQuestion": "A strain of cyanobacteria reproduces at a constant rate, producing multiple cells over a period of hours in a laboratory environment.",
+  "challenges": [
+   {
+    "id": "dnl-1",
+    "challengeType": "find_missing",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 2,
+      "bottomValue": 30,
+      "label": "Given"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 3,
+      "bottomValue": 45,
+      "label": "Find for 3"
+     }
+    ],
+    "prompt": "Given 2 Hours = 30 Cell Count, find Cell Count when Hours = 3.",
+    "hint": "First find the unit rate: 30 \u00f7 2 = 15. Then multiply by 3.",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 120,
+     "interval": 12
+    }
+   },
+   {
+    "id": "dnl-2",
+    "challengeType": "find_missing",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 2,
+      "bottomValue": 30,
+      "label": "Given"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 4,
+      "bottomValue": 60,
+      "label": "Find for 4"
+     }
+    ],
+    "prompt": "Given 2 Hours = 30 Cell Count, find Cell Count when Hours = 4.",
+    "hint": "First find the unit rate: 30 \u00f7 2 = 15. Then multiply by 4.",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 120,
+     "interval": 12
+    }
+   },
+   {
+    "id": "dnl-3",
+    "challengeType": "find_missing",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 2,
+      "bottomValue": 30,
+      "label": "Given"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 5,
+      "bottomValue": 75,
+      "label": "Find for 5"
+     }
+    ],
+    "prompt": "Given 2 Hours = 30 Cell Count, find Cell Count when Hours = 5.",
+    "hint": "First find the unit rate: 30 \u00f7 2 = 15. Then multiply by 5.",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 120,
+     "interval": 12
+    }
+   },
+   {
+    "id": "dnl-4",
+    "challengeType": "find_missing",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 2,
+      "bottomValue": 30,
+      "label": "Given"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 6,
+      "bottomValue": 90,
+      "label": "Find for 6"
+     }
+    ],
+    "prompt": "Given 2 Hours = 30 Cell Count, find Cell Count when Hours = 6.",
+    "hint": "First find the unit rate: 30 \u00f7 2 = 15. Then multiply by 6.",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 120,
+     "interval": 12
+    }
+   }
+  ],
+  "showVerticalGuides": true,
+  "showUnitRate": true
+ }
+}

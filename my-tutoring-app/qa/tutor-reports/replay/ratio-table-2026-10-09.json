@@ -1,0 +1,2024 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "ratio-table.build_ratio",
+   "primitiveId": "ratio-table",
+   "evalMode": "build_ratio",
+   "keys": [
+    "3.5",
+    "14"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "rt1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3.5",
+       "14"
+      ],
+      "ask": "The base ratio is 4 to 25 (Acid (mL) to Distilled Water (mL)). Move the slider to build an equivalent ratio where Distilled Water (mL) is 87.5.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The base ratio is 4 to 25, Acid to Distilled Water. Move the slider to build an equivalent ratio where Distilled Water is 87.5.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The base ratio is 4 to 25, Acid to Distilled Water. Move the slider to build an equivalent ratio where Distilled Water is 87.5.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The base ratio is 4 to 25, Acid to Distilled Water. Move the slider to build an equivalent ratio where Distilled Water is 87.5 mL.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The base ratio is 4 to 25 Acid to Distilled Water. Move the slider to build an equivalent ratio where Distilled Water is 87.5 mL.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The base ratio is 4 to 25, Acid to Distilled Water. Move the slider to build an equivalent ratio where Distilled Water is 87.5 mL.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "rt1",
+     "trigger": "The learner submitted \"the slider is at \u00d74.5, making 18 Acid (mL) and 112.5 Distilled Water (mL)\". The board checked it: not right.",
+     "miss": "one_step_off",
+     "scoredWith": {
+      "keys": [
+       "3.5",
+       "14"
+      ],
+      "ask": "The base ratio is 4 to 25 (Acid (mL) to Distilled Water (mL)). Move the slider to build an equivalent ratio where Distilled Water (mL) is 87.5.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "At 4.5, Distilled Water reached 112.5, which is a bit too high for 87.5. What number can you multiply 25 by to reach 87.5?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That gave 112.5 Distilled Water, which is a bit too high for 87.5. What multiplier would you get if you divide 87.5 by 25?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "At 4.5, Distilled Water is at 112.5, which is a bit too high for 87.5. What number times 25 gives 87.5?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That gave 112.5 Distilled Water, which is a bit too high. Try moving the slider to a lower multiplier so Distilled Water reaches 87.5.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That gave 112.5 mL of Distilled Water, which is a bit too high for 87.5 mL. Try adjusting the slider down and check again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "rt1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3.5",
+       "14"
+      ],
+      "ask": "The base ratio is 4 to 25 (Acid (mL) to Distilled Water (mL)). Move the slider to build an equivalent ratio where Distilled Water (mL) is 87.5.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "To find the multiplier, try dividing the target amount of 87.5 by the starting 25.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find the multiplier, divide the target amount of 87.5 by the base amount of 25. What do you get when you divide 87.5 by 25?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find the right multiplier, divide the target amount of water, 87.5, by the starting 25.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find how many times bigger 87.5 is than 25, try dividing 87.5 by 25. That result will tell you where to move the multiplier slider.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find how many times bigger 87.5 is than 25, try dividing 87.5 by 25. That gives the multiplier to set on your slider.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "rt1",
+     "trigger": "The learner submitted \"the slider is at \u00d73.5, making 14 Acid (mL) and 87.5 Distilled Water (mL)\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3.5",
+       "14"
+      ],
+      "ask": "The base ratio is 4 to 25 (Acid (mL) to Distilled Water (mL)). Move the slider to build an equivalent ratio where Distilled Water (mL) is 87.5.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You set the slider to 3.5, which matched 87.5 mL of Distilled Water and 14 mL of Acid perfectly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You set the slider to 3.5, which matched 87.5 mL of Distilled Water and 14 mL of Acid!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted the slider right to 3.5 and hit 87.5 Distilled Water and 14 Acid. Nice work working through that division to fix it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted the slider right to 3.5 times, bringing Distilled Water to 87.5 and Acid to 14. Excellent job working that out!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You set the slider to 3.5, which scaled both parts to make exactly 87.5 mL of Distilled Water.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "ratio-table.find_multiplier",
+   "primitiveId": "ratio-table",
+   "evalMode": "find_multiplier",
+   "keys": [
+    "3.5"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "rt1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3.5"
+      ],
+      "ask": "A bakery scales up a signature pastry recipe. If the base recipe calls for 4 cups of flour and yields 12 servings, and the new batch uses 14 cups of flour, what is the scaling multiplier applied to the recipe?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A bakery scales up a signature pastry recipe. If the base recipe calls for 4 cups of flour and yields 12 servings, and the new batch uses 14 cups of flour, what is the scaling multiplier applied to the recipe?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A bakery scales up a signature pastry recipe. If the base recipe calls for 4 cups of flour and yields 12 servings, and the new batch uses 14 cups of flour, what is the scaling multiplier applied to the recipe?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A bakery scales up a signature pastry recipe. If the base recipe calls for 4 cups of flour and yields 12 servings, and the new batch uses 14 cups of flour, what is the scaling multiplier applied to the recipe?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A bakery scales up a signature pastry recipe. If the base recipe calls for 4 cups of flour and yields 12 servings, and the new batch uses 14 cups of flour, what is the scaling multiplier applied to the recipe?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A bakery scales up a signature pastry recipe. If the base recipe calls for 4 cups of flour and yields 12 servings, and the new batch uses 14 cups of flour, what is the scaling multiplier applied to the recipe?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "rt1",
+     "trigger": "The learner submitted \"typed 10\". The board checked it: not right.",
+     "miss": "difference",
+     "scoredWith": {
+      "keys": [
+       "3.5"
+      ],
+      "ask": "A bakery scales up a signature pastry recipe. If the base recipe calls for 4 cups of flour and yields 12 servings, and the new batch uses 14 cups of flour, what is the scaling multiplier applied to the recipe?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Ratios scale by multiplying rather than adding. What number do we multiply 4 cups of flour by to reach 14 cups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Remember, ratios scale by multiplying rather than adding. What number do you multiply 4 cups by to get 14 cups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Remember, scaling ratios means multiplying rather than adding. What number do you multiply 4 by to get 14?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Remember, scaling ratios means multiplying rather than adding. What number do we multiply 4 by to get 14?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Remember that equivalent ratios scale by multiplying, not adding. What number do you multiply 4 cups of flour by to get 14 cups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "rt1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3.5"
+      ],
+      "ask": "A bakery scales up a signature pastry recipe. If the base recipe calls for 4 cups of flour and yields 12 servings, and the new batch uses 14 cups of flour, what is the scaling multiplier applied to the recipe?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "To find the multiplier, divide the scaled amount by the base amount: 14 divided by 4.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find the multiplier, divide the scaled amount by the base amount: 14 divided by 4.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find the multiplier, divide the new amount by the base amount: 14 divided by 4.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find how many times bigger the recipe became, divide the new amount of flour by the starting amount. Try calculating 14 divided by 4!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find the multiplier, divide the scaled amount by the base amount: 14 divided by 4. What do you get when you calculate 14 divided by 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "rt1",
+     "trigger": "The learner submitted \"typed 3.5\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3.5"
+      ],
+      "ask": "A bakery scales up a signature pastry recipe. If the base recipe calls for 4 cups of flour and yields 12 servings, and the new batch uses 14 cups of flour, what is the scaling multiplier applied to the recipe?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it by dividing to get 3.5, scaling the whole recipe up correctly!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by dividing the flour amounts: 3.5 is the exact multiplier.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the multiplier by typing 3.5 after dividing the scaled flour by the base flour!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by dividing the new amount of flour by the base amount and got 3.5. Excellent work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the multiplier by dividing 14 by 4 and got 3.5!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "ratio-table.missing_value",
+   "primitiveId": "ratio-table",
+   "evalMode": "missing_value",
+   "keys": [
+    "16"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "rt1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "16"
+      ],
+      "ask": "A classic artisan sourdough recipe utilizes a base ratio of 4 cups of unbleached flour to 1.5 cups of filtered water. If you scale up the production to yield a larger batch requiring 6 cups of water, how many cups of flour must you incorporate to maintain the exact structural hydration ratio?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A recipe uses 4 cups of flour for every 1.5 cups of water. If you scale it up to use 6 cups of water, how many cups of flour do you need?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A classic sourdough recipe uses 4 cups of flour to 1.5 cups of water. If you scale up to 6 cups of water, how many cups of flour will you need?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A classic sourdough recipe uses 4 cups of flour to 1.5 cups of water. If you scale it up to use 6 cups of water, how many cups of flour will you need?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A classic artisan sourdough recipe uses 4 cups of flour to 1.5 cups of water. If you scale up the batch to use 6 cups of water, how many cups of flour do you need?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A classic artisan sourdough recipe utilizes a base ratio of 4 cups of unbleached flour to 1.5 cups of filtered water. If you scale up the production to yield a larger batch requiring 6 cups of water, how many cups of flour must you incorporate to maintain the exact structural hydration ratio?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "rt1",
+     "trigger": "The learner submitted \"typed 8.5\". The board checked it: not right.",
+     "miss": "added_difference",
+     "scoredWith": {
+      "keys": [
+       "16"
+      ],
+      "ask": "A classic artisan sourdough recipe utilizes a base ratio of 4 cups of unbleached flour to 1.5 cups of filtered water. If you scale up the production to yield a larger batch requiring 6 cups of water, how many cups of flour must you incorporate to maintain the exact structural hydration ratio?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Remember that ratios scale by multiplying rather than adding. What number did we multiply 1.5 cups of water by to get 6 cups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Remember, equivalent ratios scale by multiplying rather than adding. What number do you multiply 1.5 cups of water by to get 6 cups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "To keep ratios equivalent, we scale by multiplying rather than adding. What number was 1.5 multiplied by to reach 6 cups of water?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Ratios scale by multiplying rather than adding. What number do you multiply 1.5 by to get 6?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Equivalent ratios scale by multiplying, not adding. What number do you multiply 1.5 by to get 6 cups of water?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "rt1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "16"
+      ],
+      "ask": "A classic artisan sourdough recipe utilizes a base ratio of 4 cups of unbleached flour to 1.5 cups of filtered water. If you scale up the production to yield a larger batch requiring 6 cups of water, how many cups of flour must you incorporate to maintain the exact structural hydration ratio?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "To find out how many times bigger the batch is, divide the new amount of water by the starting amount: 6 divided by 1.5. Then, multiply the 4 cups of flour by that same number to get your answer.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's find the multiplier first. How many times does 1.5 go into 6?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's look at the water first: how many times does 1.5 go into 6?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's look at the water row: how many times does 1.5 fit into 6? Once you find that multiplier, multiply the 4 cups of flour by that same number.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's look at the water first: how many times does 1.5 fit into 6? Once you know that multiplier, you can multiply the 4 cups of flour by the same number.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "rt1",
+     "trigger": "The learner submitted \"typed 16\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "16"
+      ],
+      "ask": "A classic artisan sourdough recipe utilizes a base ratio of 4 cups of unbleached flour to 1.5 cups of filtered water. If you scale up the production to yield a larger batch requiring 6 cups of water, how many cups of flour must you incorporate to maintain the exact structural hydration ratio?",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You found the multiplier was 4 and multiplied 4 cups of flour by 4 to get 16.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked out the multiplier and scaled up the flour to get 16 cups! Great job sticking with it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You found the multiplier and used it to find 16 cups of flour.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found that multiplying 4 by 4 gives 16 cups of flour, perfectly scaling the recipe!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it\u201416 cups of flour scales the recipe perfectly! By scaling up by 4, you kept both ingredients in the exact ratio.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "ratio-table.unit_rate",
+   "primitiveId": "ratio-table",
+   "evalMode": "unit_rate",
+   "keys": [
+    "13"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "rt1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "13"
+      ],
+      "ask": "If 4 cups of organic flour produce 52 artisanal crackers, determine the unit rate of crackers per single cup of flour.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "If 4 cups of organic flour produce 52 artisanal crackers, determine the unit rate of crackers per single cup of flour. Take your time and type your answer when you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "If 4 cups of organic flour produce 52 artisanal crackers, determine the unit rate of crackers per single cup of flour.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "If 4 cups of organic flour produce 52 artisanal crackers, determine the unit rate of crackers per single cup of flour. Give it a try whenever you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "If 4 cups of organic flour produce 52 artisanal crackers, determine the unit rate of crackers per single cup of flour. Give it a try whenever you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "If 4 cups of organic flour produce 52 artisanal crackers, determine the unit rate of crackers per single cup of flour. Give it a try whenever you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "rt1",
+     "trigger": "The learner submitted \"typed 0.08\". The board checked it: not right.",
+     "miss": "too_low",
+     "scoredWith": {
+      "keys": [
+       "13"
+      ],
+      "ask": "If 4 cups of organic flour produce 52 artisanal crackers, determine the unit rate of crackers per single cup of flour.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "That's a good try, but let's look at the order of the quantities. To find crackers per cup of flour, we divide the total number of crackers by the number of cups.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "That's a good try! To find how many crackers come from 1 cup of flour, divide the total crackers by the number of cups.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "To find how many crackers come from 1 cup of flour, divide the 52 crackers by the 4 cups. Give that division another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "To find how many crackers come from 1 cup of flour, divide the 52 crackers by the 4 cups. Give that division another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "To find how many crackers come from just 1 cup of flour, we need to divide the total number of crackers by the cups of flour: 52 divided by 4. Give that division another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "rt1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "13"
+      ],
+      "ask": "If 4 cups of organic flour produce 52 artisanal crackers, determine the unit rate of crackers per single cup of flour.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "No worries, we can work through it together! We need to share 52 crackers equally among 4 cups of flour, so what do you get when you calculate 52 divided by 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find how many crackers come from just 1 cup of flour, we split the 52 crackers equally among the 4 cups. What do you get when you calculate 52 divided by 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "We have 52 crackers split equally among 4 cups of flour. Try dividing 52 by 4 to see how many crackers belong to just 1 cup.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find the number of crackers per cup, try dividing 52 by 4. What do you get when you split 52 into 4 equal groups?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "To find the unit rate, divide the 52 crackers equally among the 4 cups of flour. What do you get when you calculate 52 divided by 4?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "rt1",
+     "trigger": "The learner submitted \"typed 13\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "13"
+      ],
+      "ask": "If 4 cups of organic flour produce 52 artisanal crackers, determine the unit rate of crackers per single cup of flour.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "ANSWER_CLOSE",
+       "HINT_REQUESTED",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "SUPPORT TIER"
+      ],
+      "menu": [
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You divided 52 by 4 and typed 13 crackers per cup of flour.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You divided 52 crackers by 4 cups of flour and found 13 crackers per cup.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You solved it and typed 13 by dividing the 52 crackers by the 4 cups of flour. Excellent work working through that step to find the unit rate!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You divided 52 by 4 and got 13 crackers per cup of flour.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked it out and typed 13, finding that each cup of flour makes 13 crackers!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,13 +1,26 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
 import { usePrimitiveEvaluation, type FactorTreeMetrics, type PrimitiveEvaluationResult } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
+import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  describeFactorWork, factorMiss, factorPairs, isPrime, splitCorrect, treeComplete, treeLeaves,
+  workspaceAssignment, workspaceScene, type FactorSplit,
+} from './factorTreeWorkspace';
+import {
+  DIVISIBILITY_RULES, PARTNER_LEVER, PRODUCT_LEVER, RULES_LEVER, factorTreeLevers, isPracticeTree, leverFacts, partnerFrame,
+  productReadout, smallerTree,
+} from './factorTreeLevers';
 
 export interface TreeNode {
   value: number;
@@ -49,43 +62,19 @@ export interface FactorTreeData {
 interface FactorTreeProps {
   data: FactorTreeData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Pure helpers (no hooks)
 // ============================================================================
 
-const isPrime = (n: number): boolean => {
-  if (n < 2) return false;
-  if (n === 2) return true;
-  if (n % 2 === 0) return false;
-  for (let i = 3; i <= Math.sqrt(n); i += 2) {
-    if (n % i === 0) return false;
-  }
-  return true;
-};
-
-const getFactorPairs = (n: number): Array<[number, number]> => {
-  const pairs: Array<[number, number]> = [];
-  for (let i = 2; i <= Math.sqrt(n); i++) {
-    if (n % i === 0) pairs.push([i, n / i]);
-  }
-  return pairs;
-};
-
-const getLeavesFromTree = (t: Map<string, TreeNode>): number[] => {
-  const leaves: number[] = [];
-  t.forEach((node) => { if (!node.factors) leaves.push(node.value); });
-  return leaves.sort((a, b) => a - b);
-};
-
-const allLeavesPrime = (t: Map<string, TreeNode>): boolean =>
-  getLeavesFromTree(t).every(isPrime);
-
 const getPrimeFactorization = (t: Map<string, TreeNode>): string => {
-  const leaves = getLeavesFromTree(t);
   const counts = new Map<number, number>();
-  leaves.forEach((p) => counts.set(p, (counts.get(p) || 0) + 1));
+  treeLeaves(t).forEach((p) => counts.set(p, (counts.get(p) || 0) + 1));
   return Array.from(counts.entries())
     .sort(([a], [b]) => a - b)
     .map(([prime, count]) => (count === 1 ? `${prime}` : `${prime}^${count}`))
@@ -110,8 +99,10 @@ const treeDepth = (t: Map<string, TreeNode>, nodeId: string): number => {
   );
 };
 
+const freshTree = (root: number) => new Map<string, TreeNode>([['0', { value: root, isPrime: isPrime(root) }]]);
+
 /**
- * Live-tutor reveal calibration per support tier. The tier already withholds on-screen
+ * Live-tutor reveal calibration per support tier (scripted path only). The tier already withholds on-screen
  * scaffolds; this keeps the tutor from leaking what the tier hid (Gotcha #2).
  */
 const tierRevealClause = (tier?: 'easy' | 'medium' | 'hard'): string => {
@@ -120,6 +111,36 @@ const tierRevealClause = (tier?: 'easy' | 'medium' | 'hard'): string => {
   if (tier === 'hard') return ' SUPPORT TIER hard: do NOT name the strategy or hand factor pairs. Ask what the student notices; never reveal the answer.';
   return '';
 };
+
+/** The session's metrics from the per-challenge records (both paths write the same records). */
+function sessionMetrics(challenges: FactorTreeChallenge[], results: ChallengeResult[], complete: boolean): FactorTreeMetrics {
+  const sum = (key: string) => results.reduce((s, r) => s + ((r[key] as number) || 0), 0);
+  const totalSplits = sum('totalSplits');
+  const totalOptimal = sum('optimalSplits');
+  const uniquePrimes = new Set<number>();
+  for (const r of results) for (const p of ((r.uniquePrimes as number[]) || [])) uniquePrimes.add(p);
+  const lastResult = results[results.length - 1];
+  return {
+    type: 'factor-tree',
+    targetNumber: challenges[0]?.rootValue ?? 0,
+    factorizationComplete: complete,
+    finalFactorization: (lastResult?.finalFactorization as string) ?? '',
+    allFactorsValid: sum('invalidSplits') === 0,
+    invalidSplitAttempts: sum('invalidSplits'),
+    totalPrimeFactors: results.reduce((s, r) => s + (((r.uniquePrimes as number[]) || []).length), 0),
+    uniquePrimes: Array.from(uniquePrimes).sort((a, b) => a - b),
+    // Per-challenge distribution is not stored, to keep the result row lean; unique primes are the high-signal metric.
+    factorDistribution: {},
+    totalSplits,
+    optimalSplits: totalOptimal,
+    efficiency: totalSplits > 0 ? totalOptimal / totalSplits : 1,
+    usedLargestFactorFirst: false,
+    hintsUsed: sum('hintsUsed'),
+    manualInputs: sum('manualInputs'),
+    resetCount: sum('resetCount'),
+    treeDepth: results.reduce((m, r) => Math.max(m, (r.treeDepth as number) || 0), 0),
+  };
+}
 
 // ============================================================================
 // Phase config (single phase — same challenge type across the session)
@@ -135,7 +156,9 @@ const RETRY_PENALTY = 0.15;
 // Component
 // ============================================================================
 
-const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
+const FactorTreeSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  FactorTreeProps & { tutorOwned: boolean; useController: (options: ProgressOptions<FactorTreeChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -155,7 +178,21 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
-  // ── Challenge progress (shared hooks) ──────────────────────────────────────
+  const stableInstanceIdRef = useRef(instanceId || `factor-tree-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
@@ -164,10 +201,15 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     recordResult,
     incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked split stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
+  // The activity's own check is the workspace's checked gesture. A ref, so the split callback keeps its deps.
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -177,16 +219,26 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     phaseConfig: PHASE_TYPE_CONFIG,
   });
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // In-item levers (`factorTreeLevers.ts`), keyed by the session item they were pulled on, and the practice tree a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<FactorTreeChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the practice tree while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
   const currentRootValue = currentChallenge?.rootValue ?? 0;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice tree. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  const leverContext = { rulesShown: showStrategyHint };
 
   // ── Per-challenge tree state ──────────────────────────────────────────────
-  const [tree, setTree] = useState<Map<string, TreeNode>>(
-    () => new Map([['0', { value: currentRootValue, isPrime: isPrime(currentRootValue) }]])
-  );
+  const [tree, setTree] = useState<Map<string, TreeNode>>(() => freshTree(currentRootValue));
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [factorInput, setFactorInput] = useState<{ factor1: string; factor2: string }>({ factor1: '', factor2: '' });
   const [error, setError] = useState<string | null>(null);
+  /** The wrong split on screen (the workspace's learner work); cleared by the next selection or Try again. */
+  const [lastSplit, setLastSplit] = useState<FactorSplit | null>(null);
 
   // Per-challenge tracking (resets each challenge)
   const [perChallengeInvalidSplits, setPerChallengeInvalidSplits] = useState(0);
@@ -197,24 +249,36 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
   const treeCompleteTriggeredRef = useRef(false);
   const hasIntroducedRef = useRef(false);
 
-  // Reset all per-challenge state when the challenge changes.
-  useEffect(() => {
-    if (!currentChallenge) return;
-    setTree(new Map([['0', { value: currentRootValue, isPrime: isPrime(currentRootValue) }]]));
+  /** Try again keeps the right splits on the tree and clears only the split that was checked wrong. */
+  const clearSplit = () => {
     setSelectedNode(null);
     setFactorInput({ factor1: '', factor2: '' });
     setError(null);
+    setLastSplit(null);
+  };
+  const resetChallenge = (root: number) => {
+    setTree(freshTree(root));
+    clearSplit();
     setPerChallengeInvalidSplits(0);
     setPerChallengeHintsUsed(0);
     setPerChallengeManualInputs(0);
     setPerChallengeResetCount(0);
     treeCompleteTriggeredRef.current = false;
-  }, [currentChallenge?.id, currentRootValue]);
+  };
+  // `index` is the item opening: this render's challenge is still the one before it.
+  openItem.current = (index, retry) => {
+    // Try again on a practice tree keeps it; a fresh item (or the full item back after practice) drops it.
+    if (retry) clearSplit();
+    else if (challenges[index]) { setPractice(null); resetChallenge(challenges[index].rootValue); }
+  };
+
+  // Reset all per-challenge state when the challenge changes (both paths).
+  useEffect(() => {
+    if (!currentChallenge) return;
+    resetChallenge(currentRootValue);
+  }, [currentChallenge?.id, currentRootValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Evaluation hook ───────────────────────────────────────────────────────
-  const stableInstanceIdRef = useRef(instanceId || `factor-tree-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
   const {
     submitResult: submitEvaluation,
     hasSubmitted: hasSubmittedEvaluation,
@@ -230,27 +294,32 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI tutoring ───────────────────────────────────────────────────────────
-  const leavesNow = useMemo(() => getLeavesFromTree(tree), [tree]);
-  const treeNowComplete = useMemo(() => allLeavesPrime(tree) && leavesNow.length > 1, [tree, leavesNow.length]);
+  // ── AI tutoring (scripted path) ───────────────────────────────────────────
+  const leavesNow = useMemo(() => treeLeaves(tree), [tree]);
+  const treeNowComplete = useMemo(() => treeComplete(tree), [tree]);
 
   const aiPrimitiveData = useMemo(() => ({
     rootValue: currentRootValue,
     currentFactorization: leavesNow.join(' × '),
     leavesCount: leavesNow.length,
-    allPrime: allLeavesPrime(tree),
+    allPrime: leavesNow.every(isPrime),
     guidedMode,
     currentChallengeIndex,
     totalChallenges: challenges.length,
     supportTier,
-  }), [currentRootValue, tree, leavesNow, guidedMode, currentChallengeIndex, challenges.length, supportTier]);
+  }), [currentRootValue, leavesNow, guidedMode, currentChallengeIndex, challenges.length, supportTier]);
 
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // Its context carries the factor pairs, so it is off on the workspace path, and its scripted cues send nothing there.
+  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'factor-tree',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     exhibitId,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Activity introduction
   useEffect(() => {
@@ -267,38 +336,31 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
   }, [challenges.length, currentRootValue, guidedMode, supportTier, sendText]);
 
   // ── Tree mutations ────────────────────────────────────────────────────────
+  // Every split is checked here. A wrong split, and the split that makes every leaf prime, are the checked gestures;
+  // a right split that leaves a composite on the tree is a step of the item and commits nothing.
   const splitNode = useCallback((nodeId: string, factor1: number, factor2: number): boolean => {
+    if (learnerBlocked()) return false;
     const node = tree.get(nodeId);
     if (!node || node.factors) return false;
+    const split: FactorSplit = { value: node.value, factor1, factor2 };
 
-    if (factor1 * factor2 !== node.value) {
-      SoundManager.playIncorrect();
-      setError(`${factor1} × ${factor2} ≠ ${node.value}`);
+    if (!splitCorrect(split)) {
+      const usedOne = (factor1 === 1 || factor2 === 1) && factor1 * factor2 === node.value;
+      if (usedOne) SoundManager.invalid(); else SoundManager.playIncorrect();
+      setError(usedOne ? 'Factor pairs cannot include 1' : `${factor1} × ${factor2} ≠ ${node.value}`);
       setPerChallengeInvalidSplits((n) => n + 1);
-      incrementAttempts();
-      sendText(
-        `[SPLIT_INVALID] Student tried ${node.value} = ${factor1} × ${factor2} ` +
-        `(actually ${factor1 * factor2}). Remind them factors must multiply to ${node.value}.`,
-        { silent: true }
-      );
-      return false;
-    }
-
-    if (factor1 === 1 || factor2 === 1) {
-      SoundManager.invalid();
-      setError('Factor pairs cannot include 1');
-      setPerChallengeInvalidSplits((n) => n + 1);
-      incrementAttempts();
-      sendText(
-        `[SPLIT_INVALID] Student used 1 as a factor of ${node.value}. ` +
-        `Explain both factors must be greater than 1.`,
-        { silent: true }
-      );
+      setLastSplit(split);
+      sendText(usedOne
+        ? `[SPLIT_INVALID] Student used 1 as a factor of ${node.value}. Explain both factors must be greater than 1.`
+        : `[SPLIT_INVALID] Student tried ${node.value} = ${factor1} × ${factor2} ` +
+          `(actually ${factor1 * factor2}). Remind them factors must multiply to ${node.value}.`,
+        { silent: true });
+      commitCheck.current(describeFactorWork(tree, split), false, factorMiss(split));
       return false;
     }
 
     setError(null);
-    incrementAttempts();
+    setLastSplit(null);
     SoundManager.snap();
 
     const newTree = new Map(tree);
@@ -310,8 +372,11 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     setSelectedNode(null);
     setFactorInput({ factor1: '', factor2: '' });
 
-    // AI commentary (skip when the tree is now complete — completion effect handles it)
-    if (!allLeavesPrime(newTree)) {
+    if (treeComplete(newTree)) {
+      // The finishing split: counts the attempt and records the verdict on both paths.
+      commitCheck.current(describeFactorWork(newTree, null), true);
+    } else {
+      incrementAttempts();
       const c1Prime = isPrime(factor1);
       const c2Prime = isPrime(factor2);
       const primeNote = c1Prime && c2Prime
@@ -321,20 +386,23 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
         : `Both ${factor1} and ${factor2} are composite — keep splitting.`;
       sendText(
         `[SPLIT_CORRECT] Split ${node.value} into ${factor1} × ${factor2}. ${primeNote} ` +
-        `Current leaves: ${getLeavesFromTree(newTree).join(', ')}. Acknowledge and guide next step.`,
+        `Current leaves: ${treeLeaves(newTree).join(', ')}. Acknowledge and guide next step.`,
         { silent: true }
       );
     }
     return true;
-  }, [tree, incrementAttempts, sendText]);
+  }, [tree, incrementAttempts, sendText]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNodeSelect = useCallback((nodeId: string, currentlySelected: boolean) => {
+    if (learnerBlocked()) return;
     if (currentlySelected) { setSelectedNode(null); return; }
     const node = tree.get(nodeId);
     if (!node) return;
     SoundManager.select();
     setSelectedNode(nodeId);
-    const pairs = getFactorPairs(node.value);
+    setError(null);
+    setLastSplit(null);
+    const pairs = factorPairs(node.value);
     sendText(
       `[NODE_SELECTED] Student selected ${node.value} to split. ` +
       `Valid pairs (for YOUR reference only): ${pairs.map(([a, b]) => `${a}×${b}`).join(', ')}. ` +
@@ -342,30 +410,28 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
       tierRevealClause(supportTier),
       { silent: true }
     );
-  }, [tree, sendText, guidedMode, supportTier]);
+  }, [tree, sendText, guidedMode, supportTier]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const resetTree = useCallback(() => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || learnerBlocked()) return;
     SoundManager.toggle(false); // falling blips — undo / clear the tree
-    setTree(new Map([['0', { value: currentRootValue, isPrime: isPrime(currentRootValue) }]]));
-    setSelectedNode(null);
-    setFactorInput({ factor1: '', factor2: '' });
-    setError(null);
+    setTree(freshTree(currentRootValue));
+    clearSplit();
     setPerChallengeResetCount((n) => n + 1);
     treeCompleteTriggeredRef.current = false;
     sendText(
       `[TREE_RESET] Student reset tree for ${currentRootValue}. Encourage another attempt.`,
       { silent: true }
     );
-  }, [currentChallenge, currentRootValue, sendText]);
+  }, [currentChallenge, currentRootValue, sendText]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Per-challenge completion ──────────────────────────────────────────────
+  // ── Per-challenge completion: this primitive's own score fields ───────────
   useEffect(() => {
     if (!currentChallenge) return;
     if (!treeNowComplete) return;
     if (treeCompleteTriggeredRef.current) return;
     // Stale-tree guard: the reset useEffect's setTree() is async — on the render
-    // immediately after `advanceProgress()`, `tree` still holds the previous
+    // immediately after the index moves, `tree` still holds the previous
     // challenge's fully-factored tree (so treeNowComplete is true) while
     // `currentChallenge` has already advanced. Only record when the tree's root
     // matches the active challenge's rootValue.
@@ -373,6 +439,8 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     if (!rootNode || rootNode.value !== currentChallenge.rootValue) return;
     treeCompleteTriggeredRef.current = true;
     SoundManager.playCorrect();
+    // A practice tree (a simplify lever) is not the session's challenge: it records nothing.
+    if (isPracticeTree(currentChallenge)) return;
 
     const splits = tree.size - leavesNow.length;
     const optimal = optimalSplitsFor(currentRootValue);
@@ -428,59 +496,15 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
         { silent: true }
       );
 
-      if (!hasSubmittedEvaluation && challenges.length > 0) {
-        // Aggregate per-challenge metrics into a session-level FactorTreeMetrics.
-        const totalInvalid = challengeResults.reduce((s, r) => s + ((r.invalidSplits as number) || 0), 0);
-        const totalSplits = challengeResults.reduce((s, r) => s + ((r.totalSplits as number) || 0), 0);
-        const totalOptimal = challengeResults.reduce((s, r) => s + ((r.optimalSplits as number) || 0), 0);
-        const totalHints = challengeResults.reduce((s, r) => s + ((r.hintsUsed as number) || 0), 0);
-        const totalManual = challengeResults.reduce((s, r) => s + ((r.manualInputs as number) || 0), 0);
-        const totalResets = challengeResults.reduce((s, r) => s + ((r.resetCount as number) || 0), 0);
-        const maxDepth = challengeResults.reduce((m, r) => Math.max(m, (r.treeDepth as number) || 0), 0);
-
-        const uniquePrimesSet = new Set<number>();
-        const factorDistribution: Record<number, number> = {};
-        for (const r of challengeResults) {
-          for (const p of ((r.uniquePrimes as number[]) || [])) uniquePrimesSet.add(p);
-        }
-        // Approximate distribution by summing per-challenge contributions.
-        // (Per-challenge distribution wasn't stored to keep the result row lean;
-        // unique primes are the high-signal metric here.)
-
+      // The workspace path submits the scored session from `onFinished` (below), not this tally.
+      if (!hasSubmittedEvaluation && challenges.length > 0 && !tutorOwned) {
         const avgScore = challengeResults.length > 0
           ? Math.round(
               challengeResults.reduce((s, r) => s + ((r.score as number) ?? (r.correct ? 100 : 0)), 0)
               / challengeResults.length
             )
           : 0;
-
-        const primaryRoot = challenges[0].rootValue;
-        const lastResult = challengeResults[challengeResults.length - 1];
-
-        const metrics: FactorTreeMetrics = {
-          type: 'factor-tree',
-          targetNumber: primaryRoot,
-          factorizationComplete: allChallengesComplete,
-          finalFactorization: (lastResult?.finalFactorization as string) ?? '',
-          allFactorsValid: totalInvalid === 0,
-          invalidSplitAttempts: totalInvalid,
-          totalPrimeFactors: challengeResults.reduce(
-            (s, r) => s + (((r.uniquePrimes as number[]) || []).length),
-            0
-          ),
-          uniquePrimes: Array.from(uniquePrimesSet).sort((a, b) => a - b),
-          factorDistribution,
-          totalSplits,
-          optimalSplits: totalOptimal,
-          efficiency: totalSplits > 0 ? totalOptimal / totalSplits : 1,
-          usedLargestFactorFirst: false,
-          hintsUsed: totalHints,
-          manualInputs: totalManual,
-          resetCount: totalResets,
-          treeDepth: maxDepth,
-        };
-
-        submitEvaluation(allChallengesComplete, avgScore, metrics, {
+        submitEvaluation(allChallengesComplete, avgScore, sessionMetrics(challenges, challengeResults, allChallengesComplete), {
           studentWork: {
             challengeCount: challenges.length,
             rootValues: challenges.map((c) => c.rootValue),
@@ -494,8 +518,18 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     // useEffect keyed on currentChallenge.id.
   }, [
     advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, allChallengesComplete, submitEvaluation,
+    hasSubmittedEvaluation, allChallengesComplete, submitEvaluation, tutorOwned,
   ]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong split's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || challenges.length === 0) return;
+    submitEvaluation(result.passed, result.accuracy, sessionMetrics(challenges, challengeResults, result.passed),
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // Auto-submit when the last challenge completes (no manual submit on session end).
   const hasAutoSubmittedRef = useRef(false);
@@ -506,19 +540,87 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     }
   }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
 
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // W1 offers no demonstration targets and no presentation.
+  const runningShown = showRunningFactorization ?? showExponentForm;
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, {
+      tree, selected: selectedNode ? tree.get(selectedNode)?.value ?? null : null,
+      pairsListed: guidedMode, primesMarked: highlightPrimes, runningShown, lastSplit,
+    });
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, leverContext);
+    const levers = practice ? [] : factorTreeLevers(sessionChallenge, pulledLevers, leverContext);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'A practice tree is on screen in place of the item. It is not graded; the full item comes back after it, blank.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = smallerTree(sessionChallenge);
+          if (!easier) return 'This number has no smaller practice tree; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetChallenge(easier.rootValue);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetChallenge(sessionChallenge.rootValue); },
+    };
+  });
+
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? 'tree',
+    label: 'The factor tree',
+    solved: treeNowComplete,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
+  const localOverallScore = useMemo(() => {
+    if (!allChallengesComplete || challenges.length === 0) return 0;
+    const sum = challengeResults.reduce(
+      (s, r) => s + ((r.score as number) ?? (r.correct ? 100 : 0)),
+      0
+    );
+    return Math.round(sum / challenges.length);
+  }, [allChallengesComplete, challenges.length, challengeResults]);
+
+  // ── Empty / error state ───────────────────────────────────────────────────
+  if (challenges.length === 0) {
+    return (
+      <div className={`w-full max-w-6xl mx-auto my-16 ${className || ''}`}>
+        <div className="glass-panel p-8 rounded-3xl border border-amber-500/20 text-center">
+          <p className="text-slate-300">No factor-tree challenges available.</p>
+        </div>
+      </div>
+    );
+  }
+
   // ── Render helpers ────────────────────────────────────────────────────────
   const renderNode = (nodeId: string, depth: number = 0): JSX.Element | null => {
     const node = tree.get(nodeId);
     if (!node) return null;
     const isLeaf = !node.factors;
     const isSelected = selectedNode === nodeId;
-    const canSplit = isLeaf && !node.isPrime;
+    const canSplit = isLeaf && !node.isPrime && !treeNowComplete;
 
     return (
       <div key={nodeId} className="flex flex-col items-center">
         <button
           onClick={() => canSplit && handleNodeSelect(nodeId, isSelected)}
-          disabled={!canSplit}
+          disabled={!canSplit || blocked}
+          aria-label={canSplit ? `Split ${node.value}` : undefined}
+          data-pip-object={`node-${nodeId}`}
           className={`
             w-16 h-16 rounded-full border-2 flex items-center justify-center font-bold text-lg
             transition-all duration-300 mb-2 relative backdrop-blur-sm
@@ -533,7 +635,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
             }
             ${!canSplit && !node.isPrime ? 'opacity-50' : ''}
           `}
-          title={node.isPrime ? 'Prime number' : canSplit ? 'Click to split' : 'Already split'}
+          title={node.isPrime ? (highlightPrimes ? 'Prime number' : undefined) : canSplit ? 'Click to split' : 'Already split'}
         >
           {(node.isPrime || canSplit) && (
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
@@ -561,39 +663,9 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     );
   };
 
-  const validPairs = selectedNode ? getFactorPairs(tree.get(selectedNode)?.value || 0) : [];
-
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challenges.length === 0) return 0;
-    const sum = challengeResults.reduce(
-      (s, r) => s + ((r.score as number) ?? (r.correct ? 100 : 0)),
-      0
-    );
-    return Math.round(sum / challenges.length);
-  }, [allChallengesComplete, challenges.length, challengeResults]);
-
-  // ── Empty / error state ───────────────────────────────────────────────────
-  if (challenges.length === 0) {
-    return (
-      <div className={`w-full max-w-6xl mx-auto my-16 ${className || ''}`}>
-        <div className="glass-panel p-8 rounded-3xl border border-amber-500/20 text-center">
-          <p className="text-slate-300">No factor-tree challenges available.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? 'tree',
-    label: 'The factor tree',
-    solved: treeNowComplete,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const validPairs = selectedNode ? factorPairs(tree.get(selectedNode)?.value || 0) : [];
+  const selectedValue = selectedNode ? tree.get(selectedNode)?.value ?? null : null;
+  const typedFactor = (text: string) => { const n = parseInt(text, 10); return Number.isNaN(n) ? null : n; };
 
   return (
     <div className={`w-full max-w-6xl mx-auto my-16 animate-fade-in ${className || ''}`}>
@@ -659,21 +731,20 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
           )}
 
           {/* Divisibility-strategy hint (easy tier, guided modes) — names a rule, never an answer */}
-          {showStrategyHint && currentChallenge && !allChallengesComplete && !treeNowComplete && (
-            <div className="mb-6 p-4 bg-sky-500/15 backdrop-blur-sm rounded-xl border border-sky-400/30 max-w-2xl mx-auto">
+          {(showStrategyHint || leverOn(RULES_LEVER)) && currentChallenge && !allChallengesComplete && !treeNowComplete && (
+            <div data-lever="divisibility-rules" className="mb-6 p-4 bg-sky-500/15 backdrop-blur-sm rounded-xl border border-sky-400/30 max-w-2xl mx-auto">
               <p className="text-sky-300 text-xs uppercase tracking-wider font-medium mb-2 text-center">
                 Divisibility strategy — which factor to try
               </p>
               <ul className="text-sm text-slate-200 space-y-1.5">
-                <li className="flex items-start gap-2"><span className="text-sky-400 mt-0.5">&#9656;</span><span>Even number? Split off a <strong>2</strong>.</span></li>
-                <li className="flex items-start gap-2"><span className="text-sky-400 mt-0.5">&#9656;</span><span>Ends in 0 or 5? Split off a <strong>5</strong>.</span></li>
-                <li className="flex items-start gap-2"><span className="text-sky-400 mt-0.5">&#9656;</span><span>Digits add to a multiple of 3? Split off a <strong>3</strong>.</span></li>
-                <li className="flex items-start gap-2"><span className="text-sky-400 mt-0.5">&#9656;</span><span>No small factor divides it? It may be prime — a leaf.</span></li>
+                {DIVISIBILITY_RULES.map((rule) => (
+                  <li key={rule} className="flex items-start gap-2"><span className="text-sky-400 mt-0.5">&#9656;</span><span>{rule}</span></li>
+                ))}
               </ul>
             </div>
           )}
 
-          {/* Tree-complete banner (per-challenge advance UI) */}
+          {/* Tree-complete banner (per-challenge advance UI; the runtime advances on the workspace path) */}
           {treeNowComplete && !allChallengesComplete && (
             <div className="mb-6 p-6 bg-green-500/20 backdrop-blur-sm border-2 border-green-400/60 rounded-2xl text-center animate-fade-in shadow-[0_0_30px_rgba(34,197,94,0.3)] relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
@@ -691,12 +762,14 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                     {currentRootValue} = {getPrimeFactorization(tree)}
                   </div>
                 )}
-                <button
-                  onClick={advanceToNextChallenge}
-                  className="px-6 py-3 bg-green-500/40 backdrop-blur-sm hover:bg-green-500/60 border border-green-400/50 hover:border-green-400/80 text-white rounded-lg font-semibold transition-all hover:shadow-[0_0_15px_rgba(34,197,94,0.4)] hover:scale-105"
-                >
-                  {currentChallengeIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
-                </button>
+                {!tutorOwned && (
+                  <button
+                    onClick={advanceToNextChallenge}
+                    className="px-6 py-3 bg-green-500/40 backdrop-blur-sm hover:bg-green-500/60 border border-green-400/50 hover:border-green-400/80 text-white rounded-lg font-semibold transition-all hover:shadow-[0_0_15px_rgba(34,197,94,0.4)] hover:scale-105"
+                  >
+                    {currentChallengeIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -723,21 +796,27 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                 <div className="flex items-center gap-4 justify-center mb-4">
                   <input
                     type="number"
+                    aria-label="Factor 1"
                     value={factorInput.factor1}
-                    onChange={(e) => setFactorInput({ ...factorInput, factor1: e.target.value })}
+                    disabled={blocked}
+                    onChange={(e) => { if (!learnerBlocked()) setFactorInput({ ...factorInput, factor1: e.target.value }); }}
                     placeholder="Factor 1"
                     className="w-24 px-4 py-2 bg-slate-800/50 backdrop-blur-sm text-white rounded-lg border border-purple-400/40 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 focus:outline-none text-center transition-all"
                   />
                   <span className="text-purple-300 text-xl font-bold">&times;</span>
                   <input
                     type="number"
+                    aria-label="Factor 2"
                     value={factorInput.factor2}
-                    onChange={(e) => setFactorInput({ ...factorInput, factor2: e.target.value })}
+                    disabled={blocked}
+                    onChange={(e) => { if (!learnerBlocked()) setFactorInput({ ...factorInput, factor2: e.target.value }); }}
                     placeholder="Factor 2"
                     className="w-24 px-4 py-2 bg-slate-800/50 backdrop-blur-sm text-white rounded-lg border border-purple-400/40 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 focus:outline-none text-center transition-all"
                   />
                   <button
+                    disabled={blocked}
                     onClick={() => {
+                      if (learnerBlocked()) return;
                       const f1 = parseInt(factorInput.factor1);
                       const f2 = parseInt(factorInput.factor2);
                       if (!isNaN(f1) && !isNaN(f2)) {
@@ -764,7 +843,9 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                       {validPairs.map(([f1, f2], idx) => (
                         <button
                           key={idx}
+                          disabled={blocked}
                           onClick={() => {
+                            if (learnerBlocked()) return;
                             setPerChallengeHintsUsed((n) => n + 1);
                             const nodeValue = tree.get(selectedNode)?.value;
                             const success = splitNode(selectedNode, f1, f2);
@@ -788,8 +869,30 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
             </div>
           )}
 
+          {/* `partner_frame` and `product_check` levers: the division left open, and what the typed factors make. */}
+          {!treeNowComplete && !allChallengesComplete && (leverOn(PARTNER_LEVER) || leverOn(PRODUCT_LEVER)) && (
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {leverOn(PARTNER_LEVER) && (
+                <div data-lever="partner-frame" className="p-4 bg-cyan-500/10 rounded-xl border border-cyan-400/30 text-center">
+                  <p className="text-cyan-300 text-xs uppercase tracking-wider font-medium mb-1">Find the partner</p>
+                  <p className="text-white font-mono text-lg">{partnerFrame(selectedValue, typedFactor(factorInput.factor1))}</p>
+                  <p className="text-slate-400 text-xs mt-1">Multiply back to check.</p>
+                </div>
+              )}
+              {leverOn(PRODUCT_LEVER) && (
+                <div data-lever="product-check" className="p-4 bg-cyan-500/10 rounded-xl border border-cyan-400/30 text-center">
+                  <p className="text-cyan-300 text-xs uppercase tracking-wider font-medium mb-1">Your factors make</p>
+                  <p className="text-white font-mono text-lg">
+                    {productReadout(selectedValue, typedFactor(factorInput.factor1), typedFactor(factorInput.factor2))
+                      ?? 'Type both factors to see what they make.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Current Factorization (running self-check — withdrawn at hard tier) */}
-          {!treeNowComplete && (showRunningFactorization ?? showExponentForm) && leavesNow.length > 1 && !allChallengesComplete && (
+          {!treeNowComplete && runningShown && leavesNow.length > 1 && !allChallengesComplete && (
             <div className="mb-6 p-5 bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-600/40 text-center relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
               <div className="relative z-10">
@@ -857,6 +960,7 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
                   {allowReset && !treeNowComplete && (
                     <button
                       onClick={resetTree}
+                      disabled={blocked}
                       className="mt-5 w-full px-4 py-2 bg-red-500/30 backdrop-blur-sm hover:bg-red-500/50 border border-red-400/50 hover:border-red-400/80 text-white rounded-lg font-semibold transition-all hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] hover:scale-105"
                     >
                       Reset Tree
@@ -884,5 +988,9 @@ const FactorTree: React.FC<FactorTreeProps> = ({ data, className }) => {
     </div>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const FactorTree = withWorkspaceController<FactorTreeProps, ProgressOptions<FactorTreeChallenge>, Progress>(
+  'factor-tree', FactorTreeSurface, useScriptedProgress, useWorkspaceProgressFor('factor-tree'));
 
 export default FactorTree;

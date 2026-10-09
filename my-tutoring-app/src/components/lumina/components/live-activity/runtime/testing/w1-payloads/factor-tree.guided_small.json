@@ -1,0 +1,43 @@
+{
+ "source": "qa/tutor-reports/factor-tree-runtime-guided_small-payload-2026-10-09.json",
+ "primitiveId": "factor-tree",
+ "evalMode": "guided_small",
+ "data": {
+  "title": "Growing Factor Trees",
+  "description": "Discover how numbers can be broken down into smaller pieces by building colorful factor trees and finding prime numbers.",
+  "challenges": [
+   {
+    "id": "ft-1",
+    "rootValue": 6
+   },
+   {
+    "id": "ft-2",
+    "rootValue": 10
+   },
+   {
+    "id": "ft-3",
+    "rootValue": 15
+   },
+   {
+    "id": "ft-4",
+    "rootValue": 8
+   },
+   {
+    "id": "ft-5",
+    "rootValue": 18
+   },
+   {
+    "id": "ft-6",
+    "rootValue": 20
+   },
+   {
+    "id": "ft-7",
+    "rootValue": 24
+   }
+  ],
+  "highlightPrimes": true,
+  "showExponentForm": true,
+  "guidedMode": true,
+  "allowReset": true
+ }
+}

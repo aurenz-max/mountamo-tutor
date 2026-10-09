@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback, useLayoutEffect } from 'react';
 import {
   usePrimitiveEvaluation,
   type DoubleNumberLineMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -23,6 +22,18 @@ import {
   type AnswerChoiceState,
 } from '../../../ui';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  answerLabel, describeRatioWork, ratioLineMiss, valuesCorrect, workspaceAssignment, workspaceScene,
+} from './doubleNumberLineWorkspace';
+import {
+  GROW_MODEL_CAPTION, GROW_MODEL_LEVER, SPLIT_GIVEN_LEVER, UNIT_JUMPS_LEVER,
+  jumpsFor, leverFacts, ratioLineLevers, simplerLine, splitFor,
+} from './doubleNumberLineLevers';
 
 /**
  * Double Number Line — Multi-instance proportional reasoning primitive.
@@ -104,6 +115,10 @@ export interface DoubleNumberLineData {
 interface DoubleNumberLineProps {
   data: DoubleNumberLineData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,6 +134,7 @@ interface LuminaNumberStepperProps {
   disabled?: boolean;
   autoFocus?: boolean;
   borderColor?: string;
+  ariaLabel?: string;
 }
 
 const LuminaNumberStepper: React.FC<LuminaNumberStepperProps> = ({
@@ -129,6 +145,7 @@ const LuminaNumberStepper: React.FC<LuminaNumberStepperProps> = ({
   disabled = false,
   autoFocus = false,
   borderColor = 'border-slate-600',
+  ariaLabel,
 }) => {
   const numValue = parseFloat(value);
 
@@ -160,6 +177,7 @@ const LuminaNumberStepper: React.FC<LuminaNumberStepperProps> = ({
       <input
         type="text"
         inputMode="decimal"
+        aria-label={ariaLabel}
         value={value}
         onChange={handleTextChange}
         disabled={disabled}
@@ -178,6 +196,27 @@ const LuminaNumberStepper: React.FC<LuminaNumberStepperProps> = ({
     </div>
   );
 };
+
+// ---------------------------------------------------------------------------
+// Lever marks (`doubleNumberLineLevers.ts`): drawn on a line's own percent scale, never labelled.
+// ---------------------------------------------------------------------------
+
+const JumpArc: React.FC<{ from: number; to: number }> = ({ from, to }) => (
+  <div data-lever="unit-jumps" aria-hidden="true"
+    className="absolute bottom-full mb-1 h-4 border-t-2 border-x-2 rounded-t-full border-cyan-300/70 pointer-events-none"
+    style={{ left: `${from}%`, width: `${Math.max(0, to - from)}%` }} />
+);
+
+const SplitMarks: React.FC<{ band: number; marks: number[] }> = ({ band, marks }) => (
+  <>
+    <div data-lever="split-given" aria-hidden="true" className="absolute top-1/2 -translate-y-1/2 h-2 left-0 bg-amber-300/30 rounded pointer-events-none"
+      style={{ width: `${band}%` }} />
+    {marks.map((m, j) => (
+      <div key={j} data-lever="split-given" aria-hidden="true"
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-0.5 h-5 bg-amber-300 pointer-events-none" style={{ left: `${m}%` }} />
+    ))}
+  </>
+);
 
 // ---------------------------------------------------------------------------
 // Phase config (one phase — every challenge in a session shares challengeType)
@@ -221,7 +260,9 @@ function tutorRevealClause(
 // Main component
 // ---------------------------------------------------------------------------
 
-const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) => {
+const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  DoubleNumberLineProps & { tutorOwned: boolean; useController: (options: ProgressOptions<DoubleNumberLineChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -246,19 +287,24 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
   const stableInstanceIdRef = useRef(instanceId || `double-number-line-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
-  // ── Challenge progress (shared hooks) ──────────────────────────────────────
-  const {
-    currentIndex,
-    currentAttempts,
-    results,
-    isComplete,
-    recordResult,
-    incrementAttempts,
-    advance,
-  } = useChallengeProgress({
+  // ── Challenge progress. On the workspace path the runtime moves the index. ──
+  /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
     challenges,
     getChallengeId: (c) => c.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
   });
+  const { currentIndex, currentAttempts, results, isComplete, advance } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -284,7 +330,16 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  const currentChallenge = challenges[currentIndex] ?? null;
+  // In-item levers (`doubleNumberLineLevers.ts`), keyed by the session item they were pulled on, and the easier item a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<DoubleNumberLineChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice item. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   // ── Per-challenge interaction state ────────────────────────────────────────
   // One input string per target point in the current challenge.
@@ -297,14 +352,23 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
   const recordedRef = useRef(false);
   const sessionCompleteFiredRef = useRef(false);
 
-  // Reset per-challenge state when the active challenge changes.
-  useEffect(() => {
-    if (!currentChallenge) return;
-    setStudentValues(currentChallenge.targetPoints.map(() => ''));
+  // Reset per-challenge state when the active challenge changes (both paths), and on the workspace path when an item
+  // opens or Try again reopens it.
+  const resetChallenge = (ch: DoubleNumberLineChallenge | null) => {
+    if (!ch) return;
+    setStudentValues(ch.targetPoints.map(() => ''));
     setFeedback(null);
     setShowHint(false);
     recordedRef.current = false;
-  }, [currentChallenge?.id]);
+  };
+  useEffect(() => {
+    resetChallenge(currentChallenge);
+  }, [currentChallenge?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  openItem.current = (index, retry) => {
+    // Try again on a practice item keeps it; a fresh item (or the full item back after practice) drops it.
+    if (retry) resetChallenge(practice ?? challenges[index] ?? null);
+    else { setPractice(null); resetChallenge(challenges[index] ?? null); }
+  };
 
   // ── AI tutoring ────────────────────────────────────────────────────────────
   const aiPrimitiveData = useMemo(() => ({
@@ -325,12 +389,17 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     challenges.length, currentChallenge, currentAttempts, supportTier,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  // The legacy context carries the target's bottom value; on the workspace path the tutor reads the scene instead.
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'double-number-line',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: 'Grade 6',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Session intro — once, on the first challenge
   const hasIntroducedRef = useRef(false);
@@ -368,9 +437,11 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     );
   }, [currentChallenge, currentIndex, challenges.length, isConnected, sendText]);
 
-  // ── Session complete: evaluation submit ────────────────────────────────────
+  // ── Session complete (scripted path): evaluation submit ───────────────────
   useEffect(() => {
     if (!isComplete) return;
+    // The workspace path submits the scored session from `onFinished` (below), not this tally.
+    if (tutorOwned) return;
     if (sessionCompleteFiredRef.current) return;
     if (challenges.length === 0) return;
     sessionCompleteFiredRef.current = true;
@@ -425,15 +496,33 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     }
   }, [
     isComplete, results, phaseResults, challenges,
-    sendText, submitEvaluation, hasSubmittedEvaluation,
+    sendText, submitEvaluation, hasSubmittedEvaluation, tutorOwned,
   ]);
 
-  // ── Submit handler ─────────────────────────────────────────────────────────
-  const isWithinTolerance = (student: number, target: number, tolerance = 0.1): boolean =>
-    Math.abs(student - target) <= tolerance;
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || challenges.length === 0) return;
+    const metrics: DoubleNumberLineMetrics = {
+      type: 'double-number-line',
+      challengeType: challenges[0].challengeType,
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.firstTryCount,
+      hintsViewed: 0,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / challenges.length) * 10) / 10,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
+  // ── Submit handler ─────────────────────────────────────────────────────────
   const handleCheckAnswers = useCallback(() => {
-    if (!currentChallenge || feedback === 'correct' || isComplete) return;
+    if (!currentChallenge || feedback === 'correct' || isComplete || learnerBlocked()) return;
 
     // Stale-state guard: setStudentValues from the reset effect is async — on
     // the render immediately after advance(), `studentValues` still holds the
@@ -441,28 +530,16 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     // on. Only proceed when the slot count matches.
     if (studentValues.length !== currentChallenge.targetPoints.length) return;
 
-    incrementAttempts();
-
-    let allCorrect = true;
-    for (let i = 0; i < currentChallenge.targetPoints.length; i++) {
-      const target = currentChallenge.targetPoints[i];
-      const studentBottom = parseFloat(studentValues[i]);
-      if (isNaN(studentBottom) || !isWithinTolerance(studentBottom, target.bottomValue)) {
-        allCorrect = false;
-        break;
-      }
-    }
+    // The checked gesture: counts the attempt and records the verdict on both paths.
+    const allCorrect = valuesCorrect(currentChallenge, studentValues);
+    const response = describeRatioWork(currentChallenge, studentValues, bottomLabel, topLabel);
 
     if (allCorrect) {
       SoundManager.playCorrect();
       setFeedback('correct');
       if (!recordedRef.current) {
         recordedRef.current = true;
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: true,
-          attempts: currentAttempts + 1,
-        });
+        progress.commitCheck(response, true);
         sendText(
           `[PHASE_COMPLETE] Challenge ${currentIndex + 1}/${challenges.length} solved on attempt ${currentAttempts + 1}.`,
           { silent: true },
@@ -472,6 +549,7 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
       SoundManager.playIncorrect();
       setFeedback('incorrect');
       setShowHint(true);
+      progress.commitCheck(response, false, ratioLineMiss(currentChallenge, studentValues));
       sendText(
         `[WRONG_ANSWER] Challenge ${currentIndex + 1}/${challenges.length} (mode: ${currentChallenge.challengeType}), attempt ${currentAttempts + 1}. `
         + `The student's bottom value is off. Coach the next step.`
@@ -480,10 +558,10 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
       );
     }
   }, [
-    currentChallenge, feedback, isComplete, studentValues,
-    incrementAttempts, recordResult, currentAttempts,
+    currentChallenge, feedback, isComplete, studentValues, bottomLabel, topLabel,
+    progress.commitCheck, currentAttempts,
     sendText, currentIndex, challenges.length, supportTier,
-  ]);
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAdvance = () => {
     advance();
@@ -531,6 +609,52 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     },
     [showTickLabels],
   );
+
+  /** What the pulled drawn levers put on the lines (never on a practice item). */
+  const leverJumps = currentChallenge && leverOn(UNIT_JUMPS_LEVER) ? jumpsFor(currentChallenge) : null;
+  const leverSplit = currentChallenge && leverOn(SPLIT_GIVEN_LEVER) ? splitFor(currentChallenge) : null;
+
+  /** A bottom tick that sits at an asked point's value (to the tick's rounding). */
+  const askedBottom = (value: number) =>
+    !!currentChallenge?.targetPoints.some((t) => Math.abs(Math.round(t.bottomValue * 100) / 100 - value) < 1e-6);
+  /** A bottom tick at a drawn given point's value (the unit-rate point only while it is drawn). */
+  const givenBottom = (value: number) =>
+    !!currentChallenge?.givenPoints.some((p) => (showUnitRate || !(Math.abs(p.topValue - 1) < 0.01 && p.label === 'Unit Rate'))
+      && Math.abs(Math.round(p.bottomValue * 100) / 100 - value) < 1e-6);
+
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation; every mode declares levers (`doubleNumberLineLevers.ts`).
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const labels = { topLabel, bottomLabel };
+    const scene = workspaceScene(currentChallenge, {
+      topLabel, bottomLabel, contextQuestion, values: studentValues,
+      showVerticalGuides, showUnitRate, showTickLabels, showGivenValues,
+    });
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : ratioLineLevers(sessionChallenge, pulledLevers, labels);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice item is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerLine(sessionChallenge, labels);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetChallenge(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetChallenge(sessionChallenge); },
+    };
+  });
 
   // ── Empty state ────────────────────────────────────────────────────────────
   if (challenges.length === 0) {
@@ -706,6 +830,13 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                       </div>
                     );
                   })}
+
+                  {/* Levers on the top line: unlabelled, never a value. */}
+                  {leverJumps && Array.from({ length: leverJumps.steps }, (_, k) => (
+                    <JumpArc key={`jump-top-${k}`} from={getTopPosition(k)} to={getTopPosition(k + 1)} />
+                  ))}
+                  {leverSplit && <SplitMarks band={getTopPosition(leverSplit.top)}
+                    marks={Array.from({ length: leverSplit.parts - 1 }, (_, j) => getTopPosition(((j + 1) * leverSplit.top) / leverSplit.parts))} />}
                 </div>
               </div>
 
@@ -734,9 +865,13 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                       className="absolute w-px h-4 bg-slate-500 top-full mt-1 flex flex-col items-center -translate-x-1/2"
                       style={{ left: `${tick.position}%` }}
                     >
-                      {showTickLabelAt(i, bottomTicks.length) && (
+                      {/* The bottom values are what the learner finds, so the bottom line prints only its ends and the
+                          given pairs' values, whatever the tier: with the tick interval equal to the rate, a fully
+                          labelled bottom line printed every answer and the rate. The tick under an asked point shows ?. */}
+                      {(askedBottom(tick.value) || ((i === 0 || i === bottomTicks.length - 1 || givenBottom(tick.value))
+                        && showTickLabelAt(i, bottomTicks.length))) && (
                         <span className="mt-2 text-sm text-slate-400 font-mono font-semibold">
-                          {tick.value}
+                          {askedBottom(tick.value) ? '?' : tick.value}
                         </span>
                       )}
                     </div>
@@ -766,6 +901,13 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                       </div>
                     );
                   })}
+
+                  {/* Levers on the bottom line: the matching jumps or parts, unlabelled. */}
+                  {leverJumps && Array.from({ length: leverJumps.steps }, (_, k) => (
+                    <JumpArc key={`jump-bottom-${k}`} from={getBottomPosition(k * leverJumps.rate)} to={getBottomPosition((k + 1) * leverJumps.rate)} />
+                  ))}
+                  {leverSplit && <SplitMarks band={getBottomPosition(leverSplit.bottom)}
+                    marks={Array.from({ length: leverSplit.parts - 1 }, (_, j) => getBottomPosition(((j + 1) * leverSplit.bottom) / leverSplit.parts))} />}
 
                   {/* Student-entered values on bottom */}
                   {currentChallenge.targetPoints.map((point, i) => {
@@ -799,6 +941,19 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
             </div>
           )}
 
+          {/* `grow_model` lever: a picture outside the item, with no number. */}
+          {!isComplete && leverOn(GROW_MODEL_LEVER) && (
+            <figure data-lever="grow-model" className="mx-auto w-64 text-center space-y-1">
+              <div className="flex gap-0.5 w-1/2">
+                {[0, 1, 2].map((k) => <div key={k} className="flex-1 h-3 border-t-2 border-x-2 rounded-t-full border-cyan-300/70" />)}
+              </div>
+              <div className="flex gap-0.5">
+                {[0, 1, 2].map((k) => <div key={k} className="flex-1 h-3 border-t-2 border-x-2 rounded-t-full border-amber-300/70" />)}
+              </div>
+              <figcaption className="text-[11px] text-slate-400">{GROW_MODEL_CAPTION}</figcaption>
+            </figure>
+          )}
+
           {/* Input section */}
           {!isComplete && currentChallenge && (
             <div className="mt-12 space-y-6">
@@ -827,9 +982,10 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                           </label>
                           <div className="text-xs text-slate-500 mb-1">What is {bottomLabel}?</div>
                           <LuminaNumberStepper
+                            ariaLabel={answerLabel(bottomLabel, topLabel, target.topValue)}
                             value={studentValues[i] ?? ''}
                             onChange={(val) => {
-                              if (feedback === 'correct') return;
+                              if (feedback === 'correct' || learnerBlocked()) return;
                               setStudentValues((prev) => {
                                 const next = [...prev];
                                 next[i] = val;
@@ -839,7 +995,7 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                             }}
                             step={1}
                             autoFocus={i === 0}
-                            disabled={feedback === 'correct'}
+                            disabled={feedback === 'correct' || blocked}
                             borderColor={
                               feedback === 'correct'
                                 ? 'border-green-500'
@@ -861,13 +1017,14 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                   status={feedback === 'correct' ? 'correct' : 'incorrect'}
                   className="max-w-2xl mx-auto"
                   teachingNote={
-                    feedback === 'incorrect' && showHint && currentChallenge.hint
+                    // The generated hint names the operation and the numbers; with the tutor, help is the tutor's.
+                    !tutorOwned && feedback === 'incorrect' && showHint && currentChallenge.hint
                       ? currentChallenge.hint
                       : undefined
                   }
                 >
                   {feedback === 'correct'
-                    ? `Correct! ${currentIndex + 1 < challenges.length ? 'Ready for the next one?' : 'Last challenge complete!'}`
+                    ? tutorOwned ? 'Correct!' : `Correct! ${currentIndex + 1 < challenges.length ? 'Ready for the next one?' : 'Last challenge complete!'}`
                     : 'Not quite — check your work and try again.'}
                 </LuminaFeedbackCard>
               )}
@@ -878,10 +1035,11 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
                   <LuminaActionButton
                     action="check"
                     onClick={handleCheckAnswers}
-                    disabled={!allInputsFilled}
+                    disabled={!allInputsFilled || blocked}
                   />
                 )}
-                {feedback === 'correct' && (
+                {/* On the workspace path the shell's Try again / Next challenge replace Next. */}
+                {!tutorOwned && feedback === 'correct' && (
                   <LuminaActionButton action="next" onClick={handleAdvance}>
                     {currentIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish Session'}
                   </LuminaActionButton>
@@ -908,5 +1066,9 @@ const DoubleNumberLine: React.FC<DoubleNumberLineProps> = ({ data, className }) 
     </div>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const DoubleNumberLine = withWorkspaceController<DoubleNumberLineProps, ProgressOptions<DoubleNumberLineChallenge>, Progress>(
+  'double-number-line', DoubleNumberLineSurface, useScriptedProgress, useWorkspaceProgressFor('double-number-line'));
 
 export default DoubleNumberLine;

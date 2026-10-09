@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -23,11 +23,23 @@ import {
 } from '../../../evaluation';
 import type { RatioTableMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  SLIDER_MIN, SLIDER_STEP, bannerShown, describeRatioWork, formatNum, ratioCorrect, ratioKey, ratioMiss, shownMultiplier,
+  workspaceAssignment, workspaceScene, type RatioWork,
+} from './ratioTableWorkspace';
+import {
+  ARROWS_LEVER, BANNER_LEVER, BAR_CHART_LEVER, DIVISION_LEVER, GROUPS_LEVER, MODEL_LEVER,
+  divisionRow, groupCount, isPracticeRatio, leverFacts, ratioLevers, ratioModel, simplerRatio,
+} from './ratioTableLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -86,21 +98,22 @@ const CHALLENGE_TYPE_CONFIG: Record<string, PhaseConfig> = {
 interface RatioTableProps {
   data: RatioTableData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function formatNum(n: number): string {
-  return n % 1 === 0 ? String(n) : n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
-}
+/** Where the slider starts: ×1, unless ×1 is the item's answer. */
+const sliderStart = (ch: RatioTableChallenge | null) => (ch?.type === 'build-ratio' && ch.targetMultiplier === 1 ? 2 : 1);
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
+const RatioTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  RatioTableProps & { tutorOwned: boolean; useController: (options: ProgressOptions<RatioTableChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -117,21 +130,36 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     onEvaluationSubmit,
   } = data;
 
+  const stableInstanceIdRef = useRef(instanceId || `ratio-table-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
   // -------------------------------------------------------------------------
-  // Challenge Progress (shared hooks)
+  // Challenge progress. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  /** Bound below, once the setters and the evaluation exist; the progress hook calls them only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
+    mergeResult,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -149,23 +177,40 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   // Current challenge
   // -------------------------------------------------------------------------
-  const currentChallenge = useMemo(
-    () => challenges[currentChallengeIndex] ?? null,
-    [challenges, currentChallengeIndex],
-  );
+  // In-item levers (`ratioTableLevers.ts`), keyed by the session item they were pulled on, and the easier problem a
+  // simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<RatioTableChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier problem while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice problem. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
 
   // -------------------------------------------------------------------------
   // Per-challenge interaction state
   // -------------------------------------------------------------------------
   const [studentAnswer, setStudentAnswer] = useState('');
-  const [sliderMultiplier, setSliderMultiplier] = useState(1);
+  const [sliderMultiplier, setSliderMultiplier] = useState(() => sliderStart(challenges[0] ?? null));
   const [hintsUsed, setHintsUsed] = useState(0);
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'hint' | ''>('');
 
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `ratio-table-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  /** A fresh item (both paths) or Try again (workspace): the answer box empty, the slider back at its start. */
+  const resetWork = (ch: RatioTableChallenge | null, keepHints: boolean) => {
+    setStudentAnswer('');
+    setSliderMultiplier(sliderStart(ch));
+    if (!keepHints) setHintsUsed(0);
+    setFeedback('');
+    setFeedbackType('');
+  };
+  openItem.current = (index, retry) => {
+    // Try again on a practice problem keeps it; a fresh item (or the full item back after practice) drops it.
+    if (retry) { resetWork(practice ?? challenges[index] ?? null, true); return; }
+    setPractice(null);
+    resetWork(challenges[index] ?? null, false);
+  };
 
   // -------------------------------------------------------------------------
   // Derived values for current challenge
@@ -174,7 +219,6 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
   const rowLabels = currentChallenge?.rowLabels ?? ['Quantity A', 'Quantity B'];
   const targetMultiplier = currentChallenge?.targetMultiplier ?? 1;
   const hiddenValue = currentChallenge?.hiddenValue ?? 'scaled-second';
-  const tolerance = currentChallenge?.tolerance ?? 1;
 
   const scaledColumn: [number, number] = useMemo(() => {
     if (!currentChallenge) return [0, 0];
@@ -186,23 +230,14 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
 
   const unitRate = baseRatio[0] !== 0 ? baseRatio[1] / baseRatio[0] : 0;
 
-  const targetValue = useMemo(() => {
-    if (!currentChallenge) return 0;
-    switch (currentChallenge.type) {
-      case 'missing-value':
-        return hiddenValue === 'scaled-first'
-          ? baseRatio[0] * targetMultiplier
-          : baseRatio[1] * targetMultiplier;
-      case 'find-multiplier':
-        return targetMultiplier;
-      case 'unit-rate':
-        return unitRate;
-      case 'build-ratio':
-        return targetMultiplier;
-      default:
-        return 0;
-    }
-  }, [currentChallenge, baseRatio, targetMultiplier, hiddenValue, unitRate]);
+  const targetValue = useMemo(() => (currentChallenge ? ratioKey(currentChallenge) : 0), [currentChallenge]);
+
+  /** The header's multiplier on a missing-value item, hidden when it would name the answer. */
+  const headerMultiplier = currentChallenge ? shownMultiplier(currentChallenge) : null;
+  /** The unit-rate banner, never on a unit-rate item and never when its number is the answer. */
+  const showBanner = !!currentChallenge && bannerShown(currentChallenge, showUnitRate || leverOn(BANNER_LEVER));
+  /** The bar chart: the session's, or the `bar_chart` lever's on the session item. */
+  const showChart = showBarChart || leverOn(BAR_CHART_LEVER);
 
   // Bar chart max for proportional widths
   const barMaxValue = useMemo(() => {
@@ -228,7 +263,8 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring
+  // AI Tutoring (scripted path). The legacy context carries the answer; on the workspace path the tutor reads the
+  // scene instead.
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     baseRatio,
@@ -249,17 +285,20 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     challenges.length, currentAttempts, supportTier,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'ratio-table',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // -------------------------------------------------------------------------
-  // Tutor reveal policy — keep the tutor in sync with the on-screen scaffold so
-  // it never names what a hard tier withheld. Mode-aware: unit-rate's identity
-  // is finding the rate, so the rate is never named at any tier there.
-  // Declared BEFORE the intro effect that consumes it.
+  // Tutor reveal policy (scripted path) — keep the tutor in sync with the on-screen scaffold so it never names what a
+  // hard tier withheld. Mode-aware: unit-rate's identity is finding the rate, so the rate is never named at any tier
+  // there. Declared BEFORE the intro effect that consumes it.
   // -------------------------------------------------------------------------
   const tutorRevealClause = useCallback(
     (challengeType: RatioTableChallenge['type']): string => {
@@ -299,22 +338,17 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
   }, [isConnected, challenges.length, currentChallenge, baseRatio, rowLabels, tutorRevealClause, sendText]);
 
   // -------------------------------------------------------------------------
-  // Answer Checking
+  // Answer Checking. Every check commits (right or wrong); an entry that is not a number is not a check.
   // -------------------------------------------------------------------------
   const checkAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-    incrementAttempts();
-
-    let correct = false;
+    if (!currentChallenge || learnerBlocked()) return;
+    const work: RatioWork = { typed: studentAnswer, multiplier: sliderMultiplier };
     let precision = 0;
 
     if (currentChallenge.type === 'build-ratio') {
-      // Slider-based: compare sliderMultiplier to targetMultiplier
       const sliderError = Math.abs((sliderMultiplier - targetMultiplier) / targetMultiplier) * 100;
-      correct = sliderError <= tolerance * 2; // slightly more tolerant for slider
       precision = Math.max(0, 100 - sliderError);
-
-      if (correct) {
+      if (ratioCorrect(currentChallenge, work)) {
         SoundManager.playCorrect();
         setFeedback(`Great! You built the correct equivalent ratio (×${formatNum(sliderMultiplier)}).`);
         setFeedbackType('success');
@@ -334,7 +368,6 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         );
       }
     } else {
-      // Text-input based: parse student answer
       const parsed = parseFloat(studentAnswer);
       if (isNaN(parsed)) {
         SoundManager.invalid();
@@ -342,20 +375,17 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         setFeedbackType('error');
         return;
       }
-
       const percentError = targetValue !== 0
         ? Math.abs((parsed - targetValue) / targetValue) * 100
         : (parsed === 0 ? 0 : 100);
-      correct = percentError <= tolerance;
       precision = Math.max(0, 100 - percentError);
 
-      if (correct) {
+      if (ratioCorrect(currentChallenge, work)) {
         const label = currentChallenge.type === 'find-multiplier'
           ? `The multiplier is ×${formatNum(targetValue)}.`
           : currentChallenge.type === 'unit-rate'
           ? `The unit rate is ${formatNum(unitRate)} ${rowLabels[1]} per ${rowLabels[0]}.`
           : `${hiddenValue === 'scaled-first' ? rowLabels[0] : rowLabels[1]} = ${formatNum(targetValue)}`;
-
         SoundManager.playCorrect();
         setFeedback(`Correct! ${label}`);
         setFeedbackType('success');
@@ -397,9 +427,12 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         );
       }
     }
-
-    if (correct) {
-      recordResult({
+    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own fields.
+    const correct = ratioCorrect(currentChallenge, work);
+    progress.commitCheck(describeRatioWork(currentChallenge, work), correct, ratioMiss(currentChallenge, work));
+    // An easier practice problem (a simplify lever) is not the session's challenge: it records nothing of its own.
+    if (correct && !isPracticeRatio(currentChallenge)) {
+      mergeResult({
         challengeId: currentChallenge.id,
         correct: true,
         attempts: currentAttempts + 1,
@@ -407,15 +440,16 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         hintsUsed,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentChallenge, studentAnswer, sliderMultiplier, targetValue, targetMultiplier,
-    unitRate, tolerance, hiddenValue, rowLabels, baseRatio, hintsUsed,
-    currentAttempts, incrementAttempts, recordResult, sendText,
+    unitRate, hiddenValue, rowLabels, baseRatio, hintsUsed,
+    currentAttempts, mergeResult, sendText, progress.commitCheck,
     supportTier, tutorRevealClause,
   ]);
 
   // -------------------------------------------------------------------------
-  // Hint System
+  // Hint System (scripted path; with the tutor, help is the tutor's)
   // -------------------------------------------------------------------------
   const provideHint = useCallback(() => {
     if (hasSubmittedEvaluation || !currentChallenge) return;
@@ -465,81 +499,73 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
   }, [hasSubmittedEvaluation, currentChallenge, hintsUsed, unitRate, rowLabels, baseRatio, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
-  // Challenge Navigation
+  // Scripted path: submit the tally once every challenge is done.
+  // -------------------------------------------------------------------------
+  const submitScripted = useCallback(() => {
+    const phaseScoreStr = phaseResults
+      .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
+      .join(', ');
+    const correctCount = challengeResults.filter(r => r.correct).length;
+    const overallPct = challenges.length > 0
+      ? Math.round((correctCount / challenges.length) * 100)
+      : 0;
+
+    sendText(
+      `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
+      + `Give encouraging phase-specific feedback about their proportional reasoning!`,
+      { silent: true },
+    );
+
+    if (hasSubmittedEvaluation) return;
+    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
+    const avgPrecision = challengeResults.length > 0
+      ? Math.round(challengeResults.reduce((s, r) => s + ((r.score as number) ?? 0), 0) / challengeResults.length)
+      : 0;
+    const totalHints = challengeResults.reduce((s, r) => s + ((r.hintsUsed as number) ?? 0), 0);
+
+    // Per-type scores
+    const typeScores: Record<string, number[]> = {};
+    challengeResults.forEach((r) => {
+      const ch = challenges.find(c => c.id === r.challengeId);
+      if (ch) {
+        if (!typeScores[ch.type]) typeScores[ch.type] = [];
+        typeScores[ch.type].push((r.score as number) ?? (r.correct ? 100 : 0));
+      }
+    });
+    const avgTypeScore = (type: string): number | undefined => {
+      const scores = typeScores[type];
+      if (!scores || scores.length === 0) return undefined;
+      return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    };
+
+    const metrics: RatioTableMetrics = {
+      type: 'ratio-table',
+      goalMet: correctCount === challenges.length,
+      overallAccuracy: overallPct,
+      totalChallenges: challenges.length,
+      correctCount,
+      attemptsCount: totalAttempts,
+      averagePrecision: avgPrecision,
+      hintsRequested: totalHints,
+      missingValueScore: avgTypeScore('missing-value'),
+      findMultiplierScore: avgTypeScore('find-multiplier'),
+      buildRatioScore: avgTypeScore('build-ratio'),
+      unitRateScore: avgTypeScore('unit-rate'),
+    };
+
+    submitEvaluation(correctCount === challenges.length, overallPct, metrics, { challengeResults });
+  }, [phaseResults, challenges, challengeResults, sendText, hasSubmittedEvaluation, submitEvaluation]);
+
+  // -------------------------------------------------------------------------
+  // Challenge Navigation (scripted path; the workspace path hides Next and the runtime advances)
   // -------------------------------------------------------------------------
   const advanceToNextChallenge = useCallback(() => {
     if (!advanceProgress()) {
-      // All complete — submit evaluation
-      const phaseScoreStr = phaseResults
-        .map((p) => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-      const correctCount = challengeResults.filter(r => r.correct).length;
-      const overallPct = challenges.length > 0
-        ? Math.round((correctCount / challenges.length) * 100)
-        : 0;
-
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallPct}%. `
-        + `Give encouraging phase-specific feedback about their proportional reasoning!`,
-        { silent: true },
-      );
-
-      if (!hasSubmittedEvaluation) {
-        const overallAccuracy = overallPct;
-        const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-        const avgPrecision = challengeResults.length > 0
-          ? Math.round(challengeResults.reduce((s, r) => s + ((r.score as number) ?? 0), 0) / challengeResults.length)
-          : 0;
-        const totalHints = challengeResults.reduce((s, r) => s + ((r.hintsUsed as number) ?? 0), 0);
-
-        // Per-type scores
-        const typeScores: Record<string, number[]> = {};
-        challengeResults.forEach((r) => {
-          const ch = challenges.find(c => c.id === r.challengeId);
-          if (ch) {
-            if (!typeScores[ch.type]) typeScores[ch.type] = [];
-            typeScores[ch.type].push((r.score as number) ?? (r.correct ? 100 : 0));
-          }
-        });
-        const avgTypeScore = (type: string): number | undefined => {
-          const scores = typeScores[type];
-          if (!scores || scores.length === 0) return undefined;
-          return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-        };
-
-        const metrics: RatioTableMetrics = {
-          type: 'ratio-table',
-          goalMet: correctCount === challenges.length,
-          overallAccuracy,
-          totalChallenges: challenges.length,
-          correctCount,
-          attemptsCount: totalAttempts,
-          averagePrecision: avgPrecision,
-          hintsRequested: totalHints,
-          missingValueScore: avgTypeScore('missing-value'),
-          findMultiplierScore: avgTypeScore('find-multiplier'),
-          buildRatioScore: avgTypeScore('build-ratio'),
-          unitRateScore: avgTypeScore('unit-rate'),
-        };
-
-        submitEvaluation(
-          correctCount === challenges.length,
-          overallAccuracy,
-          metrics,
-          { challengeResults },
-        );
-      }
+      if (!tutorOwned) submitScripted();
       return;
     }
-
-    // Reset per-challenge state
-    setStudentAnswer('');
-    setSliderMultiplier(1);
-    setHintsUsed(0);
-    setFeedback('');
-    setFeedbackType('');
-
     const nextChallenge = challenges[currentChallengeIndex + 1];
+    resetWork(nextChallenge ?? null, false);
     sendText(
       `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}: `
       + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). `
@@ -547,21 +573,38 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
       + `Introduce it briefly.`,
       { silent: true },
     );
-  }, [
-    advanceProgress, phaseResults, challenges, challengeResults, sendText,
-    hasSubmittedEvaluation, submitEvaluation, currentChallengeIndex,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [advanceProgress, challenges, sendText, currentChallengeIndex, tutorOwned, submitScripted]);
 
-  // -------------------------------------------------------------------------
-  // Auto-submit when all complete
-  // -------------------------------------------------------------------------
+  // Scripted path: auto-submit when all complete.
   const hasAutoSubmittedRef = useRef(false);
   useEffect(() => {
+    if (tutorOwned) return;
     if (allChallengesComplete && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
       hasAutoSubmittedRef.current = true;
-      advanceToNextChallenge();
+      submitScripted();
     }
-  }, [allChallengesComplete, hasSubmittedEvaluation, advanceToNextChallenge]);
+  }, [allChallengesComplete, hasSubmittedEvaluation, submitScripted, tutorOwned]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || challenges.length === 0) return;
+    const metrics: RatioTableMetrics = {
+      type: 'ratio-table',
+      goalMet: result.passed,
+      overallAccuracy: result.accuracy,
+      totalChallenges: challenges.length,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      averagePrecision: result.accuracy,
+      hintsRequested: 0,
+    };
+    submitEvaluation(result.passed, result.accuracy, metrics,
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
   // -------------------------------------------------------------------------
   // Computed
@@ -569,6 +612,14 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
   const isCurrentChallengeComplete = challengeResults.some(
     r => r.challengeId === currentChallenge?.id && r.correct,
   );
+  /** Input closed once the item is done, and on the workspace path while a checked answer waits for Try again. */
+  const inputClosed = allChallengesComplete || hasSubmittedEvaluation || isCurrentChallengeComplete || blocked;
+
+  const setMultiplier = (value: number) => {
+    if (inputClosed || learnerBlocked() || !Number.isFinite(value)) return;
+    const snapped = Math.round(Math.min(maxMultiplier, Math.max(SLIDER_MIN, value)) / SLIDER_STEP) * SLIDER_STEP;
+    setSliderMultiplier(Math.round(snapped * 10) / 10);
+  };
 
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challenges.length === 0) return 0;
@@ -593,6 +644,39 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     : feedbackType === 'hint' ? 'text-amber-400'
     : 'text-slate-300';
 
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation.
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, {
+      typed: studentAnswer, multiplier: sliderMultiplier,
+      showUnitRate: showUnitRate || leverOn(BANNER_LEVER), showBarChart: showChart,
+    });
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : ratioLevers(sessionChallenge, pulledLevers, { barChartShown: showBarChart, bannerOn: showUnitRate });
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerRatio(sessionChallenge);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetWork(easier, true);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetWork(sessionChallenge, true); },
+    };
+  });
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -607,6 +691,9 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     solved: isCurrentChallengeComplete,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
+
+  const hideFirst = currentChallenge?.type === 'missing-value' && hiddenValue === 'scaled-first' && !isCurrentChallengeComplete;
+  const hideSecond = currentChallenge?.type === 'missing-value' && hiddenValue === 'scaled-second' && !isCurrentChallengeComplete;
 
   return (
     <LuminaCard className={className}>
@@ -684,7 +771,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
                     ? 'Scaled ×?'
                     : currentChallenge.type === 'unit-rate'
                     ? 'Unit Rate'
-                    : `Scaled ×${targetMultiplier}`
+                    : `Scaled ×${headerMultiplier === null && !isCurrentChallengeComplete ? '?' : formatNum(targetMultiplier)}`
                   }
                 </span>
               </div>
@@ -702,19 +789,13 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
                   <div className="p-3 bg-purple-500/10 border border-purple-400/30 rounded-xl text-center">
                     <p className="text-xs text-purple-400 mb-1">{rowLabels[0]}</p>
                     <p className="text-2xl font-bold text-slate-100 font-mono">
-                      {currentChallenge.type === 'missing-value' && hiddenValue === 'scaled-first' && !isCurrentChallengeComplete
-                        ? '?'
-                        : formatNum(scaledColumn[0])
-                      }
+                      {hideFirst ? '?' : formatNum(scaledColumn[0])}
                     </p>
                   </div>
                   <div className="p-3 bg-purple-500/10 border border-purple-400/30 rounded-xl text-center">
                     <p className="text-xs text-purple-400 mb-1">{rowLabels[1]}</p>
                     <p className="text-2xl font-bold text-slate-100 font-mono">
-                      {currentChallenge.type === 'missing-value' && hiddenValue === 'scaled-second' && !isCurrentChallengeComplete
-                        ? '?'
-                        : formatNum(scaledColumn[1])
-                      }
+                      {hideSecond ? '?' : formatNum(scaledColumn[1])}
                     </p>
                   </div>
                 </>
@@ -723,8 +804,69 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
           </div>
         )}
 
+        {/* Lever pictures (`ratioTableLevers.ts`), on the session item only. */}
+        {currentChallenge && !allChallengesComplete && !isCurrentChallengeComplete && (() => {
+          const ch = currentChallenge;
+          const arrowLabel = ch.type === 'find-multiplier' ? '× ?'
+            : ch.type === 'build-ratio' ? `×${formatNum(sliderMultiplier)}`
+              : headerMultiplier === null ? '× ?' : `×${formatNum(targetMultiplier)}`;
+          const division = leverOn(DIVISION_LEVER) ? divisionRow(ch) : null;
+          const divisionLabel = division ? rowLabels[baseRatio.indexOf(division[1])] ?? rowLabels[0] : '';
+          const boxes = leverOn(GROUPS_LEVER) ? groupCount(ch) : null;
+          const model = leverOn(MODEL_LEVER) ? ratioModel(ch) : null;
+          const arrows = leverOn(ARROWS_LEVER) && ch.type !== 'unit-rate';
+          if (!arrows && !division && !boxes && !model) return null;
+          return (
+            <div className="space-y-3">
+              {arrows && (
+                <div data-lever="times-arrows" className="space-y-1">
+                  {[0, 1].map((r) => (
+                    <div key={r} className="flex items-center justify-center gap-2 text-sm font-mono text-slate-200">
+                      <span className="text-xs text-slate-400 w-28 text-right truncate">{rowLabels[r]}</span>
+                      <span>{formatNum(baseRatio[r])}</span>
+                      <span className="text-cyan-300">&rarr; {arrowLabel} &rarr;</span>
+                      <span>{(r === 0 ? hideFirst : hideSecond) ? '?' : formatNum(scaledColumn[r])}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {division && (
+                <p data-lever="division-frame" className="text-center text-sm font-mono text-cyan-200">
+                  {divisionLabel}: {formatNum(division[0])} &divide; {formatNum(division[1])} = ?
+                </p>
+              )}
+              {boxes && (
+                <figure data-lever="equal-groups" className="text-center">
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    {Array.from({ length: boxes }, (_, i) => (
+                      <div key={i} className="w-9 h-9 rounded-md border border-cyan-300/50 bg-cyan-500/10 flex items-center justify-center text-cyan-200 text-xs">?</div>
+                    ))}
+                  </div>
+                  <figcaption className="text-[11px] text-slate-400 mt-1">
+                    All the {rowLabels[1]} shared equally into these boxes, one box for each of the {rowLabels[0]}. One box is the amount for one.
+                  </figcaption>
+                </figure>
+              )}
+              {model && (
+                <figure data-lever="model-ratio" className="mx-auto w-72 rounded-lg border border-white/10 bg-slate-900/40 p-2 text-center">
+                  <div className="flex items-center justify-center gap-3 font-mono text-sm text-slate-200">
+                    <div className="space-y-0.5"><div>{formatNum(model.from[0])}</div><div>{formatNum(model.from[1])}</div></div>
+                    <div className="space-y-0.5 text-cyan-300"><div>&rarr; {model.op}{formatNum(model.by)} &rarr;</div><div>&rarr; {model.op}{formatNum(model.by)} &rarr;</div></div>
+                    <div className="space-y-0.5"><div>{formatNum(model.to[0])}</div><div>{formatNum(model.to[1])}</div></div>
+                  </div>
+                  <figcaption className="text-[11px] text-slate-400 mt-1">
+                    {model.op === '÷'
+                      ? 'Another ratio: both rows divided by the first number, so the first becomes one.'
+                      : 'Another ratio: both rows multiplied by the same number.'}
+                  </figcaption>
+                </figure>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Unit Rate Display */}
-        {showUnitRate && currentChallenge && !allChallengesComplete && currentChallenge.type !== 'unit-rate' && (
+        {showBanner && currentChallenge && !allChallengesComplete && (
           <div className="bg-teal-500/10 border border-teal-400/20 rounded-lg p-2 text-center">
             <p className="text-xs text-teal-300 font-mono">
               Unit Rate:{' '}
@@ -736,7 +878,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
         )}
 
         {/* Bar Chart Visualization */}
-        {showBarChart && currentChallenge && !allChallengesComplete && currentChallenge.type !== 'unit-rate' && (
+        {showChart && currentChallenge && !allChallengesComplete && currentChallenge.type !== 'unit-rate' && (
           <div className="space-y-2">
             <p className="text-xs text-slate-500 font-mono uppercase tracking-wider text-center">
               Visual Comparison
@@ -775,10 +917,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
                     style={{ width: `${Math.max(Math.min((scaledColumn[0] / barMaxValue) * 100, 100), 8)}%` }}
                   >
                     <span className="text-xs text-purple-200 font-mono">
-                      {currentChallenge.type === 'missing-value' && hiddenValue === 'scaled-first' && !isCurrentChallengeComplete
-                        ? '?'
-                        : formatNum(scaledColumn[0])
-                      }
+                      {hideFirst ? '?' : formatNum(scaledColumn[0])}
                     </span>
                   </div>
                 </div>
@@ -791,10 +930,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
                     style={{ width: `${Math.max(Math.min((scaledColumn[1] / barMaxValue) * 100, 100), 8)}%` }}
                   >
                     <span className="text-xs text-purple-200 font-mono">
-                      {currentChallenge.type === 'missing-value' && hiddenValue === 'scaled-second' && !isCurrentChallengeComplete
-                        ? '?'
-                        : formatNum(scaledColumn[1])
-                      }
+                      {hideSecond ? '?' : formatNum(scaledColumn[1])}
                     </span>
                   </div>
                 </div>
@@ -810,17 +946,29 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
               <span className="text-sm text-purple-300 font-medium">Adjust Multiplier</span>
               <span className="text-sm text-purple-200 font-mono font-bold">&times;{formatNum(sliderMultiplier)}</span>
             </div>
+            {/* The keyboard's way onto the slider (arrow keys), and the journey's: the same multiplier the slider sets. */}
+            <input
+              type="range"
+              className="sr-only"
+              aria-label="Multiplier"
+              min={SLIDER_MIN}
+              max={maxMultiplier}
+              step={SLIDER_STEP}
+              value={sliderMultiplier}
+              disabled={inputClosed}
+              onChange={(e) => setMultiplier(Number(e.target.value))}
+            />
             <LuminaSlider
               accent="purple"
-              min={0.5}
+              min={SLIDER_MIN}
               max={maxMultiplier}
-              step={0.1}
+              step={SLIDER_STEP}
               value={[sliderMultiplier]}
-              onValueChange={([v]) => setSliderMultiplier(v)}
-              disabled={hasSubmittedEvaluation}
+              onValueChange={([v]) => setMultiplier(v)}
+              disabled={inputClosed}
             />
             <div className="flex justify-between text-xs text-slate-500 font-mono">
-              <span>&times;0.5</span>
+              <span>&times;{SLIDER_MIN}</span>
               <span>&times;{maxMultiplier}</span>
             </div>
           </div>
@@ -832,9 +980,10 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
             <LuminaInput
               type="number"
               step="0.01"
+              aria-label="Your answer"
               value={studentAnswer}
-              onChange={(e) => setStudentAnswer(e.target.value)}
-              disabled={hasSubmittedEvaluation}
+              onChange={(e) => { if (!learnerBlocked()) setStudentAnswer(e.target.value); }}
+              disabled={inputClosed}
               placeholder={
                 currentChallenge.type === 'find-multiplier' ? 'Enter the multiplier'
                 : currentChallenge.type === 'unit-rate' ? 'Enter the unit rate'
@@ -843,14 +992,16 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
               className="flex-1 text-center font-mono"
               onKeyDown={(e) => e.key === 'Enter' && checkAnswer()}
             />
-            <LuminaButton
-              tone="subtle"
-              className="text-xs"
-              onClick={provideHint}
-              disabled={hasSubmittedEvaluation || hintsUsed >= 3}
-            >
-              Hint ({hintsUsed}/3)
-            </LuminaButton>
+            {!tutorOwned && (
+              <LuminaButton
+                tone="subtle"
+                className="text-xs"
+                onClick={provideHint}
+                disabled={hasSubmittedEvaluation || hintsUsed >= 3}
+              >
+                Hint ({hintsUsed}/3)
+              </LuminaButton>
+            )}
           </div>
         )}
 
@@ -863,7 +1014,7 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Action Buttons */}
+        {/* Action Buttons. On the workspace path the shell's Try again / Next challenge replace Next. */}
         {challenges.length > 0 && !allChallengesComplete && (
           <div className="flex justify-center gap-3">
             {!isCurrentChallengeComplete && (
@@ -871,12 +1022,12 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
                 action="check"
                 onClick={checkAnswer}
                 disabled={
-                  hasSubmittedEvaluation ||
+                  hasSubmittedEvaluation || blocked ||
                   (currentChallenge?.type !== 'build-ratio' && !studentAnswer)
                 }
               />
             )}
-            {isCurrentChallengeComplete && (
+            {!tutorOwned && isCurrentChallengeComplete && (
               <LuminaActionButton
                 action="next"
                 onClick={advanceToNextChallenge}
@@ -887,8 +1038,8 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
           </div>
         )}
 
-        {/* Hint on multiple failed attempts */}
-        {currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
+        {/* Hint on multiple failed attempts (scripted path; the generated hint can name the answer's arithmetic) */}
+        {!tutorOwned && currentChallenge?.hint && feedbackType === 'error' && currentAttempts >= 2 && (
           <LuminaPanel className="p-2 text-center">
             <p className="text-slate-400 text-xs italic">{currentChallenge.hint}</p>
           </LuminaPanel>
@@ -919,5 +1070,9 @@ const RatioTable: React.FC<RatioTableProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const RatioTable = withWorkspaceController<RatioTableProps, ProgressOptions<RatioTableChallenge>, Progress>(
+  'ratio-table', RatioTableSurface, useScriptedProgress, useWorkspaceProgressFor('ratio-table'));
 
 export default RatioTable;

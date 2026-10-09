@@ -1,0 +1,2123 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    9,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "measurement-tools.compare",
+   "primitiveId": "measurement-tools",
+   "evalMode": "compare",
+   "keys": [
+    "4"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "mt-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Put the Sky Rectangle on the ruler and find how many inches long it is.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's measure the Sky Rectangle by putting it on the ruler first.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Place the Sky Rectangle on the ruler to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's measure the Sky Rectangle! Start by placing it on the ruler to see where it lines up.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's measure the Sky Rectangle! Start by placing it on the ruler to see how long it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's place the Sky Rectangle on the ruler to see how long it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "mt-1",
+     "trigger": "The learner submitted \"On the ruler; answered 5 inches\". The board checked it: not right.",
+     "miss": "one_over",
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Put the Sky Rectangle on the ruler and find how many inches long it is.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Good try! Take a close look at the ruler to see which number the right edge lines up with, and give it another shot.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Look closely at the right edge of the rectangle\u2014which number mark does it line up with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the ruler where the right edge of the rectangle ends. What number mark does it line up with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a close look at where the right edge of the rectangle ends on the ruler. What number does it line up with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look closely at the right edge of the rectangle\u2014what number on the ruler does it line up with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "mt-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Put the Sky Rectangle on the ruler and find how many inches long it is.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "First, put the rectangle back onto the ruler so its left edge starts right at 0. Where does its other edge end on the numbers?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "First, put the rectangle back"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "Put the rectangle on the ruler so its left edge starts at 0, and then look at where its right edge ends. Which number mark does that right edge touch?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "First put the rectangle back on the ruler so its left edge starts at 0. Where does its right edge end?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "First, put the rectangle back on the ruler so its left side starts at 0. Then, look straight down at where the right edge stops.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "First, put the rectangle back"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "First put the rectangle back on the ruler so its left side starts at 0, and then look at where its right side ends.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "mt-1",
+     "trigger": "The learner submitted \"On the ruler; answered 4 inches\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "4"
+      ],
+      "ask": "Put the Sky Rectangle on the ruler and find how many inches long it is.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it! You checked the ruler, saw the edge landed right at 4, and entered 4 inches.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You checked the ruler and found 4 inches, fixing it yourself!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You lined up the edge, saw it reached 4 inches, and checked your answer! Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You looked right at where the edge lined up and found 4 inches!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You measured it right to the 4 inch mark!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "measurement-tools.convert",
+   "primitiveId": "measurement-tools",
+   "evalMode": "convert",
+   "keys": [
+    "25.4"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "mt-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "25.4"
+      ],
+      "ask": "Measure the Red Rectangle in inches, then change that length to centimeters.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! To get started, try putting the red rectangle on the ruler.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! To measure the red rectangle, place it on the ruler so we can see how long it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's measure the red rectangle! Start by putting the rectangle on the ruler.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's measure the red rectangle! You can put it on the ruler to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/1/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Try putting the red rectangle on the ruler to see how long it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "mt-1",
+     "trigger": "The learner submitted \"Measured 10 inches; converted to 10 centimeters\". The board checked it: not right.",
+     "miss": "same_number",
+     "scoredWith": {
+      "keys": [
+       "25.4"
+      ],
+      "ask": "Measure the Red Rectangle in inches, then change that length to centimeters.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You measured 10 inches! Since each inch has about 2 and a half centimeters, give it another try with centimeters.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice try measuring 10 inches! Since 1 inch is about 2.54 centimeters, what do you think happens to the number when we convert 10 of those inches?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You measured 10 inches! Since 1 inch is equal to 2.54 centimeters, take a look at the conversion rule on the screen to see how many centimeters that would be.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You measured 10 inches accurately! Notice on the screen that 1 inch is equal to 2.54 centimeters, so 10 inches will be more centimeters than inches. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You measured 10 inches accurately! Notice how the screen shows each inch is 2.54 centimeters, so 10 inches will be more centimeters than 10. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/6/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "mt-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "25.4"
+      ],
+      "ask": "Measure the Red Rectangle in inches, then change that length to centimeters.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the rule on the screen: 1 inch equals about 2.54 centimeters. Since we have 10 inches, what number do you get if you count by 2.5 ten times?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Take a look at the clue on your screen showing how many centimeters are in 1 inch. What happens when you have 10 of those inches together?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look at the note on your screen that says 1 inch = 2.54 centimeters. If 1 inch is about 2 and a half centimeters, what would 10 of those be?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look at the hint on your screen that says 1 inch equals 2.54 centimeters. Will 10 inches be more centimeters or fewer centimeters than 10?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look at the rule on the screen: 1 inch is equal to 2.54 centimeters. If 1 inch is about 2 and a half centimeters, will 10 inches be a bigger number or a smaller number?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "mt-1",
+     "trigger": "The learner submitted \"Measured 10 inches; converted to 25.4 centimeters\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "25.4"
+      ],
+      "ask": "Measure the Red Rectangle in inches, then change that length to centimeters.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You measured 10 inches and figured out it was 25.4 centimeters by using the rule! Great work.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked it out and converted 10 inches to 25.4 centimeters!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out and typed 25.4 centimeters, matching all ten inches!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You figured it out and typed 25.4 centimeters! You multiplied the 10 inches by 2.54 centimeters.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You converted it to 25.4 centimeters by using the rule for each of the 10 inches!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "measurement-tools.estimate",
+   "primitiveId": "measurement-tools",
+   "evalMode": "estimate",
+   "keys": [
+    "2.5"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "mt-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2.5"
+      ],
+      "ask": "Put the Purple Rectangle on the ruler and find how many inches long it is, to the nearest half inch.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's measure the purple rectangle! Start by putting it on the ruler to see where it lines up.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our measuring activity! Go ahead and place the purple rectangle onto the ruler to see how long it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's measure the purple rectangle with the ruler. Go ahead and place it on the ruler to see where it lines up!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to measuring with a ruler! Let's start by placing the purple rectangle onto the ruler.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's measure the purple rectangle! First, go ahead and put it onto the ruler.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "mt-1",
+     "trigger": "The learner submitted \"On the ruler; answered 3 inches\". The board checked it: not right.",
+     "miss": "rounded_up",
+     "scoredWith": {
+      "keys": [
+       "2.5"
+      ],
+      "ask": "Put the Purple Rectangle on the ruler and find how many inches long it is, to the nearest half inch.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a close look at the right edge of the rectangle. Which marks does that right edge land between?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a close look at the right edge of the rectangle. Which two numbers does it land between?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a close look at the right edge of the rectangle. Which two numbers does it land between?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look closely at where the right edge lands between the numbers. Which two marks is it sitting between?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a close look at where the right edge ends. Which two numbers does it land between?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "mt-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2.5"
+      ],
+      "ask": "Put the Purple Rectangle on the ruler and find how many inches long it is, to the nearest half inch.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Put the rectangle back on the ruler so its left edge starts at 0. Then see if the right edge lands right on a whole number or on a half-inch mark between numbers.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Put the rectangle back"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "Put the rectangle back on the ruler so its left edge sits right at 0. Then see if the other end stops right on a whole number or on a half-inch mark between two numbers.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Put the rectangle back"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "Put the purple rectangle back on the ruler so its left edge starts right at 0. Then see what mark the other end touches.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Put the purple rectangle back"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "Place the purple rectangle back onto the ruler so its left side starts at 0. Then see if the right edge lands right on the half-inch mark between two numbers.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "Place the purple rectangle back"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "Put the rectangle on the ruler first so its left edge starts right at 0. Then see if the other end lands right on a whole number or on a half mark.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "mt-1",
+     "trigger": "The learner submitted \"On the ruler; answered 2.5 inches\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "2.5"
+      ],
+      "ask": "Put the Purple Rectangle on the ruler and find how many inches long it is, to the nearest half inch.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You measured it right to 2.5 inches by checking that half-inch mark between 2 and 3!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You checked the ruler, saw it ended right on the half mark, and entered 2.5 inches.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! You saw that the edge stopped right at the half-inch mark between 2 and 3 and entered 2.5 inches.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You checked the half-inch mark between 2 and 3 and found that it measures 2.5 inches.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed your measurement and found that it ends right at 2.5 inches. Great job looking closely at that half-inch mark!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "measurement-tools.measure",
+   "primitiveId": "measurement-tools",
+   "evalMode": "measure",
+   "keys": [
+    "7"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "mt-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "7"
+      ],
+      "ask": "Put the Green Rectangle on the ruler and find how many inches long it is.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Try putting the green rectangle on the ruler to see how long it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's find out how long the green rectangle is by placing it on the ruler.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Go ahead and place the green rectangle on the ruler to see how long it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Let's find out how long the green rectangle is! Start by placing the rectangle on the ruler.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's place the green rectangle on the ruler to see how long it is.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "mt-1",
+     "trigger": "The learner submitted \"On the ruler; answered 8 inches\". The board checked it: not right.",
+     "miss": "one_over",
+     "scoredWith": {
+      "keys": [
+       "7"
+      ],
+      "ask": "Put the Green Rectangle on the ruler and find how many inches long it is.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Good try! Look closely at the ruler: which number does the right edge line up with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a close look at the right edge of the rectangle. What number line on the ruler does it stop at?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice try! Take a look at the ruler where the right edge of the rectangle ends. What number mark does it line up with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a close look at the ruler where the right edge of the rectangle ends. Which number line mark is it touching?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a close look at the ruler where the right edge of the rectangle ends. What number mark does it line up with?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "mt-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "7"
+      ],
+      "ask": "Put the Green Rectangle on the ruler and find how many inches long it is.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "First, put the rectangle back onto the ruler so its left side starts at 0. Then see what number the right side touches.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "First, put the rectangle back"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "First, place the green rectangle back on the ruler so its left edge starts right at 0. Then, look at the very end of the rectangle to see which number line it reaches.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "First, place the green rectangle back"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "First, tap \"Put it on the ruler\" so its left edge starts right at 0. Then look at the mark where the other end stops!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Place the rectangle on the ruler first so its left edge starts right at 0. Then look at the mark where the other end stops.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "First, put the rectangle back on the ruler so its left side starts at 0. Then see what number the right side touches.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": false,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_fix_before_try": "First, put the rectangle back"
+       },
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "mt-1",
+     "trigger": "The learner submitted \"On the ruler; answered 7 inches\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "7"
+      ],
+      "ask": "Put the Green Rectangle on the ruler and find how many inches long it is.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "SHAPE_PLACED",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "MEASURE_CORRECT",
+       "CONVERT_CORRECT",
+       "CONVERT_INCORRECT",
+       "COMPARE_CORRECT",
+       "COMPARE_INCORRECT",
+       "MEASURE_PHASE_DONE",
+       "NEXT_ITEM",
+       "ALL_COMPLETE"
+      ],
+      "menu": [
+       "put it on the ruler"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You measured it and found 7 inches! Great job checking the line right at the edge.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You checked the ruler and got 7 inches! Great job reading the mark right at the end.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You checked the ruler and found 7 inches.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed it and measured 7 inches! Great job checking right where the edge lined up.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You lined up the edge, read the 7, and got it right!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

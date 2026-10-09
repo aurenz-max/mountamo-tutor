@@ -1,0 +1,35 @@
+{
+ "source": "qa/tutor-reports/factor-tree-runtime-guided_medium-payload-2026-10-09.json",
+ "primitiveId": "factor-tree",
+ "evalMode": "guided_medium",
+ "data": {
+  "title": "Growing Factor Trees",
+  "description": "Practice breaking down numbers into their prime building blocks and writing them using exponent forms.",
+  "challenges": [
+   {
+    "id": "ft-1",
+    "rootValue": 27
+   },
+   {
+    "id": "ft-2",
+    "rootValue": 42
+   },
+   {
+    "id": "ft-3",
+    "rootValue": 45
+   },
+   {
+    "id": "ft-4",
+    "rootValue": 54
+   },
+   {
+    "id": "ft-5",
+    "rootValue": 56
+   }
+  ],
+  "highlightPrimes": true,
+  "showExponentForm": true,
+  "guidedMode": true,
+  "allowReset": true
+ }
+}

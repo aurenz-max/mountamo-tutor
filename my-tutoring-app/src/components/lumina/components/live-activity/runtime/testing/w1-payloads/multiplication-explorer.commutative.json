@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/multiplication-explorer-runtime-commutative-payload-2026-10-09.json",
+ "primitiveId": "multiplication-explorer",
+ "evalMode": "commutative",
+ "data": {
+  "title": "Sticker Packs",
+  "description": "Explore multiplication facts using groups, arrays, repeated addition, number lines, and area models.",
+  "fact": {
+   "factor1": 5,
+   "factor2": 9,
+   "product": 45
+  },
+  "representations": {
+   "equalGroups": true,
+   "array": true,
+   "repeatedAddition": true,
+   "numberLine": true,
+   "areaModel": true
+  },
+  "activeRepresentation": "groups",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "commutative",
+    "instruction": "Rotate the array to find 9 groups of 5. What is the total product?",
+    "targetFact": "5 \u00d7 9 = 45",
+    "hint": "Flip the factors around! Does the total number of stickers change?",
+    "narration": "Let's explore the commutative property. If we flip 5 groups of 9 into 9 groups of 5, what is the product?",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 5,
+     "factor2": 9
+    },
+    "representation": "groups"
+   },
+   {
+    "id": "c2",
+    "type": "commutative",
+    "instruction": "Rotate the array for 8 groups of 2. What is the total product?",
+    "targetFact": "2 \u00d7 8 = 16",
+    "hint": "Try switching the order from 2 times 8 to 8 times 2.",
+    "narration": "Great job! Now let's try 2 times 8 flipped around. What is the new product?",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 2,
+     "factor2": 8
+    },
+    "representation": "array"
+   },
+   {
+    "id": "c3",
+    "type": "commutative",
+    "instruction": "Rotate the array for 2 groups of 6. What is the total product?",
+    "targetFact": "6 \u00d7 2 = 12",
+    "hint": "Switch the factors to see how the rows and columns swap.",
+    "narration": "Keep going! What do we get when we apply the commutative property to 6 times 2?",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 6,
+     "factor2": 2
+    },
+    "representation": "repeated_addition"
+   },
+   {
+    "id": "c4",
+    "type": "commutative",
+    "instruction": "Rotate the array for 8 groups of 4. What is the total product?",
+    "targetFact": "4 \u00d7 8 = 32",
+    "hint": "Think about 8 rows of 4 instead of 4 rows of 8.",
+    "narration": "You are doing fantastic. Let's flip 4 times 8 around.",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 4,
+     "factor2": 8
+    },
+    "representation": "number_line"
+   },
+   {
+    "id": "c5",
+    "type": "commutative",
+    "instruction": "Rotate the array for 7 groups of 2. What is the total product?",
+    "targetFact": "2 \u00d7 7 = 14",
+    "hint": "Switch 2 times 7 to find the matching product.",
+    "narration": "Here is our final challenge! Apply the commutative property to 2 times 7.",
+    "hiddenValue": "product",
+    "timeLimit": null,
+    "fact": {
+     "factor1": 2,
+     "factor2": 7
+    },
+    "representation": "area_model"
+   }
+  ],
+  "showOptions": {
+   "showProduct": false,
+   "showFactFamily": true,
+   "showCommutativeFlip": true,
+   "showDistributiveBreakdown": false
+  },
+  "gradeBand": "2-3",
+  "imagePrompt": "colorful sticker sheets arranged in neat rows"
+ }
+}

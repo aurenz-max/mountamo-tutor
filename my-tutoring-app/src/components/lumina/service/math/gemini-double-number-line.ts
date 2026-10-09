@@ -303,7 +303,8 @@ const sessionWrapperSchema: Schema = {
       description:
         "Umbrella real-world setup that applies to ALL challenges in this session "
         + "(e.g., '1 cup of flour makes 3 cookies. Use this rate to answer each question.'). "
-        + "Should explicitly state the unit rate when challengeType is equivalent_ratios.",
+        + "Should explicitly state the unit rate when challengeType is equivalent_ratios. For find_missing and unit_rate, "
+        + "NEVER state the unit rate (the amount per 1): the student finds it from the given pair.",
     },
     topLabel: {
       type: Type.STRING,
@@ -376,7 +377,9 @@ function buildEquivalentRatiosChallenge(
   return {
     givenPoints: [ORIGIN, unitRatePoint],
     targetPoints: [target],
-    prompt: `Use the unit rate to find ${ctx.bottomLabel} when ${ctx.topLabel} = ${askInput}.`,
+    // The rate is stated in the prompt: the harder tiers withdraw the unit-rate dot and its badge, and the
+    // context sentence is the model's to write, so without this line the item could not be answered.
+    prompt: `The unit rate is 1 ${ctx.topLabel} = ${ctx.unitRate} ${ctx.bottomLabel}. Use it to find ${ctx.bottomLabel} when ${ctx.topLabel} = ${askInput}.`,
     hint: `Multiply ${askInput} × ${ctx.unitRate} (the unit rate).`,
   };
 }
@@ -419,7 +422,9 @@ function buildUnitRateChallenge(
     return {
       givenPoints: [ORIGIN, givenReference],
       targetPoints: [unitRatePoint],
-      prompt: `Find the unit rate: when ${ctx.topLabel} = 1, what is ${ctx.bottomLabel}?`,
+      // The given pair is stated: the harder tiers withdraw its printed badge and the interior tick labels.
+      prompt: `Given ${givenReference.topValue} ${ctx.topLabel} = ${givenReference.bottomValue} ${ctx.bottomLabel}, `
+        + `find the unit rate: when ${ctx.topLabel} = 1, what is ${ctx.bottomLabel}?`,
       hint: `Divide: ${givenReference.bottomValue} ÷ ${givenReference.topValue}.`,
     };
   }
@@ -432,7 +437,8 @@ function buildUnitRateChallenge(
   return {
     givenPoints: [ORIGIN, givenReference],
     targetPoints: [target],
-    prompt: `Now find ${ctx.bottomLabel} when ${ctx.topLabel} = ${askInput}.`,
+    prompt: `Given ${givenReference.topValue} ${ctx.topLabel} = ${givenReference.bottomValue} ${ctx.bottomLabel}, `
+      + `find ${ctx.bottomLabel} when ${ctx.topLabel} = ${askInput}.`,
     hint:
       `Unit rate is ${ctx.unitRate} (from ${givenReference.bottomValue} ÷ ${givenReference.topValue}). `
       + `Multiply by ${askInput}.`,
@@ -600,14 +606,23 @@ Return the session setup. Per-challenge ask-points are derived locally from askI
 
   // ---- Normalize session-level fields ----
   const title = String(raw.title ?? 'Double Number Line');
-  const description = String(raw.description ?? 'Find proportional relationships.');
+  let description = String(raw.description ?? 'Find proportional relationships.');
   const challengeType = (raw.challengeType ?? 'equivalent_ratios') as DoubleNumberLineChallengeType;
-  const contextQuestion = String(raw.contextQuestion ?? '');
+  let contextQuestion = String(raw.contextQuestion ?? '');
   const topLabel = String(raw.topLabel ?? 'Input');
   const bottomLabel = String(raw.bottomLabel ?? 'Output');
   let unitRate = Number(raw.unitRateOutput ?? 1);
   if (!Number.isFinite(unitRate) || unitRate <= 0) unitRate = 1;
   unitRate = correctInvertedRatio(contextQuestion, unitRate);
+  // find_missing and unit_rate ask the learner for the unit rate (the answer on unit_rate's first item, the step
+  // that unlocks every other): a context or description sentence that states it is replaced (10-09 payload: "7
+  // finished components for every 1 unit" on a find_missing session).
+  const statesRate = (text: string) => challengeType !== 'equivalent_ratios'
+    && new RegExp(`(^|[^\\d.])${String(unitRate).replace('.', '\\.')}(?![\\d]|\\.\\d)`).test(text);
+  if (statesRate(contextQuestion)) {
+    contextQuestion = `${bottomLabel} grows at a constant rate with ${topLabel}. Use the given pair on the lines to answer each question.`;
+  }
+  if (statesRate(description)) description = 'Use a given pair to find matching values on a double number line.';
 
   const maxInput = Math.max(5, Math.min(20, Math.round(Number(raw.maxInput ?? 10))));
 

@@ -1,0 +1,157 @@
+{
+ "source": "qa/tutor-reports/double-number-line-runtime-unit_rate-payload-2026-10-09.json",
+ "primitiveId": "double-number-line",
+ "evalMode": "unit_rate",
+ "data": {
+  "title": "Solar Energy Production: Panels to Kilowatts",
+  "description": "Students will determine the constant unit rate of energy output per solar panel and apply it to calculate power generation across various array sizes.",
+  "topLabel": "Solar Panels",
+  "bottomLabel": "Kilowatts Generated",
+  "unitRate": 3.5,
+  "contextQuestion": "A residential solar installation generates a proportional amount of power based on the number of active panels. Use the provided installation data to analyze the output.",
+  "challenges": [
+   {
+    "id": "dnl-1",
+    "challengeType": "unit_rate",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 2,
+      "bottomValue": 7,
+      "label": "Given"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 1,
+      "bottomValue": 3.5,
+      "label": "Unit Rate"
+     }
+    ],
+    "prompt": "Given 2 Solar Panels = 7 Kilowatts Generated, find the unit rate: when Solar Panels = 1, what is Kilowatts Generated?",
+    "hint": "Divide: 7 \u00f7 2.",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 28,
+     "interval": 3
+    }
+   },
+   {
+    "id": "dnl-2",
+    "challengeType": "unit_rate",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 2,
+      "bottomValue": 7,
+      "label": "Given"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 4,
+      "bottomValue": 14,
+      "label": "Find for 4"
+     }
+    ],
+    "prompt": "Given 2 Solar Panels = 7 Kilowatts Generated, find Kilowatts Generated when Solar Panels = 4.",
+    "hint": "Unit rate is 3.5 (from 7 \u00f7 2). Multiply by 4.",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 28,
+     "interval": 3
+    }
+   },
+   {
+    "id": "dnl-3",
+    "challengeType": "unit_rate",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 2,
+      "bottomValue": 7,
+      "label": "Given"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 5,
+      "bottomValue": 17.5,
+      "label": "Find for 5"
+     }
+    ],
+    "prompt": "Given 2 Solar Panels = 7 Kilowatts Generated, find Kilowatts Generated when Solar Panels = 5.",
+    "hint": "Unit rate is 3.5 (from 7 \u00f7 2). Multiply by 5.",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 28,
+     "interval": 3
+    }
+   },
+   {
+    "id": "dnl-4",
+    "challengeType": "unit_rate",
+    "givenPoints": [
+     {
+      "topValue": 0,
+      "bottomValue": 0,
+      "label": "Start"
+     },
+     {
+      "topValue": 2,
+      "bottomValue": 7,
+      "label": "Given"
+     }
+    ],
+    "targetPoints": [
+     {
+      "topValue": 6,
+      "bottomValue": 21,
+      "label": "Find for 6"
+     }
+    ],
+    "prompt": "Given 2 Solar Panels = 7 Kilowatts Generated, find Kilowatts Generated when Solar Panels = 6.",
+    "hint": "Unit rate is 3.5 (from 7 \u00f7 2). Multiply by 6.",
+    "topScale": {
+     "min": 0,
+     "max": 8,
+     "interval": 1
+    },
+    "bottomScale": {
+     "min": 0,
+     "max": 28,
+     "interval": 3
+    }
+   }
+  ],
+  "showVerticalGuides": true,
+  "showUnitRate": true
+ }
+}

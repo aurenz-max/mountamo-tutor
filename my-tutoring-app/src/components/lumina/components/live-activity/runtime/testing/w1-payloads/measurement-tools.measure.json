@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/measurement-tools-runtime-measure-payload-2026-10-09.json",
+ "primitiveId": "measurement-tools",
+ "evalMode": "measure",
+ "data": {
+  "title": "Measure the Shapes",
+  "description": "Drag each shape onto the ruler, align the left edge to zero, and type its width in inches.",
+  "challengeType": "measure",
+  "challenges": [
+   {
+    "id": "mt-1",
+    "shapeType": "rectangle",
+    "widthInches": 7,
+    "heightInches": 1,
+    "color": "rgba(16,185,129,0.35)",
+    "label": "Green Rectangle",
+    "hint": "Look where the right edge of the shape lines up on the ruler."
+   },
+   {
+    "id": "mt-2",
+    "shapeType": "rectangle",
+    "widthInches": 8,
+    "heightInches": 1.5,
+    "color": "rgba(245,158,11,0.35)",
+    "label": "Amber Rectangle",
+    "hint": "Line the left edge up with 0, then read where the right edge lands."
+   },
+   {
+    "id": "mt-3",
+    "shapeType": "square",
+    "widthInches": 4,
+    "heightInches": 4,
+    "color": "rgba(14,165,233,0.35)",
+    "label": "Sky Square",
+    "hint": "The small marks between the numbers are halves. Count carefully."
+   },
+   {
+    "id": "mt-4",
+    "shapeType": "rectangle",
+    "widthInches": 2,
+    "heightInches": 1,
+    "color": "rgba(99,102,241,0.35)",
+    "label": "Blue Rectangle",
+    "hint": "Measure from 0, not from 1. Where does the shape end?"
+   }
+  ],
+  "rulerLengthInches": 12,
+  "unit": "inches",
+  "precision": "whole",
+  "gradeBand": "K-2",
+  "convertToUnit": "centimeters"
+ }
+}

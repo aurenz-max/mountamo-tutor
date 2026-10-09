@@ -1,0 +1,107 @@
+{
+ "source": "qa/tutor-reports/multiplication-explorer-runtime-fluency-payload-2026-10-09.json",
+ "primitiveId": "multiplication-explorer",
+ "evalMode": "fluency",
+ "data": {
+  "title": "Sticker Packs",
+  "description": "Practice rapid multiplication recall using sticker pack collections.",
+  "fact": {
+   "factor1": 6,
+   "factor2": 4,
+   "product": 24
+  },
+  "representations": {
+   "equalGroups": true,
+   "array": true,
+   "repeatedAddition": true,
+   "numberLine": true,
+   "areaModel": true
+  },
+  "activeRepresentation": "groups",
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "fluency",
+    "instruction": "Calculate the total for 6 times 4.",
+    "targetFact": "6 \u00d7 4 = 24",
+    "hint": "Think of 6 groups with 4 stickers in each.",
+    "narration": "Let us start with six times four.",
+    "hiddenValue": "product",
+    "timeLimit": 8,
+    "fact": {
+     "factor1": 6,
+     "factor2": 4
+    },
+    "representation": "groups"
+   },
+   {
+    "id": "c2",
+    "type": "fluency",
+    "instruction": "Calculate the total for 3 times 7.",
+    "targetFact": "3 \u00d7 7 = 21",
+    "hint": "Count by sevens three times.",
+    "narration": "Moving on to three times seven.",
+    "hiddenValue": "product",
+    "timeLimit": 7,
+    "fact": {
+     "factor1": 3,
+     "factor2": 7
+    },
+    "representation": "array"
+   },
+   {
+    "id": "c3",
+    "type": "fluency",
+    "instruction": "Calculate the total for 3 times 3.",
+    "targetFact": "3 \u00d7 3 = 9",
+    "hint": "A square number of sticker packs.",
+    "narration": "Next up is three times three.",
+    "hiddenValue": "product",
+    "timeLimit": 6,
+    "fact": {
+     "factor1": 3,
+     "factor2": 3
+    },
+    "representation": "repeated_addition"
+   },
+   {
+    "id": "c4",
+    "type": "fluency",
+    "instruction": "Calculate the total for 7 times 4.",
+    "targetFact": "7 \u00d7 4 = 28",
+    "hint": "Add four seven times.",
+    "narration": "Great job. Now solve seven times four.",
+    "hiddenValue": "product",
+    "timeLimit": 6,
+    "fact": {
+     "factor1": 7,
+     "factor2": 4
+    },
+    "representation": "number_line"
+   },
+   {
+    "id": "c5",
+    "type": "fluency",
+    "instruction": "Calculate the total for 7 times 5.",
+    "targetFact": "7 \u00d7 5 = 35",
+    "hint": "Think of seven groups of five.",
+    "narration": "Final challenge: seven times five.",
+    "hiddenValue": "product",
+    "timeLimit": 5,
+    "fact": {
+     "factor1": 7,
+     "factor2": 5
+    },
+    "representation": "area_model"
+   }
+  ],
+  "showOptions": {
+   "showProduct": false,
+   "showFactFamily": false,
+   "showCommutativeFlip": true,
+   "showDistributiveBreakdown": false
+  },
+  "gradeBand": "2-3",
+  "imagePrompt": "packs of colorful stickers on a table"
+ }
+}
