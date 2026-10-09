@@ -51,6 +51,8 @@ export interface BuildWatchRequest {
   numbers: 'allowed' | 'never';
   /** Words the line may never use, such as shape names where naming the shape can be the skill. */
   neverSay?: readonly string[];
+  /** What the child placed, as exact facts, when the picture alone gets colours or kinds wrong. */
+  made?: string;
 }
 
 /** Quiet time after the last change before the watcher looks (Try It uses 1500 ms for strokes). */
@@ -85,7 +87,8 @@ export function useBuildWatcher(opts: {
         });
         if (!res.ok) return;
         const line = String(((await res.json()) as { seeing?: string }).seeing ?? '');
-        if (mine === gen.current && line) setSeeing(line);
+        // An empty reply (nothing kept by `keepWatchLine`) clears the line: the last one was about an older build.
+        if (mine === gen.current) setSeeing(line);
       } catch { /* the live line is extra */ }
     }, WATCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);

@@ -54,6 +54,7 @@ export const JOURNEY_INVARIANTS = {
   'J7-commit-visible': 'A committed verdict, retry or advance is confirmed on screen by the real visibility wait: a later render of the same item and phase does not supersede it',
   'J8-miss-named': "On a mode whose catalog entry lists misses, every checked miss names one from that list; a spoken item's known misses are all on the list and a wrong spoken answer records one",
   'J9-miss-answered': "On a mode with levers, every catalog miss is in some lever's answers or in the catalog's unanswered list",
+  'J12-item-miss-answered': "On a mode with levers, a checked miss on an item is answered by a lever on that item, or is in the catalog's unanswered list (J9 counts the mode's items together, so one item's gap passed it)",
   'J10-clean-record': 'A clean program (every item right first time) submits once, and the record says so: passed, score 100, every item first try, no assistance',
   'J11-recovery-record': 'The wrong-then-right program submits once, and the record says so: every item solved, each miss in teachingAttempts before its correct try, the score and first-response score set by the first-response gate',
 } as const;
@@ -406,6 +407,10 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
         noteLevers();
         const miss = s.task!.workspace?.attempts.at(-1)?.miss;
         tally.checked++; if (miss) tally.named++;
+        const itemLevers = s.task!.workspace?.levers ?? [];
+        if (miss && ANSWERED.has(modeKey) && !(workspaceEntry?.unanswered?.[evalMode] ?? []).includes(miss)
+            && !itemLevers.some(l => l.answers?.includes(miss)))
+          find('J12-item-miss-answered', `${item}: no lever on this item answers "${miss}" (levers here: ${itemLevers.map(l => l.id).join(', ') || 'none'})`);
         if (declared && (!miss || !declared.includes(miss)))
           find('J8-miss-named', `${item}: the checked miss named ${miss ? `"${miss}", not in the catalog's list` : 'nothing'} (${wrong.map(a => a.type).join('+')})`);
         if (!h.offer('retry')) { find('J4-retry-reopens', `${item}: no retry is offered after a checked miss`); break; }
@@ -480,7 +485,8 @@ const MOMENTS: MomentRecord[] = [];
 async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { file: string }): Promise<MomentRecord | null> {
   const row = LIVE_JOURNEYS[primitiveId];
   if (!row || row.execution === 'teaching') return null;
-  seam.evaluationContext = { lesson: 'replay' };
+  // A family whose session ends inside the replay drive submits; the replay records moments, not submissions.
+  seam.evaluationContext = { lesson: 'replay', submitEvaluation: () => Promise.resolve() };
   const h = mountWorkspace({ primitiveId, evalMode, data });
   h.settle();
   const task = () => h.state().task!;
@@ -592,6 +598,8 @@ beforeEach(() => {
   // missing context is reported, not raised. Here it would throw out of act and read as a binding defect.
   vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => setTimeout(() => { try { fn(performance.now()); } catch { /* paint only */ } }, 16));
   vi.stubGlobal('cancelAnimationFrame', clearTimeout);
+  // jsdom has no ResizeObserver; LuminaSlider (Radix) measures itself on mount (push-pull-arena design's force slider).
+  if (typeof ResizeObserver === 'undefined') vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 760, height: 480,
     right: 760, bottom: 480, x: 0, y: 0, toJSON: () => ({}) });

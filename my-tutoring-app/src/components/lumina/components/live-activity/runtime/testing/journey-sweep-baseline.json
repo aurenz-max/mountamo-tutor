@@ -1,78 +1,78 @@
 {
- "balance-scale.equality_hard": {
-  "J6-completes-once": "EVAL_TRACKER BS-3: driver cap, MAX_ITEMS 24 < 25 items (5 x 5 stages); completes at 40"
- },
- "number-line.between": {
-  "J5-credit-moves-on": "handoff 21 SW-1"
- },
- "number-line.order": {
-  "J1-drivable": "handoff 21 SW-2"
- },
- "ten-frame.decompose": {
-  "J5-credit-moves-on": "handoff 21 SW-3"
- },
- "counting-board.subitize": {
-  "J2-miss-committed": "handoff 21 SW-4",
-  "J5-credit-moves-on": "handoff 21 SW-4"
- },
- "fraction-circles.touch_fraction": {
-  "J1-drivable": "handoff 21 SW-6"
- },
- "number-tracer.copy": {
-  "J1-drivable": "handoff 21 SW-7"
- },
- "number-tracer.write": {
-  "J1-drivable": "handoff 21 SW-7"
- },
- "number-tracer.sequence": {
-  "J1-drivable": "handoff 21 SW-7"
- },
- "cvc-speller.make_word": {
-  "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after code checks; LetterBuild.workspace.test.tsx drives the commit with a stubbed judge"
- },
- "sound-swap.swap_build": {
-  "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after code checks; LetterBuild.workspace.test.tsx drives the commit with a stubbed judge"
- },
- "rhyme-studio.pair_build": {
-  "J1-drivable": "the dry sweep has no picture-tap input for this board; RhymePair.workspace.test.tsx drives every miss and the pass through the real runtime"
- },
- "syllable-clapper.build_parts": {
-  "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after the code count; SyllableBuild.workspace.test.tsx drives the commit with a stubbed judge"
- },
- "phonics-blender.build_blend": {
-  "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after code checks; LetterBuild.workspace.test.tsx drives the commit with a stubbed judge"
- },
- "sentence-builder.build_sentence": {
-  "J1-drivable": "by design: the sentence is checked by the shared literacy judge (a model) after code checks; SentenceBuild.workspace.test.tsx drives the commit with a stubbed judge"
- },
- "word-flip.build_inflect": {
-  "J1-drivable": "by design: the word is checked in code, then by the shared literacy judge (Jev, flash-latest), which the dry sweep has no model for; WordFlip.buildInflect.workspace.test.tsx drives every code miss and the commit with a stubbed judge"
- },
- "word-builder.build_affix": {
-  "J1-drivable": "by design: the word is checked by the shared literacy judge (Jev, flash-latest), which the dry sweep has no model for; WordBuilder.buildAffix.workspace.test.tsx drives the commit with a stubbed judge"
- },
- "open-builder.build_to_goal": {
-  "J1-drivable": "by design: the check is the Gemini inspector, which the dry sweep has no model for; OpenBuilder.workspace.test.tsx drives the commit with a stubbed inspector"
- },
- "strategy-picker.compare": {
-  "J1-drivable": "handoff 21 SW-8 (by design)"
- },
- "push-pull-arena.observe": {
-  "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
- },
- "push-pull-arena.predict": {
-  "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
- },
- "rhyme-studio.production": {
-  "J1-drivable": "handoff 24 SW-L1"
- },
- "rhyme-studio.collection": {
-  "J1-drivable": "handoff 24 SW-L1"
- },
- "read-aloud-studio.expression": {
-  "J1-drivable": "handoff 24 SW-L2"
- },
- "spelling-pattern-explorer.pattern_build": {
-  "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after code checks; SpellingPatternExplorer.workspace.test.tsx drives the commit with a stubbed judge"
- }
+  "balance-scale.equality_hard": {
+    "J6-completes-once": "EVAL_TRACKER BS-3: driver cap, MAX_ITEMS 24 < 25 items (5 x 5 stages); completes at 40"
+  },
+  "ten-frame.decompose": {
+    "J5-credit-moves-on": "handoff 21 SW-3"
+  },
+  "counting-board.subitize": {
+    "J2-miss-committed": "handoff 21 SW-4",
+    "J5-credit-moves-on": "handoff 21 SW-4"
+  },
+  "fraction-circles.touch_fraction": {
+    "J1-drivable": "handoff 21 SW-6"
+  },
+  "number-tracer.copy": {
+    "J1-drivable": "handoff 21 SW-7"
+  },
+  "number-tracer.write": {
+    "J1-drivable": "handoff 21 SW-7"
+  },
+  "number-tracer.sequence": {
+    "J1-drivable": "handoff 21 SW-7"
+  },
+  "cvc-speller.make_word": {
+    "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after code checks; LetterBuild.workspace.test.tsx drives the commit with a stubbed judge"
+  },
+  "sound-swap.swap_build": {
+    "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after code checks; LetterBuild.workspace.test.tsx drives the commit with a stubbed judge"
+  },
+  "rhyme-studio.pair_build": {
+    "J1-drivable": "the dry sweep has no picture-tap input for this board; RhymePair.workspace.test.tsx drives every miss and the pass through the real runtime"
+  },
+  "syllable-clapper.build_parts": {
+    "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after the code count; SyllableBuild.workspace.test.tsx drives the commit with a stubbed judge"
+  },
+  "spelling-pattern-explorer.pattern_build": {
+    "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after code checks; SpellingPatternExplorer.workspace.test.tsx drives the commit with a stubbed judge"
+  },
+  "phonics-blender.build_blend": {
+    "J1-drivable": "by design: the word is checked by the shared literacy judge (a model) after code checks; LetterBuild.workspace.test.tsx drives the commit with a stubbed judge"
+  },
+  "sentence-builder.build_sentence": {
+    "J1-drivable": "by design: the sentence is checked by the shared literacy judge (a model) after code checks; SentenceBuild.workspace.test.tsx drives the commit with a stubbed judge"
+  },
+  "word-flip.build_inflect": {
+    "J1-drivable": "by design: the word is checked in code, then by the shared literacy judge (Jev, flash-latest), which the dry sweep has no model for; WordFlip.buildInflect.workspace.test.tsx drives every code miss and the commit with a stubbed judge"
+  },
+  "word-builder.build_affix": {
+    "J1-drivable": "by design: the word is checked by the shared literacy judge (Jev, flash-latest), which the dry sweep has no model for; WordBuilder.buildAffix.workspace.test.tsx drives the commit with a stubbed judge"
+  },
+  "open-builder.build_to_goal": {
+    "J1-drivable": "by design: the check is the Gemini inspector, which the dry sweep has no model for; OpenBuilder.workspace.test.tsx drives the commit with a stubbed inspector"
+  },
+  "strategy-picker.compare": {
+    "J1-drivable": "handoff 21 SW-8 (by design)"
+  },
+  "push-pull-arena.observe": {
+    "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
+  },
+  "push-pull-arena.predict": {
+    "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
+  },
+  "rhyme-studio.production": {
+    "J1-drivable": "handoff 24 SW-L1"
+  },
+  "rhyme-studio.collection": {
+    "J1-drivable": "handoff 24 SW-L1"
+  },
+  "number-line.between": {
+    "J5-credit-moves-on": "handoff 21 SW-1"
+  },
+  "number-line.order": {
+    "J1-drivable": "handoff 21 SW-2"
+  },
+  "read-aloud-studio.expression": {
+    "J1-drivable": "handoff 24 SW-L2"
+  }
 }

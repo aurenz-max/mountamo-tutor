@@ -74,7 +74,8 @@ export interface TeachingWorkspaceOptions {
   instanceId: string; primitiveId: string; objectiveId?: string; planItemId?: string;
   items: TeachingItem[];
   workspace: MutableRefObject<TeachingWorkspace | null>;
-  onItemOpened?: (index: number) => void;
+  /** `returned`: the full item is back after a practice item (a simplify lever), blank. */
+  onItemOpened?: (index: number, returned?: boolean) => void;
   onPresentStimulus?: (index: number) => void;
   /**
    * A correct response was just committed for the item at `index`, synchronously and before any
@@ -171,13 +172,13 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     if (!session.closePractice()) return false;
     practiceItem.current = null;
     latest.current.workspace.current?.endPractice?.();
-    reset();
+    reset(true);
     return true;
   };
-  const reset = () => {
+  const reset = (returned = false) => {
     pendingSpeech.current = null; dropSpokenMiss();
     latest.current.workspace.current?.clearPresentation?.();
-    latest.current.onItemOpened?.(session.getSnapshot().index);
+    latest.current.onItemOpened?.(session.getSnapshot().index, returned);
     speechFloor.current = aiRef.current.conversation.length;
     wasReady.current = false;
   };

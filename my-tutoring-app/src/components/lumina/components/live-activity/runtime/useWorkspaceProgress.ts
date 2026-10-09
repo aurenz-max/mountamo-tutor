@@ -32,7 +32,8 @@ export interface ProgressOptions<C> extends UseChallengeProgressOptions<C> {
   workspace: MutableRefObject<TeachingWorkspace | null>;
   /** What the tutor and the observer are told about a challenge. Pure; the domain module owns it. */
   assignment: (challenge: C) => TeachingAssignment;
-  /** A fresh challenge opened (`retry` false) or the same one reopened after a checked miss (`retry` true). */
+  /** A fresh challenge, or the same one back blank after a practice item (`retry` false), or the same one reopened
+   *  after a checked miss (`retry` true). */
   onItemOpened?: (index: number, retry: boolean) => void;
   /**
    * Once per challenge, when its success is committed. A spoken item has no check of the
@@ -95,6 +96,8 @@ export function useWorkspaceProgressFor(primitiveId: string) {
       assignment: item => latest.current.assignment(item.challenge),
       onItemOpened: (_item, index) => { attemptCount.current = 0; setAttempts(0); latest.current.onItemOpened?.(index, false); },
       onCorrectionRetry: () => latest.current.onItemOpened?.(run.currentIndex, true),
+      // Back from a practice item: the surface opens blank, as on a fresh item; the attempt count stays the item's.
+      onPracticeClosed: (_item, index) => latest.current.onItemOpened?.(index, false),
       onAffirmed: item => latest.current.onSolved?.(latest.current.challenges
         .findIndex(c => latest.current.getChallengeId(c) === item.id)),
       onFinished: result => latest.current.onFinished?.(result),

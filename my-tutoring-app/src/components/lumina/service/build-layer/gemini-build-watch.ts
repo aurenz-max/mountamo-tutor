@@ -33,6 +33,9 @@ export interface BuildWatchParams {
   numbers: 'allowed' | 'never';
   /** Words the line may never use (a shape name, where naming the shape can be the skill). */
   neverSay?: readonly string[];
+  /** What the child placed, as exact facts (colours, kinds), so the line names them as placed rather than as
+   *  flash-lite guesses them from the picture (it called a red tile purple, then blue, on pattern-builder 10-08). */
+  made?: string;
   /** PNG of the build, base64 without the data: prefix. */
   image: string;
 }
@@ -53,7 +56,8 @@ export async function watchBuild(p: BuildWatchParams): Promise<{ seeing: string 
   const res = await ai.models.generateContent({
     model: WATCH_MODEL,
     contents: [{ role: 'user', parts: [
-      { text: `The child is working on: ${String(p.task ?? '').slice(0, 300)}\nSCENERY (not made by the child): ${String(p.sceneNote ?? '').slice(0, 300)}` },
+      { text: `The child is working on: ${String(p.task ?? '').slice(0, 300)}\nSCENERY (not made by the child): ${String(p.sceneNote ?? '').slice(0, 300)}`
+        + (p.made ? `\nWHAT THE CHILD PLACED (exact; name colors and kinds only from this, never by guessing from the picture): ${String(p.made).slice(0, 300)}` : '') },
       { inlineData: { mimeType: 'image/png', data: p.image } },
     ] }],
     config: { systemInstruction: system(numbers, neverSay), responseMimeType: 'application/json', temperature: 0.7,

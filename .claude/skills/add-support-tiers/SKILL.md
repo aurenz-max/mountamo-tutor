@@ -128,7 +128,7 @@ Write the new requirements into `docs/contracts/<id>.md` (`/primitive-contract`,
 
 1. **Lever state lives in the component**, keyed by item, and resets when the item changes. The generation tier only sets its initial value; a challenge prop alone cannot be pulled.
 2. **Pulling is a synchronous commit.** `pullLever(id)` changes state and returns `true`, or returns a refusal string (wrong mode, already pulled, would leak). It never schedules state and reports success.
-3. **Publish it.** Add the lever to `workspace.current.levers` with `pulled` state, and add a scene fact that says what is now on screen, in terms the tutor and JEV can read. The fact must not state the answer. The tutor reads scene facts as `task.demand`.
+3. **Publish it.** Set `levers: true` in the primitive's catalog `teachingWorkspace` (without it the tutor's guidance never carries the lever doctrine, and the sweep's inventory shows `declaresLevers: false`; 13 primitives shipped levers without it, found 2026-10-09). Add the lever to `workspace.current.levers` with `pulled` state, and add a scene fact that says what is now on screen, in terms the tutor and JEV can read. The fact must not state the answer. The tutor reads scene facts as `task.demand`.
 4. **Leak rule in code.** Each lever's leak rule is a pure function beside the domain module, unit-tested per mode.
 5. **Refuse a pull that changes nothing.** If the lever has nothing safe to draw yet (number-line: a jump of 1 has no model hop until the learner places it), return a refusal that says what to do instead. A pull the screen does not show breaks S5.
 

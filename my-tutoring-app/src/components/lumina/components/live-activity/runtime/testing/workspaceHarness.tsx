@@ -41,6 +41,9 @@ export const OBSERVER_ONLY = ['apply_tutor_verdict', 'retry', 'advance'] as cons
 export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws', pipStore }: WorkspaceMount) {
   const Component = getPrimitive(primitiveId as never)?.component as React.ComponentType<any> | undefined;
   if (!Component) throw new Error(`${primitiveId} is not in the primitive registry`);
+  // jsdom has no ResizeObserver; LuminaSlider (Radix) measures itself on mount (push-pull-arena design, ramp-lab).
+  if (typeof globalThis.ResizeObserver === 'undefined')
+    globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
   seam.activePrimitiveId = instanceId;
   const runtime = new LiveLessonRuntime('test', { allowSupportArtifacts: true, allowAnswerExposure: true, maxSupportLevel: 3 });
   const sent: any[] = [];

@@ -37,6 +37,12 @@ export interface WorkspaceRunOptions<Item extends WorkspaceRunItem> {
   onItemOpened?: (item: Item, index: number) => void;
   /** The SAME item reopened after a checked miss. Defaults to `onItemOpened`. */
   onCorrectionRetry?: (item: Item) => void;
+  /**
+   * The full item back, blank, after its practice item closed. Not a correction retry: a retry handler that keeps
+   * the learner's work, or reads practice state from its render, would reopen the practice surface on the full item
+   * (EquationBuilder, 10-09). Defaults to the retry path.
+   */
+  onPracticeClosed?: (item: Item, index: number) => void;
   onPresentStimulus?: (item: Item, index: number) => void;
   /** Once per item, when its success is committed: the first moment an answer may appear. */
   onAffirmed?: (item: Item, response?: string) => void;
@@ -153,12 +159,13 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
     planItemId: options.planItemId, workspace: options.workspace,
     items: items.map(item => ({ ...options.assignment(item),
       checkResponse: () => checked.current?.itemId === item.id ? checked.current.correct : null })),
-    onItemOpened: index => {
+    onItemOpened: (index, returned) => {
       const item = latest.current.items[index], o = latest.current;
       clearStillness(); checked.current = null;
       const retry = opened.current === item.id;
       opened.current = item.id;
-      if (retry) (o.onCorrectionRetry ?? (i => o.onItemOpened?.(i, index)))(item);
+      if (retry && returned && o.onPracticeClosed) o.onPracticeClosed(item, index);
+      else if (retry) (o.onCorrectionRetry ?? (i => o.onItemOpened?.(i, index)))(item);
       else o.onItemOpened?.(item, index);
     },
     onPresentStimulus: index => latest.current.onPresentStimulus?.(latest.current.items[index], index),
