@@ -55,6 +55,7 @@ export const JOURNEY_INVARIANTS = {
   'J8-miss-named': "On a mode whose catalog entry lists misses, every checked miss names one from that list; a spoken item's known misses are all on the list and a wrong spoken answer records one",
   'J9-miss-answered': "On a mode with levers, every catalog miss is in some lever's answers or in the catalog's unanswered list",
   'J12-item-miss-answered': "On a mode with levers, a checked miss on an item is answered by a lever on that item, or is in the catalog's unanswered list (J9 counts the mode's items together, so one item's gap passed it)",
+  'J13-help-lever-keeps-item': "On an item with help levers, after a miss each help lever the observer can pull commits, puts the key nowhere new on screen or in the scene facts, and the row's correct input still credits the item (time-sequencer 10-09: a pulled picture renamed the answer buttons)",
   'J10-clean-record': 'A clean program (every item right first time) submits once, and the record says so: passed, score 100, every item first try, no assistance',
   'J11-recovery-record': 'The wrong-then-right program submits once, and the record says so: every item solved, each miss in teachingAttempts before its correct try, the score and first-response score set by the first-response gate',
 } as const;
@@ -183,7 +184,10 @@ function perform(h: WorkspaceHarness, inputs: DriverInput[]): string | null {
         if (!button || button.disabled) throw new Error(`${a.type}: no enabled button`);
         fireEvent.click(button);
       } else if (a.type === 'choose') {
-        const button = buttons().find(b => (b.textContent ?? '').trim() === a.label || b.getAttribute('aria-label') === a.label);
+        // With or without the pictures inside it, as the driver (a lever's picture on an answer card keeps its label).
+        const words = (b: Element) => { const c = b.cloneNode(true) as Element;
+          c.querySelectorAll('[role="img"], [aria-hidden="true"]').forEach(n => n.remove()); return (c.textContent ?? '').trim(); };
+        const button = buttons().find(b => (b.textContent ?? '').trim() === a.label || words(b) === a.label || b.getAttribute('aria-label') === a.label);
         if (!button || button.disabled) throw new Error(`choose: no enabled button "${a.label}"; buttons: ${buttons()
           .map(b => `"${(b.textContent ?? '').trim() || b.getAttribute('aria-label')}"${b.disabled ? ' (disabled)' : ''}`).join(', ')}`);
         fireEvent.click(button);
@@ -594,6 +598,95 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
   return record;
 }
 
+/**
+ * J13: the first item with help levers, driven wrong, then every help lever pulled, then right. The recover and clean
+ * programs never pull a lever, so a lever that broke its own item (renamed the buttons the answer is given with, drew
+ * the key) passed them; the replay recording pulls one lever, and only when asked for.
+ */
+async function driveHelped({ primitiveId, evalMode, data }: Payload & { file: string }): Promise<Finding[]> {
+  const findings: Finding[] = [];
+  const row = LIVE_JOURNEYS[primitiveId];
+  if (!row || row.execution === 'teaching') return findings;
+  const find = (detail: string) => findings.push({ invariant: 'J13-help-lever-keeps-item', detail });
+  seam.evaluationContext = { lesson: 'helped', submitEvaluation: () => Promise.resolve() };
+  const h = mountWorkspace({ primitiveId, evalMode, data });
+  try {
+    h.settle();
+    const task = () => h.state().task!;
+    const context = (): JourneyContext => ({ data: { ...data, instanceId: 'ws' },
+      challenge: (data.challenges ?? []).find((c: { id: string }) => c.id === task().itemId) ?? null,
+      diItems: [], itemId: task().itemId, demand: task().demand ?? null, expectedAnswer: task().workspace?.expectedAnswer ?? null });
+    /** Performs inputs; a spoken answer is committed by the scripted observer. False when nothing was checked. */
+    const answer = async (inputs: DriverInput[], verdict: 'correct' | 'incorrect') => {
+      const attempts = task().evidence.attemptNumber;
+      const spoken = perform(h, inputs);
+      h.settle();
+      if (spoken !== null && task().evidence.attemptNumber === attempts) {
+        await hear(h, spoken);
+        if (!task().workspace?.pendingResponse) return false;
+        h.feedback(verdict, verdict === 'correct' ? 'advance' : 'retry'); h.confirmVisible(); h.settle();
+        return true;
+      }
+      return task().evidence.attemptNumber !== attempts;
+    };
+    // Items until one offers a help lever; earlier ones are answered right to move on.
+    for (let n = 0; n < MAX_ITEMS && h.state().status === 'active' && h.state().task; n++) {
+      const item = task().itemId;
+      let wrong: DriverInput[], correct: DriverInput[];
+      // A row that cannot drive the item is J1's finding, not this rule's.
+      try {
+        const warmup = row.inputsFor('warmup', context());
+        if (warmup.length) { perform(h, warmup); h.settle(); }
+        wrong = row.inputsFor('wrong', context()); correct = row.inputsFor('correct', context());
+      } catch { return findings; }
+      const helps = (task().workspace?.levers ?? []).filter(l => l.kind === 'help');
+      if (!helps.length || !wrong.length) {
+        if (!(await answer(correct, 'correct'))) return findings;
+        if (task()?.itemId === item && h.offer('advance')) { h.dispatch('advance'); h.confirmVisible(); h.settle(); }
+        continue;
+      }
+      const keys = keyPhrases(task().workspace?.expectedAnswer, correct, wrong, h.view.container)
+        .filter(k => k.length > 1 && !forms(k).some(f => occurrences(task().task, f)));
+      if (!(await answer(wrong, 'incorrect')) || task()?.itemId !== item) return findings;
+      const before = { screen: screenText(h), facts: JSON.stringify(task().demand ?? {}) };
+      // The options on screen: a model that labels every one (a sentence with every part of speech tagged) names the
+      // key among the others, which is not giving it away (as replay_checks.read_as_menu).
+      // A spoken item has no option buttons; its wrong answer is the other option.
+      const options = Array.from(new Set([...Array.from(h.view.container.querySelectorAll('button'))
+        .flatMap(b => [b.textContent ?? '', b.getAttribute('aria-label') ?? '']),
+        ...wrong.flatMap(a => a.type === 'answer' || a.type === 'choose' ? [a.type === 'answer' ? a.text : a.label] : [])]
+        .map(t => t.trim().toLowerCase()).filter(t => t.length > 1 && t.length <= 40)));
+      const grew = (was: string, now: string, phrase: string) => occurrences(now, phrase) > occurrences(was, phrase);
+      const leaked = (was: string, now: string, k: string) => grew(was, now, k)
+        && !options.some(o => o !== k && !forms(k).some(f => occurrences(o, f)) && grew(was, now, o));
+      for (const lever of helps) {
+        if (task().workspace?.levers?.find(l => l.id === lever.id)?.pulled) continue;
+        if (!h.offer('pull_lever')) break;
+        const receipt = h.dispatch('pull_lever', { lever: lever.id });
+        h.confirmVisible(); h.settle();
+        if (receipt.status !== 'committed') continue;  // a refusal that says why is a lever's own rule
+        const screen = screenText(h), facts = JSON.stringify(task().demand ?? {});
+        keys.filter(k => leaked(before.screen, screen, k) || leaked(before.facts, facts, k))
+          .forEach(k => find(`${item}: after "${lever.id}" the key "${k}" newly appears: …${around(screen + ' ' + facts, k)}…`));
+        if (task().workspace?.practice) { find(`${item}: the help lever "${lever.id}" opened a practice item`); return findings; }
+      }
+      if (task().phase !== 'working' && h.offer('retry')) { h.dispatch('retry'); h.confirmVisible(); h.settle(); }
+      let again: DriverInput[];
+      try { again = row.inputsFor('correct', context()); } catch (e) { find(`${item}: no correct input with the levers pulled: ${(e as Error).message}`); return findings; }
+      try {
+        if (!(await answer(again, 'correct'))) { find(`${item}: with the levers pulled the correct input was not checked`); return findings; }
+      } catch (e) { find(`${item}: with the levers pulled the correct input does not perform: ${(e as Error).message}`); return findings; }
+      const s = h.state();
+      if (s.task?.itemId === item && s.task.evidence.correctness !== 'correct' && s.status === 'active')
+        find(`${item}: with the levers pulled the correct input was checked "${s.task.evidence.correctness}"`);
+      return findings;
+    }
+    return findings;
+  } finally {
+    h.close();
+  }
+}
+
 beforeEach(() => {
   installRuntimeTimers();
   stubObservationRoutes();
@@ -668,6 +761,12 @@ describe('dry journey, every saved payload', () => {
       result.records = { ...result.records, ...clean.records };
     } catch (e) {
       result.findings.push({ invariant: 'J10-clean-record', detail: `clean program: mount or drive threw: ${(e as Error).message}` });
+    }
+    try {
+      cleanup();
+      result.findings.push(...await driveHelped(payload));
+    } catch (e) {
+      result.findings.push({ invariant: 'J13-help-lever-keeps-item', detail: `helped program: mount or drive threw: ${(e as Error).message}` });
     }
     RESULTS.push(result);
     const known = BASELINE[file] ?? {};

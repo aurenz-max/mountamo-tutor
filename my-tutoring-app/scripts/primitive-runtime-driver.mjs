@@ -143,9 +143,11 @@ const PERFORM = {
     if (!button || button.disabled) throw new Error('No enabled Check button');
     flushSync(() => button.click());
   },
-  // A labelled choice: the button whose whole text is the label, exactly.
+  // A labelled choice: the button whose whole text is the label, exactly, with or without the pictures inside it
+  // (a lever that adds a picture to an answer card leaves its label alone; time-sequencer, letter-sound-link 10-09).
   choose: ({ label }) => {
-    const button = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === label || b.getAttribute('aria-label') === label);
+    const words = b => { const c = b.cloneNode(true); c.querySelectorAll('[role="img"], [aria-hidden="true"]').forEach(n => n.remove()); return c.textContent.trim(); };
+    const button = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === label || words(b) === label || b.getAttribute('aria-label') === label);
     if (!button || button.disabled) throw new Error(`No enabled choice labelled ${label}; buttons: ${[...document.querySelectorAll('button')]
       .map(b => `"${b.textContent.trim() || b.getAttribute('aria-label')}"${b.disabled ? ' (disabled)' : ''}`).join(', ')}`);
     flushSync(() => button.click());

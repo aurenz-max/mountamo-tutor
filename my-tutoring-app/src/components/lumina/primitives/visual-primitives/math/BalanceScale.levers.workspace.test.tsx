@@ -51,7 +51,7 @@ it('equality total: unit_cells redraws the load as unit squares in the same comm
   const cells = q(h, '[data-unit-cell]') as HTMLElement[];
   expect(cells).toHaveLength(7);
   expect(cells.map(c => c.style.marginLeft)).toEqual(['', '', '', '', '', '12px', '']);
-  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/unit squares in one row/);
+  expect(String(receipt.state.task!.demand.onScreen)).toMatch(/unit squares in a single row/);
   expect(JSON.stringify(receipt.state.task!.demand)).not.toMatch(/\b7\b/);
   expect(h.view.container.textContent).not.toMatch(/=\s*7/);
 

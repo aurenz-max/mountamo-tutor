@@ -110,5 +110,17 @@
   },
   "pattern-builder.create": {
     "J12-item-miss-answered": "qa/support-levers/QUEUE-item-gaps-2026-10-09.md"
+  },
+  "sentence-analyzer.identify_pos-easy": {
+    "J13-help-lever-keeps-item": "by design 10-09: the model lever labels every part of speech on ANOTHER sentence (fact says so), the key among them; the row's wrong answer is a label the model does not use, so J13's menu exemption cannot see the others. Not a leak."
+  },
+  "sentence-analyzer.identify_pos": {
+    "J13-help-lever-keeps-item": "by design 10-09: the model lever labels every part of speech on ANOTHER sentence (fact says so), the key among them; the row's wrong answer is a label the model does not use, so J13's menu exemption cannot see the others. Not a leak."
+  },
+  "sentence-analyzer.label_all": {
+    "J13-help-lever-keeps-item": "by design 10-09: the model lever labels every part of speech on ANOTHER sentence (fact says so), the key among them; the row's wrong answer is a label the model does not use, so J13's menu exemption cannot see the others. Not a leak."
+  },
+  "decodable-reader.read_along": {
+    "J13-help-lever-keeps-item": "by design 10-09: story_region quotes the story, the stimulus already on screen; the key is a story word. Not a leak."
   }
 }

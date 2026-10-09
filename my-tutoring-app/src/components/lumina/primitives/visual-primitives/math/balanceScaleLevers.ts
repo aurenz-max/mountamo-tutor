@@ -160,7 +160,7 @@ const lever = (pulled: readonly string[], id: string, kind: Kind, carrier: Works
 
 const unitCells = (pulled: readonly string[], far: boolean) => lever(pulled, UNIT_CELLS, 'help', 'shown',
   [...ONE_OFF, ...(far ? FAR_OFF : [])], 'The learner loses count adding the weights.',
-  'Draws the same weights again as unit squares in one row, with a gap after every fifth square. No total is printed; the learner counts or adds.');
+  'Draws the same weights again as unit squares in a single row, with a gap after every fifth square. No total is printed; the learner counts or adds.');
 const balanceModel = (pulled: readonly string[], k: number, far: boolean) => lever(pulled, BALANCE_MODEL, 'help', 'both',
   [...ONE_OFF, ...(far ? FAR_OFF : [])], 'The learner does not use the balance to find the left weight.',
   `Shows a small model scale with a ${k} weight on each side, level. Talk about the model only; never say what the learner's left weight is.`);
@@ -226,7 +226,7 @@ export function workshopLevers(item: WorkshopItem | null, board: WorkshopBoard, 
 export function equalityLeverFacts(item: EqualityItem, pulled: readonly string[], session: readonly EqualityProblem[]): string {
   const k = modelWeight(item.problem.target, equalitySessionAnswers(session));
   return [
-    pulled.includes(UNIT_CELLS) && 'The right-side weights are also drawn as unit squares in one row, with a gap after every fifth square.',
+    pulled.includes(UNIT_CELLS) && 'The right-side weights are also drawn as unit squares in a single row, with a gap after every fifth square.',
     pulled.includes(BALANCE_MODEL) && k !== null && `A small model scale beside the learner's has a ${k} weight on each side, and it is level.`,
   ].filter((s): s is string => !!s).join(' ');
 }
@@ -234,7 +234,7 @@ export function equalityLeverFacts(item: EqualityItem, pulled: readonly string[]
 export function workshopLeverFacts(item: WorkshopItem, pulled: readonly string[], session: readonly WorkshopProblem[]): string {
   const p = item.problem, k = modelWeight(p.target, workshopSessionAnswers(session));
   return [
-    pulled.includes(UNIT_CELLS) && 'The chosen weights are also drawn as unit squares in one row, with a gap after every fifth square.',
+    pulled.includes(UNIT_CELLS) && 'The chosen weights are also drawn as unit squares in a single row, with a gap after every fifth square.',
     pulled.includes(BALANCE_MODEL) && k !== null && `A small model scale beside the learner's has a ${k} weight on each side, and it is level.`,
     pulled.includes(PART_WHOLE) && `A bar as long as the right side's ${p.total} is split into the left's known ${p.known} and an unlabelled part.`,
     pulled.includes(ONE_GROUP) && 'Group 1 and its parcel are ringed; the other groups are faded.',
