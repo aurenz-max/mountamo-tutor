@@ -602,8 +602,8 @@ export const shadowGradeFromGrade = (grade?: string): ShadowGrade | null => {
 };
 const shadowGradeFromProse = (prose?: string): ShadowGrade => {
   const p = (prose ?? '').toLowerCase();
-  if (/(kindergarten|preschool)/.test(p)) return 'K';
-  const m = /grade\s*(\d)|(\d)(?:st|nd|rd|th)\s*grade|(first|second|third|fourth|fifth)\s*grade/.exec(p);
+  if (/\b(kindergarten|preschool)\b/.test(p)) return 'K';
+  const m = /grade\s*(\d)|(\d)(?:st|nd|rd|th)\s*grade|\b(first|second|third|fourth|fifth)\s*grade/.exec(p);
   const word = { first: '1', second: '2', third: '3', fourth: '4', fifth: '5' } as Record<string, string>;
   const n = m ? Number(m[1] ?? m[2] ?? word[m[3]]) : 3;
   return (n >= 5 ? '5' : String(Math.max(1, n))) as ShadowGrade;
