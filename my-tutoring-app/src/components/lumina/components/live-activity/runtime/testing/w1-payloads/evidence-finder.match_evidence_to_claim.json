@@ -1,0 +1,90 @@
+{
+ "source": "qa/tutor-reports/evidence-finder-runtime-match_evidence_to_claim-payload-2026-10-09.json",
+ "primitiveId": "evidence-finder",
+ "evalMode": "match_evidence_to_claim",
+ "data": {
+  "title": "Evidence Hunt: Busy Bees and Growing Plants",
+  "gradeLevel": "4",
+  "passage": {
+   "text": "Bees are incredible insects that play a vital role in nature. When a honeybee lands on a flower to drink sweet nectar, yellow pollen dust sticks to its fuzzy body. The bee flies from blossom to blossom looking for more food. As it moves, the pollen from the first flower brushes off onto the next plant. This amazing process is known as pollination. Because of pollination, plants can create seeds and new fruits. Without bees visiting orchards every single spring, farmers would harvest far fewer apples and berries. In addition to spreading pollen, bees help wildflowers spread across meadows. When the wind blows, some seeds also travel through the air to find new soil. Therefore, bees are truly essential for keeping our natural ecosystems green and colorful.",
+   "sentences": [
+    {
+     "id": "s1",
+     "text": "Bees are incredible insects that play a vital role in nature.",
+     "isEvidence": false
+    },
+    {
+     "id": "s2",
+     "text": "When a honeybee lands on a flower to drink sweet nectar, yellow pollen dust sticks to its fuzzy body.",
+     "isEvidence": true,
+     "claimIndex": 0,
+     "evidenceStrength": "strong"
+    },
+    {
+     "id": "s3",
+     "text": "The bee flies from blossom to blossom looking for more food.",
+     "isEvidence": false
+    },
+    {
+     "id": "s4",
+     "text": "As it moves, the pollen from the first flower brushes off onto the next plant.",
+     "isEvidence": true,
+     "claimIndex": 0,
+     "evidenceStrength": "strong"
+    },
+    {
+     "id": "s5",
+     "text": "This amazing process is known as pollination.",
+     "isEvidence": false
+    },
+    {
+     "id": "s6",
+     "text": "Because of pollination, plants can create seeds and new fruits.",
+     "isEvidence": true,
+     "claimIndex": 1,
+     "evidenceStrength": "strong"
+    },
+    {
+     "id": "s7",
+     "text": "Without bees visiting orchards every single spring, farmers would harvest far fewer apples and berries.",
+     "isEvidence": true,
+     "claimIndex": 1,
+     "evidenceStrength": "moderate"
+    },
+    {
+     "id": "s8",
+     "text": "In addition to spreading pollen, bees help wildflowers spread across meadows.",
+     "isEvidence": true,
+     "claimIndex": 1,
+     "evidenceStrength": "moderate"
+    },
+    {
+     "id": "s9",
+     "text": "When the wind blows, some seeds also travel through the air to find new soil.",
+     "isEvidence": false
+    },
+    {
+     "id": "s10",
+     "text": "Therefore, bees are truly essential for keeping our natural ecosystems green and colorful.",
+     "isEvidence": false
+    }
+   ],
+   "imageDescription": "A fuzzy honeybee covered in pollen resting on a bright yellow sunflower"
+  },
+  "claims": [
+   {
+    "id": "claim1",
+    "text": "Bees physically transfer pollen from one flower to another.",
+    "color": "blue"
+   },
+   {
+    "id": "claim2",
+    "text": "The actions of bees allow plants to reproduce, grow fruits, and spread.",
+    "color": "violet"
+   }
+  ],
+  "cerEnabled": false,
+  "evalMode": "match_evidence_to_claim",
+  "objectiveGrade": "4"
+ }
+}

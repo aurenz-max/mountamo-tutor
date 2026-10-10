@@ -1,0 +1,78 @@
+{
+ "source": "qa/tutor-reports/evidence-finder-runtime-locate_evidence-payload-2026-10-09.json",
+ "primitiveId": "evidence-finder",
+ "evalMode": "locate_evidence",
+ "data": {
+  "title": "Evidence Hunt: The Busy World of Bees",
+  "gradeLevel": "4",
+  "passage": {
+   "text": "Bees are incredible insects that play a huge role in nature. Many people enjoy seeing bees buzz around colorful flowers in the garden. While flying from plant to plant, bees gather sweet nectar to make honey. Bees have fuzzy bodies that easily collect yellow pollen grains. As bees move between flowers, pollen sticks to their legs and is carried to other plants. This transfer of pollen allows plants to grow fruits and vegetables. Without bees visiting flowers, many crops would struggle to produce food. Farmers often keep beehives near their fields to help pollinate their crops. Honey is a sweet food that humans have enjoyed eating for thousands of years.",
+   "sentences": [
+    {
+     "id": "s1",
+     "text": "Bees are incredible insects that play a huge role in nature.",
+     "isEvidence": false
+    },
+    {
+     "id": "s2",
+     "text": "Many people enjoy seeing bees buzz around colorful flowers in the garden.",
+     "isEvidence": false
+    },
+    {
+     "id": "s3",
+     "text": "While flying from plant to plant, bees gather sweet nectar to make honey.",
+     "isEvidence": false
+    },
+    {
+     "id": "s4",
+     "text": "Bees have fuzzy bodies that easily collect yellow pollen grains.",
+     "isEvidence": true,
+     "claimIndex": 0,
+     "evidenceStrength": "strong"
+    },
+    {
+     "id": "s5",
+     "text": "As bees move between flowers, pollen sticks to their legs and is carried to other plants.",
+     "isEvidence": true,
+     "claimIndex": 0,
+     "evidenceStrength": "strong"
+    },
+    {
+     "id": "s6",
+     "text": "This transfer of pollen allows plants to grow fruits and vegetables.",
+     "isEvidence": true,
+     "claimIndex": 0,
+     "evidenceStrength": "strong"
+    },
+    {
+     "id": "s7",
+     "text": "Without bees visiting flowers, many crops would struggle to produce food.",
+     "isEvidence": true,
+     "claimIndex": 0,
+     "evidenceStrength": "strong"
+    },
+    {
+     "id": "s8",
+     "text": "Farmers often keep beehives near their fields to help pollinate their crops.",
+     "isEvidence": false
+    },
+    {
+     "id": "s9",
+     "text": "Honey is a sweet food that humans have enjoyed eating for thousands of years.",
+     "isEvidence": false
+    }
+   ],
+   "imageDescription": "A bumblebee gathering pollen from a bright yellow flower."
+  },
+  "claims": [
+   {
+    "id": "claim1",
+    "text": "Bees help plants grow by moving pollen from flower to flower.",
+    "color": "blue"
+   }
+  ],
+  "cerEnabled": false,
+  "evalMode": "locate_evidence",
+  "objectiveGrade": "4"
+ }
+}

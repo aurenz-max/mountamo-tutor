@@ -1,0 +1,73 @@
+{
+ "source": "qa/tutor-reports/evidence-finder-runtime-evaluate_evidence_strength-payload-2026-10-09.json",
+ "primitiveId": "evidence-finder",
+ "evalMode": "evaluate_evidence_strength",
+ "data": {
+  "title": "Evidence Hunt: The Busy World of Bees",
+  "gradeLevel": "4",
+  "passage": {
+   "text": "Honeybees are remarkable insects that play a vital role in nature. When a worker bee lands on a flower, yellow powder called pollen sticks to its furry body. Bees fly from blossom to blossom looking for sweet nectar to make honey. As they travel, bees accidentally drop some of this pollen onto other flowers. This transfer of pollen is called pollination, which allows plants to produce seeds and new fruits. Some people keep beehives in wooden boxes in their backyards. Without this hard work by bees, many of the fruits and vegetables we eat every single day would not be able to grow properly. Flowers have bright colors and sweet smells to attract hungry insects.",
+   "sentences": [
+    {
+     "id": "s1",
+     "text": "Honeybees are remarkable insects that play a vital role in nature.",
+     "isEvidence": false
+    },
+    {
+     "id": "s2",
+     "text": "When a worker bee lands on a flower, yellow powder called pollen sticks to its furry body.",
+     "isEvidence": true,
+     "claimIndex": 0,
+     "evidenceStrength": "moderate"
+    },
+    {
+     "id": "s3",
+     "text": "Bees fly from blossom to blossom looking for sweet nectar to make honey.",
+     "isEvidence": false
+    },
+    {
+     "id": "s4",
+     "text": "As they travel, bees accidentally drop some of this pollen onto other flowers.",
+     "isEvidence": true,
+     "claimIndex": 0,
+     "evidenceStrength": "strong"
+    },
+    {
+     "id": "s5",
+     "text": "This transfer of pollen is called pollination, which allows plants to produce seeds and new fruits.",
+     "isEvidence": true,
+     "claimIndex": 0,
+     "evidenceStrength": "strong"
+    },
+    {
+     "id": "s6",
+     "text": "Some people keep beehives in wooden boxes in their backyards.",
+     "isEvidence": false
+    },
+    {
+     "id": "s7",
+     "text": "Without this hard work by bees, many of the fruits and vegetables we eat every single day would not be able to grow properly.",
+     "isEvidence": true,
+     "claimIndex": 0,
+     "evidenceStrength": "weak"
+    },
+    {
+     "id": "s8",
+     "text": "Flowers have bright colors and sweet smells to attract hungry insects.",
+     "isEvidence": false
+    }
+   ],
+   "imageDescription": "A close-up of a furry honeybee covered in yellow pollen on a pink flower petal"
+  },
+  "claims": [
+   {
+    "id": "claim1",
+    "text": "Bees help plants reproduce and grow by moving pollen between flowers.",
+    "color": "blue"
+   }
+  ],
+  "cerEnabled": true,
+  "evalMode": "evaluate_evidence_strength",
+  "objectiveGrade": "4"
+ }
+}

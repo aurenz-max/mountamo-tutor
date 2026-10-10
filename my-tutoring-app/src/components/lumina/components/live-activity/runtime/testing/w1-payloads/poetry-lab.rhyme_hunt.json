@@ -1,0 +1,133 @@
+{
+ "source": "qa/tutor-reports/poetry-lab-runtime-rhyme_hunt-payload-2026-10-09.json",
+ "primitiveId": "poetry-lab",
+ "evalMode": "rhyme_hunt",
+ "data": {
+  "title": "Barnyard Rhyme Time",
+  "gradeLevel": "K",
+  "mode": "rhyme_hunt",
+  "rounds": [
+   {
+    "id": "rhyme-hunt-1",
+    "type": "rhyme_hunt",
+    "poemLines": [
+     "The small pig is in",
+     "The brown mud box",
+     "He jumps up high",
+     "To chase a fox"
+    ],
+    "candidates": [
+     {
+      "word": "in",
+      "emoji": "\ud83d\udce5"
+     },
+     {
+      "word": "box",
+      "emoji": "\ud83d\udce6"
+     },
+     {
+      "word": "high",
+      "emoji": "\ud83c\udf88"
+     },
+     {
+      "word": "fox",
+      "emoji": "\ud83e\udd8a"
+     }
+    ],
+    "rhymeWordA": "box",
+    "rhymeWordB": "fox"
+   },
+   {
+    "id": "rhyme-hunt-2",
+    "type": "rhyme_hunt",
+    "poemLines": [
+     "A fat hen sits",
+     "On the green grass",
+     "She sees a dog",
+     "Run fast, fast, fast"
+    ],
+    "candidates": [
+     {
+      "word": "sits",
+      "emoji": "\ud83e\ude91"
+     },
+     {
+      "word": "grass",
+      "emoji": "\ud83c\udf31"
+     },
+     {
+      "word": "dog",
+      "emoji": "\ud83d\udc36"
+     },
+     {
+      "word": "fast",
+      "emoji": "\u26a1"
+     }
+    ],
+    "rhymeWordA": "grass",
+    "rhymeWordB": "fast"
+   },
+   {
+    "id": "rhyme-hunt-3",
+    "type": "rhyme_hunt",
+    "poemLines": [
+     "See the white sheep",
+     "Jump over the wall",
+     "He wants to eat",
+     "A red sweet ball"
+    ],
+    "candidates": [
+     {
+      "word": "sheep",
+      "emoji": "\ud83d\udc11"
+     },
+     {
+      "word": "wall",
+      "emoji": "\ud83e\uddf1"
+     },
+     {
+      "word": "eat",
+      "emoji": "\ud83c\udf4e"
+     },
+     {
+      "word": "ball",
+      "emoji": "\u26bd"
+     }
+    ],
+    "rhymeWordA": "wall",
+    "rhymeWordB": "ball"
+   },
+   {
+    "id": "rhyme-hunt-4",
+    "type": "rhyme_hunt",
+    "poemLines": [
+     "The big red cow",
+     "Looks at the moon",
+     "She wants to get",
+     "A silver spoon"
+    ],
+    "candidates": [
+     {
+      "word": "cow",
+      "emoji": "\ud83d\udc2e"
+     },
+     {
+      "word": "moon",
+      "emoji": "\ud83c\udf19"
+     },
+     {
+      "word": "get",
+      "emoji": "\ud83e\udd32"
+     },
+     {
+      "word": "spoon",
+      "emoji": "\ud83e\udd44"
+     }
+    ],
+    "rhymeWordA": "moon",
+    "rhymeWordB": "spoon"
+   }
+  ],
+  "objectiveGrade": "K"
+ }
+}

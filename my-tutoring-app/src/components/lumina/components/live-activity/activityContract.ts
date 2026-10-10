@@ -82,6 +82,7 @@ import { interactiveBookLiveDomain } from './adapters/interactiveBookLive';
 import { storyBridgeLiveDomain } from './adapters/storyBridgeLive';
 import { storyRibbonLiveDomain } from './adapters/storyRibbonLive';
 import { storyMapLiveDomain } from './adapters/storyMapLive';
+import { poetryLabLiveDomain } from './adapters/poetryLabLive';
 import { additionSubtractionSceneLiveDomain } from './adapters/additionSubtractionSceneLive';
 import { threeDShapeExplorerLiveDomain } from './adapters/threeDShapeExplorerLive';
 import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
@@ -98,6 +99,7 @@ import { matterExplorerLiveDomain } from './adapters/matterExplorerLive';
 import { moleculeConstructorLiveDomain } from './adapters/moleculeConstructorLive';
 import { genreExplorerLiveDomain } from './adapters/genreExplorerLive';
 import { textStructureAnalyzerLiveDomain } from './adapters/textStructureAnalyzerLive';
+import { contextCluesDetectiveLiveDomain } from './adapters/contextCluesDetectiveLive';
 import { sentenceAnalyzerLiveDomain } from './adapters/sentenceAnalyzerLive';
 import { causeEffectChainLiveDomain } from './adapters/causeEffectChainLive';
 import { eraExplorerLiveDomain } from './adapters/eraExplorerLive';
@@ -121,6 +123,7 @@ import { diDeductionLiveDomain } from './adapters/diDeductionLive';
 import { diWorkedProcedureLiveDomain } from './adapters/diWorkedProcedureLive';
 import { diWordProblemSetupLiveDomain } from './adapters/diWordProblemSetupLive';
 import { spatialSceneLiveDomain } from './adapters/spatialSceneLive';
+import { spatialPathLiveDomain } from './adapters/spatialPathLive';
 import { hundredsChartLiveDomain } from './adapters/hundredsChartLive';
 import { skipCountingRunnerLiveDomain } from './adapters/skipCountingRunnerLive';
 import { mathFactFluencyLiveDomain } from './adapters/mathFactFluencyLive';
@@ -130,6 +133,7 @@ import { paragraphArchitectLiveDomain } from './adapters/paragraphArchitectLive'
 import { sentenceBuilderLiveDomain } from './adapters/sentenceBuilderLive';
 import { revisionWorkshopLiveDomain } from './adapters/revisionWorkshopLive';
 import { figurativeLanguageFinderLiveDomain } from './adapters/figurativeLanguageFinderLive';
+import { evidenceFinderLiveDomain } from './adapters/evidenceFinderLive';
 import { storyPlannerLiveDomain } from './adapters/storyPlannerLive';
 import { opinionBuilderLiveDomain } from './adapters/opinionBuilderLive';
 import { patternBuilderLiveDomain } from './adapters/patternBuilderLive';
@@ -222,6 +226,7 @@ export const LIVE_ADAPTERS = {
   'story-bridge': workspaceAdapter('story-bridge', storyBridgeLiveDomain),
   'story-ribbon': workspaceAdapter('story-ribbon', storyRibbonLiveDomain),
   'story-map': workspaceAdapter('story-map', storyMapLiveDomain),
+  'poetry-lab': workspaceAdapter('poetry-lab', poetryLabLiveDomain),
   'addition-subtraction-scene': workspaceAdapter('addition-subtraction-scene', additionSubtractionSceneLiveDomain),
   '3d-shape-explorer': workspaceAdapter('3d-shape-explorer', threeDShapeExplorerLiveDomain),
   'calendar-explorer': workspaceAdapter('calendar-explorer', calendarExplorerLiveDomain),
@@ -238,6 +243,7 @@ export const LIVE_ADAPTERS = {
   'molecule-constructor': workspaceAdapter('molecule-constructor', moleculeConstructorLiveDomain),
   'genre-explorer': workspaceAdapter('genre-explorer', genreExplorerLiveDomain),
   'text-structure-analyzer': workspaceAdapter('text-structure-analyzer', textStructureAnalyzerLiveDomain),
+  'context-clues-detective': workspaceAdapter('context-clues-detective', contextCluesDetectiveLiveDomain),
   'sentence-analyzer': workspaceAdapter('sentence-analyzer', sentenceAnalyzerLiveDomain),
   'cause-effect-chain': workspaceAdapter('cause-effect-chain', causeEffectChainLiveDomain),
   'era-explorer': workspaceAdapter('era-explorer', eraExplorerLiveDomain),
@@ -261,6 +267,7 @@ export const LIVE_ADAPTERS = {
   'di-worked-procedure': workspaceAdapter('di-worked-procedure', diWorkedProcedureLiveDomain),
   'di-word-problem-setup': workspaceAdapter('di-word-problem-setup', diWordProblemSetupLiveDomain),
   'spatial-scene': workspaceAdapter('spatial-scene', spatialSceneLiveDomain),
+  'spatial-path': workspaceAdapter('spatial-path', spatialPathLiveDomain),
   'hundreds-chart': workspaceAdapter('hundreds-chart', hundredsChartLiveDomain),
   'skip-counting-runner': workspaceAdapter('skip-counting-runner', skipCountingRunnerLiveDomain),
   'math-fact-fluency': workspaceAdapter('math-fact-fluency', mathFactFluencyLiveDomain),
@@ -274,6 +281,7 @@ export const LIVE_ADAPTERS = {
   'opinion-builder': workspaceAdapter('opinion-builder', opinionBuilderLiveDomain),
   'revision-workshop': workspaceAdapter('revision-workshop', revisionWorkshopLiveDomain),
   'figurative-language-finder': workspaceAdapter('figurative-language-finder', figurativeLanguageFinderLiveDomain),
+  'evidence-finder': workspaceAdapter('evidence-finder', evidenceFinderLiveDomain),
   'story-planner': workspaceAdapter('story-planner', storyPlannerLiveDomain),
 } satisfies Record<string, LiveActivityAdapter<any>>;
 

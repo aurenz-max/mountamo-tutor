@@ -1,0 +1,168 @@
+{
+ "source": "qa/tutor-reports/context-clues-detective-runtime-synonym_antonym-payload-2026-10-09.json",
+ "primitiveId": "context-clues-detective",
+ "evalMode": "synonym_antonym",
+ "data": {
+  "title": "Rainforest Word Detectives: Animal Mysteries",
+  "gradeLevel": "4",
+  "challenges": [
+   {
+    "id": "ch1",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch1_s1",
+       "text": "The Amazon rainforest is home to millions of fascinating creatures.",
+       "isClue": false
+      },
+      {
+       "id": "ch1_s2",
+       "text": "Unlike the dry, barren desert where very little grows, the rainforest is lush.",
+       "isClue": true
+      },
+      {
+       "id": "ch1_s3",
+       "text": "Thick green vines and tall leafy trees cover the ground as far as the eye can see.",
+       "isClue": true
+      },
+      {
+       "id": "ch1_s4",
+       "text": "Monkeys leap from branch to branch in this green paradise.",
+       "isClue": false
+      },
+      {
+       "id": "ch1_s5",
+       "text": "Colorful birds fly high above the green canopy.",
+       "isClue": false
+      }
+     ]
+    },
+    "targetWord": "lush",
+    "targetWordSentenceId": "ch1_s2",
+    "clueType": "antonym",
+    "clueSentenceIds": [
+     "ch1_s2",
+     "ch1_s3"
+    ],
+    "correctMeaning": "Growing thickly and with healthy green plants",
+    "meaningOptions": [
+     "Growing thickly and with healthy green plants",
+     "Dry and empty with no water",
+     "Cold and covered in heavy snow",
+     "Dark and quiet at night"
+    ],
+    "dictionaryDefinition": "Growing luxuriantly; covered with healthy green plants.",
+    "acceptableMeanings": [
+     "green and leafy",
+     "overgrown with plants",
+     "thickly planted"
+    ]
+   },
+   {
+    "id": "ch2",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch2_s1",
+       "text": "Walking through the rainforest requires careful attention to your surroundings.",
+       "isClue": false
+      },
+      {
+       "id": "ch2_s2",
+       "text": "The ground can be slippery and hidden dangers are everywhere.",
+       "isClue": false
+      },
+      {
+       "id": "ch2_s3",
+       "text": "Explorers must watch out for the treacherous path ahead.",
+       "isClue": true
+      },
+      {
+       "id": "ch2_s4",
+       "text": "This dangerous route is full of hidden roots and steep drop-offs.",
+       "isClue": true
+      },
+      {
+       "id": "ch2_s5",
+       "text": "Guides always lead visitors safely around these tricky spots.",
+       "isClue": false
+      }
+     ]
+    },
+    "targetWord": "treacherous",
+    "targetWordSentenceId": "ch2_s3",
+    "clueType": "synonym",
+    "clueSentenceIds": [
+     "ch2_s3",
+     "ch2_s4"
+    ],
+    "correctMeaning": "Full of danger or unreliable",
+    "meaningOptions": [
+     "Full of danger or unreliable",
+     "Very long and winding",
+     "Exciting and fun to explore",
+     "Quiet and peaceful"
+    ],
+    "dictionaryDefinition": "Hazardous; presenting hidden or unpredictable dangers.",
+    "acceptableMeanings": [
+     "dangerous",
+     "hazardous",
+     "unsafe"
+    ]
+   },
+   {
+    "id": "ch3",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch3_s1",
+       "text": "Animals in the rainforest have many different ways of finding food.",
+       "isClue": false
+      },
+      {
+       "id": "ch3_s2",
+       "text": "Some creatures have an abundant supply of fruit to eat all year round.",
+       "isClue": true
+      },
+      {
+       "id": "ch3_s3",
+       "text": "There is so much food that they never have to worry about going hungry.",
+       "isClue": true
+      },
+      {
+       "id": "ch3_s4",
+       "text": "Other animals must search for hours to find a single meal.",
+       "isClue": false
+      },
+      {
+       "id": "ch3_s5",
+       "text": "Nature provides well for these lucky creatures.",
+       "isClue": false
+      }
+     ]
+    },
+    "targetWord": "abundant",
+    "targetWordSentenceId": "ch3_s2",
+    "clueType": "synonym",
+    "clueSentenceIds": [
+     "ch3_s2",
+     "ch3_s3"
+    ],
+    "correctMeaning": "Existing or available in large quantities",
+    "meaningOptions": [
+     "Existing or available in large quantities",
+     "Hard to find and hidden away",
+     "Sour and bitter tasting",
+     "Small and hard to reach"
+    ],
+    "dictionaryDefinition": "Existing or available in large quantities; overflowing.",
+    "acceptableMeanings": [
+     "plentiful",
+     "lots of",
+     "more than enough"
+    ]
+   }
+  ],
+  "objectiveGrade": "4"
+ }
+}

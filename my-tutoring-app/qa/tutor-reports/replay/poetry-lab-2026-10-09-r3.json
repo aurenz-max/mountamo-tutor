@@ -1,0 +1,1798 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "poetry-lab.analysis",
+   "primitiveId": "poetry-lab",
+   "evalMode": "analysis",
+   "keys": [
+    "peaceful"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "mood",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "peaceful"
+      ],
+      "ask": "Read the poem. What mood or feeling does it create? Pick one, then check.",
+      "leakTokens": [],
+      "menu": [
+       "scary",
+       "silly",
+       "angry",
+       "peaceful",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to the pond! Read the poem to see what kind of feeling it gives you, then choose the mood that fits best.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our pond poem! Read the poem carefully and see which feeling fits best.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the pond! Read the poem to see what feeling or mood it creates, then pick the matching mood choice.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the pond! Read the poem and choose the mood that fits the feeling it creates.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our pond poem! Read the poem carefully and see which feeling word fits best.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "mood",
+     "trigger": "The learner submitted \"Picked the mood \\\"scary\\\"\". The board checked it: not right.",
+     "miss": "other_mood",
+     "scoredWith": {
+      "keys": [
+       "peaceful"
+      ],
+      "ask": "Read the poem. What mood or feeling does it create? Pick one, then check.",
+      "leakTokens": [],
+      "menu": [
+       "scary",
+       "silly",
+       "angry",
+       "peaceful",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the choices now\u2014each feeling word has a face to show its mood. Which face matches how the words about the sleepy pond and happy frogs feel?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "mood_faces"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now each mood choice has a face picture to show how that feeling looks. Take another look at the words in the poem and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "mood_faces"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now each feeling choice has a face picture to show what it looks like. Think about words like \"sleepy,\" \"calm,\" and \"happy,\" and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "mood_faces",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Now each mood choice has a face picture to show the feeling. Look at the words like \"calm\" and \"happy,\" and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "mood_faces",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each mood word now has a face beside it to show how it feels. Look at the words like \"sleepy,\" \"calm,\" and \"happy,\" and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "mood_faces",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "mood",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "peaceful"
+      ],
+      "ask": "Read the poem. What mood or feeling does it create? Pick one, then check.",
+      "leakTokens": [],
+      "menu": [
+       "scary",
+       "silly",
+       "angry",
+       "peaceful",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Each mood choice now has a picture face next to it to show how that feeling looks. Which face matches how the words about the calm pond and dancing clouds make you feel?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "easier_mood"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "mood_faces"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now there is a little face next to each feeling word on the screen. Take a look at the faces and try picking the one that matches how the poem feels.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "mood_faces",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Each mood choice now shows a face to picture that feeling. See which face best matches how the poem feels.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "mood_faces",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now each choice has a picture face next to it to show the feeling. Look at the faces and see which one feels like the calm pond.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "mood_faces",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Each feeling word now has a face beside it to show what it looks like. Think about words like \"sleepy,\" \"calm,\" and \"happy,\" and see which face feels like that.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "mood_faces"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "mood",
+     "trigger": "The learner said they were stuck, so the host pulled mood_faces (help). It is on screen now: Puts a face on every mood choice, so each feeling word has a picture. Every choice gets one; none is marked. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "peaceful"
+      ],
+      "ask": "Read the poem. What mood or feeling does it create? Pick one, then check.",
+      "leakTokens": [],
+      "menu": [
+       "scary",
+       "silly",
+       "angry",
+       "peaceful",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "There is now a picture of a face right beside each feeling word so you can see what they look like. Look at those faces and choose the one that feels like the calm, sleepy pond.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a picture face beside every feeling word to show what that mood looks like. Take another look at those faces, pick the one that matches the poem's feeling, and press Check.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the choices now\u2014each feeling word has a little face next to it showing that emotion. Take another look at those faces and tap the one that matches how the poem feels.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the choices\u2014each feeling word now has a picture face right next to it. Which face matches how the words in the poem make you feel?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Every mood choice now has a picture of a face right next to it showing that feeling. Look at the faces and pick the one that matches how the poem feels.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "mood",
+     "trigger": "The learner submitted \"Picked the mood \\\"peaceful\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "peaceful"
+      ],
+      "ask": "Read the poem. What mood or feeling does it create? Pick one, then check.",
+      "leakTokens": [],
+      "menu": [
+       "scary",
+       "silly",
+       "angry",
+       "peaceful",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it by picking the peaceful mood after checking the faces!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You matched the peaceful mood right to the poem's calm and sleepy feeling!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right by picking peaceful! Using the feeling faces helped you find the mood that matches the calm pond.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u2014you picked \"peaceful\"! You noticed the calm pond and gentle words to find the right mood.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You picked peaceful! Looking at the faces and thinking about the calm pond helped you find the mood.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "poetry-lab.composition",
+   "primitiveId": "poetry-lab",
+   "evalMode": "composition",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "compose",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water. Write each line in its box, then check.",
+      "leakTokens": [],
+      "menu": [
+       "check poem"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! We're writing a three-line haiku about a rainy day at the pond. What is the first thing you picture when you think of raindrops falling on the pond?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the pond! What do you picture first when you think of raindrops splashing into the water?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to Poetry Lab! What do you picture happening first at the pond on this rainy day?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainy pond! What do you picture first when you imagine raindrops falling on the water?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the poetry lab! What is the first thing you picture when rain falls on the pond?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "compose",
+     "trigger": "The learner submitted \"Line 1: \\\"light pond frog hill cloud drop path sun\\\"; Line 2: \\\"moon star snow bright cold warm soft\\\"; Line 3: \\\"warm soft green gold song\\\"\". The board checked it: not right.",
+     "miss": "syllables_off",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water. Write each line in its box, then check.",
+      "leakTokens": [],
+      "menu": [
+       "check poem"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Dots popped up under each word to show the syllable beats. Take a look at your first line and try adjusting it so it has five beats.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "syllable_beats"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the dots under each word showing your syllables. Line one needs five syllables instead of eight, so try taking a few words out!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "syllable_beats",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the dots showing the syllable beats under your words. Your first line has eight beats, but a haiku needs five beats there.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "syllable_beats"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I turned on the syllable dots under your words so you can see the beats. Line one has eight beats right now, but a haiku needs five beats in that first line.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "syllable_beats",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the dots under your words to see each syllable beat. Your first line has eight beats, but a haiku needs five in the first line.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "syllable_beats",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "compose",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water. Write each line in its box, then check.",
+      "leakTokens": [],
+      "menu": [
+       "check poem"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's try a quick practice with just one line first.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "one_line",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example haiku about a cat is now showing on your screen to help you see the pattern. Notice how each line makes a short picture and counts five, seven, and five beats.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "model_poem"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example poem about a cat is on the screen to show how three lines work. Notice how the first line has five beats, the second has seven, and the last has five.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "model_poem"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now each word has a dot underneath showing its beats. Line one has eight beats right now, so try removing a few words until there are five beats.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/5/0",
+          "lever": "syllable_beats"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Now little dots show each syllable beat under your words. Line one has eight beats right now, so try removing a few words until there are five beats.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "syllable_beats",
+          "actionId": "test/5/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "compose",
+     "trigger": "The learner said they were stuck, so the host pulled model_poem (help). It is on screen now: Shows a finished poem of the same form on another subject. Copying one of its lines does not pass the check. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water. Write each line in its box, then check.",
+      "leakTokens": [],
+      "menu": [
+       "check poem"
+      ]
+     },
+     "samples": [
+      {
+       "text": "An example haiku about a sleepy cat just appeared on your screen to show how three lines look. Take a look at its lines, and then give your own poem another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model haiku about a cat has appeared on your screen to show how a three-line poem looks. Take a look at its lines, and then try writing your pond haiku again!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model poem about a sleepy cat is now showing on your screen to help you see how the lines look. Take a look at its pattern, and then try adjusting your lines.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model poem about a cat is now showing on your screen so you can see how the three lines look and sound. Take a look at how it flows, and then try writing your pond lines!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A model poem about a cat is now showing on your screen so you can see how each line sounds. Give your poem another try using your own words!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "compose",
+     "trigger": "The learner submitted \"Line 1: \\\"sun rain wind leaf tree\\\"; Line 2: \\\"bird sky moon star snow bright cold\\\"; Line 3: \\\"bright cold warm soft green\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water. Write each line in its box, then check.",
+      "leakTokens": [],
+      "menu": [
+       "check poem"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You fixed your lines and matched the syllables to five, seven, and five perfectly! Wonderful work writing your haiku.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You fixed the syllable counts to match the five, seven, five pattern perfectly!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You matched the pattern with five, seven, and five syllables across your three lines.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted your syllables carefully to get five, seven, and five beats for each line!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You counted out five syllables, seven syllables, and five syllables to match the haiku pattern perfectly. Great job adjusting your words to fit the rhythm!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "poetry-lab.rhyme_hunt",
+   "primitiveId": "poetry-lab",
+   "evalMode": "rhyme_hunt",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "rhyme-hunt-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Listen to the poem. Tap the two word cards that rhyme.",
+      "leakTokens": [],
+      "menu": [
+       "\ud83d\udce5in",
+       "in",
+       "\ud83d\udce6box",
+       "box",
+       "\ud83e\udd8afox",
+       "fox",
+       "\ud83c\udf88high",
+       "high"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The small pig is in. The brown mud box. He jumps up high. To chase a fox. \n\nYour word cards are in, box, fox, and high.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen closely: The small pig is in. The brown mud box. He jumps up high. To chase a fox.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The small pig is in. The brown mud box. He jumps up high. To chase a fox. \n\nOur words are in, box, fox, and high. Tap the two cards that rhyme!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Listen to the poem: \"The small pig is in, the brown mud box, he jumps up high, to chase a fox.\" \n\nYour cards are in, box, fox, and high\u2014tap the two cards that rhyme!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The small pig is in,\nThe brown mud box,\nHe jumps up high,\nTo chase a fox.\n\nOur word cards are in, box, fox, and high. Which two cards rhyme?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "rhyme-hunt-1",
+     "trigger": "The learner submitted \"Tapped \\\"box\\\" and \\\"in\\\"\". The board checked it: not right.",
+     "miss": "one_of_pair",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Listen to the poem. Tap the two word cards that rhyme.",
+      "leakTokens": [],
+      "menu": [
+       "\ud83d\udce5in",
+       "in",
+       "\ud83d\udce6box",
+       "box",
+       "\ud83e\udd8afox",
+       "fox",
+       "\ud83c\udf88high",
+       "high"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the pictures at the top: b-ee and tr-ee rhyme because their ends sound the same, but b-ee and b-us do not. \n\nTry tapping two cards from the poem whose endings sound the same.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "rhyme_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the pictures at the top: b-ee and tr-ee rhyme because their ends sound the same, but b-ee and b-us just start the same. \n\nTry tapping two cards from the poem whose ends sound the same.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "rhyme_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the pictures at the top: b-ee and tr-ee rhyme because their ends sound the same, while bee and bus only start the same. \n\nTry picking the two cards from our poem that have the same ending sound!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "rhyme_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the pictures at the top: b-ee and tr-ee rhyme because their ends sound the same, but b-ee and b-us just start the same. \n\nListen to the poem again and see which two end the same:\nThe small pig is in.\nThe brown mud box.\nHe jumps up high.\nTo chase a fox.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "rhyme_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the pictures at the top: b-ee and tr-ee rhyme because their ends sound the same, but b-ee and b-us just start the same. \n\nLet's try again\u2014which two cards from the poem have ending sounds that match?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "rhyme_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "rhyme-hunt-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Listen to the poem. Tap the two word cards that rhyme.",
+      "leakTokens": [],
+      "menu": [
+       "\ud83d\udce5in",
+       "in",
+       "\ud83d\udce6box",
+       "box",
+       "\ud83e\udd8afox",
+       "fox",
+       "\ud83c\udf88high",
+       "high"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A helper picture popped up at the top showing b-ee and tr-ee ending with the same sound, while b-ee and b-us only start the same. \n\nListen to the poem's cards again: in, box, fox, high. Which two cards share the exact same ending sound?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "fewer_cards",
+          "actionId": "test/3/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "rhyme_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A picture model popped up at the top showing b-ee and tr-ee ending with the very same sound. \n\nSay each card softly to yourself to hear which two end with that same sound.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "rhyme_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the picture clue at the top: b-ee and tr-ee rhyme because they share the same ending sound, while b-ee and b-us just start alike. \n\nListen to the ending sounds on your cards and tap the two that rhyme.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "fewer_cards",
+          "actionId": "test/3/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "rhyme_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "We have a picture clue at the top showing that b-ee and tr-ee rhyme because their ends sound the same. \n\nListen to the endings: b-ox and f-ox. Tap the two cards that rhyme!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "fewer_cards"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "rhyme_model",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A helper picture popped up at the top showing bee and tree, because they end in the exact same sound. \n\nListen closely to the endings of your cards: in, box, fox, and high\u2014which two share the same ending sound?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "rhyme_model"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "rhyme-hunt-1",
+     "trigger": "The learner said they were stuck, so the host pulled rhyme_model (help). It is on screen now: Shows a model above the poem with pictures: two words that rhyme and one that only starts the same, none from this poem. Say the model words aloud and stretch their endings; it marks no card. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Listen to the poem. Tap the two word cards that rhyme.",
+      "leakTokens": [],
+      "menu": [
+       "\ud83d\udce5in",
+       "in",
+       "\ud83d\udce6box",
+       "box",
+       "\ud83e\udd8afox",
+       "fox",
+       "\ud83c\udf88high",
+       "high"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look above the poem: there are new pictures showing b-ee and tr-ee ending with the same sound, while b-ee and b-us only start the same. \n\nGo ahead and tap the two cards below that have the same ending sound.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right above the poem\u2014there are picture cards showing bee and tree, which rhyme because their endings sound the same, and bus, which only starts the same. \n\nNow listen to our poem's cards again: in, box, fox, high. Which two rhyme?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right above the poem\u2014new pictures appeared! Bee and tree rhyme because they end with the same \"ee\" sound, while bee and bus only start the same.\n\nNow look at your word cards below: in, box, fox, and high. Which two cards end with the same sound?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right above the poem\u2014there are picture cards showing bee and tree, and their ends sound alike, but bus only starts with the same sound. \n\nListen closely to your cards: in, box, fox, and high. Which two words have the same ending sound?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look up above the poem: there are new pictures showing how b-ee and tr-ee rhyme because they end with the same sound, but b-ee and b-us only start the same. \n\nNow listen to your cards: in, box, fox, and high. Go ahead and tap the two cards that rhyme.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "rhyme-hunt-1",
+     "trigger": "The learner submitted \"Tapped \\\"box\\\" and \\\"fox\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Listen to the poem. Tap the two word cards that rhyme.",
+      "leakTokens": [],
+      "menu": [
+       "\ud83d\udce5in",
+       "in",
+       "\ud83d\udce6box",
+       "box",
+       "\ud83e\udd8afox",
+       "fox",
+       "\ud83c\udf88high",
+       "high"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found the rhyming pair, box and fox! You listened for that matching ending sound and fixed it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found box and fox! Those two rhyme because they both end with that same sound.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found them! You picked box and fox, and their endings rhyme perfectly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found them! You picked box and fox, and they rhyme because they both end with that ox sound.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the rhyming pair by tapping box and fox!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

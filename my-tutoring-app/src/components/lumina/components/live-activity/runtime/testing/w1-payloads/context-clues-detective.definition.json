@@ -1,0 +1,153 @@
+{
+ "source": "qa/tutor-reports/context-clues-detective-runtime-definition-payload-2026-10-09.json",
+ "primitiveId": "context-clues-detective",
+ "evalMode": "definition",
+ "data": {
+  "title": "Rainforest Detective: Animal Secrets",
+  "gradeLevel": "4",
+  "challenges": [
+   {
+    "id": "ch1",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch1_s1",
+       "text": "The Amazon rainforest is home to countless wild species.",
+       "isClue": false
+      },
+      {
+       "id": "ch1_s2",
+       "text": "Many scientists study how creatures survive in the dense jungle.",
+       "isClue": false
+      },
+      {
+       "id": "ch1_s3",
+       "text": "Poison dart frogs are known to be venomous, which means they produce a toxic substance that can harm predators.",
+       "isClue": true
+      },
+      {
+       "id": "ch1_s4",
+       "text": "Their bright blue and yellow skin warns other animals to stay away.",
+       "isClue": true
+      },
+      {
+       "id": "ch1_s5",
+       "text": "Even a tiny touch of their skin can make an attacker very sick.",
+       "isClue": false
+      }
+     ]
+    },
+    "targetWord": "venomous",
+    "targetWordSentenceId": "ch1_s3",
+    "clueType": "definition",
+    "clueSentenceIds": [
+     "ch1_s3",
+     "ch1_s4"
+    ],
+    "correctMeaning": "Producing poison that can harm other animals",
+    "meaningOptions": [
+     "Producing poison that can harm other animals",
+     "Able to change colors to hide from enemies",
+     "Moving very quickly through the trees",
+     "Eating only plants and leaves"
+    ],
+    "dictionaryDefinition": "Capable of injecting venom or poison by means of a bite or sting."
+   },
+   {
+    "id": "ch2",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch2_s1",
+       "text": "Life high up in the rainforest canopy is full of daily challenges.",
+       "isClue": false
+      },
+      {
+       "id": "ch2_s2",
+       "text": "Spider monkeys travel effortlessly through the upper branches.",
+       "isClue": false
+      },
+      {
+       "id": "ch2_s3",
+       "text": "Sloths move at a sluggish pace, defined as an extremely slow speed.",
+       "isClue": true
+      },
+      {
+       "id": "ch2_s4",
+       "text": "It can take a sloth several minutes to travel just a few feet.",
+       "isClue": true
+      },
+      {
+       "id": "ch2_s5",
+       "text": "Algae often grows on their fur, giving them a greenish color.",
+       "isClue": false
+      }
+     ]
+    },
+    "targetWord": "sluggish",
+    "targetWordSentenceId": "ch2_s3",
+    "clueType": "definition",
+    "clueSentenceIds": [
+     "ch2_s3",
+     "ch2_s4"
+    ],
+    "correctMeaning": "Moving with very slow speed",
+    "meaningOptions": [
+     "Moving with very slow speed",
+     "Making a loud howling sound",
+     "Sleeping during the daytime hours",
+     "Climbing up tall tree trunks"
+    ],
+    "dictionaryDefinition": "Moving slowly or lazily."
+   },
+   {
+    "id": "ch3",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch3_s1",
+       "text": "Rainforest birds come in many different shapes and sizes.",
+       "isClue": false
+      },
+      {
+       "id": "ch3_s2",
+       "text": "The toucan is famous for its large beak.",
+       "isClue": false
+      },
+      {
+       "id": "ch3_s3",
+       "text": "Macaws are gregarious birds, which is a way of saying they live and travel in large, noisy flocks.",
+       "isClue": true
+      },
+      {
+       "id": "ch3_s4",
+       "text": "You will rarely see a single macaw flying alone through the trees.",
+       "isClue": true
+      },
+      {
+       "id": "ch3_s5",
+       "text": "Their colorful feathers flash brilliantly against the green leaves.",
+       "isClue": false
+      }
+     ]
+    },
+    "targetWord": "gregarious",
+    "targetWordSentenceId": "ch3_s3",
+    "clueType": "definition",
+    "clueSentenceIds": [
+     "ch3_s3",
+     "ch3_s4"
+    ],
+    "correctMeaning": "Living and traveling together in groups",
+    "meaningOptions": [
+     "Living and traveling together in groups",
+     "Building nests high in the canopy",
+     "Eating seeds and tropical fruits",
+     "Flying great distances across rivers"
+    ],
+    "dictionaryDefinition": "Fond of company; sociable."
+   }
+  ],
+  "objectiveGrade": "4"
+ }
+}

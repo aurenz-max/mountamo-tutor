@@ -43,11 +43,15 @@ import type { AffixBuildMiss } from '../../../primitives/visual-primitives/liter
 import type { LetterBuildMiss } from '../../../primitives/visual-primitives/literacy/letterBuild';
 import type { SpellingMiss } from '../../../primitives/visual-primitives/literacy/spellingPatternExplorerWorkspace';
 import type { RhymePairMiss } from '../../../primitives/visual-primitives/literacy/rhymePairBuild';
+import type { RouteMiss } from '../../../primitives/visual-primitives/math/spatialPathWorkspace';
 import type { PicturePairMiss } from '../../../primitives/visual-primitives/literacy/picturePairBuild';
 import type { SpokenYouAndMeMiss } from '../../../primitives/visual-primitives/literacy/youAndMeWorkspace';
 import type { SpokenOralSentenceMiss } from '../../../primitives/visual-primitives/literacy/oralSentenceStudioWorkspace';
 import type { SpokenStoryRibbonMiss } from '../../../primitives/visual-primitives/literacy/storyRibbonWorkspace';
 import type { StoryMapMiss } from '../../../primitives/visual-primitives/literacy/storyMapWorkspace';
+import type { PoetryMiss } from '../../../primitives/visual-primitives/literacy/poetryLabWorkspace';
+import type { ContextClueMiss } from '../../../primitives/visual-primitives/literacy/contextCluesWorkspace';
+import type { EvidenceFinderMiss } from '../../../primitives/visual-primitives/literacy/evidenceFinderWorkspace';
 import { missLists, sameMisses } from './missLists';
 
 export const LITERACY_CATALOG: ComponentDefinition[] = [
@@ -56,6 +60,29 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     description: 'Animated route-choice scenes for Kindergarten movement prepositions and directional language. Students choose a visible path that goes over, under, through, around, or across a landmark, then watch the traveler follow the exact selected geometry. The route shape is the scored evidence; the final destination is deliberately identical for every candidate route. Serves Language Arts requirement LA004-05-H for creating and following directions with directional prepositions.',
     constraints: 'Kindergarten. The generator owns all route geometry and answer keys. Every challenge must expose at least three visually distinct routes with one shared start and one shared finish. Do not score the endpoint. Keep obstacles and candidate routes visible, but do not label or highlight the correct relation until submission. The current L0 contract is choose_route; drawing and multi-step route creation are future evaluation modes. Do not route Grade 1-2 attempts until those grades have an honest directional-preposition curriculum home.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
+    evalModes: [
+      { evalMode: 'choose_route', label: 'Choose the route (pictorial)', beta: 2.5,
+        scaffoldingMode: 2, challengeTypes: ['choose_route'],
+        description: 'Choose, from at least three routes with one shared start and finish, the route whose path goes over, under, through, around, or across the landmark. The route identity is checked; the endpoint is not.' },
+    ],
+    teachingWorkspace: {
+      grades: ['Kindergarten'],
+      guidance: 'The map checks the answer itself, and you are not told it: the learner taps a numbered route, then presses '
+        + 'Animate this route, and the traveler walks it. Every route starts and ends at the same place, so where a route '
+        + 'ends is never the answer; what its path does at the landmark is. A Kindergarten learner may not read: read the '
+        + 'ask aloud and say the movement word clearly. Before the check, and after a wrong one, never say which number '
+        + 'to tap, point at a route, or say what the right path looks like or where on this map it goes (straight, '
+        + 'curved, high, low, into an opening): that gives the answer away. Explaining the movement word with an '
+        + 'everyday example away from the map (crawling under a table, walking through a door) is teaching. After a '
+        + 'wrong check you may name what the animated route did. You cannot tap or animate a route; beyond its levers '
+        + 'you cannot change the screen.',
+      // Levers: `spatialPathLevers.ts`; both help levers answer every miss on every item, so nothing is unanswered.
+      levers: true,
+      // The map's own check (`routeMiss`): the movement the chosen route made instead of the asked one.
+      misses: missLists<RouteMiss>({
+        choose_route: ['went_over', 'went_under', 'went_through', 'went_around', 'went_across'],
+      }),
+    },
     supportsEvaluation: true,
   },
   {
@@ -4342,6 +4369,31 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'analysis', affordances: { representation: 'symbolic', answers: ['tap'] }, label: 'Analysis (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['analysis'], description: 'Identify poetic elements in given poem.' },
       { evalMode: 'composition', affordances: { representation: 'symbolic', answers: ['type'] }, label: 'Composition (Tier 5)', beta: 6.0, scaffoldingMode: 5, challengeTypes: ['composition'], description: 'Compose poem using template structure.' },
     ],
+    // W1 (C22, `poetryLabWorkspace.ts`): every item is checked by the activity's own code. The scripted fallback still
+    // reads the `tutoring` block below.
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'The activity checks every answer itself, and you are not told the answers. Rhyme hunt (Kindergarten and '
+        + 'Grade 1): read the poem aloud slowly, every line ending alike, and read the word cards; the learner taps the two '
+        + 'cards that rhyme. Never say which two rhyme, never say two of the endings together, and never say a word that '
+        + 'rhymes with one of them. After a wrong pair you may stretch the two words they tapped and ask whether the ends '
+        + 'sound the same. Analysis, one step at a time: the learner picks the mood, taps a word of each figurative phrase '
+        + '(every word is a button; a word in no figurative phrase makes it wrong), and picks the rhyme scheme. Never say '
+        + 'the mood or a word that means it, never narrow the moods to the right one, never say which words are figurative, which lines rhyme or the scheme\'s letters; ask which words make them feel '
+        + 'that way, whether a phrase means exactly what it says, and which last words sound alike. Composition: the '
+        + 'learner types each line, then checks; the activity checks the form only (every line written, no line repeated, '
+        + 'acrostic letters, syllables within one of the target). Never write a line or a word for them; ask what they '
+        + 'picture, and help them clap the syllables of their own line. You may read the poem and the choices aloud. You '
+        + 'cannot tap, pick or type for the learner.',
+      // rhyme_model, fewer_cards; mood_faces, easier_mood, figure_models, phrase_count, easier_figures, end_words,
+      // easier_scheme; model_poem, syllable_beats, first_letters, one_line (`poetryLabLevers.ts`). Every miss answered.
+      levers: true,
+      misses: missLists<PoetryMiss>({
+        rhyme_hunt: ['same_start', 'one_of_pair', 'neither_of_pair'],
+        analysis: ['other_mood', 'literal_picked', 'missed_some', 'aabb_abab', 'other_scheme'],
+        composition: ['line_missing', 'line_too_short', 'line_repeated', 'wrong_first_letter', 'syllables_off'],
+      }),
+    },
     tutoring: {
       taskDescription:
         'You are the rhyme and poetry coach for "{{title}}" at Grade {{gradeLevel}}. '
@@ -4819,6 +4871,31 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       { evalMode: 'evaluate_evidence_strength', label: 'Evaluate Evidence Strength (Tier 4)', beta: 4.5, scaffoldingMode: 4, challengeTypes: ['evaluate_evidence_strength'], description: 'Rate evidence strength and justify it (CER framework).' },
     ],
     supportsEvaluation: true,
+    // W1 C21 (`evidenceFinderWorkspace.ts`): find is checked on every mode, the strength rating on CER passages.
+    // The CER reasoning box is open writing with no check and stays on the scripted path (contract G1).
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'The activity checks every answer itself, and you are not told the answers. The learner reads a short '
+        + 'informational passage and highlights every sentence that is evidence for the claim: they tap a sentence to '
+        + 'highlight it (with two claims, they first tap the claim it supports), then press Check Evidence. Evidence '
+        + 'states a fact that proves the claim; a sentence that is only about the topic, or is someone\'s opinion, is '
+        + 'not evidence. On a passage with strength ratings they then rate each evidence sentence Strong, Moderate or '
+        + 'Weak and check: strong evidence gives a specific fact that proves the claim, weak evidence only mentions the '
+        + 'idea. Never say which sentences are evidence, which claim one supports, or how strong one is, before a check '
+        + 'or after a wrong one. Teaching is asking about the claim: what would prove it, does this sentence prove it '
+        + 'or only talk about the topic, is it a fact or an opinion. You may read the passage, the claims and the '
+        + 'sentences aloud. You cannot highlight or rate for the learner.',
+      // The activity's own check (`evidenceFinderMiss`); `wrong_claim` needs two claims, the ratings a CER passage.
+      misses: missLists<EvidenceFinderMiss>({
+        locate_evidence: ['not_evidence', 'missed_evidence'],
+        match_evidence_to_claim: ['not_evidence', 'wrong_claim', 'missed_evidence'],
+        evaluate_evidence_strength: ['not_evidence', 'wrong_claim', 'missed_evidence',
+          'weak_as_strong', 'rated_too_strong', 'rated_too_weak', 'mixed_ratings'],
+      }),
+      // evidence_count, proof_example, practice_passage (find); strength_guide, practice_ratings (rate)
+      // (`evidenceFinderLevers.ts`); every miss answered on every mode.
+      levers: true,
+    },
     tutoring: {
       taskDescription: 'Find textual evidence for claims. Claim: {{currentClaim}}.',
       contextKeys: ['currentClaim'],
@@ -5337,6 +5414,36 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
         description: 'Meaning from broader context.',
       },
     ],
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
+      guidance: 'Each word is a few steps, each checked by the activity, and you are not told the answers: the learner taps '
+        + 'sentences and presses Check Clue, then (only when the lesson mixes clue types) taps one of five clue types and '
+        + 'presses Check Type, then taps (or types) a meaning and presses Check Meaning. Until a step is credited, never say which sentence holds the clue, which clue '
+        + 'type it is, or what the word means, and never say which option to tap. On the find step, do not name, number, '
+        + 'quote or point to any sentence or line for the learner to look at, the word\'s own one included (on many words '
+        + 'the clue is inside it), also when a lever changed the passage; ask what the passage tells us about the word and '
+        + 'let the learner choose. On a type step, the lesson\'s mode names the clue types in play: do not say which one '
+        + 'this word has. Reading the whole passage aloud, reading the five type '
+        + 'names as a list, and asking what a sentence the learner tapped tells us about the word is teaching. The find step passes when the tapped '
+        + 'sentences are clues (the word\'s own sentence may be among them, but alone it passes only when the clue is inside '
+        + 'it), so tapping every sentence does not pass. The dictionary '
+        + 'definition appears only after the meaning is credited. A wrong check\'s miss names the confusion: extra_sentence, '
+        + 'a clue tapped with sentences that are not; similar_opposite, synonym against antonym; definition_synonym, a meaning '
+        + 'spelled out against one similar word; said_inference, inference for a clue the text states; teach that contrast. '
+        + 'A definition clue says what the word means in the text; a synonym is a similar word nearby; an antonym is an '
+        + 'opposite set against it (unlike, but, however); an example clue lists cases (such as, for example); an inference '
+        + 'is pieced together from several sentences. You cannot tap, type or press Check.',
+      // Every step declares help levers (`contextCluesLevers.ts`); every miss is answered by one on every step it occurs.
+      levers: true,
+      // The activity's own check (`clueMiss`), every mode: three steps per word.
+      misses: missLists<ContextClueMiss>({
+        // One clue type per session in these three modes: no classify step, so no type misses.
+        definition: ['target_sentence_only', 'extra_sentence', 'no_clue', 'other_meaning'],
+        synonym_antonym: ['target_sentence_only', 'extra_sentence', 'no_clue', 'similar_opposite', 'definition_synonym', 'said_inference', 'other_type', 'other_meaning'],
+        example: ['target_sentence_only', 'extra_sentence', 'no_clue', 'other_meaning'],
+        inference: ['target_sentence_only', 'extra_sentence', 'no_clue', 'other_meaning'],
+      }),
+    },
     supportsEvaluation: true,
     tutoring: {
       taskDescription:

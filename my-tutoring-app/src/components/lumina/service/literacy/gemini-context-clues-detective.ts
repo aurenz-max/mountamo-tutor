@@ -2,6 +2,7 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { ContextCluesDetectiveData } from "../../primitives/visual-primitives/literacy/ContextCluesDetective";
+import { STRATEGY_BY_TYPE } from "../../primitives/visual-primitives/literacy/contextCluesLevers";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -78,8 +79,9 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 // ---------------------------------------------------------------------------
 // Bespoke support scaffold — which on-screen helps are withdrawn per tier.
 // Three withdrawals mapped to the primitive's three solver phases:
-//   FIND     → showClueHints:        pre-tint the real clue sentence(s) so the
-//              student can self-check their search (#1 perception aid).
+//   FIND     → showClueHints:        list the passage one sentence per line (the
+//              `sentence_list` lever's starting position). It used to tint the
+//              real clue sentences, which drew the find step's answer.
 //   CLASSIFY → showClueTypeDescriptions: show what each clue type means under its
 //              label vs. bare labels — recall the types unaided (#2 instruction).
 //   DEFINE   → strategyHint:         name the reading strategy ("look for the
@@ -90,7 +92,7 @@ function normalizeSupportTier(difficulty?: string): SupportTier | null {
 // ---------------------------------------------------------------------------
 
 interface ContextCluesSupportScaffold {
-  /** FIND: pre-tint the clue sentence(s) (easy/medium) vs. bare passage (hard). */
+  /** FIND: passage listed one sentence per line (easy/medium) vs. running text (hard). */
   showClueHints: boolean;
   /** CLASSIFY: show per-type descriptions (easy) vs. bare type labels (medium/hard). */
   showClueTypeDescriptions: boolean;
@@ -100,14 +102,8 @@ interface ContextCluesSupportScaffold {
 }
 
 /** Per-clue-type strategy nudge for the DEFINE phase. Tells the student HOW to read
- *  the clue WITHOUT stating the meaning. Easy tier only. */
-const STRATEGY_HINT_BY_TYPE: Record<string, string> = {
-  definition: 'Strategy: find the sentence that explains the word in plain words right where it appears.',
-  synonym: 'Strategy: look for a familiar word nearby that means about the same thing.',
-  antonym: 'Strategy: find the opposite word (look for "unlike", "but", "however") and flip it.',
-  example: 'Strategy: read the examples ("such as", "like") and ask what they have in common.',
-  inference: 'Strategy: gather hints across the sentences and reason out what fits.',
-};
+ *  the clue WITHOUT stating the meaning. Easy tier only; the `strategy` lever prints the same text. */
+const STRATEGY_HINT_BY_TYPE: Record<string, string> = STRATEGY_BY_TYPE;
 
 function resolveSupportStructure(
   pinnedType: string,
@@ -130,7 +126,7 @@ function resolveSupportStructure(
     nameStrategy,
     promptLines: [
       lead,
-      `FIND phase: the actual clue sentence(s) are ${showClueHints ? 'faintly cued so the student can confirm their search' : 'NOT cued — the student locates the clue sentence unaided'}.`,
+      `FIND phase: the passage is ${showClueHints ? 'listed one sentence per line' : 'shown as running text'}; no clue sentence is ever marked — the student locates it unaided.`,
       `CLASSIFY phase: the explanation of what each clue type means is ${showClueTypeDescriptions ? 'shown under each type label' : 'withdrawn — only the bare type names are shown, so the student recalls the clue types from memory'}.`,
       `DEFINE phase: the reading strategy for this clue type is ${nameStrategy ? 'named for the student' : 'NOT named — the student decides how to use the clue and justifies the meaning themselves'}.`,
       'Keep the title and description neutral — never state the support level, the clue type, or the answer.',

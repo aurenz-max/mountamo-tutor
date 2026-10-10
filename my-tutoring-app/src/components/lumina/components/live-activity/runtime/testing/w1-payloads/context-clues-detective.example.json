@@ -1,0 +1,150 @@
+{
+ "source": "qa/tutor-reports/context-clues-detective-runtime-example-payload-2026-10-09.json",
+ "primitiveId": "context-clues-detective",
+ "evalMode": "example",
+ "data": {
+  "title": "Rainforest Ranger: Animal Evidence",
+  "gradeLevel": "4",
+  "challenges": [
+   {
+    "id": "ch1",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch1_s1",
+       "text": "Deep in the green canopy, many creatures make their homes.",
+       "isClue": false
+      },
+      {
+       "id": "ch1_s2",
+       "text": "The jungle is packed with diverse wildlife, including chameleons, toucans, sloths, and jaguars.",
+       "isClue": true
+      },
+      {
+       "id": "ch1_s3",
+       "text": "Each of these animals has special traits that help them survive.",
+       "isClue": false
+      },
+      {
+       "id": "ch1_s4",
+       "text": "Scientists study these living things to learn how the forest works.",
+       "isClue": false
+      },
+      {
+       "id": "ch1_s5",
+       "text": "Protecting this habitat is important for all species.",
+       "isClue": false
+      }
+     ]
+    },
+    "targetWord": "diverse",
+    "targetWordSentenceId": "ch1_s2",
+    "clueType": "example",
+    "clueSentenceIds": [
+     "ch1_s2"
+    ],
+    "correctMeaning": "Showing a great deal of variety; very different",
+    "meaningOptions": [
+     "Showing a great deal of variety; very different",
+     "Dangerous and fierce",
+     "Hidden from view",
+     "Small in number"
+    ],
+    "dictionaryDefinition": "Showing a great deal of variety; very different."
+   },
+   {
+    "id": "ch2",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch2_s1",
+       "text": "Rainforest animals have clever ways to stay safe from predators.",
+       "isClue": false
+      },
+      {
+       "id": "ch2_s2",
+       "text": "Many insects use camouflage, such as turning green to match the leaves or looking like a brown twig.",
+       "isClue": true
+      },
+      {
+       "id": "ch2_s3",
+       "text": "This disguise keeps them hidden from hungry birds.",
+       "isClue": false
+      },
+      {
+       "id": "ch2_s4",
+       "text": "Even larger animals sometimes use colors to blend in with trees.",
+       "isClue": false
+      },
+      {
+       "id": "ch2_s5",
+       "text": "Staying unseen is the best defense in the wild.",
+       "isClue": false
+      }
+     ]
+    },
+    "targetWord": "camouflage",
+    "targetWordSentenceId": "ch2_s2",
+    "clueType": "example",
+    "clueSentenceIds": [
+     "ch2_s2"
+    ],
+    "correctMeaning": "A disguise that lets animals blend into their surroundings",
+    "meaningOptions": [
+     "A loud noise used to scare enemies",
+     "A bright color that attracts friends",
+     "A disguise that lets animals blend into their surroundings",
+     "A sharp weapon used for fighting"
+    ],
+    "dictionaryDefinition": "The disguising of military personnel, equipment, and installations by painting or covering them to make them blend in with their surroundings."
+   },
+   {
+    "id": "ch3",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch3_s1",
+       "text": "Rainforests receive a lot of rain throughout the year.",
+       "isClue": false
+      },
+      {
+       "id": "ch3_s2",
+       "text": "Because of this wet climate, the forest floor is full of rotting logs and damp soil.",
+       "isClue": false
+      },
+      {
+       "id": "ch3_s3",
+       "text": "Decomposers, for example mushrooms, earthworms, and bacteria, break down this dead material.",
+       "isClue": true
+      },
+      {
+       "id": "ch3_s4",
+       "text": "This process recycles important nutrients back into the dirt.",
+       "isClue": false
+      },
+      {
+       "id": "ch3_s5",
+       "text": "Without these organisms, the jungle would quickly pile up with waste.",
+       "isClue": false
+      }
+     ]
+    },
+    "targetWord": "decomposers",
+    "targetWordSentenceId": "ch3_s3",
+    "clueType": "example",
+    "clueSentenceIds": [
+     "ch3_s3"
+    ],
+    "correctMeaning": "Organisms that break down dead plant and animal material",
+    "meaningOptions": [
+     "Organisms that eat only fresh green leaves",
+     "Animals that hunt other creatures for food",
+     "Organisms that break down dead plant and animal material",
+     "Plants that grow very tall to reach the sun"
+    ],
+    "dictionaryDefinition": "An organism, especially a soil bacterium, fungus, or invertebrate, that decomposes organic material."
+   }
+  ],
+  "objectiveGrade": "4"
+ }
+}

@@ -1,0 +1,1399 @@
+{
+ "lessonEntry": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+ "records": [
+  {
+   "payload": "poetry-lab.analysis",
+   "primitiveId": "poetry-lab",
+   "evalMode": "analysis",
+   "guidance": "The activity checks every answer itself, and you are not told the answers. Rhyme hunt (Kindergarten and Grade 1): read the poem aloud slowly, every line ending alike, and read the word cards; the learner taps the two cards that rhyme. Never say which two rhyme, never say two of the endings together, and never say a word that rhymes with one of them. After a wrong pair you may stretch the two words they tapped and ask whether the ends sound the same. Analysis, one step at a time: the learner picks the mood, taps a word of each figurative phrase (every word is a button; a word in no figurative phrase makes it wrong), and picks the rhyme scheme. Never say the mood or a word that means it, never narrow the moods to the right one, never say which words are figurative, which lines rhyme or the scheme's letters; ask which words make them feel that way, whether a phrase means exactly what it says, and which last words sound alike. Composition: the learner types each line, then checks; the activity checks the form only (every line written, no line repeated, acrostic letters, syllables within one of the target). Never write a line or a word for them; ask what they picture, and help them clap the syllables of their own line. You may read the poem and the choices aloud. You cannot tap, pick or type for the learner. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. Everything you write is spoken aloud: say math in words (\"x squared\", \"three fourths\"), never as symbols, LaTeX or markup. When an answer is right, credit the learner in your own words: that they did it, and the number, word, shape or sound they gave; when the state shows how they got there (they checked, fixed a mistake, counted one by one), name that too, because that is the part they can do again. Praise that names nothing credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. When told the learner has stopped, invite their next step or a check of their own work; never do the step for them or say what their work adds up to. The host records feedback and handles retry and advance; call no recording or progression tool.",
+   "topic": "A rainy day at the pond",
+   "gradeLevel": "4",
+   "leakTokens": [],
+   "ask": "Read the poem. What mood or feeling does it create? Pick one, then check.",
+   "keys": [
+    "peaceful"
+   ],
+   "menu": [
+    "scary",
+    "silly",
+    "angry",
+    "peaceful",
+    "check"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "mood",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "analysis",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "mood",
+       "phase": "working",
+       "task": "Read the poem. What mood or feeling does it create? Pick one, then check.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "poem": "The grey clouds dance across the sky, / The sleepy pond is calm and wide, / The buzzing dragonflies wave goodbye, / And happy frogs begin to slide.",
+        "moodChoices": "Printed moods (pick one): scary, silly, angry, peaceful",
+        "constraints": "The learner taps one mood, then presses Check; the activity checks it. You cannot pick for the learner.",
+        "learnerWork": "No mood picked yet",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "mood",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "mood",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "analysis",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "mood",
+       "phase": "checked",
+       "task": "Read the poem. What mood or feeling does it create? Pick one, then check.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Picked the mood \"scary\"",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "poem": "The grey clouds dance across the sky, / The sleepy pond is calm and wide, / The buzzing dragonflies wave goodbye, / And happy frogs begin to slide.",
+        "moodChoices": "Printed moods (pick one): scary, silly, angry, peaceful",
+        "constraints": "The learner taps one mood, then presses Check; the activity checks it. You cannot pick for the learner.",
+        "learnerWork": "Picked the mood \"scary\"",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "mood",
+         "response": "Picked the mood \"scary\"",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "other_mood"
+        },
+        "attempts": [
+         {
+          "itemId": "mood",
+          "response": "Picked the mood \"scary\"",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "other_mood"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "mood",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted \"Picked the mood \\\"scary\\\"\". The board checked it: not right."
+     ],
+     "spoken": false,
+     "miss": "other_mood"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "mood",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 4,
+      "visibleRevision": 4,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "analysis",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "mood",
+       "phase": "working",
+       "task": "Read the poem. What mood or feeling does it create? Pick one, then check.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Picked the mood \"scary\"",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "poem": "The grey clouds dance across the sky, / The sleepy pond is calm and wide, / The buzzing dragonflies wave goodbye, / And happy frogs begin to slide.",
+        "moodChoices": "Printed moods (pick one): scary, silly, angry, peaceful",
+        "constraints": "The learner taps one mood, then presses Check; the activity checks it. You cannot pick for the learner.",
+        "learnerWork": "No mood picked yet",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "mood",
+         "response": "Picked the mood \"scary\"",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "other_mood"
+        },
+        "attempts": [
+         {
+          "itemId": "mood",
+          "response": "Picked the mood \"scary\"",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "other_mood"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "mood",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "credit",
+     "itemId": "mood",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 6,
+      "visibleRevision": 6,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "analysis",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "mood",
+       "phase": "checked",
+       "task": "Read the poem. What mood or feeling does it create? Pick one, then check.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Picked the mood \"peaceful\"",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "poem": "The grey clouds dance across the sky, / The sleepy pond is calm and wide, / The buzzing dragonflies wave goodbye, / And happy frogs begin to slide.",
+        "moodChoices": "Printed moods (pick one): scary, silly, angry, peaceful",
+        "constraints": "The learner taps one mood, then presses Check; the activity checks it. You cannot pick for the learner.",
+        "learnerWork": "Picked the mood \"peaceful\"",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "mood",
+         "response": "Picked the mood \"peaceful\"",
+         "source": "gesture",
+         "correct": true,
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "mood",
+          "response": "Picked the mood \"scary\"",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "other_mood"
+         },
+         {
+          "itemId": "mood",
+          "response": "Picked the mood \"peaceful\"",
+          "source": "gesture",
+          "correct": true,
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/6/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "mood",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted \"Picked the mood \\\"peaceful\\\"\". The board checked it: right."
+     ],
+     "spoken": false
+    }
+   ]
+  },
+  {
+   "payload": "poetry-lab.composition",
+   "primitiveId": "poetry-lab",
+   "evalMode": "composition",
+   "guidance": "The activity checks every answer itself, and you are not told the answers. Rhyme hunt (Kindergarten and Grade 1): read the poem aloud slowly, every line ending alike, and read the word cards; the learner taps the two cards that rhyme. Never say which two rhyme, never say two of the endings together, and never say a word that rhymes with one of them. After a wrong pair you may stretch the two words they tapped and ask whether the ends sound the same. Analysis, one step at a time: the learner picks the mood, taps a word of each figurative phrase (every word is a button; a word in no figurative phrase makes it wrong), and picks the rhyme scheme. Never say the mood or a word that means it, never narrow the moods to the right one, never say which words are figurative, which lines rhyme or the scheme's letters; ask which words make them feel that way, whether a phrase means exactly what it says, and which last words sound alike. Composition: the learner types each line, then checks; the activity checks the form only (every line written, no line repeated, acrostic letters, syllables within one of the target). Never write a line or a word for them; ask what they picture, and help them clap the syllables of their own line. You may read the poem and the choices aloud. You cannot tap, pick or type for the learner. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. Everything you write is spoken aloud: say math in words (\"x squared\", \"three fourths\"), never as symbols, LaTeX or markup. When an answer is right, credit the learner in your own words: that they did it, and the number, word, shape or sound they gave; when the state shows how they got there (they checked, fixed a mistake, counted one by one), name that too, because that is the part they can do again. Praise that names nothing credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. When told the learner has stopped, invite their next step or a check of their own work; never do the step for them or say what their work adds up to. The host records feedback and handles retry and advance; call no recording or progression tool.",
+   "topic": "A rainy day at the pond",
+   "gradeLevel": "3",
+   "leakTokens": [],
+   "ask": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water. Write each line in its box, then check.",
+   "keys": [],
+   "menu": [
+    "check poem"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "compose",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "composition",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "compose",
+       "phase": "working",
+       "task": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water. Write each line in its box, then check.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "prompt": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water.",
+        "form": "A haiku of 3 lines; syllables per line 5-7-5",
+        "syllablesCounted": "line 1: 0, line 2: 0, line 3: 0",
+        "constraints": "The learner types each line in its box and presses Check Poem. The activity checks the form only: every line written with two or more words, no line repeated, each line within one syllable of its target (by the counter shown). It does not judge rhyme, meaning or word choice. You cannot type for the learner.",
+        "learnerWork": "No line written yet",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "compose",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "compose",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 5,
+      "visibleRevision": 5,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "composition",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "compose",
+       "phase": "checked",
+       "task": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water. Write each line in its box, then check.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Line 1: \"light pond frog hill cloud drop path sun\"; Line 2: \"moon star snow bright cold warm soft\"; Line 3: \"warm soft green gold song\"",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "prompt": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water.",
+        "form": "A haiku of 3 lines; syllables per line 5-7-5",
+        "syllablesCounted": "line 1: 8, line 2: 7, line 3: 5",
+        "constraints": "The learner types each line in its box and presses Check Poem. The activity checks the form only: every line written with two or more words, no line repeated, each line within one syllable of its target (by the counter shown). It does not judge rhyme, meaning or word choice. You cannot type for the learner.",
+        "learnerWork": "Line 1: \"light pond frog hill cloud drop path sun\"; Line 2: \"moon star snow bright cold warm soft\"; Line 3: \"warm soft green gold song\"",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "compose",
+         "response": "Line 1: \"light pond frog hill cloud drop path sun\"; Line 2: \"moon star snow bright cold warm soft\"; Line 3: \"warm soft green gold song\"",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "syllables_off"
+        },
+        "attempts": [
+         {
+          "itemId": "compose",
+          "response": "Line 1: \"light pond frog hill cloud drop path sun\"; Line 2: \"moon star snow bright cold warm soft\"; Line 3: \"warm soft green gold song\"",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "syllables_off"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/5/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "compose",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted \"Line 1: \\\"light pond frog hill cloud drop path sun\\\"; Line 2: \\\"moon star snow bright cold warm soft\\\"; Line 3: \\\"warm soft green gold song\\\"\". The board checked it: not right."
+     ],
+     "spoken": false,
+     "miss": "syllables_off"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "compose",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 6,
+      "visibleRevision": 6,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "composition",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "compose",
+       "phase": "working",
+       "task": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water. Write each line in its box, then check.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Line 1: \"light pond frog hill cloud drop path sun\"; Line 2: \"moon star snow bright cold warm soft\"; Line 3: \"warm soft green gold song\"",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "prompt": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water.",
+        "form": "A haiku of 3 lines; syllables per line 5-7-5",
+        "syllablesCounted": "line 1: 8, line 2: 7, line 3: 5",
+        "constraints": "The learner types each line in its box and presses Check Poem. The activity checks the form only: every line written with two or more words, no line repeated, each line within one syllable of its target (by the counter shown). It does not judge rhyme, meaning or word choice. You cannot type for the learner.",
+        "learnerWork": "Line 1: \"light pond frog hill cloud drop path sun\"; Line 2: \"moon star snow bright cold warm soft\"; Line 3: \"warm soft green gold song\"",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "compose",
+         "response": "Line 1: \"light pond frog hill cloud drop path sun\"; Line 2: \"moon star snow bright cold warm soft\"; Line 3: \"warm soft green gold song\"",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "syllables_off"
+        },
+        "attempts": [
+         {
+          "itemId": "compose",
+          "response": "Line 1: \"light pond frog hill cloud drop path sun\"; Line 2: \"moon star snow bright cold warm soft\"; Line 3: \"warm soft green gold song\"",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "syllables_off"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/6/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "compose",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "credit",
+     "itemId": "compose",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 10,
+      "visibleRevision": 10,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "composition",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "compose",
+       "phase": "checked",
+       "task": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water. Write each line in its box, then check.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Line 1: \"sun rain wind leaf tree\"; Line 2: \"bird sky moon star snow bright cold\"; Line 3: \"bright cold warm soft green\"",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "prompt": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water.",
+        "form": "A haiku of 3 lines; syllables per line 5-7-5",
+        "syllablesCounted": "line 1: 5, line 2: 7, line 3: 5",
+        "constraints": "The learner types each line in its box and presses Check Poem. The activity checks the form only: every line written with two or more words, no line repeated, each line within one syllable of its target (by the counter shown). It does not judge rhyme, meaning or word choice. You cannot type for the learner.",
+        "learnerWork": "Line 1: \"sun rain wind leaf tree\"; Line 2: \"bird sky moon star snow bright cold\"; Line 3: \"bright cold warm soft green\"",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "compose",
+         "response": "Line 1: \"sun rain wind leaf tree\"; Line 2: \"bird sky moon star snow bright cold\"; Line 3: \"bright cold warm soft green\"",
+         "source": "gesture",
+         "correct": true,
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "compose",
+          "response": "Line 1: \"light pond frog hill cloud drop path sun\"; Line 2: \"moon star snow bright cold warm soft\"; Line 3: \"warm soft green gold song\"",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "syllables_off"
+         },
+         {
+          "itemId": "compose",
+          "response": "Line 1: \"sun rain wind leaf tree\"; Line 2: \"bird sky moon star snow bright cold\"; Line 3: \"bright cold warm soft green\"",
+          "source": "gesture",
+          "correct": true,
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/10/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "compose",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted \"Line 1: \\\"sun rain wind leaf tree\\\"; Line 2: \\\"bird sky moon star snow bright cold\\\"; Line 3: \\\"bright cold warm soft green\\\"\". The board checked it: right."
+     ],
+     "spoken": false
+    }
+   ]
+  },
+  {
+   "payload": "poetry-lab.rhyme_hunt",
+   "primitiveId": "poetry-lab",
+   "evalMode": "rhyme_hunt",
+   "guidance": "The activity checks every answer itself, and you are not told the answers. Rhyme hunt (Kindergarten and Grade 1): read the poem aloud slowly, every line ending alike, and read the word cards; the learner taps the two cards that rhyme. Never say which two rhyme, never say two of the endings together, and never say a word that rhymes with one of them. After a wrong pair you may stretch the two words they tapped and ask whether the ends sound the same. Analysis, one step at a time: the learner picks the mood, taps a word of each figurative phrase (every word is a button; a word in no figurative phrase makes it wrong), and picks the rhyme scheme. Never say the mood or a word that means it, never narrow the moods to the right one, never say which words are figurative, which lines rhyme or the scheme's letters; ask which words make them feel that way, whether a phrase means exactly what it says, and which last words sound alike. Composition: the learner types each line, then checks; the activity checks the form only (every line written, no line repeated, acrostic letters, syllables within one of the target). Never write a line or a word for them; ask what they picture, and help them clap the syllables of their own line. You may read the poem and the choices aloud. You cannot tap, pick or type for the learner. You own the teaching: one step at a time, and let the learner try. Use begin_help before guiding questions, explanations or a demonstration. When asked to show something and demonstrate is offered, call it with target ids from workspace.objects and wait for its visible result before saying anything is marked; talk alone does not show. The transcript is noisy supporting context, never the answer. Everything you write is spoken aloud: say math in words (\"x squared\", \"three fourths\"), never as symbols, LaTeX or markup. When an answer is right, credit the learner in your own words: that they did it, and the number, word, shape or sound they gave; when the state shows how they got there (they checked, fixed a mistake, counted one by one), name that too, because that is the part they can do again. Praise that names nothing credits nothing. Praise straight after a smaller step credits only that step: return to the original question first. Before a try or after a mistake, never say the answer or a change the task does not ask for; after a mistake, invite another try. When told the learner has stopped, invite their next step or a check of their own work; never do the step for them or say what their work adds up to. The host records feedback and handles retry and advance; call no recording or progression tool.",
+   "topic": "A rainy day at the pond",
+   "gradeLevel": "K",
+   "leakTokens": [],
+   "ask": "Listen to the poem. Tap the two word cards that rhyme.",
+   "keys": [],
+   "menu": [
+    "📥in",
+    "in",
+    "📦box",
+    "box",
+    "🦊fox",
+    "fox",
+    "🎈high",
+    "high"
+   ],
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "rhyme-hunt-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 1,
+      "visibleRevision": 1,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "rhyme_hunt",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "rhyme-hunt-1",
+       "phase": "working",
+       "task": "Listen to the poem. Tap the two word cards that rhyme.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 0,
+        "correctness": "unknown",
+        "recentResponses": []
+       },
+       "demand": {
+        "poem": "The small pig is in / The brown mud box / He jumps up high / To chase a fox",
+        "wordCards": "Word cards, in screen order, each with a picture: in, box, fox, high",
+        "constraints": "The poem is printed, but the learner may not read yet: you read it aloud. The learner taps two word cards; the second tap is the check. You cannot tap for the learner.",
+        "learnerWork": "No card tapped yet",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": null,
+        "attempts": []
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/1/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "rhyme-hunt-1",
+        "secondsOnItem": 4,
+        "secondsSinceReady": 4,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 0,
+        "wrongAttempts": 0,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally."
+     ],
+     "spoken": false
+    },
+    {
+     "kind": "miss",
+     "itemId": "rhyme-hunt-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 3,
+      "visibleRevision": 3,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "rhyme_hunt",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "rhyme-hunt-1",
+       "phase": "checked",
+       "task": "Listen to the poem. Tap the two word cards that rhyme.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Tapped \"box\" and \"in\"",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "poem": "The small pig is in / The brown mud box / He jumps up high / To chase a fox",
+        "wordCards": "Word cards, in screen order, each with a picture: in, box, fox, high",
+        "constraints": "The poem is printed, but the learner may not read yet: you read it aloud. The learner taps two word cards; the second tap is the check. You cannot tap for the learner.",
+        "learnerWork": "Tapped \"box\" and \"in\"",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "rhyme-hunt-1",
+         "response": "Tapped \"box\" and \"in\"",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "one_of_pair"
+        },
+        "attempts": [
+         {
+          "itemId": "rhyme-hunt-1",
+          "response": "Tapped \"box\" and \"in\"",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "one_of_pair"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/3/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "rhyme-hunt-1",
+        "secondsOnItem": 8,
+        "secondsSinceReady": 8,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted \"Tapped \\\"box\\\" and \\\"in\\\"\". The board checked it: not right."
+     ],
+     "spoken": false,
+     "miss": "one_of_pair"
+    },
+    {
+     "kind": "stuck",
+     "itemId": "rhyme-hunt-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 4,
+      "visibleRevision": 4,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "rhyme_hunt",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "rhyme-hunt-1",
+       "phase": "working",
+       "task": "Listen to the poem. Tap the two word cards that rhyme.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 1,
+        "correctness": "incorrect",
+        "recentResponses": [
+         {
+          "response": "Tapped \"box\" and \"in\"",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "poem": "The small pig is in / The brown mud box / He jumps up high / To chase a fox",
+        "wordCards": "Word cards, in screen order, each with a picture: in, box, fox, high",
+        "constraints": "The poem is printed, but the learner may not read yet: you read it aloud. The learner taps two word cards; the second tap is the check. You cannot tap for the learner.",
+        "learnerWork": "No card tapped yet",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "rhyme-hunt-1",
+         "response": "Tapped \"box\" and \"in\"",
+         "source": "gesture",
+         "correct": false,
+         "assisted": false,
+         "answerExposure": "none",
+         "miss": "one_of_pair"
+        },
+        "attempts": [
+         {
+          "itemId": "rhyme-hunt-1",
+          "response": "Tapped \"box\" and \"in\"",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "one_of_pair"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/4/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "rhyme-hunt-1",
+        "secondsOnItem": 12,
+        "secondsSinceReady": 12,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 1,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [],
+     "spoken": false,
+     "learner": "I'm stuck. I don't know how to do this one."
+    },
+    {
+     "kind": "credit",
+     "itemId": "rhyme-hunt-1",
+     "packet": {
+      "sessionEpoch": "test",
+      "revision": 6,
+      "visibleRevision": 6,
+      "instanceId": "ws",
+      "planItemId": "plan-ws",
+      "primitiveId": "poetry-lab",
+      "objectiveId": "poetry-lab-practice",
+      "evalMode": "rhyme_hunt",
+      "owner": "tutor",
+      "status": "active",
+      "task": {
+       "itemId": "rhyme-hunt-1",
+       "phase": "checked",
+       "task": "Listen to the poem. Tap the two word cards that rhyme.",
+       "completed": false,
+       "evidence": {
+        "attemptNumber": 2,
+        "correctness": "correct",
+        "recentResponses": [
+         {
+          "response": "Tapped \"box\" and \"fox\"",
+          "source": "gesture",
+          "recognition": "clear"
+         }
+        ]
+       },
+       "demand": {
+        "poem": "The small pig is in / The brown mud box / He jumps up high / To chase a fox",
+        "wordCards": "Word cards, in screen order, each with a picture: in, box, fox, high",
+        "constraints": "The poem is printed, but the learner may not read yet: you read it aloud. The learner taps two word cards; the second tap is the check. You cannot tap for the learner.",
+        "learnerWork": "Tapped \"box\" and \"fox\"",
+        "response": "gesture",
+        "presentation": "ready"
+       },
+       "support": {
+        "level": 0,
+        "answerExposure": "none"
+       },
+       "workspace": {
+        "progression": "observer",
+        "objects": [],
+        "demonstration": [],
+        "lastResponse": {
+         "itemId": "rhyme-hunt-1",
+         "response": "Tapped \"box\" and \"fox\"",
+         "source": "gesture",
+         "correct": true,
+         "assisted": false,
+         "answerExposure": "none"
+        },
+        "attempts": [
+         {
+          "itemId": "rhyme-hunt-1",
+          "response": "Tapped \"box\" and \"in\"",
+          "source": "gesture",
+          "correct": false,
+          "assisted": false,
+          "answerExposure": "none",
+          "miss": "one_of_pair"
+         },
+         {
+          "itemId": "rhyme-hunt-1",
+          "response": "Tapped \"box\" and \"fox\"",
+          "source": "gesture",
+          "correct": true,
+          "assisted": false,
+          "answerExposure": "none"
+         }
+        ]
+       }
+      },
+      "supportArtifact": null,
+      "blockedReason": null,
+      "canStartNext": false,
+      "canGenerateSupport": false,
+      "moveOptions": null,
+      "markedTargetIds": [],
+      "assistance": [],
+      "choices": [
+       {
+        "action": {
+         "type": "workspace",
+         "operation": "begin_help"
+        },
+        "description": "Begin a teaching exchange. Use before verbal help, questions that guide the solution, or demonstration. Records assistance without submitting an answer. No parameters.",
+        "assistance": {
+         "level": 2,
+         "answerExposure": "none"
+        },
+        "actionId": "test/6/0"
+       }
+      ],
+      "learner": {
+       "about": "Facts about the learner on this item, for choosing between waiting, helping and offering a break. They never grade an answer. Quiet time alone is not a reason to interrupt.",
+       "signals": {
+        "itemId": "rhyme-hunt-1",
+        "secondsOnItem": 16,
+        "secondsSinceReady": 16,
+        "secondsSinceTutorSettled": null,
+        "secondsSinceLearnerSpoke": null,
+        "learnerTurns": 0,
+        "tutorTurns": 0,
+        "attempts": 2,
+        "wrongAttempts": 1,
+        "repeatedWrongResponse": false,
+        "helpRecorded": false,
+        "helpRequests": 0,
+        "stopRequests": 0,
+        "turnsWithoutAnswer": 0
+       },
+       "observations": []
+      }
+     },
+     "host": [
+      "The learner submitted \"Tapped \\\"box\\\" and \\\"fox\\\"\". The board checked it: right."
+     ],
+     "spoken": false
+    }
+   ]
+  }
+ ]
+}

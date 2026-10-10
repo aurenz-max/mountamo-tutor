@@ -1,0 +1,2157 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    5,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    6,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "context-clues-detective.definition",
+   "primitiveId": "context-clues-detective",
+   "evalMode": "definition",
+   "keys": [
+    "sentence 4",
+    "4"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1:find",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 4",
+       "4"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"venomous\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to the rainforest! Look closely at the passage and tap a sentence that gives a clue to what \"venomous\" means, then press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the rainforest! Look closely at the passage and tap a sentence that gives a clue to what \"venomous\" means, then press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest clue hunt! Read through the sentences to find one that explains what \"venomous\" means, tap it, and press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest clue hunt! Read through the sentences and see if one helps explain what \"venomous\" means.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest clue hunt! Read through the sentences and see if you can find one that explains what \"venomous\" means.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1:find",
+     "trigger": "The learner submitted \"Tapped sentence 1\". The board checked it: not right.",
+     "miss": "no_clue",
+     "scoredWith": {
+      "keys": [
+       "sentence 4",
+       "4"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"venomous\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Sentence 1 tells us where animals live, but not what the word means. Take a look near sentence 3 where \"venomous\" appears, and see which sentence explains what it does.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 introduces the rainforest, but it does not explain the word. Look closer to sentence 3 where \"venomous\" appears, and see which words explain what it does.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us about the rainforest, but it doesn't tell us what \"venomous\" means. Which sentence explains what happens when a frog is venomous?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us where animals live, but it doesn't tell us what \"venomous\" means. Which sentence explains what happens when a frog is venomous?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us about the rainforest, but not what \"venomous\" means. Which sentence explains what happens when a frog is venomous?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1:find",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 4",
+       "4"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"venomous\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's break it down: read sentence 3 carefully to see what it says right after \"venomous.\" What words explain what that means?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's look at sentence 3, which says: \"Poison dart frogs are known to be venomous, which means they produce a toxic substance that can harm predators.\" \n\nNotice the words \"which means\"\u2014what does that tell you about what follows?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Read sentence 3 carefully: what words right after \"venomous\" tell us what it means? Give that sentence a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Read sentence 3 carefully where the word \"venomous\" appears. Does that sentence tell us what \"venomous\" means right after the word?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Read sentence 3 carefully: \"Poison dart frogs are known to be venomous, which means they produce a toxic substance that can harm predators.\" \n\nNotice how that sentence uses \"which means\" to tell us what the frog produces. Tap the sentence that explains that meaning, and press Check Clue.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1:find",
+     "trigger": "The learner submitted \"Tapped sentence 4\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 4",
+       "4"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"venomous\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it by looking at sentence 4! That clue helps show why other animals stay away.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by tapping sentence 4 to catch the clue.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found a clue sentence by checking sentence 4!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the clue sentence by checking sentence 4!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the clue by tapping sentence 4. Now let's see what clue type it is!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "context-clues-detective.example",
+   "primitiveId": "context-clues-detective",
+   "evalMode": "example",
+   "keys": [
+    "sentence 2",
+    "2"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1:find",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 2",
+       "2"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"diverse\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to our rainforest word mystery! Take a look at the passage, tap a sentence that gives a clue about what \"diverse\" means, and press Check Clue when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest adventure! Look closely at the passage to find a clue that helps explain what \"diverse\" means, tap the sentence, and hit Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest word hunt! Take a look at the passage, tap a sentence that gives a clue about what \"diverse\" means, and press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest adventure! Look closely at the passage and tap a sentence that gives a clue about what \"diverse\" means, then hit Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Let's be context clues detectives and explore the rainforest. Take a look at the passage and tap a sentence that gives a clue about what \"diverse\" means, then press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1:find",
+     "trigger": "The learner submitted \"Tapped sentence 1\". The board checked it: not right.",
+     "miss": "no_clue",
+     "scoredWith": {
+      "keys": [
+       "sentence 2",
+       "2"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"diverse\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Sentence 1 tells us where creatures make homes, but it doesn't give clues about the word \"diverse.\" Look closely at the sentences right around sentence 2 where the word appears to see what details are shared about that wildlife.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "sentence 2"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us where creatures live, but it doesn't give a clue about what \"diverse\" means. Read sentence 2 carefully to see what details it shares right after our mystery word!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "sentence 2"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us where creatures live, but it doesn't give a clue about what \"diverse\" means. Read sentence 2 closely to see what details or examples it shares about that wildlife.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "sentence 2"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us where creatures live, but it doesn't give a clue about what \"diverse\" means. Read sentence 2 carefully and see what it tells us about that wildlife.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "sentence 2"
+       },
+       "pulledLever": null
+      },
+      {
+       "text": "Good try! Look closely at sentence 2 where the word \"diverse\" appears and see which sentence gives details or examples about it.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "sentence 2"
+       },
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1:find",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 2",
+       "2"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"diverse\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's read sentence 2 together: \"The jungle is packed with diverse wildlife, including chameleons, toucans, sloths, and jaguars.\" What does the sentence list right after \"diverse wildlife\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "sentence 2"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "Try reading sentence 2 carefully to see what comes right after the word \"diverse.\" Does that sentence give us specific examples of what kind of wildlife is in the jungle?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "sentence 2"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "Let's read sentence 2 together: \"The jungle is packed with diverse wildlife, including chameleons, toucans, sloths, and jaguars.\" What examples or details does the sentence give right after the word \"diverse\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "sentence 2"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "Let's read sentence 2 together: \"The jungle is packed with diverse wildlife, including chameleons, toucans, sloths, and jaguars.\" What does the rest of that sentence tell us about the wildlife?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "sentence 2"
+       },
+       "pulledLever": false
+      },
+      {
+       "text": "Let's read sentence 2 together: \"The jungle is packed with diverse wildlife, including chameleons, toucans, sloths, and jaguars.\" \n\nWhat kind of clues does sentence 2 give right after the word \"diverse\"?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "sentence 2"
+       },
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1:find",
+     "trigger": "The learner submitted \"Tapped sentence 2\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 2",
+       "2"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"diverse\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You tapped sentence 2 and found the clue sentence right where those animals were listed.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by checking sentence 2, where those specific animals are listed.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! Tapping sentence 2 gave us the exact clue we needed.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it\u2014tapping sentence 2 was the clue! Now look at the clue types on your screen to see what kind of clue that sentence gave us.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! Tapping sentence 2 gave us the exact clue we needed.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "context-clues-detective.inference",
+   "primitiveId": "context-clues-detective",
+   "evalMode": "inference",
+   "keys": [
+    "sentence 3",
+    "3"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1:find",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 3",
+       "3"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"camouflaged\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Let's explore the rainforest and look for clues to help us figure out what \"camouflaged\" means.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest adventure! Look closely at the passage to find a clue that helps explain what \"camouflaged\" means.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the rainforest! Look closely at the passage and tap a sentence that gives a clue to what \"camouflaged\" means, then press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest adventure! Look through the sentences to find a clue that helps explain what \"camouflaged\" means, tap it, and press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest adventure! Look closely at the passage to find a clue that helps explain what \"camouflaged\" means, tap that sentence, and press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1:find",
+     "trigger": "The learner submitted \"Tapped sentence 1\". The board checked it: not right.",
+     "miss": "no_clue",
+     "scoredWith": {
+      "keys": [
+       "sentence 3",
+       "3"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"camouflaged\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Sentence 1 tells us the rainforest has many species, but it doesn't describe how the creatures look or act. Take a look at the sentences describing the animals to see which one shows an animal blending in or hiding.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us the rainforest has many species, but it doesn't describe how the creatures look or hide. Which sentence describes an animal being hard to see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 introduces the rainforest, but let's re-read sentence 4 and sentence 5 to see what makes those animals hard for researchers to spot. Which detail in the text describes an animal being hidden?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 introduces the rainforest, but it doesn't describe how the creatures look or act. Which sentence shows what makes an animal hard to spot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us the rainforest has many species, but it doesn't describe how they look or act. Which sentence describes an animal being hard to see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1:find",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 3",
+       "3"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"camouflaged\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look closely at sentence 4 and sentence 5. What words describe why a creature might be hard for the researchers to spot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Sentence 5 says researchers have to look carefully to spot these creatures. Read sentence 4 and notice what words tell us why an animal might be hard to spot.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Sentence 5 says researchers have to study carefully to spot these creatures. Which sentence before it describes an animal that is hard to see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Read sentence 4 carefully and see what it tells us about how the sloth is resting. What words in that sentence describe why it might be hard to spot?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Look closely at sentences 2, 3, and 4. Which one describes an animal being hard to see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": false,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {
+        "no_key_before_try": "3"
+       },
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1:find",
+     "trigger": "The learner submitted \"Tapped sentence 3\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 3",
+       "3"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"camouflaged\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found a clue sentence! That detail helps show where the animals are and how they fit into their environment.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found a clue sentence! That detail helps show where the animals are living and blending in.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found a clue sentence! That detail helps show where creatures are living in the rainforest.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice detective work! You tapped sentence 3 and found a great clue.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the clue sentence by checking how the creatures are described in the passage! Now let's see what clue type that is.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "context-clues-detective.synonym_antonym",
+   "primitiveId": "context-clues-detective",
+   "evalMode": "synonym_antonym",
+   "keys": [
+    "sentence 3",
+    "3"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1:find",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 3",
+       "3"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"lush\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to our rainforest adventure! Look closely at the passage to find a clue that helps explain what \"lush\" means, tap the sentence, and press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest adventure! Look closely at the passage to find a clue that helps explain what \"lush\" means.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest adventure! Look closely at the passage to find a clue that helps explain what \"lush\" means.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the rainforest! Look closely at the passage and tap a sentence that gives a clue about what \"lush\" means, then press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our rainforest adventure! Look closely at the passage to find a clue that helps explain what \"lush\" means. Tap the sentence you think gives the best clue, then press Check Clue.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1:find",
+     "trigger": "The learner submitted \"Tapped sentence 1\". The board checked it: not right.",
+     "miss": "no_clue",
+     "scoredWith": {
+      "keys": [
+       "sentence 3",
+       "3"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"lush\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Sentence 1 tells us about the animals, but it doesn't describe what \"lush\" looks like or compares to. Look near sentence 2 to see what words describe the plants or contrast with \"lush.\"",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 talks about the creatures, but it doesn't describe what \"lush\" looks or feels like. Try looking at sentence 2 where \"lush\" appears, or the sentences right next to it, to see what details describe the rainforest.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us about the animals, but it doesn't describe what \"lush\" means. Try looking closely at sentence 2 and what it compares the rainforest to.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us about the animals, but it doesn't give a clue about what \"lush\" means. Take another look near sentence 2 to see what describes or contrasts with the rainforest.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Sentence 1 tells us about the animals, but it doesn't describe what \"lush\" looks like. Read sentence 2 again and see what it compares the rainforest to.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1:find",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 3",
+       "3"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"lush\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Let's look at sentence 2: \"Unlike the dry, barren desert where very little grows, the rainforest is lush.\" Notice how it sets a dry desert against the rainforest to show what \"lush\" is like. Tap sentence 2 and try checking it!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Read sentence 2 carefully: what place is being compared to the rainforest?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Let's read sentence 2 carefully: \"Unlike the dry, barren desert where very little grows, the rainforest is lush.\" Notice how it sets a dry desert against the rainforest to show what \"lush\" means.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Read sentence 2 carefully and notice how it compares the rainforest to a dry, barren desert where very little grows. See if sentence 2 gives you a clue about what \"lush\" might mean.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      },
+      {
+       "text": "Take a look at sentence 2, where the author compares the rainforest to a dry desert where very little grows. What does that comparison tell you about the rainforest?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": false
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1:find",
+     "trigger": "The learner submitted \"Tapped sentence 3\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "sentence 3",
+       "3"
+      ],
+      "ask": "Find a sentence that gives a clue to what \"lush\" means. Tap it, then press Check Clue.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "FIND_CORRECT",
+       "FIND_INCORRECT",
+       "CLASSIFY_CORRECT",
+       "CLASSIFY_INCORRECT",
+       "DEFINE_CORRECT",
+       "DEFINE_INCORRECT",
+       "NEXT_WORD"
+      ],
+      "menu": [
+       "sentence 1",
+       "sentence 2",
+       "sentence 3",
+       "sentence 4",
+       "sentence 5",
+       "check clue"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found it by picking sentence 3, which describes the thick green vines and tall leafy trees covering the ground.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! Tapping sentence 3 spotted the thick green vines and tall leafy trees that show what \"lush\" looks like.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it! By checking sentence 3 with the thick green vines and tall leafy trees, you caught a great clue.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found it by tapping sentence 3, which describes the thick green vines and tall leafy trees covering the ground.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the clue sentence by tapping sentence 3, which describes the thick green vines and leafy trees! That really shows what \"lush\" is talking about.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -201,6 +201,16 @@ import { CONFLICT_LABELS as STORY_CONFLICT_LABELS, arcLabels as storyArcLabels, 
   from '../../primitives/visual-primitives/literacy/storyMapWorkspace';
 import { practiceFor as storyPracticeFor, practicePhase as storyPracticePhase, type PracticeStory }
   from '../../primitives/visual-primitives/literacy/storyMapLevers';
+import type { PoetryLabData } from '../../primitives/visual-primitives/literacy/PoetryLab';
+import { lineCount as poetryLineCount, poetryHarnessWork, poetryItems }
+  from '../../primitives/visual-primitives/literacy/poetryLabWorkspace';
+import { practiceFor as poetryPracticeFor, practiceSource as poetryPracticeSource }
+  from '../../primitives/visual-primitives/literacy/poetryLabLevers';
+import type { EvidenceFinderData } from '../../primitives/visual-primitives/literacy/EvidenceFinder';
+import { STRENGTH_LABELS as EVIDENCE_STRENGTH_LABELS, claimOf as evidenceClaimOf, rateList as evidenceRateList }
+  from '../../primitives/visual-primitives/literacy/evidenceFinderWorkspace';
+import { practiceFor as evidencePracticeFor, practicePhase as evidencePracticePhase }
+  from '../../primitives/visual-primitives/literacy/evidenceFinderLevers';
 import { itemsFromChallenges as addSubItems } from '../../primitives/visual-primitives/math/additionSubtractionSceneScript';
 import { additionSubtractionJourneyAnswers } from '../../primitives/visual-primitives/math/additionSubtractionSceneWorkspace';
 import { practiceParent as addSubPracticeParent, smallerStory as addSubSmallerStory }
@@ -273,6 +283,9 @@ import { deductionItems, diDeductionHarnessAnswers } from '../../primitives/visu
 import { diWorkedProcedureHarnessAnswers, workedProcedureItems } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
 import { diWordProblemHarnessAnswers, wordProblemHarnessPlacements, wordProblemItems } from '../../primitives/visual-primitives/direct-instruction/diWordProblemWorkspace';
 import { spatialHarnessInputs } from '../../primitives/visual-primitives/math/spatialSceneWorkspace';
+import { spatialPathHarnessInputs } from '../../primitives/visual-primitives/math/spatialPathWorkspace';
+import { practiceParent as spatialPathPracticeParent, threeRoutes as spatialPathThreeRoutes }
+  from '../../primitives/visual-primitives/math/spatialPathLevers';
 import { practiceItem as spatialPracticeItem, practiceParent as spatialPracticeParent } from '../../primitives/visual-primitives/math/spatialSceneLevers';
 import { hundredsChartHarnessInputs } from '../../primitives/visual-primitives/math/hundredsChartWorkspace';
 import { practiceItem as hundredsChartPracticeItem, practiceParent as hundredsChartPracticeParent }
@@ -301,6 +314,7 @@ function transformItem(ctx: { data: Record<string, any>; itemId: string | null }
 import { practiceFor as angleWorkshopPracticeFor, practiceParent as angleWorkshopPracticeParent }
   from '../../primitives/visual-primitives/math/angleWorkshopLevers';
 import { sentenceOf as figSentenceOf, sentencesOf as figSentencesOf, typeChoices as figTypeChoices } from '../../primitives/visual-primitives/literacy/figurativeSteps';
+import { clueHarnessInputs, stepFor as clueStepFor } from '../../primitives/visual-primitives/literacy/contextCluesWorkspace';
 import { splitPictureOption as storySplitPicture } from '../../primitives/visual-primitives/literacy/storySteps';
 import { strategyPickerHarnessInputs } from '../../primitives/visual-primitives/math/strategyPickerWorkspace';
 import { practiceItem as strategyPracticeItem, practiceParent as strategyPracticeParent }
@@ -2835,6 +2849,28 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object^="cell-"], [aria-label="Viewer position"]' } },
   },
+  'spatial-path': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/SpatialPath.tsx',
+    instanceId: 'routes',
+    defaults: { grade: 'Kindergarten', mode: 'choose_route', di: false,
+      topic: 'Directional prepositions through around and across' },
+    leakTokens: ['ROUTE_ITEM', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // The real map: touch a route's numbered badge, then Animate this route; a wrong one takes the first other route.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const all = ctx.data.challenges ?? [];
+      // The easier map (a simplify lever) is not a generated challenge: rebuild it from its parent.
+      const parent = spatialPathPracticeParent(ctx.itemId ?? '', all);
+      const c = parent ? spatialPathThreeRoutes(parent) : all.find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error(`spatial-path: no input for item ${ctx.itemId}`);
+      return spatialPathHarnessInputs(c, intent === 'wrong');
+    },
+    // The key is a route number on the map; the asked word is the task itself, so replies are read by hand.
+    replayKeys: () => [],
+    probes: { mounted: { selector: '[data-pip-object^="route-"]' } },
+  },
   'syllable-clapper': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/SyllableClapper.tsx',
@@ -3106,6 +3142,87 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return (storyPracticePhase(ctx.itemId) ?? ctx.itemId) === 'analyze' && type && !storyPracticePhase(ctx.itemId)
         ? [STORY_CONFLICT_LABELS[type]] : [];
     },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'poetry-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/PoetryLab.tsx',
+    instanceId: 'poetry',
+    defaults: { grade: 'Grade 4', mode: 'analysis', di: false, topic: 'A rainy day at the pond' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item through its real controls, from `poetryHarnessWork`. rhyme_hunt: tap two cards (the second tap
+    // checks); a wrong pair is one rhyme word and a card outside the pair. mood and rhyme scheme: tap a choice, then
+    // Check; a wrong one is another printed choice. figurative: touch a word of each phrase, then Check; a wrong one
+    // adds a word in no phrase. composition: write each line, then Check Poem; a wrong one breaks the form.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // A practice item (`<id>~simpler`, poetryLabLevers.ts) is rebuilt from the session item with the same builder.
+      const session = ctx.data as PoetryLabData;
+      const source = poetryPracticeSource(ctx.itemId) ?? ctx.itemId;
+      const sessionItem = poetryItems(session).find(i => i.id === source);
+      const practice = sessionItem && poetryPracticeSource(ctx.itemId) ? poetryPracticeFor(sessionItem, session) : null;
+      const item = practice?.item ?? sessionItem, d = practice?.data ?? session;
+      if (!item) throw new Error(`poetry-lab: no input for item ${ctx.itemId}`);
+      const work = poetryHarnessWork(item, d, intent === 'wrong');
+      if (item.kind === 'rhyme_hunt') return work.picked.map((label): DriverInput => ({ type: 'choose', label }));
+      if (item.kind === 'mood') return [{ type: 'choose', label: work.mood! }, { type: 'check' }];
+      if (item.kind === 'rhyme') return [{ type: 'choose', label: work.scheme! }, { type: 'check' }];
+      if (item.kind === 'figurative') return [...work.tapped.map((target): DriverInput => ({ type: 'touch', target })), { type: 'check' }];
+      return [...Array.from({ length: poetryLineCount(d) }, (_, i): DriverInput =>
+        ({ type: 'write', label: `Line ${i + 1}`, text: work.lines[i] ?? '' })), { type: 'check' }];
+    },
+    // The replay's word check: the mood and the scheme letters. A rhyme pair and a figurative phrase are words of the
+    // poem the tutor reads aloud, so those replies are read by hand.
+    replayKeys: ctx => {
+      const d = ctx.data as PoetryLabData;
+      return ctx.itemId === 'mood' && d.correctMood ? [d.correctMood]
+        : ctx.itemId === 'rhyme' && d.rhymeScheme ? [d.rhymeScheme] : [];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'evidence-finder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/EvidenceFinder.tsx',
+    instanceId: 'evidence',
+    defaults: { grade: 'Grade 4', mode: 'locate_evidence', di: false, topic: 'How bees help plants grow' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // Each phase through its real controls. find: (with two claims, tap the claim) tap every evidence sentence under
+    // its claim, then Check; a wrong one puts every evidence sentence under the first claim (`wrong_claim`) when the
+    // second has evidence, else adds a sentence that is not evidence (`not_evidence`). rate: tap each sentence's
+    // strength, then Check; a wrong one rates every sentence Strong (or Weak when all are strong).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // A practice passage (`<item>~simpler`, evidenceFinderLevers.ts) is rebuilt from the session passage with the same builder.
+      const phase = evidencePracticePhase(ctx.itemId) ?? ctx.itemId;
+      const practice = evidencePracticePhase(ctx.itemId) ? evidencePracticeFor({ id: phase as 'find' | 'rate' }, ctx.data as EvidenceFinderData) : null;
+      const d = practice ?? ctx.data as EvidenceFinderData;
+      const wrong = intent === 'wrong';
+      const evidence = d.passage.sentences.filter(s => s.isEvidence);
+      if (phase === 'find') {
+        const claimFor = (s: (typeof evidence)[number]) => (wrong && d.claims.length > 1 ? 0 : evidenceClaimOf(d, s));
+        const spread = d.claims.length > 1 && evidence.some(s => evidenceClaimOf(d, s) > 0);
+        const extra = wrong && !spread ? d.passage.sentences.filter(s => !s.isEvidence).slice(0, 1) : [];
+        return [...d.claims.flatMap((c, i): DriverInput[] => {
+          const here = evidence.filter(s => claimFor(s) === i).map((s): DriverInput => ({ type: 'touch', target: `sentence-${s.id}` }));
+          const more = i === 0 ? extra.map((s): DriverInput => ({ type: 'touch', target: `sentence-${s.id}` })) : [];
+          if (!here.length && !more.length) return [];
+          return [...(d.claims.length > 1 ? [{ type: 'choose', label: c.text } as DriverInput] : []), ...here, ...more];
+        }), { type: 'check' }];
+      }
+      if (phase === 'rate') {
+        const list = evidenceRateList(d);
+        const all = list.every(s => (s.evidenceStrength ?? 'strong') === 'strong') ? 'weak' : 'strong';
+        return [...list.map((s): DriverInput => ({ type: 'choose',
+          label: `${EVIDENCE_STRENGTH_LABELS[wrong ? all : s.evidenceStrength ?? 'strong']}: ${s.text.trim()}` })), { type: 'check' }];
+      }
+      throw new Error(`evidence-finder: no input for item ${ctx.itemId}`);
+    },
+    // The replay's word check. find's key is which printed sentences are evidence; reading the passage aloud
+    // (allowed) reads it, so find's replies are read by hand. rate's key words (Strong, Moderate, Weak) are the
+    // printed choices on every sentence, so its replies are read by hand too.
+    replayKeys: () => [],
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'addition-subtraction-scene': {
@@ -3891,6 +4008,28 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         { type: 'choose' as const, label: "I'm done!" }];
     },
     probes: { mounted: { selector: '[data-testid="fig-passage"], [data-testid="fig-sentence"], textarea' } },
+  },
+  'context-clues-detective': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/literacy/ContextCluesDetective.tsx',
+    instanceId: 'clues',
+    defaults: { grade: 'Grade 4', mode: 'synonym_antonym', di: false, topic: 'Animals of the rainforest' },
+    leakTokens: ['ACTIVITY_START', 'FIND_CORRECT', 'FIND_INCORRECT', 'CLASSIFY_CORRECT', 'CLASSIFY_INCORRECT', 'DEFINE_CORRECT',
+      'DEFINE_INCORRECT', 'NEXT_WORD'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every step through its real controls (item `<word id>:<step>`): a sentence ("sentence N") then Check Clue, a clue
+    // type then Check Type, a meaning option (or the typed meaning) then Check Meaning. Wrong: a sentence that is not a
+    // clue, the type's signature confusion, another option. A find step whose every sentence is a clue has no wrong tap.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const step = clueStepFor(ctx.data.challenges ?? [], String(ctx.itemId ?? ''));
+      if (!step) throw new Error(`No context-clues step ${ctx.itemId}`);
+      const inputs = clueHarnessInputs(step, intent === 'wrong' ? 'wrong' : 'correct');
+      if (!inputs) return [];
+      return inputs.map(i => i.kind === 'choose' ? { type: 'choose' as const, label: i.label }
+        : { type: 'write' as const, label: i.label, text: i.text });
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'story-planner': {
     execution: 'workspace',

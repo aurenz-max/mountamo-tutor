@@ -1,0 +1,171 @@
+{
+ "source": "qa/tutor-reports/context-clues-detective-runtime-inference-payload-2026-10-09.json",
+ "primitiveId": "context-clues-detective",
+ "evalMode": "inference",
+ "data": {
+  "title": "Rainforest Detective: Uncovering Jungle Secrets",
+  "gradeLevel": "4",
+  "challenges": [
+   {
+    "id": "ch1",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch1_s1",
+       "text": "The Amazon rainforest is home to millions of fascinating species.",
+       "isClue": false
+      },
+      {
+       "id": "ch1_s2",
+       "text": "Howler monkeys and bright parrots move constantly through the leafy green canopy.",
+       "isClue": false
+      },
+      {
+       "id": "ch1_s3",
+       "text": "Down on the dark, damp forest floor, tiny leaf-cutter ants march in long lines.",
+       "isClue": true
+      },
+      {
+       "id": "ch1_s4",
+       "text": "Nearby, a slow-moving sloth rests high above, completely hidden by hanging vines and thick moss.",
+       "isClue": true
+      },
+      {
+       "id": "ch1_s5",
+       "text": "Researchers must study the ecosystem carefully to spot all these camouflaged creatures.",
+       "isClue": true
+      }
+     ]
+    },
+    "targetWord": "camouflaged",
+    "targetWordSentenceId": "ch1_s5",
+    "clueType": "inference",
+    "clueSentenceIds": [
+     "ch1_s3",
+     "ch1_s4",
+     "ch1_s5"
+    ],
+    "correctMeaning": "Hidden by blending into the surrounding environment",
+    "meaningOptions": [
+     "Hidden by blending into the surrounding environment",
+     "Sleeping high up in the trees",
+     "Moving very slowly through the vines",
+     "Brightly colored to attract attention"
+    ],
+    "dictionaryDefinition": "Disguised or hidden by blending in with the surrounding background or environment.",
+    "acceptableMeanings": [
+     "blended in",
+     "hidden",
+     "disguised"
+    ]
+   },
+   {
+    "id": "ch2",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch2_s1",
+       "text": "Life in the tropical rainforest is full of daily challenges for its animal residents.",
+       "isClue": false
+      },
+      {
+       "id": "ch2_s2",
+       "text": "Jaguar cubs watch their mothers hunt for prey during the warm afternoon hours.",
+       "isClue": false
+      },
+      {
+       "id": "ch2_s3",
+       "text": "During heavy tropical storms, rain pours down continuously for hours, soaking everything in sight.",
+       "isClue": true
+      },
+      {
+       "id": "ch2_s4",
+       "text": "Small frogs hop quickly under broad fern leaves to stay dry from the falling water.",
+       "isClue": true
+      },
+      {
+       "id": "ch2_s5",
+       "text": "Tree frogs must endure the freezing cold and wet conditions until the bright sun finally returns.",
+       "isClue": true
+      }
+     ]
+    },
+    "targetWord": "endure",
+    "targetWordSentenceId": "ch2_s5",
+    "clueType": "inference",
+    "clueSentenceIds": [
+     "ch2_s3",
+     "ch2_s4",
+     "ch2_s5"
+    ],
+    "correctMeaning": "To suffer through or put up with something difficult",
+    "meaningOptions": [
+     "To suffer through or put up with something difficult",
+     "To run away very fast from danger",
+     "To find food during a heavy storm",
+     "To climb up the tallest trees"
+    ],
+    "dictionaryDefinition": "To remain firm under suffering or misfortune without giving way.",
+    "acceptableMeanings": [
+     "withstand",
+     "survive through",
+     "face"
+    ]
+   },
+   {
+    "id": "ch3",
+    "passage": {
+     "sentences": [
+      {
+       "id": "ch3_s1",
+       "text": "Exploring the dense rainforest requires patience and sharp observational skills.",
+       "isClue": false
+      },
+      {
+       "id": "ch3_s2",
+       "text": "A harpy eagle sits silently on a high branch, scanning the vast green landscape below.",
+       "isClue": true
+      },
+      {
+       "id": "ch3_s3",
+       "text": "Colorful poison dart frogs hop across the wet moss near a babbling stream.",
+       "isClue": false
+      },
+      {
+       "id": "ch3_s4",
+       "text": "Suddenly, a bright blue morpho butterfly flutters its wings in a patch of sunlight.",
+       "isClue": true
+      },
+      {
+       "id": "ch3_s5",
+       "text": "Biologists notice every tiny movement and sound echoing through the thick jungle.",
+       "isClue": true
+      }
+     ]
+    },
+    "targetWord": "scanning",
+    "targetWordSentenceId": "ch3_s2",
+    "clueType": "inference",
+    "clueSentenceIds": [
+     "ch3_s2",
+     "ch3_s4",
+     "ch3_s5"
+    ],
+    "correctMeaning": "Looking closely across an area to search for something",
+    "meaningOptions": [
+     "Looking closely across an area to search for something",
+     "Flying away from sudden danger",
+     "Building a nest high in the trees",
+     "Making a loud noise to warn others"
+    ],
+    "dictionaryDefinition": "To look at something carefully or examine an area broadly.",
+    "acceptableMeanings": [
+     "searching",
+     "surveying",
+     "watching closely"
+    ]
+   }
+  ],
+  "objectiveGrade": "4"
+ }
+}

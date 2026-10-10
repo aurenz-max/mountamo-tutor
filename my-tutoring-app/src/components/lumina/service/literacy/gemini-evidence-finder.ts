@@ -115,10 +115,12 @@ const evidenceFinderSchema: Schema = {
               },
               claimIndex: {
                 type: Type.NUMBER,
-                description: "Which claim this evidence supports (0-based index into claims array). Only for evidence sentences."
+                description: "Which claim this evidence supports (0-based index into claims array). -1 for a sentence that is not evidence."
               }
             },
-            required: ["id", "text", "isEvidence"]
+            // claimIndex is required: optional, flash-lite dropped it on every sentence of a two-claim passage
+            // (W1 C21 payload), and the match mode's check is the claim each sentence supports.
+            required: ["id", "text", "isEvidence", "claimIndex"]
           },
           description: "Array of individual sentences making up the passage"
         },
@@ -294,7 +296,7 @@ REQUIRED INFORMATION:
      - text: The sentence text (should concatenate to the full passage text)
      - isEvidence: true if this sentence IS valid evidence for a claim, false otherwise
      - evidenceStrength: "strong", "moderate", or "weak" (ONLY for evidence sentences)
-     - claimIndex: 0-based index of which claim this evidence supports (ONLY for evidence sentences)
+     - claimIndex: 0-based index of which claim this evidence supports; -1 for a sentence that is not evidence
    - imageDescription: Brief scene description
 
    CRITICAL RULES:
@@ -321,7 +323,7 @@ EXAMPLE OUTPUT (structure only — your content must match the task identity abo
   "passage": {
     "text": "Dolphins are fascinating marine mammals. They can swim up to 20 miles per hour. Many people enjoy watching dolphins at aquariums. Dolphins use echolocation to find their food in murky water. Some scientists believe dolphins are among the smartest animals. Baby dolphins stay with their mothers for up to six years. Dolphins are beautiful animals that make people smile.",
     "sentences": [
-      { "id": "s1", "text": "Dolphins are fascinating marine mammals.", "isEvidence": false },
+      { "id": "s1", "text": "Dolphins are fascinating marine mammals.", "isEvidence": false, "claimIndex": -1 },
       { "id": "s2", "text": "They can swim up to 20 miles per hour.", "isEvidence": true, "evidenceStrength": "strong", "claimIndex": 0 },
       { "id": "s3", "text": "Many people enjoy watching dolphins at aquariums.", "isEvidence": false },
       { "id": "s4", "text": "Dolphins use echolocation to find their food in murky water.", "isEvidence": true, "evidenceStrength": "strong", "claimIndex": 0 },
@@ -364,6 +366,18 @@ Now generate an evidence finding activity about "${topic}" at grade level ${grad
       ...result,
       ...configRest,
     };
+    // claimIndex is required in the schema, so a non-evidence sentence carries -1: drop it there. A one-claim
+    // passage's evidence always supports claim 0.
+    if (finalData.passage?.sentences) {
+      finalData.passage.sentences = finalData.passage.sentences.map(s => {
+        if (!s.isEvidence) {
+          const { claimIndex: _c, evidenceStrength: _e, ...rest } = s;
+          void _c; void _e;
+          return rest;
+        }
+        return (finalData.claims?.length ?? 0) <= 1 ? { ...s, claimIndex: 0 } : s;
+      });
+    }
 
     console.log('Evidence Finder Generated:', {
       title: finalData.title,

@@ -1,0 +1,1708 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "evidence-finder.evaluate_evidence_strength",
+   "primitiveId": "evidence-finder",
+   "evalMode": "evaluate_evidence_strength",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "find",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for the claim: \"Bees help plants reproduce and grow by moving pollen between flowers.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the claim and tap each sentence in the passage that provides evidence to prove it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the claim and tap each sentence in the story that proves it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the passage and tap any sentence that gives proof for the claim.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to Evidence Hunt! Read the passage carefully and tap every sentence that proves how bees help plants reproduce and grow by moving pollen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Look for the sentences that give facts proving how bees help plants reproduce and grow by moving pollen. Tap each sentence that shows this, then hit Check Evidence when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "find",
+     "trigger": "The learner submitted \"Highlighted for the claim: \\\"Honeybees are remarkable insects that play a vital role in nature.\\\", \\\"When a worker bee lands on a flower, yellow powder called pollen sticks to its furry body.\\\", \\\"As they travel, bees accidentally drop some of this pollen onto other flowers.\\\", \\\"This transfer of pollen is called pollination, which allows plants to produce seeds and new frui",
+     "miss": "not_evidence",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for the claim: \"Bees help plants reproduce and grow by moving pollen between flowers.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the owl example on the screen showing how some sentences prove a claim while others just share general facts or opinions. Check your highlighted sentences to make sure each one specifically proves how bees move pollen to help plants grow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the example on the screen showing the difference between a sentence that actually proves a claim and one that is just about the topic. Look closely at your highlighted sentences to see if any are just general facts rather than proof that bees move pollen to help plants grow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "proof_example"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the example on the screen showing the difference between a fact that proves a claim, a sentence just about the topic, and an opinion. See if every sentence you picked actually proves our claim about moving pollen.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the example on the screen showing the difference between a sentence that actually proves a claim and one that is just about the topic. Look back at the sentences you highlighted to see if any just share facts without proving how bees move pollen to help plants grow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the example on the screen showing the difference between a sentence that actually proves a claim and one that is just about the topic. Look back at each highlighted sentence and check if it truly proves how bees move pollen to help plants grow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "proof_example"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "find",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for the claim: \"Bees help plants reproduce and grow by moving pollen between flowers.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I opened an owl example on your screen that shows how only sentences giving proof count as evidence, while opinions and general facts do not. Check each sentence in your passage to see if it specifically proves how bees move pollen to help plants grow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "practice_passage",
+          "actionId": "test/7/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "proof_example"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A worked example about owls is on your screen now to show how evidence works: a sentence must give a fact that directly proves the claim, rather than just sharing an interesting detail or an opinion. Look closely at the sentences you picked and see if any are just general facts instead of proving how pollen is moved.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "practice_passage"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "proof_example"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A worked example about owls is on your screen now to show how facts that prove a claim are different from opinions or general details. Look back at your sentences and see if any of them just give a general fact rather than proving the claim.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "proof_example"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide about owls just popped up to show how a sentence must specifically prove the claim, rather than just be a nice fact or opinion. Check each of your choices to make sure it directly proves how moving pollen helps plants reproduce and grow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "proof_example"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example appeared on your screen showing that sentences about a topic don't always prove the claim. Look back at your choices to see which ones specifically show bees moving pollen to help plants grow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "find",
+     "trigger": "The learner said they were stuck, so the host pulled proof_example (help). It is on screen now: Shows a worked example on another topic: a claim, a sentence that proves it, one that is only about the topic, and an opinion, each marked with why. Nothing from this passage is on it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lev",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for the claim: \"Bees help plants reproduce and grow by moving pollen between flowers.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the new box on your screen with the owl example. It shows how only facts proving the claim count as evidence, while general facts and opinions do not. Check your highlighted sentences and see if any of them are just describing bees rather than proving the claim.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "On your screen, there is a new guide with an example about owls that shows why a sentence proves a claim versus just talking about the topic or sharing an opinion. Look through your highlighted sentences to make sure each one gives proof that bees move pollen to help plants grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the example box that just appeared on your screen. It shows how sentences that prove a claim are different from opinions or sentences that are just about the topic. Take another look at your highlighted sentences to see if any of them are just sharing general thoughts instead of proving the claim!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the guide that appeared on your screen about owls. It shows that catching mice in the dark proves they hunt at night, but building nests in trees is just a fact about owls that doesn't prove the claim, and saying they are beautiful is an opinion. Now, look back at your highlighted sentences and see if any of them just talk about bees without proving how they move pollen to help plants grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the owl guide that popped up on your screen: it shows how one sentence gives a fact that proves the claim, while others are just general facts or opinions. Now look back at your highlighted sentences and see which ones actually prove that bees move pollen to help plants grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "find",
+     "trigger": "The learner submitted \"Highlighted for the claim: \\\"When a worker bee lands on a flower, yellow powder called pollen sticks to its furry body.\\\", \\\"As they travel, bees accidentally drop some of this pollen onto other flowers.\\\", \\\"This transfer of pollen is called pollination, which allows plants to produce seeds and new fruits.\\\", \\\"Without this hard work by bees, many of the fruits and vegetabl",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for the claim: \"Bees help plants reproduce and grow by moving pollen between flowers.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! By taking off the general statement about honeybees being remarkable, you kept only the four sentences that prove how pollen moves between flowers to help plants grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found them! By un-highlighting the general sentence about bees being remarkable insects, you left only the four sentences that directly prove how pollen is moved and helps plants grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You took off the general opening sentence and kept the exact four facts showing how bees carry pollen and help plants make fruits and seeds!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! You unhighlighted the first sentence and kept the exact four sentences that show how pollen moves and helps plants produce fruits and seeds.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You took off the general statement and kept only the four sentences that show how pollen moves and helps plants make seeds and fruit! Excellent work finding the exact evidence.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "evidence-finder.locate_evidence",
+   "primitiveId": "evidence-finder",
+   "evalMode": "locate_evidence",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "find",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for the claim: \"Bees help plants grow by moving pollen from flower to flower.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the passage and tap each sentence that proves our claim about how bees help plants grow.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the Evidence Hunt! Take a look at the passage and tap the sentences that prove how bees help plants grow by moving pollen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Read through the passage and tap each sentence that proves our claim about how bees move pollen to help plants grow.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the passage and tap any sentence that proves bees help plants grow by moving pollen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the lesson! Read the passage carefully and look for sentences that prove bees help plants grow by moving pollen.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "find",
+     "trigger": "The learner submitted \"Highlighted for the claim: \\\"Bees are incredible insects that play a huge role in nature.\\\", \\\"Bees have fuzzy bodies that easily collect yellow pollen grains.\\\", \\\"As bees move between flowers, pollen sticks to their legs and is carried to other plants.\\\", \\\"This transfer of pollen allows plants to grow fruits and vegetables.\\\", \\\"Without bees visiting flowers, many crops w",
+     "miss": "not_evidence",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for the claim: \"Bees help plants grow by moving pollen from flower to flower.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A guide popped up showing how some sentences prove a claim, while others are just opinions or general facts. Check your highlighted sentences to make sure each one truly proves the claim.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the new example on your screen showing how evidence must specifically prove the claim, rather than just being about the topic or an opinion. Look closely at your highlighted sentences to see if each one truly proves the claim, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the example on the screen: a sentence can be about the topic without actually proving the claim. Check your highlighted sentences to make sure each one gives a fact proving bees move pollen to help plants grow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the new guide on your screen comparing facts that prove a claim with general details or opinions. Check your highlighted sentences to make sure each one specifically proves how bees help plants grow by moving pollen.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "proof_example"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the new example on the screen showing how a sentence must specifically prove the claim, not just talk about the topic. Look closely at your highlighted sentences to see if any just describe bees instead of proving how they move pollen to help plants grow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "find",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for the claim: \"Bees help plants grow by moving pollen from flower to flower.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the bike example on your screen: notice how only sentences giving factual proof count as evidence, while general facts and opinions do not. See if any sentence you picked is just talking about bees rather than proving they help plants grow.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "proof_example"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the new example on the screen: it shows how a sentence like \"pedaling works your heart\" proves the bike claim, but saying \"bikes come in many colors\" is just a general fact. Take another look at your highlighted sentences to see if any are just general facts instead of proof.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Take a look at the example on your screen: sentences that prove a claim are facts showing *how* it happens, while other sentences are just general details or opinions. Which sentence in your highlights shows the actual steps of bees moving pollen?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows an example about bikes that shows the difference between a fact that proves a claim, a topic sentence, and an opinion. See which of your bee sentences only talk about bees generally instead of proving our exact claim.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "proof_example"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A worked example about riding bikes just appeared on the screen to show how real proof is different from an opinion or a topic sentence. Look at the sentences you highlighted to see if each one actually proves our claim, or if it is just a nice fact.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "proof_example"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "find",
+     "trigger": "The learner said they were stuck, so the host pulled proof_example (help). It is on screen now: Shows a worked example on another topic: a claim, a sentence that proves it, one that is only about the topic, and an opinion, each marked with why. Nothing from this passage is on it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lev",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for the claim: \"Bees help plants grow by moving pollen from flower to flower.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look beside your passage: there is a worked example showing how each sentence connects to a claim. Compare your highlighted sentences to it, and see if any are just opinions or general topic facts.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A guide is now on the screen showing a claim about bikes, with examples of a sentence that proves it, one that is only about the topic, and an opinion. Take a look at those examples, then see if any of your highlighted sentences are just describing bees rather than proving the claim.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "On your screen, there is a guide showing how sentences work: one proves the claim with facts, while others just talk about the topic or share an opinion. Take a close look at your highlighted sentences to see if any just share a feeling or general idea, and try unhighlighting it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the side of your screen: there is a bike example showing how a proving fact is different from an opinion or just talking about the topic. Take another look at the sentences you highlighted to see if any are just general statements.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A worked example about riding bikes has appeared on the screen, showing how a proving fact is different from an opinion or a topic sentence. Look over your highlighted sentences to see if one is just an opinion or general fact, and tap it to unhighlight it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "find",
+     "trigger": "The learner submitted \"Highlighted for the claim: \\\"Bees have fuzzy bodies that easily collect yellow pollen grains.\\\", \\\"As bees move between flowers, pollen sticks to their legs and is carried to other plants.\\\", \\\"This transfer of pollen allows plants to grow fruits and vegetables.\\\", \\\"Without bees visiting flowers, many crops would struggle to produce food.\\\".\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for the claim: \"Bees help plants grow by moving pollen from flower to flower.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You did it! By taking off the opinion sentence and keeping only the four facts that show how pollen moves to help plants make food, every piece of evidence was spot on.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You took off the sentence that was just an opinion and kept only the facts showing how pollen moves and helps plants grow.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You took off the general statement and kept the four sentences that show how pollen moves to help plants grow. Great job finding the exact evidence!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found all four evidence sentences by taking off that opening opinion and focusing on the facts about pollen and plant growth!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found all four evidence sentences by removing the opening sentence that was just an opinion about bees being incredible insects. Great job paying attention to which facts actually prove the claim!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "evidence-finder.match_evidence_to_claim",
+   "primitiveId": "evidence-finder",
+   "evalMode": "match_evidence_to_claim",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "find",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for one of the claims, under the claim it supports: claim 1, \"Bees physically transfer pollen from one flower to another.\"; claim 2, \"The actions of bees allow plants to reproduce, grow fruits, and spread.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to our lesson on how bees help plants grow! Take a look at the passage and tap a claim to start matching your evidence.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Tap a claim, then tap the sentences in the story that prove it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to Evidence Hunt! Tap a claim, then find the sentences in the story that prove it.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the two claims and tap any sentence that proves one of them.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the two claims, then tap the sentences in the passage that prove them.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "find",
+     "trigger": "The learner submitted \"Highlighted for claim 1: \\\"When a honeybee lands on a flower to drink sweet nectar, yellow pollen dust sticks to its fuzzy body.\\\", \\\"As it moves, the pollen from the first flower brushes off onto the next plant.\\\", \\\"Because of pollination, plants can create seeds and new fruits.\\\", \\\"Without bees visiting orchards every single spring, farmers would harvest far fewer apples",
+     "miss": "wrong_claim",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for one of the claims, under the claim it supports: claim 1, \"Bees physically transfer pollen from one flower to another.\"; claim 2, \"The actions of bees allow plants to reproduce, grow fruits, and spread.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Boxes now show under each claim to track your evidence: claim one has two boxes, and claim two has three boxes. Take another look to see which sentences prove plants reproducing or growing fruit instead.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "evidence_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have boxes under each claim now showing how many sentences prove each one: claim one has two, and claim two has three. Try sorting your evidence between the two claims.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "evidence_count",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You have boxes under each claim now showing how many pieces of evidence belong to each one\u2014claim one has two, and claim two has three. Try sorting some of your choices under claim two!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "evidence_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You now have boxes showing that claim one has two evidence sentences, while claim two has three. Try sorting which sentences prove transferring pollen versus helping plants grow and fruit.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "evidence_count",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the boxes that appeared under each claim: claim one needs two pieces of evidence, and claim two needs three. Take another look to see which sentences prove plants reproducing, growing fruit, or spreading.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "evidence_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "find",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for one of the claims, under the claim it supports: claim 1, \"Bees physically transfer pollen from one flower to another.\"; claim 2, \"The actions of bees allow plants to reproduce, grow fruits, and spread.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You can see boxes under each claim now: two for claim one, and three for claim two. Try tapping claim two to sort sentences about plants making seeds, fruit, or spreading.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "evidence_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Notice how claim one only needs two sentences about pollen physically moving, while claim two needs three sentences about plants reproducing, making fruits, or spreading. Try tapping claim two first, then tap the sentences that prove what plants are able to grow or do.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "evidence_count",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Under claim one, there are two boxes to fill, and under claim two, there are three boxes. Try tapping claim two first, then choose a sentence that proves plants reproduce or make fruit!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "evidence_count",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "An example is on your screen showing how evidence proves a specific claim rather than just talking about the topic. Look at your two claims and decide which sentences prove moving pollen, and which prove growing fruit or spreading seeds.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Boxes now appear under each claim to show how many sentences prove it: claim one has two boxes, and claim two has three boxes. Tap claim two first, then tap the sentences that prove bees help plants reproduce, make fruit, or spread.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "proof_example",
+          "actionId": "test/7/0"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/7/0",
+          "lever": "evidence_count"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "find",
+     "trigger": "The learner said they were stuck, so the host pulled evidence_count (help). It is on screen now: Shows under each claim a row of boxes, one for each sentence that clearly proves it, filling one per sentence highlighted under that claim. It counts; it never marks which sentences. You may say how many each claim has. First point the learner to it: say what is now drawn and where to look, as a change",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for one of the claims, under the claim it supports: claim 1, \"Bees physically transfer pollen from one flower to another.\"; claim 2, \"The actions of bees allow plants to reproduce, grow fruits, and spread.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look below the two claims: you will see two boxes under claim one, and three boxes under claim two. Try selecting claim two and highlighting the sentences that prove plants reproduce, grow fruit, or spread.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under the claims: you will see two boxes under claim one, and three boxes under claim two. Go ahead and adjust which claim each sentence is highlighted under to fill those boxes!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under each claim: there is a row of boxes showing how many sentences prove it, with two boxes for claim one and three boxes for claim two. Tap a sentence to unselect it or move it, and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right under each claim: a row of boxes has appeared to show how many sentences prove each one. Claim one has two boxes, and claim two has three boxes waiting to be filled. Which sentences prove that bees help plants make new fruits, seeds, or spread?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look right beneath each claim: there is now a row of boxes showing how many sentences prove each one. Claim one needs two sentences, and claim two needs three sentences. Give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "find",
+     "trigger": "The learner submitted \"Highlighted for claim 1: \\\"When a honeybee lands on a flower to drink sweet nectar, yellow pollen dust sticks to its fuzzy body.\\\", \\\"As it moves, the pollen from the first flower brushes off onto the next plant.\\\". Highlighted for claim 2: \\\"Because of pollination, plants can create seeds and new fruits.\\\", \\\"Without bees visiting orchards every single spring, farmers would",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Highlight every sentence in the passage that is evidence for one of the claims, under the claim it supports: claim 1, \"Bees physically transfer pollen from one flower to another.\"; claim 2, \"The actions of bees allow plants to reproduce, grow fruits, and spread.\".",
+      "leakTokens": [],
+      "menu": [
+       "check evidence"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You sorted them out and matched all five evidence sentences to their correct claims!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You sorted them out and matched all five evidence sentences to their correct claims!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You sorted each piece of evidence under the right claim, matching the two sentences about transferring pollen to claim one and the three sentences about seeds, fruit, and spreading to claim two!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You sorted the evidence across both claims, putting the two pollen transfer sentences under claim one and the three sentences about seeds, fruit, and meadows under claim two!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You sorted the sentences under each claim and found all five pieces of evidence!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,453 @@
+{
+ "source": "qa/tutor-reports/spatial-path-runtime-choose_route-payload-2026-10-09.json",
+ "primitiveId": "spatial-path",
+ "evalMode": "choose_route",
+ "data": {
+  "title": "Choosing Paths",
+  "description": "Discover how different journeys take us through, around, and across the map.",
+  "challengeType": "choose_route",
+  "challenges": [
+   {
+    "id": "spatial-path-1",
+    "type": "choose_route",
+    "instruction": "Choose the route that takes the fox through the rocky tunnel, then animate it.",
+    "traveler": {
+     "name": "fox",
+     "emoji": "\ud83e\udd8a"
+    },
+    "landmark": {
+     "name": "rocky tunnel",
+     "emoji": "\u26f0\ufe0f"
+    },
+    "requestedRelation": "through",
+    "routes": [
+     {
+      "id": "route-under",
+      "relation": "under",
+      "d": "M60 160 Q300 308 540 160",
+      "geometrySignature": "arc-below-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-through",
+      "relation": "through",
+      "d": "M60 160 L540 160",
+      "geometrySignature": "centerline-through-opening",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-around",
+      "relation": "around",
+      "d": "M60 160 C90 55 180 48 215 120 C245 182 255 270 300 270 C345 270 355 182 385 120 C420 48 510 55 540 160",
+      "geometrySignature": "perimeter-loop-around-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-across",
+      "relation": "across",
+      "d": "M60 160 L190 82 L410 82 L540 160",
+      "geometrySignature": "straight-crossing-on-bridge",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-over",
+      "relation": "over",
+      "d": "M60 160 Q300 12 540 160",
+      "geometrySignature": "arc-above-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     }
+    ],
+    "correctRouteId": "route-through",
+    "contrast": "A route goes through by what its path does at the rocky tunnel, not by its final stop."
+   },
+   {
+    "id": "spatial-path-2",
+    "type": "choose_route",
+    "instruction": "Choose the route that takes the rabbit around the garden wall, then animate it.",
+    "traveler": {
+     "name": "rabbit",
+     "emoji": "\ud83d\udc07"
+    },
+    "landmark": {
+     "name": "garden wall",
+     "emoji": "\ud83e\uddf1"
+    },
+    "requestedRelation": "around",
+    "routes": [
+     {
+      "id": "route-around",
+      "relation": "around",
+      "d": "M60 160 C90 55 180 48 215 120 C245 182 255 270 300 270 C345 270 355 182 385 120 C420 48 510 55 540 160",
+      "geometrySignature": "perimeter-loop-around-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-across",
+      "relation": "across",
+      "d": "M60 160 L190 82 L410 82 L540 160",
+      "geometrySignature": "straight-crossing-on-bridge",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-over",
+      "relation": "over",
+      "d": "M60 160 Q300 12 540 160",
+      "geometrySignature": "arc-above-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-under",
+      "relation": "under",
+      "d": "M60 160 Q300 308 540 160",
+      "geometrySignature": "arc-below-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-through",
+      "relation": "through",
+      "d": "M60 160 L540 160",
+      "geometrySignature": "centerline-through-opening",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     }
+    ],
+    "correctRouteId": "route-around",
+    "contrast": "A route goes around by what its path does at the garden wall, not by its final stop."
+   },
+   {
+    "id": "spatial-path-3",
+    "type": "choose_route",
+    "instruction": "Choose the route that takes the train across the bridge deck, then animate it.",
+    "traveler": {
+     "name": "train",
+     "emoji": "\ud83d\ude82"
+    },
+    "landmark": {
+     "name": "bridge deck",
+     "emoji": "\ud83c\udf09"
+    },
+    "requestedRelation": "across",
+    "routes": [
+     {
+      "id": "route-over",
+      "relation": "over",
+      "d": "M60 160 Q300 12 540 160",
+      "geometrySignature": "arc-above-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-under",
+      "relation": "under",
+      "d": "M60 160 Q300 308 540 160",
+      "geometrySignature": "arc-below-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-through",
+      "relation": "through",
+      "d": "M60 160 L540 160",
+      "geometrySignature": "centerline-through-opening",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-around",
+      "relation": "around",
+      "d": "M60 160 C90 55 180 48 215 120 C245 182 255 270 300 270 C345 270 355 182 385 120 C420 48 510 55 540 160",
+      "geometrySignature": "perimeter-loop-around-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-across",
+      "relation": "across",
+      "d": "M60 160 L190 82 L410 82 L540 160",
+      "geometrySignature": "straight-crossing-on-bridge",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     }
+    ],
+    "correctRouteId": "route-across",
+    "contrast": "A route goes across by what its path does at the bridge deck, not by its final stop."
+   },
+   {
+    "id": "spatial-path-4",
+    "type": "choose_route",
+    "instruction": "Choose the route that takes the bee over the hedge, then animate it.",
+    "traveler": {
+     "name": "bee",
+     "emoji": "\ud83d\udc1d"
+    },
+    "landmark": {
+     "name": "hedge",
+     "emoji": "\ud83c\udf33"
+    },
+    "requestedRelation": "over",
+    "routes": [
+     {
+      "id": "route-through",
+      "relation": "through",
+      "d": "M60 160 L540 160",
+      "geometrySignature": "centerline-through-opening",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-around",
+      "relation": "around",
+      "d": "M60 160 C90 55 180 48 215 120 C245 182 255 270 300 270 C345 270 355 182 385 120 C420 48 510 55 540 160",
+      "geometrySignature": "perimeter-loop-around-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-across",
+      "relation": "across",
+      "d": "M60 160 L190 82 L410 82 L540 160",
+      "geometrySignature": "straight-crossing-on-bridge",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-over",
+      "relation": "over",
+      "d": "M60 160 Q300 12 540 160",
+      "geometrySignature": "arc-above-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-under",
+      "relation": "under",
+      "d": "M60 160 Q300 308 540 160",
+      "geometrySignature": "arc-below-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     }
+    ],
+    "correctRouteId": "route-over",
+    "contrast": "A route goes over by what its path does at the hedge, not by its final stop."
+   },
+   {
+    "id": "spatial-path-5",
+    "type": "choose_route",
+    "instruction": "Choose the route that takes the boat under the low bridge, then animate it.",
+    "traveler": {
+     "name": "boat",
+     "emoji": "\u26f5"
+    },
+    "landmark": {
+     "name": "low bridge",
+     "emoji": "\ud83c\udf09"
+    },
+    "requestedRelation": "under",
+    "routes": [
+     {
+      "id": "route-across",
+      "relation": "across",
+      "d": "M60 160 L190 82 L410 82 L540 160",
+      "geometrySignature": "straight-crossing-on-bridge",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-over",
+      "relation": "over",
+      "d": "M60 160 Q300 12 540 160",
+      "geometrySignature": "arc-above-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-under",
+      "relation": "under",
+      "d": "M60 160 Q300 308 540 160",
+      "geometrySignature": "arc-below-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-through",
+      "relation": "through",
+      "d": "M60 160 L540 160",
+      "geometrySignature": "centerline-through-opening",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     },
+     {
+      "id": "route-around",
+      "relation": "around",
+      "d": "M60 160 C90 55 180 48 215 120 C245 182 255 270 300 270 C345 270 355 182 385 120 C420 48 510 55 540 160",
+      "geometrySignature": "perimeter-loop-around-landmark",
+      "start": {
+       "x": 60,
+       "y": 160
+      },
+      "end": {
+       "x": 540,
+       "y": 160
+      }
+     }
+    ],
+    "correctRouteId": "route-under",
+    "contrast": "A route goes under by what its path does at the low bridge, not by its final stop."
+   }
+  ],
+  "gradeBand": "K"
+ }
+}

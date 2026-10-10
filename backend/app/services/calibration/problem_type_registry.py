@@ -458,6 +458,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "follow_directions": PriorConfig(4.0, "Multi-step spatial placement"),
         "describe_scene":    PriorConfig(4.5, "Describe a fixed-perspective spatial relation aloud"),
     },
+    # Design prior, not empirically calibrated.
+    "spatial-path": {
+        "choose_route": PriorConfig(2.5, "Pictorial: choose the route whose shape goes over/under/through/around/across a landmark"),
+        # Sessions generated before the eval mode was registered.
+        "default":      PriorConfig(2.5, "Choose a route by its movement relation"),
+    },
     "shape-composer": {
         "compose-match":   PriorConfig(-0.5, "Compose shapes to match a target silhouette"),
         "free-create":     PriorConfig(-0.3, "Open build: compose your own picture from a recipe of shapes, all touching"),

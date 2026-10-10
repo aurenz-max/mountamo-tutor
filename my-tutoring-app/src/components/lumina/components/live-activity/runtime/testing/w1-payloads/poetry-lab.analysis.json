@@ -1,0 +1,40 @@
+{
+ "source": "qa/tutor-reports/poetry-lab-runtime-analysis-payload-2026-10-09.json",
+ "primitiveId": "poetry-lab",
+ "evalMode": "analysis",
+ "data": {
+  "title": "The Pond on a Rainy Day",
+  "gradeLevel": "4",
+  "mode": "analysis",
+  "poemLines": [
+   "The grey clouds dance across the sky,",
+   "The sleepy pond is calm and wide,",
+   "The buzzing dragonflies wave goodbye,",
+   "And happy frogs begin to slide."
+  ],
+  "correctMood": "peaceful",
+  "moodOptions": [
+   "peaceful",
+   "scary",
+   "angry",
+   "silly"
+  ],
+  "figurativeInstances": [
+   {
+    "text": "The grey clouds dance across the sky,",
+    "startIndex": 0,
+    "endIndex": 37,
+    "type": "personification"
+   }
+  ],
+  "rhymeScheme": "ABAB",
+  "rhymeSchemeOptions": [
+   "ABAB",
+   "AABB",
+   "ABCB",
+   "ABCD"
+  ],
+  "poem": "The grey clouds dance across the sky,\nThe sleepy pond is calm and wide,\nThe buzzing dragonflies wave goodbye,\nAnd happy frogs begin to slide.",
+  "objectiveGrade": "4"
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "source": "qa/tutor-reports/poetry-lab-runtime-composition-payload-2026-10-09.json",
+ "primitiveId": "poetry-lab",
+ "evalMode": "composition",
+ "data": {
+  "title": "Pond Rain Haiku",
+  "gradeLevel": "3",
+  "mode": "composition",
+  "templateType": "haiku",
+  "compositionPrompt": "Write a three-line haiku about raindrops falling on the pond, green lily pads, and frogs splashing in the water.",
+  "templateConstraints": {
+   "lineCount": 3,
+   "syllablesPerLine": [
+    5,
+    7,
+    5
+   ]
+  },
+  "objectiveGrade": "3"
+ }
+}

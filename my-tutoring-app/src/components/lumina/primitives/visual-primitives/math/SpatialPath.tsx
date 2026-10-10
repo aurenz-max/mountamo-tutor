@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaActionButton,
   LuminaBadge,
@@ -19,12 +19,20 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SpatialPathMetrics } from '../../../evaluation/types';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { describeRouteWork, routeMatches, routeMiss, workspaceAssignment, workspaceScene, type RouteView }
+  from './spatialPathWorkspace';
+import { WATCH_LEVER, WORD_LEVER, WORD_MODELS, leverFacts, spatialPathLevers, threeRoutes, type WordModel }
+  from './spatialPathLevers';
 
 export type SpatialPathRelation = 'over' | 'under' | 'through' | 'around' | 'across';
 
@@ -64,6 +72,13 @@ export interface SpatialPathData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<SpatialPathMetrics>) => void;
 }
 
+interface SpatialPathProps {
+  data: SpatialPathData;
+  className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
+}
+
 const PHASE_CONFIG: Record<string, PhaseConfig> = {
   choose_route: { label: 'Choose a Route', icon: '🛤️', accentColor: 'cyan' },
 };
@@ -75,12 +90,17 @@ interface RouteSceneProps {
   challenge: SpatialPathChallenge;
   selectedRouteId: string | null;
   submitted: boolean;
+  /** Whether the checked map shows the correct route in green (always on the scripted path; on a right check only
+   *  on the workspace path, where Try again reopens the same map). */
+  revealKey: boolean;
   animationNonce: number;
+  /** The watch_each lever: a dot in each route's colour walks every route in turn. */
+  watchEach?: boolean;
   onSelect: (routeId: string) => void;
 }
 
 const RouteScene: React.FC<RouteSceneProps> = ({
-  challenge, selectedRouteId, submitted, animationNonce, onSelect,
+  challenge, selectedRouteId, submitted, revealKey, animationNonce, watchEach, onSelect,
 }) => {
   const selected = challenge.routes.find((route) => route.id === selectedRouteId);
   return (
@@ -102,8 +122,9 @@ const RouteScene: React.FC<RouteSceneProps> = ({
         {challenge.routes.map((route, index) => {
           const isSelected = route.id === selectedRouteId;
           const isCorrect = route.id === challenge.correctRouteId;
+          const keyShown = submitted && revealKey && isCorrect;
           const stroke = submitted
-            ? isCorrect ? '#34d399' : isSelected ? '#fb7185' : '#64748b'
+            ? keyShown ? '#34d399' : isSelected ? '#fb7185' : '#64748b'
             : isSelected ? '#22d3ee' : ROUTE_COLORS[index % ROUTE_COLORS.length];
           return (
             <g key={route.id}>
@@ -121,10 +142,10 @@ const RouteScene: React.FC<RouteSceneProps> = ({
                 d={route.d}
                 fill="none"
                 stroke={stroke}
-                strokeWidth={isSelected || (submitted && isCorrect) ? 9 : 6}
+                strokeWidth={isSelected || keyShown ? 9 : 6}
                 strokeLinecap="round"
                 strokeDasharray={isSelected ? undefined : '11 8'}
-                opacity={submitted && !isCorrect && !isSelected ? 0.35 : 0.9}
+                opacity={submitted && !keyShown && !isSelected ? 0.35 : 0.9}
                 pointerEvents="none"
               />
               <circle
@@ -133,6 +154,7 @@ const RouteScene: React.FC<RouteSceneProps> = ({
                 r="12"
                 fill={stroke}
                 className="cursor-pointer"
+                data-pip-object={`route-${index + 1}`}
                 onClick={() => !submitted && onSelect(route.id)}
               />
               <text
@@ -143,14 +165,23 @@ const RouteScene: React.FC<RouteSceneProps> = ({
                 fill="#020617"
                 pointerEvents="none"
               >{index + 1}</text>
-              {submitted && (isCorrect || isSelected) && (
-                <text x="300" y={isCorrect ? 18 : 304} textAnchor="middle" fontSize="14" fill={stroke}>
+              {submitted && (keyShown || isSelected) && (
+                <text x="300" y={keyShown ? 18 : 304} textAnchor="middle" fontSize="14" fill={stroke}>
                   Route {index + 1}: {route.relation}
                 </text>
               )}
             </g>
           );
         })}
+
+        {watchEach && !submitted && challenge.routes.map((route, index) => (
+          <circle key={`watch-${route.id}`} r="9" cx="0" cy="0" fill={ROUTE_COLORS[index % ROUTE_COLORS.length]}
+            stroke="#020617" strokeWidth="2" opacity="0" data-lever="watch_each" pointerEvents="none">
+            {/* Hidden at the origin until its turn, then shown as it walks. */}
+            <set attributeName="opacity" to="0.95" begin={`${index * 1.8}s`} fill="freeze" />
+            <animateMotion dur="1.6s" begin={`${index * 1.8}s`} fill="freeze" path={route.d} />
+          </circle>
+        ))}
 
         {submitted && selected && (
           <text key={`${selected.id}-${animationNonce}`} x="42" y="150" fontSize="28">
@@ -163,18 +194,57 @@ const RouteScene: React.FC<RouteSceneProps> = ({
   );
 };
 
-export default function SpatialPath({ data, className }: { data: SpatialPathData; className?: string }) {
+/** The word_picture lever: a ball going the asked way past a plain object, apart from the map. No route number. */
+const WordPicture: React.FC<{ model: WordModel }> = ({ model }) => (
+  <div className="flex items-center justify-center gap-4 rounded-2xl border border-white/10 bg-slate-900/40 p-3" data-lever="word_picture">
+    <svg viewBox="0 0 200 110" className="h-24 w-48" role="img" aria-label={`A ball going ${model.relation} a ${model.object}`}>
+      <defs><marker id="word-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#e2e8f0" /></marker></defs>
+      {model.relation === 'over' && <rect x="80" y="50" width="40" height="40" rx="4" fill="#92400e" />}
+      {model.relation === 'under' && <g fill="#a16207"><rect x="55" y="30" width="90" height="9" rx="2" /><rect x="60" y="39" width="6" height="58" /><rect x="134" y="39" width="6" height="58" /></g>}
+      {model.relation === 'through' && <ellipse cx="100" cy="58" rx="11" ry="30" fill="none" stroke="#f472b6" strokeWidth="6" />}
+      {model.relation === 'around' && <g><rect x="96" y="58" width="8" height="22" fill="#78350f" /><circle cx="100" cy="46" r="16" fill="#15803d" /></g>}
+      {model.relation === 'across' && <g><rect x="55" y="66" width="90" height="34" fill="#0ea5e9" opacity="0.6" /><rect x="50" y="61" width="100" height="6" fill="#a16207" /></g>}
+      <path d={model.path} fill="none" stroke="#e2e8f0" strokeWidth="3" strokeDasharray="7 5" markerEnd="url(#word-arrow)" />
+      <circle r="7" fill="#facc15"><animateMotion dur="2s" repeatCount="indefinite" path={model.path} /></circle>
+    </svg>
+    <p className="text-lg font-semibold text-slate-100">{model.relation}</p>
+  </div>
+);
+
+/**
+ * On the shared teaching workspace (W1, plain shape) the check commits through `progress.commitCheck`, the runtime
+ * owns Try again and the next challenge, and a wrong check never turns the correct route green: Try again reopens
+ * the same map.
+ */
+const SpatialPathSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  SpatialPathProps & { tutorOwned: boolean; useController: (options: ProgressOptions<SpatialPathChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const challenges = data.challenges ?? [];
-  const {
-    currentIndex,
-    currentAttempts,
-    results,
-    isComplete,
-    recordResult,
-    incrementAttempts,
-    advance,
-  } = useChallengeProgress({ challenges, getChallengeId: (challenge) => challenge.id });
-  const current = challenges[currentIndex] ?? null;
+  const instanceId = useRef(data.instanceId ?? `spatial-path-${crypto.randomUUID()}`).current;
+
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (challenge) => challenge.id,
+    instanceId, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete, mergeResult, advance } = progress;
+  /** Workspace path: a checked route stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  // Levers (`spatialPathLevers.ts`), keyed by the session item they were pulled on, and the easier challenge a
+  // simplify lever put on screen in its place. The item starts bare.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<SpatialPathChallenge | null>(null);
+  const sessionChallenge = challenges[currentIndex] ?? null;
+  /** What is on screen: the easier challenge while a simplify lever holds it, else the session item. */
+  const current = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   const phaseResults = usePhaseResults({
     challenges,
     results,
@@ -189,13 +259,15 @@ export default function SpatialPath({ data, className }: { data: SpatialPathData
   const [routeAttempts, setRouteAttempts] = useState<Array<{ challengeId: string; routeId: string; relation: string; correct: boolean }>>([]);
   const recordedRef = useRef(false);
   const viewedHintsRef = useRef(new Set<string>());
-  const instanceId = useRef(data.instanceId ?? `spatial-path-${crypto.randomUUID()}`).current;
 
   const evaluation = usePrimitiveEvaluation<SpatialPathMetrics>({
     primitiveType: 'spatial-path', instanceId, skillId: data.skillId,
     subskillId: data.subskillId, objectiveId: data.objectiveId, exhibitId: data.exhibitId,
     onSubmit: data.onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
+
+  // ── AI tutoring (scripted path only) ───────────────────────────
+  // Its context and cues name the asked relation beside the routes, so it is off on the workspace path.
   const aiPrimitiveData = useMemo(() => ({
     challengeType: 'choose_route',
     requestedRelation: current?.requestedRelation,
@@ -205,18 +277,34 @@ export default function SpatialPath({ data, className }: { data: SpatialPathData
     currentChallenge: currentIndex + 1,
     totalChallenges: challenges.length,
   }), [current, currentIndex, challenges.length]);
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'spatial-path', instanceId, primitiveData: aiPrimitiveData,
     gradeLevel: data.gradeBand === 'K' ? 'Kindergarten' : `Grade ${data.gradeBand ?? '1'}`,
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
-  useEffect(() => {
-    if (!current) return;
+  /** A blank map: no route chosen, nothing replayed. */
+  const clearMap = useCallback(() => {
     setSelectedRouteId(null);
     setFeedback(null);
     setSubmittedRoute(false);
+  }, []);
+
+  useEffect(() => {
+    if (!current) return;
+    clearMap();
     recordedRef.current = false;
-  }, [current?.id]);
+  }, [current?.id, clearMap]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Workspace path: a fresh item ends any practice; it and Try again both open a blank map (Try again on a practice
+  // challenge keeps it).
+  openItem.current = (_index, retry) => {
+    clearMap();
+    if (!retry) { recordedRef.current = false; setPractice(null); }
+  };
 
   useEffect(() => {
     if (!current) return;
@@ -225,42 +313,46 @@ export default function SpatialPath({ data, className }: { data: SpatialPathData
       + 'The child must choose by route shape; every route ends at the same place.',
       { silent: true },
     );
-  }, [current?.id, currentIndex, challenges.length, sendText]);
+  }, [current?.id, currentIndex, challenges.length, sendText]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const view: RouteView = { selectedRouteId, checked: submittedRoute };
 
   const handleCheck = useCallback(() => {
-    if (!current || !selectedRouteId || recordedRef.current) return;
-    incrementAttempts();
+    if (!current || !selectedRouteId || recordedRef.current || learnerBlocked()) return;
     setSubmittedRoute(true);
     setAnimationNonce((value) => value + 1);
     const selected = current.routes.find((route) => route.id === selectedRouteId);
-    const correct = selectedRouteId === current.correctRouteId;
+    const correct = routeMatches(current, selectedRouteId);
     setRouteAttempts((previous) => [...previous, {
       challengeId: current.id,
       routeId: selectedRouteId,
       relation: selected?.relation ?? 'unknown',
       correct,
     }]);
+    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    progress.commitCheck(describeRouteWork(current, { selectedRouteId, checked: true }), correct,
+      correct ? undefined : routeMiss(current, selectedRouteId));
     if (correct) {
       recordedRef.current = true;
       SoundManager.playCorrect();
       setFeedback({ status: 'correct', text: `Yes — ${current.contrast}` });
-      recordResult({ challengeId: current.id, correct: true, attempts: currentAttempts + 1, selectedRouteId, requestedRelation: current.requestedRelation });
+      // A practice challenge (the simplify lever) records nothing: it is not the session's challenge.
+      if (!practice) mergeResult({ challengeId: current.id, correct: true, attempts: currentAttempts + 1, selectedRouteId, requestedRelation: current.requestedRelation });
       sendText(`[ANSWER_CORRECT] The child chose route ${selectedRouteId}, whose geometry goes ${current.requestedRelation} the ${current.landmark.name}. Celebrate briefly.`, { silent: true });
     } else {
       SoundManager.playIncorrect();
-      setFeedback({ status: 'incorrect', text: `That route goes ${selected?.relation ?? 'a different way'}, not ${current.requestedRelation}. Watch its path, then compare it with the green route.` });
+      setFeedback({ status: 'incorrect', text: `That route goes ${selected?.relation ?? 'a different way'}, not ${current.requestedRelation}. `
+        + (tutorOwned ? 'Watch its path at the landmark.' : 'Watch its path, then compare it with the green route.') });
       sendText(`[ANSWER_INCORRECT] The child chose a ${selected?.relation ?? 'different'} route; the request was ${current.requestedRelation}. Contrast the movement relation without using the final destination.`, { silent: true });
     }
-  }, [current, selectedRouteId, currentAttempts, incrementAttempts, recordResult, sendText]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current, selectedRouteId, currentAttempts, mergeResult, sendText, tutorOwned, progress, practice]);
 
-  const retry = useCallback(() => {
-    setSelectedRouteId(null);
-    setSubmittedRoute(false);
-    setFeedback(null);
-  }, []);
+  const retry = useCallback(() => clearMap(), [clearMap]);
 
+  // ── Session complete (scripted path) ───────────────────────────
   useEffect(() => {
-    if (!isComplete || evaluation.hasSubmitted || challenges.length === 0) return;
+    if (tutorOwned || !isComplete || evaluation.hasSubmitted || challenges.length === 0) return;
     const correctCount = results.filter((result) => result.correct).length;
     const attemptsCount = results.reduce((sum, result) => sum + result.attempts, 0);
     const firstTryCount = results.filter((result) => result.correct && result.attempts === 1).length;
@@ -278,7 +370,49 @@ export default function SpatialPath({ data, className }: { data: SpatialPathData
       { routeAttempts },
     );
     sendText(`[ALL_COMPLETE] The child completed ${correctCount}/${challenges.length} route-geometry challenges. Give one brief movement-word celebration.`, { silent: true });
-  }, [isComplete, evaluation, challenges, results, routeAttempts, sendText]);
+  }, [tutorOwned, isComplete, evaluation, challenges, results, routeAttempts, sendText]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss (`diagnosisEvidence.phases`).
+  finish.current = (result) => {
+    if (evaluation.hasSubmitted || progress.recordsEvaluation === false) return;
+    evaluation.submitResult(result.passed, result.accuracy, {
+      type: 'spatial-path', challengeType: 'choose_route', totalChallenges: challenges.length,
+      correctCount: result.solvedCount, attemptsCount: result.attemptsCount, firstTryCount: result.firstTryCount,
+      hintsViewed: viewedHintsRef.current.size, overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: result.attemptsCount / Math.max(1, challenges.length),
+    }, { routeAttempts, challengeResults: result.outcomes, learningResponses: result.learningResponses,
+      teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+    undefined, result.diagnosisEvidence);
+  };
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !current || !sessionChallenge) return;
+    const scene = workspaceScene(current, view);
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
+    const levers = practice ? [] : spatialPathLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = threeRoutes(sessionChallenge);
+          if (!easier) return 'This item has no easier map; try a help lever.';
+          setLeverState(pulled); clearMap(); recordedRef.current = false; setPractice(easier);
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { clearMap(); recordedRef.current = false; setPractice(null); },
+    };
+  });
 
   const overallScore = evaluation.submittedResult?.score ?? (results.length
     ? Math.round(results.reduce((sum, result) => sum + (result.correct ? 100 : 0), 0) / challenges.length)
@@ -319,10 +453,15 @@ export default function SpatialPath({ data, className }: { data: SpatialPathData
             {pip.store && <div {...pip.dock} />}
             <div {...pip.workspace}>
             <RouteScene challenge={current} selectedRouteId={selectedRouteId}
-              submitted={submittedRoute} animationNonce={animationNonce}
-              onSelect={(routeId) => { SoundManager.select(); setSelectedRouteId(routeId); setFeedback(null); }} />
+              submitted={submittedRoute} revealKey={!tutorOwned || feedback?.status === 'correct'}
+              animationNonce={animationNonce} watchEach={leverOn(WATCH_LEVER)}
+              onSelect={(routeId) => {
+                if (learnerBlocked()) return;
+                SoundManager.select(); setSelectedRouteId(routeId); setFeedback(null);
+              }} />
             </div>
 
+            {leverOn(WORD_LEVER) && <WordPicture model={WORD_MODELS[current.requestedRelation]} />}
             <LuminaPanel>
               <p className="text-center text-sm text-slate-300">Tap a numbered route. The destination is the same; the path itself is your answer.</p>
             </LuminaPanel>
@@ -336,12 +475,13 @@ export default function SpatialPath({ data, className }: { data: SpatialPathData
             </LuminaFeedbackCard>}
             <div className="flex justify-center">
               {!recordedRef.current && !submittedRoute && (
-                <LuminaActionButton action="check" onClick={handleCheck} disabled={!selectedRouteId}>Animate this route</LuminaActionButton>
+                <LuminaActionButton action="check" onClick={handleCheck} disabled={!selectedRouteId || learnerBlocked()}>Animate this route</LuminaActionButton>
               )}
-              {!recordedRef.current && submittedRoute && (
+              {/* On the workspace the shell's Try again and Next challenge own both moves. */}
+              {!tutorOwned && !recordedRef.current && submittedRoute && (
                 <LuminaActionButton action="retry" onClick={retry}>Try another route</LuminaActionButton>
               )}
-              {recordedRef.current && (
+              {!tutorOwned && recordedRef.current && (
                 <LuminaActionButton action="next" onClick={() => advance()}>
                   {currentIndex < challenges.length - 1 ? 'Next route' : 'See results'}
                 </LuminaActionButton>
@@ -353,4 +493,10 @@ export default function SpatialPath({ data, className }: { data: SpatialPathData
       </LuminaCardContent>
     </LuminaCard>
   );
-}
+};
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const SpatialPath = withWorkspaceController<SpatialPathProps, ProgressOptions<SpatialPathChallenge>, Progress>(
+  'spatial-path', SpatialPathSurface, useScriptedProgress, useWorkspaceProgressFor('spatial-path'));
+
+export default SpatialPath;

@@ -3,11 +3,20 @@ import type {
   SpatialPathChallenge,
   SpatialPathData,
   SpatialPathRelation,
-  SpatialRoute,
 } from '../../primitives/visual-primitives/math/SpatialPath';
+import {
+  SCENES,
+  buildSpatialRoutes,
+  routeContrast,
+  routeInstruction,
+  validateSpatialPathChallenge,
+} from '../../primitives/visual-primitives/math/spatialPathRoutes';
 import { ai } from '../geminiClient';
 import type { GenerationContext } from '../generation/generationContext';
 import { buildScopePromptSection } from '../scopeContext';
+import { logEvalModeResolution } from '../evalMode';
+
+export { buildSpatialRoutes, validateSpatialPathChallenge };
 
 const wrapperSchema: Schema = {
   type: Type.OBJECT,
@@ -18,56 +27,6 @@ const wrapperSchema: Schema = {
   },
   required: ['title', 'description', 'challengeType'],
 };
-
-const START = { x: 60, y: 160 } as const;
-const END = { x: 540, y: 160 } as const;
-
-const ROUTE_GEOMETRY: Record<SpatialPathRelation, { d: string; signature: string }> = {
-  over: { d: 'M60 160 Q300 12 540 160', signature: 'arc-above-landmark' },
-  under: { d: 'M60 160 Q300 308 540 160', signature: 'arc-below-landmark' },
-  through: { d: 'M60 160 L540 160', signature: 'centerline-through-opening' },
-  around: {
-    d: 'M60 160 C90 55 180 48 215 120 C245 182 255 270 300 270 C345 270 355 182 385 120 C420 48 510 55 540 160',
-    signature: 'perimeter-loop-around-landmark',
-  },
-  across: { d: 'M60 160 L190 82 L410 82 L540 160', signature: 'straight-crossing-on-bridge' },
-};
-
-export function buildSpatialRoutes(rotation = 0): SpatialRoute[] {
-  const relations: SpatialPathRelation[] = ['over', 'under', 'through', 'around', 'across'];
-  const rotated = relations.map((_, index) => relations[(index + rotation) % relations.length]);
-  return rotated.map((relation) => ({
-    id: `route-${relation}`,
-    relation,
-    d: ROUTE_GEOMETRY[relation].d,
-    geometrySignature: ROUTE_GEOMETRY[relation].signature,
-    start: { ...START },
-    end: { ...END },
-  }));
-}
-
-const SCENES = [
-  { traveler: { name: 'fox', emoji: '🦊' }, landmark: { name: 'rocky tunnel', emoji: '⛰️' } },
-  { traveler: { name: 'rabbit', emoji: '🐇' }, landmark: { name: 'garden wall', emoji: '🧱' } },
-  { traveler: { name: 'train', emoji: '🚂' }, landmark: { name: 'bridge deck', emoji: '🌉' } },
-  { traveler: { name: 'bee', emoji: '🐝' }, landmark: { name: 'hedge', emoji: '🌳' } },
-  { traveler: { name: 'boat', emoji: '⛵' }, landmark: { name: 'low bridge', emoji: '🌉' } },
-] as const;
-
-export function validateSpatialPathChallenge(challenge: SpatialPathChallenge): string[] {
-  const issues: string[] = [];
-  if (challenge.routes.length < 3) issues.push('fewer than three routes');
-  const starts = new Set(challenge.routes.map((route) => `${route.start.x},${route.start.y}`));
-  const ends = new Set(challenge.routes.map((route) => `${route.end.x},${route.end.y}`));
-  if (starts.size !== 1 || ends.size !== 1) issues.push('routes do not share endpoints');
-  if (new Set(challenge.routes.map((route) => route.geometrySignature)).size !== challenge.routes.length) {
-    issues.push('route geometry is duplicated');
-  }
-  const correct = challenge.routes.find((route) => route.id === challenge.correctRouteId);
-  if (!correct) issues.push('correct route is missing');
-  else if (correct.relation !== challenge.requestedRelation) issues.push('correct route relation mismatches request');
-  return issues;
-}
 
 export function selectSpatialPathChallenges(count = 5): SpatialPathChallenge[] {
   const relations: SpatialPathRelation[] = ['through', 'around', 'across', 'over', 'under'];
@@ -80,13 +39,13 @@ export function selectSpatialPathChallenges(count = 5): SpatialPathChallenge[] {
     const challenge: SpatialPathChallenge = {
       id: `spatial-path-${index + 1}`,
       type: 'choose_route',
-      instruction: `Choose the route that takes the ${scene.traveler.name} ${requestedRelation} the ${scene.landmark.name}, then animate it.`,
+      instruction: routeInstruction(scene.traveler.name, requestedRelation, scene.landmark.name),
       traveler: { ...scene.traveler },
       landmark: { ...scene.landmark },
       requestedRelation,
       routes,
       correctRouteId: `route-${requestedRelation}`,
-      contrast: `A route goes ${requestedRelation} by what its path does at the ${scene.landmark.name}, not by its final stop.`,
+      contrast: routeContrast(requestedRelation, scene.landmark.name),
     };
     const issues = validateSpatialPathChallenge(challenge);
     if (issues.length > 0) throw new Error(`Invalid spatial path ${challenge.id}: ${issues.join(', ')}`);
@@ -95,6 +54,8 @@ export function selectSpatialPathChallenges(count = 5): SpatialPathChallenge[] {
 }
 
 export async function generateSpatialPath(ctx: GenerationContext): Promise<SpatialPathData> {
+  // Single mode (choose_route): the pin is logged; every challenge is that one task.
+  logEvalModeResolution('SpatialPath', ctx.targetEvalMode, null);
   const requestedCount = typeof ctx.raw.instanceCount === 'number' ? ctx.raw.instanceCount : 5;
   const challenges = selectSpatialPathChallenges(requestedCount);
   const scopeSection = buildScopePromptSection(ctx.scope);
