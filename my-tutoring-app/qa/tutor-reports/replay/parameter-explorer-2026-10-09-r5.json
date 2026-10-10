@@ -1,0 +1,2128 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "parameter-explorer.explore",
+   "primitiveId": "parameter-explorer",
+   "evalMode": "explore",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Explore the simulation by adjusting the tangential velocity (v) and radius of curvature (r) to observe how centripetal acceleration responds to changes in kinematics during circular motion. Move a slider, then press Done Exploring.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock v",
+       "lock r",
+       "done exploring"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Try moving the sliders to see how changing velocity and radius affects the centripetal acceleration, then press Done Exploring when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Try moving the sliders to see how tangential velocity and radius affect centripetal acceleration, then press Done Exploring when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a moment to try moving the sliders to see what happens, and hit Done Exploring whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Try moving the sliders to see how tangential velocity and radius change the centripetal acceleration, then press Done Exploring when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Go ahead and try adjusting the sliders to see how the centripetal acceleration changes, then press Done Exploring when you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"moved v\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Explore the simulation by adjusting the tangential velocity (v) and radius of curvature (r) to observe how centripetal acceleration responds to changes in kinematics during circular motion. Move a slider, then press Done Exploring.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock v",
+       "lock r",
+       "done exploring"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You adjusted the velocity slider and saw the centripetal acceleration jump up to 22.05 meters per second squared. Notice how increasing that speed makes the acceleration grow rapidly because velocity is squared in the formula.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted velocity and saw how centripetal acceleration reacted. Notice how that velocity term is squared in the numerator.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted the velocity slider and saw the centripetal acceleration shift right away. Take a look at how that acceleration responded as velocity changed.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted the velocity slider and saw the centripetal acceleration change. Notice how strongly the acceleration responds to changes in velocity!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted the velocity slider and saw the centripetal acceleration jump up to 22.05 meters per second squared! Notice how changes in velocity affect acceleration very quickly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "parameter-explorer.identify-relationship",
+   "primitiveId": "parameter-explorer",
+   "evalMode": "identify-relationship",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Start from m = 4 kg, v = 5 m/s. If you double one parameter and hold the others, which one changes Kinetic Energy the most? Choose one parameter and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock m",
+       "lock v",
+       "m(mass)",
+       "m (mass)",
+       "v(velocity)",
+       "v (velocity)"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the formula and see what happens to Kinetic Energy when each parameter changes.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the formula and see what happens when you consider doubling each parameter.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the kinetic energy explorer! Take a look at the formula and see which parameter you think will change the energy the most when doubled.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula and see what happens if you double one parameter at a time. Which one do you think will change Kinetic Energy the most?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula for kinetic energy and think about what happens when each parameter doubles. Whenever you're ready, select your choice and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"chose m (Mass)\". The board checked it: not right.",
+     "miss": "weaker_effect",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Start from m = 4 kg, v = 5 m/s. If you double one parameter and hold the others, which one changes Kinetic Energy the most? Choose one parameter and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock m",
+       "lock v",
+       "m(mass)",
+       "m (mass)",
+       "v(velocity)",
+       "v (velocity)"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I've marked the starting value and its double on each slider so you can test them one at a time. Try moving each slider to its double mark and watch what happens to the Kinetic Energy!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "double_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I have marked each slider's start and its double, and added a button to reset them. Try sliding one to its mark to see how Kinetic Energy responds.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "double_marks",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I've marked the starting values and their doubles on each slider so you can test them one at a time. Try doubling each one to see how Kinetic Energy changes.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "double_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Marks have appeared showing the starting value and double for each slider. Try doubling each one to see how the Kinetic Energy changes, then give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "double_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I marked the starting value and its double on each slider so you can test them one at a time. Try doubling each slider and watching how Kinetic Energy changes.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "double_marks",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Start from m = 4 kg, v = 5 m/s. If you double one parameter and hold the others, which one changes Kinetic Energy the most? Choose one parameter and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock m",
+       "lock v",
+       "m(mass)",
+       "m (mass)",
+       "v(velocity)",
+       "v (velocity)"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Marks have appeared on each slider showing its starting value and its double, along with a button to reset them. Try sliding each one to its double mark and see which one makes the Kinetic Energy number jump higher.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "doubling_model"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "double_marks",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Marks have appeared on each slider showing its starting value and its double, along with a button to reset. Try moving one slider at a time to its mark and see which one changes the Kinetic Energy more.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "double_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Marks have appeared on each slider showing its starting value and its double, along with a button to reset. Try moving one slider to its double mark to see how Kinetic Energy changes, then reset and try the other!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "double_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "You can see marks at the starting value and its double on each slider now, along with a button to reset them. Try sliding one to its mark and see how much the Kinetic Energy changes!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "double_marks",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Each slider now shows its starting point and its double, plus a button to reset back to the start. Try sliding one to its double mark and see how much the energy readout changes.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "double_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1",
+     "trigger": "The learner said they were stuck, so the host pulled double_marks (help). It is on screen now: Marks each slider's starting value and its double, and adds a Back to start button, so the learner can double one parameter at a time and watch the output readout. It names no parameter and no result. First point the learner to it: say what is now drawn and where to look, as a change to the picture; neve",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Start from m = 4 kg, v = 5 m/s. If you double one parameter and hold the others, which one changes Kinetic Energy the most? Choose one parameter and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock m",
+       "lock v",
+       "m(mass)",
+       "m (mass)",
+       "v(velocity)",
+       "v (velocity)"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look at the sliders now: you'll see small marks showing the start value and double for both mass and velocity, plus a \"Back to start\" button. Try sliding one to its double mark and compare how much the Kinetic Energy changes!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the sliders\u2014there is now a mark at the starting number and another at its double, plus a Back to start button. Try moving one slider to its double mark to see how Kinetic Energy responds!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Each slider now has marks showing its start value and double, and there is a Back to start button to reset. Try doubling one slider at a time and see which one changes the Kinetic Energy more.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new tick marks on each slider showing its starting spot and its double, plus the Back to start button. Try sliding one parameter to its double mark to see what the Kinetic Energy changes to, and then test the other!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the sliders\u2014there are now special marks showing each starting value and its double, along with a \"Back to start\" button. Try sliding one to its double mark to test its effect on Kinetic Energy, then give the question another shot!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"chose v (Velocity)\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Start from m = 4 kg, v = 5 m/s. If you double one parameter and hold the others, which one changes Kinetic Energy the most? Choose one parameter and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock m",
+       "lock v",
+       "m(mass)",
+       "m (mass)",
+       "v(velocity)",
+       "v (velocity)"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Nice work choosing velocity! By testing each slider at its double mark, you saw that velocity has a much bigger effect because it gets squared in the formula.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done choosing Velocity! Doubling velocity quadrupled the Kinetic Energy because it is squared in the formula.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! By testing each slider with the double marks, you saw that doubling velocity made the kinetic energy jump all the way to two hundred joules, making it the strongest parameter.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You selected velocity, and testing the double marks showed how squaring velocity gives it an even bigger effect on kinetic energy.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! By testing each slider with the double marks, you saw that doubling velocity changes Kinetic Energy much more because velocity is squared in the formula.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "parameter-explorer.predict-direction",
+   "primitiveId": "parameter-explorer",
+   "evalMode": "predict-direction",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Net Force (F) changes from 50 N to 175 N while m = 10 kg stays fixed. Will Acceleration increase, decrease, or stay the same? Choose Increase, Decrease or Stay Same and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock f",
+       "lock m",
+       "\ud83d\udcc8 increase",
+       "increase",
+       "\ud83d\udcc9 decrease",
+       "decrease",
+       "\u27a1\ufe0f stay same",
+       "stay same"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the formula: acceleration equals net force divided by mass. When the net force goes up from 50 to 175 newtons, what do you think happens to acceleration?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the formula and see what happens to acceleration when the net force increases.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the formula and see what happens to acceleration when net force goes up.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the formula and see what you think will happen to acceleration when net force increases.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula and make your prediction for what happens to Acceleration when Net Force increases.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"predicts Acceleration will decrease\". The board checked it: not right.",
+     "miss": "opposite_direction",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Net Force (F) changes from 50 N to 175 N while m = 10 kg stays fixed. Will Acceleration increase, decrease, or stay the same? Choose Increase, Decrease or Stay Same and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock f",
+       "lock m",
+       "\ud83d\udcc8 increase",
+       "increase",
+       "\ud83d\udcc9 decrease",
+       "decrease",
+       "\u27a1\ufe0f stay same",
+       "stay same"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice how F is circled in the formula right at the top. When the number you are dividing goes up, what happens to the result?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_parameter"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice where F is ringed in the formula: acceleration equals F divided by m. When F gets larger, what happens to acceleration?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_parameter"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice where F is circled in the formula. If you divide a bigger number by 10, does the result get larger or smaller?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "find_parameter",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice that the letter F is now circled in the formula. Where does F sit in the calculation, and what happens to the result when that number gets larger?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_parameter"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the formula where F is circled. Where does F sit in the relationship, and what does that mean for acceleration when F increases?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_parameter"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Net Force (F) changes from 50 N to 175 N while m = 10 kg stays fixed. Will Acceleration increase, decrease, or stay the same? Choose Increase, Decrease or Stay Same and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock f",
+       "lock m",
+       "\ud83d\udcc8 increase",
+       "increase",
+       "\ud83d\udcc9 decrease",
+       "decrease",
+       "\u27a1\ufe0f stay same",
+       "stay same"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A ring has appeared around the letter F in the formula. Where does F sit in the calculation?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_parameter"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A ring just appeared around F in the formula. Where does F sit in the calculation?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_parameter"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A ring just appeared around F in the formula. Since F is the number being divided, try thinking about whether dividing a larger number makes your answer bigger or smaller.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_parameter"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The letter F is now ringed in the formula to show where net force sits. When that number on top grows, give it another try and see which way acceleration moves.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "find_parameter",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A ring has appeared around F in the formula to highlight it. Since F is the quantity being divided by mass, think about what happens to the whole amount when that starting number gets bigger.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "find_parameter"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1",
+     "trigger": "The learner said they were stuck, so the host pulled find_parameter (help). It is on screen now: Rings the changed parameter's symbol wherever it appears in the formula. Nothing else is written. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work it through for th",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Net Force (F) changes from 50 N to 175 N while m = 10 kg stays fixed. Will Acceleration increase, decrease, or stay the same? Choose Increase, Decrease or Stay Same and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock f",
+       "lock m",
+       "\ud83d\udcc8 increase",
+       "increase",
+       "\ud83d\udcc9 decrease",
+       "decrease",
+       "\u27a1\ufe0f stay same",
+       "stay same"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The letter F is ringed in the formula right before the division sign. Take another look at how F changes, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the formula: the letter F for Net Force is now circled. It sits at the top before the division sign, so give it another try and choose what happens to acceleration!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The letter F is now ringed in the formula. Take another look at where it sits, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the formula: the letter F for Net Force is now circled right at the front before the division sign. Take another look and give it your best try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A circle is now drawn around F in the formula. Take another look at where F is, and give the prediction another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"predicts Acceleration will increase\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Net Force (F) changes from 50 N to 175 N while m = 10 kg stays fixed. Will Acceleration increase, decrease, or stay the same? Choose Increase, Decrease or Stay Same and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock f",
+       "lock m",
+       "\ud83d\udcc8 increase",
+       "increase",
+       "\ud83d\udcc9 decrease",
+       "decrease",
+       "\u27a1\ufe0f stay same",
+       "stay same"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right\u2014by spotting where F sits in the formula, you correctly predicted that acceleration would increase!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right with increase, seeing that a larger net force makes the acceleration go up!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You spotted that net force was being divided, so choosing increase was spot on!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right! You rechecked where net force sits in the formula and correctly predicted that acceleration would increase.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right\u2014acceleration will increase! Looking at where net force was in the formula helped you turn that right around.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "parameter-explorer.predict-value",
+   "primitiveId": "parameter-explorer",
+   "evalMode": "predict-value",
+   "keys": [
+    "250"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "ch1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "250"
+      ],
+      "ask": "Mass (m) changes from 10 kg to 20 kg while v = 5 m/s stays fixed. What will Kinetic Energy be? Type the prediction and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock m",
+       "lock v"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the formula and see what happens to Kinetic Energy when mass changes to 20 kilograms.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula and see what happens when mass changes to twenty kilograms. Type your prediction whenever you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the formula and see what happens to kinetic energy when mass changes to twenty kilograms.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the formula and see what happens when mass changes to twenty kilograms. Type your prediction and press Check when you are ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the lesson! Take a look at how mass and velocity relate to kinetic energy, and enter your prediction whenever you're ready.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"predicts Kinetic Energy = 125 J\". The board checked it: not right.",
+     "miss": "unchanged_output",
+     "scoredWith": {
+      "keys": [
+       "250"
+      ],
+      "ask": "Mass (m) changes from 10 kg to 20 kg while v = 5 m/s stays fixed. What will Kinetic Energy be? Type the prediction and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock m",
+       "lock v"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The screen now shows the formula with twenty plugged in for mass and five for velocity. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The formula now shows the new numbers plugged in: half times twenty times five squared. Give it another try with these values!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The formula is now showing the new numbers in place of the letters. Try calculating Kinetic Energy with these values and give it another shot!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The formula is now showing with the numbers plugged in for mass and velocity. Try calculating that value and give it another shot!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The screen now shows the formula with twenty plugged in for mass and five for velocity. Give it another calculate and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "ch1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "250"
+      ],
+      "ask": "Mass (m) changes from 10 kg to 20 kg while v = 5 m/s stays fixed. What will Kinetic Energy be? Type the prediction and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock m",
+       "lock v"
+      ]
+     },
+     "samples": [
+      {
+       "text": "The screen now shows the formula with twenty plugged in for mass and five for velocity: half times twenty times five squared. Try working out that calculation!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The formula is now written out on the screen with twenty in place of mass and five squared for velocity. Try calculating that to see what Kinetic Energy equals!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The formula is now written out on the screen with twenty for mass and five squared for velocity. Try multiplying those out to see what Kinetic Energy gives!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "substitution",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows the formula with twenty plugged in for mass and five for velocity. What do you get when you calculate five squared first?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "substitution"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows the formula with twenty plugged in for mass and five for velocity. What do you get when you work that out?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "substitution",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "ch1",
+     "trigger": "The learner said they were stuck, so the host pulled substitution (help). It is on screen now: Shows the formula with the new setting and the held values written in place of the letters. It does not work it out. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then let them try the same question again; do not work ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "250"
+      ],
+      "ask": "Mass (m) changes from 10 kg to 20 kg while v = 5 m/s stays fixed. What will Kinetic Energy be? Type the prediction and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock m",
+       "lock v"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the calculation now written out on the screen with the numbers plugged in. What does that give when you multiply it out?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The screen now shows the formula written out with twenty plugged in for mass and five for velocity. Take a look at that expression and type in what you calculate!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The formula on the screen now shows twenty substituted for mass and five for velocity. What does that give when you multiply it out?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice how the formula is written out on screen with twenty substituted for mass and five for velocity. What does that give when you multiply it out?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the formula on the screen: twenty is now filled in for mass and five for velocity. What does that give when you calculate it?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "ch1",
+     "trigger": "The learner submitted \"predicts Kinetic Energy = 250 J\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "250"
+      ],
+      "ask": "Mass (m) changes from 10 kg to 20 kg while v = 5 m/s stays fixed. What will Kinetic Energy be? Type the prediction and press Check.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "REVEAL POLICY"
+      ],
+      "menu": [
+       "\ud83d\udd13",
+       "lock m",
+       "lock v"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! You calculated two hundred fifty joules by multiplying through the formula with the new mass.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You worked out the calculation and found two hundred fifty joules.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You calculated two hundred fifty joules by multiplying through the formula with the new mass.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You worked out the calculation and found two hundred fifty joules.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it\u2014250 Joules! You used the substituted values and calculated the result correctly.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

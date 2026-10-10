@@ -1,0 +1,1905 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ],
+   "no_change_before_receipt": [
+    0,
+    15
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ],
+   "no_key_before_try": [
+    0,
+    10
+   ],
+   "no_fix_before_try": [
+    0,
+    15
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    15
+   ],
+   "no_protocol_leak": [
+    0,
+    15
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "slope-triangle.calculate",
+   "primitiveId": "slope-triangle",
+   "evalMode": "calculate",
+   "keys": [
+    "-1/3"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "st-3",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "-1/3"
+      ],
+      "ask": "Use the triangle to calculate the slope of this line. Slope = rise \u00f7 run.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the slope triangle on the line to find the rise and run. Whenever you're ready, type your answer and press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the triangle on the line, and see what its rise and run tell you about the slope.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the triangle on the screen and use the rise and run to find the slope.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the triangle on the line and see how the rise and run compare.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the triangle on the line, and remember that slope is rise divided by run.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "st-3",
+     "trigger": "The learner submitted \"typed slope -3\". The board checked it: not right.",
+     "miss": "reciprocal",
+     "scoredWith": {
+      "keys": [
+       "-1/3"
+      ],
+      "ask": "Use the triangle to calculate the slope of this line. Slope = rise \u00f7 run.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the new reminder on the screen: slope is the up-or-down change divided by the across change. Which number goes in the numerator?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "formula_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new badge showing slope is change in y divided by change in x, so the up-or-down leg goes on top. Which number belongs in the numerator?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "formula_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The badge shows that slope is change in y divided by change in x, so the up-or-down leg goes on top. Which number belongs on top of the fraction?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "formula_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The formula badge is on the screen now to show that the up-and-down change goes on top. Which number belongs in the numerator?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "formula_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The reminder on the screen shows that slope is change in y divided by change in x, so the up-or-down leg goes on top. Which number goes in the numerator?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "formula_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "st-3",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "-1/3"
+      ],
+      "ask": "Use the triangle to calculate the slope of this line. Slope = rise \u00f7 run.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A helper badge popped up showing that slope is delta y divided by delta x, so the up-or-down leg goes on top. Try writing that ratio with your triangle's numbers and press Check.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "formula_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A formula reminder popped up on the grid showing that slope equals change in y divided by change in x. That means the vertical leg goes on top and the horizontal leg goes on the bottom. Try setting up that fraction and dividing!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "formula_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows that the up-or-down leg, delta y, goes on top, and delta x goes on the bottom. Try setting up that fraction with the numbers from the triangle.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "formula_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The screen now shows that slope is change in y divided by change in x, so the up-or-down number goes on top. What fraction do you get when you put negative two over six?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "model_triangle"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "formula_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A badge is now on your screen reminding us that slope is change in y divided by change in x, with the vertical leg on top. Try writing that fraction using your triangle's labels.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "formula_frame",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "st-3",
+     "trigger": "The learner said they were stuck, so the host pulled formula_frame (help). It is on screen now: Shows the badge slope = change in y over change in x on the grid, and writes under the card that the up-or-down leg goes on top and that a line falling from left to right has a negative slope. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "-1/3"
+      ],
+      "ask": "Use the triangle to calculate the slope of this line. Slope = rise \u00f7 run.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A new reminder is on the screen showing that slope is delta y divided by delta x, with the up-or-down change on top. Take a look at the two numbers on the triangle and try putting them into that fraction.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the new badge on the grid showing that slope equals change in y divided by change in x, with the reminder that the up-or-down leg goes on top. Put delta y over delta x, and try typing that fraction into the box.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A badge has appeared on the grid showing slope equals delta y divided by delta x, reminding us that the up-or-down change goes on top. Take another look at the triangle's labels and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder badge is now showing on your screen with the formula for slope. Take a look at which number represents the vertical change to set up your fraction, and try typing it in.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A new badge is on the grid showing slope equals delta y divided by delta x, and the note under the card reminds us that the up-or-down leg goes on top. Take another look at the labels on the triangle legs and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "st-3",
+     "trigger": "The learner submitted \"typed slope -1/3\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "-1/3"
+      ],
+      "ask": "Use the triangle to calculate the slope of this line. Slope = rise \u00f7 run.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You put negative two over six and simplified it to negative one third. Nicely done!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You put negative two over six and reduced it to negative one third.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You put negative two over six and simplified it to negative one third\u2014great work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You worked it out and simplified negative two sixths to negative one third. Great job!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You put negative two over six and simplified it to negative one third.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "slope-triangle.draw_triangle",
+   "primitiveId": "slope-triangle",
+   "evalMode": "draw_triangle",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "st-3",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Build a slope triangle on the line: drag the left corner along the line, size the run with the right corner, then raise or lower the top corner until it lands back on the line.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "\u2190 move",
+       "move left",
+       "move \u2192",
+       "move right",
+       "run \u2212",
+       "shorter run",
+       "run +",
+       "longer run",
+       "rise \u2212",
+       "lower rise",
+       "rise +",
+       "higher rise",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Try adjusting the rise until the top corner lands right on the line.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Try building your slope triangle by adjusting the corners until the top corner lands right back on the line.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Go ahead and build your slope triangle so the top corner lands right back on the line.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the slope triangle challenge! Take a look at the line on your grid and try adjusting the corners to build your slope triangle.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take your time building the triangle so its top corner lands right back on the line.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "st-3",
+     "trigger": "The learner submitted \"built a triangle with run 4 and rise -4, its left corner at x = -4\". The board checked it: not right.",
+     "miss": "wrong_sign",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Build a slope triangle on the line: drag the left corner along the line, size the run with the right corner, then raise or lower the top corner until it lands back on the line.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "\u2190 move",
+       "move left",
+       "move \u2192",
+       "move right",
+       "run \u2212",
+       "shorter run",
+       "run +",
+       "longer run",
+       "rise \u2212",
+       "lower rise",
+       "rise +",
+       "higher rise",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the line as you move from left to right: does it go up or down?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "build_frame",
+          "actionId": "test/9/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the line: as we move from left to right, does it go up or down?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "build_frame",
+          "actionId": "test/9/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helpful tip was added below the card: since this line goes up from left to right, see what happens when you raise the top corner upward instead.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "build_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the reminder below the card: since this line goes up from left to right, does the rise need to go up or down to reach the line?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "build_frame",
+          "actionId": "test/9/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the direction the line goes as you move from left to right\u2014does it go up or down?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "build_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "st-3",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Build a slope triangle on the line: drag the left corner along the line, size the run with the right corner, then raise or lower the top corner until it lands back on the line.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "\u2190 move",
+       "move left",
+       "move \u2192",
+       "move right",
+       "run \u2212",
+       "shorter run",
+       "run +",
+       "longer run",
+       "rise \u2212",
+       "lower rise",
+       "rise +",
+       "higher rise",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A reminder has been added below the card about how the top corner lands on the line. Since this line goes up from left to right, try using the Higher rise button to move that top corner upward onto the line.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "build_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A helpful hint just appeared below the card to guide you. Use the Higher rise button to move that top corner up toward the line.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "build_frame",
+          "actionId": "test/9/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A tip appeared under the card to help guide you. Because the line goes upward from left to right, try using the Higher rise button so the top corner reaches back up to the line.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "build_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A helpful tip appeared below the card to show how the top corner connects to the line. Try using the Higher rise button to move that top corner up toward the line.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/9/0",
+          "lever": "build_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A hint appeared under the card reminding us that the top corner changes with the rise buttons. Since this line goes up from left to right, try using the Higher rise button to bring the top corner up to the line.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "build_frame",
+          "actionId": "test/9/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "st-3",
+     "trigger": "The learner said they were stuck, so the host pulled build_frame (help). It is on screen now: Writes under the card: the top corner lands back on the line when the rise is the slope times the run, with the top corner below the right angle for a line that falls from left to right; the top corner's buttons change the rise. No number. First point the learner to it: say what is now drawn and where to ",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Build a slope triangle on the line: drag the left corner along the line, size the run with the right corner, then raise or lower the top corner until it lands back on the line.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "\u2190 move",
+       "move left",
+       "move \u2192",
+       "move right",
+       "run \u2212",
+       "shorter run",
+       "run +",
+       "longer run",
+       "rise \u2212",
+       "lower rise",
+       "rise +",
+       "higher rise",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look right below the card: a tip is now written there showing that the top corner must land directly back on the line. Since this line goes up from left to right, try using Higher rise to bring that corner up until it meets the line.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder has appeared right below the card about how the top corner lands back on the line. Take a look at that note, then use the buttons to adjust your rise until the corner sits on the line.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A guide has appeared below the card explaining how the top corner connects back to the line. Use the Higher rise button to lift that top corner up until it touches the line.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A reminder just appeared under the card to help with landing on the line. Take a look at it, and try using Higher rise to bring that top corner back up to the line.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helpful hint is now written right under the card reminding you how the top corner connects to the line. Give the rise buttons a try to bring that corner up to meet the line.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "st-3",
+     "trigger": "The learner submitted \"built a triangle with run 4 and rise 4, its left corner at x = -4\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Build a slope triangle on the line: drag the left corner along the line, size the run with the right corner, then raise or lower the top corner until it lands back on the line.",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "\u2190 move",
+       "move left",
+       "move \u2192",
+       "move right",
+       "run \u2212",
+       "shorter run",
+       "run +",
+       "longer run",
+       "rise \u2212",
+       "lower rise",
+       "rise +",
+       "higher rise",
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You raised that top corner until it met the line, building a run of four and a rise of four that landed right on it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You adjusted the rise up to four to match the run of four, landing that top corner right back on the line!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You brought the rise up to four and placed that top corner right on the line!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You raised the top corner so it has a rise of four to match your run of four, landing it right back on the line.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You raised that top corner until it met the line with a rise of four and a run of four, and it fit perfectly!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "slope-triangle.identify_slope",
+   "primitiveId": "slope-triangle",
+   "evalMode": "identify_slope",
+   "keys": [
+    "3",
+    "3"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "st-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3",
+       "3"
+      ],
+      "ask": "Look at the triangle on the line. Count the rise (vertical) and run (horizontal).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the triangle on the line, and count the vertical rise and horizontal run.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the triangle on the line, and count the vertical rise and horizontal run.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the triangle along the line, and count the vertical rise and horizontal run.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the triangle on the line, and count the vertical rise and horizontal run.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at the triangle on the line. How many grid units does it go across, and how many does it go up?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "st-1",
+     "trigger": "The learner submitted \"typed rise -3 and run 3\". The board checked it: not right.",
+     "miss": "rise_sign",
+     "scoredWith": {
+      "keys": [
+       "3",
+       "3"
+      ],
+      "ask": "Look at the triangle on the line. Count the rise (vertical) and run (horizontal).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the note under the card: starting from the left corner, going up makes the rise positive, while going down makes it negative. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "sign_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the reminder under the card: starting from the left corner, moving up means the rise is positive. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sign_frame",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A note has appeared below the card: starting from the left corner, moving up means the rise is positive, and moving down means it is negative. Take another look at the vertical leg and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sign_frame",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A guide appeared showing how direction sets the sign for rise and run. Notice whether this triangle goes up or down from left to right, and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sign_frame",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A note just appeared below the card: starting from the left, going up means a positive rise and going down means negative. Give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sign_frame",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "st-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3",
+       "3"
+      ],
+      "ask": "Look at the triangle on the line. Count the rise (vertical) and run (horizontal).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A guide has appeared below the card explaining how the directions work. Moving from the bottom-left corner to the right-angle corner, does the vertical rise go up or down?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "sign_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide just appeared under the card to help with signs. Since the line goes up from left to right, what sign should the rise have?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sign_frame",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide is now on screen under the card: starting from the left corner, going up makes the rise positive, and going right makes the run positive. Does our triangle's vertical leg go up or down as you move from left to right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sign_frame",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A note has appeared below the card explaining how to find the sign: starting from the left corner, going up makes the rise positive. Does the vertical leg of this triangle go up or down to reach the line?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sign_frame",
+          "actionId": "test/4/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A hint appeared under the card to help with signs: moving to the right gives a positive run, and moving upward gives a positive rise. From the left corner of your triangle, does the line go up or down?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/4/0",
+          "lever": "sign_frame"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "st-1",
+     "trigger": "The learner said they were stuck, so the host pulled sign_frame (help). It is on screen now: Writes under the card: from the left corner, a rise that goes up is positive and one that goes down is negative; the run counts to the right, so it is positive. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Th",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3",
+       "3"
+      ],
+      "ask": "Look at the triangle on the line. Count the rise (vertical) and run (horizontal).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Look under the card: there is a reminder showing that going up means a positive rise, while going down means negative. Starting from the left and heading to the right-angle corner, see which way the vertical leg goes, and try typing your values again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helpful hint has appeared right under the card reminding us that going up gives a positive rise and going down gives a negative rise. Looking at this triangle from left to right, does the line rise up or go down?",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A note has appeared under the card reminding us that moving upward from the left corner is positive, and moving downward is negative. Take another look at the vertical rise on your triangle and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helpful note has appeared below the card explaining how directions work: starting from the left corner, going up makes the rise positive, and counting to the right makes the run positive. Take another look at the triangle and try entering the numbers again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is now a helpful hint written right under the card: starting from the left corner, a rise that goes up is positive, and one that goes down is negative. Look at your triangle and give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "st-1",
+     "trigger": "The learner submitted \"typed rise 3 and run 3\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "3",
+       "3"
+      ],
+      "ask": "Look at the triangle on the line. Count the rise (vertical) and run (horizontal).",
+      "leakTokens": [
+       "ACTIVITY_START",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "Support tier"
+      ],
+      "menu": [
+       "check"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You got it right by fixing the sign to positive three for the rise and three for the run!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You corrected the sign and found both the rise of three and the run of three.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You corrected the sign and found a rise of 3 and a run of 3.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done! You corrected the sign and got both the rise of three and the run of three just right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You checked the direction, fixed the sign to a positive rise of three, and got both legs right.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
