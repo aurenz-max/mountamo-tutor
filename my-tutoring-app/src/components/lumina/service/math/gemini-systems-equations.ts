@@ -653,14 +653,18 @@ function instructionFor(type: SystemsEquationsChallengeType): string {
   }
 }
 
-function hintFor(type: SystemsEquationsChallengeType, x: number, y: number): string {
+/**
+ * The on-demand hint: the method's next moves, never the solution. It used to print the pair ("The answer is
+ * (2, 1)"), which turned "Show hint" into "show answer" (fixed 2026-10-09, W1 binding C20).
+ */
+function hintFor(type: SystemsEquationsChallengeType, _x?: number, _y?: number): string {
   switch (type) {
     case 'graph':
-      return `Trace each line to where they cross. The crossing point's x-coordinate is ${x} and y-coordinate is ${y}.`;
+      return 'Trace each line to where they cross. From the origin, count across for x, then up or down for y. Then check the pair in both equations.';
     case 'substitution':
-      return `Set m₁·x + b₁ = m₂·x + b₂. Solve for x first (you should get ${x}), then plug back to find y = ${y}.`;
+      return 'Set the two right-hand sides equal and solve for x. Put that x into either equation to find y, then check the pair in both equations.';
     case 'elimination':
-      return `Multiply one or both equations so a column matches; add or subtract to cancel that variable. The answer is (${x}, ${y}).`;
+      return 'Multiply one or both equations so the x (or y) coefficients are opposites, add to cancel that variable, solve, then back-substitute. Check the pair in both equations.';
   }
 }
 
@@ -708,6 +712,9 @@ function buildSlopeInterceptChallenge(
     // Pick an integer intersection point in a safe interior band.
     const x0 = randInt(-4, 4);
     const y0 = randInt(-4, 4);
+    // A solution on the y-axis gives both lines the same b, so both printed equations end in the answer's y
+    // ("y = x + 3" and "y = -x + 3" is (0, 3)): the shaped builder's bA === bB guard, here.
+    if (x0 === 0) continue;
 
     // Back-solve y-intercepts: b = y0 - m·x0.
     const yInterceptA = y0 - slopeA * x0;

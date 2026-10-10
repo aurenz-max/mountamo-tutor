@@ -1,0 +1,63 @@
+{
+ "source": "qa/tutor-reports/parameter-explorer-runtime-explore-payload-2026-10-09.json",
+ "primitiveId": "parameter-explorer",
+ "evalMode": "explore",
+ "data": {
+  "title": "Centripetal Acceleration Explorer",
+  "description": "Investigate how altering the tangential velocity and the radius of curvature non-linearly impacts the centripetal acceleration required to maintain uniform circular motion.",
+  "formula": "a_c = \\frac{v^2}{r}",
+  "jsExpression": "Math.pow(v, 2) / r",
+  "outputName": "Centripetal Acceleration",
+  "outputUnit": "m/s\u00b2",
+  "context": "Classical mechanics exploring the radial acceleration experienced by an object traversing a circular trajectory at a constant tangential velocity.",
+  "parameters": [
+   {
+    "symbol": "v",
+    "name": "Tangential Velocity",
+    "unit": "m/s",
+    "min": 1,
+    "max": 50,
+    "step": 0.5,
+    "default": 10,
+    "description": "The linear speed of the object along the tangential vector of the circular path."
+   },
+   {
+    "symbol": "r",
+    "name": "Radius of Curvature",
+    "unit": "m",
+    "min": 0.5,
+    "max": 20,
+    "step": 0.5,
+    "default": 5,
+    "description": "The radius of the circular trajectory from the center of rotation to the object."
+   }
+  ],
+  "observations": [
+   {
+    "trigger": "Increment tangential velocity (v) from 10 m/s to 40 m/s while keeping the radius of curvature (r) locked at 5 m.",
+    "prompt": "Observe how centripetal acceleration scales non-linearly with tangential velocity. Notice the quadratic exponent applied to velocity in the numerator and explain why doubling the velocity quadruples the radial acceleration demand."
+   },
+   {
+    "trigger": "Gradually expand the radius of curvature (r) from 2 m to 20 m while maintaining a constant tangential velocity (v) of 20 m/s.",
+    "prompt": "Analyze the inverse proportionality between the radius of the circular trajectory and the resulting centripetal acceleration. How does widening the turning radius mitigate the inertial forces experienced by the traversing object?"
+   }
+  ],
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "explore",
+    "instruction": "Explore the simulation by adjusting the tangential velocity (v) and radius of curvature (r) to observe how centripetal acceleration responds to changes in kinematics during circular motion."
+   },
+   {
+    "id": "ch2",
+    "type": "explore",
+    "instruction": "Examine how increasing the tangential velocity while keeping the radius constant alters the resulting radial acceleration, focusing on the quadratic dependency of velocity in the numerator."
+   },
+   {
+    "id": "ch3",
+    "type": "explore",
+    "instruction": "Investigate the inverse relationship between the radius of curvature and the centripetal acceleration by holding velocity constant and systematically modifying the radius."
+   }
+  ]
+ }
+}

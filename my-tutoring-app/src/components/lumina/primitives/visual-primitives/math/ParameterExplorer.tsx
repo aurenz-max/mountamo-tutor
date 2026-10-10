@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import katex from 'katex';
 // @ts-ignore – CSS import works at runtime via Next.js loader
 import 'katex/dist/katex.min.css';
@@ -28,11 +28,25 @@ import {
 } from '../../../evaluation';
 import type { ParameterExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  DIRECTION_LABEL, describeParameterWork, directionKey, evaluateFormula, formatOutput, identifyKey, parameterCheck,
+  parameterLabel, parameterMiss, promptFor, resultText, sliderLabel, startingValues, workspaceAssignment, workspaceScene,
+  type Direction, type ParameterWork, plainFormula,
+} from './parameterExplorerWorkspace';
+import {
+  DOUBLE_MARKS_LEVER, DOUBLING_MODEL_LEVER, FIND_PARAMETER_LEVER, MODEL_PAIR_LEVER, SCALING_MODEL_LEVER, SUBSTITUTION_LEVER,
+  doubleMarks, doublingModel, isPracticeParameter, leverFacts, modelPair, parameterLevers, scalingModel, simplerParameter,
+  substitutionText, type Model,
+} from './parameterExplorerLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -56,6 +70,7 @@ export interface ParameterExplorerChallenge {
   /** For predict challenges */
   prediction?: {
     varyParameter: string;
+    /** The value the varied parameter moves to from its starting value (both predict modes). */
     newValue?: number;
     correctDirection?: 'increase' | 'decrease' | 'stay-same';
     correctValue?: number;
@@ -69,8 +84,8 @@ export interface ParameterExplorerChallenge {
   //    is present). These withdraw EXPLANATORY OVERLAYS only — the sliders and the
   //    formula (the manipulable simulation) stay live at every tier. Absent ⇒ all
   //    overlays on (back-compat). See gemini-parameter-explorer.ts resolveSupportStructure. ──
-  /** Show the big focal live OUTPUT readout. Off for real predictions (hard/medium)
-   *  so the student can't slide to the asked value and read the answer off it. */
+  /** Show the big focal live OUTPUT readout. The predict modes hide it until the answer is
+   *  checked whatever this says, so the student cannot slide to the asked value and read it off. */
   showOutputReadout?: boolean;
   /** Show the numeric value beside each parameter slider. Off at hard. */
   showParamReadouts?: boolean;
@@ -121,6 +136,8 @@ const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   'identify-relationship': { label: 'Identify Relationship', icon: '🔗', accentColor: 'emerald' },
 };
 
+const DIRECTION_ICON: Record<Direction, string> = { increase: '📈', decrease: '📉', 'stay-same': '➡️' };
+
 // ============================================================================
 // MathDisplay — inline KaTeX renderer
 // ============================================================================
@@ -141,34 +158,9 @@ function MathDisplay({ latex, display = false, className = '' }: { latex: string
 // Helpers
 // ============================================================================
 
-/** Safely evaluate the JS expression with given parameter values */
-function evaluateFormula(
-  jsExpression: string,
-  paramValues: Record<string, number>,
-): number | null {
-  try {
-    const paramNames = Object.keys(paramValues);
-    const paramVals = Object.values(paramValues);
-    // Build a function with parameter names as arguments
-    // eslint-disable-next-line no-new-func
-    const fn = new Function(...paramNames, `"use strict"; return (${jsExpression});`);
-    const result = fn(...paramVals);
-    if (typeof result !== 'number' || !isFinite(result)) return null;
-    return Math.round(result * 1e6) / 1e6; // avoid floating-point noise
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Tier-aware tutor reveal clause. A living-sim tutor sees the full challenge data
- * (including outputValue and the correct answer) and can LEAK what a hard tier hid
- * on screen. This calibrates how much the tutor may say:
- *  - easy   → may name the relationship and walk the effect (the readouts already show it)
- *  - medium → nudge execution; do NOT name the relationship; ask what they predict
- *  - hard   → never state the parameter's effect, never read the output; ask what
- *             the student PREDICTS will happen and why, from the formula structure
- * At every tier: never reveal the final numeric answer.
+ * Tier-aware tutor reveal clause for the scripted path's tagged messages. The workspace path sends none (the tutor
+ * reads the scene, which never carries the key).
  */
 function tutorRevealPolicy(
   tier: 'easy' | 'medium' | 'hard' | undefined,
@@ -190,20 +182,11 @@ function tutorRevealPolicy(
         + 'the effect from the formula before sliding; do not name the relationship outright. '
         + 'Never reveal the answer.';
     case 'easy':
-      return 'REVEAL POLICY (easy): the readouts are visible — you may name the relationship and '
-        + 'point to the live readout as a self-check, but still let the student answer.';
+      return 'REVEAL POLICY (easy): you may name the relationship in general terms, but the output stays '
+        + 'hidden until the answer is checked; let the student answer.';
     default:
       return 'REVEAL POLICY: guide without revealing the final answer.';
   }
-}
-
-/** Format a number for display */
-function formatOutput(value: number): string {
-  if (Math.abs(value) >= 1e6 || (Math.abs(value) < 0.001 && value !== 0)) {
-    return value.toExponential(3);
-  }
-  // Up to 4 decimal places, trimming trailing zeros
-  return parseFloat(value.toFixed(4)).toString();
 }
 
 // ============================================================================
@@ -214,25 +197,49 @@ interface ParameterSliderProps {
   param: ParameterDef;
   value: number;
   locked: boolean;
+  /** Closed while a checked answer waits for Try again (workspace path). */
+  disabled?: boolean;
   onValueChange: (value: number) => void;
   onToggleLock: () => void;
   highlighted?: boolean;
   /** Support-tier overlay: show the live numeric value of this parameter. The
    *  slider itself (the manipulable object) always renders. */
   showValueReadout?: boolean;
+  /** `double_marks` lever: where the starting value and its double sit on the slider. */
+  marks?: { start: number; double: number };
+}
+
+/** A model outside the item (a lever picture): each rule with its letter moved and what the rule gives. */
+function ModelFigure({ model, lever }: { model: Model; lever: string }) {
+  return (
+    <figure data-lever={lever} className="rounded-xl border border-white/10 bg-black/15 p-3 text-sm text-slate-200">
+      <figcaption className="mb-2 text-xs text-slate-400">A model outside this formula</figcaption>
+      <div className="space-y-1 font-mono">
+        {model.rows.map((row) => (
+          <p key={row.rule}>
+            {row.rule}: {model.input} {formatOutput(row.from)} → {formatOutput(row.to)}, {model.output} {formatOutput(row.outFrom)} → {formatOutput(row.outTo)}
+          </p>
+        ))}
+      </div>
+    </figure>
+  );
 }
 
 const ParameterSlider: React.FC<ParameterSliderProps> = ({
   param,
   value,
   locked,
+  disabled,
   onValueChange,
   onToggleLock,
   highlighted,
   showValueReadout = true,
+  marks,
 }) => {
+  const at = (v: number) => `${((v - param.min) / Math.max(1e-9, param.max - param.min)) * 100}%`;
   return (
     <div
+      data-parameter={param.symbol}
       className={`p-3 rounded-lg border transition-all ${
         highlighted
           ? 'border-amber-400/50 bg-amber-500/10'
@@ -258,7 +265,10 @@ const ParameterSlider: React.FC<ParameterSliderProps> = ({
             </span>
           )}
           <button
+            type="button"
             onClick={onToggleLock}
+            disabled={disabled}
+            aria-label={locked ? `Unlock ${param.symbol}` : `Lock ${param.symbol}`}
             className={`text-xs px-1.5 py-0.5 rounded transition-colors ${
               locked
                 ? 'bg-red-500/20 text-red-400 border border-red-500/30'
@@ -277,9 +287,27 @@ const ParameterSlider: React.FC<ParameterSliderProps> = ({
         max={param.max}
         step={param.step}
         value={[value]}
-        disabled={locked}
+        disabled={locked || disabled}
         onValueChange={([v]) => onValueChange(v)}
       />
+      {/* The same control for the keyboard and the journey driver (the Radix thumb has no value input). */}
+      <input
+        type="range"
+        className="sr-only"
+        aria-label={sliderLabel(param)}
+        min={param.min}
+        max={param.max}
+        step={param.step}
+        value={value}
+        disabled={locked || disabled}
+        onChange={(event) => onValueChange(Number(event.target.value))}
+      />
+      {marks && (
+        <div data-lever="double-marks" className="relative mt-1 h-4 text-[10px] text-amber-300" aria-hidden="true">
+          <span className="absolute -translate-x-1/2" style={{ left: at(marks.start) }}>▲ start</span>
+          <span className="absolute -translate-x-1/2" style={{ left: at(marks.double) }}>▲ ×2</span>
+        </div>
+      )}
       <div className="flex justify-between text-[10px] text-slate-600 mt-0.5">
         <span>
           {param.min}
@@ -304,9 +332,15 @@ const ParameterSlider: React.FC<ParameterSliderProps> = ({
 interface ParameterExplorerProps {
   data: ParameterExplorerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }) => {
+const ParameterExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  ParameterExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<ParameterExplorerChallenge>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -333,20 +367,34 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   // -------------------------------------------------------------------------
-  // Challenge Progress (shared hooks)
+  // Challenge Progress. On the workspace path the runtime moves the index; the hooks below are bound after render.
   // -------------------------------------------------------------------------
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId,
+    objectiveId,
+    planItemId: runtimePlanItemId,
+    workspace,
+    assignment: (ch) => workspaceAssignment(data, ch),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
     recordResult,
-    incrementAttempts,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
   const phaseResults = usePhaseResults({
     challenges,
@@ -359,20 +407,15 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
   // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
-  // Parameter values (keyed by symbol)
-  const [paramValues, setParamValues] = useState<Record<string, number>>(() => {
-    const initial: Record<string, number> = {};
-    for (const p of parameters) {
-      initial[p.symbol] = p.default;
-    }
-    return initial;
-  });
+  // Parameter values (keyed by symbol). Every item opens at the starting values its ask is stated from.
+  const [paramValues, setParamValues] = useState<Record<string, number>>(() => startingValues(data));
 
   // Locked parameters (hold-and-vary)
   const [lockedParams, setLockedParams] = useState<Set<string>>(new Set());
 
-  // Track which parameters the student has explored (moved)
+  // Parameters the student has moved in the lesson (metrics), and on the current item (explore's check).
   const [exploredParams, setExploredParams] = useState<Set<string>>(new Set());
+  const [movedThisItem, setMovedThisItem] = useState<string[]>([]);
 
   // Observations that have been triggered
   const [triggeredObservations, setTriggeredObservations] = useState<Set<number>>(new Set());
@@ -381,28 +424,54 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
   const [usedHoldAndVary, setUsedHoldAndVary] = useState(false);
 
   // Challenge answer state
-  const [selectedDirection, setSelectedDirection] = useState<'increase' | 'decrease' | 'stay-same' | null>(null);
+  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
   const [predictedValue, setPredictedValue] = useState('');
   const [selectedParameter, setSelectedParameter] = useState<string | null>(null);
   const [answerFeedback, setAnswerFeedback] = useState<'correct' | 'incorrect' | null>(null);
-  const [showExplanation, setShowExplanation] = useState(false);
 
   // -------------------------------------------------------------------------
   // Computed
   // -------------------------------------------------------------------------
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  // In-item levers (`parameterExplorerLevers.ts`), keyed by the session item they were pulled on, and the easier
+  // problem a simplify lever put on screen in its place.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<ParameterExplorerChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier problem while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const pulledLevers = leverState.item === sessionChallenge?.id ? leverState.pulled : [];
+  /** A runtime pull on the session item; never drawn on a practice problem. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  const currentType = currentChallenge?.type;
+  const isPredict = currentType === 'predict-direction' || currentType === 'predict-value';
   const outputValue = useMemo(
     () => evaluateFormula(jsExpression, paramValues),
     [jsExpression, paramValues],
   );
+  /** The learner's work as the domain module reads it. */
+  const work: ParameterWork = {
+    direction: selectedDirection,
+    value: predictedValue,
+    parameter: selectedParameter,
+    moved: movedThisItem,
+  };
+  /** The item is over: credited, or (scripted path only) missed and waiting for Next. */
+  const itemClosed = answerFeedback === 'correct' || (!tutorOwned && answerFeedback !== null);
 
   // ── Support-tier overlay flags (default ON when the field is absent — back-compat
   //    for sessions with no config.difficulty). The simulation object (sliders +
-  //    formula) is always rendered; only these explanatory overlays withdraw. ──
-  const showOutputReadout = currentChallenge?.showOutputReadout ?? true;
+  //    formula) is always rendered; only these explanatory overlays withdraw. In the
+  //    predict modes the output is the answer, so it stays hidden until the item is over
+  //    at every tier. ──
+  const showOutputReadout = isPredict ? itemClosed : currentChallenge?.showOutputReadout ?? true;
   const showParamReadouts = currentChallenge?.showParamReadouts ?? true;
   const showVaryHighlight = currentChallenge?.showVaryHighlight ?? true;
   const supportTier = currentChallenge?.supportTier;
+  /** Observation cards narrate relationships, which the checked modes ask for: explore only. */
+  const observationsVisible = currentType === 'explore' || !currentChallenge;
+  const shownObservations = observationsVisible
+    ? observations.filter((_, idx) => triggeredObservations.has(idx)).map((obs) => obs.prompt)
+    : [];
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -423,18 +492,18 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring
+  // AI Tutoring (scripted path; on the workspace path the tutor reads the scene)
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(
     () => ({
       formula,
       outputName,
       paramValues,
-      outputValue,
+      outputValue: showOutputReadout ? outputValue : null,
       exploredParams: Array.from(exploredParams),
       lockedParams: Array.from(lockedParams),
       currentChallengeType: currentChallenge?.type,
-      currentChallengeInstruction: currentChallenge?.instruction,
+      currentChallengeInstruction: currentChallenge ? promptFor(data, currentChallenge) : undefined,
       challengeIndex: currentChallengeIndex,
       totalChallenges: challenges.length,
       supportTier,
@@ -444,21 +513,27 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
       outputName,
       paramValues,
       outputValue,
+      showOutputReadout,
       exploredParams,
       lockedParams,
       currentChallenge,
       currentChallengeIndex,
       challenges.length,
       supportTier,
+      data,
     ],
   );
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'parameter-explorer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: 'Grade 9-12',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Introduction
   const hasIntroducedRef = useRef(false);
@@ -478,15 +553,18 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
   // -------------------------------------------------------------------------
   const handleParamChange = useCallback(
     (symbol: string, value: number) => {
+      if (learnerBlocked()) return;
       SoundManager.tick();
       setParamValues((prev) => ({ ...prev, [symbol]: value }));
       setExploredParams((prev) => new Set(prev).add(symbol));
+      setMovedThisItem((prev) => (prev.includes(symbol) ? prev : [...prev, symbol]));
     },
-    [],
+    [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const toggleLock = useCallback(
     (symbol: string) => {
+      if (learnerBlocked()) return;
       setLockedParams((prev) => {
         const next = new Set(prev);
         if (next.has(symbol)) {
@@ -500,21 +578,33 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
         return next;
       });
     },
-    [],
+    [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  // Reset answer state for a new challenge
+  // Reset the answer (Try again keeps the sliders as they are).
   const resetAnswerState = useCallback(() => {
     setSelectedDirection(null);
     setPredictedValue('');
     setSelectedParameter(null);
     setAnswerFeedback(null);
-    setShowExplanation(false);
   }, []);
+  // A fresh item opens at the starting values, unlocked, with nothing moved.
+  const openFresh = useCallback(() => {
+    resetAnswerState();
+    setParamValues(startingValues(data));
+    setLockedParams(new Set());
+    setMovedThisItem([]);
+  }, [resetAnswerState, data]);
+  // Workspace path: the runtime opens each item (and reopens it after a miss) in the same commit as the scene.
+  // Try again on a practice problem keeps it; a fresh item (or the full item back after practice) drops it.
+  openItem.current = (_index, retry) => {
+    if (retry) resetAnswerState();
+    else { setPractice(null); openFresh(); }
+  };
 
-  // Submit evaluation when all challenges complete
+  // Scripted path: submit evaluation when all challenges complete (the workspace path submits from `onFinished`).
   const handleSubmitEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation || challenges.length === 0) return;
+    if (tutorOwned || hasSubmittedEvaluation || challenges.length === 0) return;
 
     const correctCount = challengeResults.filter((r) => r.correct).length;
     const score = Math.round((correctCount / challenges.length) * 100);
@@ -540,6 +630,7 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
       explorationTime: Math.round((elapsedMs ?? 0) / 1000),
     });
   }, [
+    tutorOwned,
     hasSubmittedEvaluation,
     challenges,
     challengeResults,
@@ -553,104 +644,106 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
     submitEvaluation,
   ]);
 
-  // Auto-submit when all challenges complete
+  // Auto-submit when all challenges complete (scripted path)
   useEffect(() => {
     if (allChallengesComplete && !hasSubmittedEvaluation && challenges.length > 0) {
       handleSubmitEvaluation();
     }
   }, [allChallengesComplete, hasSubmittedEvaluation, challenges.length, handleSubmitEvaluation]);
 
+  // Workspace path, under a lesson's evaluation provider only (the live host has none): the scored session, whose
+  // item scores count corrections and whose evidence carries each wrong check's named miss.
+  const submittedOnFinish = useRef(false);
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || submittedOnFinish.current || challenges.length === 0 || progress.recordsEvaluation === false) return;
+    submittedOnFinish.current = true;
+    submitEvaluation(result.passed, result.accuracy, {
+      type: 'parameter-explorer',
+      evalMode: challenges[0]?.type ?? 'default',
+      predictionsCorrect: result.firstTryCount,
+      predictionsTotal: challenges.length,
+      parametersExplored: Array.from(exploredParams),
+      observationsTriggered: triggeredObservations.size,
+      usedHoldAndVary,
+      explorationTime: Math.round((elapsedMs ?? 0) / 1000),
+    }, { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+      teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+    undefined, result.diagnosisEvidence);
+  };
+
   // -------------------------------------------------------------------------
   // Challenge Answer Checking
   // -------------------------------------------------------------------------
   const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
+    if (!currentChallenge || answerFeedback !== null || learnerBlocked()) return;
+    const isCorrect = parameterCheck(data, currentChallenge, work);
 
-    let isCorrect = false;
-
-    switch (currentChallenge.type) {
-      case 'explore': {
-        // Explore mode: auto-advance after the student interacts
-        isCorrect = exploredParams.size >= 1;
-        break;
-      }
-      case 'predict-direction': {
-        if (!selectedDirection || !currentChallenge.prediction) break;
-        isCorrect = selectedDirection === currentChallenge.prediction.correctDirection;
-        break;
-      }
-      case 'predict-value': {
-        if (!predictedValue.trim() || !currentChallenge.prediction) break;
-        const predicted = parseFloat(predictedValue);
-        if (isNaN(predicted)) break;
-        const correct = currentChallenge.prediction.correctValue ?? 0;
-        const tol = currentChallenge.prediction.tolerance ?? Math.abs(correct * 0.1);
-        isCorrect = Math.abs(predicted - correct) <= tol;
-        break;
-      }
-      case 'identify-relationship': {
-        if (!selectedParameter || !currentChallenge.correctParameter) break;
-        isCorrect = selectedParameter === currentChallenge.correctParameter;
-        break;
-      }
-    }
-
-    incrementAttempts();
+    progress.commitCheck(
+      describeParameterWork(data, currentChallenge, work),
+      isCorrect,
+      isCorrect ? undefined : parameterMiss(data, currentChallenge, work),
+    );
     if (isCorrect) {
       SoundManager.playCorrect();
     } else {
       SoundManager.playIncorrect();
     }
     setAnswerFeedback(isCorrect ? 'correct' : 'incorrect');
-    setShowExplanation(true);
+    // The item is over (credited, or missed on the scripted path): the sliders show the asked setting.
+    const p = currentChallenge.prediction;
+    if ((isCorrect || !tutorOwned) && p?.newValue !== undefined && parameters.some((x) => x.symbol === p.varyParameter)) {
+      setParamValues({ ...startingValues(data), [p.varyParameter]: p.newValue });
+    }
 
     if (isCorrect) {
       sendText(
         `[ANSWER_CORRECT] Challenge ${currentChallengeIndex + 1}/${challenges.length}: `
-        + `"${currentChallenge.instruction}" — Student answered correctly. Congratulate briefly.`,
+        + `"${promptFor(data, currentChallenge)}" — Student answered correctly. Congratulate briefly.`,
         { silent: true },
       );
     } else {
-      const studentAnswer =
-        currentChallenge.type === 'predict-direction'
-          ? selectedDirection
-          : currentChallenge.type === 'predict-value'
-          ? predictedValue
-          : selectedParameter;
+      const key = currentChallenge.type === 'predict-direction' ? directionKey(data, currentChallenge)
+        : currentChallenge.type === 'identify-relationship' ? identifyKey(data, currentChallenge)
+        : currentChallenge.prediction?.correctValue;
       sendText(
         `[ANSWER_INCORRECT] Challenge ${currentChallengeIndex + 1}/${challenges.length}: `
-        + `"${currentChallenge.instruction}" — Student chose "${studentAnswer}" but correct is `
-        + `"${currentChallenge.prediction?.correctDirection ?? currentChallenge.prediction?.correctValue ?? currentChallenge.correctParameter}". `
-        + `Attempt ${currentAttempts + 1}. Give a hint. `
+        + `"${promptFor(data, currentChallenge)}" — Student ${describeParameterWork(data, currentChallenge, work)} but correct is `
+        + `"${key}". Attempt ${currentAttempts + 1}. Give a hint. `
         + tutorRevealPolicy(currentChallenge.supportTier, currentChallenge.type),
         { silent: true },
       );
     }
 
-    // Record result after a short delay for feedback
-    const score = isCorrect ? 100 : Math.max(0, 100 - currentAttempts * 25);
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct: isCorrect,
-      attempts: currentAttempts + 1,
-      score,
-    });
-  }, [
+    // Scripted path: the item ends here, right or wrong, with this primitive's own score.
+    if (!tutorOwned) {
+      recordResult({
+        challengeId: currentChallenge.id,
+        correct: isCorrect,
+        attempts: currentAttempts + 1,
+        score: isCorrect ? 100 : Math.max(0, 100 - currentAttempts * 25),
+      });
+    }
+  }, [ // eslint-disable-line react-hooks/exhaustive-deps
     currentChallenge,
+    answerFeedback,
     selectedDirection,
     predictedValue,
     selectedParameter,
-    exploredParams.size,
+    movedThisItem,
     currentAttempts,
     currentChallengeIndex,
     challenges.length,
-    incrementAttempts,
     recordResult,
     sendText,
+    tutorOwned,
+    data,
+    parameters,
+    progress.commitCheck,
   ]);
 
+  // Scripted path: the primitive's own Next (the workspace path hides it; the runtime advances).
   const handleNextChallenge = useCallback(() => {
-    resetAnswerState();
+    openFresh();
     if (!advanceProgress()) {
       // All done — evaluation auto-submits via effect
       return;
@@ -661,7 +754,7 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
       + tutorRevealPolicy(nextCh?.supportTier, nextCh?.type),
       { silent: true },
     );
-  }, [advanceProgress, resetAnswerState, currentChallengeIndex, challenges, challenges.length, sendText]);
+  }, [advanceProgress, openFresh, currentChallengeIndex, challenges, sendText]);
 
   // -------------------------------------------------------------------------
   // Observation Triggers
@@ -679,6 +772,47 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
   }, [observations, exploredParams.size, triggeredObservations]);
 
   // -------------------------------------------------------------------------
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration, no
+  // presentation.
+  // -------------------------------------------------------------------------
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(data, currentChallenge, {
+      ...work,
+      values: paramValues,
+      locked: Array.from(lockedParams),
+      outputShown: showOutputReadout,
+      valuesShown: showParamReadouts,
+      observations: shownObservations,
+      solved: answerFeedback === 'correct',
+    });
+    const onScreen = practice ? '' : leverFacts(data, sessionChallenge, pulledLevers);
+    const levers = practice ? [] : parameterLevers(data, sessionChallenge, pulledLevers, {
+      outputShown: sessionChallenge.type === 'identify-relationship' && (sessionChallenge.showOutputReadout ?? true) });
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice problem is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const easier = simplerParameter(data, sessionChallenge);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); openFresh();
+          return { practice: workspaceAssignment(data, easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); openFresh(); },
+    };
+  });
+
+  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
@@ -687,6 +821,8 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
     const correct = challengeResults.filter((r) => r.correct).length;
     return Math.round((correct / challenges.length) * 100);
   }, [challengeResults, challenges.length]);
+
+  const showSummary = allChallengesComplete && (!tutorOwned || hasSubmittedEvaluation || !!progress.practiceSummary);
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
@@ -699,6 +835,15 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
     solved: answerFeedback === 'correct',
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
+
+  /** Answer controls: closed once the item is checked, and while a checked miss waits for Try again. */
+  const answerClosed = answerFeedback !== null || blocked;
+  const result = currentChallenge && itemClosed ? resultText(data, currentChallenge) : '';
+  // Lever pictures, built for the session item (never drawn on a practice problem; `leverOn` is false there).
+  const ringSymbol = sessionChallenge?.prediction?.varyParameter;
+  const pairModel = sessionChallenge && leverOn(MODEL_PAIR_LEVER) ? modelPair(data, sessionChallenge) : null;
+  const scaleModel = sessionChallenge && leverOn(SCALING_MODEL_LEVER) ? scalingModel(data, sessionChallenge) : null;
+  const doubleModel = sessionChallenge && leverOn(DOUBLING_MODEL_LEVER) ? doublingModel(data, sessionChallenge) : null;
 
   return (
     <LuminaCard className={className}>
@@ -726,23 +871,34 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
             {outputName}
             {outputUnit && ` (${outputUnit})`}
           </p>
+          {/* `find_parameter` lever: the changed parameter ringed wherever it sits in the formula. */}
+          {leverOn(FIND_PARAMETER_LEVER) && ringSymbol && (
+            <p data-lever="find-parameter" className="mt-2 font-mono text-lg text-slate-200">
+              {plainFormula(data).split(/([A-Za-z_][A-Za-z0-9_]*)/).map((token, i) => (token === ringSymbol
+                ? <span key={i} className="rounded-full px-1.5 ring-2 ring-amber-300">{token}</span>
+                : <span key={i}>{token}</span>))}
+            </p>
+          )}
+          {/* `substitution` lever: the formula with the setting written in, not worked out. */}
+          {leverOn(SUBSTITUTION_LEVER) && sessionChallenge && (
+            <p data-lever="substitution" className="mt-2 font-mono text-base text-slate-200">{substitutionText(data, sessionChallenge)}</p>
+          )}
         </LuminaPanel>
 
         {/* ── Output Display (bespoke focal readout — a withdrawable OVERLAY) ──
-            At harder tiers showOutputReadout is false: the live numeric result is
-            hidden so the student must PREDICT the parameter's effect rather than
-            read it off. The sliders + formula (the manipulable sim) stay live. */}
+            Hidden in the predict modes until the answer is checked (it is the answer), and
+            at the tiers that withdraw it elsewhere. The sliders + formula stay live. */}
         <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-400/20 text-center">
           <p className="text-xs text-slate-400 mb-1">{outputName}</p>
           {showOutputReadout ? (
-            <p className="text-3xl font-mono font-bold text-blue-300">
+            <p className="text-3xl font-mono font-bold text-blue-300" data-output="shown">
               {outputValue !== null ? formatOutput(outputValue) : '—'}
               {outputUnit && (
                 <span className="text-base text-blue-400/60 ml-1">{outputUnit}</span>
               )}
             </p>
           ) : (
-            <p className="text-3xl font-mono font-bold text-blue-300/40 select-none" title="Predict the result — readout hidden at this level">
+            <p className="text-3xl font-mono font-bold text-blue-300/40 select-none" data-output="hidden" title="Predict the result — the readout is hidden until you check">
               ?
             </p>
           )}
@@ -767,45 +923,69 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
               param={param}
               value={paramValues[param.symbol] ?? param.default}
               locked={lockedParams.has(param.symbol)}
+              disabled={blocked}
               onValueChange={(v) => handleParamChange(param.symbol, v)}
               onToggleLock={() => toggleLock(param.symbol)}
               showValueReadout={showParamReadouts}
+              marks={leverOn(DOUBLE_MARKS_LEVER) ? doubleMarks(data).find((m) => m.symbol === param.symbol) : undefined}
               highlighted={
-                currentChallenge?.type === 'predict-direction' ||
-                currentChallenge?.type === 'predict-value'
-                  ? showVaryHighlight &&
-                    currentChallenge.prediction?.varyParameter === param.symbol
-                  : currentChallenge?.type === 'identify-relationship'
+                isPredict
+                  ? showVaryHighlight && currentChallenge?.prediction?.varyParameter === param.symbol
+                  : currentType === 'identify-relationship'
                   ? selectedParameter === param.symbol
                   : false
               }
             />
           ))}
+          {leverOn(DOUBLE_MARKS_LEVER) && (
+            <div className="text-center">
+              <button
+                type="button"
+                disabled={blocked}
+                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 hover:bg-white/10"
+                onClick={() => {
+                  if (learnerBlocked()) return;
+                  SoundManager.select();
+                  setParamValues(startingValues(data));
+                }}
+              >
+                Back to start
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* ── Observation Prompts ── */}
-        {observations.length > 0 && triggeredObservations.size > 0 && (
+        {/* Lever pictures outside the item: none of its letters or numbers. */}
+        {(leverOn(MODEL_PAIR_LEVER) && pairModel) || (leverOn(SCALING_MODEL_LEVER) && scaleModel)
+          || (leverOn(DOUBLING_MODEL_LEVER) && doubleModel) ? (
           <div className="space-y-2">
-            {observations.map(
-              (obs, idx) =>
-                triggeredObservations.has(idx) && (
-                  <LuminaCallout
-                    key={idx}
-                    accent="emerald"
-                    label="Observe"
-                    icon={<Lightbulb className="w-4 h-4" />}
-                  >
-                    {obs.prompt}
-                  </LuminaCallout>
-                ),
-            )}
+            {leverOn(MODEL_PAIR_LEVER) && pairModel && <ModelFigure model={pairModel} lever="model-pair" />}
+            {leverOn(SCALING_MODEL_LEVER) && scaleModel && <ModelFigure model={scaleModel} lever="scaling-model" />}
+            {leverOn(DOUBLING_MODEL_LEVER) && doubleModel && <ModelFigure model={doubleModel} lever="doubling-model" />}
+          </div>
+        ) : null}
+
+        {/* ── Observation Prompts (explore only: they narrate relationships the checked modes ask for) ── */}
+        {shownObservations.length > 0 && (
+          <div className="space-y-2">
+            {shownObservations.map((prompt, idx) => (
+              <LuminaCallout
+                key={idx}
+                accent="emerald"
+                label="Observe"
+                icon={<Lightbulb className="w-4 h-4" />}
+              >
+                {prompt}
+              </LuminaCallout>
+            ))}
           </div>
         )}
 
         {/* ── Challenge Area ── */}
-        {currentChallenge && !allChallengesComplete && (
+        {/* Stays up on the workspace path once the last item is credited, until the runtime closes the lesson. */}
+        {currentChallenge && !showSummary && (
           <LuminaPanel className="space-y-4">
-            <LuminaPrompt>{currentChallenge.instruction}</LuminaPrompt>
+            <LuminaPrompt>{promptFor(data, currentChallenge)}</LuminaPrompt>
 
             {/* Explore: just needs to interact with sliders */}
             {currentChallenge.type === 'explore' && (
@@ -816,7 +996,7 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
                 <LuminaActionButton
                   action="check"
                   onClick={handleCheckAnswer}
-                  disabled={exploredParams.size === 0}
+                  disabled={movedThisItem.length === 0 || answerClosed}
                 >
                   Done Exploring
                 </LuminaActionButton>
@@ -826,33 +1006,29 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
             {/* Predict Direction */}
             {currentChallenge.type === 'predict-direction' && (
               <div className="space-y-3">
-                {currentChallenge.prediction && (
-                  <p className="text-xs text-slate-500">
-                    If <span className="font-mono text-slate-300">{currentChallenge.prediction.varyParameter}</span> changes,
-                    what happens to <span className="font-mono text-slate-300">{outputName}</span>?
-                  </p>
-                )}
                 <div className="flex gap-2 justify-center">
                   {(['increase', 'decrease', 'stay-same'] as const).map((dir) => (
                     <button
                       key={dir}
                       type="button"
-                      className={`rounded-xl border px-4 py-2 capitalize transition-all ${answerStateClass(
+                      aria-label={DIRECTION_LABEL[dir]}
+                      className={`rounded-xl border px-4 py-2 transition-all ${answerStateClass(
                         selectedDirection === dir ? 'selected' : 'idle',
                       )}`}
                       onClick={() => {
+                        if (learnerBlocked()) return;
                         SoundManager.select();
                         setSelectedDirection(dir);
                       }}
-                      disabled={answerFeedback !== null}
+                      disabled={answerClosed}
                     >
-                      {dir === 'increase' ? '📈 Increase' : dir === 'decrease' ? '📉 Decrease' : '➡️ Stay Same'}
+                      <span aria-hidden="true">{DIRECTION_ICON[dir]} </span>{DIRECTION_LABEL[dir]}
                     </button>
                   ))}
                 </div>
                 {answerFeedback === null && selectedDirection && (
                   <div className="text-center">
-                    <LuminaActionButton action="check" onClick={handleCheckAnswer} />
+                    <LuminaActionButton action="check" onClick={handleCheckAnswer} disabled={blocked} />
                   </div>
                 )}
               </div>
@@ -861,29 +1037,21 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
             {/* Predict Value */}
             {currentChallenge.type === 'predict-value' && (
               <div className="space-y-3">
-                {currentChallenge.prediction && (
-                  <p className="text-xs text-slate-500">
-                    If <span className="font-mono text-slate-300">{currentChallenge.prediction.varyParameter}</span>{' '}
-                    {currentChallenge.prediction.newValue !== undefined
-                      ? `changes to ${currentChallenge.prediction.newValue}`
-                      : 'changes'}
-                    , what will <span className="font-mono text-slate-300">{outputName}</span> be?
-                  </p>
-                )}
                 <div className="flex items-center gap-2 justify-center">
                   <LuminaInput
                     type="number"
+                    aria-label="Your prediction"
                     value={predictedValue}
-                    onChange={(e) => setPredictedValue(e.target.value)}
+                    onChange={(e) => { if (!learnerBlocked()) setPredictedValue(e.target.value); }}
                     placeholder="Your prediction..."
-                    disabled={answerFeedback !== null}
+                    disabled={answerClosed}
                     className="w-40 text-center font-mono"
                   />
                   {outputUnit && <span className="text-sm text-slate-500">{outputUnit}</span>}
                 </div>
                 {answerFeedback === null && predictedValue.trim() && (
                   <div className="text-center">
-                    <LuminaActionButton action="check" onClick={handleCheckAnswer} />
+                    <LuminaActionButton action="check" onClick={handleCheckAnswer} disabled={blocked} />
                   </div>
                 )}
               </div>
@@ -892,23 +1060,21 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
             {/* Identify Relationship */}
             {currentChallenge.type === 'identify-relationship' && (
               <div className="space-y-3">
-                <p className="text-xs text-slate-500">
-                  Select the parameter that has the strongest effect on{' '}
-                  <span className="font-mono text-slate-300">{outputName}</span>.
-                </p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {parameters.map((param) => (
                     <button
                       key={param.symbol}
                       type="button"
+                      aria-label={parameterLabel(param)}
                       className={`rounded-xl border px-4 py-2 font-mono transition-all ${answerStateClass(
                         selectedParameter === param.symbol ? 'selected' : 'idle',
                       )}`}
                       onClick={() => {
+                        if (learnerBlocked()) return;
                         SoundManager.select();
                         setSelectedParameter(param.symbol);
                       }}
-                      disabled={answerFeedback !== null}
+                      disabled={answerClosed}
                     >
                       {param.symbol}
                       <span className="ml-1 text-xs font-sans text-slate-400">({param.name})</span>
@@ -917,25 +1083,33 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
                 </div>
                 {answerFeedback === null && selectedParameter && (
                   <div className="text-center">
-                    <LuminaActionButton action="check" onClick={handleCheckAnswer} />
+                    <LuminaActionButton action="check" onClick={handleCheckAnswer} disabled={blocked} />
                   </div>
                 )}
               </div>
             )}
 
-            {/* Feedback */}
+            {/* Feedback. A miss on the workspace path shows nothing new: the explanation and result wait for credit. */}
             {answerFeedback && (
               <LuminaFeedbackCard status={answerFeedback}>
-                {showExplanation && currentChallenge.prediction?.explanation
-                  ? currentChallenge.prediction.explanation
-                  : answerFeedback === 'correct'
-                  ? 'Nicely done.'
-                  : 'Take another look at how the parameters drive the output.'}
+                {itemClosed ? (
+                  <>
+                    {result && <span className="block">{result}</span>}
+                    {currentChallenge.prediction?.explanation && (
+                      <span className="block mt-1">{currentChallenge.prediction.explanation}</span>
+                    )}
+                    {!result && !currentChallenge.prediction?.explanation && (answerFeedback === 'correct'
+                      ? 'Nicely done.'
+                      : 'Take another look at how the parameters drive the output.')}
+                  </>
+                ) : (
+                  'Not yet. Look at where that parameter sits in the formula and think again.'
+                )}
               </LuminaFeedbackCard>
             )}
 
-            {/* Next button */}
-            {answerFeedback !== null && (
+            {/* Next button (scripted path; on the workspace path the shell's Try again / Next challenge replace it) */}
+            {!tutorOwned && answerFeedback !== null && (
               <div className="text-center">
                 <LuminaActionButton action="next" onClick={handleNextChallenge}>
                   {currentChallengeIndex + 1 < challenges.length ? 'Next Challenge →' : 'Finish'}
@@ -948,7 +1122,7 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
         </div>
 
         {/* ── Phase Summary ── */}
-        {allChallengesComplete && phaseResults.length > 0 && (
+        {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
             overallScore={submittedResult?.score ?? localOverallScore}
@@ -962,5 +1136,9 @@ const ParameterExplorer: React.FC<ParameterExplorerProps> = ({ data, className }
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const ParameterExplorer = withWorkspaceController<ParameterExplorerProps, ProgressOptions<ParameterExplorerChallenge>, Progress>(
+  'parameter-explorer', ParameterExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('parameter-explorer'));
 
 export default ParameterExplorer;

@@ -891,7 +891,18 @@ Return ONLY the wrapper fields described above.
   // every type in the bundle.
   const sessionChallengeType: MatrixChallengeType = allowedChallengeTypes[0];
 
-  const gradeBand = (wrapper.gradeBand as '7-8' | 'algebra2' | 'precalculus' | 'advanced' | undefined) ?? inferGradeBand(gradeLevel);
+  // The lesson's grade is the ceiling: the model may pick a lower band, never a higher one (a Grade 10 lesson came
+  // back 'advanced', entries to ±12 and three-term products past 100; payload 2026-10-09).
+  // The ceiling is the objective's curriculum grade when there is one (`ctx.grade`), else no ceiling.
+  const BAND_ORDER = ['7-8', 'algebra2', 'precalculus', 'advanced'] as const;
+  const gradeNumber = ctx.grade && /^\d+$/.test(ctx.grade) ? Number(ctx.grade) : null;
+  const gradeCeiling: (typeof BAND_ORDER)[number] = gradeNumber === null ? 'advanced'
+    : gradeNumber <= 8 ? '7-8' : gradeNumber <= 10 ? 'algebra2' : 'precalculus';
+  const modelBand = wrapper.gradeBand as (typeof BAND_ORDER)[number] | undefined;
+  const fallbackBand = inferGradeBand(gradeLevel);
+  const clamp = (band: (typeof BAND_ORDER)[number]) =>
+    (BAND_ORDER.indexOf(band) <= BAND_ORDER.indexOf(gradeCeiling) ? band : gradeCeiling);
+  const gradeBand = clamp(modelBand && BAND_ORDER.includes(modelBand) ? modelBand : fallbackBand);
 
   // ── Tier-2: narrow the code-owned matrix ENTRY range to the lesson scope (CLASS-3) ──
   // Entries are code-picked; intent can't reach them via the prompt. Resolve a {min,max}

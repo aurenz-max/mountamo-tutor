@@ -1,0 +1,150 @@
+{
+ "source": "qa/tutor-reports/matrix-display-runtime-transpose-payload-2026-10-09.json",
+ "primitiveId": "matrix-display",
+ "evalMode": "transpose",
+ "data": {
+  "title": "Matrix Reflection and Index Permutation",
+  "description": "Practice the foundational algebraic transformation of swapping rows and columns across a series of non-square matrices. Observe how dimensions invert and structural symmetry is revealed through systematic transposition.",
+  "challenges": [
+   {
+    "id": "matrix-1",
+    "challengeType": "transpose",
+    "instruction": "Transpose the 2\u00d73 matrix. Enter each entry of the resulting 3\u00d72 matrix.",
+    "rows": 2,
+    "columns": 3,
+    "values": [
+     [
+      -6,
+      0,
+      1
+     ],
+     [
+      1,
+      -4,
+      -8
+     ]
+    ],
+    "expectedMatrix": [
+     [
+      -6,
+      1
+     ],
+     [
+      0,
+      -4
+     ],
+     [
+      1,
+      -8
+     ]
+    ],
+    "hint": "Row i of A becomes column i of A\u1d40. The transpose of a 2\u00d73 matrix is a 3\u00d72 matrix."
+   },
+   {
+    "id": "matrix-2",
+    "challengeType": "transpose",
+    "instruction": "Transpose the 3\u00d72 matrix. Enter each entry of the resulting 2\u00d73 matrix.",
+    "rows": 3,
+    "columns": 2,
+    "values": [
+     [
+      -7,
+      -8
+     ],
+     [
+      -5,
+      4
+     ],
+     [
+      -5,
+      -8
+     ]
+    ],
+    "expectedMatrix": [
+     [
+      -7,
+      -5,
+      -5
+     ],
+     [
+      -8,
+      4,
+      -8
+     ]
+    ],
+    "hint": "Row i of A becomes column i of A\u1d40. The transpose of a 3\u00d72 matrix is a 2\u00d73 matrix."
+   },
+   {
+    "id": "matrix-3",
+    "challengeType": "transpose",
+    "instruction": "Transpose the 2\u00d73 matrix. Enter each entry of the resulting 3\u00d72 matrix.",
+    "rows": 2,
+    "columns": 3,
+    "values": [
+     [
+      -4,
+      6,
+      -1
+     ],
+     [
+      2,
+      2,
+      7
+     ]
+    ],
+    "expectedMatrix": [
+     [
+      -4,
+      2
+     ],
+     [
+      6,
+      2
+     ],
+     [
+      -1,
+      7
+     ]
+    ],
+    "hint": "Row i of A becomes column i of A\u1d40. The transpose of a 2\u00d73 matrix is a 3\u00d72 matrix."
+   },
+   {
+    "id": "matrix-4",
+    "challengeType": "transpose",
+    "instruction": "Transpose the 3\u00d72 matrix. Enter each entry of the resulting 2\u00d73 matrix.",
+    "rows": 3,
+    "columns": 2,
+    "values": [
+     [
+      -1,
+      -1
+     ],
+     [
+      5,
+      -8
+     ],
+     [
+      -5,
+      -9
+     ]
+    ],
+    "expectedMatrix": [
+     [
+      -1,
+      5,
+      -5
+     ],
+     [
+      -1,
+      -8,
+      -9
+     ]
+    ],
+    "hint": "Row i of A becomes column i of A\u1d40. The transpose of a 3\u00d72 matrix is a 2\u00d73 matrix."
+   }
+  ],
+  "challengeType": "transpose",
+  "educationalContext": "Transposition is a fundamental algebraic operation with profound implications in linear transformations, solving systems of linear equations, and computing covariance matrices in multivariate statistics. By inverting the row and column indices of a matrix, mathematicians can analyze dual spaces and orthogonal complements.",
+  "gradeBand": "algebra2"
+ }
+}

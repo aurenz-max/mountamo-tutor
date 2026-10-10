@@ -1,0 +1,108 @@
+{
+ "source": "qa/tutor-reports/matrix-display-runtime-determinant_inverse-payload-2026-10-09.json",
+ "primitiveId": "matrix-display",
+ "evalMode": "determinant_inverse",
+ "data": {
+  "title": "Advanced Matrix Inversion and Determinant Analysis",
+  "description": "Students will rigorously calculate determinants and find inverses for a sequence of increasingly complex square matrices.",
+  "challenges": [
+   {
+    "id": "matrix-1",
+    "challengeType": "determinant",
+    "instruction": "Calculate the determinant of this 2\u00d72 matrix. Enter the integer value.",
+    "rows": 2,
+    "columns": 2,
+    "values": [
+     [
+      3,
+      5
+     ],
+     [
+      -1,
+      -2
+     ]
+    ],
+    "expectedScalar": -1,
+    "hint": "For [[a, b], [c, d]], det = ad \u2212 bc."
+   },
+   {
+    "id": "matrix-2",
+    "challengeType": "inverse",
+    "instruction": "Find the inverse of this 2\u00d72 matrix. Enter each entry of A\u207b\u00b9.",
+    "rows": 2,
+    "columns": 2,
+    "values": [
+     [
+      -3,
+      -5
+     ],
+     [
+      -1,
+      -2
+     ]
+    ],
+    "expectedMatrix": [
+     [
+      -2,
+      5
+     ],
+     [
+      1,
+      -3
+     ]
+    ],
+    "hint": "For [[a, b], [c, d]] with det = ad \u2212 bc, A\u207b\u00b9 = (1/det) \u00b7 [[d, \u2212b], [\u2212c, a]]."
+   },
+   {
+    "id": "matrix-3",
+    "challengeType": "determinant",
+    "instruction": "Calculate the determinant of this 2\u00d72 matrix. Enter the integer value.",
+    "rows": 2,
+    "columns": 2,
+    "values": [
+     [
+      -6,
+      5
+     ],
+     [
+      8,
+      3
+     ]
+    ],
+    "expectedScalar": -58,
+    "hint": "For [[a, b], [c, d]], det = ad \u2212 bc."
+   },
+   {
+    "id": "matrix-4",
+    "challengeType": "inverse",
+    "instruction": "Find the inverse of this 2\u00d72 matrix. Enter each entry of A\u207b\u00b9.",
+    "rows": 2,
+    "columns": 2,
+    "values": [
+     [
+      1,
+      -2
+     ],
+     [
+      -2,
+      5
+     ]
+    ],
+    "expectedMatrix": [
+     [
+      5,
+      2
+     ],
+     [
+      2,
+      1
+     ]
+    ],
+    "hint": "For [[a, b], [c, d]] with det = ad \u2212 bc, A\u207b\u00b9 = (1/det) \u00b7 [[d, \u2212b], [\u2212c, a]]."
+   }
+  ],
+  "challengeType": "determinant",
+  "educationalContext": "Mastery of matrix inverses and determinants is foundational for solving multivariable linear systems, transforming geometric spaces, and advancing in linear algebra.",
+  "gradeBand": "algebra2"
+ }
+}

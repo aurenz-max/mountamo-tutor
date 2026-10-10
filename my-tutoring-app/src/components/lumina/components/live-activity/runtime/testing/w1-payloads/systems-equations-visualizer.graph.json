@@ -1,0 +1,118 @@
+{
+ "source": "qa/tutor-reports/systems-equations-visualizer-runtime-graph-payload-2026-10-09.json",
+ "primitiveId": "systems-equations-visualizer",
+ "evalMode": "graph",
+ "data": {
+  "title": "Solving Systems of Linear Equations by Graphing",
+  "description": "Practice finding the solution to a system of two linear equations by visually reading the intersection point from a coordinate plane.",
+  "xRange": [
+   -10,
+   10
+  ],
+  "yRange": [
+   -10,
+   10
+  ],
+  "gridSpacing": {
+   "x": 1,
+   "y": 1
+  },
+  "showAxes": true,
+  "showGrid": true,
+  "gradeBand": "7-8",
+  "challenges": [
+   {
+    "id": "se-3",
+    "type": "graph",
+    "systemForm": "slope-intercept",
+    "equationA": {
+     "display": "y = -x + 2",
+     "slope": -1,
+     "yIntercept": 2,
+     "color": "#3b82f6",
+     "label": "Line A"
+    },
+    "equationB": {
+     "display": "y = 3x - 2",
+     "slope": 3,
+     "yIntercept": -2,
+     "color": "#10b981",
+     "label": "Line B"
+    },
+    "expectedX": 1,
+    "expectedY": 1,
+    "instruction": "Look at the two lines on the graph. Find the intersection point and enter (x, y).",
+    "hint": "Trace each line to where they cross. From the origin, count across for x, then up or down for y. Then check the pair in both equations."
+   },
+   {
+    "id": "se-1",
+    "type": "graph",
+    "systemForm": "slope-intercept",
+    "equationA": {
+     "display": "y = -0.5x - 3",
+     "slope": -0.5,
+     "yIntercept": -3,
+     "color": "#3b82f6",
+     "label": "Line A"
+    },
+    "equationB": {
+     "display": "y = -3x - 8",
+     "slope": -3,
+     "yIntercept": -8,
+     "color": "#10b981",
+     "label": "Line B"
+    },
+    "expectedX": -2,
+    "expectedY": -2,
+    "instruction": "Look at the two lines on the graph. Find the intersection point and enter (x, y).",
+    "hint": "Trace each line to where they cross. From the origin, count across for x, then up or down for y. Then check the pair in both equations."
+   },
+   {
+    "id": "se-2",
+    "type": "graph",
+    "systemForm": "slope-intercept",
+    "equationA": {
+     "display": "y = 3x - 9",
+     "slope": 3,
+     "yIntercept": -9,
+     "color": "#3b82f6",
+     "label": "Line A"
+    },
+    "equationB": {
+     "display": "y = -3x + 3",
+     "slope": -3,
+     "yIntercept": 3,
+     "color": "#10b981",
+     "label": "Line B"
+    },
+    "expectedX": 2,
+    "expectedY": -3,
+    "instruction": "Look at the two lines on the graph. Find the intersection point and enter (x, y).",
+    "hint": "Trace each line to where they cross. From the origin, count across for x, then up or down for y. Then check the pair in both equations."
+   },
+   {
+    "id": "se-4",
+    "type": "graph",
+    "systemForm": "slope-intercept",
+    "equationA": {
+     "display": "y = 2x + 8",
+     "slope": 2,
+     "yIntercept": 8,
+     "color": "#3b82f6",
+     "label": "Line A"
+    },
+    "equationB": {
+     "display": "y = -x - 1",
+     "slope": -1,
+     "yIntercept": -1,
+     "color": "#10b981",
+     "label": "Line B"
+    },
+    "expectedX": -3,
+    "expectedY": 2,
+    "instruction": "Look at the two lines on the graph. Find the intersection point and enter (x, y).",
+    "hint": "Trace each line to where they cross. From the origin, count across for x, then up or down for y. Then check the pair in both equations."
+   }
+  ]
+ }
+}

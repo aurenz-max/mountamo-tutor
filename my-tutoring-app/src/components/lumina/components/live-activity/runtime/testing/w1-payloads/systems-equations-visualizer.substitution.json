@@ -1,0 +1,118 @@
+{
+ "source": "qa/tutor-reports/systems-equations-visualizer-runtime-substitution-payload-2026-10-09.json",
+ "primitiveId": "systems-equations-visualizer",
+ "evalMode": "substitution",
+ "data": {
+  "title": "Solving Systems by Substitution",
+  "description": "Practice solving linear systems algebraically by setting two slope-intercept equations equal to find the exact (x, y) intersection point.",
+  "xRange": [
+   -10,
+   10
+  ],
+  "yRange": [
+   -10,
+   10
+  ],
+  "gridSpacing": {
+   "x": 1,
+   "y": 1
+  },
+  "showAxes": true,
+  "showGrid": true,
+  "gradeBand": "algebra-1",
+  "challenges": [
+   {
+    "id": "se-4",
+    "type": "substitution",
+    "systemForm": "slope-intercept",
+    "equationA": {
+     "display": "y = -2x - 1",
+     "slope": -2,
+     "yIntercept": -1,
+     "color": "#3b82f6",
+     "label": "Line A"
+    },
+    "equationB": {
+     "display": "y = -x - 2",
+     "slope": -1,
+     "yIntercept": -2,
+     "color": "#10b981",
+     "label": "Line B"
+    },
+    "expectedX": 1,
+    "expectedY": -3,
+    "instruction": "Both equations are solved for y. Set them equal, solve for x, then find y. Enter (x, y).",
+    "hint": "Set the two right-hand sides equal and solve for x. Put that x into either equation to find y, then check the pair in both equations."
+   },
+   {
+    "id": "se-2",
+    "type": "substitution",
+    "systemForm": "slope-intercept",
+    "equationA": {
+     "display": "y = -2x + 9",
+     "slope": -2,
+     "yIntercept": 9,
+     "color": "#3b82f6",
+     "label": "Line A"
+    },
+    "equationB": {
+     "display": "y = x - 3",
+     "slope": 1,
+     "yIntercept": -3,
+     "color": "#10b981",
+     "label": "Line B"
+    },
+    "expectedX": 4,
+    "expectedY": 1,
+    "instruction": "Both equations are solved for y. Set them equal, solve for x, then find y. Enter (x, y).",
+    "hint": "Set the two right-hand sides equal and solve for x. Put that x into either equation to find y, then check the pair in both equations."
+   },
+   {
+    "id": "se-1",
+    "type": "substitution",
+    "systemForm": "slope-intercept",
+    "equationA": {
+     "display": "y = x + 7",
+     "slope": 1,
+     "yIntercept": 7,
+     "color": "#3b82f6",
+     "label": "Line A"
+    },
+    "equationB": {
+     "display": "y = -x + 1",
+     "slope": -1,
+     "yIntercept": 1,
+     "color": "#10b981",
+     "label": "Line B"
+    },
+    "expectedX": -3,
+    "expectedY": 4,
+    "instruction": "Both equations are solved for y. Set them equal, solve for x, then find y. Enter (x, y).",
+    "hint": "Set the two right-hand sides equal and solve for x. Put that x into either equation to find y, then check the pair in both equations."
+   },
+   {
+    "id": "se-3",
+    "type": "substitution",
+    "systemForm": "slope-intercept",
+    "equationA": {
+     "display": "y = -3x - 9",
+     "slope": -3,
+     "yIntercept": -9,
+     "color": "#3b82f6",
+     "label": "Line A"
+    },
+    "equationB": {
+     "display": "y = -1.5x - 3",
+     "slope": -1.5,
+     "yIntercept": -3,
+     "color": "#10b981",
+     "label": "Line B"
+    },
+    "expectedX": -4,
+    "expectedY": 3,
+    "instruction": "Both equations are solved for y. Set them equal, solve for x, then find y. Enter (x, y).",
+    "hint": "Set the two right-hand sides equal and solve for x. Put that x into either equation to find y, then check the pair in both equations."
+   }
+  ]
+ }
+}

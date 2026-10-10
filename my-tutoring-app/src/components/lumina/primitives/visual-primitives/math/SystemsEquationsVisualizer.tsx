@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import {
   LuminaCard,
   LuminaCardHeader,
@@ -21,11 +21,24 @@ import {
 } from '../../../evaluation';
 import type { SystemsEquationsMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  describeSystemsWork, enteredPoint, methodSteps, solutionCorrect, systemsMiss, workspaceAssignment, workspaceScene,
+  type SolutionPoint,
+} from './systemsEquationsWorkspace';
+import {
+  AXIS_GUIDE, CHECK_BOTH, EVERY_LINE, LINE_UP, METHOD_STEPS, SET_EQUAL, WORKED_EXAMPLE,
+  checkRows, isPracticeItem, leverFacts, lineUpColumns, setEqualLine, simplerItem, systemsLevers, workedExample,
+  type WorkedExample,
+} from './systemsEquationsLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth — mirrored in gemini-systems-equations.ts)
@@ -56,6 +69,7 @@ export interface SystemsEquationsChallenge {
   expectedX: number;
   expectedY: number;
   instruction: string;
+  /** On-demand hint (scripted path only). The method on this item's equations; never the solution. */
   hint: string;
 
   // ── Within-mode support-tier scaffolds (display-only; set by the generator when
@@ -109,7 +123,7 @@ const PHASE_CONFIG_BY_TYPE: Record<SystemsEquationsChallengeType, PhaseConfig> =
 };
 
 // ============================================================================
-// Tutor reveal policy — calibrates how much the live tutor reveals per tier.
+// Tutor reveal policy (scripted path) — calibrates how much the live tutor reveals per tier.
 // The intersection IS the (x, y) answer on every mode, so the tutor never states
 // the coordinates and, at 'hard', never names the method or the intersection —
 // it only asks what the two lines share.
@@ -135,6 +149,37 @@ function tutorRevealPolicy(
   }
 }
 
+/** The worked_example lever on a graph item: two different lines on a small plane, their crossing marked and named. */
+const GraphExampleInset: React.FC<{ example: WorkedExample }> = ({ example }) => {
+  const S = 160, P = 12, D = S - 2 * P, lo = -5, hi = 5;
+  const tx = (x: number) => P + ((x - lo) / (hi - lo)) * D;
+  const ty = (y: number) => P + ((hi - y) / (hi - lo)) * D;
+  const line = (eq: { slope: number; yIntercept: number }, color: string) => (
+    <line x1={tx(lo)} y1={ty(eq.slope * lo + eq.yIntercept)} x2={tx(hi)} y2={ty(eq.slope * hi + eq.yIntercept)}
+      stroke={color} strokeWidth={2} />
+  );
+  return (
+    <figure data-lever="worked-example" className="mx-auto w-64 rounded-lg border border-white/10 bg-slate-900/40 p-2 text-center">
+      <figcaption className="mb-1 text-xs uppercase tracking-wider text-slate-400">Worked example</figcaption>
+      <svg viewBox={`0 0 ${S} ${S}`} className="mx-auto w-40">
+        <clipPath id="systems-example-clip"><rect x={P} y={P} width={D} height={D} /></clipPath>
+        {Array.from({ length: hi - lo + 1 }, (_, i) => lo + i).map(v => (
+          <React.Fragment key={v}>
+            <line x1={tx(v)} y1={P} x2={tx(v)} y2={S - P} stroke="white" strokeOpacity={v === 0 ? 0.5 : 0.08} />
+            <line x1={P} y1={ty(v)} x2={S - P} y2={ty(v)} stroke="white" strokeOpacity={v === 0 ? 0.5 : 0.08} />
+          </React.Fragment>
+        ))}
+        <g clipPath="url(#systems-example-clip)">
+          {line(example.equationA, '#a78bfa')}
+          {line(example.equationB, '#f0abfc')}
+        </g>
+        <circle cx={tx(example.solution.x)} cy={ty(example.solution.y)} r={4} fill="none" stroke="#fde68a" strokeWidth={2} />
+      </svg>
+      <p className="mt-1 font-mono text-xs text-violet-200">{example.steps.join(' ')}</p>
+    </figure>
+  );
+};
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -142,9 +187,17 @@ function tutorRevealPolicy(
 interface SystemsEquationsVisualizerProps {
   data: SystemsEquationsVisualizerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({ data, className }) => {
+const SystemsEquationsVisualizerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  SystemsEquationsVisualizerProps & {
+    tutorOwned: boolean;
+    useController: (options: ProgressOptions<SystemsEquationsChallenge>) => Progress;
+  }) => {
   const {
     title,
     description,
@@ -164,63 +217,95 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     onEvaluationSubmit,
   } = data;
 
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const stableInstanceIdRef = useRef(instanceId || `systems-equations-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
   // -------------------------------------------------------------------------
-  // Multi-challenge state
+  // Challenge progression. On the workspace path the runtime moves the index.
   // -------------------------------------------------------------------------
+  /** Bound below, once the setters exist; the progress hook calls them only after render. */
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges,
+    getChallengeId: (ch) => ch.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: (result) => finish.current(result),
+  });
   const {
     currentIndex: currentChallengeIndex,
     currentAttempts,
     results: challengeResults,
     isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
+    mergeResult,
     advance: advanceProgress,
-  } = useChallengeProgress({
-    challenges,
-    getChallengeId: (ch) => ch.id,
-  });
+  } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const blocked = tutorOwned && progress.canAttempt === false;
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = blocked;
+  const learnerBlocked = () => workspaceClosed.current;
 
-  const currentChallenge = challenges[currentChallengeIndex] || null;
+  // In-item levers (`systemsEquationsLevers.ts`), keyed by the session item they were pulled on, with the learner's
+  // last checked pair on it (the check_both lever reads it), and the easier item a simplify lever put on screen.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[]; lastTried: SolutionPoint | null }>(
+    { item: '', pulled: [], lastTried: null });
+  const [practice, setPractice] = useState<SystemsEquationsChallenge | null>(null);
+  const sessionChallenge = challenges[currentChallengeIndex] ?? null;
+  /** What is on screen: the easier item while a simplify lever holds it, else the session item. */
+  const currentChallenge = practice ?? sessionChallenge;
+  const onSessionItem = leverState.item === sessionChallenge?.id;
+  const pulledLevers = onSessionItem ? leverState.pulled : [];
+  const lastTried = onSessionItem ? leverState.lastTried : null;
+  /** A runtime pull on the session item; never drawn on a practice item. */
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   const challengeType = currentChallenge?.type ?? 'graph';
 
   // -------------------------------------------------------------------------
-  // Per-challenge UI state (reset on advance)
+  // Per-challenge UI state
   // -------------------------------------------------------------------------
   const [xInput, setXInput] = useState('');
   const [yInput, setYInput] = useState('');
   const [feedback, setFeedback] = useState('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'info' | ''>('');
   const [showHint, setShowHint] = useState(false);
-  const [revealLines, setRevealLines] = useState(false); // for non-graph modes, lines hide until correct
+  /** The item on screen was checked right: its lines and crossing are drawn. */
+  const [solved, setSolved] = useState(false);
 
-  // Refs
-  const stableInstanceIdRef = useRef(instanceId || `systems-equations-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const recordedRef = useRef(false);
   const hintViewedRef = useRef(false);
   const hintsViewedRef = useRef(0);
   const submittedRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  /** A fresh item (both paths) or Try again (workspace): the boxes empty, the feedback gone. */
+  const resetWork = () => {
+    setXInput(''); setYInput(''); setFeedback(''); setFeedbackType(''); setSolved(false);
+  };
+  openItem.current = (_index, retry) => {
+    // Try again on a practice item keeps it; a fresh item (or the full item back after practice) drops it.
+    if (!retry) { setPractice(null); setShowHint(false); hintViewedRef.current = false; }
+    resetWork();
+  };
+
+  // Scripted path: the per-challenge reset whenever advance() flips the challenge.
+  useEffect(() => {
+    if (tutorOwned || !currentChallenge) return;
+    resetWork();
+    setShowHint(false);
+    hintViewedRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorOwned, currentChallenge?.id]);
+
+  /** The lines are drawn on a graph item, and on any item once it is solved. The algebra modes keep them hidden. */
+  const revealLines = challengeType === 'graph' || solved;
+
   // Canvas constants
   const padding = 50;
   const canvasWidth = 600;
   const canvasHeight = 540;
-
-  // -------------------------------------------------------------------------
-  // Per-challenge reset — fires whenever advance() flips currentChallenge.id.
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!currentChallenge) return;
-    setXInput('');
-    setYInput('');
-    setFeedback('');
-    setFeedbackType('');
-    setShowHint(false);
-    setRevealLines(currentChallenge.type === 'graph');
-    recordedRef.current = false;
-    hintViewedRef.current = false;
-  }, [currentChallenge?.id, currentChallenge]);
 
   // -------------------------------------------------------------------------
   // Coordinate helpers
@@ -234,6 +319,9 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     const canvasY = canvasHeight - padding - ((y - yRange[0]) / graphHeight) * effectiveHeight;
     return { x: canvasX, y: canvasY };
   }, [xRange, yRange]);
+
+  /** Axis numbers: on unless the hard tier withheld them, and on again with the every_line lever. */
+  const axisNumbers = !!currentChallenge && (currentChallenge.showAxisLabels !== false || leverOn(EVERY_LINE));
 
   // -------------------------------------------------------------------------
   // Canvas draw
@@ -281,10 +369,8 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
       ctx.lineTo(yAxisX, canvasHeight - padding);
       ctx.stroke();
 
-      // Numbered tick labels — perception aid, withdrawn at the hard support tier
-      // (showAxisLabels === false). Undefined (no tier present) → labels shown.
-      const showAxisLabels = currentChallenge.showAxisLabels !== false;
-      if (showAxisLabels) {
+      // Numbered tick labels — perception aid, withdrawn at the hard support tier.
+      if (axisNumbers) {
         ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
         ctx.font = '12px monospace';
         ctx.textAlign = 'center';
@@ -302,7 +388,6 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
       }
     }
 
-    // Lines — both A and B
     if (revealLines) {
       const drawLine = (slope: number, yIntercept: number, color: string) => {
         ctx.strokeStyle = color;
@@ -326,16 +411,14 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
       drawLine(currentChallenge.equationA.slope, currentChallenge.equationA.yIntercept, currentChallenge.equationA.color || '#3b82f6');
       drawLine(currentChallenge.equationB.slope, currentChallenge.equationB.yIntercept, currentChallenge.equationB.color || '#10b981');
 
-      // ── Support-tier (easy) FUZZY crossing-region cue — a "look here" self-check
-      //    hint. NEVER the exact point and NEVER coordinates: the intersection IS the
-      //    (x, y) answer, so this is a soft translucent blob whose radius spans ~1.6
-      //    grid units, withdrawn the instant the student answers correctly. ──
-      if (currentChallenge.showIntersectionRegion && !recordedRef.current) {
+      // ── Support-tier (easy) FUZZY crossing-region cue — never the exact point, never coordinates;
+      //    withdrawn the instant the student answers correctly. ──
+      if (currentChallenge.showIntersectionRegion && !solved) {
         const center = graphToCanvas(currentChallenge.expectedX, currentChallenge.expectedY);
         const unit = Math.abs(graphToCanvas(1, 0).x - graphToCanvas(0, 0).x);
         const radius = unit * 1.6; // deliberately fuzzy — covers several integer points
         const grad = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, radius);
-        grad.addColorStop(0, 'rgba(250, 204, 21, 0.28)'); // soft amber glow
+        grad.addColorStop(0, 'rgba(250, 204, 21, 0.28)');
         grad.addColorStop(1, 'rgba(250, 204, 21, 0)');
         ctx.fillStyle = grad;
         ctx.beginPath();
@@ -343,8 +426,8 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
         ctx.fill();
       }
 
-      // Intersection marker — shown only once correct (post-correct reveal per §6m #4).
-      if (recordedRef.current) {
+      // Intersection marker — shown only once correct.
+      if (solved) {
         const pos = graphToCanvas(currentChallenge.expectedX, currentChallenge.expectedY);
         ctx.fillStyle = '#ef4444';
         ctx.beginPath();
@@ -360,25 +443,13 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
         ctx.fillText(`(${currentChallenge.expectedX}, ${currentChallenge.expectedY})`, pos.x, pos.y - 14);
       }
     } else {
-      // Lines hidden — show a "Verify on graph" placeholder for substitution/elimination modes.
       ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
       ctx.font = '14px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('Solve algebraically — the graph reveals after you check.', canvasWidth / 2, canvasHeight / 2);
     }
-  }, [
-    currentChallenge,
-    xRange,
-    yRange,
-    gridSpacing,
-    showAxes,
-    showGrid,
-    revealLines,
-    graphToCanvas,
-    // recordedRef.current isn't reactive, but we redraw on feedbackType change which gates on it.
-    feedbackType,
-  ]);
+  }, [currentChallenge, xRange, yRange, gridSpacing, showAxes, showGrid, revealLines, solved, axisNumbers, graphToCanvas]);
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -414,7 +485,7 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring
+  // AI Tutoring (scripted path; on the workspace path the tutor reads the scene instead)
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     challengeType,
@@ -438,17 +509,21 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     currentAttempts,
   ]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'systems-equations-visualizer',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel:
       gradeBand === '7-8' ? 'Grade 8' : gradeBand === 'algebra-1' ? 'Algebra 1' : 'Algebra 2',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((text: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(text, options);
+  }, [tutorOwned, sendLegacyText]);
 
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
+    if (tutorOwned || !isConnected || hasIntroducedRef.current) return;
     hasIntroducedRef.current = true;
     const totalCh = challenges.length;
     const policy = tutorRevealPolicy(supportTier, challengeType);
@@ -459,85 +534,70 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
       + (policy ? ` ${policy}` : ''),
       { silent: true }
     );
-  }, [isConnected, challenges.length, challengeType, gradeBand, supportTier, sendText]);
+  }, [tutorOwned, isConnected, challenges.length, challengeType, gradeBand, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
-  // Submit handler (single, used by all 3 modes — answer is always (x, y))
+  // Check (single, used by all 3 modes — the answer is always (x, y)). Every graded check commits, right or wrong.
   // -------------------------------------------------------------------------
-
-  const completeChallenge = useCallback((correct: boolean) => {
-    if (!currentChallenge) return;
-    if (recordedRef.current) return; // stale-state guard
-    incrementAttempts();
-    const attempts = currentAttempts + 1;
-
-    if (correct) {
-      const score = Math.max(20, 100 - (attempts - 1) * 20);
-      recordedRef.current = true;
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts,
-        score,
-      });
-    }
-  }, [currentChallenge, currentAttempts, incrementAttempts, recordResult]);
-
   const handleCheck = useCallback(() => {
-    if (!currentChallenge || hasSubmittedEvaluation) return;
-    const trimmedX = xInput.trim();
-    const trimmedY = yInput.trim();
-    if (!trimmedX || !trimmedY) {
+    if (!currentChallenge || hasSubmittedEvaluation || solved || learnerBlocked()) return;
+    const work = { x: xInput, y: yInput };
+    if (!xInput.trim() || !yInput.trim()) {
       SoundManager.invalid();
       setFeedback('Enter both x and y values.');
       setFeedbackType('error');
       return;
     }
-    const xVal = parseFloat(trimmedX);
-    const yVal = parseFloat(trimmedY);
-    if (!Number.isFinite(xVal) || !Number.isFinite(yVal)) {
+    const point = enteredPoint(work);
+    if (!point) {
       SoundManager.invalid();
       setFeedback('Enter numbers for x and y.');
       setFeedbackType('error');
       return;
     }
-    const correct =
-      Math.abs(xVal - currentChallenge.expectedX) < 0.01 &&
-      Math.abs(yVal - currentChallenge.expectedY) < 0.01;
+    const correct = solutionCorrect(currentChallenge, point);
+    const attempts = currentAttempts + 1;
     if (correct) {
       SoundManager.playCorrect();
       setFeedback(`Correct! The solution is (${currentChallenge.expectedX}, ${currentChallenge.expectedY}).`);
       setFeedbackType('success');
-      setRevealLines(true);
+      setSolved(true);
       sendText(
         `[ANSWER_CORRECT] Student solved system via ${challengeType}. `
         + `Celebrate briefly and emphasize verification: "Plug into both equations to confirm."`,
         { silent: true },
       );
-      completeChallenge(true);
     } else {
       SoundManager.playIncorrect();
-      setFeedback(`Not quite. Check both equations carefully.`);
+      setFeedback(tutorOwned ? 'Not quite.' : 'Not quite. Check both equations carefully.');
       setFeedbackType('error');
-      incrementAttempts();
+      // The check_both lever reads the last checked pair on the session item.
+      if (!practice && sessionChallenge) {
+        setLeverState(s => ({ item: sessionChallenge.id, pulled: s.item === sessionChallenge.id ? s.pulled : [], lastTried: point }));
+      }
       const revealPolicy = tutorRevealPolicy(supportTier, currentChallenge.type);
       sendText(
-        `[ANSWER_INCORRECT] Student tried (${xVal}, ${yVal}) for ${challengeType} mode. `
+        `[ANSWER_INCORRECT] Student tried (${point.x}, ${point.y}) for ${challengeType} mode. `
         + `Actual: (${currentChallenge.expectedX}, ${currentChallenge.expectedY}). Coach the method without giving the answer.`
         + (revealPolicy ? ` ${revealPolicy}` : ''),
         { silent: true },
       );
     }
+    // The checked gesture (counts the attempt, records the verdict on both paths), then this primitive's own score.
+    progress.commitCheck(describeSystemsWork(work), correct, correct ? undefined : systemsMiss(currentChallenge, point));
+    // An easier practice item (a simplify lever) is not the session's challenge: it records nothing of its own.
+    if (correct && !isPracticeItem(currentChallenge)) {
+      mergeResult({
+        challengeId: currentChallenge.id,
+        correct: true,
+        attempts,
+        score: Math.max(20, 100 - (attempts - 1) * 20),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    currentChallenge,
-    hasSubmittedEvaluation,
-    xInput,
-    yInput,
-    challengeType,
-    completeChallenge,
-    incrementAttempts,
-    supportTier,
-    sendText,
+    currentChallenge, sessionChallenge, practice, hasSubmittedEvaluation, solved, xInput, yInput, challengeType,
+    currentAttempts, mergeResult, supportTier, sendText, tutorOwned, progress.commitCheck,
   ]);
 
   const handleShowHint = useCallback(() => {
@@ -549,7 +609,9 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     }
   }, [showHint]);
 
+  // Scripted path only: the workspace path has no Next and the runtime advances.
   const advanceChallenge = useCallback(() => {
+    if (tutorOwned) return;
     if (advanceProgress()) {
       const nextIdx = currentChallengeIndex + 1;
       const next = challenges[nextIdx];
@@ -561,13 +623,13 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
         { silent: true },
       );
     }
-  }, [advanceProgress, currentChallengeIndex, challenges, supportTier, sendText]);
+  }, [tutorOwned, advanceProgress, currentChallengeIndex, challenges, supportTier, sendText]);
 
   // -------------------------------------------------------------------------
-  // Session-complete: build metrics and submit exactly once.
+  // Session-complete (scripted path): build metrics and submit exactly once.
   // -------------------------------------------------------------------------
   useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
+    if (tutorOwned || !allChallengesComplete || hasSubmittedEvaluation || challenges.length === 0) return;
     if (submittedRef.current) return;
     submittedRef.current = true;
 
@@ -601,15 +663,66 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
       `[ALL_COMPLETE] All ${total} systems done. Correct: ${correctCount}/${total}. First-try: ${firstTryCount}. Accuracy: ${avgScore}%. Give encouraging summary.`,
       { silent: true },
     );
-  }, [allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+  }, [tutorOwned, allChallengesComplete, hasSubmittedEvaluation, challenges, challengeResults, currentChallenge, submitEvaluation, sendText]);
+
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong check's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || submittedRef.current || challenges.length === 0 || progress.recordsEvaluation === false) return;
+    submittedRef.current = true;
+    const total = challenges.length;
+    submitEvaluation(result.passed, result.accuracy, {
+      type: 'systems-equations-visualizer',
+      challengeType: (challenges[0]?.type ?? 'graph') as SystemsEquationsMetrics['challengeType'],
+      totalChallenges: total,
+      correctCount: result.solvedCount,
+      attemptsCount: result.attemptsCount,
+      firstTryCount: result.outcomes.filter(o => o.solved && o.attempts === 1).length,
+      hintsViewed: 0,
+      overallAccuracy: result.accuracy,
+      averageAttemptsPerChallenge: Math.round((result.attemptsCount / total) * 10) / 10,
+    }, { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+      teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+    undefined, result.diagnosisEvidence);
+  };
+
+  // -------------------------------------------------------------------------
+  // Workspace path: what the tutor and the observer are shown, republished every render.
+  // -------------------------------------------------------------------------
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
+    const scene = workspaceScene(currentChallenge, { xRange, yRange, work: { x: xInput, y: yInput }, linesShown: revealLines });
+    const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers, lastTried);
+    const levers = practice ? [] : systemsLevers(sessionChallenge, pulledLevers);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
+        ...(practice ? { practice: 'An easier practice system is on screen in place of the item. It is not graded; the full item comes back after it.' } : {}) },
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find((l) => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (id === CHECK_BOTH && !lastTried) return 'No checked answer on this item yet: check_both shows a checked pair in each equation.';
+        const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id], lastTried };
+        if (lever.kind === 'simplify') {
+          const easier = simplerItem(sessionChallenge);
+          if (!easier) return 'This item has no easier version; try a help lever.';
+          setLeverState(pulled); setPractice(easier); resetWork();
+          return { practice: workspaceAssignment(easier) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { setPractice(null); resetWork(); },
+    };
+  });
 
   // -------------------------------------------------------------------------
   // Derived UI state
   // -------------------------------------------------------------------------
-  const isCurrentComplete =
-    challenges.length > 0 &&
-    challengeResults.length > currentChallengeIndex &&
-    challengeResults[currentChallengeIndex]?.correct;
+  const isCurrentComplete = solved || (!practice && !!sessionChallenge
+    && challengeResults.some(r => r.challengeId === sessionChallenge.id && r.correct));
 
   const localOverallScore = useMemo(() => {
     if (!allChallengesComplete || challengeResults.length === 0) return 0;
@@ -621,9 +734,6 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     );
   }, [allChallengesComplete, challengeResults]);
 
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
   // the child's touches; Pip points only at the workspace as a whole and never
@@ -650,6 +760,13 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     challengeType === 'graph' ? 'Graphing'
     : challengeType === 'substitution' ? 'Substitution'
     : 'Elimination';
+  const inputsOpen = !isCurrentComplete && !blocked;
+
+  // Lever pictures (`systemsEquationsLevers.ts`), on the session item only.
+  const example = sessionChallenge && leverOn(WORKED_EXAMPLE) ? workedExample(sessionChallenge) : null;
+  const columns = sessionChallenge && leverOn(LINE_UP) ? lineUpColumns(sessionChallenge) : null;
+  const firstStep = sessionChallenge && leverOn(SET_EQUAL) ? setEqualLine(sessionChallenge) : null;
+  const checked = sessionChallenge && leverOn(CHECK_BOTH) && lastTried ? checkRows(sessionChallenge, lastTried) : null;
 
   return (
     <LuminaCard className={className}>
@@ -665,6 +782,9 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
             />
           </div>
         </div>
+        {practice && (
+          <p data-lever="practice" className="mt-1 text-xs uppercase tracking-wider text-violet-300">Practice system (not graded)</p>
+        )}
         <p className="text-slate-400 text-sm mt-1">
           {currentChallenge.instruction}
         </p>
@@ -694,6 +814,38 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
           </LuminaPanel>
         </div>
 
+        {/* set_equal lever: substitution's first step, not solved */}
+        {firstStep && (
+          <p data-lever="set-equal" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center font-mono text-sm text-violet-200">
+            Set the right-hand sides equal: {firstStep}
+          </p>
+        )}
+
+        {/* line_up lever: elimination's equations in x, y and constant columns */}
+        {columns && (
+          <div data-lever="line-up" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-sm text-violet-200">
+            <table className="mx-auto font-mono">
+              <thead>
+                <tr className="text-xs text-slate-400"><th className="px-3" /><th className="px-3">x</th><th className="px-3">y</th><th className="px-3">=</th></tr>
+              </thead>
+              <tbody>
+                {columns.rows.map(r => (
+                  <tr key={r.label}><td className="px-3 text-slate-400">{r.label}</td><td className="px-3 text-center">{r.a}</td>
+                    <td className="px-3 text-center">{r.b}</td><td className="px-3 text-center">{r.c}</td></tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-2 text-center text-xs">{columns.note}</p>
+          </div>
+        )}
+
+        {/* method_steps lever (or the easy tier's open steps) */}
+        {leverOn(METHOD_STEPS) && (
+          <p data-lever="method-steps" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center text-sm text-violet-200">
+            {methodSteps(challengeType)}
+          </p>
+        )}
+
         {/* Progress dots — bespoke per-challenge state visual tied to results. */}
         <div className="flex items-center justify-center gap-1.5">
           {challenges.map((ch, idx) => {
@@ -718,7 +870,8 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
         {/* Pip's dock sits above the workspace, which it outlines as a region. */}
         {pip.store && !allChallengesComplete && <div {...pip.dock} />}
         <div {...pip.workspace} className="space-y-4">
-        {/* Canvas — bespoke interaction surface (left untouched). */}
+        {/* Canvas — bespoke interaction surface. The algebra modes keep the lines hidden until solved:
+            showing them would let the learner read the solution off the crossing. */}
         <LuminaPanel accent="blue" className="p-3 rounded-2xl">
           <canvas
             ref={canvasRef}
@@ -727,19 +880,26 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
             className="rounded-lg w-full"
             style={{ aspectRatio: `${canvasWidth} / ${canvasHeight}`, backgroundColor: 'rgba(15, 23, 42, 0.6)' }}
           />
-          {!revealLines && challengeType !== 'graph' && (
-            <div className="mt-2 flex justify-center">
-              <LuminaButton
-                tone="subtle"
-                size="sm"
-                className="text-xs"
-                onClick={() => { SoundManager.tap(); setRevealLines(true); }}
-              >
-                Peek at the graph
-              </LuminaButton>
-            </div>
-          )}
         </LuminaPanel>
+
+        {/* axis_guide lever: how a crossing is read. No number. */}
+        {leverOn(AXIS_GUIDE) && (
+          <p data-lever="axis-guide" className="rounded-lg border border-violet-500/30 bg-slate-950/40 p-3 text-center text-sm text-violet-200">
+            From the origin, read x across first (left is negative), then y up or down (down is negative). The solution is
+            where the two lines meet, not where a line meets an axis.
+          </p>
+        )}
+
+        {example && (example.form === 'slope-intercept' && challengeType === 'graph'
+          ? <GraphExampleInset example={example} />
+          : (
+            <figure data-lever="worked-example" className="mx-auto max-w-md rounded-lg border border-white/10 bg-slate-900/40 p-3">
+              <figcaption className="mb-1 text-center text-xs uppercase tracking-wider text-slate-400">Worked example</figcaption>
+              <ol className="space-y-0.5 font-mono text-xs text-violet-200">
+                {example.steps.map((s, i) => <li key={i}>{s}</li>)}
+              </ol>
+            </figure>
+          ))}
 
         {/* Answer panel */}
         {!isCurrentComplete && !allChallengesComplete && (
@@ -756,8 +916,10 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
                 <span className="text-blue-300 font-mono">x =</span>
                 <LuminaInput
                   type="number"
+                  aria-label="x"
                   value={xInput}
-                  onChange={(e) => setXInput(e.target.value)}
+                  disabled={!inputsOpen}
+                  onChange={(e) => { if (!learnerBlocked()) setXInput(e.target.value); }}
                   className="w-20 px-2 py-1.5 text-center"
                   placeholder="?"
                   onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
@@ -767,17 +929,29 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
                 <span className="text-emerald-300 font-mono">y =</span>
                 <LuminaInput
                   type="number"
+                  aria-label="y"
                   value={yInput}
-                  onChange={(e) => setYInput(e.target.value)}
+                  disabled={!inputsOpen}
+                  onChange={(e) => { if (!learnerBlocked()) setYInput(e.target.value); }}
                   className="w-20 px-2 py-1.5 text-center"
                   placeholder="?"
                   onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
                 />
               </label>
-              <LuminaActionButton action="check" onClick={handleCheck}>
+              <LuminaActionButton action="check" onClick={handleCheck} disabled={!inputsOpen}>
                 Check
               </LuminaActionButton>
             </div>
+            {/* check_both lever: the learner's last checked pair in each equation; no computed value. */}
+            {checked && lastTried && (
+              <ul data-lever="check-both" className="space-y-1 text-center font-mono text-xs text-violet-200">
+                {checked.map(r => (
+                  <li key={r.label}>
+                    ({lastTried.x}, {lastTried.y}) in {r.display}: {r.works ? 'works ✓' : 'does not work ✗'}
+                  </li>
+                ))}
+              </ul>
+            )}
           </LuminaPanel>
         )}
 
@@ -792,39 +966,40 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
           </LuminaFeedbackCard>
         )}
 
-        {/* Method step hint — easy support tier only. Coordinate-free (never the
-            answer), shown by default as a self-check scaffold; withdrawn at medium/hard. */}
+        {/* Method step hint — easy support tier (and a practice item). Coordinate-free, never the answer. */}
         {currentChallenge.showStepHint && currentChallenge.stepHint && !isCurrentComplete && (
           <LuminaHintDisclosure defaultOpen label="Method steps">
             {currentChallenge.stepHint}
           </LuminaHintDisclosure>
         )}
 
-        {/* Hint — on-demand (carries the numbers); unchanged by tier. */}
-        {showHint && (
+        {/* Hint — on-demand, scripted path only (with the tutor, hints are the tutor's). Never the solution. */}
+        {!tutorOwned && showHint && currentChallenge.hint && (
           <LuminaHintDisclosure defaultOpen label="Hint">
             {currentChallenge.hint}
           </LuminaHintDisclosure>
         )}
 
-        {/* Controls */}
-        <div className="flex justify-center gap-2 flex-wrap">
-          {isCurrentComplete && !allChallengesComplete && (
-            <LuminaActionButton action="next" onClick={advanceChallenge}>
-              Next System →
-            </LuminaActionButton>
-          )}
-          {!isCurrentComplete && !allChallengesComplete && (
-            <LuminaButton
-              tone="subtle"
-              size="sm"
-              onClick={handleShowHint}
-              disabled={showHint}
-            >
-              {showHint ? 'Hint shown' : 'Show hint'}
-            </LuminaButton>
-          )}
-        </div>
+        {/* Controls (scripted path; with the tutor, Next challenge and Try again are the shell's) */}
+        {!tutorOwned && (
+          <div className="flex justify-center gap-2 flex-wrap">
+            {isCurrentComplete && !allChallengesComplete && (
+              <LuminaActionButton action="next" onClick={advanceChallenge}>
+                Next System →
+              </LuminaActionButton>
+            )}
+            {!isCurrentComplete && !allChallengesComplete && currentChallenge.hint && (
+              <LuminaButton
+                tone="subtle"
+                size="sm"
+                onClick={handleShowHint}
+                disabled={showHint}
+              >
+                {showHint ? 'Hint shown' : 'Show hint'}
+              </LuminaButton>
+            )}
+          </div>
+        )}
 
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
@@ -840,5 +1015,10 @@ const SystemsEquationsVisualizer: React.FC<SystemsEquationsVisualizerProps> = ({
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const SystemsEquationsVisualizer = withWorkspaceController<SystemsEquationsVisualizerProps,
+  ProgressOptions<SystemsEquationsChallenge>, Progress>('systems-equations-visualizer', SystemsEquationsVisualizerSurface,
+  useScriptedProgress, useWorkspaceProgressFor('systems-equations-visualizer'));
 
 export default SystemsEquationsVisualizer;

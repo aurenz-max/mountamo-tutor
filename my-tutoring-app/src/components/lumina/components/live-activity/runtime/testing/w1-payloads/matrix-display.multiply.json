@@ -1,0 +1,198 @@
+{
+ "source": "qa/tutor-reports/matrix-display-runtime-multiply-payload-2026-10-09.json",
+ "primitiveId": "matrix-display",
+ "evalMode": "multiply",
+ "data": {
+  "title": "Advanced Matrix Multiplication and Linear Transformations",
+  "description": "Students will practice rigorous row-by-column dot products to compute composite linear transformations across a sequence of progressive challenges.",
+  "challenges": [
+   {
+    "id": "matrix-1",
+    "challengeType": "multiply",
+    "instruction": "Multiply A (2\u00d72) by B (2\u00d72). Enter each entry of the 2\u00d72 result.",
+    "rows": 2,
+    "columns": 2,
+    "values": [
+     [
+      5,
+      -2
+     ],
+     [
+      0,
+      3
+     ]
+    ],
+    "secondMatrix": {
+     "rows": 2,
+     "columns": 2,
+     "values": [
+      [
+       5,
+       -5
+      ],
+      [
+       6,
+       2
+      ]
+     ],
+     "label": "Matrix B"
+    },
+    "expectedMatrix": [
+     [
+      13,
+      -29
+     ],
+     [
+      18,
+      6
+     ]
+    ],
+    "hint": "Result[i][j] = row i of A \u00b7 column j of B = \u03a3 A[i][k] \u00d7 B[k][j]."
+   },
+   {
+    "id": "matrix-2",
+    "challengeType": "multiply",
+    "instruction": "Multiply A (2\u00d73) by B (3\u00d72). Enter each entry of the 2\u00d72 result.",
+    "rows": 2,
+    "columns": 3,
+    "values": [
+     [
+      4,
+      -4,
+      3
+     ],
+     [
+      3,
+      -3,
+      -4
+     ]
+    ],
+    "secondMatrix": {
+     "rows": 3,
+     "columns": 2,
+     "values": [
+      [
+       -3,
+       -5
+      ],
+      [
+       -1,
+       -6
+      ],
+      [
+       -5,
+       1
+      ]
+     ],
+     "label": "Matrix B"
+    },
+    "expectedMatrix": [
+     [
+      -23,
+      7
+     ],
+     [
+      14,
+      -1
+     ]
+    ],
+    "hint": "Result[i][j] = row i of A \u00b7 column j of B = \u03a3 A[i][k] \u00d7 B[k][j]."
+   },
+   {
+    "id": "matrix-3",
+    "challengeType": "multiply",
+    "instruction": "Multiply A (2\u00d72) by B (2\u00d72). Enter each entry of the 2\u00d72 result.",
+    "rows": 2,
+    "columns": 2,
+    "values": [
+     [
+      -2,
+      -3
+     ],
+     [
+      -6,
+      -1
+     ]
+    ],
+    "secondMatrix": {
+     "rows": 2,
+     "columns": 2,
+     "values": [
+      [
+       3,
+       1
+      ],
+      [
+       -3,
+       -3
+      ]
+     ],
+     "label": "Matrix B"
+    },
+    "expectedMatrix": [
+     [
+      3,
+      7
+     ],
+     [
+      -15,
+      -3
+     ]
+    ],
+    "hint": "Result[i][j] = row i of A \u00b7 column j of B = \u03a3 A[i][k] \u00d7 B[k][j]."
+   },
+   {
+    "id": "matrix-4",
+    "challengeType": "multiply",
+    "instruction": "Multiply A (2\u00d73) by B (3\u00d72). Enter each entry of the 2\u00d72 result.",
+    "rows": 2,
+    "columns": 3,
+    "values": [
+     [
+      3,
+      1,
+      1
+     ],
+     [
+      5,
+      1,
+      -6
+     ]
+    ],
+    "secondMatrix": {
+     "rows": 3,
+     "columns": 2,
+     "values": [
+      [
+       -4,
+       -6
+      ],
+      [
+       -3,
+       -3
+      ],
+      [
+       2,
+       -1
+      ]
+     ],
+     "label": "Matrix B"
+    },
+    "expectedMatrix": [
+     [
+      -13,
+      -22
+     ],
+     [
+      -35,
+      -27
+     ]
+    ],
+    "hint": "Result[i][j] = row i of A \u00b7 column j of B = \u03a3 A[i][k] \u00d7 B[k][j]."
+   }
+  ],
+  "challengeType": "multiply",
+  "educationalContext": "Matrix multiplication is foundational to modern computational mathematics, serving as the algebraic backbone for computer graphics, cryptography, and high-dimensional data analysis in machine learning.",
+  "gradeBand": "algebra2"
+ }
+}

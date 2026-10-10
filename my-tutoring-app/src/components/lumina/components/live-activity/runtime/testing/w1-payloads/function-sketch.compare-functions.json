@@ -1,0 +1,911 @@
+{
+ "source": "qa/tutor-reports/function-sketch-runtime-compare-functions-payload-2026-10-09.json",
+ "primitiveId": "function-sketch",
+ "evalMode": "compare-functions",
+ "data": {
+  "title": "Analyzing Function Families and End Behavior",
+  "context": "Comparing polynomial and exponential function dynamics under asymptotic scaling",
+  "challenges": [
+   {
+    "id": "fs-compare-functions-1",
+    "type": "compare-functions",
+    "instruction": "Examine the Cartesian behavior and growth rates of both functions plotted over the continuous domain [0, 5].",
+    "xLabel": "x",
+    "xMin": 0,
+    "xMax": 5,
+    "yLabel": "f(x)",
+    "yMin": 0,
+    "yMax": 35,
+    "curveA": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 0.2631578947368421,
+      "y": 0.07
+     },
+     {
+      "x": 0.5263157894736842,
+      "y": 0.28
+     },
+     {
+      "x": 0.7894736842105263,
+      "y": 0.62
+     },
+     {
+      "x": 1.0526315789473684,
+      "y": 1.11
+     },
+     {
+      "x": 1.3157894736842104,
+      "y": 1.73
+     },
+     {
+      "x": 1.5789473684210527,
+      "y": 2.49
+     },
+     {
+      "x": 1.8421052631578947,
+      "y": 3.39
+     },
+     {
+      "x": 2.1052631578947367,
+      "y": 4.43
+     },
+     {
+      "x": 2.3684210526315788,
+      "y": 5.61
+     },
+     {
+      "x": 2.631578947368421,
+      "y": 6.93
+     },
+     {
+      "x": 2.894736842105263,
+      "y": 8.38
+     },
+     {
+      "x": 3.1578947368421053,
+      "y": 9.97
+     },
+     {
+      "x": 3.4210526315789473,
+      "y": 11.7
+     },
+     {
+      "x": 3.6842105263157894,
+      "y": 13.57
+     },
+     {
+      "x": 3.9473684210526314,
+      "y": 15.58
+     },
+     {
+      "x": 4.2105263157894735,
+      "y": 17.73
+     },
+     {
+      "x": 4.473684210526316,
+      "y": 20.01
+     },
+     {
+      "x": 4.7368421052631575,
+      "y": 22.44
+     },
+     {
+      "x": 5,
+      "y": 25
+     }
+    ],
+    "curveB": [
+     {
+      "x": 0,
+      "y": 1
+     },
+     {
+      "x": 0.2631578947368421,
+      "y": 1.2
+     },
+     {
+      "x": 0.5263157894736842,
+      "y": 1.45
+     },
+     {
+      "x": 0.7894736842105263,
+      "y": 1.74
+     },
+     {
+      "x": 1.0526315789473684,
+      "y": 2.09
+     },
+     {
+      "x": 1.3157894736842104,
+      "y": 2.51
+     },
+     {
+      "x": 1.5789473684210527,
+      "y": 3.01
+     },
+     {
+      "x": 1.8421052631578947,
+      "y": 3.61
+     },
+     {
+      "x": 2.1052631578947367,
+      "y": 4.33
+     },
+     {
+      "x": 2.3684210526315788,
+      "y": 5.2
+     },
+     {
+      "x": 2.631578947368421,
+      "y": 6.24
+     },
+     {
+      "x": 2.894736842105263,
+      "y": 7.48
+     },
+     {
+      "x": 3.1578947368421053,
+      "y": 8.98
+     },
+     {
+      "x": 3.4210526315789473,
+      "y": 10.77
+     },
+     {
+      "x": 3.6842105263157894,
+      "y": 12.93
+     },
+     {
+      "x": 3.9473684210526314,
+      "y": 15.51
+     },
+     {
+      "x": 4.2105263157894735,
+      "y": 18.61
+     },
+     {
+      "x": 4.473684210526316,
+      "y": 22.33
+     },
+     {
+      "x": 4.7368421052631575,
+      "y": 26.8
+     },
+     {
+      "x": 5,
+      "y": 32
+     }
+    ],
+    "labelA": "Curve A",
+    "labelB": "Curve B",
+    "question": "Which curve exhibits the characteristic asymptotic dominance and rapid compounding rate indicative of an exponential parent function f(x) = a \u00b7 b^x, rather than a polynomial power function?",
+    "correctCurve": "B",
+    "compareExplanation": "Curve B represents an exponential model f(x) = 2^x (with non-zero y-intercept at (0, 1) and a growth factor that scales proportionally with the function's value), whereas Curve A represents a quadratic power model f(x) = x^2 passing through the origin (0, 0)."
+   },
+   {
+    "id": "fs-compare-functions-2",
+    "type": "compare-functions",
+    "instruction": "Examine the two continuous curves graphed over the domain [-4, 5].",
+    "xLabel": "x",
+    "xMin": -4,
+    "xMax": 5,
+    "yLabel": "y",
+    "yMin": -10,
+    "yMax": 10,
+    "curveA": [
+     {
+      "x": -4,
+      "y": -8.53
+     },
+     {
+      "x": -3.526315789473684,
+      "y": -5.69
+     },
+     {
+      "x": -3.0526315789473686,
+      "y": -3.51
+     },
+     {
+      "x": -2.5789473684210527,
+      "y": -1.94
+     },
+     {
+      "x": -2.105263157894737,
+      "y": -0.91
+     },
+     {
+      "x": -1.6315789473684212,
+      "y": -0.32
+     },
+     {
+      "x": -1.1578947368421053,
+      "y": -0.06
+     },
+     {
+      "x": -0.6842105263157898,
+      "y": 0
+     },
+     {
+      "x": -0.2105263157894739,
+      "y": 0
+     },
+     {
+      "x": 0.2631578947368416,
+      "y": 0.06
+     },
+     {
+      "x": 0.7368421052631575,
+      "y": 0.32
+     },
+     {
+      "x": 1.2105263157894735,
+      "y": 0.91
+     },
+     {
+      "x": 1.6842105263157894,
+      "y": 1.94
+     },
+     {
+      "x": 2.1578947368421053,
+      "y": 3.51
+     },
+     {
+      "x": 2.6315789473684204,
+      "y": 5.69
+     },
+     {
+      "x": 3.1052631578947363,
+      "y": 8.53
+     },
+     {
+      "x": 3.578947368421052,
+      "y": 9.2
+     },
+     {
+      "x": 4.052631578947368,
+      "y": 9.5
+     },
+     {
+      "x": 4.526315789473683,
+      "y": 9.8
+     },
+     {
+      "x": 5,
+      "y": 10
+     }
+    ],
+    "curveB": [
+     {
+      "x": -4,
+      "y": -1.97
+     },
+     {
+      "x": -3.526315789473684,
+      "y": -1.95
+     },
+     {
+      "x": -3.0526315789473686,
+      "y": -1.9
+     },
+     {
+      "x": -2.5789473684210527,
+      "y": -1.83
+     },
+     {
+      "x": -2.105263157894737,
+      "y": -1.71
+     },
+     {
+      "x": -1.6315789473684212,
+      "y": -1.5
+     },
+     {
+      "x": -1.1578947368421053,
+      "y": -1.16
+     },
+     {
+      "x": -0.6842105263157898,
+      "y": -0.59
+     },
+     {
+      "x": -0.2105263157894739,
+      "y": 0.37
+     },
+     {
+      "x": 0.2631578947368416,
+      "y": 1
+     },
+     {
+      "x": 0.7368421052631575,
+      "y": 1.99
+     },
+     {
+      "x": 1.2105263157894735,
+      "y": 3.65
+     },
+     {
+      "x": 1.6842105263157894,
+      "y": 6.44
+     },
+     {
+      "x": 2.1578947368421053,
+      "y": 8.5
+     },
+     {
+      "x": 2.6315789473684204,
+      "y": 9.2
+     },
+     {
+      "x": 3.1052631578947363,
+      "y": 9.6
+     },
+     {
+      "x": 3.578947368421052,
+      "y": 9.8
+     },
+     {
+      "x": 4.052631578947368,
+      "y": 9.9
+     },
+     {
+      "x": 4.526315789473683,
+      "y": 9.95
+     },
+     {
+      "x": 5,
+      "y": 10
+     }
+    ],
+    "labelA": "Curve A",
+    "labelB": "Curve B",
+    "question": "Which curve belongs to the cubic function family exhibiting inflection at the origin rather than an exponential family with a horizontal asymptote?",
+    "correctCurve": "A",
+    "compareExplanation": "Curve A represents an odd-degree polynomial (cubic function, scaled as f(x) = 0.133x^3) characterized by point symmetry about the inflection point at the origin (0,0) and opposing end behaviors. In contrast, Curve B demonstrates exponential growth with a horizontal asymptote as x approaches negative infinity."
+   },
+   {
+    "id": "fs-compare-functions-3",
+    "type": "compare-functions",
+    "instruction": "Two function profiles, f(x) and g(x), are graphed over the domain [0, 10]. Examine the end behavior and rate of acceleration for each model.",
+    "xLabel": "x",
+    "xMin": 0,
+    "xMax": 10,
+    "yLabel": "y",
+    "yMin": 0,
+    "yMax": 100,
+    "curveA": [
+     {
+      "x": 0,
+      "y": 1
+     },
+     {
+      "x": 0.5263157894736842,
+      "y": 1.28
+     },
+     {
+      "x": 1.0526315789473684,
+      "y": 1.63
+     },
+     {
+      "x": 1.5789473684210527,
+      "y": 2.08
+     },
+     {
+      "x": 2.1052631578947367,
+      "y": 2.65
+     },
+     {
+      "x": 2.631578947368421,
+      "y": 3.39
+     },
+     {
+      "x": 3.1578947368421053,
+      "y": 4.33
+     },
+     {
+      "x": 3.6842105263157894,
+      "y": 5.52
+     },
+     {
+      "x": 4.2105263157894735,
+      "y": 7.05
+     },
+     {
+      "x": 4.7368421052631575,
+      "y": 9
+     },
+     {
+      "x": 5.263157894736842,
+      "y": 11.49
+     },
+     {
+      "x": 5.789473684210526,
+      "y": 14.67
+     },
+     {
+      "x": 6.315789473684211,
+      "y": 18.73
+     },
+     {
+      "x": 6.842105263157895,
+      "y": 23.91
+     },
+     {
+      "x": 7.368421052631579,
+      "y": 30.53
+     },
+     {
+      "x": 7.894736842105263,
+      "y": 38.98
+     },
+     {
+      "x": 8.421052631578947,
+      "y": 49.77
+     },
+     {
+      "x": 8.947368421052632,
+      "y": 63.54
+     },
+     {
+      "x": 9.473684210526315,
+      "y": 81.12
+     },
+     {
+      "x": 10,
+      "y": 100
+     }
+    ],
+    "curveB": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 0.5263157894736842,
+      "y": 0.28
+     },
+     {
+      "x": 1.0526315789473684,
+      "y": 1.11
+     },
+     {
+      "x": 1.5789473684210527,
+      "y": 2.49
+     },
+     {
+      "x": 2.1052631578947367,
+      "y": 4.43
+     },
+     {
+      "x": 2.631578947368421,
+      "y": 6.93
+     },
+     {
+      "x": 3.1578947368421053,
+      "y": 9.97
+     },
+     {
+      "x": 3.6842105263157894,
+      "y": 13.57
+     },
+     {
+      "x": 4.2105263157894735,
+      "y": 17.73
+     },
+     {
+      "x": 4.7368421052631575,
+      "y": 22.44
+     },
+     {
+      "x": 5.263157894736842,
+      "y": 27.7
+     },
+     {
+      "x": 5.789473684210526,
+      "y": 33.52
+     },
+     {
+      "x": 6.315789473684211,
+      "y": 39.89
+     },
+     {
+      "x": 6.842105263157895,
+      "y": 46.81
+     },
+     {
+      "x": 7.368421052631579,
+      "y": 54.29
+     },
+     {
+      "x": 7.894736842105263,
+      "y": 62.33
+     },
+     {
+      "x": 8.421052631578947,
+      "y": 70.91
+     },
+     {
+      "x": 8.947368421052632,
+      "y": 80.06
+     },
+     {
+      "x": 9.473684210526315,
+      "y": 89.75
+     },
+     {
+      "x": 10,
+      "y": 100
+     }
+    ],
+    "labelA": "Curve A",
+    "labelB": "Curve B",
+    "question": "Which curve models an exponential growth function with a constant multiplicative rate, rather than a polynomial (quadratic) function?",
+    "correctCurve": "A",
+    "compareExplanation": "Curve A represents exponential growth (g(x) \u2248 100^(x/10)), which starts with relatively small absolute increments but exhibits a strictly proportional rate of change, eventually accelerating sharply and overtaking polynomial curves. Curve B is quadratic (f(x) = x^2), which begins with a steeper initial rise relative to the exponential base near zero but has a constant second derivative rather than a geometric multiplicative factor."
+   },
+   {
+    "id": "fs-compare-functions-4",
+    "type": "compare-functions",
+    "instruction": "Two parent function families are graphed over the interval x \u2208 [0, 9.5]. Analyze their curvature and growth rates.",
+    "xLabel": "x",
+    "xMin": 0,
+    "xMax": 10,
+    "yLabel": "f(x)",
+    "yMin": 0,
+    "yMax": 100,
+    "curveA": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 0.5263157894736842,
+      "y": 0.25
+     },
+     {
+      "x": 1.0526315789473684,
+      "y": 1
+     },
+     {
+      "x": 1.5789473684210527,
+      "y": 2.25
+     },
+     {
+      "x": 2.1052631578947367,
+      "y": 4
+     },
+     {
+      "x": 2.631578947368421,
+      "y": 6.25
+     },
+     {
+      "x": 3.1578947368421053,
+      "y": 9
+     },
+     {
+      "x": 3.6842105263157894,
+      "y": 12.25
+     },
+     {
+      "x": 4.2105263157894735,
+      "y": 16
+     },
+     {
+      "x": 4.7368421052631575,
+      "y": 20.25
+     },
+     {
+      "x": 5.263157894736842,
+      "y": 25
+     },
+     {
+      "x": 5.789473684210526,
+      "y": 30.25
+     },
+     {
+      "x": 6.315789473684211,
+      "y": 36
+     },
+     {
+      "x": 6.842105263157895,
+      "y": 42.25
+     },
+     {
+      "x": 7.368421052631579,
+      "y": 49
+     },
+     {
+      "x": 7.894736842105263,
+      "y": 56.25
+     },
+     {
+      "x": 8.421052631578947,
+      "y": 64
+     },
+     {
+      "x": 8.947368421052632,
+      "y": 72.25
+     },
+     {
+      "x": 9.473684210526315,
+      "y": 81
+     },
+     {
+      "x": 10,
+      "y": 90.25
+     }
+    ],
+    "curveB": [
+     {
+      "x": 0,
+      "y": 1
+     },
+     {
+      "x": 0.5263157894736842,
+      "y": 1.28
+     },
+     {
+      "x": 1.0526315789473684,
+      "y": 1.63
+     },
+     {
+      "x": 1.5789473684210527,
+      "y": 2.08
+     },
+     {
+      "x": 2.1052631578947367,
+      "y": 2.65
+     },
+     {
+      "x": 2.631578947368421,
+      "y": 3.39
+     },
+     {
+      "x": 3.1578947368421053,
+      "y": 4.33
+     },
+     {
+      "x": 3.6842105263157894,
+      "y": 5.52
+     },
+     {
+      "x": 4.2105263157894735,
+      "y": 7.05
+     },
+     {
+      "x": 4.7368421052631575,
+      "y": 9
+     },
+     {
+      "x": 5.263157894736842,
+      "y": 11.49
+     },
+     {
+      "x": 5.789473684210526,
+      "y": 14.66
+     },
+     {
+      "x": 6.315789473684211,
+      "y": 18.72
+     },
+     {
+      "x": 6.842105263157895,
+      "y": 23.9
+     },
+     {
+      "x": 7.368421052631579,
+      "y": 30.52
+     },
+     {
+      "x": 7.894736842105263,
+      "y": 38.97
+     },
+     {
+      "x": 8.421052631578947,
+      "y": 49.76
+     },
+     {
+      "x": 8.947368421052632,
+      "y": 63.53
+     },
+     {
+      "x": 9.473684210526315,
+      "y": 81.13
+     },
+     {
+      "x": 10,
+      "y": 100
+     }
+    ],
+    "labelA": "Curve A",
+    "labelB": "Curve B",
+    "question": "Which curve exhibits characteristic exponential growth with a non-zero y-intercept rather than polynomial (quadratic) growth?",
+    "correctCurve": "B",
+    "compareExplanation": "Curve B originates at (0, 1) and demonstrates a constant proportional growth factor per unit interval, which characterizes the exponential family f(x) = b^x. In contrast, Curve A passes through the origin (0, 0) and represents a quadratic power family f(x) = x^2, where the second differences are constant."
+   },
+   {
+    "id": "fs-compare-functions-5",
+    "type": "compare-functions",
+    "instruction": "Two parent function transformations are displayed on the interval [0, 5]. Analyze the structural growth rates and curvature of each trajectory.",
+    "xLabel": "x",
+    "xMin": 0,
+    "xMax": 5,
+    "yLabel": "y",
+    "yMin": 0,
+    "yMax": 35,
+    "curveA": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 0.2631578947368421,
+      "y": 0.08
+     },
+     {
+      "x": 0.5263157894736842,
+      "y": 0.35
+     },
+     {
+      "x": 0.7894736842105263,
+      "y": 0.78
+     },
+     {
+      "x": 1.0526315789473684,
+      "y": 1.39
+     },
+     {
+      "x": 1.3157894736842104,
+      "y": 2.16
+     },
+     {
+      "x": 1.5789473684210527,
+      "y": 3.12
+     },
+     {
+      "x": 1.8421052631578947,
+      "y": 4.24
+     },
+     {
+      "x": 2.1052631578947367,
+      "y": 5.54
+     },
+     {
+      "x": 2.3684210526315788,
+      "y": 7.02
+     },
+     {
+      "x": 2.631578947368421,
+      "y": 8.66
+     },
+     {
+      "x": 2.894736842105263,
+      "y": 10.47
+     },
+     {
+      "x": 3.1578947368421053,
+      "y": 12.47
+     },
+     {
+      "x": 3.4210526315789473,
+      "y": 14.63
+     },
+     {
+      "x": 3.6842105263157894,
+      "y": 16.97
+     },
+     {
+      "x": 3.9473684210526314,
+      "y": 19.49
+     },
+     {
+      "x": 4.2105263157894735,
+      "y": 22.18
+     },
+     {
+      "x": 4.473684210526316,
+      "y": 25.06
+     },
+     {
+      "x": 4.7368421052631575,
+      "y": 28.1
+     },
+     {
+      "x": 5,
+      "y": 31.25
+     }
+    ],
+    "curveB": [
+     {
+      "x": 0,
+      "y": 1
+     },
+     {
+      "x": 0.2631578947368421,
+      "y": 1.18
+     },
+     {
+      "x": 0.5263157894736842,
+      "y": 1.4
+     },
+     {
+      "x": 0.7894736842105263,
+      "y": 1.66
+     },
+     {
+      "x": 1.0526315789473684,
+      "y": 1.97
+     },
+     {
+      "x": 1.3157894736842104,
+      "y": 2.33
+     },
+     {
+      "x": 1.5789473684210527,
+      "y": 2.76
+     },
+     {
+      "x": 1.8421052631578947,
+      "y": 3.28
+     },
+     {
+      "x": 2.1052631578947367,
+      "y": 3.89
+     },
+     {
+      "x": 2.3684210526315788,
+      "y": 4.61
+     },
+     {
+      "x": 2.631578947368421,
+      "y": 5.47
+     },
+     {
+      "x": 2.894736842105263,
+      "y": 6.49
+     },
+     {
+      "x": 3.1578947368421053,
+      "y": 7.7
+     },
+     {
+      "x": 3.4210526315789473,
+      "y": 9.13
+     },
+     {
+      "x": 3.6842105263157894,
+      "y": 10.83
+     },
+     {
+      "x": 3.9473684210526314,
+      "y": 12.85
+     },
+     {
+      "x": 4.2105263157894735,
+      "y": 15.24
+     },
+     {
+      "x": 4.473684210526316,
+      "y": 18.08
+     },
+     {
+      "x": 4.7368421052631575,
+      "y": 21.45
+     },
+     {
+      "x": 5,
+      "y": 32
+     }
+    ],
+    "labelA": "Function A",
+    "labelB": "Function B",
+    "question": "Which curve represents an exponential growth model f(x) = a \u00b7 b^x rather than a polynomial power function g(x) = c \u00b7 x^2?",
+    "correctCurve": "B",
+    "compareExplanation": "Function B exhibits a non-zero y-intercept at (0, 1) and a strictly multiplicative constant ratio between successive evenly spaced points characteristic of exponential functions f(x) = 2^x, whereas Function A passes through the origin (0, 0) with quadratic scaling g(x) = 1.25x^2."
+   }
+  ]
+ }
+}

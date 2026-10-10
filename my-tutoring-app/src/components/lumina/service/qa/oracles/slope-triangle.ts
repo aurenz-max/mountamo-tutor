@@ -253,12 +253,13 @@ export const slopeTriangleOracle: ContentOracle = {
         });
       }
 
-      // ── (e) grid readability: the counted rise must land on a half-grid line ──
-      if (Math.abs(expectedRise * 2 - Math.round(expectedRise * 2)) > 0.01) {
+      // ── (e) grid readability: the counted rise must be a whole number of grid steps (a 3/2 line with run 5 drew
+      //    "Δy = 7.5", 2026-10-09) ──
+      if (Math.abs(expectedRise - Math.round(expectedRise)) > 0.01) {
         violations.push({
           check: 'answer-key-desync',
           where: id,
-          detail: `expectedRise=${expectedRise} is not readable off the grid (not a whole or half grid unit)`,
+          detail: `expectedRise=${expectedRise} is not readable off the grid (not a whole grid unit)`,
         });
       }
 

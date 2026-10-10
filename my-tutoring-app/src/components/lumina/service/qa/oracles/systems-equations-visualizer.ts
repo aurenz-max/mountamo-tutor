@@ -58,9 +58,11 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *      solution magnitude |expectedX|/|expectedY| honors an explicit objective
  *      ceiling (ctx.scopeMax ?? topic "to N"). No intrinsic magnitude ceiling —
  *      systems topics rarely carry one, and the builders already clamp to ±4.
- *  - answer-leak       : the title / description / instruction must not print
- *      the solution as an "(x, y)" pair. Value-matched on the PAIR (both coords
- *      together) so a bare small integer can't false-match.
+ *  - answer-leak       : the title / description / instruction / hint must not
+ *      print the solution as an "(x, y)" pair. Value-matched on the PAIR (both
+ *      coords together) so a bare small integer can't false-match. The hint is
+ *      in scope since 2026-10-09: hintFor() used to print the solution, which
+ *      made "Show hint" a show-answer button; it now gives the method only.
  *  - clustering        : the solution (x, y) must spread across the session
  *      (checkAnswerVariety); no byte-identical system card (same
  *      slopeA/bA/slopeB/bB/solution twice).
@@ -70,11 +72,6 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *      ships finite a/b/c with b ≠ 0 (the line is drawn from slope = −a/b).
  *
  * Deliberately NOT checked:
- *  - The on-demand `hint` stating the answer. hintFor() literally prints the
- *    solution ("the answer is (2, 1)"); it is the mode's intended lowest-
- *    scaffold help, gated behind "Show hint" (the component labels it "carries
- *    the numbers", :785). Flagging it would fire on every legitimate
- *    generation (coordinate-graph equation-label precedent).
  *  - support-tier scaffold flags (showIntersectionRegion / showAxisLabels /
  *    showStepHint / stepHint): display-only, the checker never reads them, and
  *    the exact intersection point is withheld at every tier by design.
@@ -333,12 +330,12 @@ export const systemsEquationsVisualizerOracle: ContentOracle = {
         });
       }
 
-      // ── answer-leak: the wrapper/instruction must not print the solution pair ──
-      if (coordPairsIn(`${leakText} ${instruction}`).some((p) => p.x === expectedX && p.y === expectedY)) {
+      // ── answer-leak: the wrapper/instruction/hint must not print the solution pair ──
+      if (coordPairsIn(`${leakText} ${instruction} ${hint}`).some((p) => p.x === expectedX && p.y === expectedY)) {
         violations.push({
           check: 'answer-leak',
           where: id,
-          detail: `the title/description/instruction prints the solution (${expectedX}, ${expectedY})`,
+          detail: `the title/description/instruction/hint prints the solution (${expectedX}, ${expectedY})`,
         });
       }
 

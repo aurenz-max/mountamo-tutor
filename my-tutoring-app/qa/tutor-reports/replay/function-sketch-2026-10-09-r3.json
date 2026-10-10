@@ -1,0 +1,2406 @@
+{
+ "model": "gemini-3.8-flash",
+ "samples": 5,
+ "checks": {
+  "not_empty": "The tutor replied (words or a tool call)",
+  "no_protocol_leak": "No protocol tag, id, JSON, tool name, or the word \"lever\" spoken",
+  "no_key_before_try": "Before a try, the reply does not say the answer in any spoken form",
+  "no_fix_before_try": "Before a try, the reply does not tell the learner what to change by how much",
+  "no_change_before_receipt": "A reply that pulls a lever does not describe the change as already on screen"
+ },
+ "rates": {
+  "start": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "miss": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "stuck": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ],
+   "no_change_before_receipt": [
+    0,
+    20
+   ]
+  },
+  "lever": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ],
+   "no_key_before_try": [
+    0,
+    5
+   ],
+   "no_fix_before_try": [
+    0,
+    20
+   ]
+  },
+  "credit": {
+   "not_empty": [
+    0,
+    20
+   ],
+   "no_protocol_leak": [
+    0,
+    20
+   ]
+  }
+ },
+ "results": [
+  {
+   "payload": "function-sketch.classify-shape",
+   "primitiveId": "function-sketch",
+   "evalMode": "classify-shape",
+   "keys": [
+    "cubic"
+   ],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fs-classify-shape-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cubic"
+      ],
+      "ask": "What type of function is this?",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "quadraticcubicsinusoidalexponential",
+       "quadratic",
+       "cubic",
+       "sinusoidal",
+       "exponential",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome to families of functions! Take a look at the curve on the graph and choose which family it belongs to.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the curve on your graph and see how it behaves across the axes.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our lesson on families of functions and their graphs! Take a look at the curve on your screen and select which family it belongs to.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the curve on the graph and see which function family matches its shape.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the graph and see which function family matches the curve.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "fs-classify-shape-1",
+     "trigger": "The learner submitted \"chose \\\"quadratic\\\"\". The board checked it: not right.",
+     "miss": "polynomial_degree",
+     "scoredWith": {
+      "keys": [
+       "cubic"
+      ],
+      "ask": "What type of function is this?",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "quadraticcubicsinusoidalexponential",
+       "quadratic",
+       "cubic",
+       "sinusoidal",
+       "exponential",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Dots have appeared marking the turning points and axis crossings along the curve. How many times does the curve turn?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "turn_marks",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I've marked the turning points and crossings on the curve with dots. Take a look at how many times it bends and turns, and try another choice!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "turn_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Dots have appeared where the curve turns and crosses the axis. How many turning points do you see?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "turn_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I added dots at the turning points and axis crossings to show where the curve bends. Take another look at how many turns it makes and try again!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "turn_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take another look\u2014dots now mark each turning point and axis crossing. How many times does the curve turn?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "turn_marks"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "fs-classify-shape-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cubic"
+      ],
+      "ask": "What type of function is this?",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "quadraticcubicsinusoidalexponential",
+       "quadratic",
+       "cubic",
+       "sinusoidal",
+       "exponential",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "I've brought up reference shapes for each function family beside the graph. Compare your curve to those shapes and see which one matches best.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "family_gallery"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The basic shapes for each function family are now shown beside the graph. Compare them to your curve and see which one matches.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "family_gallery",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've displayed reference shapes for each function family beside the graph. Compare the bends in your curve to the examples to see which one matches.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "family_gallery",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've added reference shapes for each function family beside the graph. Which of those shapes looks most like your curve?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "family_gallery"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I have displayed example shapes for each function family beside the graph. Compare the bends in our curve to those examples and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "family_gallery",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "fs-classify-shape-1",
+     "trigger": "The learner said they were stuck, so the host pulled family_gallery (help). It is on screen now: Shows, beside the graph, the basic shape of every family in the choices, each under its own name. The item's curve is not among them: the learner still matches it. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Then l",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cubic"
+      ],
+      "ask": "What type of function is this?",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "quadraticcubicsinusoidalexponential",
+       "quadratic",
+       "cubic",
+       "sinusoidal",
+       "exponential",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the gallery of shapes that just appeared beside the graph showing each family's basic curve. Compare the way your curve bends to those shapes and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the graph, you can now see the basic shapes for each function family with their names. Take a look at those examples, then choose the one that matches the curve on your graph.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "The shapes of each function family are now displayed right beside the graph. Look at how their curves bend, and see which one matches the curve on your screen.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the graph, you can now see the basic shapes for quadratic, cubic, sinusoidal, and exponential functions. Take another look at your curve and see which family matches its overall shape.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Beside the graph, you can now see the basic shapes for each function family with their names. Take a look at those examples and see which shape matches your curve.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": true,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fs-classify-shape-1",
+     "trigger": "The learner submitted \"chose \\\"cubic\\\"\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [
+       "cubic"
+      ],
+      "ask": "What type of function is this?",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "quadraticcubicsinusoidalexponential",
+       "quadratic",
+       "cubic",
+       "sinusoidal",
+       "exponential",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Spot on! By checking the gallery and seeing that characteristic bend with its two turns, you identified that it's a cubic function.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! By checking the gallery and seeing how the ends go in opposite directions with that signature S-curve bend, you identified it as cubic.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! By checking the gallery and seeing how the curve turns twice with opposite ends, you matched it correctly to cubic.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it! You checked the shape, matched the bends to the gallery, and selected cubic.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You matched it to cubic by comparing the shapes and seeing how the curve bends. Excellent work!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "function-sketch.compare-functions",
+   "primitiveId": "function-sketch",
+   "evalMode": "compare-functions",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fs-compare-functions-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Examine the Cartesian behavior and growth rates of both functions plotted over the continuous domain [0, 5]. Which curve exhibits the characteristic asymptotic dominance and rapid compounding rate indicative of an exponential parent function f(x) = a \u00b7 b^x, rather than a polynomial power function?",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "curve acurve b",
+       "curve a",
+       "curve b",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at how both curves climb as x moves from 0 to 5. What differences do you notice in how quickly each curve rises?",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to the lesson on families of functions! Take a look at the two curves and choose the one that shows exponential growth.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look at how both curves climb across the graph as $x$ increases. Notice which one starts growing much faster and steeper as you move to the right.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at how both curves grow as you move from left to right across the graph.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at how both curves grow as $x$ increases, and select the curve you think matches an exponential function.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "fs-compare-functions-1",
+     "trigger": "The learner submitted \"chose Curve A (\\\"Curve A\\\")\". The board checked it: not right.",
+     "miss": "other_curve",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Examine the Cartesian behavior and growth rates of both functions plotted over the continuous domain [0, 5]. Which curve exhibits the characteristic asymptotic dominance and rapid compounding rate indicative of an exponential parent function f(x) = a \u00b7 b^x, rather than a polynomial power function?",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "curve acurve b",
+       "curve a",
+       "curve b",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Step staircases are now shown under both curves so you can see how much each one rises for every step forward. Notice which curve's vertical steps start growing much larger and faster, and give it another try.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "equal_steps"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I've added step markers under both curves to show how much each one rises with each step forward. Notice which curve's vertical risers grow dramatically taller as you move to the right, and give it another try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "equal_steps",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the step risers underneath each curve. Which curve has risers that multiply and grow dramatically taller with every single step?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "equal_steps",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I've added step markers under both curves so you can see how much each one rises across equal intervals. Notice which curve has risers that multiply and grow dramatically taller with every step.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "equal_steps"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I have added step markers under both curves to show how much each one rises with each step forward. Notice which curve has risers that get dramatically taller and taller.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "equal_steps",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "fs-compare-functions-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Examine the Cartesian behavior and growth rates of both functions plotted over the continuous domain [0, 5]. Which curve exhibits the characteristic asymptotic dominance and rapid compounding rate indicative of an exponential parent function f(x) = a \u00b7 b^x, rather than a polynomial power function?",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "curve acurve b",
+       "curve a",
+       "curve b",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A staircase of equal steps has appeared under both curves so you can see how much each one rises across each step. Look at which curve starts rising much steeper from step to step, and tap that one.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "equal_steps",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A staircase of equal steps is now drawn under both curves to show each curve's vertical rise over equal horizontal steps. Look at which curve's vertical rise multiplies and shoots up far more steeply by x = 5.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "equal_steps",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A staircase of equal steps is now drawn under both curves to show each curve's vertical rise for every step to the right. Look at which curve's steps start exploding upwards much more rapidly toward the right end.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "equal_steps"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "Look at the step risers underneath both curves: an exponential curve multiplies its growth, making each step dramatically taller than the last. Which curve shows its steps shooting up much more steeply near the right?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "equal_steps"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The staircase lines show how much each curve rises across equal steps forward. Look at which curve's vertical risers multiply and shoot upward much faster toward the right.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "equal_steps",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "fs-compare-functions-1",
+     "trigger": "The learner said they were stuck, so the host pulled equal_steps (help). It is on screen now: Draws a staircase of equal steps across under both curves: each riser shows how much that curve rises or falls over one step. No number, and neither curve is singled out. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it a lever or a tool. Th",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Examine the Cartesian behavior and growth rates of both functions plotted over the continuous domain [0, 5]. Which curve exhibits the characteristic asymptotic dominance and rapid compounding rate indicative of an exponential parent function f(x) = a \u00b7 b^x, rather than a polynomial power function?",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "curve acurve b",
+       "curve a",
+       "curve b",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Notice the new staircases drawn under each curve, where each vertical step shows how much the curve rises for each step across. Look at which curve's vertical steps get rapidly taller and taller as you move to the right, and try tapping your choice!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the staircase that just appeared beneath both curves showing how much each one climbs step by step. Compare how tall those vertical steps get on each curve, and choose the one that climbs faster and faster.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the staircases drawn beneath both curves: each vertical riser shows how much that curve climbs over a single step forward. Look at which curve's vertical steps get rapidly taller and taller as you go to the right, and give that curve a tap!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There are now staircases drawn under both curves showing how much each one rises for every step along x. Take a look at which curve has vertical steps that keep multiplying and getting taller much faster, and tap that one.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Look at the staircase steps that just appeared under both curves: each vertical riser shows how much that curve climbs over one step across. Follow those steps from left to right to see which curve's vertical jumps multiply and get much taller.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fs-compare-functions-1",
+     "trigger": "The learner submitted \"chose Curve B (\\\"Curve B\\\")\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Examine the Cartesian behavior and growth rates of both functions plotted over the continuous domain [0, 5]. Which curve exhibits the characteristic asymptotic dominance and rapid compounding rate indicative of an exponential parent function f(x) = a \u00b7 b^x, rather than a polynomial power function?",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "curve acurve b",
+       "curve a",
+       "curve b",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You chose Curve B by seeing how its steps grew much steeper, which is exactly how exponential growth takes off!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You got it right with Curve B! Looking at those staircases showed how its step sizes multiplied and grew much faster.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You compared the staircases, saw how quickly the steps grew, and chose Curve B! That compounding vertical growth is exactly what defines an exponential function.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Spot on! You checked the risers and chose Curve B, seeing how its vertical growth rapidly outpaced the other curve just like an exponential function does.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You selected Curve B, spotting how its risers quickly grew much taller at each step, just like an exponential function does.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "function-sketch.identify-features",
+   "primitiveId": "function-sketch",
+   "evalMode": "identify-features",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fs-identify-features-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Identify the key local extrema and intercepts characterizing this cubic potential function.",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u25cb local maximum\u25cb local minimum",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look at the graph and see where the curve reaches its peaks or valleys. Tap the key features you spot when you're ready!",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the graph and see if you can spot the local peaks and valleys where the curve turns.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the curve on your screen and find its key turning points to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the graph and see if you can spot where the curve reaches its peaks or valleys. Tap the rings on those key features, then press Check.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the graph and see where the curve reaches its peaks or valleys, then tap those key features.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "fs-identify-features-1",
+     "trigger": "The learner submitted \"found 1 of 2 features (\\\"local maximum\\\")\". The board checked it: not right.",
+     "miss": "missed_extremum",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Identify the key local extrema and intercepts characterizing this cubic potential function.",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u25cb local maximum\u25cb local minimum",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You found the local maximum! Check along the curve to see if there is another turning point you can mark.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the local maximum! Check if there is another turning point or valley along the curve to tap before checking again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the local maximum! Check if there is another turning point along the curve to tap before checking again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found the local maximum! Check along the curve to see if it turns anywhere else.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice job spotting that local maximum! There's one more key turning point along the curve to find before checking again.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "fs-identify-features-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Identify the key local extrema and intercepts characterizing this cubic potential function.",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u25cb local maximum\u25cb local minimum",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A guide just appeared below the graph reminding us that a minimum is where the curve reaches a bottom turn. Look for where the curve dips and turns back upward.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "feature_guide",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide appeared below the graph to remind you what each feature looks like. Follow the curve toward where it dips down to its lowest turn and tap that point!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "feature_guide",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A quick guide just popped up below the graph reminding us what each feature is. Look for where the curve dips down to turn around and tap that ring!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "feature_guide"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I added a guide below the graph reminding us that a minimum is where the curve turns at the bottom of a dip. Look for where the curve dips and turns back upward, and give that spot a tap!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/3/0",
+          "lever": "feature_guide"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A guide appeared below the graph to remind you what each feature means. Look for where the curve dips into a valley and turns around.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "feature_guide",
+          "actionId": "test/3/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "fs-identify-features-1",
+     "trigger": "The learner said they were stuck, so the host pulled feature_guide (help). It is on screen now: Writes under the graph what each kind of feature is: a root is where the curve crosses the x-axis, a maximum or minimum is where it turns, the y-intercept is where it crosses the y-axis, an asymptote is a line it approaches. No place. First point the learner to it: say what is now drawn and where to loo",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Identify the key local extrema and intercepts characterizing this cubic potential function.",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u25cb local maximum\u25cb local minimum",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Under the graph, there is now a guide explaining that a minimum or maximum is where the curve turns. Give it another try by looking for that turning point on the curve!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the guide that just appeared below the graph explaining roots, turns, intercepts, and asymptotes. Give the curve another look to see where it turns!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There is a helpful guide written right under the graph explaining what each feature looks like, including where a curve turns at a maximum or minimum. Take another look at the curve and tap the other turning point when you spot it!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "There's now a guide written right under your graph explaining what each feature means. Take another look at the curve to spot where it dips into that bottom turn, and tap it when you're ready!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A helpful guide has been added under the graph explaining what each feature looks like. Use that to spot where the curve dips and makes its other turn, and give that ring a tap!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fs-identify-features-1",
+     "trigger": "The learner submitted \"found 2 of 2 features (\\\"local maximum\\\", \\\"local minimum\\\")\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Identify the key local extrema and intercepts characterizing this cubic potential function.",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "\u25cb local maximum\u25cb local minimum",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Nicely done, you spotted both the local maximum and the local minimum!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both the local maximum and the local minimum by checking where the curve turned! Great job sticking with it.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nice work! You found both the local maximum and the local minimum by spotting each turning point on the curve.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both the local maximum and the local minimum by checking the turning points and fixing that missing feature!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You found both the local maximum and the local minimum by spotting where the curve turned!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "payload": "function-sketch.sketch-match",
+   "primitiveId": "function-sketch",
+   "evalMode": "sketch-match",
+   "keys": [],
+   "stopped": null,
+   "moments": [
+    {
+     "kind": "start",
+     "itemId": "fs-sketch-match-1",
+     "trigger": "[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Sketch the transformed cubic function by plotting its critical points, inflection point, and intercepts.",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "0 points placed (min 5)clear",
+       "clear",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Welcome! Take a look at the cubic function and start by plotting key anchor points on the graph to sketch its curve.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the cubic function and plot its key anchor points on the graph to sketch the curve.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to function sketching! Take a look at the cubic function and start by plotting some of its key points on the graph.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome! Take a look at the cubic function and plot a few key points on the graph to get started.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Welcome to our graphing practice! Take a look at the cubic function given, and start by tapping points on the graph where key features like the intercepts belong.",
+       "calls": [
+        {
+         "name": "observe_runtime",
+         "args": {}
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "miss",
+     "itemId": "fs-sketch-match-1",
+     "trigger": "The learner submitted \"placed 8 points, left to right: (-3.4, 12.5), (-2.3, 12.5), (-1.2, 12.5), (-0.1, 12.5), (1.1, 12.5), (2.2, 12.5), (3.3, 12.5), (4.4, 12.5)\". The board checked it: not right.",
+     "miss": "missed_peak",
+     "scoredWith": {
+      "keys": [],
+      "ask": "Sketch the transformed cubic function by plotting its critical points, inflection point, and intercepts.",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "0 points placed (min 5)clear",
+       "clear",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A guide has appeared below the graph showing the steps to anchor your sketch: find where it crosses each axis, where it turns, and which way the ends go. Give it another try by starting with those key features!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/10/0",
+          "lever": "sketch_steps"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A guide has appeared below the graph showing the steps to find your anchors. Give it another try by starting with where the curve crosses the axes.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sketch_steps",
+          "actionId": "test/10/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A guide has appeared below the graph showing the steps to find your anchors: check where the curve crosses the axes, where it turns, and where the ends go. Clear your points and give it another try starting with those features!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sketch_steps",
+          "actionId": "test/10/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "A guide has appeared below the graph showing the steps to anchor your sketch: find where it crosses each axis, where it turns, and which way the ends go. Try clearing your points and plotting those anchor points first.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sketch_steps",
+          "actionId": "test/10/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "I've added a guide below the graph showing the steps to find key anchors: first the axis crossings, then turning points, and end behavior. Give it another try by finding where the curve crosses the axes first.",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sketch_steps",
+          "actionId": "test/10/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "stuck",
+     "itemId": "fs-sketch-match-1",
+     "trigger": "I'm stuck. I don't know how to do this one.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Sketch the transformed cubic function by plotting its critical points, inflection point, and intercepts.",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "0 points placed (min 5)clear",
+       "clear",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "A guide has appeared below the graph showing the steps to anchor your sketch: find where it crosses each axis, where it turns, and which way the ends go. What values make the factors in $(x + 2)(x - 1)(x - 3)$ equal zero?",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sketch_steps",
+          "actionId": "test/10/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I've brought up an easier practice sketch with the key points written out for you to try first. Take a look at those points and give sketching this simpler curve a try!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "simpler_item",
+          "actionId": "test/10/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "The steps to sketch are now shown right under the graph. Look at where the function crosses the x-axis from its factors, and place those points first!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/10/0",
+          "lever": "simpler_item"
+         }
+        },
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/10/0",
+          "lever": "sketch_steps"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "I have opened a simpler practice curve with its key points written out for you to try first. Take a look at where those points land and see if you can trace through them!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "actionId": "test/10/0",
+          "lever": "simpler_item"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      },
+      {
+       "text": "A handy checklist just appeared below the graph to guide your steps. Look at the factored form to see what values of x make each factor zero, and start by placing those crossings!",
+       "calls": [
+        {
+         "name": "perform_runtime_action",
+         "args": {
+          "lever": "sketch_steps",
+          "actionId": "test/10/0"
+         }
+        }
+       ],
+       "before": "",
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": true
+       },
+       "evidence": {},
+       "pulledLever": true
+      }
+     ]
+    },
+    {
+     "kind": "lever",
+     "itemId": "fs-sketch-match-1",
+     "trigger": "The learner said they were stuck, so the host pulled sketch_steps (help). It is on screen now: Writes under the graph the order to find a sketch's anchors: where it crosses the x-axis, where it crosses the y-axis, where it turns, which way each end goes; then points between. No number. First point the learner to it: say what is now drawn and where to look, as a change to the picture; never call it",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Sketch the transformed cubic function by plotting its critical points, inflection point, and intercepts.",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "0 points placed (min 5)clear",
+       "clear",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "Take a look below the graph\u2014a list of steps has appeared showing the order to find your anchor points. Start by checking where the curve crosses the axes, then give it another try!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the graph, a list of steps has appeared showing the order to find your anchor points: look for where the curve crosses the axes, where it turns, and which way the ends go. Use those steps to help guide where to place your points, and give it another try.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Under the graph, a step-by-step guide is now shown to help you order your anchors: start with the axis crossings, then turning points, and end behavior. Take a look at the guide and try plotting your first anchor point on the graph.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Take a look just beneath the graph\u2014a guide has appeared showing the steps for finding your anchors, starting with where the curve crosses the axes. Try following that order to place your anchor points!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Notice the new guide written right below the graph that lays out the order to find your anchors: where the curve crosses the x-axis, where it crosses the y-axis, where it turns, and which way the ends go. Try following that order to place your first anchor point on the graph.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": true,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    },
+    {
+     "kind": "credit",
+     "itemId": "fs-sketch-match-1",
+     "trigger": "The learner submitted \"placed 13 points, left to right: (-2.6, -9.4), (-2.1, 0), (-1.6, 5.6), (-1.2, 7.9), (-0.7, 7.6), (-0.2, 5.4), (0.3, 1.7), (0.7, -2.8), (1.2, -6.6), (1.7, -8), (2.2, -6.1), (2.6, -0.9), (3.1, 7.6)\". The board checked it: right.",
+     "miss": null,
+     "scoredWith": {
+      "keys": [],
+      "ask": "Sketch the transformed cubic function by plotting its critical points, inflection point, and intercepts.",
+      "leakTokens": [
+       "FEATURE_FOUND",
+       "ANSWER_CORRECT",
+       "ANSWER_INCORRECT",
+       "NEXT_ITEM",
+       "ALL_COMPLETE",
+       "[TIER"
+      ],
+      "menu": [
+       "0 points placed (min 5)clear",
+       "clear",
+       "check answer"
+      ]
+     },
+     "samples": [
+      {
+       "text": "You nailed it! By plotting those 13 points to capture the crossings, peaks, and turns, you traced the exact path of the cubic curve.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You plotted the intercepts and turning points to shape that cubic curve accurately, and your sketch matched!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You nailed it! By plotting those 13 points to capture the crossings and the turning points, you sketched the cubic curve accurately.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "You did it! By finding where the curve crosses the axes and turns, you placed all thirteen points right along the cubic curve to complete the sketch.",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      },
+      {
+       "text": "Nicely done\u2014you plotted those 13 points and captured the curve's key crossings and turning points accurately!",
+       "calls": [],
+       "checks": {
+        "not_empty": true,
+        "no_protocol_leak": true,
+        "no_key_before_try": null,
+        "no_fix_before_try": null,
+        "no_change_before_receipt": null
+       },
+       "evidence": {},
+       "pulledLever": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

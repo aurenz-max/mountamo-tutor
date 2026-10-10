@@ -26,10 +26,15 @@ import { measurementToolsLiveDomain } from './adapters/measurementToolsLive';
 import { areaModelLiveDomain } from './adapters/areaModelLive';
 import { percentBarLiveDomain } from './adapters/percentBarLive';
 import { formulaLabLiveDomain } from './adapters/formulaLabLive';
+import { parameterExplorerLiveDomain } from './adapters/parameterExplorerLive';
 import { ratioTableLiveDomain } from './adapters/ratioTableLive';
+import { matrixDisplayLiveDomain } from './adapters/matrixDisplayLive';
 import { twoWayTableLiveDomain } from './adapters/twoWayTableLive';
 import { histogramLiveDomain } from './adapters/histogramLive';
 import { coordinateGraphLiveDomain } from './adapters/coordinateGraphLive';
+import { systemsEquationsLiveDomain } from './adapters/systemsEquationsLive';
+import { slopeTriangleLiveDomain } from './adapters/slopeTriangleLive';
+import { functionSketchLiveDomain } from './adapters/functionSketchLive';
 import { circleExplorerLiveDomain } from './adapters/circleExplorerLive';
 import { distributionExplorerLiveDomain } from './adapters/distributionExplorerLive';
 import { doubleNumberLineLiveDomain } from './adapters/doubleNumberLineLive';
@@ -161,10 +166,15 @@ export const LIVE_ADAPTERS = {
   'area-model': workspaceAdapter('area-model', areaModelLiveDomain),
   'percent-bar': workspaceAdapter('percent-bar', percentBarLiveDomain),
   'formula-lab': workspaceAdapter('formula-lab', formulaLabLiveDomain),
+  'parameter-explorer': workspaceAdapter('parameter-explorer', parameterExplorerLiveDomain),
   'ratio-table': workspaceAdapter('ratio-table', ratioTableLiveDomain),
+  'matrix-display': workspaceAdapter('matrix-display', matrixDisplayLiveDomain),
   'two-way-table': workspaceAdapter('two-way-table', twoWayTableLiveDomain),
   'histogram': workspaceAdapter('histogram', histogramLiveDomain),
   'coordinate-graph': workspaceAdapter('coordinate-graph', coordinateGraphLiveDomain),
+  'systems-equations-visualizer': workspaceAdapter('systems-equations-visualizer', systemsEquationsLiveDomain),
+  'slope-triangle': workspaceAdapter('slope-triangle', slopeTriangleLiveDomain),
+  'function-sketch': workspaceAdapter('function-sketch', functionSketchLiveDomain),
   'circle-explorer': workspaceAdapter('circle-explorer', circleExplorerLiveDomain),
   'distribution-explorer': workspaceAdapter('distribution-explorer', distributionExplorerLiveDomain),
   'double-number-line': workspaceAdapter('double-number-line', doubleNumberLineLiveDomain),

@@ -1,0 +1,167 @@
+{
+ "source": "qa/tutor-reports/slope-triangle-runtime-identify_slope-payload-2026-10-09.json",
+ "primitiveId": "slope-triangle",
+ "evalMode": "identify_slope",
+ "data": {
+  "title": "Reading Slope Triangles",
+  "description": "Practice finding the slope of various lines by reading the rise and run directly from pre-drawn slope triangles on the coordinate grid.",
+  "xRange": [
+   -10,
+   10
+  ],
+  "yRange": [
+   -10,
+   10
+  ],
+  "gridSpacing": {
+   "x": 1,
+   "y": 1
+  },
+  "showAxes": true,
+  "showGrid": true,
+  "notation": "riseRun",
+  "gradeBand": "7-8",
+  "challenges": [
+   {
+    "id": "st-1",
+    "type": "identify_slope",
+    "attachedLine": {
+     "equation": "y = x + 4",
+     "slope": 1,
+     "yIntercept": 4,
+     "color": "#3b82f6",
+     "label": "y = x + 4"
+    },
+    "triangle": {
+     "position": {
+      "x": -2,
+      "y": 0
+     },
+     "size": 3,
+     "showMeasurements": false,
+     "showSlope": true,
+     "showAngle": false,
+     "notation": "riseRun",
+     "color": "#3b82f6"
+    },
+    "expectedRise": 3,
+    "expectedRun": 3,
+    "expectedSlope": 1,
+    "instruction": "Look at the triangle on the line. Count the rise (vertical) and run (horizontal).",
+    "hint": "Start at the lower corner of the triangle. Count grid squares vertically to the opposite corner \u2014 that's the rise (positive if you went up, negative if you went down). Then count grid squares horizontally to the other corner \u2014 that's the run."
+   },
+   {
+    "id": "st-3",
+    "type": "identify_slope",
+    "attachedLine": {
+     "equation": "y = -x + 10",
+     "slope": -1,
+     "yIntercept": 10,
+     "color": "#3b82f6",
+     "label": "y = -x + 10"
+    },
+    "triangle": {
+     "position": {
+      "x": 5,
+      "y": 0
+     },
+     "size": 2,
+     "showMeasurements": false,
+     "showSlope": true,
+     "showAngle": false,
+     "notation": "riseRun",
+     "color": "#a855f7"
+    },
+    "expectedRise": -2,
+    "expectedRun": 2,
+    "expectedSlope": -1,
+    "instruction": "Look at the triangle on the line. Count the rise (vertical) and run (horizontal).",
+    "hint": "Start at the lower corner of the triangle. Count grid squares vertically to the opposite corner \u2014 that's the rise (positive if you went up, negative if you went down). Then count grid squares horizontally to the other corner \u2014 that's the run."
+   },
+   {
+    "id": "st-4",
+    "type": "identify_slope",
+    "attachedLine": {
+     "equation": "y = x - 3",
+     "slope": 1,
+     "yIntercept": -3,
+     "color": "#3b82f6",
+     "label": "y = x - 3"
+    },
+    "triangle": {
+     "position": {
+      "x": 4,
+      "y": 0
+     },
+     "size": 3,
+     "showMeasurements": false,
+     "showSlope": true,
+     "showAngle": false,
+     "notation": "riseRun",
+     "color": "#ec4899"
+    },
+    "expectedRise": 3,
+    "expectedRun": 3,
+    "expectedSlope": 1,
+    "instruction": "Look at the triangle on the line. Count the rise (vertical) and run (horizontal).",
+    "hint": "Start at the lower corner of the triangle. Count grid squares vertically to the opposite corner \u2014 that's the rise (positive if you went up, negative if you went down). Then count grid squares horizontally to the other corner \u2014 that's the run."
+   },
+   {
+    "id": "st-5",
+    "type": "identify_slope",
+    "attachedLine": {
+     "equation": "y = 2*x - 7",
+     "slope": 2,
+     "yIntercept": -7,
+     "color": "#3b82f6",
+     "label": "y = 2x - 7"
+    },
+    "triangle": {
+     "position": {
+      "x": 3,
+      "y": 0
+     },
+     "size": 3,
+     "showMeasurements": false,
+     "showSlope": true,
+     "showAngle": false,
+     "notation": "riseRun",
+     "color": "#f97316"
+    },
+    "expectedRise": 6,
+    "expectedRun": 3,
+    "expectedSlope": 2,
+    "instruction": "Look at the triangle on the line. Count the rise (vertical) and run (horizontal).",
+    "hint": "Start at the lower corner of the triangle. Count grid squares vertically to the opposite corner \u2014 that's the rise (positive if you went up, negative if you went down). Then count grid squares horizontally to the other corner \u2014 that's the run."
+   },
+   {
+    "id": "st-2",
+    "type": "identify_slope",
+    "attachedLine": {
+     "equation": "y = -2*x - 2",
+     "slope": -2,
+     "yIntercept": -2,
+     "color": "#3b82f6",
+     "label": "y = -2x - 2"
+    },
+    "triangle": {
+     "position": {
+      "x": -3,
+      "y": 0
+     },
+     "size": 2,
+     "showMeasurements": false,
+     "showSlope": true,
+     "showAngle": false,
+     "notation": "riseRun",
+     "color": "#22d3ee"
+    },
+    "expectedRise": -4,
+    "expectedRun": 2,
+    "expectedSlope": -2,
+    "instruction": "Look at the triangle on the line. Count the rise (vertical) and run (horizontal).",
+    "hint": "Start at the lower corner of the triangle. Count grid squares vertically to the opposite corner \u2014 that's the rise (positive if you went up, negative if you went down). Then count grid squares horizontally to the other corner \u2014 that's the run."
+   }
+  ]
+ }
+}

@@ -1,0 +1,142 @@
+{
+ "source": "qa/tutor-reports/systems-equations-visualizer-runtime-elimination-payload-2026-10-09.json",
+ "primitiveId": "systems-equations-visualizer",
+ "evalMode": "elimination",
+ "data": {
+  "title": "Mastering Systems by Elimination",
+  "description": "Practice solving pairs of linear equations in standard form by adding or scaling equations to eliminate variables and find integer solutions.",
+  "xRange": [
+   -10,
+   10
+  ],
+  "yRange": [
+   -10,
+   10
+  ],
+  "gridSpacing": {
+   "x": 1,
+   "y": 1
+  },
+  "showAxes": true,
+  "showGrid": true,
+  "gradeBand": "algebra-2",
+  "challenges": [
+   {
+    "id": "se-3",
+    "type": "elimination",
+    "systemForm": "standard",
+    "equationA": {
+     "display": "2x + 3y = 5",
+     "slope": -0.6666666666666666,
+     "yIntercept": 1.6666666666666667,
+     "a": 2,
+     "b": 3,
+     "c": 5,
+     "color": "#3b82f6",
+     "label": "Eq. A"
+    },
+    "equationB": {
+     "display": "-x - y = -2",
+     "slope": -1,
+     "yIntercept": 2,
+     "a": -1,
+     "b": -1,
+     "c": -2,
+     "color": "#10b981",
+     "label": "Eq. B"
+    },
+    "expectedX": 1,
+    "expectedY": 1,
+    "instruction": "Use elimination \u2014 add or scale equations so one variable cancels. Then solve and enter (x, y).",
+    "hint": "Multiply one or both equations so the x (or y) coefficients are opposites, add to cancel that variable, solve, then back-substitute. Check the pair in both equations."
+   },
+   {
+    "id": "se-1",
+    "type": "elimination",
+    "systemForm": "standard",
+    "equationA": {
+     "display": "-2x + 2y = 6",
+     "slope": 1,
+     "yIntercept": 3,
+     "a": -2,
+     "b": 2,
+     "c": 6,
+     "color": "#3b82f6",
+     "label": "Eq. A"
+    },
+    "equationB": {
+     "display": "2x - y = -3",
+     "slope": 2,
+     "yIntercept": 3,
+     "a": 2,
+     "b": -1,
+     "c": -3,
+     "color": "#10b981",
+     "label": "Eq. B"
+    },
+    "expectedX": 0,
+    "expectedY": 3,
+    "instruction": "Use elimination \u2014 add or scale equations so one variable cancels. Then solve and enter (x, y).",
+    "hint": "Multiply one or both equations so the x (or y) coefficients are opposites, add to cancel that variable, solve, then back-substitute. Check the pair in both equations."
+   },
+   {
+    "id": "se-4",
+    "type": "elimination",
+    "systemForm": "standard",
+    "equationA": {
+     "display": "-3x + 2y = -10",
+     "slope": 1.5,
+     "yIntercept": -5,
+     "a": -3,
+     "b": 2,
+     "c": -10,
+     "color": "#3b82f6",
+     "label": "Eq. A"
+    },
+    "equationB": {
+     "display": "-2x + 3y = -10",
+     "slope": 0.6666666666666666,
+     "yIntercept": -3.3333333333333335,
+     "a": -2,
+     "b": 3,
+     "c": -10,
+     "color": "#10b981",
+     "label": "Eq. B"
+    },
+    "expectedX": 2,
+    "expectedY": -2,
+    "instruction": "Use elimination \u2014 add or scale equations so one variable cancels. Then solve and enter (x, y).",
+    "hint": "Multiply one or both equations so the x (or y) coefficients are opposites, add to cancel that variable, solve, then back-substitute. Check the pair in both equations."
+   },
+   {
+    "id": "se-2",
+    "type": "elimination",
+    "systemForm": "standard",
+    "equationA": {
+     "display": "x + y = 6",
+     "slope": -1,
+     "yIntercept": 6,
+     "a": 1,
+     "b": 1,
+     "c": 6,
+     "color": "#3b82f6",
+     "label": "Eq. A"
+    },
+    "equationB": {
+     "display": "x - 3y = -2",
+     "slope": 0.3333333333333333,
+     "yIntercept": 0.6666666666666666,
+     "a": 1,
+     "b": -3,
+     "c": -2,
+     "color": "#10b981",
+     "label": "Eq. B"
+    },
+    "expectedX": 4,
+    "expectedY": 2,
+    "instruction": "Use elimination \u2014 add or scale equations so one variable cancels. Then solve and enter (x, y).",
+    "hint": "Multiply one or both equations so the x (or y) coefficients are opposites, add to cancel that variable, solve, then back-substitute. Check the pair in both equations."
+   }
+  ]
+ }
+}

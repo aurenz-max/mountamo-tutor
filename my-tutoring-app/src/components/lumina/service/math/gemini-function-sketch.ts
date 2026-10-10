@@ -10,6 +10,9 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from "../scopeContext";
 import {
+  SKETCH_PASS, familyOf, inPlot, isStraight, revealSketch, sketchScore,
+} from "../../primitives/visual-primitives/math/functionSketchWorkspace";
+import {
   resolveEvalModeConstraint,
   logEvalModeResolution,
   type ChallengeTypeDoc,
@@ -640,7 +643,9 @@ EXAMPLE (quadratic):
 
   const featureCount = Math.min(4, Math.max(2, data.featureCount ?? 2));
   const rawFeatures = extractFeatures(data, featureCount);
-  const features = validateFeatureSemantics(rawFeatures, curve);
+  // A feature off the plotted axes cannot be seen or tapped.
+  const axes = { xMin: data.xMin, xMax: data.xMax, yMin: data.yMin, yMax: data.yMax } as FunctionSketchChallenge;
+  const features = validateFeatureSemantics(rawFeatures, curve).filter(f => inPlot(axes, f));
   if (features.length < 2) {
     if (attempt < 1) {
       console.warn('[FunctionSketch] identify-features: retrying with stronger turning-point hint');
@@ -717,8 +722,20 @@ EXAMPLE:
     // Force correctType into options
     options[3] = data.correctType;
   }
+  // Four different choices with the key among them once: a repeated family is two buttons with one name.
+  if (new Set(options.map((o: string) => o.trim().toLowerCase())).size !== options.length) {
+    throw new Error('[FunctionSketch] classify-shape options repeat a family');
+  }
 
   const curve = generateCurvePoints(data.xMin, data.xMax, 20, yValues);
+  // The key must not contradict the drawn curve: a straight line is linear, and a linear key needs a straight line.
+  if (isStraight(curve, data.yMax - data.yMin) !== (familyOf(data.correctType) === 'linear')) {
+    throw new Error(`[FunctionSketch] classify-shape key "${data.correctType}" contradicts the drawn curve`);
+  }
+  // The instruction never names the answer.
+  const keyWord = String(data.correctType ?? '').trim().toLowerCase();
+  const instruction = keyWord && String(data.instruction ?? '').toLowerCase().includes(keyWord)
+    ? 'What type of function does this curve show?' : data.instruction;
 
   return {
     title: data.title || topic,
@@ -726,7 +743,7 @@ EXAMPLE:
     challenge: {
       id: `classify-${Date.now()}`,
       type: 'classify-shape',
-      instruction: data.instruction,
+      instruction,
       xLabel: data.xLabel, xMin: data.xMin, xMax: data.xMax,
       yLabel: data.yLabel, yMin: data.yMin, yMax: data.yMax,
       classifyCurve: curve,
@@ -795,6 +812,15 @@ EXAMPLE:
   if (keyFeatures.length < 3) throw new Error('[FunctionSketch] Too few valid key features');
 
   const revealCurve = generateCurvePoints(data.xMin, data.xMax, 20, revealYValues);
+  // The function's own curve, sketched point by point, must pass the check: key features off the curve would make the
+  // drawn answer score as wrong.
+  const minPoints = Math.max(3, Math.min(8, data.minPoints ?? 5));
+  const probe = { type: 'sketch-match', xMin: data.xMin, xMax: data.xMax, yMin: data.yMin, yMax: data.yMax,
+    keyFeatures, revealCurve, minPoints } as FunctionSketchChallenge;
+  const reveal = revealSketch(probe);
+  if (reveal.length < minPoints || sketchScore(probe, reveal) < SKETCH_PASS) {
+    throw new Error('[FunctionSketch] sketch-match key features do not lie on the function curve');
+  }
 
   return {
     title: data.title || topic,
@@ -809,7 +835,7 @@ EXAMPLE:
       sketchExpression: data.sketchExpression,
       keyFeatures,
       revealCurve,
-      minPoints: Math.max(3, Math.min(8, data.minPoints ?? 5)),
+      minPoints,
     },
   };
 }
@@ -871,6 +897,19 @@ EXAMPLE:
 
   const correctCurve = data.correctCurve === 'A' || data.correctCurve === 'B'
     ? data.correctCurve : 'A';
+  // The learner picks a curve by its button label, so the two labels must differ.
+  // A label that carries a formula or a function's name ("g(x) = 2^x", "Function f(x)") answers a question that names
+  // the formula or the function: both curves get plain letters instead.
+  const sameLabels = String(data.labelA ?? '').trim().toLowerCase() === String(data.labelB ?? '').trim().toLowerCase();
+  const formula = (l: unknown) => /[=^]|\b[a-z]\s*\(\s*[a-z]\s*\)/i.test(String(l ?? ''));
+  const plain = sameLabels || formula(data.labelA) || formula(data.labelB);
+  const labelA = plain ? 'Curve A' : data.labelA, labelB = plain ? 'Curve B' : data.labelB;
+  // The model puts the answer on B almost every time. Where the labels are only letters, code picks the side: half the
+  // time the two curves trade places, and every "Curve A"/"Curve B" in the text trades letters with them.
+  const generic = (l: unknown) => /^\s*(curve|model|graph|function)\s+[ab]\s*$/i.test(String(l ?? ''));
+  const swap = generic(labelA) && generic(labelB) && Math.random() < 0.5;
+  const trade = (t: unknown) => (typeof t === 'string'
+    ? t.replace(/\b(curve|model|graph|function)\s+([AB])\b/gi, (_m, w: string, l: string) => `${w} ${l.toUpperCase() === 'A' ? 'B' : 'A'}`) : t);
 
   return {
     title: data.title || topic,
@@ -878,15 +917,16 @@ EXAMPLE:
     challenge: {
       id: `compare-${Date.now()}`,
       type: 'compare-functions',
-      instruction: data.instruction,
+      instruction: swap ? trade(data.instruction) as string : data.instruction,
       xLabel: data.xLabel, xMin: data.xMin, xMax: data.xMax,
       yLabel: data.yLabel, yMin: data.yMin, yMax: data.yMax,
-      curveA, curveB,
-      labelA: data.labelA,
-      labelB: data.labelB,
-      question: data.question,
-      correctCurve,
-      compareExplanation: data.explanation,
+      curveA: swap ? curveB : curveA,
+      curveB: swap ? curveA : curveB,
+      labelA,
+      labelB,
+      question: swap ? trade(data.question) as string : data.question,
+      correctCurve: swap ? (correctCurve === 'A' ? 'B' : 'A') : correctCurve,
+      compareExplanation: swap ? trade(data.explanation) as string : data.explanation,
     },
   };
 }
@@ -1024,9 +1064,17 @@ export const generateFunctionSketch = async (
     instanceCount: challenges.length,
   });
 
+  // A classify-shape session's title and context are shown above every curve: neither may name a family that answers one.
+  // The context describes the first sub-call's own curve ("oscillatory potential"), so a classify session always gets a
+  // plain one; the title is replaced when it names a key or a key's family ("Wave Motion" for a sinusoid).
+  const classifyKeys = challenges.filter(c => c.type === 'classify-shape' && c.correctType).map(c => String(c.correctType));
+  const names = (text: string) => classifyKeys.some(k => text.toLowerCase().includes(k.trim().toLowerCase())
+    || (familyOf(text) !== 'other' && familyOf(text) === familyOf(k)));
+  const classify = classifyKeys.length > 0;
+
   return {
-    title: head.title,
-    context: head.context,
+    title: classify && names(head.title) ? 'Name the function family' : head.title,
+    context: classify ? 'Look at each curve and decide which family of functions it belongs to.' : head.context,
     challenges,
   };
 };

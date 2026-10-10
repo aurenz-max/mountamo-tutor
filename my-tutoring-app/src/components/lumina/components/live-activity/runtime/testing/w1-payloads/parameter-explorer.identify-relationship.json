@@ -1,0 +1,54 @@
+{
+ "source": "qa/tutor-reports/parameter-explorer-runtime-identify-relationship-payload-2026-10-09.json",
+ "primitiveId": "parameter-explorer",
+ "evalMode": "identify-relationship",
+ "data": {
+  "title": "Kinetic Energy Explorer",
+  "description": "Examine how mass and velocity non-linearly dictate kinetic energy, highlighting the quadratic sensitivity of velocity versus the linear proportionality of mass.",
+  "formula": "KE = \\frac{1}{2}mv^2",
+  "jsExpression": "0.5 * m * Math.pow(v, 2)",
+  "outputName": "Kinetic Energy",
+  "outputUnit": "J",
+  "context": "Classical mechanics in physics, modeling the energy possessed by an object due to its motion, crucial for analyzing collisions, work, and conservation principles.",
+  "parameters": [
+   {
+    "symbol": "m",
+    "name": "Mass",
+    "unit": "kg",
+    "min": 0.5,
+    "max": 50,
+    "step": 0.5,
+    "default": 4,
+    "description": "The inertial mass of the moving body"
+   },
+   {
+    "symbol": "v",
+    "name": "Velocity",
+    "unit": "m/s",
+    "min": 0,
+    "max": 20,
+    "step": 0.1,
+    "default": 5,
+    "description": "The instantaneous linear velocity of the body"
+   }
+  ],
+  "observations": [
+   {
+    "trigger": "Isolate the mass variable by keeping velocity constant at 5.0 m/s and incrementally double the mass from 4.0 kg to 8.0 kg, then to 16.0 kg.",
+    "prompt": "Observe how the resulting kinetic energy scales proportionally with mass. Deduce why the kinetic energy-to-mass ratio remains invariant despite changes in the scalar mass value."
+   },
+   {
+    "trigger": "Lock the mass parameter at a baseline of 4.0 kg while systematically increasing velocity from 5.0 m/s to 10.0 m/s.",
+    "prompt": "Examine the non-linear trajectory of the kinetic energy output as velocity doubles. Formulate an explanation regarding the exponential magnitude shift rooted in the velocity squared term within classical mechanics."
+   }
+  ],
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "identify-relationship",
+    "instruction": "Examine the kinetic energy formula KE = 0.5 * m * v^2. Determine which parameter exerts a disproportionately greater influence on the resulting kinetic energy when independently doubled from its default baseline.",
+    "correctParameter": "v"
+   }
+  ]
+ }
+}

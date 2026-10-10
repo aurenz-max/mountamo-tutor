@@ -1,0 +1,167 @@
+{
+ "source": "qa/tutor-reports/slope-triangle-runtime-calculate-payload-2026-10-09.json",
+ "primitiveId": "slope-triangle",
+ "evalMode": "calculate",
+ "data": {
+  "title": "Reading and Calculating Slope from Triangles",
+  "description": "Practice determining the slope of various linear graphs by analyzing the rise and run of pre-drawn right triangles, working with both integer and fractional values.",
+  "xRange": [
+   -10,
+   10
+  ],
+  "yRange": [
+   -10,
+   10
+  ],
+  "gridSpacing": {
+   "x": 1,
+   "y": 1
+  },
+  "showAxes": true,
+  "showGrid": true,
+  "notation": "deltaNotation",
+  "gradeBand": "algebra-1",
+  "challenges": [
+   {
+    "id": "st-3",
+    "type": "calculate",
+    "attachedLine": {
+     "equation": "y = -0.3333333333333333*x + 6",
+     "slope": -0.3333333333333333,
+     "yIntercept": 6,
+     "color": "#3b82f6",
+     "label": "y = -0.33x + 6"
+    },
+    "triangle": {
+     "position": {
+      "x": -4,
+      "y": 0
+     },
+     "size": 6,
+     "showMeasurements": true,
+     "showSlope": true,
+     "showAngle": false,
+     "notation": "deltaNotation",
+     "color": "#a855f7"
+    },
+    "expectedRise": -2,
+    "expectedRun": 6,
+    "expectedSlope": -0.3333333333333333,
+    "instruction": "Use the triangle to calculate the slope of this line. Slope = rise \u00f7 run.",
+    "hint": "Read \u0394y (the vertical leg) and \u0394x (the horizontal leg) off the triangle's labels. The slope is \u0394y \u00f7 \u0394x \u2014 and the sign of \u0394y is the sign of the slope."
+   },
+   {
+    "id": "st-1",
+    "type": "calculate",
+    "attachedLine": {
+     "equation": "y = 0.3333333333333333*x",
+     "slope": 0.3333333333333333,
+     "yIntercept": 0,
+     "color": "#3b82f6",
+     "label": "y = 0.33x"
+    },
+    "triangle": {
+     "position": {
+      "x": -4,
+      "y": 0
+     },
+     "size": 6,
+     "showMeasurements": true,
+     "showSlope": true,
+     "showAngle": false,
+     "notation": "deltaNotation",
+     "color": "#3b82f6"
+    },
+    "expectedRise": 2,
+    "expectedRun": 6,
+    "expectedSlope": 0.3333333333333333,
+    "instruction": "Use the triangle to calculate the slope of this line. Slope = rise \u00f7 run.",
+    "hint": "Read \u0394y (the vertical leg) and \u0394x (the horizontal leg) off the triangle's labels. The slope is \u0394y \u00f7 \u0394x \u2014 and the sign of \u0394y is the sign of the slope."
+   },
+   {
+    "id": "st-4",
+    "type": "calculate",
+    "attachedLine": {
+     "equation": "y = -0.6666666666666666*x + 2",
+     "slope": -0.6666666666666666,
+     "yIntercept": 2,
+     "color": "#3b82f6",
+     "label": "y = -0.67x + 2"
+    },
+    "triangle": {
+     "position": {
+      "x": -3,
+      "y": 0
+     },
+     "size": 3,
+     "showMeasurements": true,
+     "showSlope": true,
+     "showAngle": false,
+     "notation": "deltaNotation",
+     "color": "#ec4899"
+    },
+    "expectedRise": -2,
+    "expectedRun": 3,
+    "expectedSlope": -0.6666666666666666,
+    "instruction": "Use the triangle to calculate the slope of this line. Slope = rise \u00f7 run.",
+    "hint": "Read \u0394y (the vertical leg) and \u0394x (the horizontal leg) off the triangle's labels. The slope is \u0394y \u00f7 \u0394x \u2014 and the sign of \u0394y is the sign of the slope."
+   },
+   {
+    "id": "st-2",
+    "type": "calculate",
+    "attachedLine": {
+     "equation": "y = -0.75*x + 3",
+     "slope": -0.75,
+     "yIntercept": 3,
+     "color": "#3b82f6",
+     "label": "y = -0.75x + 3"
+    },
+    "triangle": {
+     "position": {
+      "x": -1,
+      "y": 0
+     },
+     "size": 4,
+     "showMeasurements": true,
+     "showSlope": true,
+     "showAngle": false,
+     "notation": "deltaNotation",
+     "color": "#22d3ee"
+    },
+    "expectedRise": -3,
+    "expectedRun": 4,
+    "expectedSlope": -0.75,
+    "instruction": "Use the triangle to calculate the slope of this line. Slope = rise \u00f7 run.",
+    "hint": "Read \u0394y (the vertical leg) and \u0394x (the horizontal leg) off the triangle's labels. The slope is \u0394y \u00f7 \u0394x \u2014 and the sign of \u0394y is the sign of the slope."
+   },
+   {
+    "id": "st-5",
+    "type": "calculate",
+    "attachedLine": {
+     "equation": "y = -2*x - 10",
+     "slope": -2,
+     "yIntercept": -10,
+     "color": "#3b82f6",
+     "label": "y = -2x - 10"
+    },
+    "triangle": {
+     "position": {
+      "x": -4,
+      "y": 0
+     },
+     "size": 3,
+     "showMeasurements": true,
+     "showSlope": true,
+     "showAngle": false,
+     "notation": "deltaNotation",
+     "color": "#f97316"
+    },
+    "expectedRise": -6,
+    "expectedRun": 3,
+    "expectedSlope": -2,
+    "instruction": "Use the triangle to calculate the slope of this line. Slope = rise \u00f7 run.",
+    "hint": "Read \u0394y (the vertical leg) and \u0394x (the horizontal leg) off the triangle's labels. The slope is \u0394y \u00f7 \u0394x \u2014 and the sign of \u0394y is the sign of the slope."
+   }
+  ]
+ }
+}

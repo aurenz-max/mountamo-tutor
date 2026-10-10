@@ -1,0 +1,96 @@
+{
+ "source": "qa/tutor-reports/parameter-explorer-runtime-predict-value-payload-2026-10-09.json",
+ "primitiveId": "parameter-explorer",
+ "evalMode": "predict-value",
+ "data": {
+  "title": "Kinetic Energy Explorer",
+  "description": "Investigate how quadratic dependence on velocity versus linear dependence on mass influences the total kinetic energy of a moving system.",
+  "formula": "E_k = \\frac{1}{2} m v^2",
+  "jsExpression": "0.5 * m * Math.pow(v, 2)",
+  "outputName": "Kinetic Energy",
+  "outputUnit": "J",
+  "context": "Classical mechanics relating the mass and velocity of a macroscopic object to its translational kinetic energy.",
+  "parameters": [
+   {
+    "symbol": "m",
+    "name": "Mass",
+    "unit": "kg",
+    "min": 0.1,
+    "max": 100,
+    "step": 0.1,
+    "default": 10,
+    "description": "The inertial mass of the translating object."
+   },
+   {
+    "symbol": "v",
+    "name": "Velocity",
+    "unit": "m/s",
+    "min": 0,
+    "max": 50,
+    "step": 0.1,
+    "default": 5,
+    "description": "The instantaneous linear velocity of the object relative to an inertial reference frame."
+   }
+  ],
+  "observations": [
+   {
+    "trigger": "Isolate mass (m) by holding velocity constant and incrementally doubling the mass value",
+    "prompt": "Examine how the kinetic energy scales in direct proportion to the mass. Consider why doubling the mass results in a strictly linear increase in energy, whereas altering other parameters may yield non-linear consequences in classical mechanical systems."
+   },
+   {
+    "trigger": "Isolate velocity (v) by locking the mass and exponentially increasing the velocity parameter",
+    "prompt": "Analyze the parabolic trajectory of the kinetic energy output as velocity increases. Explain the physical significance of the squared velocity term in the equation and discuss why high-velocity impacts present exponentially greater destructive potential than low-velocity impacts."
+   }
+  ],
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "predict-value",
+    "instruction": "Calculate the translational kinetic energy of a macroscopic object when its mass is increased to 20 kg, maintaining the default velocity of 5 m/s.",
+    "prediction": {
+     "varyParameter": "m",
+     "newValue": 20,
+     "correctValue": 250,
+     "tolerance": 0.1,
+     "explanation": "Using the kinetic energy formula E_k = 0.5 * m * v^2, substituting m = 20 kg and v = 5 m/s yields E_k = 0.5 * 20 * (5)^2 = 10 * 25 = 250 Joules."
+    }
+   },
+   {
+    "id": "ch2",
+    "type": "predict-value",
+    "instruction": "Determine the resulting kinetic energy if the velocity of the default 10 kg mass is increased to 10 m/s.",
+    "prediction": {
+     "varyParameter": "v",
+     "newValue": 10,
+     "correctValue": 500,
+     "tolerance": 0.1,
+     "explanation": "Using the kinetic energy formula E_k = 0.5 * m * v^2, substituting m = 10 kg and v = 10 m/s yields E_k = 0.5 * 10 * (10)^2 = 5 * 100 = 500 Joules."
+    }
+   },
+   {
+    "id": "ch3",
+    "type": "predict-value",
+    "instruction": "Compute the kinetic energy for a reduced mass of 4 kg while keeping the velocity at its default value of 5 m/s.",
+    "prediction": {
+     "varyParameter": "m",
+     "newValue": 4,
+     "correctValue": 50,
+     "tolerance": 0.1,
+     "explanation": "Applying the formula E_k = 0.5 * m * v^2 with m = 4 kg and v = 5 m/s gives E_k = 0.5 * 4 * (5)^2 = 2 * 25 = 50 Joules."
+    }
+   },
+   {
+    "id": "ch4",
+    "type": "predict-value",
+    "instruction": "Evaluate the kinetic energy for the default 10 kg mass when its velocity is adjusted to 4 m/s.",
+    "prediction": {
+     "varyParameter": "v",
+     "newValue": 4,
+     "correctValue": 80,
+     "tolerance": 0.1,
+     "explanation": "Applying the formula E_k = 0.5 * m * v^2 with m = 10 kg and v = 4 m/s gives E_k = 0.5 * 10 * (4)^2 = 5 * 16 = 80 Joules."
+    }
+   }
+  ]
+ }
+}

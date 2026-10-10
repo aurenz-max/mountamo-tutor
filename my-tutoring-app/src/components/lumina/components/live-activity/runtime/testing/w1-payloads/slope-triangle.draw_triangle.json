@@ -1,0 +1,167 @@
+{
+ "source": "qa/tutor-reports/slope-triangle-runtime-draw_triangle-payload-2026-10-09.json",
+ "primitiveId": "slope-triangle",
+ "evalMode": "draw_triangle",
+ "data": {
+  "title": "Constructing Slope Triangles",
+  "description": "Practice building slope triangles on various lines by selecting appropriate runs and rises to understand rise over run.",
+  "xRange": [
+   -10,
+   10
+  ],
+  "yRange": [
+   -10,
+   10
+  ],
+  "gridSpacing": {
+   "x": 1,
+   "y": 1
+  },
+  "showAxes": true,
+  "showGrid": true,
+  "notation": "deltaNotation",
+  "gradeBand": "algebra-2",
+  "challenges": [
+   {
+    "id": "st-3",
+    "type": "draw_triangle",
+    "attachedLine": {
+     "equation": "y = x + 2",
+     "slope": 1,
+     "yIntercept": 2,
+     "color": "#3b82f6",
+     "label": "y = x + 2"
+    },
+    "triangle": {
+     "position": {
+      "x": -4,
+      "y": 0
+     },
+     "size": 1,
+     "showMeasurements": false,
+     "showSlope": false,
+     "showAngle": false,
+     "notation": "deltaNotation",
+     "color": "#a855f7"
+    },
+    "expectedRise": 4,
+    "expectedRun": 4,
+    "expectedSlope": 1,
+    "instruction": "Build a slope triangle on the line: choose a run, then raise or lower the top corner until it lands back on the line.",
+    "hint": "The rise is the slope times the run. Pick a run that makes the rise a whole number of grid steps, then set the top corner."
+   },
+   {
+    "id": "st-1",
+    "type": "draw_triangle",
+    "attachedLine": {
+     "equation": "y = 2*x + 3",
+     "slope": 2,
+     "yIntercept": 3,
+     "color": "#3b82f6",
+     "label": "y = 2x + 3"
+    },
+    "triangle": {
+     "position": {
+      "x": -5,
+      "y": 0
+     },
+     "size": 1,
+     "showMeasurements": false,
+     "showSlope": false,
+     "showAngle": false,
+     "notation": "deltaNotation",
+     "color": "#3b82f6"
+    },
+    "expectedRise": 8,
+    "expectedRun": 4,
+    "expectedSlope": 2,
+    "instruction": "Build a slope triangle on the line: choose a run, then raise or lower the top corner until it lands back on the line.",
+    "hint": "The rise is the slope times the run. Pick a run that makes the rise a whole number of grid steps, then set the top corner."
+   },
+   {
+    "id": "st-4",
+    "type": "draw_triangle",
+    "attachedLine": {
+     "equation": "y = -2*x - 2",
+     "slope": -2,
+     "yIntercept": -2,
+     "color": "#3b82f6",
+     "label": "y = -2x - 2"
+    },
+    "triangle": {
+     "position": {
+      "x": -3,
+      "y": 0
+     },
+     "size": 1,
+     "showMeasurements": false,
+     "showSlope": false,
+     "showAngle": false,
+     "notation": "deltaNotation",
+     "color": "#ec4899"
+    },
+    "expectedRise": -6,
+    "expectedRun": 3,
+    "expectedSlope": -2,
+    "instruction": "Build a slope triangle on the line: choose a run, then raise or lower the top corner until it lands back on the line.",
+    "hint": "The rise is the slope times the run. Pick a run that makes the rise a whole number of grid steps, then set the top corner."
+   },
+   {
+    "id": "st-2",
+    "type": "draw_triangle",
+    "attachedLine": {
+     "equation": "y = -2*x + 13",
+     "slope": -2,
+     "yIntercept": 13,
+     "color": "#3b82f6",
+     "label": "y = -2x + 13"
+    },
+    "triangle": {
+     "position": {
+      "x": 1,
+      "y": 0
+     },
+     "size": 1,
+     "showMeasurements": false,
+     "showSlope": false,
+     "showAngle": false,
+     "notation": "deltaNotation",
+     "color": "#22d3ee"
+    },
+    "expectedRise": -6,
+    "expectedRun": 3,
+    "expectedSlope": -2,
+    "instruction": "Build a slope triangle on the line: choose a run, then raise or lower the top corner until it lands back on the line.",
+    "hint": "The rise is the slope times the run. Pick a run that makes the rise a whole number of grid steps, then set the top corner."
+   },
+   {
+    "id": "st-5",
+    "type": "draw_triangle",
+    "attachedLine": {
+     "equation": "y = 3*x - 10",
+     "slope": 3,
+     "yIntercept": -10,
+     "color": "#3b82f6",
+     "label": "y = 3x - 10"
+    },
+    "triangle": {
+     "position": {
+      "x": 0,
+      "y": 0
+     },
+     "size": 1,
+     "showMeasurements": false,
+     "showSlope": false,
+     "showAngle": false,
+     "notation": "deltaNotation",
+     "color": "#f97316"
+    },
+    "expectedRise": 6,
+    "expectedRun": 2,
+    "expectedSlope": 3,
+    "instruction": "Build a slope triangle on the line: choose a run, then raise or lower the top corner until it lands back on the line.",
+    "hint": "The rise is the slope times the run. Pick a run that makes the rise a whole number of grid steps, then set the top corner."
+   }
+  ]
+ }
+}

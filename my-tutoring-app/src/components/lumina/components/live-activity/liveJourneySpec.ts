@@ -49,17 +49,33 @@ import { practiceParent as netPracticeParent, simplerNet } from '../../primitive
 import { formatNumber as formulaNumber, formulaHarnessInput, tokenizeFormula as formulaTokensOf }
   from '../../primitives/visual-primitives/math/formulaLabWorkspace';
 import { practiceParent as formulaPracticeParent, simplerFormula } from '../../primitives/visual-primitives/math/formulaLabLevers';
+import { askedOutput as parameterAskedOutput, formatOutput as parameterNumber, parameterHarnessInput }
+  from '../../primitives/visual-primitives/math/parameterExplorerWorkspace';
+import { practiceParent as parameterPracticeParent, simplerParameter }
+  from '../../primitives/visual-primitives/math/parameterExplorerLevers';
 import { practiceParent as percentPracticeParent, simplerPercent } from '../../primitives/visual-primitives/math/percentBarLevers';
 import { factorHarnessSplits, factorizationForms } from '../../primitives/visual-primitives/math/factorTreeWorkspace';
 import { practiceParent as factorPracticeParent, smallerTree } from '../../primitives/visual-primitives/math/factorTreeLevers';
 import { equationHarnessChoices, mergeCommutingSteps, stepsDoneFrom } from '../../primitives/visual-primitives/math/equationWorkspaceDomain';
 import { fewerSteps as equationFewerSteps, practiceParent as equationPracticeParent } from '../../primitives/visual-primitives/math/equationWorkspaceLevers';
 import { ratioHarnessInput } from '../../primitives/visual-primitives/math/ratioTableWorkspace';
+import { SCALAR_LABEL as MATRIX_SCALAR_LABEL, boxLabel as matrixBoxLabel, formatEntry as matrixEntry, matrixHarnessInput }
+  from '../../primitives/visual-primitives/math/matrixDisplayWorkspace';
+import { practiceParent as matrixPracticeParent, simplerMatrix } from '../../primitives/visual-primitives/math/matrixDisplayLevers';
 import { twoWayHarnessText } from '../../primitives/visual-primitives/math/twoWayTableWorkspace';
 import { coordinateHarnessInput, keyText as coordinateKeyText, planePixel }
   from '../../primitives/visual-primitives/math/coordinateGraphWorkspace';
 import { practiceParent as coordinatePracticeParent, simplerItem as simplerCoordinate }
   from '../../primitives/visual-primitives/math/coordinateGraphLevers';
+import { pairText as systemsPairText, systemsHarnessPoint } from '../../primitives/visual-primitives/math/systemsEquationsWorkspace';
+import { practiceParent as systemsPracticeParent, simplerItem as simplerSystem }
+  from '../../primitives/visual-primitives/math/systemsEquationsLevers';
+import { builtTriangle as slopeBuiltTriangle, ratioText as slopeRatioText, slopeHarnessSteps }
+  from '../../primitives/visual-primitives/math/slopeTriangleWorkspace';
+import { canvasPixel as sketchCanvasPixel, functionSketchHarnessInput }
+  from '../../primitives/visual-primitives/math/functionSketchWorkspace';
+import { practiceParent as sketchPracticeParent, simplerItem as simplerSketchItem }
+  from '../../primitives/visual-primitives/math/functionSketchLevers';
 import { practiceParent as twoWayPracticeParent, simplerTable } from '../../primitives/visual-primitives/math/twoWayTableLevers';
 import { histogramHarnessInput } from '../../primitives/visual-primitives/math/histogramWorkspace';
 import { practiceParent as histogramPracticeParent, simplerHistogram } from '../../primitives/visual-primitives/math/histogramLevers';
@@ -391,6 +407,13 @@ function percentBarItem(ctx: JourneyContext): any {
   const parentId = percentPracticeParent(String(ctx.itemId ?? ''));
   const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
   return parent && parentId !== ctx.itemId ? simplerPercent(parent) : parent;
+}
+
+/** parameter-explorer's current challenge; an easier one (`~simpler`) is rebuilt from its parent with the same builder. */
+function parameterExplorerItem(ctx: JourneyContext): any {
+  const parentId = parameterPracticeParent(String(ctx.itemId ?? ''));
+  const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+  return parent && parentId !== ctx.itemId ? simplerParameter(ctx.data as any, parent) : parent;
 }
 
 /** formula-lab's current challenge; an easier one (`~simpler`) is rebuilt from its parent with the same builder. */
@@ -1132,6 +1155,43 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
+  'parameter-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/ParameterExplorer.tsx',
+    instanceId: 'parameter',
+    defaults: { grade: 'Grade 9', mode: 'predict-direction', di: false, topic: 'How each variable in a physics formula affects the result' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', 'REVEAL POLICY'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls (`parameterHarnessInput`): explore writes the first parameter's slider
+    // ("<name> (<symbol>) slider") one step and presses Done Exploring; predict-direction chooses Increase / Decrease /
+    // Stay Same and Check; predict-value types "Your prediction" and Check; identify chooses "<symbol> (<name>)" and
+    // Check. A wrong answer is the mode's signature miss (the other direction, the starting output, the parameter with
+    // the largest starting number). explore has no wrong move: Done Exploring opens only after a move.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c: any = parameterExplorerItem(ctx);
+      if (!c) throw new Error('No current parameter-explorer challenge');
+      const input = parameterHarnessInput(ctx.data as any, c, intent === 'wrong' ? 'wrong' : 'correct');
+      if (!input) {
+        if (c.type === 'explore') return [];
+        throw new Error(`parameter-explorer ${c.type}: no input for this item`);
+      }
+      switch (input.kind) {
+        case 'move': return [{ type: 'write', label: input.label, text: String(input.value) }, { type: 'choose', label: 'Done Exploring' }];
+        case 'direction': return [{ type: 'choose', label: input.label }, { type: 'check' }];
+        case 'type': return [{ type: 'write', label: 'Your prediction', text: input.text }, { type: 'check' }];
+        case 'parameter': return [{ type: 'choose', label: input.label }, { type: 'check' }];
+      }
+    },
+    // The answer as the screen would print it: predict-value's output. The direction words and the parameter names are
+    // on screen as choices, so they are read by hand in the replies.
+    replayKeys: (ctx) => {
+      const c: any = parameterExplorerItem(ctx);
+      const value = c?.type === 'predict-value' ? parameterAskedOutput(ctx.data as any, c) : null;
+      return value === null || value === undefined ? [] : [parameterNumber(value)];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
   'ratio-table': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/RatioTable.tsx',
@@ -1154,6 +1214,41 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return input.kind === 'type'
         ? [{ type: 'write', label: 'Your answer', text: input.text }, { type: 'check' }]
         : [{ type: 'write', label: 'Multiplier', text: String(input.value) }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'matrix-display': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/MatrixDisplay.tsx',
+    instanceId: 'matrix',
+    defaults: { grade: 'Grade 10', mode: 'transpose', di: false, topic: 'Matrix operations' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'SHOW_STEPS', 'NEXT_ITEM', 'ALL_COMPLETE', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: a number typed into each answer box ("Answer row i, column j") or the
+    // determinant box, then Check. A wrong answer is the item's signature miss from `matrixMiss` (reading order kept,
+    // the other operation, B·A, the products added, the swap without the negation), else one box off.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier practice problem (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = matrixPracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? simplerMatrix(parent) : parent;
+      if (!c) throw new Error('No current matrix-display challenge');
+      const input = matrixHarnessInput(c, intent === 'wrong' ? 'wrong' : 'correct');
+      if (input.kind === 'scalar') return [{ type: 'write', label: MATRIX_SCALAR_LABEL, text: input.text }, { type: 'check' }];
+      return [...input.cells.flatMap((row, i) => row.map((text, j) => ({ type: 'write' as const, label: matrixBoxLabel(i, j), text }))),
+        { type: 'check' }];
+    },
+    // The typed boxes name the answer in parts, most of them numbers the matrices already show. The key is the
+    // determinant, or the result entries the screen does not show (a sum, a product, a sign changed).
+    replayKeys: (ctx) => {
+      const c: any = ctx.challenge;
+      if (!c) return [];
+      // A determinant equal to one of the drawn entries ([[3, 5], [-1, -2]] is -1) cannot be told from reading the matrix.
+      const shown = new Set([...(c.values ?? []).flat(), ...(c.secondMatrix?.values ?? []).flat()].map(matrixEntry));
+      if (typeof c.expectedScalar === 'number') return shown.has(matrixEntry(c.expectedScalar)) ? [] : [matrixEntry(c.expectedScalar)];
+      return Array.from(new Set(((c.expectedMatrix ?? []) as number[][]).flat().map(matrixEntry)))
+        .filter(k => !shown.has(k) && !['0', '1', '2', '3'].includes(k));
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
@@ -1232,6 +1327,93 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const c: any = parent && parentId !== ctx.itemId
         ? simplerCoordinate(parent, { gridMin: ctx.data.gridMin, gridMax: ctx.data.gridMax }) : parent;
       return c && c.type !== 'plot_point' ? [coordinateKeyText(c)] : [];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'systems-equations-visualizer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/SystemsEquationsVisualizer.tsx',
+    instanceId: 'systems',
+    defaults: { grade: 'Grade 8', mode: 'graph', di: false, topic: 'Solving systems of linear equations' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', 'SUPPORT TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls: x and y typed into their boxes, then Check. A wrong answer is the item's first
+    // signature miss (`systemsHarnessPoint`): x and y swapped, a sign flipped, or one step off. A practice item
+    // (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const parentId = systemsPracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? simplerSystem(parent) : parent;
+      if (!c) throw new Error('No current systems-equations-visualizer challenge');
+      const p = systemsHarnessPoint(c, intent === 'wrong' ? 'wrong' : 'correct');
+      return [{ type: 'write', label: 'x', text: String(p.x) }, { type: 'write', label: 'y', text: String(p.y) }, { type: 'check' }];
+    },
+    // The key as a pair, as the screen prints it once solved.
+    replayKeys: ctx => {
+      const parentId = systemsPracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? simplerSystem(parent) : parent;
+      return c ? [systemsPairText({ x: c.expectedX, y: c.expectedY })] : [];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'slope-triangle': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/SlopeTriangle.tsx',
+    instanceId: 'slope',
+    defaults: { grade: 'Grade 8', mode: 'identify_slope', di: false, topic: 'Slope as rise over run' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', 'Support tier'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls (`slopeHarnessSteps`): identify types the rise and the run, calculate types the
+    // slope, draw presses the run and rise buttons from the run and rise the scene prints to the generated example
+    // triangle; then Check. A wrong answer is the item's signature miss: the legs swapped (or the rise's sign lost), the
+    // slope turned over, the built rise the wrong way.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c: any = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current slope-triangle challenge');
+      return slopeHarnessSteps(c, intent === 'wrong' ? 'wrong' : 'correct', slopeBuiltTriangle(c, ctx.demand?.learnerWork))
+        .map((s): DriverInput => (s.kind === 'check' ? { type: 'check' } : s.kind === 'write'
+          ? { type: 'write', label: s.label, text: s.text } : { type: 'choose', label: s.label }));
+    },
+    // The key: the rise and the run (identify), the slope in lowest terms (calculate). A build has no single key: any
+    // run with its rise fits.
+    replayKeys: ctx => {
+      const c: any = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c || c.type === 'draw_triangle') return [];
+      return c.type === 'identify_slope' ? [String(c.expectedRise), String(c.expectedRun)] : [slopeRatioText(c.expectedRise, c.expectedRun)];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'function-sketch': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/math/FunctionSketch.tsx',
+    instanceId: 'fsketch',
+    defaults: { grade: 'Grade 10', mode: 'classify-shape', di: false, topic: 'Families of functions and their graphs' },
+    leakTokens: ['FEATURE_FOUND', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', '[TIER'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode through its real controls (`functionSketchHarnessInput`), then Check Answer: classify taps a family,
+    // compare taps a curve's button, identify taps features on the canvas (one-point strokes in canvas pixels), sketch
+    // taps the function's own curve point by point. A wrong answer is the item's signature miss: a confused family, the
+    // other curve, one feature only, the sketch upside down or a flat line.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier practice item (`~simpler`) is rebuilt from its parent with the same builder.
+      const parentId = sketchPracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? simplerSketchItem(parent) : parent;
+      if (!c) throw new Error('No current function-sketch challenge');
+      const input = functionSketchHarnessInput(c, intent === 'wrong' ? 'wrong' : 'correct');
+      if (input.kind === 'choose') return [{ type: 'choose', label: input.label }, { type: 'check' }];
+      return [{ type: 'draw', strokes: input.points.map(p => [sketchCanvasPixel(c, p)]) }, { type: 'check' }];
+    },
+    // The key as the screen prints it: the family (classify). A curve, a feature or a sketch has no one printed key.
+    replayKeys: ctx => {
+      const parentId = sketchPracticeParent(String(ctx.itemId ?? ''));
+      const parent = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === parentId);
+      const c: any = parent && parentId !== ctx.itemId ? simplerSketchItem(parent) : parent;
+      return c?.type === 'classify-shape' && c.correctType ? [String(c.correctType)] : [];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

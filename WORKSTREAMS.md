@@ -43,7 +43,7 @@ Exit: every bound mode's misses are defined once as `{ id, pattern }`; gesture c
 
 | # | Item | Executor · queue | State |
 |---|---|---|---|
-| 1.1 | W1 binding rollout C10-C19, each with its miss function | `/add-live-tutor-tools` · `qa/workspace-rollout/ROLLOUT.md` | ACTIVE (this session, 10-09): queue recounted (87/212 bound); C10 DONE 10-09 (5 primitives, 27 modes, levers on every mode; sweep J13 added); C11-C19 DONE 10-09 (28 primitives with levers; 3 HELD); next C20 |
+| 1.1 | W1 binding rollout C10-C19, each with its miss function | `/add-live-tutor-tools` · `qa/workspace-rollout/ROLLOUT.md` | ACTIVE (this session, 10-09): queue recounted (87/212 bound); C10 DONE 10-09 (5 primitives, 27 modes, levers on every mode; sweep J13 added); C11-C20 DONE 10-09 (33 primitives with levers; 3 HELD); next C21 |
 | 1.2 | Gesture misses for bound families | `/add-support-tiers` · handoff 20 A | DONE 09-27 (RP-7 closed) |
 | 1.3 | Miss definitions carry their observable pattern (today only in docblocks); the packet and `spoken_miss` read them; doctrine says what to do with a miss | `/add-live-tutor-tools` · handoff 20 (new) | open; packet side needs `runtime/` |
 | 1.4 | Spoken misses wired (59 families) | `/add-live-tutor-tools` · handoff 20 Part B | DONE 09-28 (`b431d545`; route file still untracked): 0 FP in 3630; report `qa/tutor-reports/spoken-miss/wired-2026-09-28.md` |

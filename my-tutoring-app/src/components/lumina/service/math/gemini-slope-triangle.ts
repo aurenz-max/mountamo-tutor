@@ -94,7 +94,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   draw_triangle: {
     promptDoc:
-      `"draw_triangle": Algebra-1/Geometry. Given a line, the student constructs a slope triangle of a specified run, then reads off rise to verify the slope. `
+      `"draw_triangle": Algebra-1/Geometry. Given a line, the student builds a slope triangle on it: chooses a run, then sets the rise so the top corner lands back on the line. `
       + `Clean integer slopes (m ∈ {±1, ±2, ±3, ±1/2}). The student picks position; runs of 2-4. Notation: 'deltaNotation'.`,
     schemaDescription: "'draw_triangle' (construct triangle on a given line)",
   },
@@ -464,7 +464,7 @@ function instructionFor(type: SlopeTriangleChallengeType, line: LineSpec): strin
     case 'calculate':
       return `Use the triangle to calculate the slope of this line. Slope = rise ÷ run.`;
     case 'draw_triangle':
-      return `Drag the base point and resize the triangle so it sits on the line and reveals the slope.`;
+      return `Build a slope triangle on the line: choose a run, then raise or lower the top corner until it lands back on the line.`;
   }
 }
 
@@ -475,7 +475,7 @@ function hintFor(type: SlopeTriangleChallengeType, rise: number, run: number): s
     case 'calculate':
       return `Read Δy (the vertical leg) and Δx (the horizontal leg) off the triangle's labels. The slope is Δy ÷ Δx — and the sign of Δy is the sign of the slope.`;
     case 'draw_triangle':
-      return `Pick a base x-value on the visible line, then resize so the run is ${run}. The rise will be ${rise}.`;
+      return `The rise is the slope times the run. Pick a run that makes the rise a whole number of grid steps, then set the top corner.`;
   }
 }
 
@@ -572,7 +572,9 @@ export function selectSlopeTriangleChallenges(
       run = runPool[randInt(0, runPool.length - 1)];
       rise = slope * run;
     }
-    if (!Number.isFinite(rise) || !Number.isInteger(rise * 2)) continue; // keep grid-friendly
+    // Keep grid-friendly: the triangle's top corner lands on a grid crossing, so the rise is counted in whole steps
+    // (a 3/2 line with run 5 drew "Δy = 7.5", W1 payload 2026-10-09).
+    if (!Number.isFinite(rise) || !Number.isInteger(rise)) continue;
 
     const startX = randInt(-5, Math.min(5, 7 - run));
     const yIntercept = chooseYIntercept(slope, run, rise, startX);
@@ -634,7 +636,9 @@ export function selectSlopeTriangleChallenges(
       run = built.run;
       rise = built.rise;
     } else {
-      run = runPool[randInt(0, runPool.length - 1)];
+      // A whole-number rise, as in the main loop: a run that is a multiple of the pair's run.
+      const fits = runPool.filter((r) => Number.isInteger(slope * r));
+      run = fits.length ? fits[randInt(0, fits.length - 1)] : Math.abs(runUnit);
       rise = slope * run;
     }
     const startX = randInt(-5, Math.min(5, 7 - run));

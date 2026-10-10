@@ -1,0 +1,516 @@
+{
+ "source": "qa/tutor-reports/function-sketch-runtime-classify-shape-payload-2026-10-09.json",
+ "primitiveId": "function-sketch",
+ "evalMode": "classify-shape",
+ "data": {
+  "title": "Thermodynamic Transition Curve",
+  "context": "Look at each curve and decide which family of functions it belongs to.",
+  "challenges": [
+   {
+    "id": "fs-classify-shape-1",
+    "type": "classify-shape",
+    "instruction": "What type of function is this?",
+    "xLabel": "Reaction Coordinate (x)",
+    "xMin": -3,
+    "xMax": 3,
+    "yLabel": "Potential Energy (kJ/mol)",
+    "yMin": -8,
+    "yMax": 8,
+    "classifyCurve": [
+     {
+      "x": -3,
+      "y": -6.75
+     },
+     {
+      "x": -2.6842105263157894,
+      "y": -4.83
+     },
+     {
+      "x": -2.3684210526315788,
+      "y": -3.22
+     },
+     {
+      "x": -2.0526315789473686,
+      "y": -1.9
+     },
+     {
+      "x": -1.736842105263158,
+      "y": -0.87
+     },
+     {
+      "x": -1.4210526315789473,
+      "y": -0.11
+     },
+     {
+      "x": -1.105263157894737,
+      "y": 0.38
+     },
+     {
+      "x": -0.7894736842105265,
+      "y": 0.63
+     },
+     {
+      "x": -0.47368421052631593,
+      "y": 0.66
+     },
+     {
+      "x": -0.1578947368421053,
+      "y": 0.5
+     },
+     {
+      "x": 0.1578947368421053,
+      "y": 0.17
+     },
+     {
+      "x": 0.4736842105263155,
+      "y": -0.28
+     },
+     {
+      "x": 0.7894736842105261,
+      "y": -0.79
+     },
+     {
+      "x": 1.1052631578947363,
+      "y": -1.29
+     },
+     {
+      "x": 1.421052631578947,
+      "y": -1.69
+     },
+     {
+      "x": 1.7368421052631575,
+      "y": -1.9
+     },
+     {
+      "x": 2.052631578947368,
+      "y": -1.8
+     },
+     {
+      "x": 2.3684210526315788,
+      "y": -1.3
+     },
+     {
+      "x": 2.6842105263157894,
+      "y": -0.3
+     },
+     {
+      "x": 3,
+      "y": 1.25
+     }
+    ],
+    "correctType": "cubic",
+    "options": [
+     "quadratic",
+     "cubic",
+     "sinusoidal",
+     "exponential"
+    ],
+    "classifyExplanation": "The curve demonstrates characteristic cubic polynomial behavior, displaying opposite end behavior as x goes to \u00b1infinity and an inflection point accompanied by local extrema."
+   },
+   {
+    "id": "fs-classify-shape-2",
+    "type": "classify-shape",
+    "instruction": "What type of function best describes this curve?",
+    "xLabel": "Time (seconds)",
+    "xMin": 0,
+    "xMax": 9.5,
+    "yLabel": "Altitude (meters)",
+    "yMin": -10,
+    "yMax": 60,
+    "classifyCurve": [
+     {
+      "x": 0,
+      "y": 0
+     },
+     {
+      "x": 0.5,
+      "y": 11.25
+     },
+     {
+      "x": 1,
+      "y": 21
+     },
+     {
+      "x": 1.5,
+      "y": 29.25
+     },
+     {
+      "x": 2,
+      "y": 36
+     },
+     {
+      "x": 2.5,
+      "y": 41.25
+     },
+     {
+      "x": 3,
+      "y": 45
+     },
+     {
+      "x": 3.5,
+      "y": 47.25
+     },
+     {
+      "x": 4,
+      "y": 48
+     },
+     {
+      "x": 4.5,
+      "y": 47.25
+     },
+     {
+      "x": 5,
+      "y": 45
+     },
+     {
+      "x": 5.5,
+      "y": 41.25
+     },
+     {
+      "x": 6,
+      "y": 36
+     },
+     {
+      "x": 6.5,
+      "y": 29.25
+     },
+     {
+      "x": 7,
+      "y": 21
+     },
+     {
+      "x": 7.5,
+      "y": 11.25
+     },
+     {
+      "x": 8,
+      "y": 0
+     },
+     {
+      "x": 8.5,
+      "y": -12.75
+     },
+     {
+      "x": 9,
+      "y": -27
+     },
+     {
+      "x": 9.5,
+      "y": -42.75
+     }
+    ],
+    "correctType": "quadratic",
+    "options": [
+     "linear",
+     "exponential",
+     "quadratic",
+     "cubic"
+    ],
+    "classifyExplanation": "The graph exhibits a characteristic parabolic trajectory with a single global extremum (vertex) and symmetric rate of change, consistent with a degree-2 polynomial under constant second-order differences."
+   },
+   {
+    "id": "fs-classify-shape-3",
+    "type": "classify-shape",
+    "instruction": "What type of function is this?",
+    "xLabel": "Time (seconds)",
+    "xMin": 0,
+    "xMax": 6.28,
+    "yLabel": "Voltage (V)",
+    "yMin": -5,
+    "yMax": 5,
+    "classifyCurve": [
+     {
+      "x": 0,
+      "y": 3
+     },
+     {
+      "x": 0.3305263157894737,
+      "y": 2.83
+     },
+     {
+      "x": 0.6610526315789474,
+      "y": 2.34
+     },
+     {
+      "x": 0.9915789473684211,
+      "y": 1.58
+     },
+     {
+      "x": 1.322105263157895,
+      "y": 0.63
+     },
+     {
+      "x": 1.6526315789473687,
+      "y": -0.39
+     },
+     {
+      "x": 1.9831578947368422,
+      "y": -1.37
+     },
+     {
+      "x": 2.3136842105263162,
+      "y": -2.2
+     },
+     {
+      "x": 2.64421052631579,
+      "y": -2.76
+     },
+     {
+      "x": 2.9747368421052633,
+      "y": -2.99
+     },
+     {
+      "x": 3.3052631578947373,
+      "y": -2.86
+     },
+     {
+      "x": 3.635789473684211,
+      "y": -2.39
+     },
+     {
+      "x": 3.9663157894736845,
+      "y": -1.65
+     },
+     {
+      "x": 4.296842105263158,
+      "y": -0.72
+     },
+     {
+      "x": 4.6273684210526325,
+      "y": 0.3
+     },
+     {
+      "x": 4.957894736842106,
+      "y": 1.28
+     },
+     {
+      "x": 5.28842105263158,
+      "y": 2.13
+     },
+     {
+      "x": 5.618947368421053,
+      "y": 2.72
+     },
+     {
+      "x": 5.949473684210527,
+      "y": 2.98
+     },
+     {
+      "x": 6.280000000000001,
+      "y": 2.88
+     }
+    ],
+    "correctType": "sinusoidal",
+    "options": [
+     "quadratic",
+     "cubic",
+     "sinusoidal",
+     "exponential"
+    ],
+    "classifyExplanation": "The curve exhibits continuous, smooth periodicity with bounded oscillation between fixed amplitudes, characteristic of a harmonic trigonometric function."
+   },
+   {
+    "id": "fs-classify-shape-4",
+    "type": "classify-shape",
+    "instruction": "What type of function best describes this curve?",
+    "xLabel": "Reaction Coordinate (x)",
+    "xMin": -3,
+    "xMax": 3,
+    "yLabel": "Net Energy Potential (kJ/mol)",
+    "yMin": -10,
+    "yMax": 10,
+    "classifyCurve": [
+     {
+      "x": -3,
+      "y": -9
+     },
+     {
+      "x": -2.6842105263157894,
+      "y": -6.65
+     },
+     {
+      "x": -2.3684210526315788,
+      "y": -4.61
+     },
+     {
+      "x": -2.0526315789473686,
+      "y": -2.87
+     },
+     {
+      "x": -1.736842105263158,
+      "y": -1.41
+     },
+     {
+      "x": -1.4210526315789473,
+      "y": -0.22
+     },
+     {
+      "x": -1.105263157894737,
+      "y": 0.72
+     },
+     {
+      "x": -0.7894736842105265,
+      "y": 1.43
+     },
+     {
+      "x": -0.47368421052631593,
+      "y": 1.9
+     },
+     {
+      "x": -0.1578947368421053,
+      "y": 2.15
+     },
+     {
+      "x": 0.1578947368421053,
+      "y": 2.19
+     },
+     {
+      "x": 0.4736842105263155,
+      "y": 2.05
+     },
+     {
+      "x": 0.7894736842105261,
+      "y": 1.74
+     },
+     {
+      "x": 1.1052631578947363,
+      "y": 1.28
+     },
+     {
+      "x": 1.421052631578947,
+      "y": 0.69
+     },
+     {
+      "x": 1.7368421052631575,
+      "y": 0
+     },
+     {
+      "x": 2.052631578947368,
+      "y": -0.77
+     },
+     {
+      "x": 2.3684210526315788,
+      "y": -1.59
+     },
+     {
+      "x": 2.6842105263157894,
+      "y": -2.43
+     },
+     {
+      "x": 3,
+      "y": -3.27
+     }
+    ],
+    "correctType": "cubic",
+    "options": [
+     "quadratic",
+     "cubic",
+     "sinusoidal",
+     "exponential"
+    ],
+    "classifyExplanation": "The curve exhibits characteristic cubic behavior (degree 3), displaying opposite end behaviors along with an inflection point and a local maximum followed by a decline."
+   },
+   {
+    "id": "fs-classify-shape-5",
+    "type": "classify-shape",
+    "instruction": "What type of function best describes this curve?",
+    "xLabel": "Reaction Progress (x)",
+    "xMin": -3,
+    "xMax": 3,
+    "yLabel": "Net Energy Gradient (y)",
+    "yMin": -8,
+    "yMax": 8,
+    "classifyCurve": [
+     {
+      "x": -3,
+      "y": -6
+     },
+     {
+      "x": -2.6842105263157894,
+      "y": -1.86
+     },
+     {
+      "x": -2.3684210526315788,
+      "y": 1.45
+     },
+     {
+      "x": -2.0526315789473686,
+      "y": 3.96
+     },
+     {
+      "x": -1.736842105263158,
+      "y": 5.64
+     },
+     {
+      "x": -1.4210526315789473,
+      "y": 6.5
+     },
+     {
+      "x": -1.105263157894737,
+      "y": 6.53
+     },
+     {
+      "x": -0.7894736842105265,
+      "y": 5.79
+     },
+     {
+      "x": -0.47368421052631593,
+      "y": 4.38
+     },
+     {
+      "x": -0.1578947368421053,
+      "y": 2.38
+     },
+     {
+      "x": 0.1578947368421053,
+      "y": -0.09
+     },
+     {
+      "x": 0.4736842105263155,
+      "y": -2.86
+     },
+     {
+      "x": 0.7894736842105261,
+      "y": -5.61
+     },
+     {
+      "x": 1.1052631578947363,
+      "y": -8
+     },
+     {
+      "x": 1.421052631578947,
+      "y": -9.73
+     },
+     {
+      "x": 1.7368421052631575,
+      "y": -10.49
+     },
+     {
+      "x": 2.052631578947368,
+      "y": -9.96
+     },
+     {
+      "x": 2.3684210526315788,
+      "y": -7.83
+     },
+     {
+      "x": 2.6842105263157894,
+      "y": -3.77
+     },
+     {
+      "x": 3,
+      "y": 2.54
+     }
+    ],
+    "correctType": "cubic",
+    "options": [
+     "quadratic",
+     "cubic",
+     "sinusoidal",
+     "exponential"
+    ],
+    "classifyExplanation": "The graph exhibits cubic characteristics: an inflection point, opposite end behaviors as x approaches positive and negative infinity, and both a local maximum and a local minimum."
+   }
+  ]
+ }
+}

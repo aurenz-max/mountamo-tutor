@@ -19,6 +19,7 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildScopePromptSection } from "../scopeContext";
+import { dominantParameter, settleChallenge } from "../../primitives/visual-primitives/math/parameterExplorerWorkspace";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -165,7 +166,8 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'predict-direction': {
     promptDoc:
       `"predict-direction": Student predicts whether the output will increase, decrease, or stay the same `
-      + `when a specific parameter changes. Requires predVaryParameter (which parameter symbol), `
+      + `when a specific parameter changes from its default to a new value. Requires predVaryParameter (which parameter symbol), `
+      + `predNewValue (the value it changes to, inside its slider range and different from its default), `
       + `predCorrectDirection ('increase'|'decrease'|'stay-same'), and predExplanation. `
       + `Choose parameters where the direction is unambiguous from the formula.`,
     schemaDescription: "'predict-direction' (predict output direction when parameter changes)",
@@ -181,12 +183,26 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   'identify-relationship': {
     promptDoc:
-      `"identify-relationship": Student identifies which parameter has the strongest effect on the output. `
-      + `Requires identifyCorrectParameter (the symbol of the most influential parameter). `
-      + `Choose a formula where one parameter genuinely dominates — e.g., appears as a multiplier `
-      + `while others are additive, or appears with a higher exponent.`,
+      `"identify-relationship": Student identifies which parameter changes the output the most when it alone is `
+      + `doubled from its default (the others held). Requires identifyCorrectParameter (that parameter's symbol). `
+      + `Only use it when one parameter genuinely leads — e.g., it is raised to a higher power, or it multiplies `
+      + `while others only add. In a plain product of first powers (V = IR) doubling any one doubles the output: no leader.`,
     schemaDescription: "'identify-relationship' (identify most influential parameter)",
   },
+};
+
+/**
+ * What a pinned mode needs from the formula. identify needs a parameter that leads (a product of first powers has
+ * none); predict-direction needs one that divides, or every answer is "the same way the input moved".
+ */
+const FORMULA_NEED: Partial<Record<ParameterExplorerChallenge['type'], string>> = {
+  'identify-relationship': 'The students will be asked which parameter changes the output the most when it alone is doubled. '
+    + 'Choose a formula where one parameter clearly leads: raised to a higher power than the others (A = πr², d = ½gt², '
+    + 'KE = ½mv², P = I²R), or the only multiplier where the others add. NOT a plain product of first powers like V = IR '
+    + 'or F = ma (doubling any one doubles the output).',
+  'predict-direction': 'The students will predict which way the output moves when one parameter changes. Choose a formula '
+    + 'where at least one parameter divides (sits in a denominator), so raising it lowers the output: I = V/R, a = F/m, '
+    + 'P = F/A, ρ = m/V, t = d/v. Not a plain product, where every answer would be "the same way the input moved".',
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -279,6 +295,7 @@ async function runFormulaService(
   topic: string,
   gradeLevel: string,
   scopeSection = '',
+  formulaNeed = '',
 ): Promise<FormulaResult | null> {
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
@@ -290,12 +307,14 @@ A Parameter Explorer lets students manipulate formula variables via sliders and 
 REQUIREMENTS:
 1. Choose a formula appropriate for the topic and grade level
 2. Provide BOTH:
-   - LaTeX formula for display (e.g., "V = IR", "F = \\\\frac{Gm_1m_2}{r^2}")
-   - JavaScript expression for evaluation (e.g., "I * R", "G * m1 * m2 / Math.pow(r, 2)")
-3. The JS expression must use the EXACT same symbols as the parameter symbols
+   - LaTeX formula for display (e.g., "V = IR", "a = \\\\frac{F}{m}", "A = \\\\pi r^2")
+   - JavaScript expression for evaluation (e.g., "I * R", "F / m", "Math.PI * Math.pow(r, 2)")
+3. The JS expression may use ONLY the parameter symbols, numbers and Math functions. Write any constant as a number
+   (g as 9.8, G as 6.674e-11); a letter that is not a parameter breaks the formula
 4. Use Math.pow(base, exp) for exponentiation — NEVER use **
-5. Use 2-3 parameters with clear physical/domain meaning
-6. Each parameter needs sensible numeric ranges and step sizes
+5. Use 2-3 parameters with clear physical/domain meaning, every one of them in the formula (never a placeholder parameter the formula ignores)
+6. Each parameter needs sensible numeric ranges and step sizes, with every min, max, step and default between 0.01 and
+   10000 so a student reads them without scientific notation (pick units that keep them there: Earth masses, km, minutes)
 7. Default values should produce a reasonable, non-zero output
 
 EXAMPLE FORMULAS:
@@ -304,7 +323,9 @@ EXAMPLE FORMULAS:
 - Economics: Revenue = P × Q
 - Geometry: A = πr², V = lwh
 
-AVOID: division by zero at any slider position, NaN/Infinity, more than 3 variables, Python syntax (**).`,
+AVOID: division by zero at any slider position, NaN/Infinity, more than 3 variables, Python syntax (**).${formulaNeed ? `
+
+${formulaNeed}` : ''}`,
     config: {
       responseMimeType: 'application/json',
       responseSchema: FORMULA_SCHEMA,
@@ -358,7 +379,7 @@ const challengeItemSchema: Schema = {
     },
     predNewValue: {
       type: Type.NUMBER,
-      description: "The new value the parameter changes to (for predict-value)",
+      description: "The new value the parameter changes to from its default (for predict-direction and predict-value)",
     },
     predCorrectValue: {
       type: Type.NUMBER,
@@ -392,35 +413,45 @@ const CHALLENGES_SCHEMA: Schema = {
   required: ['challenges'],
 };
 
+/** The fields each challenge type needs; a pinned single type makes them required, or the model drops them. */
+const REQUIRED_BY_TYPE: Record<string, string[]> = {
+  explore: [],
+  'predict-direction': ['predVaryParameter', 'predNewValue', 'predCorrectDirection', 'predExplanation'],
+  'predict-value': ['predVaryParameter', 'predNewValue', 'predCorrectValue', 'predTolerance', 'predExplanation'],
+  'identify-relationship': ['identifyCorrectParameter'],
+};
+
 async function runChallengesService(
   formulaContext: string,
   challengeTypeSection: string,
   allowedTypes: string[] | undefined,
   tierSection: string,
+  symbols: string[],
 ): Promise<FlatChallenge[]> {
-  // Constrain the schema enum if eval mode restricts types
-  let activeSchema = CHALLENGES_SCHEMA;
-  if (allowedTypes && allowedTypes.length < 4) {
-    activeSchema = {
-      ...CHALLENGES_SCHEMA,
-      properties: {
-        challenges: {
-          type: Type.ARRAY,
-          items: {
-            ...challengeItemSchema,
-            properties: {
-              ...challengeItemSchema.properties,
-              type: {
-                ...challengeItemSchema.properties!.type,
-                enum: allowedTypes,
-              },
-            },
-          },
-          description: `Array of 3-4 challenges using ONLY these types: ${allowedTypes.join(', ')}`,
-        },
+  // Parameter references are the formula's symbols (an open string came back as "mIdv2"); a single pinned type
+  // requires its own fields.
+  const symbolEnum = { type: Type.STRING, enum: symbols };
+  const properties = {
+    ...challengeItemSchema.properties,
+    predVaryParameter: { ...challengeItemSchema.properties!.predVaryParameter, ...symbolEnum },
+    identifyCorrectParameter: { ...challengeItemSchema.properties!.identifyCorrectParameter, ...symbolEnum },
+    ...(allowedTypes && allowedTypes.length < 4
+      ? { type: { ...challengeItemSchema.properties!.type, enum: allowedTypes } } : {}),
+  };
+  const required = ['id', 'type', 'instruction',
+    ...(allowedTypes?.length === 1 ? REQUIRED_BY_TYPE[allowedTypes[0]] ?? [] : [])];
+  const activeSchema: Schema = {
+    ...CHALLENGES_SCHEMA,
+    properties: {
+      challenges: {
+        type: Type.ARRAY,
+        items: { ...challengeItemSchema, properties, required },
+        description: allowedTypes && allowedTypes.length < 4
+          ? `Array of 3-4 challenges using ONLY these types: ${allowedTypes.join(', ')}`
+          : 'Array of 3-4 challenges',
       },
-    };
-  }
+    },
+  };
 
   const response = await ai.models.generateContent({
     model: 'gemini-flash-lite-latest',
@@ -498,15 +529,18 @@ Each observation should:
 }
 
 // ---------------------------------------------------------------------------
-// Hardcoded fallback (Ohm's Law V=IR)
+// Hardcoded fallback (electrical power P = I^2 R): every mode has an answerable item. A
+// product of equal powers (V = IR) has no leading parameter, so it cannot serve identify.
 // ---------------------------------------------------------------------------
 
 function buildFallback(allowedTypes?: string[]): ParameterExplorerData {
   const allChallenges: ParameterExplorerChallenge[] = [
-    { id: 'fb1', type: 'explore', instruction: 'Move both sliders and observe how voltage changes. Try holding one constant while varying the other.' },
-    { id: 'fb2', type: 'predict-direction', instruction: 'If current increases, what happens to voltage?', prediction: { varyParameter: 'I', correctDirection: 'increase', explanation: 'Voltage is directly proportional to current (V=IR), so increasing I increases V.' } },
-    { id: 'fb3', type: 'predict-value', instruction: 'If current is 5 A and resistance is 10 Ω, what is the voltage?', prediction: { varyParameter: 'I', newValue: 5, correctValue: 50, tolerance: 1, explanation: 'V = I × R = 5 × 10 = 50 V' } },
-    { id: 'fb4', type: 'identify-relationship', instruction: 'Which parameter has a stronger effect on voltage when both are at moderate values?', correctParameter: 'R' },
+    { id: 'fb1', type: 'explore', instruction: 'Move both sliders and watch the power. Try holding one constant while you vary the other.' },
+    { id: 'fb2', type: 'predict-direction', instruction: 'If the current increases, what happens to the power?', prediction: { varyParameter: 'I', newValue: 4, correctDirection: 'increase', explanation: 'Power grows with the square of the current, so more current means more power.' } },
+    { id: 'fb5', type: 'predict-direction', instruction: 'If the resistance decreases, what happens to the power?', prediction: { varyParameter: 'R', newValue: 5, correctDirection: 'decrease', explanation: 'With the current held, power is proportional to resistance, so less resistance means less power.' } },
+    { id: 'fb3', type: 'predict-value', instruction: 'If the current is 5 A, what is the power?', prediction: { varyParameter: 'I', newValue: 5, correctValue: 250, tolerance: 1, explanation: 'P = I² × R = 25 × 10 = 250 W' } },
+    { id: 'fb6', type: 'predict-value', instruction: 'If the resistance is 30 Ω, what is the power?', prediction: { varyParameter: 'R', newValue: 30, correctValue: 120, tolerance: 1, explanation: 'P = I² × R = 4 × 30 = 120 W' } },
+    { id: 'fb4', type: 'identify-relationship', instruction: 'Which parameter changes the power more when it is doubled?', correctParameter: 'I' },
   ];
 
   const challenges = allowedTypes
@@ -514,20 +548,20 @@ function buildFallback(allowedTypes?: string[]): ParameterExplorerData {
     : allChallenges;
 
   return {
-    title: "Ohm's Law Explorer",
-    description: "Explore how voltage depends on current and resistance",
-    formula: "V = IR",
-    jsExpression: "I * R",
-    outputName: "Voltage",
-    outputUnit: "V",
-    context: "Electrical circuits: Ohm's law describes the relationship between voltage, current, and resistance.",
+    title: 'Electrical Power Explorer',
+    description: 'Explore how the power in a resistor depends on current and resistance',
+    formula: 'P = I^2 R',
+    jsExpression: 'Math.pow(I, 2) * R',
+    outputName: 'Power',
+    outputUnit: 'W',
+    context: 'Electrical circuits: the power a resistor turns into heat depends on the current through it and its resistance.',
     parameters: [
-      { symbol: 'I', name: 'Current', unit: 'A', min: 0, max: 10, step: 0.5, default: 2, description: 'Electric current flowing through the circuit' },
+      { symbol: 'I', name: 'Current', unit: 'A', min: 0, max: 10, step: 0.5, default: 2, description: 'Electric current flowing through the resistor' },
       { symbol: 'R', name: 'Resistance', unit: 'Ω', min: 1, max: 100, step: 1, default: 10, description: 'Resistance of the circuit element' },
     ],
     observations: [
-      { trigger: 'Vary I', prompt: 'Notice how voltage changes linearly with current when resistance is held constant.' },
-      { trigger: 'Vary R', prompt: 'A higher resistance means more voltage is needed to push the same current through.' },
+      { trigger: 'Vary I', prompt: 'Watch how fast the power climbs as the current goes up with resistance held.' },
+      { trigger: 'Vary R', prompt: 'Now hold the current and vary the resistance. Does the power climb the same way?' },
     ],
     challenges: challenges.length > 0 ? challenges : allChallenges,
   };
@@ -660,44 +694,6 @@ function validateJsExpression(
   }
 }
 
-/** Recompute correctValue for predict-value challenges to verify Gemini's answer. */
-function verifyPredictValueChallenge(
-  challenge: ParameterExplorerChallenge,
-  jsExpression: string,
-  params: ParameterExplorerData['parameters'],
-): ParameterExplorerChallenge {
-  if (challenge.type !== 'predict-value' || !challenge.prediction) return challenge;
-
-  const paramValues: Record<string, number> = {};
-  for (const p of params) {
-    paramValues[p.symbol] = p.default;
-  }
-  if (challenge.prediction.varyParameter && challenge.prediction.newValue !== undefined) {
-    paramValues[challenge.prediction.varyParameter] = challenge.prediction.newValue;
-  }
-
-  try {
-    const paramNames = Object.keys(paramValues);
-    const paramVals = Object.values(paramValues);
-    // eslint-disable-next-line no-new-func
-    const fn = new Function(...paramNames, `"use strict"; return (${jsExpression});`);
-    const computed = fn(...paramVals);
-    if (typeof computed === 'number' && isFinite(computed)) {
-      const rounded = Math.round(computed * 1e6) / 1e6;
-      if (Math.abs(rounded - (challenge.prediction.correctValue ?? 0)) > (challenge.prediction.tolerance ?? 0.1)) {
-        console.warn(
-          `[ParameterExplorer] Correcting predict-value: Gemini said ${challenge.prediction.correctValue}, ` +
-          `computed ${rounded} (jsExpression="${jsExpression}", params=${JSON.stringify(paramValues)})`,
-        );
-      }
-      challenge.prediction.correctValue = rounded;
-    }
-  } catch {
-    // If evaluation fails, keep Gemini's value (already validated jsExpression earlier)
-  }
-  return challenge;
-}
-
 // ---------------------------------------------------------------------------
 // Build formula context string for Stage 2 services
 // ---------------------------------------------------------------------------
@@ -776,24 +772,33 @@ export const generateParameterExplorer = async (
 
   console.log(`[ParameterExplorer] Stage 1: Formula service for "${topic}"`);
 
-  // ── Stage 1 (Sequential): Formula definition ──
-  const formulaResult = await runFormulaService(topic, gradeLevel, scopeSection);
-
-  if (!formulaResult) {
-    console.warn('[ParameterExplorer] Formula service returned empty, using fallback');
+  // ── Stage 1 (Sequential): Formula definition. A formula the sliders cannot drive is asked for once more, with
+  //    exactly two parameters (flash-lite drops the optional third one while the expression still uses it). ──
+  const need = pinnedType ? FORMULA_NEED[pinnedType] ?? '' : '';
+  const settleFormula = async (note: string) => {
+    const result = await runFormulaService(topic, gradeLevel, scopeSection, [need, note].filter(Boolean).join('\n\n'));
+    if (!result) return { problem: 'Formula service returned empty' };
+    const params = reconstructParameters(result);
+    if (params.length < 2) return { problem: `Only ${params.length} parameters reconstructed` };
+    if (!validateJsExpression(result.jsExpression, params)) return { problem: `jsExpression "${result.jsExpression}" is not evaluable` };
+    // A slider the formula ignores teaches nothing and makes every "which matters most" item trivial.
+    const usesSymbol = (symbol: string) => result.jsExpression.split(/[^A-Za-z0-9_.]+/).includes(symbol);
+    const ignored = params.filter(p => !usesSymbol(p.symbol));
+    if (ignored.length) return { problem: `Parameter(s) ${ignored.map(p => p.symbol).join(', ')} not in "${result.jsExpression}"` };
+    if (pinnedType === 'identify-relationship' && !dominantParameter({ ...result, parameters: params }))
+      return { problem: `No parameter leads in "${result.jsExpression}"` };
+    return { formulaResult: result, parameters: params };
+  };
+  let settled = await settleFormula('');
+  if (!settled.formulaResult) {
+    console.warn(`[ParameterExplorer] ${settled.problem}; asking again for two parameters`);
+    settled = await settleFormula('Use exactly 2 parameters (paramCount 2), both used in the jsExpression.');
+  }
+  if (!settled.formulaResult || !settled.parameters) {
+    console.warn(`[ParameterExplorer] ${settled.problem}, using fallback`);
     return buildFallback(allowedTypes);
   }
-
-  const parameters = reconstructParameters(formulaResult);
-  if (parameters.length < 2) {
-    console.warn(`[ParameterExplorer] Only ${parameters.length} parameters reconstructed, using fallback`);
-    return buildFallback(allowedTypes);
-  }
-
-  if (!validateJsExpression(formulaResult.jsExpression, parameters)) {
-    console.warn(`[ParameterExplorer] jsExpression "${formulaResult.jsExpression}" is not evaluable, using fallback`);
-    return buildFallback(allowedTypes);
-  }
+  const { formulaResult, parameters } = settled;
 
   console.log(`[ParameterExplorer] Stage 2: Challenges + Observations in parallel`);
 
@@ -806,7 +811,7 @@ export const generateParameterExplorer = async (
   );
 
   const [rawChallenges, observations] = await Promise.all([
-    runChallengesService(formulaContext, challengeTypeSection, allowedTypes, tierSection),
+    runChallengesService(formulaContext, challengeTypeSection, allowedTypes, tierSection, parameters.map(p => p.symbol)),
     runObservationsService(formulaContext),
   ]);
 
@@ -815,10 +820,7 @@ export const generateParameterExplorer = async (
 
   for (const flatCh of rawChallenges) {
     const reconstructed = reconstructChallenge(flatCh);
-    if (reconstructed) {
-      const verified = verifyPredictValueChallenge(reconstructed, formulaResult.jsExpression, parameters);
-      validChallenges.push(verified);
-    }
+    if (reconstructed) validChallenges.push(reconstructed);
   }
 
   const rejectedCount = rawChallenges.length - validChallenges.length;
@@ -857,6 +859,35 @@ export const generateParameterExplorer = async (
 
   if (validChallenges.length === 0) {
     console.warn('[ParameterExplorer] All challenges referenced invalid parameters, using fallback');
+    return buildFallback(allowedTypes);
+  }
+
+  // ── Code owns every key (`settleChallenge`): the direction and the value come from the formula at a setting on the
+  //    slider, the leading parameter from doubling each one. An item the formula cannot answer is dropped. ──
+  const lab = { formula: formulaResult.formula, jsExpression: formulaResult.jsExpression, outputName: formulaResult.outputName,
+    outputUnit: formulaResult.outputUnit, parameters };
+  const settledCount = validChallenges.length;
+  validChallenges = validChallenges.flatMap(ch => {
+    const settledChallenge = settleChallenge(lab, ch);
+    if (!settledChallenge) console.warn(`[ParameterExplorer] ${ch.id} (${ch.type}) has no answerable setting in "${lab.jsExpression}": `
+      + JSON.stringify(ch.prediction ?? ch.correctParameter ?? null));
+    return settledChallenge ?? [];
+  });
+  // N challenges = N problems: one formula has one leading parameter, so identify asks once; a repeated setting is
+  // the same prediction.
+  const asked = new Set<string>();
+  validChallenges = validChallenges.filter(ch => {
+    const key = ch.type === 'identify-relationship' ? ch.type
+      : ch.type === 'explore' ? `${ch.type}:${ch.id}` : `${ch.type}:${ch.prediction?.varyParameter}:${ch.prediction?.newValue}`;
+    if (asked.has(key)) return false;
+    asked.add(key);
+    return true;
+  });
+  if (validChallenges.length < settledCount) {
+    console.warn(`[ParameterExplorer] Dropped ${settledCount - validChallenges.length} challenge(s) the formula cannot answer or that repeat another`);
+  }
+  if (validChallenges.length === 0) {
+    console.warn('[ParameterExplorer] No challenge the formula can answer, using fallback');
     return buildFallback(allowedTypes);
   }
 

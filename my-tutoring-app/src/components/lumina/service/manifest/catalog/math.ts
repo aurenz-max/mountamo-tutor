@@ -10,10 +10,15 @@ import { PERCENT_MISSES_BY_MODE } from '../../../primitives/visual-primitives/ma
 import { TRANSFORM_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/transformationLabWorkspace';
 import { NET_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/netFolderWorkspace';
 import { FORMULA_MISSES_BY_MODE, type FormulaLabMiss } from '../../../primitives/visual-primitives/math/formulaLabWorkspace';
+import { PARAMETER_MISSES_BY_MODE, type ParameterExplorerMiss } from '../../../primitives/visual-primitives/math/parameterExplorerWorkspace';
 import { RATIO_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/ratioTableWorkspace';
+import { MATRIX_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/matrixDisplayWorkspace';
 import { HISTOGRAM_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/histogramWorkspace';
 import { TWO_WAY_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/twoWayTableWorkspace';
 import { COORDINATE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/coordinateGraphWorkspace';
+import { SYSTEMS_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/systemsEquationsWorkspace';
+import { SLOPE_TRIANGLE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/slopeTriangleWorkspace';
+import { FUNCTION_SKETCH_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/functionSketchWorkspace';
 import { CIRCLE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/circleExplorerWorkspace';
 import { DISTRIBUTION_MISSES_BY_MODE } from '../../../primitives/distribution-explorer/distributionExplorerWorkspace';
 import { RATIO_LINE_MISSES_BY_MODE } from '../../../primitives/visual-primitives/math/doubleNumberLineWorkspace';
@@ -1977,7 +1982,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 6.5,
         scaffoldingMode: 5,
         challengeTypes: ['draw_triangle'],
-        description: 'Position and size a slope triangle on a given line to match a target run. Δy/Δx notation.',
+        description: 'Build a slope triangle on a given line: choose a run and set the rise so the top corner lands back on the line (rise = slope × run). Δy/Δx notation.',
       },
     ],
     tutoring: {
@@ -2012,10 +2017,50 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    teachingWorkspace: {
+      grades: ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11'],
+      guidance: 'The activity checks each answer itself, and you are not told it. Reading a triangle, the learner types its '
+        + 'rise and its run; calculating, the learner types the slope as a number or a fraction (any equal fraction counts); '
+        + 'building, the learner chooses a run and raises or lowers the top corner until it lands back on the line; any run '
+        + 'whose rise is a whole number of steps fits. Before a check and after a wrong one, never say the rise, the run, '
+        + 'the slope, the fraction it reduces to, or the rise a built run needs: working them out is the task. The line '
+        + 'label shows the slope as ?x where the item asks for it. You may read the instruction, the line label, and any '
+        + 'number the card prints (the legs, a build\'s current run and rise). Teaching is '
+        + 'counting and direction: the run is the grid steps across from the left corner to the right-angle corner; the '
+        + 'rise is the grid steps up or down from the right-angle corner to the line, negative when the line falls from '
+        + 'left to right; slope is rise divided by run, the same for every triangle on one line. Ask which leg goes up or '
+        + 'down and how many steps it covers, or which number goes on top. A wrong answer\'s named miss tells you how it '
+        + 'differs from the answer: ask about that difference, and never turn it into the answer\'s number. When the '
+        + 'learner is stuck, give one step and let them take the next. You cannot type, move the triangle or press Check.',
+      // Every mode declares levers (`slopeTriangleLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`slopeTriangleMiss`), every mode.
+      misses: { ...SLOPE_TRIANGLE_MISSES_BY_MODE },
+    },
     supportsEvaluation: true,
   },
   {
     id: 'systems-equations-visualizer',
+    teachingWorkspace: {
+      grades: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The learner types x and y into two boxes and presses Check; the activity checks the pair itself, and you '
+        + 'are not told the solution. Before a check and after a wrong one, never say the solution, either coordinate, or '
+        + 'the result of any step (the x that setting equal or eliminating gives, the y it leads to): working them out is '
+        + 'the task. You may read the two equations, the instruction and any number the screen prints. On graph items both '
+        + 'lines are drawn and the crossing is not marked; on substitution and elimination the graph stays hidden until the '
+        + 'answer is right, so never describe where the lines cross. Teaching is the method: the solution is the one point '
+        + 'on BOTH lines, so it makes both equations true; substitution sets the two expressions for y equal, solves for x, '
+        + 'then puts x back in to find y; elimination lines up the x, y and constant columns and adds or scales the '
+        + 'equations so one variable cancels. A wrong check\'s named miss says how the pair differs (on one line only, x '
+        + 'right and y wrong, swapped, a sign): ask about that difference, such as which equation the pair fails, and never '
+        + 'turn it into the answer\'s number or sign. Never suggest swapping x and y, flipping a sign or keeping one '
+        + 'coordinate: on a named miss that hands over the answer; send the learner back to the method. When the learner is stuck, give one step and let them take the next: '
+        + 'name the step, never its result. You cannot type, press Check or show the graph.',
+      // Every mode declares levers (`systemsEquationsLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`systemsMiss`), every mode.
+      misses: { ...SYSTEMS_MISSES_BY_MODE },
+    },
     description: 'Multi-challenge systems-of-equations session (3-6 distinct systems of the same solution method, surfaced sequentially). Per challenge, students see two linear equations and one integer (x, y) solution, then type the answer for immediate judgment. Wrong answers prompt a hint; correct answers reveal the intersection on the graph and advance. Supports graphing (slope-intercept lines drawn for visual reading), substitution (equations in y = mx + b form, graph hidden until correct), and elimination (equations in a·x + b·y = c form, graph hidden until correct). ESSENTIAL for grade 8 (systems introduction via graphing), Algebra 1 (substitution + elimination), and Algebra 2 (efficient method selection).',
     constraints: 'Manifest must NOT supply specific equations, slopes, intercepts, or solutions — the pool service builds 3-6 distinct systems deterministically from the eval mode and gradeBand. Manifest may supply gradeBand and instanceCount only. Per-mode shape: graph uses integer slopes (m ∈ {±1, ±2, ±3, ±1/2}) and integer intersections in [-4, 4]; substitution uses the same slope-intercept form with mixed integer/fractional slopes; elimination uses small integer coefficients (a, b ∈ {±1, ±2, ±3}) with integer solutions and a·x + b·y = c display form.',
     affordances: { representation: 'symbolic', answers: ['type'], role: 'apply', minutes: 8 },
@@ -2517,6 +2562,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'matrix-display',
+    teachingWorkspace: {
+      grades: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The activity checks each answer itself, and you are not told it: the learner types a number in every box '
+        + 'of the answer grid, or one number for a determinant, and presses Check; the check then marks each box right or '
+        + 'wrong. Before a check and after a wrong one, never say an entry of the answer, the determinant, or the result '
+        + 'of any product, sum or difference the learner has to work out; the numbers of the matrices on screen may be '
+        + 'read. Teaching is the rule of the operation: a transpose turns each row into the matching column; adding or '
+        + 'subtracting pairs the entries in the same position; a product box is a row of A times a column of B, matching '
+        + 'entries multiplied and then added; a two by two determinant is the main diagonal\'s product minus the other '
+        + 'diagonal\'s; a two by two inverse swaps the diagonal entries, changes the signs of the other two, and divides '
+        + 'by the determinant. Name one box and ask which entries go into it, then let the learner do the arithmetic. '
+        + 'When no rule line is on screen, do not state the formula; ask the learner to recall it. Say a formula in plain '
+        + 'words, never in symbols or markup. Read the task aloud. You cannot type or press Check.',
+      // Every mode declares levers (`matrixDisplayLevers.ts`); every miss is answered by a help lever on every item.
+      levers: true,
+      // The activity's own check (`matrixMiss`), every mode.
+      misses: { ...MATRIX_MISSES_BY_MODE },
+    },
     description: 'Multi-challenge matrix practice session (3-6 matrix problems of the same operation, surfaced sequentially). Per challenge, students see Matrix A (and Matrix B for binary operations), enter the result in editable cells (or a single number for determinant), and click "Check Answer" for immediate judgment. Wrong answers prompt hint / "Show steps" walkthrough; correct answers advance to the next matrix. Supports transpose, add, subtract, multiply (row-by-column), determinant (2×2 and 3×3), and inverse (2×2 with det = ±1 so entries stay integer). ESSENTIAL for grade 7-8 (intro to matrix arithmetic), Algebra 2 (operations + determinant), Precalculus (inverses + multiplication), and Linear Algebra (all operations).',
     constraints: 'Manifest must NOT supply specific matrix values, dimensions, or per-challenge content — the pool service builds 3-6 distinct challenges deterministically from the eval-mode operation and gradeBand. Manifest may supply gradeBand and instanceCount only. Per-mode shape constraints: transpose alternates 2×3/3×2; add/subtract uses 2×2 or 2×3 same-shape; multiply alternates 2×2 × 2×2 and 2×3 × 3×2; determinant uses 2×2 (grade 7-8) or 2×2/3×3 (algebra2+); inverse is always 2×2 with det ∈ {±1} so A⁻¹ entries are clean integers.',
     affordances: { representation: 'symbolic', answers: ['type'], role: 'apply', minutes: 5 },
@@ -6933,6 +6996,26 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'parameter-explorer',
+    teachingWorkspace: {
+      grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The activity checks every answer itself, and you are not told the answer. Every item starts from the '
+        + 'starting values its ask states. In explore the learner moves sliders (a lock holds one) and presses Done '
+        + 'Exploring; any move is credited. In predict-direction the learner chooses Increase, Decrease or Stay Same; in '
+        + 'predict-value the learner types the output at the new setting; in both the output readout stays hidden until an '
+        + 'answer is credited. In identify-relationship the learner chooses the parameter whose doubling, with the others '
+        + 'held, changes the output the most. Before a credited answer never say which way the output moves, its value at '
+        + 'the new setting, or which parameter leads, and never tell the learner which choice to try. On these items the '
+        + 'rule for a role is the answer, so before a credit do not say what a numerator, a denominator, a factor or a '
+        + 'power does to the output, do not answer your own question, and do not give an example with the same shape (a '
+        + 'fraction for a fraction, a square for a square). Teaching is where the parameter sits in the formula: ask where '
+        + 'it sits, then ask what that does when it grows, and let the learner say it. You cannot move a slider, choose, '
+        + 'type, or press a button.',
+      // Every checked mode declares levers (`parameterExplorerLevers.ts`); every miss is answered by a help lever on
+      // every item. explore credits every move, names no miss and has no lever.
+      levers: true,
+      // The activity's own check (`parameterMiss`); explore credits every move and names none.
+      misses: missLists<ParameterExplorerMiss>(PARAMETER_MISSES_BY_MODE),
+    },
     description: 'Multi-variable formula explorer with interactive sliders. Students adjust parameters via continuous sliders to observe how output changes in real-time. Supports prediction checkpoints and hold-and-vary (lock variables). Perfect for exploring STEM relationships (physics, chemistry, economics). ESSENTIAL for grade 6-12 science and math.',
     constraints: 'Requires jsExpression (JS-evaluable formula) alongside LaTeX formula. Parameters need numeric min/max/step ranges. Works best with 2-3 parameters.',
     affordances: { representation: 'symbolic', answers: ['manipulate', 'tap'], role: ['visualize', 'apply'], minutes: 5 },
@@ -7065,6 +7148,24 @@ export const MATH_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'function-sketch',
+    teachingWorkspace: {
+      grades: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'The activity checks every answer itself, and you are not told it. On classify-shape the learner taps one '
+        + 'family and presses Check; on compare-functions they tap the button for one curve, then Check. On '
+        + 'identify-features they tap each key feature on the curve (roots, turning points, intercepts, asymptotes); Check '
+        + 'credits only when every one is found. On sketch-match they tap points on the empty graph to sketch the function '
+        + 'described, then Check; it is scored on how close the sketch passes to the key features. You do not see the '
+        + 'curves, so never describe a curve\'s shape yourself: ask the learner what they see, where it crosses each axis, '
+        + 'where it turns, how it behaves at each end, whether it changes by equal steps or faster and faster. A family\'s '
+        + 'defining property may be explained in general. Before a check and after a wrong one, never '
+        + 'name the family, never say which curve, never say where a feature is or give its coordinates, and never work '
+        + 'out the roots, turning points or shape from the expression for them. You cannot tap the graph, choose, or '
+        + 'press Check.',
+      // Every mode declares levers (`functionSketchLevers.ts`).
+      levers: true,
+      // The activity's own check (`functionSketchMiss`), every mode.
+      misses: { ...FUNCTION_SKETCH_MISSES_BY_MODE },
+    },
     description: 'Multi-challenge qualitative function reasoning primitive for grades 9-12. Each session walks the student through 3-6 distinct functions in the same eval mode (orchestrator-same-mode pattern). Students analyze function behavior by shape, key features, and family — without computing exact values. Supports four challenge types: classify-shape (linear/quadratic/exponential/periodic), identify-features (roots, extrema, intercepts, asymptotes), compare-functions (two curves, match to description), and sketch-match (place control points to sketch a described function). Pedagogical moments: FEATURE_FOUND, ANSWER_CORRECT, ANSWER_INCORRECT, NEXT_ITEM, ALL_COMPLETE. ESSENTIAL for Algebra 2, Precalculus, and AP Calculus qualitative reasoning.',
     constraints: 'Best for grades 9-12. The manifest must NOT supply specific functions, expressions, curves, or features — the generator picks 3-6 distinct functions locally per the selected eval mode via N parallel Gemini sub-generator calls. Requires only a title and context string at the session level. Sketch-match requires control-point placement UI; identify-features requires annotatable curve with clickable feature markers.',
     affordances: { representation: 'symbolic', answers: ['tap'], role: 'apply', minutes: 6 },
