@@ -24,7 +24,7 @@ import {
 import type { FunctionSketchMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import {
   CANVAS_WIDTH,
@@ -717,7 +717,7 @@ const FunctionSketchSurface = ({ data, runtimePlanItemId, tutorOwned, useControl
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage="You analyzed the functions!"

@@ -66,7 +66,7 @@ import { CLUE_LEVER, MODEL_LEVER, TWO_CARDS_LEVER, leversOnScreen, modelFor, pic
   practiceItemFor } from './pictureVocabularyLevers';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { pictureVocabularyPipPose } from '../../../pip/pictureVocabularyPipPose';
 import RhymePairSurface from './RhymePairSurface';
@@ -700,7 +700,7 @@ function PictureVocabularySurface({ data, className, runtimePlanItemId }: Pictur
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Picture Vocabulary Complete!"
             celebrationMessage={celebrationMessage}

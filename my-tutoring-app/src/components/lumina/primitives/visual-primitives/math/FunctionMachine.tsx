@@ -18,7 +18,7 @@ import {
 import type { FunctionMachineMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -862,7 +862,7 @@ const FunctionMachineSurface = ({ data, className, runtimePlanItemId, tutorOwned
       {...{
         title, description, challengeType, ruleComplexity, outputDisplay, showComplexityBadge, className, challenges,
         currentIndex, challengeResults, allChallengesComplete, hasSubmittedEvaluation, phaseResults, submittedResult,
-        elapsedMs, currentChallenge, guessResult, guessAttempts, challengeDone, makeTarget, madeMachines, makeRow,
+        shownScore: practiceScore(progress.practiceSummary), elapsedMs, currentChallenge, guessResult, guessAttempts, challengeDone, makeTarget, madeMachines, makeRow,
         makeVerdict, makeMisses, processedPairs, availableInputs, flight, prediction, predictionFeedback,
         predictionsCorrect, predictionsTotal, guessedRule, createRulePairs, tutorOwned, resolvedInstanceId,
         isAudioPlaying, activePrimitiveId, leverShow,
@@ -902,6 +902,8 @@ interface FunctionMachineScreenProps {
   hasSubmittedEvaluation: boolean;
   phaseResults: ReturnType<typeof usePhaseResults>;
   submittedResult: { score?: number } | null | undefined;
+  /** The practice summary's own score on the workspace path; the screen shows it over the re-graded record. */
+  shownScore: number | undefined;
   elapsedMs: number;
   currentChallenge: FunctionMachineChallenge;
   guessResult: 'correct' | 'incorrect' | null;
@@ -946,7 +948,7 @@ const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
   const {
     title, description, challengeType, ruleComplexity, outputDisplay, showComplexityBadge, className, challenges,
     currentIndex, challengeResults, allChallengesComplete, hasSubmittedEvaluation, phaseResults, submittedResult,
-    elapsedMs, currentChallenge, guessResult, guessAttempts, challengeDone, makeTarget, madeMachines, makeRow,
+    shownScore, elapsedMs, currentChallenge, guessResult, guessAttempts, challengeDone, makeTarget, madeMachines, makeRow,
     makeVerdict, makeMisses, processedPairs, availableInputs, flight, prediction, predictionFeedback,
     predictionsCorrect, predictionsTotal, guessedRule, createRulePairs, tutorOwned, blocked, leverShow,
   } = p;
@@ -1040,7 +1042,7 @@ const FunctionMachineScreen: React.FC<FunctionMachineScreenProps> = (p) => {
       {hasSubmittedEvaluation && phaseResults.length > 0 && (
         <PhaseSummaryPanel
           phases={phaseResults}
-          overallScore={submittedResult?.score}
+          overallScore={shownScore ?? submittedResult?.score}
           durationMs={elapsedMs}
           heading="Session Complete!"
           celebrationMessage={`You finished all ${challenges.length} function machines.`}

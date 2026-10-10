@@ -15,7 +15,7 @@ import {
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -171,7 +171,7 @@ export default function ParagraphBuildSurface({ data, className, runtimePlanItem
       </LuminaCardHeader>
       <LuminaCardContent className="space-y-4">
         {allDone && (
-          <PhaseSummaryPanel phases={phaseResults} overallScore={submittedResult?.score ?? progress.teachingResult?.accuracy}
+          <PhaseSummaryPanel phases={phaseResults} overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? progress.teachingResult?.accuracy)}
             durationMs={elapsedMs} heading="Paragraphs built!" celebrationMessage="You put a topic, facts that belong, and a closing in order." />
         )}
         {!allDone && current && (

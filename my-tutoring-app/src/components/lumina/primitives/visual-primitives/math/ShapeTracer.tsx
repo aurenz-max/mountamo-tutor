@@ -16,7 +16,7 @@ import {
 } from '../../../evaluation';
 import type { ShapeTracerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -1463,7 +1463,7 @@ const ShapeTracerSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Shape Tracer Complete!"
             celebrationMessage={`You completed all ${challenges.length} shape challenges!`}

@@ -7,7 +7,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -1054,7 +1054,7 @@ const DoubleNumberLineSurface = ({ data, className, runtimePlanItemId, tutorOwne
           {isComplete && phaseResults.length > 0 && (
             <PhaseSummaryPanel
               phases={phaseResults}
-              overallScore={submittedResult?.score}
+              overallScore={practiceScore(progress.practiceSummary) ?? submittedResult?.score}
               durationMs={elapsedMs}
               heading="Ratio Session Complete!"
               celebrationMessage={`You worked through ${challenges.length} proportional reasoning ${challenges.length === 1 ? 'challenge' : 'challenges'}!`}

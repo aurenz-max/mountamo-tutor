@@ -75,7 +75,7 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -834,7 +834,7 @@ function WordWorkoutSurface({ data, className, runtimePlanItemId }: WordWorkoutP
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Word Workout Complete!"
             celebrationMessage={celebrationMessage}

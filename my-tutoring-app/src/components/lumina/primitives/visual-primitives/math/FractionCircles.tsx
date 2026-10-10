@@ -27,7 +27,7 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeWork, workspaceAssignment, workspaceScene, type FractionCirclesView } from './fractionCirclesWorkspace';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { buildFractionCompareEvidence, type FractionCompareResponse } from './fractionCompareEvidence';
@@ -1034,7 +1034,7 @@ const FractionCirclesSurface = ({ data, className, localOnly = false, runtimePla
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Fractions Complete!"
             celebrationMessage={`You completed all ${challenges.length} fraction challenges!`}

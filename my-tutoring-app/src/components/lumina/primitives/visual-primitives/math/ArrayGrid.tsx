@@ -6,7 +6,7 @@ import {
   type ArrayGridMetrics,
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -801,7 +801,7 @@ const ArrayGridSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
       <div className={`w-full max-w-6xl mx-auto my-16 ${className || ''}`}>
         <PhaseSummaryPanel
           phases={phaseResults}
-          overallScore={submittedResult?.score}
+          overallScore={practiceScore(progress.practiceSummary) ?? submittedResult?.score}
           durationMs={elapsedMs}
           heading="Array Session Complete"
           celebrationMessage={

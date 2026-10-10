@@ -27,7 +27,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -1223,7 +1223,7 @@ const ShapeComposerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100)}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100))}
             durationMs={elapsedMs}
             heading="Shape Composer Complete!"
             celebrationMessage="You composed and decomposed shapes like a pro!"

@@ -71,7 +71,7 @@ import { MODEL_LEVER, SLOTS_LEVER, SMALL_BOARD_LEVER, leversOnScreen, modelFor, 
   startingLevers, wordBuilderLevers, type PracticeWord } from './visual-primitives/literacy/wordBuilderLevers';
 import { useStimulusPipSurface } from '../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../hooks/usePhaseResults';
 import type { WordBuilderData } from '../types';
 import WordBuildAffix from './visual-primitives/literacy/WordBuildAffix';
 
@@ -441,7 +441,7 @@ function SpokenWordBuilderSurface({ data, className, runtimePlanItemId }: WordBu
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Word Building Complete!"
             celebrationMessage="You built every word out loud — that is how big words come apart."

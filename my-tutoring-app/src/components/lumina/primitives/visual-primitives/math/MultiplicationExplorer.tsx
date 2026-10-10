@@ -17,7 +17,7 @@ import {
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MultiplicationExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -1368,7 +1368,7 @@ const MultiplicationExplorerSurface = ({ data, className, runtimePlanItemId, tut
         {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score}
+            overallScore={practiceScore(progress.practiceSummary) ?? submittedResult?.score}
             durationMs={elapsedMs}
             heading="Multiplication Session Complete"
             celebrationMessage={

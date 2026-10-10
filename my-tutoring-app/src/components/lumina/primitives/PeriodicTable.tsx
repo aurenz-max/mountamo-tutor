@@ -48,7 +48,7 @@ import {
 } from '../ui';
 import { useStimulusPipSurface } from '../pip/useStimulusPipSurface';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../hooks/usePhaseResults';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -405,7 +405,7 @@ const PeriodicTableJudged: React.FC<PeriodicTableProps> = ({ data, className, ru
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Periodic Table Complete!"
             celebrationMessage={`You worked the table across ${items.length} rounds!`}

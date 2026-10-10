@@ -42,6 +42,7 @@ import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
 import { diStagePipPose } from '../../../pip/diStagePipPose';
 import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
+import { practiceScore } from '../../../hooks/usePhaseResults';
 
 export interface DiStageData {
   instanceId?: string;
@@ -232,7 +233,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
   if (summary) return <LuminaCard className={className} surface="elevated">
     <LuminaCardContent className="space-y-6">
       <PhaseSummaryPanel heading={copy.heading} celebrationMessage={copy.celebration}
-        overallScore={evaluation.submittedResult?.score} durationMs={evaluation.elapsedMs}
+        overallScore={practiceScore(summary) ?? evaluation.submittedResult?.score} durationMs={evaluation.elapsedMs}
         phases={summary.outcomes.map((outcome, position) => ({
           label: items[position] ? recapLabel(items[position], outcome.score > 0) : '',
           score: outcome.score, attempts: outcome.attempts, firstTry: outcome.corrections === 0,

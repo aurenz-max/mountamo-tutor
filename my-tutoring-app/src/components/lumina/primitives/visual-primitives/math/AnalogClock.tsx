@@ -17,7 +17,7 @@ import {
 } from '../../../evaluation';
 import type { AnalogClockMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -1233,7 +1233,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? localOverallScore}
             durationMs={elapsedMs}
             heading="Time Telling Complete!"
             celebrationMessage="You learned to read the clock!"

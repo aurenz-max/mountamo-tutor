@@ -59,6 +59,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { buildLetterSoundLinkItems, letterSoundMiss, printedStimulus, workspaceAssignment, workspaceScene,
   type LetterSoundItem, type LetterSoundMode, type LetterSoundTier } from './letterSoundLinkDomain';
 import type { LetterSoundLinkData } from './LetterSoundLink';
+import { practiceScore } from '../../../hooks/usePhaseResults';
 
 export interface LetterSoundLinkTeachingProps {
   data: LetterSoundLinkData;
@@ -242,7 +243,7 @@ function LinkWorkspace({ data, items, className, runtimePlanItemId }:
     <LuminaCardContent className="space-y-6">
       <PhaseSummaryPanel heading="Letter-Sound Link Complete!"
         celebrationMessage={`You worked on ${items.length} letter sounds!`}
-        overallScore={evaluation.submittedResult?.score} durationMs={evaluation.elapsedMs}
+        overallScore={practiceScore(summary) ?? evaluation.submittedResult?.score} durationMs={evaluation.elapsedMs}
         phases={summary.outcomes.map((outcome, position) => ({
           label: items[position] ? MODE_BADGE[items[position].mode] : '', score: outcome.score,
           attempts: outcome.attempts, firstTry: outcome.corrections === 0, accentColor: 'cyan' as const }))} />

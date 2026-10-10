@@ -25,7 +25,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -1382,7 +1382,7 @@ const AngleWorkshopSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Angles Complete!"
             celebrationMessage={`You completed all ${challenges.length} angle challenges.`}

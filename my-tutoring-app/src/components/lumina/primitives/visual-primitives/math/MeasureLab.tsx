@@ -28,7 +28,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -1040,7 +1040,7 @@ const MeasureLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
           {isComplete && phaseResults.length > 0 ? (
             <PhaseSummaryPanel
               phases={phaseResults}
-              overallScore={evaluation.submittedResult?.score}
+              overallScore={practiceScore(progress.practiceSummary) ?? evaluation.submittedResult?.score}
               durationMs={evaluation.elapsedMs}
               heading="Measuring Complete!"
               celebrationMessage={`You tested ${challenges.length} ${challenges.length === 1 ? 'thing' : 'things'} yourself!`}

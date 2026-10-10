@@ -59,7 +59,7 @@ import {
 import { numberWordFor } from './countingBoardScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import SplitAndSayBoard from './SplitAndSayBoard';
 import { COUNTERS_LEVER, EQ_FRAME_LEVER, FRAME_LEVER, MOVE_LEVER, SMALLER_BOND_LEVER, SMALLER_LEVER, STRIP_LEVER, WAYS_LEVER,
@@ -1664,7 +1664,7 @@ const NumberBondSurface = ({ data, className, autoStart = false, runtimePlanItem
         {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={practiceScore(runner.practiceSummary) ?? evaluation.submittedResult?.score}
             durationMs={evaluation.elapsedMs}
             heading="Number Bonds Complete!"
             celebrationMessage={celebrationMessage}

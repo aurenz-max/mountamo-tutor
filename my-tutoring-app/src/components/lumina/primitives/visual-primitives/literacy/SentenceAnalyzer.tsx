@@ -72,7 +72,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import {
   gradeNumberOf,
@@ -537,7 +537,7 @@ const SentenceAnalyzerSurface: React.FC<SentenceAnalyzerProps> = ({ data, classN
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Grammar Work Complete!"
             celebrationMessage="Great work — you told me every answer out loud!"

@@ -34,6 +34,7 @@ import { MARKS_LEVER, STEPS_LEVER, THREE_LEVER, leverFacts, quantityParts, seque
   from './numberSequencerLevers';
 import { CAR_MARKS_LEVER, MODEL_TRAIN_LEVER, SMALLER_LEVER, STEP_ARROW_LEVER, modelTrain, smallerNumbers, spokenLeverFacts,
   spokenSequencerLevers, stepArrow } from './numberSequencerSpokenLevers';
+import { practiceScore } from '../../../hooks/usePhaseResults';
 
 export interface NumberSequencerTeachingProps {
   data: NumberSequencerData;
@@ -171,7 +172,7 @@ function TrainWorkspace({ data, items, className, runtimePlanItemId }:
   if (summary) return <LuminaCard className={className} surface="elevated">
     <LuminaCardContent className="space-y-6">
       <PhaseSummaryPanel heading="Sequence Complete!" celebrationMessage="You worked through every number train!"
-        overallScore={evaluation.submittedResult?.score} durationMs={evaluation.elapsedMs}
+        overallScore={practiceScore(summary) ?? evaluation.submittedResult?.score} durationMs={evaluation.elapsedMs}
         phases={summary.outcomes.map((outcome, position) => ({
           label: MODE_LABEL[items[position]?.challengeType ?? 'fill-missing'], score: outcome.score,
           attempts: outcome.attempts, firstTry: outcome.corrections === 0, accentColor: 'cyan' as const }))} />

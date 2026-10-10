@@ -90,7 +90,7 @@ import { BLOCKS_LEVER, MODEL_LEVER, PLAIN_LEVER, READBACK_LEVER, TEEN_LEVER, VAL
 import { placeLabel } from './spokenNumberWords';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // ============================================================================
@@ -817,7 +817,7 @@ const PlaceValueChartSurface = ({ data, className, autoStart = false, runtimePla
         {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={practiceScore(runner.practiceSummary) ?? evaluation.submittedResult?.score}
             durationMs={evaluation.elapsedMs}
             heading="Place Value Complete!"
             celebrationMessage={celebrationMessage}

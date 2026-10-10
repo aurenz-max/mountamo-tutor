@@ -14,7 +14,7 @@ import {
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -195,7 +195,7 @@ export default function WritingStagesSurface({ data, className, runtimePlanItemI
         {allDone && (
           <>
             <LuminaPanel data-testid="ws-final" className="p-3 text-base text-slate-100">{paragraph.join(' ')}</LuminaPanel>
-            <PhaseSummaryPanel phases={phaseResults} overallScore={submittedResult?.score ?? progress.teachingResult?.accuracy}
+            <PhaseSummaryPanel phases={phaseResults} overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? progress.teachingResult?.accuracy)}
               durationMs={elapsedMs} heading="Paragraph written!" celebrationMessage="You wrote a whole paragraph, one step at a time." />
           </>
         )}

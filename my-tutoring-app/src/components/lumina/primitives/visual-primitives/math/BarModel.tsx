@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
@@ -1347,7 +1347,7 @@ const BarModelSurface = ({ data, className, runtimePlanItemId }: BarModelProps) 
           {sessionOver && phaseResults.length > 0 ? (
             <PhaseSummaryPanel
               phases={phaseResults}
-              overallScore={submittedResult?.score}
+              overallScore={practiceScore(progress.practiceSummary) ?? submittedResult?.score}
               durationMs={elapsedMs}
               heading="Graph Session Complete!"
               celebrationMessage={`You worked through ${challenges.length} graph ${challenges.length === 1 ? 'challenge' : 'challenges'}!`}

@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
 import type { LightShadowLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -851,7 +851,7 @@ const LightShadowLabSurface = ({ data, className = '', runtimePlanItemId, tutorO
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? 0}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? 0)}
             durationMs={evaluation.elapsedMs}
             heading="Shadow Lab Complete!"
             celebrationMessage="You explored how light and shadows work!"

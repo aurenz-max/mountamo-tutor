@@ -20,7 +20,7 @@ import {
 import type { ShapeBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
@@ -2103,7 +2103,7 @@ const ShapeBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage={`You completed all ${challenges.length} shape challenges!`}

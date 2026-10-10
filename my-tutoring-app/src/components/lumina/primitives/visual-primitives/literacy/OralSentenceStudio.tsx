@@ -34,7 +34,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import { itemsFromChallenges, type OralSentenceStudioItem } from './oralSentenceStudioScript';
 import { oralSentenceAssignment, oralSentenceScene } from './oralSentenceStudioWorkspace';
 import { PICTURES_LEVER, STRIP_LEVER, leversOnScreen, oralSentenceLevers } from './oralSentenceStudioLevers';
@@ -357,7 +357,7 @@ const OralSentenceStudioSurface: React.FC<OralSentenceStudioProps> = ({ data, cl
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Sentence Studio Complete!"
             celebrationMessage="You used new words to make complete picture sentences."

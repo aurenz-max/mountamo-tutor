@@ -36,7 +36,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { itemsFromChallenges, mixedEventIds, type StoryRibbonItem } from './storyRibbonScript';
@@ -502,7 +502,7 @@ function StoryRibbonSession({ data, className, runtimePlanItemId }: StoryRibbonP
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Story Ribbons Complete!"
             celebrationMessage="You turned picture moments into connected stories."

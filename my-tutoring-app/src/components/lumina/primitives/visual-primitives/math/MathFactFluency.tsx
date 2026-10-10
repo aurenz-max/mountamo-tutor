@@ -30,7 +30,7 @@ import {
   DOTS_LEVER, MARKS_LEVER, PARTS_LEVER, WHOLE_LEVER, factModel, leverFacts, mathFactLevers, simplerItem, startLevers,
 } from './mathFactFluencyLevers';
 import type { StepSegment } from '../../../components/live-activity/runtime/contract';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -845,7 +845,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Fact Fluency Complete!"
             celebrationMessage={`You completed ${challenges.length} facts! Best streak: ${bestStreak} in a row!`}

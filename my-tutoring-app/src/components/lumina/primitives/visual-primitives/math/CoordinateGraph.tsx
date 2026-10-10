@@ -17,7 +17,7 @@ import {
 } from '../../../evaluation';
 import type { CoordinateGraphMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -528,7 +528,7 @@ const CoordinateGraphSurface = ({ data, className, runtimePlanItemId, tutorOwned
       {allChallengesComplete && phaseResults.length > 0 && (
         <PhaseSummaryPanel
           phases={phaseResults}
-          overallScore={submittedResult?.score ?? overallScore}
+          overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? overallScore)}
           durationMs={elapsedMs}
           heading="Challenge Complete!"
           celebrationMessage="Great work on the coordinate plane!"

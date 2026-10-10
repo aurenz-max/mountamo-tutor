@@ -24,7 +24,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeVerify, plainAssignment, plainScene } from './balanceScaleWorkspace';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import BalanceScaleEquality, { type BalanceSurfaceProps } from './BalanceScaleEquality';
@@ -865,7 +865,7 @@ const BalanceScaleSurface = ({ data, className, runtimePlanItemId }: BalanceScal
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="All Equations Solved!"
             celebrationMessage={`You completed all ${challenges.length} balance scale challenges!`}

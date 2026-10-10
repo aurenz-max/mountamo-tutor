@@ -19,7 +19,7 @@ import {
   ALL_SIDES_LEVER, CELL_DOTS_LEVER, CELL_LABELS_LEVER, PRACTICE_NOTE, SHARED_PARTS_LEVER, SIDE_SUM_LEVER, STACK_LEVER,
   START_CELL_LEVER, TENS_SPLIT_LEVER, areaModelLevers, leverFacts, practiceItem, tensSplits,
 } from './areaModelLevers';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import {
   LuminaCard,
@@ -999,7 +999,7 @@ const AreaModelSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
       <div className={`w-full max-w-6xl mx-auto my-16 ${className || ''}`}>
         <PhaseSummaryPanel
           phases={phaseResults}
-          overallScore={submittedResult?.score}
+          overallScore={practiceScore(progress.practiceSummary) ?? submittedResult?.score}
           durationMs={elapsedMs}
           heading="Area Model Session Complete"
           celebrationMessage={

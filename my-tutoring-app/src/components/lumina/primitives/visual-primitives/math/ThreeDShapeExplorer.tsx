@@ -24,7 +24,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import {
   SHAPE_FACTS, SHAPE_LABELS, THREE_D_SHAPES, buildThreeDShapeItems, supportForItem,
   wrapperTextForSession, type PropertyKey, type ThreeDShapeChallengeLike,
@@ -403,7 +403,7 @@ function ThreeDShapeExplorerSurface({ data, className, runtimePlanItemId }: Thre
         <div className="flex justify-center"><LuminaReadAloudGlyph size={22} speaking={runner.tutorSpeaking} /></div>
         {revealItem && !practice && <p className="text-center text-xl font-semibold capitalize text-emerald-300">{revealItem.answer}</p>}
       </>}
-      {showSummary && <PhaseSummaryPanel phases={phases} overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy} durationMs={evaluation.elapsedMs} heading="Solid Shape Lab Complete!" celebrationMessage="Great shape work - you told me every answer out loud!" />}
+      {showSummary && <PhaseSummaryPanel phases={phases} overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)} durationMs={evaluation.elapsedMs} heading="Solid Shape Lab Complete!" celebrationMessage="Great shape work - you told me every answer out loud!" />}
     </LuminaCardContent>
   </LuminaCard>;
 }

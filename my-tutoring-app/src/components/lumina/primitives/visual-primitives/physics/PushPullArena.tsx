@@ -66,7 +66,7 @@ import {
 } from './pushPullArenaLevers';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 
 // =============================================================================
@@ -860,7 +860,7 @@ function PushPullArenaSurface({ data, className = '', runtimePlanItemId }: PushP
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage="You explored pushes and pulls out loud!"

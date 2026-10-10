@@ -49,7 +49,7 @@ import {
 } from './solarSystemScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
-import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 
 export type { SolarChallengeType };
 
@@ -1056,7 +1056,7 @@ const JudgedFace: React.FC<JudgedFaceProps> = ({ data, items, isPreReader, resol
         <PhaseSummaryPanel
           className="mt-4"
           phases={phaseResults}
-          overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+          overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
           durationMs={evaluation.elapsedMs}
           heading="Your Space Journey"
           celebrationMessage="You called the planets by name — out loud, like a real astronomer!"

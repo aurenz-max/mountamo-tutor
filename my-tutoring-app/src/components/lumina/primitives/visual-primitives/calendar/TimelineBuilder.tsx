@@ -8,7 +8,7 @@ import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../eval
 import type { TimelineBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { dropZoneStateClass, motion, type DropZoneState } from '../../../ui';
@@ -520,7 +520,7 @@ const TimelineBuilderSurface = ({ data, runtimePlanItemId, tutorOwned, useContro
       {allChallengesComplete && phaseResults.length > 0 && (
         <PhaseSummaryPanel
           phases={phaseResults}
-          overallScore={overallScore}
+          overallScore={practiceScore(progress.practiceSummary) ?? overallScore}
           durationMs={Date.now() - startTimeRef.current}
           heading="Timeline Complete!"
           celebrationMessage="Great work placing events on the timeline!"

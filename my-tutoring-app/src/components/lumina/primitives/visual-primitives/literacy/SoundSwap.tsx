@@ -36,7 +36,7 @@ import type { SoundSwapMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
@@ -466,7 +466,7 @@ function SoundSwapSurface({ data, className, runtimePlanItemId }: SoundSwapProps
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Sound Swap Complete!"
             celebrationMessage={`You made ${runner.practiceSummary?.solvedCount ?? 0} new word${runner.practiceSummary?.solvedCount === 1 ? '' : 's'} by changing sounds!`}

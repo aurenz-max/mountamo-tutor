@@ -16,7 +16,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { MatrixDisplayMetrics } from '../../../evaluation/types';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
@@ -904,7 +904,7 @@ const MatrixDisplaySurface = ({ data, className, runtimePlanItemId, tutorOwned, 
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Matrix Session Complete!"
             celebrationMessage="You worked through every problem!"

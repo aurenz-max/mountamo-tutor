@@ -58,7 +58,7 @@ import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
 import { usePipSurface, usePipTargets } from '../pip/PipSurfaceContext';
 import { knowledgeCheckPipPose } from '../pip/knowledgeCheckPipPose';
 import PhaseSummaryPanel, { type PhaseResult } from '../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../hooks/usePhaseResults';
 import {
   LuminaChallengeCounter,
   LuminaPanel,
@@ -686,7 +686,7 @@ const KnowledgeCheckJudged: React.FC<JudgedProps> = ({
           {showSummary && (
             <PhaseSummaryPanel
               phases={phaseResults}
-              overallScore={runner.teachingResult?.accuracy}
+              overallScore={practiceScore(runner.practiceSummary) ?? runner.teachingResult?.accuracy}
               heading={preReader ? '🎉 You did it!' : '🎉 Knowledge check complete'}
               celebrationMessage={`You answered ${runner.teachingResult?.firstTryCount ?? 0} of ${items.length} on the first try.`}
             />

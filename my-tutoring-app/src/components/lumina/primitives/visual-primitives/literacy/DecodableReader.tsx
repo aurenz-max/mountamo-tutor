@@ -78,7 +78,7 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import {
   itemsFromChallenges,
   passageTextFrom,
@@ -615,7 +615,7 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
           <div className="space-y-4">
             <PhaseSummaryPanel
               phases={phaseResults}
-              overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+              overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
               durationMs={evaluation.elapsedMs}
               heading={mode === 'read_along' ? 'Great story time!' : 'Great reading today!'}
               celebrationMessage={

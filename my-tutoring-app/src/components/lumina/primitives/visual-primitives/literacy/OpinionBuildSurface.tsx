@@ -13,7 +13,7 @@ import {
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -144,7 +144,7 @@ export default function OpinionBuildSurface({ data, className, runtimePlanItemId
       </LuminaCardHeader>
       <LuminaCardContent className="space-y-4">
         {allDone && (
-          <PhaseSummaryPanel phases={phaseResults} overallScore={submittedResult?.score ?? progress.teachingResult?.accuracy}
+          <PhaseSummaryPanel phases={phaseResults} overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? progress.teachingResult?.accuracy)}
             durationMs={elapsedMs} heading="Opinions built!" celebrationMessage="You backed up your opinion with a reason and an example." />
         )}
         {!allDone && current && (

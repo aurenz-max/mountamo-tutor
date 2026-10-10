@@ -21,7 +21,7 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { describeSpatialCheck, hearSceneQuestionRequest, placeCellCorrect, spatialAssignment, spatialMiss, spatialScene } from './spatialSceneWorkspace';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import type { LearningResponseEvidence } from '../../../evaluation/learningResponseEvidence';
@@ -1073,7 +1073,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage="Great spatial reasoning!"

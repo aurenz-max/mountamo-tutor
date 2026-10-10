@@ -14,7 +14,7 @@ import { LuminaBadge, LuminaButton, LuminaCard, LuminaCardContent, LuminaCardHea
   LuminaCardTitle, LuminaChallengeCounter, LuminaPanel, LuminaPrompt } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { YouAndMeMetrics } from '../../../evaluation/types';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
@@ -171,7 +171,7 @@ function YouAndMeSession({ data, className, runtimePlanItemId }: YouAndMeProps) 
 
   if (!item) return <LuminaCard><LuminaCardContent>No scenes available. Generate a new activity.</LuminaCardContent></LuminaCard>;
   if (showSummary) return <PhaseSummaryPanel phases={phases}
-    overallScore={evaluation.submittedResult?.score ?? run.teachingResult?.accuracy} heading="You & Me"
+    overallScore={practiceScore(run.practiceSummary) ?? (evaluation.submittedResult?.score ?? run.teachingResult?.accuracy)} heading="You & Me"
     celebrationMessage="Both partners had a turn." />;
 
   const speaker = item.participants[item.speaker];

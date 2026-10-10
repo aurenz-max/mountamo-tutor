@@ -71,7 +71,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { syllableClapperPipPose } from '../../../pip/syllableClapperPipPose';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
 import type { LetterBuildItem } from './letterBuild';
 
@@ -494,7 +494,7 @@ function SyllableClapperSurface({ data, className, runtimePlanItemId }: Syllable
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Syllable Clapping Complete!"
             celebrationMessage="Your ears found the parts in every word!"

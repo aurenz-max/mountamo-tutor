@@ -21,7 +21,7 @@ import {
 } from '../../../evaluation';
 import type { NumberLineMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isFindBetweenAnswerCorrect, isPlotPlacementCorrect, isSnappedPlacementExact } from './numberLineGrading';
@@ -1653,7 +1653,7 @@ const NumberLineSurface = ({ data, className, onControlsReady, runtimePlanItemId
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score}
+            overallScore={practiceScore(progress.practiceSummary) ?? submittedResult?.score}
             durationMs={elapsedMs}
             heading="Number Line Complete!"
             celebrationMessage={`You completed all ${challenges.length} challenges!`}

@@ -32,7 +32,7 @@ import {
   lineFact, markerFact, markerPlace, modelFact, numberLine, patternBuilderLevers, practiceItem, repeatGroups, shapeModel,
   type NumberLineModel,
 } from './patternBuilderLevers';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -1039,7 +1039,7 @@ function PatternBuilderSurface({ data, className, runtimePlanItemId }: PatternBu
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={completionDurationRef.current}
             heading="Pattern Challenge Complete!"
             celebrationMessage="You explored patterns like a mathematician!"

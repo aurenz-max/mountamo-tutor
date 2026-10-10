@@ -17,7 +17,7 @@ import {
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { AdditionFactStrategiesMetrics } from '../../../evaluation/types';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
@@ -525,7 +525,7 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
         {isComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={overallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? overallScore}
             durationMs={evaluation.elapsedMs}
             heading={`${copy.name} Complete!`}
             celebrationMessage={`${results.filter((r) => r.attempts === 1).length} of ${challenges.length} facts right on the first try.`}

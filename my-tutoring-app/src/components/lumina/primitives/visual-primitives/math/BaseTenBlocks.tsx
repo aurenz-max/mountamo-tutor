@@ -27,7 +27,7 @@ import { TWO_WAYS, describePlainCheck, describeTwoWaysCheck, plainMiss, plainWor
 import { BaseTenBuildScene, MatButtons, TenModel, columnCapacity, type MatPlace } from './BaseTenBuildScene';
 import { useBuildWatcher } from '../../build-layer/buildLayer';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import CalculatorInput from '../../input-primitives/CalculatorInput';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -981,7 +981,7 @@ const BaseTenBlocksSurface = ({ data, className, runtimePlanItemId }: BaseTenBlo
         {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage={`You completed all ${challengesWithIds.length} challenges!`}

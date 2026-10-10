@@ -18,7 +18,7 @@ import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../..
 import type { PrimitiveMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { usePhaseResults } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -187,7 +187,7 @@ export default function RhymePairSurface<I extends PairBoardItem = RhymePairItem
       </LuminaCardHeader>
       <LuminaCardContent className="space-y-4">
         {allDone && (
-          <PhaseSummaryPanel phases={phaseResults} overallScore={submittedResult?.score ?? progress.teachingResult?.accuracy}
+          <PhaseSummaryPanel phases={phaseResults} overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? progress.teachingResult?.accuracy)}
             durationMs={elapsedMs} heading={rules.summary.heading} celebrationMessage={rules.summary.message} />
         )}
         {!allDone && current && (

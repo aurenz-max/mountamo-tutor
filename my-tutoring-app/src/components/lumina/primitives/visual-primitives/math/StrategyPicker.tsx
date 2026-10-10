@@ -29,7 +29,7 @@ import {
   strategyPickerLevers,
 } from './strategyPickerLevers';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 
@@ -1169,7 +1169,7 @@ function StrategyPickerSurface({ data, className, runtimePlanItemId }: StrategyP
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Strategy Practice Complete!"
             celebrationMessage={`You solved problems ${strategiesUsed.size} different way${strategiesUsed.size !== 1 ? 's' : ''}!`}

@@ -19,7 +19,7 @@ import {
 } from '../../../evaluation';
 import type { HistogramMetrics } from '../../../evaluation/types';
 import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -1030,7 +1030,7 @@ const HistogramSurface = ({ data, className, runtimePlanItemId, tutorOwned, useC
         {isComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading={getHeading()}
             celebrationMessage={getCelebration()}

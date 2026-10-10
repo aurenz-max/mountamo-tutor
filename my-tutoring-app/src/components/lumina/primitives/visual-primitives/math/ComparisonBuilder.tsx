@@ -25,7 +25,7 @@ import {
 } from '../../../evaluation';
 import type { ComparisonBuilderMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -2184,7 +2184,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Comparison Complete!"
             celebrationMessage={`You completed all ${challenges.length} comparison challenges!`}

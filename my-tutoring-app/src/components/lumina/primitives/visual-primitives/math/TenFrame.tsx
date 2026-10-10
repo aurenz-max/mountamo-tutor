@@ -135,7 +135,7 @@ import { numberWordFor } from './countingBoardScript';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { tenFramePipPose } from '../../../pip/tenFramePipPose';
 
@@ -1304,7 +1304,7 @@ const TenFrameSurface = ({ data, className, autoStart = false, runtimePlanItemId
         {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={practiceScore(runner.practiceSummary) ?? evaluation.submittedResult?.score}
             durationMs={evaluation.elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage={celebrationMessage}

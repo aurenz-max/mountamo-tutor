@@ -26,7 +26,7 @@ import { withWorkspaceOnly } from '../../../components/live-activity/runtime/wit
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { judgedAnswerMix } from '../../../hooks/judgedScriptContract';
-import { phaseResultsFromSummary, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import { evidenceFor, itemsFromChallenges, type StoryBridgeItem } from './storyBridgeScript';
 import {
@@ -505,7 +505,7 @@ function StoryBridgeSession({ data, className, runtimePlanItemId }: StoryBridgeP
           </>
         )}
         {showSummary && (
-          <PhaseSummaryPanel phases={phaseResults} overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+          <PhaseSummaryPanel phases={phaseResults} overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs} heading="Story Bridge Complete!" celebrationMessage={celebration} />
         )}
       </LuminaCardContent>

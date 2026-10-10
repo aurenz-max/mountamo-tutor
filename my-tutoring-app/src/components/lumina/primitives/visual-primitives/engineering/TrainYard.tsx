@@ -12,7 +12,7 @@ import type { TrainYardMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -649,7 +649,7 @@ const TrainYardSurface: React.FC<TrainYardProps> = ({ data, className, runtimePl
 
       <LuminaCardContent className="space-y-4">
         {allChallengesComplete && phaseResults.length > 0 && (
-          <PhaseSummaryPanel phases={phaseResults} overallScore={submittedResult?.score ?? localScore} durationMs={elapsedMs}
+          <PhaseSummaryPanel phases={phaseResults} overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localScore)} durationMs={elapsedMs}
             heading="Rail Jobs Complete!" celebrationMessage="Every load made it over the hill." className="mb-6" />
         )}
 

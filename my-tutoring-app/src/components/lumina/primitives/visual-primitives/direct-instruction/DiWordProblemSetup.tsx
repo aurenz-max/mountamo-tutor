@@ -54,6 +54,7 @@ import { boardComplete, bigSlotMatches, describePlacement, wordProblemAssignment
 import { COUNT_DOTS, MODEL_STORY, READ_ALONG, STORY_LINKS, WITHIN_TEN, countDotsFor, modelStoriesFor, startingLevers, storySentences,
   withinTenSteps, wordProblemLeverFacts, wordProblemLevers } from './diWordProblemLevers';
 import { familySpoken, numberWord as spokenNumber } from './diWordProblemPlan';
+import { practiceScore } from '../../../hooks/usePhaseResults';
 
 export type {
   DiWordProblemSetupData,
@@ -230,7 +231,7 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
     const outcomes = runner.practiceSummary?.outcomes ?? [];
     return <LuminaCard className={className}><LuminaCardContent className="space-y-4">
       <PhaseSummaryPanel heading="Word Problems Set Up!" celebrationMessage="You found the big number and said the family yourself."
-        overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy} durationMs={evaluation.elapsedMs}
+        overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)} durationMs={evaluation.elapsedMs}
         phases={outcomes.map((outcome, position) => ({
           label: items[position] ? `Story ${items[position].problemIndex + 1} · ${items[position].actionContract.label}` : '',
           score: outcome.score, attempts: outcome.attempts, firstTry: outcome.corrections === 0, accentColor: 'cyan' as const }))} />

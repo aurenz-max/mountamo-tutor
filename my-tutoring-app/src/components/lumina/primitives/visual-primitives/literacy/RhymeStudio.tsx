@@ -76,7 +76,7 @@ import { onsetOf, rimeOfWord } from './rhymeModels';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { stableShuffle } from '../../../utils/choiceOrder';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { rhymeStudioPipPose } from '../../../pip/rhymeStudioPipPose';
@@ -719,7 +719,7 @@ function RhymeStudioSurface({ data, className, runtimePlanItemId }: RhymeStudioP
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Rhyme Studio Complete!"
             celebrationMessage={`You listened for rhymes in ${items.length} rounds — with your own ears and your own voice!`}

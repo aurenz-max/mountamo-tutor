@@ -29,7 +29,7 @@ import {
 } from '../../../evaluation';
 import type { FormulaLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { evaluateFormulaExpression } from './formulaLabMath';
@@ -1553,7 +1553,7 @@ const FormulaLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
         {hasSubmitted && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score}
+            overallScore={practiceScore(progress.practiceSummary) ?? submittedResult?.score}
             durationMs={elapsedMs}
             heading="Formula relationship discovered"
             celebrationMessage={`You completed ${challenges.length} formula tasks and used the living system to connect observation, prediction, structure, and transfer.`}

@@ -19,7 +19,7 @@ import {
   type PrimitiveEvaluationResult,
 } from '../../../evaluation';
 import type { SpatialPathMetrics } from '../../../evaluation/types';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
@@ -441,7 +441,7 @@ const SpatialPathSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       </LuminaCardHeader>
       <LuminaCardContent className="space-y-5">
         {isComplete && phaseResults.length > 0 && (
-          <PhaseSummaryPanel phases={phaseResults} overallScore={overallScore}
+          <PhaseSummaryPanel phases={phaseResults} overallScore={practiceScore(progress.practiceSummary) ?? overallScore}
             durationMs={evaluation.elapsedMs} heading="Route Explorer Complete"
             celebrationMessage="You followed the shape of each path." />
         )}

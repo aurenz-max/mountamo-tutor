@@ -74,7 +74,7 @@ import {
   answerStateClass,
   type LuminaAccent,
 } from '../../../ui';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import {
   usePrimitiveEvaluation,
   type PrimitiveEvaluationResult,
@@ -731,7 +731,7 @@ function LetterSpotterSurface({ data, className, runtimePlanItemId }: LetterSpot
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Letter Spotting Complete!"
             celebrationMessage={`You spotted letters across ${items.length} rounds — ${cumulativeLetters.length} letters in play!`}

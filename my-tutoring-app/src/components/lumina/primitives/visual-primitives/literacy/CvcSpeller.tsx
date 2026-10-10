@@ -46,7 +46,7 @@ import type { CvcSpellerMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
@@ -751,7 +751,7 @@ function CvcSpellerSurface({ data, className, runtimePlanItemId }: CvcSpellerPro
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Sounds and Letters Complete!"
             celebrationMessage={`You got ${runner.practiceSummary?.solvedCount ?? 0} word${runner.practiceSummary?.solvedCount === 1 ? '' : 's'}!`}

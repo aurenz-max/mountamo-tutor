@@ -36,7 +36,7 @@ import {
   DOTS_LEVER, EQ_FRAME_LEVER, FRAME_LEVER, MATCH_LEVER, PRINTED_DOTS_LEVER, REWRITE_MODEL_LEVER, equationBuilderLevers,
   equationFrame, equationLeverFacts, matchMarked, practiceItem, printedDots, rewriteModel,
 } from './equationBuilderLevers';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -1140,7 +1140,7 @@ function EquationBuilderSurface({ data, className, runtimePlanItemId }: Equation
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage="You explored equations like a pro!"

@@ -75,7 +75,7 @@ import {
 import type { CauseEffectChainMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
@@ -868,7 +868,7 @@ const CauseEffectChainSurface: React.FC<CauseEffectChainProps> = ({ data, classN
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Chains Built!"
             celebrationMessage={`You traced what caused what in ${periodLabel}.`}

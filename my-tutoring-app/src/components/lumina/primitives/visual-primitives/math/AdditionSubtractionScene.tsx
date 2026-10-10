@@ -111,7 +111,7 @@ import {
   groupsFact, groupsOffered, smallerStory,
 } from './additionSubtractionSceneLevers';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { additionSubtractionScenePipPose } from '../../../pip/additionSubtractionScenePipPose';
@@ -1101,7 +1101,7 @@ function AdditionSubtractionSceneSurface({ data, className, runtimePlanItemId }:
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Story Complete!"
             celebrationMessage={celebrationMessage}

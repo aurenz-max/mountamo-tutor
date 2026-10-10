@@ -29,7 +29,7 @@ import {
   CHAIN_MODEL_LEVER, END_LINES_LEVER, ORDER_STEPS_LEVER, OUTLINE_LEVER, UNIT_MARKS_LEVER, UNIT_MODEL_LEVER, WORD_MODEL_LEVER,
   lengthLabLevers, leverFacts, simplerLength,
 } from './lengthLabLevers';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -1338,7 +1338,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100)}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100))}
             durationMs={elapsedMs}
             heading="Length Lab Complete!"
             celebrationMessage="You explored measuring and comparing lengths!"

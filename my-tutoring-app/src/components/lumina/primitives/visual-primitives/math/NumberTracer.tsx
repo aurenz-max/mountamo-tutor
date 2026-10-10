@@ -40,7 +40,7 @@ async function evaluateDigitDrawing(
   if (!res.ok) throw new Error(`Digit evaluation failed: ${res.status}`);
   return res.json() as Promise<DigitEvaluationResult>;
 }
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -1259,10 +1259,10 @@ const NumberTracerSurface = ({ data, className, runtimePlanItemId, runtimeEvalMo
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? Math.round(
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? Math.round(
               challengeResults.reduce((s, r) => s + (r.score ?? (r.correct ? 100 : 0)), 0)
               / Math.max(1, challengeResults.length),
-            )}
+            ))}
             durationMs={elapsedMs}
             heading="Number Writing Complete!"
             celebrationMessage="You practiced writing numbers!"

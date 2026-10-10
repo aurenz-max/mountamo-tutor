@@ -77,7 +77,7 @@ import { graphemes } from './wordWorkoutLevers';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { phonemeExplorerPipPose } from '../../../pip/phonemeExplorerPipPose';
 
@@ -750,7 +750,7 @@ function PhonemeExplorerSurface({ data, className, runtimePlanItemId }: PhonemeE
         {showSummary && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy}
+            overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy)}
             durationMs={evaluation.elapsedMs}
             heading="Phoneme Explorer Complete!"
             celebrationMessage="Great job hearing every sound!"

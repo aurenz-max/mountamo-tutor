@@ -18,7 +18,7 @@ import {
 import type { FastFactMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
@@ -882,7 +882,7 @@ const FastFactSurface = ({ data, className, runtimePlanItemId, tutorOwned, useCo
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Fact Fluency Complete!"
             celebrationMessage={`You completed ${challenges.length} challenges! Best streak: ${bestStreak} in a row!`}

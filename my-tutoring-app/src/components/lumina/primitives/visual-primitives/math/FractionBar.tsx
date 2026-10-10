@@ -15,7 +15,7 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { fractionBarDiagnosisEvidence, type FractionBarResponse } from './fractionBarEvidence';
@@ -851,7 +851,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         <div className="max-w-6xl mx-auto my-16">
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score}
+            overallScore={practiceScore(progress.practiceSummary) ?? submittedResult?.score}
             durationMs={elapsedMs}
             heading="Fraction Bar Session Complete"
             celebrationMessage={

@@ -86,7 +86,7 @@ import {
 } from './sortingStationScript';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { sortingStationPipPose } from '../../../pip/sortingStationPipPose';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
@@ -850,7 +850,7 @@ const SortingStationSurface = ({ data, className, autoStart = false, runtimePlan
         {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={practiceScore(runner.practiceSummary) ?? evaluation.submittedResult?.score}
             durationMs={evaluation.elapsedMs}
             heading="Sorting Complete!"
             celebrationMessage="You said every answer out loud!"

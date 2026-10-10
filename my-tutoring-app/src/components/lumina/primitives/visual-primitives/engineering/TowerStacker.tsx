@@ -22,7 +22,7 @@ import {
   LuminaCardTitle, LuminaFeedbackCard,
 } from '../../../ui';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult, type TowerStackerMetrics } from '../../../evaluation';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -346,7 +346,7 @@ const TowerStackerSurface = ({ data, className, runtimePlanItemId, tutorOwned, u
   if (isComplete) {
     return (
       <div className={`w-full max-w-5xl mx-auto my-8 ${className ?? ''}`}>
-        <PhaseSummaryPanel phases={phaseResults} overallScore={submittedResult?.score} durationMs={elapsedMs}
+        <PhaseSummaryPanel phases={phaseResults} overallScore={practiceScore(progress.practiceSummary) ?? submittedResult?.score} durationMs={elapsedMs}
           heading="Towers Complete" celebrationMessage="You built every tower!" />
       </div>
     );

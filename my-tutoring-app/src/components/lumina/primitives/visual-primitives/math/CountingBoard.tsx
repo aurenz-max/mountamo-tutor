@@ -62,7 +62,7 @@ import HandIcon from './HandIcon';
 import { SoundManager } from '../../../utils/SoundManager';
 import PhaseSummaryPanel, { type PhaseResult } from '../../../components/PhaseSummaryPanel';
 import JudgedMicPanel from '../../../components/JudgedMicPanel';
-import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { countingBoardPipPose } from '../../../pip/countingBoardPipPose';
 
@@ -1497,7 +1497,7 @@ const CountingBoardSurface = ({ data, className, autoStart = false, runtimePlanI
         {showSummary && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={evaluation.submittedResult?.score}
+            overallScore={practiceScore(runner.practiceSummary) ?? evaluation.submittedResult?.score}
             durationMs={evaluation.elapsedMs}
             heading="Counting Complete!"
             celebrationMessage={celebrationMessage}

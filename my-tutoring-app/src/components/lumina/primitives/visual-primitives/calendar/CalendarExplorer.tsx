@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { usePrimitiveEvaluation } from '../../../evaluation';
 import type { CalendarExplorerMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import { phaseResultsFromSummary, usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { phaseResultsFromSummary, usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceRunner, type TeachingEvaluationResult }
@@ -562,7 +562,7 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
       {allChallengesComplete && phaseResults.length > 0 && (
         <PhaseSummaryPanel
           phases={phaseResults}
-          overallScore={submittedResult?.score ?? progress.teachingResult?.accuracy ?? 0}
+          overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? progress.teachingResult?.accuracy ?? 0)}
           durationMs={Date.now() - startTimeRef.current}
           heading="Challenge Complete!"
           celebrationMessage="Great work exploring the calendar!"
@@ -1061,7 +1061,7 @@ const CalendarSequenceSurface = ({ data, runtimePlanItemId }: CalendarExplorerPr
           {showSummary && (
             <PhaseSummaryPanel
               phases={phaseResults}
-              overallScore={evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy ?? 0}
+              overallScore={practiceScore(runner.practiceSummary) ?? (evaluation.submittedResult?.score ?? runner.teachingResult?.accuracy ?? 0)}
               durationMs={evaluation.elapsedMs}
               heading={`${monthOnly ? 'Month' : dayOnly ? 'Day' : 'Calendar'} Chain Complete!`}
               celebrationMessage={`You kept the ${monthOnly ? 'months' : dayOnly ? 'days' : 'calendar sequences'} moving in order with your voice!`}

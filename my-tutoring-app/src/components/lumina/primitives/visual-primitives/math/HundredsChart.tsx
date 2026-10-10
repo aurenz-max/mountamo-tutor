@@ -29,7 +29,7 @@ import {
   DOTS_LEVER, MODEL_LEVER, PRACTICE_NOTE, TALLY_LEVER, TALLY_FACT, dotsFact, hopDots, hundredsChartLevers, modelChart, modelFact,
   practiceItem, rowTally, type ChartModel,
 } from './hundredsChartLevers';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
@@ -487,7 +487,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
         {allChallengesComplete && phaseResults.length > 0 && (
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
             durationMs={elapsedMs}
             heading="Challenge Complete!"
             celebrationMessage="You mastered the hundreds chart patterns!"

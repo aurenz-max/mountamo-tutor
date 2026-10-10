@@ -25,7 +25,7 @@ import {
 import type { PoetryLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -501,7 +501,7 @@ const RhymeHunt: React.FC<PoetryLabSurfaceProps> = ({ data, className, runtimePl
         <LuminaCardContent className="p-5">
           <PhaseSummaryPanel
             phases={phaseResults}
-            overallScore={submittedScore ?? progress.teachingResult?.accuracy ?? undefined}
+            overallScore={practiceScore(progress.practiceSummary) ?? (submittedScore ?? progress.teachingResult?.accuracy ?? undefined)}
             durationMs={Date.now() - startTimeRef.current}
             heading="Rhyme Hunt Complete"
             celebrationMessage="You listened closely for matching word endings!"
@@ -784,7 +784,7 @@ const PoetryWorkspaceBoard: React.FC<PoetryLabSurfaceProps> = ({ data, className
       </LuminaCardHeader>
       <LuminaCardContent className="space-y-4">
         {done ? (
-          <PhaseSummaryPanel phases={phaseResults} overallScore={submittedResult?.score ?? progress.teachingResult?.accuracy}
+          <PhaseSummaryPanel phases={phaseResults} overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? progress.teachingResult?.accuracy)}
             durationMs={Date.now() - startTime.current}
             heading={mode === 'composition' ? 'Poem Complete!' : 'Poetry Analysis Complete!'}
             celebrationMessage={mode === 'composition' ? 'You wrote and shaped your own poem.' : 'You broke down the elements of this poem.'} />

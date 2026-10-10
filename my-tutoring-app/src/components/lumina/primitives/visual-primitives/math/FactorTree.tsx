@@ -4,7 +4,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallba
 import { usePrimitiveEvaluation, type FactorTreeMetrics, type PrimitiveEvaluationResult } from '../../../evaluation';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import type { ChallengeResult } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
+import { usePhaseResults, type PhaseConfig, practiceScore } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
@@ -976,7 +976,7 @@ const FactorTreeSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
           {allChallengesComplete && phaseResults.length > 0 && (
             <PhaseSummaryPanel
               phases={phaseResults}
-              overallScore={submittedResult?.score ?? localOverallScore}
+              overallScore={practiceScore(progress.practiceSummary) ?? (submittedResult?.score ?? localOverallScore)}
               durationMs={elapsedMs}
               heading="Factor-Tree Session Complete!"
               celebrationMessage={`You factored ${challenges.length} composite ${challenges.length === 1 ? 'number' : 'numbers'}!`}
