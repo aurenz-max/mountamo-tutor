@@ -18,6 +18,9 @@ export default defineConfig({
     // tests, which opt into jsdom per-file via a `// @vitest-environment jsdom` header.
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     setupFiles: ['./vitest.setup.ts'],
+    // The full Lumina suite (~19k tests, 2026-10-09) runs every file in parallel; the same mounted tests that take
+    // 1-2 s alone crossed the 5 s default on every full run and passed alone, so a full-run gate always read red.
+    testTimeout: 15_000,
   },
   resolve: {
     alias: {
