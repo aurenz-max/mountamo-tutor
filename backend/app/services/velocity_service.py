@@ -96,7 +96,7 @@ class VelocityService:
         total_expected = 0.0
 
         for subj in subject_names:
-            curriculum_data = await self.curriculum.get_curriculum(subj)
+            curriculum_data = await self.curriculum.get_student_curriculum(student_id, subj)
             total_skills = self._count_subskills(curriculum_data)
 
             if total_skills == 0:

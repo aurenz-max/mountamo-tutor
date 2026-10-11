@@ -2,10 +2,22 @@
 
 import asyncio
 import logging
+import time
 from typing import Dict, List, Optional, Any, Set, Tuple
 from datetime import datetime, timezone
 
+from .curriculum_scope import (
+    GradeUnresolved,
+    grade_key,
+    scoped_subject_id,
+    split_scoped,
+    student_scoped_subject,
+    subject_key,
+)
+
 logger = logging.getLogger(__name__)
+
+GRAPH_CACHE_TTL_S = 600
 
 
 class LearningPathsService:
@@ -43,8 +55,11 @@ class LearningPathsService:
         # Default threshold for mastery
         self.DEFAULT_MASTERY_THRESHOLD = 0.8
 
-        # In-memory cache for curriculum graphs (they change infrequently)
+        # In-memory cache for curriculum graphs, keyed by grade-scoped subject.
+        # Entries expire after GRAPH_CACHE_TTL_S so a publish reaches a running
+        # backend without a restart (there was no invalidation path at all).
         self._graph_cache: Dict[str, Dict[str, Any]] = {}
+        self._graph_cache_at: Dict[str, float] = {}
 
         logger.info(f"Initialized LearningPathsService (Firestore-native) for {project_id}")
 
@@ -53,30 +68,74 @@ class LearningPathsService:
     async def _get_graph(
         self,
         subject_id: str,
-        version_type: str = "published"
+        version_type: str = "published",
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Get curriculum graph, using in-memory cache.
+        Get one grade's curriculum graph, using in-memory cache.
+
+        ``subject_id`` is scoped ("MATHEMATICS_GK") or bare with ``grade``.
+        A bare subject with no grade raises GradeUnresolved (a ValueError):
+        every grade holds every subject, so there is nothing to guess.
 
         Returns:
             {"nodes": [...], "edges": [...], "version_id": ..., ...}
         """
-        # Normalize display name to Firestore subject_id
-        # e.g. "Language Arts" → "LANGUAGE_ARTS", "Mathematics" → "MATHEMATICS"
-        subject_id = subject_id.upper().replace(" ", "_")
+        subject_id = scoped_subject_id(subject_id, grade)
         cache_key = f"{subject_id}:{version_type}"
 
-        if cache_key not in self._graph_cache:
+        loaded_at = self._graph_cache_at.get(cache_key)
+        stale = loaded_at is not None and time.monotonic() - loaded_at > GRAPH_CACHE_TTL_S
+        if cache_key not in self._graph_cache or stale:
             graph_data = await self.firestore.get_curriculum_graph(
                 subject_id=subject_id,
                 version_type=version_type
             )
             if graph_data and graph_data.get("graph"):
                 self._graph_cache[cache_key] = graph_data
+                self._graph_cache_at[cache_key] = time.monotonic()
             else:
                 raise ValueError(f"No curriculum graph found for {subject_id} ({version_type})")
 
         return self._graph_cache[cache_key]
+
+    async def _student_graph(
+        self, student_id: int, subject: str, version_type: str = "published"
+    ) -> Dict[str, Any]:
+        """The graph of `subject` at the grade this student studies it."""
+        scoped = await student_scoped_subject(self.firestore, student_id, subject)
+        return await self._get_graph(scoped, version_type)
+
+    async def _scope_graphs(
+        self,
+        *,
+        student_id: Optional[int] = None,
+        subject: Optional[str] = None,
+        grade: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """The graphs a request is about: one subject, or every published
+        subject at one grade. The grade comes from ``grade``, else the
+        student's grade (per-subject override first), else GradeUnresolved."""
+        if subject:
+            if grade or split_scoped(subject)[1] or student_id is None:
+                return [await self._get_graph(subject, grade=grade)]
+            return [await self._student_graph(student_id, subject)]
+        if not grade and student_id is not None:
+            fields = await self.firestore.get_student_planning_fields(student_id)
+            grade = fields.get("grade_level")
+        g = grade_key(grade)
+        if not g:
+            raise GradeUnresolved(f"No grade to scope graphs (student {student_id}, grade {grade!r})")
+        graphs = []
+        for subj in await self._get_available_subjects(grade=g):
+            try:
+                if student_id is not None:
+                    graphs.append(await self._student_graph(student_id, subj))
+                else:
+                    graphs.append(await self._get_graph(subj, grade=g))
+            except ValueError:
+                continue
+        return graphs
 
     def _invalidate_graph_cache(self, subject_id: Optional[str] = None):
         """Clear graph cache (call when curriculum is updated)."""
@@ -93,7 +152,8 @@ class LearningPathsService:
         self,
         student_id: int,
         entity_id: str,
-        entity_type: str
+        entity_type: str,
+        graphs: Optional[List[Dict[str, Any]]] = None,
     ) -> float:
         """
         Get student proficiency for a skill or subskill from Firestore competencies.
@@ -117,8 +177,9 @@ class LearningPathsService:
                 # Average proficiency across all subskills in this skill
                 prof_map = await self.firestore.get_student_proficiency_map(student_id)
 
-                # Find all subskills belonging to this skill from any cached graph
-                skill_subskills = self._get_subskills_for_skill(entity_id)
+                if graphs is None:
+                    graphs = await self._scope_graphs(student_id=student_id)
+                skill_subskills = self._get_subskills_for_skill(entity_id, graphs)
 
                 if not skill_subskills:
                     return 0.0
@@ -136,12 +197,10 @@ class LearningPathsService:
             logger.error(f"Error getting proficiency for {entity_type} {entity_id}: {e}")
             return 0.0
 
-    def _get_subskills_for_skill(self, skill_id: str) -> List[str]:
-        """
-        Get subskill IDs belonging to a skill from cached graph nodes.
-        Falls back to ID-prefix matching if graph not cached.
-        """
-        for graph_data in self._graph_cache.values():
+    def _get_subskills_for_skill(self, skill_id: str, graphs: List[Dict[str, Any]]) -> List[str]:
+        """Subskill IDs belonging to a skill, from the given graphs (skill IDs
+        repeat across grades, so the caller scopes the graphs)."""
+        for graph_data in graphs:
             nodes = graph_data.get("graph", {}).get("nodes", [])
             subskills = []
             for node in nodes:
@@ -193,8 +252,8 @@ class LearningPathsService:
             }
         """
         try:
-            # Get all prerequisite edges for this entity from any available graph
-            prerequisite_edges = await self._get_prerequisite_edges_for(target_entity_id)
+            graphs = await self._scope_graphs(student_id=student_id)
+            prerequisite_edges = self._get_prerequisite_edges_for(target_entity_id, graphs)
 
             # If no prerequisites, entity is unlocked by default
             if not prerequisite_edges:
@@ -217,7 +276,7 @@ class LearningPathsService:
                 # If not found as subskill, try computing as skill average
                 if current_proficiency == 0.0 and self._detect_entity_type(source_id) == "skill":
                     current_proficiency = await self.get_entity_proficiency(
-                        student_id, source_id, "skill"
+                        student_id, source_id, "skill", graphs
                     )
 
                 met = current_proficiency >= threshold
@@ -241,9 +300,10 @@ class LearningPathsService:
             logger.error(f"Error checking prerequisites for {target_entity_type} {target_entity_id}: {e}")
             raise
 
-    async def _get_prerequisite_edges_for(
+    def _get_prerequisite_edges_for(
         self,
-        target_entity_id: str
+        target_entity_id: str,
+        graphs: List[Dict[str, Any]],
     ) -> List[Tuple[str, float]]:
         """
         Get all prerequisite edges pointing to a target entity.
@@ -256,31 +316,20 @@ class LearningPathsService:
             [(source_id, threshold), ...]
         """
         edges = []
-
-        for graph_data in self._graph_cache.values():
-            graph_edges = graph_data.get("graph", {}).get("edges", [])
-            for edge in graph_edges:
+        for graph_data in graphs:
+            for edge in graph_data.get("graph", {}).get("edges", []):
                 if edge["target"] == target_entity_id and edge.get("is_prerequisite", True):
                     edges.append((
                         edge["source"],
-                        edge.get("threshold", self.DEFAULT_MASTERY_THRESHOLD)
+                        edge.get("threshold") or self.DEFAULT_MASTERY_THRESHOLD,
                     ))
-
-        # If nothing in cache, try to load a graph
-        if not edges and not self._graph_cache:
-            # Try loading MATHEMATICS as default
-            try:
-                await self._get_graph("MATHEMATICS")
-                return await self._get_prerequisite_edges_for(target_entity_id)
-            except ValueError:
-                pass
-
         return edges
 
     async def get_related_entities(
         self,
         entity_id: str,
         subject: str,
+        grade: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Get all entities connected to ``entity_id`` via any edge type.
@@ -289,7 +338,7 @@ class LearningPathsService:
         each connection — used by Pulse for discovery and by frontend for
         "related skills" display.
         """
-        graph = await self._get_graph(subject)
+        graph = await self._get_graph(subject, grade=grade)
         graph_edges = graph.get("graph", {}).get("edges", [])
         related = []
         for edge in graph_edges:
@@ -335,21 +384,14 @@ class LearningPathsService:
             Set of unlocked entity IDs
         """
         try:
-            # Determine which subjects to check
-            subjects = [subject] if subject else await self._get_available_subjects()
+            graphs = await self._scope_graphs(student_id=student_id, subject=subject)
 
             # Get student proficiency map (all subjects)
             prof_map = await self.firestore.get_student_proficiency_map(student_id)
 
             unlocked = set()
 
-            for subj in subjects:
-                try:
-                    graph_data = await self._get_graph(subj)
-                except ValueError:
-                    logger.debug(f"No graph for subject {subj}, skipping")
-                    continue
-
+            for graph_data in graphs:
                 graph = graph_data["graph"]
                 nodes = graph["nodes"]
                 edges = graph["edges"]
@@ -405,7 +447,8 @@ class LearningPathsService:
         self,
         subject: Optional[str] = None,
         entity_type: Optional[str] = None,
-        include_metadata: bool = True
+        include_metadata: bool = True,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get complete learning prerequisite graph from Firestore.
@@ -425,19 +468,15 @@ class LearningPathsService:
             }
         """
         try:
-            subjects = [subject] if subject else await self._get_available_subjects()
+            graphs = await self._scope_graphs(subject=subject, grade=grade)
 
             all_nodes = {}
             all_edges = []
             all_subjects = set()
 
-            for subj in subjects:
-                try:
-                    graph_data = await self._get_graph(subj)
-                except ValueError:
-                    continue
-
+            for graph_data in graphs:
                 graph = graph_data["graph"]
+                subj = graph_data.get("base_subject_id") or graph_data.get("subject_id")
 
                 for node in graph["nodes"]:
                     node_id = node["id"]
@@ -469,7 +508,7 @@ class LearningPathsService:
                         "from_type": self._detect_entity_type(edge["source"]),
                         "to_id": edge["target"],
                         "to_type": self._detect_entity_type(edge["target"]),
-                        "threshold": edge.get("threshold", self.DEFAULT_MASTERY_THRESHOLD)
+                        "threshold": edge.get("threshold") or self.DEFAULT_MASTERY_THRESHOLD
                     })
 
             response = {
@@ -495,7 +534,11 @@ class LearningPathsService:
     async def get_entity_prerequisites(
         self,
         entity_id: str,
-        entity_type: Optional[str] = None
+        entity_type: Optional[str] = None,
+        graphs: Optional[List[Dict[str, Any]]] = None,
+        *,
+        subject: Optional[str] = None,
+        grade: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Get prerequisites for a specific entity from Firestore graph edges.
@@ -511,12 +554,13 @@ class LearningPathsService:
             if entity_type is None:
                 entity_type = self._detect_entity_type(entity_id)
 
-            prerequisite_edges = await self._get_prerequisite_edges_for(entity_id)
+            if graphs is None:
+                graphs = await self._scope_graphs(subject=subject, grade=grade)
+            prerequisite_edges = self._get_prerequisite_edges_for(entity_id, graphs)
 
             results = []
             for source_id, threshold in prerequisite_edges:
-                # Look up node info from cache
-                node_info = self._get_node_info(source_id)
+                node_info = self._get_node_info(source_id, graphs)
 
                 results.append({
                     "prerequisite_id": source_id,
@@ -535,7 +579,11 @@ class LearningPathsService:
     async def get_entity_unlocks(
         self,
         entity_id: str,
-        entity_type: Optional[str] = None
+        entity_type: Optional[str] = None,
+        graphs: Optional[List[Dict[str, Any]]] = None,
+        *,
+        subject: Optional[str] = None,
+        grade: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Get what entities this entity unlocks (reverse direction).
@@ -551,30 +599,24 @@ class LearningPathsService:
             if entity_type is None:
                 entity_type = self._detect_entity_type(entity_id)
 
+            if graphs is None:
+                graphs = await self._scope_graphs(subject=subject, grade=grade)
             results = []
 
-            for graph_data in self._graph_cache.values():
+            for graph_data in graphs:
                 graph_edges = graph_data.get("graph", {}).get("edges", [])
                 for edge in graph_edges:
                     if edge["source"] == entity_id:
                         target_id = edge["target"]
-                        node_info = self._get_node_info(target_id)
+                        node_info = self._get_node_info(target_id, graphs)
 
                         results.append({
                             "unlocks_id": target_id,
                             "unlocks_type": self._detect_entity_type(target_id),
-                            "threshold": edge.get("threshold", self.DEFAULT_MASTERY_THRESHOLD),
+                            "threshold": edge.get("threshold") or self.DEFAULT_MASTERY_THRESHOLD,
                             "subject": node_info.get("subject"),
                             "description": node_info.get("description")
                         })
-
-            # If cache empty, try loading default graph
-            if not results and not self._graph_cache:
-                try:
-                    await self._get_graph("MATHEMATICS")
-                    return await self.get_entity_unlocks(entity_id, entity_type)
-                except ValueError:
-                    pass
 
             return results
 
@@ -582,9 +624,9 @@ class LearningPathsService:
             logger.error(f"Error getting unlocks for {entity_id}: {e}")
             raise
 
-    def _get_node_info(self, node_id: str) -> Dict[str, Any]:
-        """Look up node info (subject, description) from cached graphs."""
-        for graph_data in self._graph_cache.values():
+    def _get_node_info(self, node_id: str, graphs: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Look up node info (subject, description) in the given graphs."""
+        for graph_data in graphs:
             for node in graph_data.get("graph", {}).get("nodes", []):
                 if node["id"] == node_id:
                     return {
@@ -598,10 +640,12 @@ class LearningPathsService:
     async def get_skill_with_subskills(
         self,
         skill_id: str,
-        student_id: Optional[int] = None
+        student_id: Optional[int] = None,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get detailed view of a specific skill with subskills and sequencing.
+        Skill IDs repeat across grades: the grade is ``grade``, else the student's.
 
         Reads from curriculum_published for hierarchy data, and Firestore
         competencies for student progress.
@@ -621,11 +665,16 @@ class LearningPathsService:
             }
         """
         try:
-            # Find the skill in curriculum_published
-            skill_data = await self._find_skill_in_published(skill_id)
+            if not grade and student_id is not None:
+                grade = (await self.firestore.get_student_planning_fields(student_id)).get("grade_level")
+            g = grade_key(grade)
+            if not g:
+                raise GradeUnresolved(f"Skill {skill_id}: no grade (skill IDs repeat across grades)")
+            skill_data = await self._find_skill_in_published(skill_id, g)
 
             if not skill_data:
-                raise ValueError(f"Skill {skill_id} not found")
+                raise ValueError(f"Skill {skill_id} not found in grade {g}")
+            graphs = await self._scope_graphs(subject=skill_data["subject"], grade=g)
 
             result = {
                 "skill_id": skill_id,
@@ -650,7 +699,7 @@ class LearningPathsService:
 
                 # Get prerequisites for this subskill
                 subskill_prerequisites = await self.get_entity_prerequisites(
-                    subskill_id, "subskill"
+                    subskill_id, "subskill", graphs
                 )
 
                 subskill_entry = {
@@ -673,8 +722,8 @@ class LearningPathsService:
                 result["subskills"].append(subskill_entry)
 
             # Get prerequisites and unlocks for the skill itself
-            result["prerequisites"] = await self.get_entity_prerequisites(skill_id, "skill")
-            result["unlocks"] = await self.get_entity_unlocks(skill_id, "skill")
+            result["prerequisites"] = await self.get_entity_prerequisites(skill_id, "skill", graphs)
+            result["unlocks"] = await self.get_entity_unlocks(skill_id, "skill", graphs)
 
             return result
 
@@ -682,20 +731,19 @@ class LearningPathsService:
             logger.error(f"Error getting skill details for {skill_id}: {e}")
             raise
 
-    async def _find_skill_in_published(self, skill_id: str) -> Optional[Dict[str, Any]]:
+    async def _find_skill_in_published(self, skill_id: str, grade: str) -> Optional[Dict[str, Any]]:
         """
-        Find a skill in the curriculum_published collection.
+        Find a skill in one grade of curriculum_published.
 
         Returns skill data with its subskills, or None if not found.
         """
         try:
-            # Search across all published subjects
-            subjects = await self.firestore.get_all_published_subjects()
+            subjects = await self.firestore.get_all_published_subjects(grade=grade)
 
             for subj_info in subjects:
                 curriculum = await self.firestore.get_published_curriculum(
                     subject_id=subj_info["subject_id"],
-                    grade=subj_info.get("grade")
+                    grade=subj_info["grade_doc"]
                 )
                 if not curriculum:
                     continue
@@ -775,8 +823,11 @@ class LearningPathsService:
                 logger.info(f"No unlocked subskills for student {student_id}")
                 return []
 
-            # Get curriculum metadata for descriptions
-            curriculum_index = await self._build_subskill_index(subject)
+            graphs = await self._scope_graphs(student_id=student_id, subject=subject)
+            student_grade = (await self.firestore.get_student_planning_fields(student_id)).get("grade_level")
+            curriculum_index = await self._build_subskill_index(
+                subject_key(subject) if subject else None, grade_key(student_grade)
+            )
 
             recommendations = []
 
@@ -808,7 +859,7 @@ class LearningPathsService:
                 meta = curriculum_index.get(entity_id, {})
 
                 # Get prerequisite info
-                prereq_edges = await self._get_prerequisite_edges_for(entity_id)
+                prereq_edges = self._get_prerequisite_edges_for(entity_id, graphs)
                 prerequisites_met = []
                 for source_id, threshold in prereq_edges:
                     current = prof_map.get(source_id, {}).get("proficiency", 0.0)
@@ -846,15 +897,21 @@ class LearningPathsService:
             logger.error(f"Error getting recommendations for student {student_id}: {e}")
             raise
 
-    async def _build_subskill_index(self, subject: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+    async def _build_subskill_index(
+        self, subject: Optional[str], grade: Optional[str]
+    ) -> Dict[str, Dict[str, Any]]:
         """
-        Build a flat lookup index of subskill metadata from curriculum_published.
+        Build a flat lookup index of subskill metadata for ONE grade of
+        curriculum_published (subskill IDs repeat across grades).
 
         Returns: {subskill_id: {subject, skill_id, skill_description, subskill_description, ...}}
         """
         index = {}
+        if not grade:
+            logger.error(f"_build_subskill_index({subject!r}): no grade; returning empty index")
+            return index
         try:
-            subjects = await self.firestore.get_all_published_subjects()
+            subjects = await self.firestore.get_all_published_subjects(grade=grade)
 
             for subj_info in subjects:
                 if subject and subj_info["subject_id"] != subject:
@@ -862,7 +919,7 @@ class LearningPathsService:
 
                 curriculum = await self.firestore.get_published_curriculum(
                     subject_id=subj_info["subject_id"],
-                    grade=subj_info.get("grade")
+                    grade=subj_info["grade_doc"]
                 )
                 if not curriculum:
                     continue
@@ -898,10 +955,12 @@ class LearningPathsService:
     async def get_graph_for_visualization(
         self,
         subject: Optional[str] = None,
-        student_id: Optional[int] = None
+        student_id: Optional[int] = None,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Get graph structure optimized for frontend visualization.
+        Get graph structure optimized for frontend visualization, for ONE
+        grade: ``grade``, else the student's grade of record.
 
         Returns units with nested skills and subskills, prerequisites, unlocks, and
         optional student progress data.
@@ -914,9 +973,14 @@ class LearningPathsService:
             {"units": [{unit_id, unit_title, subject, skills: [{...}]}]}
         """
         try:
-            subjects = await self.firestore.get_all_published_subjects()
+            if not grade and student_id is not None:
+                grade = (await self.firestore.get_student_planning_fields(student_id)).get("grade_level")
+            g = grade_key(grade)
+            if not g:
+                raise GradeUnresolved("Graph visualization needs a grade or a student with grade_level")
+            subjects = await self.firestore.get_all_published_subjects(grade=g)
             if subject:
-                subjects = [s for s in subjects if s["subject_id"] == subject]
+                subjects = [s for s in subjects if s["subject_id"] == subject_key(subject)]
 
             # Get student data if needed
             prof_map = {}
@@ -932,16 +996,15 @@ class LearningPathsService:
             for subj_info in subjects:
                 curriculum = await self.firestore.get_published_curriculum(
                     subject_id=subj_info["subject_id"],
-                    grade=subj_info.get("grade")
+                    grade=subj_info["grade_doc"]
                 )
                 if not curriculum:
                     continue
 
-                # Ensure graph is loaded for prerequisite lookups
                 try:
-                    await self._get_graph(subj_info["subject_id"])
+                    graphs = [await self._get_graph(subj_info["subject_id"], grade=g)]
                 except ValueError:
-                    pass
+                    graphs = []
 
                 for unit in curriculum.get("curriculum", []):
                     unit_id = unit.get("unit_id")
@@ -957,8 +1020,8 @@ class LearningPathsService:
                         skill_id = skill.get("skill_id")
                         if skill_id not in units_dict[unit_id]["skills"]:
                             # Get skill-level prerequisites and unlocks
-                            skill_prereqs = await self.get_entity_prerequisites(skill_id, "skill")
-                            skill_unlocks = await self.get_entity_unlocks(skill_id, "skill")
+                            skill_prereqs = await self.get_entity_prerequisites(skill_id, "skill", graphs)
+                            skill_unlocks = await self.get_entity_unlocks(skill_id, "skill", graphs)
 
                             units_dict[unit_id]["skills"][skill_id] = {
                                 "skill_id": skill_id,
@@ -973,7 +1036,7 @@ class LearningPathsService:
                             subskill_id = subskill.get("subskill_id")
 
                             # Get subskill prerequisites
-                            sub_prereqs = await self.get_entity_prerequisites(subskill_id, "subskill")
+                            sub_prereqs = await self.get_entity_prerequisites(subskill_id, "subskill", graphs)
 
                             subskill_data = {
                                 "subskill_id": subskill_id,
@@ -1054,19 +1117,14 @@ class LearningPathsService:
             # Step 1: Fetch graph and proficiency from Firestore in parallel
             version_type = "draft" if include_drafts else "published"
 
-            # Grade-scope the graph lookup so get_curriculum_graph resolves the
-            # student's grade directly (via grade hints) instead of scanning all
-            # grade docs and returning the first that contains the subject —
-            # which, in lexicographic doc order, hands K students a Grade 1 graph.
-            # Proficiency stays keyed on the bare display subject.
-            graph_subject_id = subject_id
-            if grade:
-                suffix = self.firestore.grade_to_subject_suffix(grade)
-                if suffix and not subject_id.upper().endswith(suffix):
-                    graph_subject_id = f"{subject_id}{suffix}"
-
+            # Proficiency stays keyed on the bare display subject; the graph
+            # is the explicit grade, else the grade the student studies it at.
+            graph_coro = (
+                self._get_graph(subject_id, version_type, grade=grade) if grade
+                else self._student_graph(student_id, subject_id, version_type)
+            )
             graph_data, student_prof_map = await asyncio.gather(
-                self._get_graph(graph_subject_id, version_type),
+                graph_coro,
                 self.firestore.get_student_proficiency_map(student_id, subject=subject_id)
             )
 
@@ -1175,7 +1233,7 @@ class LearningPathsService:
             logger.info(f"Recalculating unlocks for student {student_id}, subject {subject_id}")
 
             # Get previous state + proficiency map in parallel (independent reads)
-            graph_data = await self._get_graph(subject_id)  # cached in-memory
+            graph_data = await self._student_graph(student_id, subject_id)  # cached in-memory
             previous, prof_map = await asyncio.gather(
                 self.firestore.get_learning_path(student_id, subject_id),
                 self.firestore.get_student_proficiency_map(student_id, subject=subject_id),

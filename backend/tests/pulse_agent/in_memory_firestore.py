@@ -847,7 +847,7 @@ class InMemoryFirestoreService:
         return copy.deepcopy(results[:limit])
 
     async def resolve_subskill_location(
-        self, subskill_id: str
+        self, subskill_id: str, subject: Optional[str] = None, student_id: Optional[int] = None,
     ) -> Optional[Dict[str, Any]]:
         """Canonical {subject, subject_id, grade} from the loaded curriculum
         index. No lineage hop — in-memory ids are canonical by construction."""

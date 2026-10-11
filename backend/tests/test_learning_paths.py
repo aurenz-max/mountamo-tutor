@@ -46,17 +46,41 @@ class TestLearningPathsService(unittest.TestCase):
             ],
         )
 
-        # Pre-populate graph cache
-        self.service._graph_cache["Math:published"] = self.mock_graph
+        # Graphs are cached per grade-scoped subject; the student is in K.
+        self.service._graph_cache["MATH_GK:published"] = self.mock_graph
+        self.firestore_service.get_student_planning_fields = AsyncMock(
+            return_value={"grade_level": "K"}
+        )
 
         # Default mock for get_curriculum_graph (returns our test graph)
         self.firestore_service.get_curriculum_graph = AsyncMock(return_value=self.mock_graph)
         self.firestore_service.get_all_published_subjects = AsyncMock(
-            return_value=[{"subject_id": "Math", "grade": "K"}]
+            return_value=[{"subject_id": "Math", "grade": "K", "grade_doc": "Kindergarten"}]
         )
         self.firestore_service.get_graph_status = AsyncMock(
             return_value={"total_cached": 1}
         )
+
+    # ==================== Grade scoping ====================
+
+    def test_student_without_grade_is_refused_not_guessed(self):
+        """A bare subject with no student grade raises instead of picking a grade."""
+        from app.services.curriculum_scope import GradeUnresolved
+        self.firestore_service.get_student_planning_fields = AsyncMock(return_value={})
+        self.firestore_service.get_student_proficiency_map = AsyncMock(return_value={})
+        with self.assertRaises(GradeUnresolved):
+            asyncio.run(self.service.get_unlocked_entities(student_id=1, subject="Math"))
+
+    def test_student_grade_selects_the_graph(self):
+        """The student's grade (override first) picks which grade's graph loads."""
+        g1_graph = _make_graph(nodes=[{"id": "G1-ONLY-a", "type": "subskill"}], edges=[])
+        self.service._graph_cache["MATH_G1:published"] = g1_graph
+        self.firestore_service.get_student_proficiency_map = AsyncMock(return_value={})
+        self.firestore_service.get_student_planning_fields = AsyncMock(
+            return_value={"grade_level": "K", "subject_grade_overrides": {"MATH": "1"}}
+        )
+        unlocked = asyncio.run(self.service.get_unlocked_entities(student_id=1, subject="Math"))
+        self.assertEqual(unlocked, {"G1-ONLY-a"})
 
     # ==================== Unlock Logic ====================
 

@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Dict, Any, List, Optional
 import logging
 
+from ...services.curriculum_scope import GradeUnresolved
 from ...services.learning_paths import LearningPathsService
 from ...dependencies import get_learning_paths_service
 
@@ -52,6 +53,7 @@ async def get_learning_graph(
     subject: Optional[str] = Query(None, description="Filter by subject (e.g., 'Mathematics')"),
     entity_type: Optional[str] = Query(None, description="Filter by 'skill' or 'subskill'"),
     include_metadata: bool = Query(True, description="Include metadata about graph structure"),
+    grade: Optional[str] = Query(None, description="Curriculum grade (K, 1-5). Required unless a student_id with grade_level is given: skill IDs repeat across grades"),
     learning_paths_service: LearningPathsService = Depends(get_learning_paths_service)
 ):
     """
@@ -75,12 +77,15 @@ async def get_learning_graph(
         graph = await learning_paths_service.get_learning_graph(
             subject=subject,
             entity_type=entity_type,
-            include_metadata=include_metadata
+            include_metadata=include_metadata,
+            grade=grade,
         )
 
         logger.info(f"Successfully retrieved learning graph with {len(graph['graph']['nodes'])} nodes")
         return graph
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting learning graph: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -90,6 +95,8 @@ async def get_learning_graph(
 async def get_prerequisites(
     entity_id: str,
     entity_type: Optional[str] = Query(None, description="'skill' or 'subskill' (auto-detect if not provided)"),
+    subject: Optional[str] = Query(None, description="Subject (optional; narrows the graphs searched)"),
+    grade: Optional[str] = Query(None, description="Curriculum grade (K, 1-5). Required unless a student_id with grade_level is given: skill IDs repeat across grades"),
     learning_paths_service: LearningPathsService = Depends(get_learning_paths_service)
 ):
     """
@@ -123,14 +130,12 @@ async def get_prerequisites(
 
         # Get prerequisites
         prerequisites = await learning_paths_service.get_entity_prerequisites(
-            entity_id,
-            entity_type
+            entity_id, entity_type, subject=subject, grade=grade
         )
 
         # Get what this entity unlocks
         unlocks = await learning_paths_service.get_entity_unlocks(
-            entity_id,
-            entity_type
+            entity_id, entity_type, subject=subject, grade=grade
         )
 
         # Detect entity type if not provided
@@ -144,6 +149,8 @@ async def get_prerequisites(
             "unlocks": unlocks
         }
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting prerequisites for {entity_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -201,6 +208,8 @@ async def get_recommendations(
             "count": len(recommendations)
         }
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting recommendations for student {student_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -241,6 +250,8 @@ async def get_unlocked_entities(
             "count": len(unlocked)
         }
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting unlocked entities for student {student_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -293,6 +304,8 @@ async def check_prerequisite_status(
             **check_result
         }
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error checking prerequisites: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -334,6 +347,8 @@ async def recalculate_unlocks(
             **result
         }
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except ValueError as e:
         logger.warning(f"Graph not found for recalculation: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e))
@@ -348,6 +363,7 @@ async def recalculate_unlocks(
 async def get_graph_visualization(
     subject: Optional[str] = Query(None, description="Filter by subject"),
     student_id: Optional[int] = Query(None, description="Include student progress data"),
+    grade: Optional[str] = Query(None, description="Curriculum grade (K, 1-5). Required unless a student_id with grade_level is given: skill IDs repeat across grades"),
     learning_paths_service: LearningPathsService = Depends(get_learning_paths_service)
 ):
     """
@@ -390,13 +406,16 @@ async def get_graph_visualization(
 
         graph = await learning_paths_service.get_graph_for_visualization(
             subject=subject,
-            student_id=student_id
+            student_id=student_id,
+            grade=grade,
         )
 
         logger.info(f"Retrieved visualization graph with {len(graph['units'])} units")
 
         return graph
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting graph visualization: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -406,6 +425,7 @@ async def get_graph_visualization(
 async def get_skill_details(
     skill_id: str,
     student_id: Optional[int] = Query(None, description="Include student progress data"),
+    grade: Optional[str] = Query(None, description="Curriculum grade (K, 1-5). Required unless a student_id with grade_level is given: skill IDs repeat across grades"),
     learning_paths_service: LearningPathsService = Depends(get_learning_paths_service)
 ):
     """
@@ -441,11 +461,14 @@ async def get_skill_details(
 
         skill_data = await learning_paths_service.get_skill_with_subskills(
             skill_id=skill_id,
-            student_id=student_id
+            student_id=student_id,
+            grade=grade,
         )
 
         return skill_data
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except ValueError as e:
         logger.warning(f"Skill not found: {skill_id}")
         raise HTTPException(status_code=404, detail=str(e))
@@ -518,6 +541,8 @@ async def get_student_curriculum_graph(
 
         return student_graph
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except ValueError as e:
         logger.warning(f"Graph not found: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e))
@@ -545,6 +570,8 @@ async def learning_paths_health_check(
 
         return health
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
@@ -555,6 +582,7 @@ async def learning_paths_health_check(
 @router.get("/analytics")
 async def get_learning_paths_analytics(
     subject: Optional[str] = Query(None, description="Filter by subject"),
+    grade: Optional[str] = Query(None, description="Curriculum grade (K, 1-5). Required unless a student_id with grade_level is given: skill IDs repeat across grades"),
     learning_paths_service: LearningPathsService = Depends(get_learning_paths_service)
 ):
     """
@@ -569,7 +597,8 @@ async def get_learning_paths_analytics(
         # Get graph with metadata
         graph = await learning_paths_service.get_learning_graph(
             subject=subject,
-            include_metadata=True
+            include_metadata=True,
+            grade=grade,
         )
 
         if not graph or not graph.get("graph"):
@@ -614,6 +643,8 @@ async def get_learning_paths_analytics(
             }
         }
 
+    except GradeUnresolved as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:

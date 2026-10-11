@@ -372,7 +372,11 @@ class FirestoreService:
             ):
                 return
             try:
-                new_cache: Dict[str, Dict[str, Any]] = {}
+                # Subskill IDs are unique only within a grade (LA001-01-a is
+                # G1 "decode CVC" and G5 "narrative theme"), so each id maps
+                # to EVERY place it is published; resolve_subskill_location
+                # narrows by subject and the student's grade.
+                new_cache: Dict[str, List[Dict[str, Any]]] = {}
                 for grade_doc in self.client.collection('curriculum_published').stream():
                     grade_id = grade_doc.id
                     for doc in grade_doc.reference.collection('subjects').stream():
@@ -380,11 +384,12 @@ class FirestoreService:
                         subject_name = data.get("subject_name", doc.id)
                         grade = data.get("grade", grade_id)
                         for ss_id, entry in (data.get("subskill_index") or {}).items():
-                            new_cache[ss_id] = {
+                            new_cache.setdefault(ss_id, []).append({
                                 "subject": (entry or {}).get("subject") or subject_name,
                                 "subject_id": doc.id,
                                 "grade": (entry or {}).get("grade") or grade,
-                            }
+                                "grade_doc": grade_id,
+                            })
                 self._subskill_loc_cache = new_cache
                 self._subskill_loc_refresh = datetime.now(timezone.utc)
                 if new_cache:
@@ -394,27 +399,68 @@ class FirestoreService:
                 if not self._subskill_loc_cache:
                     self._subskill_loc_refresh = datetime.now(timezone.utc)
 
-    async def resolve_subskill_location(self, subskill_id: str) -> Optional[Dict[str, Any]]:
+    async def resolve_subskill_location(
+        self,
+        subskill_id: str,
+        subject: Optional[str] = None,
+        student_id: Optional[int] = None,
+    ) -> Optional[Dict[str, Any]]:
         """Resolve a subskill_id to its canonical {subject, subject_id, grade}.
 
         Routes the id through the lineage resolver first (so deprecated ids land
-        on their successor) before the curriculum lookup. Returns None for a
-        true orphan — an id that resolves to no published subskill — so the
-        caller can flag it instead of inventing a subject.
+        on their successor) before the curriculum lookup. An id published in
+        several grades is narrowed by ``subject`` and then by the grade the
+        student studies that subject at. Returns None for a true orphan, and
+        for an id still ambiguous after narrowing, so the caller flags it
+        instead of stamping another grade's curriculum.
         """
         await self._ensure_subskill_loc_cache()
         if not subskill_id:
             return None
-        loc = self._subskill_loc_cache.get(subskill_id)
-        if loc:
-            return loc
-        # Deprecated id? Follow lineage to the canonical successor, then retry.
-        try:
-            canonical = await self._resolver.resolve(subskill_id)
-        except Exception:
-            canonical = subskill_id
-        if canonical and canonical != subskill_id:
-            return self._subskill_loc_cache.get(canonical)
+        candidates = self._subskill_loc_cache.get(subskill_id)
+        if not candidates:
+            # Deprecated id? Follow lineage to the canonical successor, then retry.
+            try:
+                canonical = await self._resolver.resolve(subskill_id)
+            except Exception:
+                canonical = subskill_id
+            if canonical and canonical != subskill_id:
+                candidates = self._subskill_loc_cache.get(canonical)
+        if not candidates:
+            return None
+        if len(candidates) == 1:
+            return candidates[0]
+        if subject:
+            key = self.rollup_subject_key(subject)
+            same_subject = [c for c in candidates if self.rollup_subject_key(c["subject_id"]) == key]
+            if same_subject:
+                candidates = same_subject
+        if len(candidates) > 1 and student_id is not None:
+            fields = await self.get_student_planning_fields(student_id)
+            subj_key = self.rollup_subject_key(candidates[0]["subject_id"])
+            want = (fields.get("subject_grade_overrides") or {}).get(subj_key) or fields.get("grade_level")
+            want_code = self.normalize_grade_code(want)
+            on_grade = [c for c in candidates if self.normalize_grade_code(c["grade_doc"]) == want_code]
+            if on_grade:
+                candidates = on_grade
+            elif want_code == "K" or want_code.isdigit():
+                # Off-grade work (a K student on a Grade 1 lesson): the
+                # published grade nearest the student's, lower on a tie.
+                def _n(code: str) -> int:
+                    return 0 if code == "K" else int(code) if code.isdigit() else 99
+                target = _n(want_code)
+                candidates = [min(
+                    candidates,
+                    key=lambda c: (abs(_n(self.normalize_grade_code(c["grade_doc"])) - target),
+                                   _n(self.normalize_grade_code(c["grade_doc"]))),
+                )]
+        if len(candidates) == 1:
+            return candidates[0]
+        logger.warning(
+            f"resolve_subskill_location({subskill_id!r}): published in "
+            f"{[(c['subject_id'], c['grade_doc']) for c in candidates]}; "
+            f"subject={subject!r} student={student_id} did not narrow it"
+        )
         return None
 
     async def apply_attempt_rollup(
@@ -441,7 +487,7 @@ class FirestoreService:
         day = ts[:10]
         score = float(score)
 
-        loc = await self.resolve_subskill_location(subskill_id)
+        loc = await self.resolve_subskill_location(subskill_id, subject, student_id)
         if loc:
             canonical_subject = loc["subject"]
             grade = loc.get("grade")
@@ -1236,12 +1282,8 @@ class FirestoreService:
         self, subject_id: str, collection_name: str = "curriculum_published",
         grade_hints: Optional[List[str]] = None,
     ) -> Optional[str]:
-        """Find which grade document contains this subject.
-
-        If grade_hints are provided (from a grade suffix), try those first
-        for an O(1) lookup before falling back to a full scan.
-        """
-        # Fast path: try grade hints first
+        """The grade doc for this subject among the hinted grade spellings
+        (from a grade suffix). No hint match -> None: never another grade."""
         for hint in (grade_hints or []):
             doc_ref = (
                 self.client.collection(collection_name)
@@ -1251,20 +1293,6 @@ class FirestoreService:
             )
             if doc_ref.get().exists:
                 return hint
-
-        # Slow path: scan all grade documents. First match wins and doc ids
-        # stream lexicographically ("1" < "Kindergarten"), so a subject that
-        # is published in several grades resolves to Grade 1 — this scan is
-        # a GUESS. Callers should pass a grade (students/{id}.grade_level).
-        for grade_doc in self.client.collection(collection_name).stream():
-            subj_ref = grade_doc.reference.collection("subjects").document(subject_id)
-            if subj_ref.get().exists:
-                logger.warning(
-                    f"Grade-ambiguous resolution: {subject_id} matched grade doc "
-                    f"'{grade_doc.id}' by first-doc-wins scan — pass a grade to "
-                    f"avoid serving the wrong grade's curriculum"
-                )
-                return grade_doc.id
         return None
 
     def _read_nodes_from_curriculum(
@@ -1343,7 +1371,8 @@ class FirestoreService:
                 "source_type": e.get("source_entity_type", ""),
                 "target": e.get("target_entity_id", ""),
                 "target_type": e.get("target_entity_type", ""),
-                "threshold": e.get("min_proficiency_threshold", 0.8),
+                # Agent-authored edges store null; .get(key, default) returns None then.
+                "threshold": e.get("min_proficiency_threshold") or 0.8,
                 "relationship": e.get("relationship", "prerequisite"),
                 "strength": e.get("strength", 1.0),
                 "is_prerequisite": e.get("is_prerequisite", True),
@@ -1404,11 +1433,30 @@ class FirestoreService:
             # and extract grade hints for fast resolution.
             bare_subject_id, grade_hints = self._strip_grade_suffix(subject_id)
             published_only = version_type == "published"
+            if not grade_hints:
+                # Every grade doc holds every subject, and subskill IDs repeat
+                # across grades, so a bare subject has no single answer. The
+                # old first-doc-wins scan served Grade 1 to every caller.
+                # Scope the subject (services/curriculum_scope.py).
+                logger.error(
+                    f"get_curriculum_graph({subject_id!r}): no grade suffix; refusing to guess. "
+                    f"Pass a scoped id such as {bare_subject_id}_GK"
+                )
+                return None
 
             def _load_graph_blocking():
+                nonlocal bare_subject_id
                 resolved_grade = self._resolve_grade_for_subject(
                     bare_subject_id, collection_name, grade_hints
                 )
+                if not resolved_grade:
+                    # Engineering subjects carry the grade in the doc id itself
+                    # (ENGINEERING_G5), so the stripped id names no doc.
+                    resolved_grade = self._resolve_grade_for_subject(
+                        subject_id, collection_name, grade_hints
+                    )
+                    if resolved_grade:
+                        bare_subject_id = subject_id
                 if not resolved_grade:
                     return None, [], []
                 loaded_nodes = self._read_nodes_from_curriculum(
@@ -1428,6 +1476,21 @@ class FirestoreService:
                     f"No {collection_name} document found for {bare_subject_id}"
                 )
                 return None
+
+            # An edge whose endpoint is not a node in this graph points at a
+            # subskill a curriculum edit removed. As a prerequisite it would
+            # lock its target forever (the student can never earn proficiency
+            # on a node that does not exist), so drop it here, the one place
+            # every unlock, BFS and readiness consumer reads edges from.
+            node_ids = {n["id"] for n in nodes}
+            dangling = [e for e in edges if e["source"] not in node_ids or e["target"] not in node_ids]
+            if dangling:
+                gating = sum(1 for e in dangling if e.get("is_prerequisite", True))
+                logger.warning(
+                    f"[GRAPH] {subject_id}: dropped {len(dangling)} edges to removed nodes "
+                    f"({gating} gating), e.g. {dangling[0]['source']} -> {dangling[0]['target']}"
+                )
+                edges = [e for e in edges if e["source"] in node_ids and e["target"] in node_ids]
 
             now = datetime.now(timezone.utc).isoformat()
             skill_count = sum(1 for n in nodes if n.get("type") == "skill")
@@ -1572,11 +1635,18 @@ class FirestoreService:
                         return doc.to_dict()
                 return None
 
-            # Search across all grades
+            # No grade: first grade doc holding the subject wins ("1" streams
+            # before "Kindergarten"). Ambiguous: every grade holds every subject.
+            # Remaining callers (competency, assessment, recommender endpoints)
+            # still need a grade threaded through; WORKSTREAMS 7.0.
             for grade_doc in self.client.collection('curriculum_published').stream():
                 doc_ref = grade_doc.reference.collection('subjects').document(subject_id)
                 doc = doc_ref.get()
                 if doc.exists:
+                    logger.warning(
+                        f"get_published_curriculum({subject_id!r}) without a grade served "
+                        f"grade doc {grade_doc.id!r}; pass the student's grade"
+                    )
                     return doc.to_dict()
             return None
 
@@ -1606,6 +1676,7 @@ class FirestoreService:
                         "subject_id": doc.id,
                         "subject_name": doc_data.get("subject_name", doc.id),
                         "grade": doc_data.get("grade", grade),
+                        "grade_doc": grade,
                     })
             else:
                 # All subjects across all grades
@@ -1618,6 +1689,7 @@ class FirestoreService:
                             "subject_id": doc.id,
                             "subject_name": doc_data.get("subject_name", doc.id),
                             "grade": doc_data.get("grade", grade_id),
+                            "grade_doc": grade_id,
                         })
 
             return subjects

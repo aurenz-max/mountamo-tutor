@@ -202,8 +202,8 @@ class PulseEngine:
             theta_map[sid] = ab.get("theta", DEFAULT_STUDENT_THETA)
             sigma_map[sid] = ab.get("sigma", DEFAULT_THETA_SIGMA)
 
-        # 2. Load DAG
-        graph_data = await self.learning_paths._get_graph(subject)
+        # 2. Load DAG: the grade this student studies the subject at
+        graph_data = await self.learning_paths._student_graph(student_id, subject)
         if not graph_data or "graph" not in graph_data:
             logger.warning(f"[PULSE] No graph found for subject {subject}")
             return PulseSessionResponse(
@@ -1177,7 +1177,7 @@ class PulseEngine:
         )
 
         # Load graph and find ancestors
-        graph_data = await self.learning_paths._get_graph(subject)
+        graph_data = await self.learning_paths._student_graph(student_id, subject)
         if not graph_data or "graph" not in graph_data:
             return None
 
@@ -1327,7 +1327,7 @@ class PulseEngine:
         # Load DAG for skill descriptions
         node_map: Dict[str, Dict] = {}
         try:
-            graph_data = await self.learning_paths._get_graph(subject)
+            graph_data = await self.learning_paths._student_graph(student_id, subject)
             if graph_data and "graph" in graph_data:
                 all_nodes = graph_data["graph"].get("nodes", [])
                 node_map = {n["id"]: n for n in all_nodes

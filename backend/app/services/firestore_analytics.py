@@ -683,7 +683,7 @@ class FirestoreAnalyticsService:
         # published node are dropped, matching the orphan rule for totals.
         skill_state: Dict[tuple, Dict[str, Any]] = {}
         for canonical_sid, d in lifecycle.items():
-            loc = await self.fs.resolve_subskill_location(canonical_sid)
+            loc = await self.fs.resolve_subskill_location(canonical_sid, d.get("subject"), student_id)
             if loc:
                 subj_key = self.fs.rollup_subject_key(loc["subject"])
                 gcode = self.fs.normalize_grade_code(loc.get("grade"))

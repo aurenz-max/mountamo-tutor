@@ -205,6 +205,14 @@ class CurriculumService:
         self._cache_set(cache_key, subjects)
         return subjects
 
+    async def get_student_curriculum(self, student_id: int, subject: str) -> List[Dict]:
+        """The curriculum of `subject` at the grade this student studies it
+        (override first, then grade of record). Raises GradeUnresolved rather
+        than reading an arbitrary grade's doc."""
+        from .curriculum_scope import student_grade
+        grade = await student_grade(self.firestore_service, student_id, subject)
+        return await self.get_curriculum(subject, grade=grade)
+
     async def get_curriculum(self, subject: str, grade: Optional[str] = None) -> List[Dict]:
         """Get hierarchical curriculum data for a subject.
 

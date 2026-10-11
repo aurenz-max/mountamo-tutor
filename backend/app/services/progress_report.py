@@ -115,16 +115,16 @@ class ProgressReportService:
         now = time.time()
         if _CURRICULUM_CACHE["index"] is not None and now - _CURRICULUM_CACHE["at"] < _CURRICULUM_TTL_S:
             return _CURRICULUM_CACHE["index"], _CURRICULUM_CACHE["trees"]
-        index: Dict[str, Dict[str, Any]] = {}
+        # Subskill IDs repeat across grades with unrelated content (278 of
+        # them), so each id keeps every published location; get_report picks
+        # the one nearest the student's grade.
+        index: Dict[str, List[Dict[str, Any]]] = {}
         trees: Dict[str, Dict[str, List[Dict[str, Any]]]] = defaultdict(dict)
-        # Kindergarten first so a K id wins any (rare) duplicate across grade docs.
-        grade_docs = sorted(self.fs.client.collection("curriculum_published").stream(),
-                            key=lambda g: 0 if g.id == "Kindergarten" else 1)
-        for g in grade_docs:
+        for g in self.fs.client.collection("curriculum_published").stream():
             for s in g.reference.collection("subjects").stream():
                 d = s.to_dict() or {}
                 for sid, meta in (d.get("subskill_index") or {}).items():
-                    index.setdefault(sid, {**meta, "subject_id": s.id})
+                    index.setdefault(sid, []).append({**meta, "subject_id": s.id, "grade_doc": g.id})
                 trees[g.id][s.id] = [
                     {
                         "unit_id": u.get("unit_id"),
@@ -164,8 +164,20 @@ class ProgressReportService:
         index, trees = self._curriculum()
         grade_doc = _grade_doc_key(grade, trees) or _GRADE_DOC.get(grade, grade)
 
+        def _n(code: str) -> int:
+            return 0 if code == "K" else int(code) if code.isdigit() else 99
+
+        def pick(sid: str) -> Dict[str, Any]:
+            """The published location of `sid` nearest the student's grade (lower on a tie)."""
+            cands = index.get(sid) or []
+            if len(cands) <= 1:
+                return cands[0] if cands else {}
+            target = _n(grade)
+            return min(cands, key=lambda c: (abs(_n(_grade_code(c["grade_doc"])) - target),
+                                             _n(_grade_code(c["grade_doc"]))))
+
         def meta(sid: str) -> Dict[str, Any]:
-            m = index.get(sid) or {}
+            m = pick(sid)
             return {"subskill_id": sid,
                     "description": _clean_description(m.get("subskill_description")) or None,
                     "source_description": m.get("subskill_description"),
@@ -315,7 +327,7 @@ class ProgressReportService:
         for s in sessions:
             per = minutes(s) / len(s)
             for a in s:
-                m = index.get(a["sid"]) or {}
+                m = pick(a["sid"])
                 subject_minutes[m.get("subject_id") or _subject_key(a["subject"])] += per
                 if m:
                     grade_mix[_grade_code(m.get("grade"))] += 1

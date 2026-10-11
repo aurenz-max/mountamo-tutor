@@ -217,7 +217,7 @@ class PlanningService:
 
         for subj in subject_names:
             # Get total subskills from curriculum
-            curriculum_data = await self.curriculum.get_curriculum(subj)
+            curriculum_data = await self.curriculum.get_student_curriculum(student_id, subj)
             total_subskills = self._count_subskills(curriculum_data)
 
             # Count by gate status (PRD §5.1) — membership via curriculum ids
@@ -329,7 +329,7 @@ class PlanningService:
         projections: dict[str, SubjectMonthlyProjection] = {}
 
         for subj in subject_names:
-            curriculum_data = await self.curriculum.get_curriculum(subj)
+            curriculum_data = await self.curriculum.get_student_curriculum(student_id, subj)
             total_subskills = self._count_subskills(curriculum_data)
 
             closed, in_review, learning_count, _, subj_lcs = self._count_by_gate_status(
@@ -1784,7 +1784,7 @@ class PlanningService:
 
         for subj in subject_names:
             try:
-                curriculum_data = await self.curriculum.get_curriculum(subj)
+                curriculum_data = await self.curriculum.get_student_curriculum(student_id, subj)
             except Exception:
                 continue
 
