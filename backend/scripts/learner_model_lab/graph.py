@@ -133,7 +133,7 @@ def _dag(n: int, scored: List[Tuple[float, int, int]], cap: int | None) -> Tuple
     return parents, scores
 
 
-SCOPE = {"LANGUAGE_ARTS": ("GK", "G1"), "MATHEMATICS": ("GK", "G1", "G2")}  # what the 10-11 pilot scored
+SCOPE = {"LANGUAGE_ARTS": ("GK", "G1"), "MATHEMATICS": ("GK", "G1", "G2", "G3", "G4", "G5")}  # grades scored by Jev so far
 
 
 def load(subject: str = "LANGUAGE_ARTS", grades=None, min_score: float = 0.6, max_parents: int = 3) -> Graph:

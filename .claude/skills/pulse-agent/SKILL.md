@@ -2,16 +2,20 @@
 name: pulse-agent
 description: >-
   Run synthetic student profiles through the adaptive engine — scripted
-  archetypes, a latent-ability truth model, or the full day-by-day student-data
-  loop — without a real student or browser, to validate mastery, item
-  selection, and the estimator. Use to stress-test the adaptive machinery and
-  produce findings. Not for fixing what it finds (/pulse-fix).
+  archetypes, a latent-ability truth model, the full day-by-day student-data
+  loop, or the learner-model lab that compares today's engine with the
+  two-layer graph model (real-data replay, primitive-shaped simulated attempts,
+  frontier selection) — without a real student or browser. Use to stress-test
+  the adaptive machinery or judge a learner-model change, and produce findings.
+  Not for fixing what it finds (/pulse-fix).
 ---
 
 # Pulse Agent — Synthetic Student Journey Simulator
 
 Run synthetic student profiles through Lumina's adaptive machinery without a
-real student or browser. Three modes, increasing scope:
+real student or browser. Modes 1–3 exercise the PRODUCTION engine (the
+regression harness while it is live); mode 4 is where a replacement learner
+model is judged against it.
 
 1. **Engine mode** (v1, default) — scripted archetype scores drive PulseEngine
    directly. Validates IRT-derived mastery, unified item selection, leapfrog
@@ -37,6 +41,24 @@ real student or browser. Three modes, increasing scope:
    through the subjects. Retest scheduling runs on the virtual clock (the
    planner and MasteryLifecycleEngine follow `store.virtual_now`), so review
    blocks surface on the days retests fall due.
+
+4. **Lab mode** (`lab ...`) — the learner-model lab
+   (`backend/scripts/learner_model_lab/`), offline, no Firestore except an
+   explicit `pull`. Compares `today` (the production θ update, called
+   unchanged, + Fisher × σ² selection) with the **two-layer model**: IRT θ per
+   subskill measures; the Jev prerequisite graph decides. Interface: each
+   subskill sends the graph a likelihood ratio around its mastery threshold
+   (τ = median item β + 1.4); the graph's P(mastered) reshapes θ's prior when
+   a child first meets a subskill. Selection teaches the **frontier**
+   (P(unmastered and every R prerequisite mastered)) with an unlock bonus
+   (best next step only) and a one-step look-ahead. Three checks, each on the
+   data that can answer it:
+
+   | Check | Command | Data | 10-11 result (math) |
+   |---|---|---|---|
+   | Predicts answers at least as well as today | `replay real` | a real student's first-try results | loss 0.047 vs 0.065, AUC 0.956 vs 0.939 |
+   | The graph predicts a NEW subskill better | `replay real` (first-encounter column) | same | loss 0.35 vs 0.50 |
+   | The selector teaches more | `run run` | simulated children with prerequisite dependence | 1.5–2× subskills mastered, prereq-missing 0 vs ~0.3, success 0.5–0.7 vs 0.7–0.8 |
 
 **All modes are in-memory.** The only Firestore reads are the one-time
 curriculum bootstrap and (optionally) a `--seed-from` snapshot; loop mode has
@@ -76,6 +98,68 @@ Cosmos is deprecated: the loop runs `CompetencyService` with `cosmos_db=None`
   `promotion_ready` + a plan warning (never silent).
 - `--sessions N` (engine/truth), `--subject Science`, `--grade 1`, `--seed N`,
   `--graph`, `--firestore` (engine mode only, production validation)
+- `/pulse-agent lab replay MATHEMATICS` — real-data replay + shuffle controls
+- `/pulse-agent lab sim MATHEMATICS` — Level A simulated attempts, replayed
+- `/pulse-agent lab frontier MATHEMATICS` — selection lab, every policy
+- `/pulse-agent lab check` — Gibbs sampler vs exact enumeration (run after
+  any change to the graph model's inference)
+
+## Lab mode (learner-model lab)
+
+Run from `backend/`; every command uses all CPU cores. Outputs go to
+`backend/reports/learner-model-lab/` (gitignored).
+
+```bash
+venv/Scripts/python -m scripts.learner_model_lab.run check                                   # exact vs Gibbs, must PASS
+venv/Scripts/python -m scripts.learner_model_lab.replay pull --student 1004                  # read-only reviews refresh
+venv/Scripts/python -m scripts.learner_model_lab.replay real --subject MATHEMATICS --perms 2  # ~10 min
+venv/Scripts/python -m scripts.learner_model_lab.replay sim  --subject MATHEMATICS --seeds 3 --reviews 150
+venv/Scripts/python -m scripts.learner_model_lab.run run --subject MATHEMATICS --items 60 --seeds 4 [--learning ready|flat|zone|success]
+```
+
+**Data rules (each cost a wrong conclusion once):**
+- **Score first-try results, never the attempt `score`.** Retry-until-correct
+  primitives submit 10/10 after a retry, so 97–99% of attempts read perfect.
+  First try lives in each review's per-challenge results
+  (`student_work.*[{attempts, correct}]`, the profile's "First-try" stat);
+  `evidence.py` reads it the way `problems._find_challenge_results` does.
+  Production IRT is still fed the final score — `today_first` in the replay
+  measures what feeding first-try would gain.
+- **Real data judges measurement; simulation judges decisions.** A
+  near-ceiling student (1004: ~1% first-try misses) cannot test gap-finding
+  or teaching; it can test calibration and first-encounter prediction.
+- **Shuffle controls:** `shuffle-subskill` (structure destroyed) must score
+  clearly worse than real order, or skill identity carries no signal;
+  `shuffle-time` tests the learning-over-time component.
+- **Vary the truth model's learning rule** (`--learning`) before trusting a
+  selection gain: the default (`ready`) gates learning on prerequisites, which
+  is the selector's own assumption.
+- **Level A attempts** (`simsource.py`) use templates harvested from real
+  reviews (challenges per review, whether the primitive ever recorded a
+  retry). A primitive that never shows a retry is simulated as one-shot —
+  whether it CAN record a miss is unknown until the real component is driven
+  (base-ten-blocks: 871 reviews, zero retries).
+
+**Model pitfalls already fixed — re-check after changing the model:**
+- Untouched subskills pin general ability φ at its prior unless barren
+  subskills (no evidence at or below them) are left out of φ's update; they
+  sum out exactly and are redrawn after.
+- The unlock bonus counts only the best next step; summing lets a hub (count
+  to 10, ~40 dependents) win every pick.
+- Without a slip term a 9/10 counts against mastery; continuous 0–10 truth
+  scores cap near 9 and stop mastery from ever being confirmed — the lab
+  scores first-try right/wrong per challenge.
+- The truth model's prerequisite penalty follows only step ≥ 0.8 edges; all
+  edges crushed unrelated skills.
+
+**Personas** (`truth.py`): literacy `no_blend` (B), `no_letter_sound` (C),
+`no_decode` (D) and math `no_place_value`, `no_facts`, `no_subtract`, plus
+`struggling`, `steady`, `gifted`. Gaps are set by regex on subskill labels.
+
+**Known open items (WORKSTREAMS 7.4):** success rate below today's;
+literacy gap targeting; the struggling child gains nothing (no easier
+subskills below K in the graph); diagnosis of untouched subskills for gifted
+children.
 
 ## Required Reading
 
@@ -268,3 +352,10 @@ planner and MasteryLifecycleEngine follow `store.virtual_now` when set.)
 | `backend/tests/pulse_agent/run_scenarios.py` | CLI entry point |
 | `backend/scripts/backfill_daily_rollups.py` | `aggregate_student` = the L2 parity oracle |
 | `backend/app/services/pulse_engine.py` | Engine under test |
+| `backend/scripts/learner_model_lab/graph.py` | Subskill graph from Jev scores (`/curriculum-graph jev-*`) |
+| `backend/scripts/learner_model_lab/layered.py` | Two-layer model: IRT per subskill + graph, interface, frontier selector |
+| `backend/scripts/learner_model_lab/bayes.py` | Graph layer: Gibbs over mastery + φ, frontier, unlock value |
+| `backend/scripts/learner_model_lab/baseline.py` | `today`: production θ update + Fisher × σ² |
+| `backend/scripts/learner_model_lab/truth.py` | Simulated children with prerequisite dependence + personas |
+| `backend/scripts/learner_model_lab/simsource.py` · `evidence.py` · `replay.py` | Level A attempts, shared first-try reader, replay |
+| `backend/scripts/learner_model_lab/run.py` | Frontier lab, `check` |

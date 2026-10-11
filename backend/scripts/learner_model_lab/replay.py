@@ -13,6 +13,7 @@ Engines
 Scores per challenge: log loss (lower is better), AUC (does the engine rank
 the misses below the hits), mean predicted P on misses vs on hits.
 
+  pull  read-only copy of one student's reviews from Firestore
   sim   simulated children (Level A) on the curriculum walk
   real  student 1004's reviews, plus two permutation controls:
           shuffle-subskill  each review keeps its results but gets another
@@ -20,6 +21,7 @@ the misses below the hits), mean predicted P on misses vs on hits.
           shuffle-time      reviews in random order (destroys learning order)
 
 Usage (from backend/):
+  venv/Scripts/python -m scripts.learner_model_lab.replay pull --student 1004
   venv/Scripts/python -m scripts.learner_model_lab.replay sim --subject MATHEMATICS
   venv/Scripts/python -m scripts.learner_model_lab.replay real --subject MATHEMATICS
 """
@@ -49,8 +51,8 @@ from .layered import LayeredEngine
 from .simsource import Simulator, harvest, usage
 from .truth import PERSONAS_BY_SUBJECT, TruthStudent
 
-LAB = ROOT / "backend" / "reports" / "learner-model-lab-2026-10-11"
-REVIEWS_1004 = LAB / "reviews_1004_raw.json"
+LAB = ROOT / "backend" / "reports" / "learner-model-lab"   # gitignored; outputs and pulled reviews
+REVIEWS_1004 = LAB / "reviews_1004.json"                   # template + real-replay source (refresh with `pull`)
 ENGINES = ("today", "today_first", "bayes", "layered")
 
 
@@ -177,6 +179,17 @@ def run_real(a) -> None:
     write_summary(out_dir, f"Student 1004, {a.subject}: {n} reviews on the pilot graph", groups)
 
 
+def run_pull(a) -> None:
+    """Read-only: students/{id}/reviews -> reports/learner-model-lab/reviews_{id}.json."""
+    from app.db.firestore_service import FirestoreService
+    c = FirestoreService().client
+    docs = [d.to_dict() for d in c.collection("students").document(str(a.student)).collection("reviews").stream()]
+    LAB.mkdir(parents=True, exist_ok=True)
+    path = LAB / f"reviews_{a.student}.json"
+    path.write_text(json.dumps(docs, default=str), encoding="utf-8")
+    print(f"{len(docs)} reviews -> {path}")
+
+
 def write_summary(out_dir: Path, title: str, groups: Dict[str, List[Dict]]) -> None:
     def avg(rs, k, m):
         v = [r[k][m] for r in rs if r[k][m] is not None]
@@ -207,8 +220,10 @@ def main() -> None:
     r = sub.add_parser("real")
     r.add_argument("--subject", default="MATHEMATICS")
     r.add_argument("--perms", type=int, default=3)
+    pl = sub.add_parser("pull")
+    pl.add_argument("--student", type=int, default=1004)
     a = ap.parse_args()
-    run_sim(a) if a.cmd == "sim" else run_real(a)
+    {"sim": run_sim, "real": run_real, "pull": run_pull}[a.cmd](a)
 
 
 if __name__ == "__main__":

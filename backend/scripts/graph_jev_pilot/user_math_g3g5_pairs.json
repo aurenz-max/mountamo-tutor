@@ -1,0 +1,185 @@
+{
+ "_note": "Math G3-G5 labelled check, 2026-10-11. For each pair: is A a prerequisite of B? label: R (A is a step performed inside B) | E (B is a harder version of A, A learned first) | H (helpful, not required) | N (not a prerequisite). speed (only for R/E): F (A must be fast/automatic) | S (slow is fine). Jev scores are hidden in user_math_g3g5_key.json.",
+ "pairs": {
+  "1": {
+   "A": "G3 Connect visual models of partitioned shapes directly to corresponding mathematical fraction models on a number line or area grid. Focus: Linking geometry to abs",
+   "B": "G4 Determine the hidden rule that transforms an input number into an output number. Focus: Identifying function relationships. Examples: Input 1 -> Output 3; Input",
+   "label": null,
+   "speed": null
+  },
+  "2": {
+   "A": "G3 Decompose a factor to simplify a multiplication problem (distributive property). Focus: Breaking down factors. Examples: 7x6 = (5x6) + (2x6), 8x4 = (4x4) + (4x4",
+   "B": "G3 Students derive harder multiplication facts from known simpler ones using strategies like doubling, make-ten, or near-square mental math. Focus: Applying strate",
+   "label": null,
+   "speed": null
+  },
+  "3": {
+   "A": "G3 Name the unit fraction for a given shape that has been divided into a specific number of equal parts, with one part shaded. Focus: Naming the fraction as 1/b. E",
+   "B": "G5 Subtract two fractions with unlike denominators by physically removing a portion from a fraction bar model. Focus: Visualizing subtraction as removing parts fro",
+   "label": null,
+   "speed": null
+  },
+  "4": {
+   "A": "G1 Solve take-from word problems where the starting amount decreases to an unknown result. Focus: Determining the remaining balance after subtraction. Examples: Ja",
+   "B": "G3 Partition objects into equal groups to understand sharing (partitive division). Focus: Fair sharing concepts. Examples: 12 shared by 3, 15 shared by 5, 8 shared",
+   "label": null,
+   "speed": null
+  },
+  "5": {
+   "A": "G3 Count and name the number of equal parts in a given partitioned whole to describe the shape. Focus: Labeling the total number of equal parts. Examples: a circle",
+   "B": "G3 Extend number sequences by identifying and applying a consistent rule. Focus: Pattern extrapolation. Examples: 2, 4, 6, 8, ?, 5, 10, 15, 20, ?, 3, 6, 9, 12, ?, ",
+   "label": null,
+   "speed": null
+  },
+  "6": {
+   "A": "G1 Examine 3D shapes to determine their characteristics such as faces, edges, and vertices. Focus: Analyzing the structure of 3D forms. Examples: cube (6 faces, 12",
+   "B": "G3 Decompose a factor to simplify a multiplication problem (distributive property). Focus: Breaking down factors. Examples: 7x6 = (5x6) + (2x6), 8x4 = (4x4) + (4x4",
+   "label": null,
+   "speed": null
+  },
+  "7": {
+   "A": "G3 Generate an equivalent fraction by splitting existing parts into smaller equal pieces. Focus: Creating equivalent fractions via subdivision. Examples: split 1/2",
+   "B": "G5 Perform addition and subtraction of fractions with unlike denominators by jumping along a number line. Focus: Viewing fraction operations as movement along a co",
+   "label": null,
+   "speed": null
+  },
+  "8": {
+   "A": "G3 Construct all four related facts in a fact family for a set of three numbers. Focus: Understanding fact families. Examples: (3, 4, 12), (5, 6, 30), (2, 8, 16), ",
+   "B": "G5 Perform subtraction of decimals to hundredths using base-ten block regrouping. Focus: Subtraction with regrouping. Examples: 0.5 - 0.2, 0.45 - 0.12, 0.6 - 0.05,",
+   "label": null,
+   "speed": null
+  },
+  "9": {
+   "A": "G3 Calculate the area of rectangular shapes by applying the multiplication of side lengths. Focus: Area of rectangles via multiplication. Examples: 4x5, 6x3, 8x2, ",
+   "B": "G4 Apply knowledge of area and perimeter formulas to solve complex, multi-step real-world geometric problems. Focus: Real-world application of geometry. Examples: ",
+   "label": null,
+   "speed": null
+  },
+  "10": {
+   "A": "G4 Students translate word problems into fraction expressions to add or subtract quantities with like denominators. Focus: Solving applied problems with fractions.",
+   "B": "G5 Apply standard addition and subtraction algorithms to solve real-world fraction word problems. Focus: Computational accuracy in word problem contexts. Examples:",
+   "label": null,
+   "speed": null
+  },
+  "11": {
+   "A": "G5 Transform the corresponding terms of two number sequences into ordered coordinate pairs. Focus: Pairing (term A, term B) for visualization. Examples: (0,0), (2,",
+   "B": "G5 Plot generated coordinate pairs onto a first-quadrant coordinate plane to visualize the pattern relationship. Focus: Graphing the relationship between two seque",
+   "label": null,
+   "speed": null
+  },
+  "12": {
+   "A": "G3 Identify the unit fraction represented by shapes partitioned into 2, 3, 4, 6, or 8 segments. Focus: Fluency in identifying unit fractions within various geometr",
+   "B": "G3 Generate an equivalent fraction by splitting existing parts into smaller equal pieces. Focus: Creating equivalent fractions via subdivision. Examples: split 1/2",
+   "label": null,
+   "speed": null
+  },
+  "13": {
+   "A": "G3 Recognize two fractions as equivalent by visually comparing their shaded areas. Focus: Visual equivalence (area models). Examples: 1/2 and 2/4, 1/3 and 2/6, 2/4",
+   "B": "G5 Find a common denominator for two fractions using equivalent fractions displayed on partitioned fraction bars. Focus: Identifying common units using equivalence",
+   "label": null,
+   "speed": null
+  },
+  "14": {
+   "A": "G3 Identify the time on an analog clock face by counting by fives for the minute hand. Focus: Reading time to the nearest 5 minutes. Examples: 1:05, 3:10, 7:15, 10",
+   "B": "G5 Students apply length conversions to solve real-world scenarios involving measurement distances. Focus: length in context. Examples: fencing requirements for a ",
+   "label": null,
+   "speed": null
+  },
+  "15": {
+   "A": "G3 Identify rectangles by checking for four right angles and opposite equal sides. Focus: Recognizing defining attributes of rectangles. Examples: horizontal recta",
+   "B": "G3 Evaluate the reasonableness of solutions for two-step problems using estimation. Focus: Estimation as a check. Examples: If 7x8 is about 50, then 56+5 is about ",
+   "label": null,
+   "speed": null
+  },
+  "16": {
+   "A": "G3 Solve division word problems within 100 involving equal sharing contexts. Focus: Solving division problems in context. Examples: Sharing 24 stickers, Dividing 4",
+   "B": "G4 Find quotients and determine the practical interpretation of remainders. Focus: Division with context-based remainders. Examples: Distributing 100 apples among ",
+   "label": null,
+   "speed": null
+  },
+  "17": {
+   "A": "G5 Identify the place and value of digits in decimals to thousandths. Focus: Name places including tenths, hundredths, and thousandths. Examples: 0.4, 0.05, 0.009,",
+   "B": "G5 Recognize that a digit in one place represents 10 times the value of the place to its right and 1/10 of the value of the place to its left. Focus: Exploring 10x",
+   "label": null,
+   "speed": null
+  },
+  "18": {
+   "A": "G3 Students solve word problems involving the multiplication of a one-digit number by a multiple of ten. Focus: Applying multiplication to word problems. Examples:",
+   "B": "G3 Apply known multiplication facts to solve division problems efficiently. Focus: Using inverses to simplify division. Examples: 24/3 using 3x8=24, 42/6 using 6x7",
+   "label": null,
+   "speed": null
+  },
+  "19": {
+   "A": "G4 Students subtract fractions with like denominators by calculating the difference between numerators. Focus: Subtraction with like denominators. Examples: 3/4 - ",
+   "B": "G4 Analyze and interpret existing line plots displaying fractional measurements to extract specific data insights. Focus: Reading fractional distribution. Examples",
+   "label": null,
+   "speed": null
+  },
+  "20": {
+   "A": "G3 Calculate the total distance around a polygon by summing the lengths of all sides. Focus: Finding perimeter. Examples: Rectangles with side 4 and 6, squares wit",
+   "B": "G4 Apply knowledge of area and perimeter formulas to solve complex, multi-step real-world geometric problems. Focus: Real-world application of geometry. Examples: ",
+   "label": null,
+   "speed": null
+  },
+  "21": {
+   "A": "G3 Students practice the 2 times table by applying doubling strategies to reach products up to 20. Focus: Developing fluency with factors of 2. Examples: 2x1=2, 2x",
+   "B": "G3 Generate an equivalent fraction by splitting existing parts into smaller equal pieces. Focus: Creating equivalent fractions via subdivision. Examples: split 1/2",
+   "label": null,
+   "speed": null
+  },
+  "22": {
+   "A": "G4 Classify diverse angles by comparing them to a reference 90-degree gauge. Focus: Categorization as acute, right, or obtuse based on magnitude. Examples: 20-degr",
+   "B": "G4 Sort various triangles into bins based on their internal angle measurements. Focus: Identifying right, acute, and obtuse triangles. Examples: equilateral triang",
+   "label": null,
+   "speed": null
+  },
+  "23": {
+   "A": "G2 Express an even number (up to 20) as the sum of two equal addends. Focus: Connecting even numbers to the doubles addition concept. Examples: 4=2+2, 6=3+3, 8=4+4",
+   "B": "G3 Students multiply one-digit numbers by multiples of ten up to 90. Focus: Basic multiples of 10. Examples: 3x20, 4x30, 2x40, 5x20, 3x30, 6x10, 7x10, 2x50. Constr",
+   "label": null,
+   "speed": null
+  },
+  "24": {
+   "A": "G3 Students multiply one-digit numbers by 10 using place value logic. Focus: Multiplying by ten. Examples: 2x10, 5x10, 9x10, 4x10, 7x10, 3x10, 8x10, 6x10. Constrai",
+   "B": "G3 Students multiply one-digit numbers by multiples of ten up to 90. Focus: Basic multiples of 10. Examples: 3x20, 4x30, 2x40, 5x20, 3x30, 6x10, 7x10, 2x50. Constr",
+   "label": null,
+   "speed": null
+  },
+  "25": {
+   "A": "G3 Connect the denominator of a fraction to the physical number of equal parts present in the whole model. Focus: Denominator conceptualization. Examples: identify",
+   "B": "G5 Students interpret line plots displaying data measured in halves, quarters, and eighths. Focus: read fractional line plots. Examples: reading frequency of 1/4 i",
+   "label": null,
+   "speed": null
+  },
+  "26": {
+   "A": "G3 Students multiply one-digit numbers by 10 using place value logic. Focus: Multiplying by ten. Examples: 2x10, 5x10, 9x10, 4x10, 7x10, 3x10, 8x10, 6x10. Constrai",
+   "B": "G3 Students solve word problems involving the multiplication of a one-digit number by a multiple of ten. Focus: Applying multiplication to word problems. Examples:",
+   "label": null,
+   "speed": null
+  },
+  "27": {
+   "A": "G3 Determine the future time by adding a specific duration to a given start time. Focus: Calculating end time from duration and start time. Examples: Start 2:15, a",
+   "B": "G3 Examine the dots on a line plot to report the frequency of specific data points. Focus: Reading data from line plots. Examples: Heights of bean plants, lengths ",
+   "label": null,
+   "speed": null
+  },
+  "28": {
+   "A": "G4 Decompose multi-digit numbers into their expanded form to show total value. Focus: Representing numbers as the sum of their individual place values. Examples: 5",
+   "B": "G5 Convert flexibly among standard, expanded, and word forms for a given decimal. Focus: Fluency across decimal representations. Examples: 0.25, 0.007, 0.812, 0.3,",
+   "label": null,
+   "speed": null
+  },
+  "29": {
+   "A": "G1 Sum a two-digit number and a one-digit number where the ones don't exceed ten. Focus: Adding without regrouping. Examples: 43 + 5, 21 + 7, 52 + 4, 30 + 9, 64 + ",
+   "B": "G3 Students perform addition of three-digit numbers that do not require regrouping. Focus: Adding without carrying. Examples: 123+234, 401+312, 520+150, 314+625, 2",
+   "label": null,
+   "speed": null
+  },
+  "30": {
+   "A": "G3 Students compare two three-digit numbers using symbols to indicate greater than, less than, or equal to. Focus: Numerical comparison based on place value. Examp",
+   "B": "G3 Compare quantities of mass or volume using visual comparison tools or inequality symbols. Focus: Comparing volumes and masses. Examples: 2L vs 1500ml; 500g vs 1",
+   "label": null,
+   "speed": null
+  }
+ }
+}

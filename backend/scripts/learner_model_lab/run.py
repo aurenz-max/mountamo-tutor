@@ -36,7 +36,7 @@ from . import truth as truth_mod
 from .layered import LayeredEngine
 from .truth import PERSONAS, PERSONAS_BY_SUBJECT, TruthStudent
 
-OUT = ROOT / "backend" / "reports" / "learner-model-lab-2026-10-11"
+OUT = ROOT / "backend" / "reports" / "learner-model-lab" / "frontier"   # gitignored
 CHECKPOINTS = (10, 20, 40, 60, 100)
 PASS = 6.0
 POLICIES = ("today", "bayes_value", "layered_value")

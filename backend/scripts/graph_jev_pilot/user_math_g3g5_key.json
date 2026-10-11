@@ -1,0 +1,182 @@
+{
+ "1": {
+  "pair": "G3:GEOM003-04-c>G4:OPS004-06-f",
+  "step": 0.02,
+  "easier_form": 0.02,
+  "fluency": null
+ },
+ "2": {
+  "pair": "G3:OPS003-05-c>G3:OPS003-06-j",
+  "step": 0.65,
+  "easier_form": 0.46,
+  "fluency": 0.45
+ },
+ "3": {
+  "pair": "G3:NF001-02-b>G5:NF003-01-c",
+  "step": 0.47,
+  "easier_form": 0.04,
+  "fluency": null
+ },
+ "4": {
+  "pair": "G1:OPS001-05-c>G3:OPS003-03-a",
+  "step": 0.1,
+  "easier_form": 0.03,
+  "fluency": null
+ },
+ "5": {
+  "pair": "G3:NF001-01-c>G3:OPS003-08-b",
+  "step": 0.02,
+  "easier_form": 0.02,
+  "fluency": null
+ },
+ "6": {
+  "pair": "G1:GEOM001-02-b>G3:OPS003-05-c",
+  "step": 0.01,
+  "easier_form": 0.01,
+  "fluency": null
+ },
+ "7": {
+  "pair": "G3:NF001-05-c>G5:NF003-01-d",
+  "step": 0.69,
+  "easier_form": 0.16,
+  "fluency": 0.38
+ },
+ "8": {
+  "pair": "G3:OPS003-04-a>G5:NBT005-07-b",
+  "step": 0.03,
+  "easier_form": 0.03,
+  "fluency": null
+ },
+ "9": {
+  "pair": "G3:MEAS003-06-b>G4:MEAS004-04-d",
+  "step": 0.91,
+  "easier_form": 0.36,
+  "fluency": 0.49
+ },
+ "10": {
+  "pair": "G4:NF002-03-f>G5:NF003-02-b",
+  "step": 0.6,
+  "easier_form": 0.85,
+  "fluency": 0.41
+ },
+ "11": {
+  "pair": "G5:OPS005-05-a>G5:OPS005-05-b",
+  "step": 0.93,
+  "easier_form": 0.47,
+  "fluency": 0.25
+ },
+ "12": {
+  "pair": "G3:GEOM003-04-d>G3:NF001-05-c",
+  "step": 0.51,
+  "easier_form": 0.13,
+  "fluency": 0.38
+ },
+ "13": {
+  "pair": "G3:NF001-05-a>G5:NF003-01-a",
+  "step": 0.8,
+  "easier_form": 0.39,
+  "fluency": 0.39
+ },
+ "14": {
+  "pair": "G3:MEAS003-01-a>G5:MEAS005-02-b",
+  "step": 0.02,
+  "easier_form": 0.01,
+  "fluency": null
+ },
+ "15": {
+  "pair": "G3:GEOM003-01-b>G3:OPS003-07-d",
+  "step": 0.02,
+  "easier_form": 0.02,
+  "fluency": null
+ },
+ "16": {
+  "pair": "G3:OPS003-03-e>G4:NBT004-07-c",
+  "step": 0.32,
+  "easier_form": 0.68,
+  "fluency": null
+ },
+ "17": {
+  "pair": "G5:NBT005-01-a>G5:NBT005-01-b",
+  "step": 0.86,
+  "easier_form": 0.24,
+  "fluency": 0.4
+ },
+ "18": {
+  "pair": "G3:NBT003-05-e>G3:OPS003-04-d",
+  "step": 0.03,
+  "easier_form": 0.04,
+  "fluency": null
+ },
+ "19": {
+  "pair": "G4:NF002-03-d>G4:MEAS004-05-b",
+  "step": 0.83,
+  "easier_form": 0.06,
+  "fluency": 0.29
+ },
+ "20": {
+  "pair": "G3:MEAS003-07-a>G4:MEAS004-04-d",
+  "step": 0.89,
+  "easier_form": 0.35,
+  "fluency": 0.42
+ },
+ "21": {
+  "pair": "G3:OPS003-06-a>G3:NF001-05-c",
+  "step": 0.49,
+  "easier_form": 0.04,
+  "fluency": null
+ },
+ "22": {
+  "pair": "G4:GEOM004-02-a>G4:GEOM004-03-a",
+  "step": 0.91,
+  "easier_form": 0.67,
+  "fluency": 0.31
+ },
+ "23": {
+  "pair": "G2:OPS002-05-b>G3:NBT003-05-b",
+  "step": 0.05,
+  "easier_form": 0.07,
+  "fluency": null
+ },
+ "24": {
+  "pair": "G3:NBT003-05-a>G3:NBT003-05-b",
+  "step": 0.83,
+  "easier_form": 0.92,
+  "fluency": 0.36
+ },
+ "25": {
+  "pair": "G3:NF001-02-d>G5:MEAS005-05-a",
+  "step": 0.47,
+  "easier_form": 0.1,
+  "fluency": null
+ },
+ "26": {
+  "pair": "G3:NBT003-05-a>G3:NBT003-05-e",
+  "step": 0.83,
+  "easier_form": 0.64,
+  "fluency": 0.44
+ },
+ "27": {
+  "pair": "G3:MEAS003-02-b>G3:MEAS003-05-a",
+  "step": 0.01,
+  "easier_form": 0.02,
+  "fluency": null
+ },
+ "28": {
+  "pair": "G4:NBT004-01-c>G5:NBT005-02-d",
+  "step": 0.48,
+  "easier_form": 0.4,
+  "fluency": null
+ },
+ "29": {
+  "pair": "G1:NBT001-05-a>G3:NBT003-03-a",
+  "step": 0.57,
+  "easier_form": 0.75,
+  "fluency": 0.31
+ },
+ "30": {
+  "pair": "G3:NBT003-02-d>G3:MEAS003-03-c",
+  "step": 0.54,
+  "easier_form": 0.11,
+  "fluency": 0.28
+ }
+}

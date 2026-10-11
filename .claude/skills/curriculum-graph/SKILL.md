@@ -1,18 +1,35 @@
 ---
 name: curriculum-graph
 description: >-
-  Analyze the curriculum knowledge graph for structural issues that hurt Pulse
-  engine diversity and adaptive routing — diagnose, simulate, suggest, and add
-  typed edges. Use when Pulse repetition, weak discovery, or graph health looks
-  off for a subject. Not for authoring new curriculum content or building the
-  initial graph (/curriculum-author).
+  Build and validate the Jev prerequisite graph the learner model runs on
+  (subskill nodes, step/easier/fluency scores, cross-grade), and diagnose the
+  published typed-edge graph that Pulse uses for variety — diagnose, simulate,
+  suggest, and add edges. Use when a subject needs its prerequisite graph
+  scored or checked, or when Pulse repetition, weak discovery, or graph health
+  looks off. Not for authoring new curriculum content (/curriculum-author).
 ---
 
 # Curriculum Graph — Diagnostic & Improvement Skill
 
-Analyze the curriculum knowledge graph for structural issues that affect Pulse engine diversity and adaptive learning quality. Uses the agentic graph analysis layer (GraphAnalysisEngine, SuggestionEngine, ScopedSuggestionService, CurriculumGraphAgentService) to diagnose, suggest, and improve the graph.
+Two graph layers live here, with different jobs:
+
+1. **Prerequisite graph (Jev)** — what the learner model runs on: which
+   subskill is a step inside another (R), an easier version learned first (E),
+   and whether it must be fast. Built by Jev questions, checked against hand
+   labels, one graph per subject spanning grades (user ruling 10-11). Commands:
+   `jev-estimate`, `jev-build`, `jev-validate`. See the next section.
+2. **Typed-edge graph (published)** — `prerequisite / builds_on / reinforces /
+   parallel / applies` edges authored by Gemini and humans, used by Pulse for
+   discovery and session variety. Commands: `diagnose`, `pulse-sim`,
+   `suggest`, `scoped-suggest`, `connect-skills`, `add-edge`, `compare`. For
+   prerequisite structure the Jev graph replaces the Gemini suggest path
+   (Jev found 33/36 related literacy pairs vs 11/36 published); the soft
+   builds_on/reinforces/parallel edges stay as the variety layer.
 
 **Arguments:** `/curriculum-graph [command] [subject_id]`
+- `/curriculum-graph jev-estimate MATHEMATICS` — pairs still to score and their cost
+- `/curriculum-graph jev-build MATHEMATICS G3 G4 G5` — score those target grades with Jev
+- `/curriculum-graph jev-validate MATHEMATICS` — AUC against a hand-labelled sheet (makes the sheet if none)
 - `/curriculum-graph diagnose Mathematics` — full structural diagnosis + health score
 - `/curriculum-graph pulse-sim Mathematics` — simulate Pulse candidate pools across sessions
 - `/curriculum-graph suggest Mathematics` — generate Gemini-powered edge suggestions (bulk pipeline)
@@ -60,6 +77,59 @@ Only edges with `is_prerequisite: true` enforce mastery gates. All types are tra
 - `authored_by`: "human" | "agent"
 - `confidence`: agent confidence (null for human)
 - `pair_id`: links reverse edges for parallel relationships
+
+---
+
+## Prerequisite graph (Jev): build and validate
+
+**What it is.** Nodes are published subskills keyed `grade:subskill_id` (bare
+ids repeat across grades). For each (candidate A, target B) pair Jev answers,
+with A inside each question's instructions:
+- `step` — A is performed as a step inside a B problem (R edge)
+- `easier_form` — B is the same task as A, made harder (E edge)
+- `fluency` (only where step ≥ 0.5) — A must be automatic for B to be manageable
+
+Edge score = `max(step, easier_form)`. The learner model keeps the top 3
+parents per subskill above 0.6, oriented into a DAG (strongest first, skip any
+edge that closes a cycle); an item of B requires B plus every parent with
+step ≥ 0.8. H never gates. Candidates come from the target's grade and the
+2 grades before it, so cross-grade edges come out of the same run.
+
+**Data:** `backend/reports/graph-jev-pilot-2026-10-11/` (gitignored):
+`baseline_graphs.json` (published subskills per subject × grade, from `dump`)
+and `jev_answers.json` (every scored pair). Runner, lab and validator all read
+this folder.
+
+**Commands** (from `backend/`):
+```bash
+venv/Scripts/python -m scripts.graph_jev_pilot.run_pilot dump --subjects MATHEMATICS        # refresh published subskills (read-only)
+venv/Scripts/python -m scripts.graph_jev_pilot.run_pilot estimate --subjects MATHEMATICS    # pairs left + cost
+venv/Scripts/python -m scripts.graph_jev_pilot.run_pilot judge --subjects MATHEMATICS --grades G3 G4 G5
+venv/Scripts/python -m scripts.graph_jev_pilot.validate scripts/graph_jev_pilot/<sheet>_pairs.json
+```
+`judge` is incremental (already-scored pairs are skipped) and costs about
+$1.70 per 131k pairs (math G3–G5, 10-11: $2.36, 2 min). Report the
+`estimate` before any run over $5.
+
+**Validation — do this before a subject's graph is used.** A sheet of 20–40
+pairs the user labels R/E/H/N plus speed F/S, mixing Jev-high, Jev-middle and
+Jev-low-but-similar-looking pairs, with Jev's scores in a separate
+`<sheet>_key.json` so the labeller is blind. Pass bar: prerequisite AUC ≥ 0.85
+(literacy 0.92, 10-11). Disagreements list which pairs to look at: an
+activity-worded subskill ("sort cards with 90% accuracy") is fixed in the
+curriculum through draft → publish, never by rewording the Jev question
+(telling Jev "judge the capability" made literacy worse, 0.90).
+
+**Then check what the graph does**, not only its labels: the learner-model lab
+(`/pulse-agent lab ...`) runs the frontier selector on it — "served with a
+prerequisite missing" should be ~0 and subskills mastered should beat today.
+
+**Status (10-11):** scored literacy GK–G1, math GK–G5. Remaining: literacy
+G2–G5, science GK–G4, social studies GK–G4 (about 210k pairs, ~$2.70); no
+published G5 science or social studies. Labelled sheets: literacy (22 pairs,
+AUC 0.92), math G3–G5 (30 pairs, awaiting labels). Storage: one graph per
+subject across grades — production storage is per grade today (WORKSTREAMS
+7.2c), so publishing waits on that work.
 
 ---
 

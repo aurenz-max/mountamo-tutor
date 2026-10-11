@@ -13,9 +13,14 @@ candidates gave flat, unusable probabilities in the smoke test):
 
 Pass 2 asks a fluency Noul only on pairs with step >= 0.5.
 
+Candidates come from the target's grade and the `--window` grades before it
+(default 2), so cross-grade edges come out of the same run. Answers are keyed
+`grade:id>grade:id` (bare ids repeat across grades); entries from the 10-11
+pilot keep their bare keys and are recognised by their grade fields.
+
 Usage (from backend/):
-  venv/Scripts/python -m scripts.graph_jev_pilot.run_pilot dump
-  venv/Scripts/python -m scripts.graph_jev_pilot.run_pilot judge [--only MATHEMATICS_G1]
+  venv/Scripts/python -m scripts.graph_jev_pilot.run_pilot dump --subjects MATHEMATICS
+  venv/Scripts/python -m scripts.graph_jev_pilot.run_pilot judge --subjects MATHEMATICS --grades G3 G4 G5
 """
 
 from __future__ import annotations
@@ -36,11 +41,10 @@ ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 MODEL = "jev-latest"
 SUBSKILL = re.compile(r"-[a-zA-Z]$")
 
-# subject -> grade ids in learning order (Firestore graph suffixes)
-SCOPE = {
-    "MATHEMATICS": ["GK", "G1", "G2"],
-    "LANGUAGE_ARTS": ["GK", "G1"],
-}
+# grade ids in learning order (Firestore graph suffixes)
+GRADES = ["GK", "G1", "G2", "G3", "G4", "G5"]
+SUBJECTS = ["MATHEMATICS", "LANGUAGE_ARTS", "SCIENCE", "SOCIAL_STUDIES"]
+WINDOW = 2           # candidate grades before the target grade
 CHUNK = 120          # questions per request
 CONCURRENCY = 8
 
@@ -53,21 +57,27 @@ def _key() -> str:
 
 # ── dump ────────────────────────────────────────────────────────────────────
 
-async def dump() -> None:
+async def dump(subjects: list[str]) -> None:
+    """Fetch published subskill graphs and merge them into baseline_graphs.json."""
     sys.path.insert(0, str(ROOT / "backend"))
     from app.db.firestore_service import FirestoreService
     fs = FirestoreService()
     OUT.mkdir(parents=True, exist_ok=True)
-    out = {}
-    for subject, grades in SCOPE.items():
-        for g in grades:
+    path = OUT / "baseline_graphs.json"
+    out = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    for subject in subjects:
+        for g in GRADES:
             sid = f"{subject}_{g}"
-            graph = await fs.get_curriculum_graph(sid, "published")
+            try:
+                graph = await fs.get_curriculum_graph(sid, "published")
+            except Exception as e:  # a grade without a published graph
+                print(f"{sid}: no graph ({e})")
+                continue
             body = (graph or {}).get("graph", {})
             nodes = [n for n in body.get("nodes", []) if (n.get("entity_type") or n.get("type")) == "subskill"]
             out[sid] = {"nodes": nodes, "edges": body.get("edges", [])}
             print(f"{sid}: {len(nodes)} subskills, {len(out[sid]['edges'])} edges")
-    (OUT / "baseline_graphs.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+    path.write_text(json.dumps(out, indent=1), encoding="utf-8")
 
 
 # ── judge ───────────────────────────────────────────────────────────────────
@@ -120,7 +130,11 @@ async def _post(client, sem, state, questions, stats) -> dict:
     raise RuntimeError(f"TypeSafe failed: {err}")
 
 
-async def judge(only: list[str] | None) -> None:
+def _qkey(cg: str, cid: str, tg: str, tid: str) -> str:
+    return f"{cg}:{cid}>{tg}:{tid}"
+
+
+async def judge(subjects: list[str], targets: list[str] | None, window: int) -> None:
     base = json.loads((OUT / "baseline_graphs.json").read_text(encoding="utf-8"))
     cache_path = OUT / "jev_answers.json"
     cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {}
@@ -128,18 +142,23 @@ async def judge(only: list[str] | None) -> None:
     sem = asyncio.Semaphore(CONCURRENCY)
     headers = {"Authorization": f"Bearer {_key()}", "Content-Type": "application/json"}
     t0 = time.time()
+    # the 10-11 pilot stored bare keys; recognise them by their grade fields
+    done = {_qkey(v["source_grade"], v["source"], v["target_grade"], v["target"]) for v in cache.values()}
+    only = set()
     async with httpx.AsyncClient(headers=headers) as client:
-        for subject, grades in SCOPE.items():
+        for subject in subjects:
+            grades = [g for g in GRADES if f"{subject}_{g}" in base]
             for gi, tg in enumerate(grades):
                 tsid = f"{subject}_{tg}"
-                if only and tsid not in only:
+                if targets and tg not in targets:
                     continue
-                pool = [(n, g) for g in grades[: gi + 1] for n in base[f"{subject}_{g}"]["nodes"]]
+                only.add(tsid)
+                pool = [(n, g) for g in grades[max(0, gi - window): gi + 1] for n in base[f"{subject}_{g}"]["nodes"]]
                 jobs = []
                 for t in base[tsid]["nodes"]:
                     state = {"target_skill": _skill(t, tg)}
                     todo = [(c, cg) for c, cg in pool
-                            if c["id"] != t["id"] and f"{c['id']}>{t['id']}" not in cache]
+                            if not (c["id"] == t["id"] and cg == tg) and _qkey(cg, c["id"], tg, t["id"]) not in done]
                     per = CHUNK // 2
                     for i in range(0, len(todo), per):
                         jobs.append((t, state, todo[i:i + per]))
@@ -152,7 +171,8 @@ async def judge(only: list[str] | None) -> None:
                             qs[f"{name}_{k}"] = q
                     ans = await _post(client, sem, state, qs, stats)
                     for k, (c, cg) in enumerate(batch):
-                        cache[f"{c['id']}>{t['id']}"] = {
+                        done.add(_qkey(cg, c["id"], tg, t["id"]))
+                        cache[_qkey(cg, c["id"], tg, t["id"])] = {
                             "source": c["id"], "source_grade": cg, "target": t["id"], "target_grade": tg,
                             "subject": subject,
                             "step": ans[f"step_{k}"]["noul"], "easier_form": ans[f"easier_form_{k}"]["noul"]}
@@ -164,18 +184,18 @@ async def judge(only: list[str] | None) -> None:
                     print(f"  {min(i + 40, len(jobs))}/{len(jobs)}  tokens in={stats['in']:,}  {time.time() - t0:.0f}s", flush=True)
 
         # pass 2: fluency on likely steps
-        nodes = {n["id"]: n for sid, g in base.items() for n in g["nodes"]}
+        nodes = {(sid.rsplit("_", 1)[1], n["id"]): n for sid, g in base.items() for n in g["nodes"]}
         need = [v for v in cache.values() if v["step"] >= 0.5 and "fluency" not in v
-                and (not only or f"{v['subject']}_{v['target_grade']}" in only)]
-        by_target: dict[str, list] = {}
+                and f"{v['subject']}_{v['target_grade']}" in only]
+        by_target: dict[tuple, list] = {}
         for v in need:
-            by_target.setdefault(v["target"], []).append(v)
+            by_target.setdefault((v["target_grade"], v["target"]), []).append(v)
 
-        async def run_f(tid, rows):
-            t = nodes[tid]
+        async def run_f(tkey, rows):
+            t = nodes[tkey]
             qs = {}
             for k, v in enumerate(rows):
-                qs[f"fluency_{k}"] = fluency_question(nodes[v["source"]], v["source_grade"])["fluency"]
+                qs[f"fluency_{k}"] = fluency_question(nodes[(v["source_grade"], v["source"])], v["source_grade"])["fluency"]
             ans = await _post(client, sem, {"target_skill": _skill(t, rows[0]["target_grade"])}, qs, stats)
             for k, v in enumerate(rows):
                 v["fluency"] = ans[f"fluency_{k}"]["noul"]
@@ -189,10 +209,37 @@ async def judge(only: list[str] | None) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("cmd", choices=["dump", "judge"])
-    p.add_argument("--only", nargs="*")
+    p.add_argument("cmd", choices=["dump", "judge", "estimate"])
+    p.add_argument("--subjects", nargs="+", default=SUBJECTS, choices=SUBJECTS)
+    p.add_argument("--grades", nargs="*", help="target grades to judge (default: all published)")
+    p.add_argument("--window", type=int, default=WINDOW)
     a = p.parse_args()
-    asyncio.run(dump() if a.cmd == "dump" else judge(a.only))
+    if a.cmd == "dump":
+        asyncio.run(dump(a.subjects))
+    elif a.cmd == "estimate":
+        estimate(a.subjects, a.grades, a.window)
+    else:
+        asyncio.run(judge(a.subjects, a.grades, a.window))
+
+
+def estimate(subjects: list[str], targets: list[str] | None, window: int) -> None:
+    """Pairs still to judge, and a cost estimate at the pilot's rate ($1.70 / 131k pairs)."""
+    base = json.loads((OUT / "baseline_graphs.json").read_text(encoding="utf-8"))
+    cache_path = OUT / "jev_answers.json"
+    cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {}
+    done = {_qkey(v["source_grade"], v["source"], v["target_grade"], v["target"]) for v in cache.values()}
+    total = 0
+    for subject in subjects:
+        grades = [g for g in GRADES if f"{subject}_{g}" in base]
+        for gi, tg in enumerate(grades):
+            if targets and tg not in targets:
+                continue
+            pool = [(n, g) for g in grades[max(0, gi - window): gi + 1] for n in base[f"{subject}_{g}"]["nodes"]]
+            n = sum(1 for t in base[f"{subject}_{tg}"]["nodes"] for c, cg in pool
+                    if not (c["id"] == t["id"] and cg == tg) and _qkey(cg, c["id"], tg, t["id"]) not in done)
+            total += n
+            print(f"{subject}_{tg}: {len(base[f'{subject}_{tg}']['nodes'])} subskills, {n:,} pairs to judge")
+    print(f"total {total:,} pairs, about ${total / 131_000 * 1.70:.2f}")
 
 
 if __name__ == "__main__":
