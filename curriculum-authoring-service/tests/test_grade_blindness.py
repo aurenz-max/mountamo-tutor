@@ -358,3 +358,11 @@ def test_draft_ref_normalizes_grade(monkeypatch):
 
     # First document() call is the GRADE bucket; both must normalise equal.
     assert rec_short[0] == rec_long[0] == "Kindergarten"
+
+
+def test_grade_doc_key_is_the_one_firestore_form():
+    """Every spelling maps to the doc ids the backend reads; long forms never leak into paths."""
+    from app.models.grades import grade_doc_key
+    assert grade_doc_key("K") == grade_doc_key("Kindergarten") == "Kindergarten"
+    assert grade_doc_key("1") == grade_doc_key("1st Grade") == "1"
+    assert grade_doc_key("3rd Grade") == "3"

@@ -10,7 +10,7 @@ from google.oauth2 import service_account
 import os
 
 from app.core.config import settings
-from app.models.grades import normalise_grade
+from app.models.grades import grade_doc_key, normalise_grade
 
 logger = logging.getLogger(__name__)
 
@@ -394,7 +394,9 @@ class CurriculumFirestore:
         The grade subcollection allows O(1) grade-scoped lookups.
         """
         try:
-            grade = curriculum_data.get("grade", "K")
+            # Canonical doc key: a raw grade field ("K", "1st Grade") would
+            # create a second published doc for a grade the backend never reads.
+            grade = grade_doc_key(curriculum_data.get("grade") or "")
             firestore_data = self._prepare_firestore_data(curriculum_data)
 
             # Ensure grade document exists with metadata

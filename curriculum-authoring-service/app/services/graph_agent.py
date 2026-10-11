@@ -224,7 +224,7 @@ class CurriculumGraphAgentService:
         # Invalidate caches
         self._health_cache.pop(subject_id, None)
         try:
-            await self.cache.invalidate_cache(subject_id, "draft")
+            await self.cache.invalidate_cache(subject_id, version_type="draft")
         except Exception:
             pass
 
@@ -300,7 +300,7 @@ class CurriculumGraphAgentService:
         # Invalidate caches
         self._health_cache.pop(subject_id, None)
         try:
-            await self.cache.invalidate_cache(subject_id, "draft")
+            await self.cache.invalidate_cache(subject_id, version_type="draft")
         except Exception:
             pass
 

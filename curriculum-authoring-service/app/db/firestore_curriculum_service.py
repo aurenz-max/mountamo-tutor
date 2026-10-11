@@ -16,6 +16,7 @@ from google.oauth2 import service_account
 import os
 
 from app.core.config import settings
+from app.models.grades import grade_doc_key
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +90,11 @@ class FirestoreCurriculumSync:
 
     def _graph_ref(self, grade: str, subject_id: str):
         """Get the curriculum_graphs subject document reference."""
+        # Canonical doc key; edges keyed "1st Grade" or "K" are invisible to
+        # the backend, which reads curriculum_graphs/{Kindergarten|1..12}.
         return (
             self.client.collection("curriculum_graphs")
-            .document(grade)
+            .document(grade_doc_key(grade))
             .collection("subjects")
             .document(subject_id)
         )
@@ -105,12 +108,23 @@ class FirestoreCurriculumSync:
         return self._graph_ref(grade, subject_id).collection("suggestions")
 
     async def _resolve_grade(self, subject_id: str) -> Optional[str]:
-        """Resolve grade for a subject by checking draft/published docs."""
+        """The grade of a subject that exists in exactly ONE grade (e.g.
+        ENGINEERING_G5). Core subjects exist in every grade, so without an
+        explicit grade they return None: callers must pass ?grade= rather than
+        land edges in whichever grade doc streams first ("1")."""
+        found = set()
         for collection_name in ("curriculum_drafts", "curriculum_published"):
             for grade_doc in self.client.collection(collection_name).stream():
                 doc = grade_doc.reference.collection("subjects").document(subject_id).get()
                 if doc.exists:
-                    return grade_doc.id
+                    try:
+                        found.add(grade_doc_key(grade_doc.id))
+                    except ValueError:
+                        continue
+        if len(found) == 1:
+            return found.pop()
+        if found:
+            logger.error(f"_resolve_grade({subject_id}): in grades {sorted(found)}; pass grade explicitly")
         return None
 
     # ========================================================================
@@ -283,6 +297,48 @@ class FirestoreCurriculumSync:
         except Exception as e:
             logger.error(f"Failed to publish edges for {subject_id}: {e}")
             return 0
+
+
+    async def prune_dangling_edges(self, subject_id: str, grade: str) -> List[str]:
+        """Delete published edges whose source or target is not a node of the
+        published subject (skill or subskill). Returns the deleted edge ids.
+
+        A curriculum edit that removes subskills used to leave their edges in
+        place; as prerequisites they locked their targets, and the backend's
+        read-time filter was the only defence."""
+        key = grade_doc_key(grade)
+        pub = (
+            self.client.collection("curriculum_published").document(key)
+            .collection("subjects").document(subject_id).get()
+        )
+        if not pub.exists:
+            logger.error(f"prune_dangling_edges: no published {subject_id} at grade {key}; nothing pruned")
+            return []
+        data = pub.to_dict() or {}
+        node_ids = set((data.get("subskill_index") or {}).keys())
+        for unit in data.get("curriculum") or []:
+            for skill in unit.get("skills") or []:
+                if skill.get("skill_id"):
+                    node_ids.add(skill["skill_id"])
+                for ss in skill.get("subskills") or []:
+                    if ss.get("subskill_id"):
+                        node_ids.add(ss["subskill_id"])
+        if not node_ids:
+            logger.error(f"prune_dangling_edges: published {subject_id} at {key} has no nodes; nothing pruned")
+            return []
+        deleted: List[str] = []
+        batch = self.client.batch()
+        for doc in self._edges_collection(key, subject_id).stream():
+            e = doc.to_dict() or {}
+            if e.get("source_entity_id") not in node_ids or e.get("target_entity_id") not in node_ids:
+                batch.delete(doc.reference)
+                deleted.append(doc.id)
+                if len(deleted) % 450 == 0:
+                    batch.commit()
+                    batch = self.client.batch()
+        if len(deleted) % 450:
+            batch.commit()
+        return deleted
 
 
 # Global instance

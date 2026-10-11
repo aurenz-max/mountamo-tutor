@@ -27,7 +27,7 @@ from app.db.firestore_curriculum_service import firestore_curriculum_sync
 logger = logging.getLogger(__name__)
 
 # Re-export from canonical grades module
-from app.models.grades import GRADE_LABELS, grades_match, normalise_grade
+from app.models.grades import GRADE_LABELS, grades_match, normalise_grade, grade_doc_key
 
 # Fields stored on unit entries for authoring lifecycle only
 AUTHORING_METADATA_FIELDS = {
@@ -68,15 +68,14 @@ class DraftCurriculumService:
     def _ref(self, grade: str, subject_id: str):
         """Get doc reference for a draft subject.
 
-        Normalises grade to its canonical long form (e.g. "K" → "Kindergarten")
-        before building the Firestore path, so a write with ``grade="K"`` lands
-        on the SAME doc the reader resolves via _grade_variants() rather than
-        silently creating a divergent ``curriculum_drafts/K/…`` bucket.
+        Keys by grade_doc_key ("Kindergarten", "1".."12"), the same doc ids
+        curriculum_published and curriculum_graphs use. The old long-form key
+        ("1st Grade") forked every grade into twin draft buckets.
         """
         return (
             self._client
             .collection(self.COLLECTION)
-            .document(normalise_grade(grade))
+            .document(grade_doc_key(grade))
             .collection("subjects")
             .document(subject_id)
         )
@@ -88,7 +87,7 @@ class DraftCurriculumService:
 
     async def save_draft(self, grade: str, subject_id: str, data: Dict[str, Any]) -> None:
         """Write the full draft document (upsert)."""
-        canonical = normalise_grade(grade)
+        canonical = grade_doc_key(grade)
         # Ensure grade doc exists (canonical key so it matches _ref's path)
         self._client.collection(self.COLLECTION).document(canonical).set(
             {"grade": canonical}, merge=True
@@ -110,7 +109,7 @@ class DraftCurriculumService:
         if grade:
             docs = (
                 self._client.collection(self.COLLECTION)
-                .document(grade)
+                .document(grade_doc_key(grade))
                 .collection("subjects")
                 .stream()
             )
@@ -157,7 +156,7 @@ class DraftCurriculumService:
         doc = {
             "subject_id": subject_id,
             "subject_name": subject_name,
-            "grade": normalise_grade(grade),
+            "grade": grade_doc_key(grade),
             "version_id": version_id,
             "version_number": 1,
             "created_at": now,
@@ -852,7 +851,8 @@ class DraftCurriculumService:
     async def _get_current_published(self, grade: str, subject_id: str, graph_service) -> Optional[Dict]:
         """Read the currently published curriculum document."""
         try:
-            doc_ref = graph_service.curriculum_published.document(grade).collection("subjects").document(subject_id)
+            # Canonical key: a raw "K" found no doc, so publish skipped lineage detection.
+            doc_ref = graph_service.curriculum_published.document(grade_doc_key(grade)).collection("subjects").document(subject_id)
             doc = doc_ref.get()
             return doc.to_dict() if doc.exists else None
         except Exception as e:

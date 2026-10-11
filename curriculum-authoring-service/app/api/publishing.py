@@ -38,10 +38,12 @@ async def publish_subject(
 ):
     """Publish all draft changes for a subject.
 
-    Single atomic operation:
-      1. Copy draft → curriculum_published (lineage-validated, accepted units only)
-      2. Publish graph edges (set is_draft=False)
-      3. Update version record
+    Order matters (not a transaction, so a failure must stop early):
+      1. Copy draft → curriculum_published (lineage-validated, accepted units
+         only). A lineage block raises here, BEFORE any edge goes live.
+      2. Version record + publish graph edges (set is_draft=False)
+      3. Delete published edges whose endpoint is not in the new node set, so
+         a removed subskill cannot leave gating edges behind
 
     The backend JIT-flattens the graph on first read from the hierarchical
     collections, so no flat cache rebuild is needed here.
@@ -53,15 +55,20 @@ async def publish_subject(
     publish_request.subject_id = subject_id
 
     try:
-        # 1. Version bookkeeping + edge publishing
-        result = await version_control.publish(publish_request, "local-dev-user", grade=grade)
-
-        # 2. Deploy draft → curriculum_published (lineage-validated)
+        # 1. Deploy draft → curriculum_published (lineage-validated)
         await curriculum_manager.deploy_curriculum_to_firestore(
             grade=grade,
             subject_id=subject_id,
             deployed_by="auto-publish"
         )
+
+        # 2. Version bookkeeping + edge publishing
+        result = await version_control.publish(publish_request, "local-dev-user", grade=grade)
+
+        # 3. Edges must point at published nodes
+        pruned = await firestore_curriculum_sync.prune_dangling_edges(subject_id, grade)
+        if pruned:
+            logger.warning(f"Publish {subject_id} grade {grade}: deleted {len(pruned)} edges to removed nodes")
 
         return result
 

@@ -42,7 +42,7 @@ async def create_edge(
 
     # Invalidate draft graph cache
     try:
-        await graph_cache_manager.invalidate_cache(subject_id, "draft")
+        await graph_cache_manager.invalidate_cache(subject_id, version_type="draft")
     except Exception as e:
         logger.warning(f"Cache invalidation failed (non-blocking): {e}")
 

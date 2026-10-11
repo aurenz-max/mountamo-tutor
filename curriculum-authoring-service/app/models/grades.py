@@ -55,6 +55,24 @@ def to_short_grade(grade: str) -> str:
     return _REVERSE_ALIASES.get(grade, grade)
 
 
+def grade_doc_key(grade: str) -> str:
+    """The Firestore grade doc id for any accepted grade spelling.
+
+    This is the ONE form used in Firestore paths, in curriculum_published,
+    curriculum_drafts and curriculum_graphs alike: "Kindergarten" for K,
+    digits for 1-12 ("1", not "1st Grade"; "K" is not a doc id). The student
+    backend reads exactly these keys (backend services/curriculum_scope.py).
+    Long-form keys ("1st Grade") split drafts into twin buckets and let a
+    publish create a second curriculum_published doc for the same grade.
+    """
+    long_form = normalise_grade(str(grade).strip())
+    if long_form == "Kindergarten":
+        return "Kindergarten"
+    if long_form == "Pre-K":
+        return "Pre-K"
+    return _REVERSE_ALIASES[long_form]
+
+
 def grades_match(a: str, b: str) -> bool:
     """Return True if two grade strings refer to the same grade level.
 
