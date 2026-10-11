@@ -1,0 +1,115 @@
+{
+ "_note": "User-labelled literacy pairs, 2026-10-11. Fill label: R (step inside) | E (easier version learned first) | H (helpful, not required) | N (not a prerequisite); speed: F (must be fast) | S (slow is fine) | null.",
+ "pairs": {
+  "1": {
+   "pair": "LA001-03-B>LA001-01-a",
+   "label": "R",
+   "speed": "F"
+  },
+  "2": {
+   "pair": "LA001-03-D>LA001-01-a",
+   "label": "H",
+   "speed": null
+  },
+  "3": {
+   "pair": "LA001-03-C>LA001-01-b",
+   "label": "H",
+   "speed": null
+  },
+  "4": {
+   "pair": "LA001-01-a>LA001-01-b",
+   "label": "E",
+   "speed": "S"
+  },
+  "5": {
+   "pair": "LA001-01-a>LA003-02-a",
+   "label": "R",
+   "speed": "F"
+  },
+  "6": {
+   "pair": "LA001-07-a>LA003-02-a",
+   "label": "H",
+   "speed": null
+  },
+  "7": {
+   "pair": "LA001-03-A>LA001-03-B",
+   "label": "H",
+   "speed": null
+  },
+  "8": {
+   "pair": "LA002-02-b>LA001-01-a",
+   "label": "H",
+   "speed": null
+  },
+  "9": {
+   "pair": "LA001-01-a>LA002-02-b",
+   "label": "H",
+   "speed": null
+  },
+  "10": {
+   "pair": "LA001-03-B>LA002-02-a",
+   "label": "R",
+   "speed": "S"
+  },
+  "11": {
+   "pair": "LA005-03-C>LA001-01-a",
+   "label": "H",
+   "speed": null
+  },
+  "12": {
+   "pair": "LA001-01-C>LA001-03-D",
+   "label": "N",
+   "speed": null
+  },
+  "13": {
+   "pair": "LA003-02-a>LA003-04-b",
+   "label": "H",
+   "speed": null
+  },
+  "14": {
+   "pair": "LA001-01-a>LA003-04-a",
+   "label": "H",
+   "speed": null
+  },
+  "15": {
+   "pair": "LA007-02-a>LA003-05-a",
+   "label": "H",
+   "speed": null
+  },
+  "16": {
+   "pair": "LA006-01-C>LA003-05-a",
+   "label": "E",
+   "speed": "S"
+  },
+  "17": {
+   "pair": "LA004-01-A>LA004-04-F",
+   "label": "H",
+   "speed": null
+  },
+  "18": {
+   "pair": "LA004-02-C>LA006-01-a",
+   "label": "E",
+   "speed": "S"
+  },
+  "19": {
+   "pair": "LA002-03-a>LA002-04-b",
+   "label": "H",
+   "speed": null
+  },
+  "20": {
+   "pair": "LA001-03-E>LA001-07-b",
+   "label": "R",
+   "speed": "F"
+  },
+  "21": {
+   "pair": "LA001-04-a>LA001-04-b",
+   "label": "H",
+   "speed": null
+  },
+  "22": {
+   "pair": "LA005-04-a>LA005-04-b",
+   "label": "R",
+   "speed": "S"
+  }
+ }
+}
