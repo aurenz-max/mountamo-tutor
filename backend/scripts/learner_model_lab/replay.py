@@ -74,28 +74,35 @@ def auc(pairs) -> float | None:
     return wins / (len(pos) * len(neg))
 
 
-def replay(g, evidence: List[Evidence], seed: int = 0) -> Dict:
-    eng = {"today": BaselineEngine(g), "today_first": BaselineEngine(g), "bayes": B.BayesEngine(g, seed=seed),
-           "layered": LayeredEngine(g, seed=seed)}
+def replay(g, evidence: List[Evidence], seed: int = 0, engines=ENGINES) -> Dict:
+    make = {"today": lambda: BaselineEngine(g), "today_first": lambda: BaselineEngine(g),
+            "bayes": lambda: B.BayesEngine(g, seed=seed), "layered": lambda: LayeredEngine(g, seed=seed)}
+    eng = {k: make[k]() for k in engines}
     pairs = {k: [] for k in eng}
     first_pairs = {k: [] for k in eng}   # the first review on each subskill
+    after_easy = {k: [] for k in eng}    # reviews of k after an easier form of k was practised
+    e_parents: Dict[int, set] = {}
+    for j in range(g.n):
+        for k, _ in g.easier_children(j, g.parents):
+            e_parents.setdefault(k, set()).add(j)
     seen = set()
     for e in evidence:
         a, c = get_item_discrimination(e.primitive, e.mode)
         it = Item(node=e.node, mode=e.mode, beta=get_prior_beta(e.primitive, e.mode), a=a, c=c)
         new = e.node not in seen
+        easy_before = bool(e_parents.get(e.node, set()) & seen)
         seen.add(e.node)
         for k, en in eng.items():
             p = en.predict(it)
             pairs[k].extend((p, y) for y in e.first)
             if new:
                 first_pairs[k].extend((p, y) for y in e.first)
+            if easy_before:
+                after_easy[k].extend((p, y) for y in e.first)
         first = 10.0 * sum(e.first) / len(e.first)
         n = n_eff(len(e.first))
-        eng["today"].observe(it, e.final_score, n)
-        eng["today_first"].observe(it, first, n)
-        eng["bayes"].observe(it, first, n)
-        eng["layered"].observe(it, first, n)
+        for k, en in eng.items():
+            en.observe(it, e.final_score if k == "today" else first, n)
     out = {}
     for k, pr in pairs.items():
         miss = [p for p, y in pr if not y]
@@ -106,8 +113,41 @@ def replay(g, evidence: List[Evidence], seed: int = 0) -> Dict:
                   "first_loss": st.mean(xent(y, p) for p, y in first_pairs[k]) if first_pairs[k] else None,
                   "first_p": st.mean(p for p, _ in first_pairs[k]) if first_pairs[k] else None,
                   "first_acc": st.mean(y for _, y in first_pairs[k]) if first_pairs[k] else None,
-                  "first_n": len(first_pairs[k])}
+                  "first_n": len(first_pairs[k]),
+                  "after_easy_loss": st.mean(xent(y, p) for p, y in after_easy[k]) if after_easy[k] else None,
+                  "after_easy_n": len(after_easy[k]),
+                  "after_easy_acc": st.mean(y for _, y in after_easy[k]) if after_easy[k] else None,
+                  "after_easy_p": st.mean(p for p, _ in after_easy[k]) if after_easy[k] else None}
     return out
+
+
+# ── transfer: how much easier-form practice transfers, measured on real data ─
+
+def _transfer_job(job):
+    subject, transfer, path = job
+    B.TRANSFER = transfer
+    g = load(subject)
+    ev = load_reviews(Path(path), g)
+    return transfer, replay(g, ev, 0, engines=("layered",))["layered"]
+
+
+def run_transfer(a) -> None:
+    """Replay a real student's reviews through the two-layer model at several
+    TRANSFER values. The value whose predictions fit best (lowest log loss,
+    above all on subskills met after their easier form) is the data's
+    estimate of how much easier-form practice transfers."""
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    path = LAB / f"reviews_{a.student}.json"
+    jobs = [(a.subject, t, str(path)) for t in a.values]
+    rows = []
+    with ProcessPoolExecutor(max_workers=len(jobs)) as pool:
+        for t, res in pool.map(_transfer_job, jobs):
+            rows.append((t, res))
+            print(f"transfer {t:.2f}: loss {res['loss']:.4f} | after easier form: n={res['after_easy_n']} "
+                  f"loss {res['after_easy_loss'] or 0:.4f} predicted {res['after_easy_p'] or 0:.3f} actual {res['after_easy_acc'] or 0:.3f}", flush=True)
+    out = LAB / f"transfer-{a.subject.lower()}-{a.student}.json"
+    out.write_text(json.dumps(rows, indent=1), encoding="utf-8")
+    print(f"-> {out}")
 
 
 # ── sim ─────────────────────────────────────────────────────────────────────
@@ -220,10 +260,14 @@ def main() -> None:
     r = sub.add_parser("real")
     r.add_argument("--subject", default="MATHEMATICS")
     r.add_argument("--perms", type=int, default=3)
+    tr = sub.add_parser("transfer")
+    tr.add_argument("--subject", default="MATHEMATICS")
+    tr.add_argument("--student", type=int, default=1004)
+    tr.add_argument("--values", type=float, nargs="+", default=[0.0, 0.15, 0.3, 0.6, 1.0])
     pl = sub.add_parser("pull")
     pl.add_argument("--student", type=int, default=1004)
     a = ap.parse_args()
-    {"sim": run_sim, "real": run_real, "pull": run_pull}[a.cmd](a)
+    {"sim": run_sim, "real": run_real, "pull": run_pull, "transfer": run_transfer}[a.cmd](a)
 
 
 if __name__ == "__main__":
