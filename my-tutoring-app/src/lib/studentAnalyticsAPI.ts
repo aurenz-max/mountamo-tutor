@@ -283,6 +283,115 @@ export interface ProfileSkillState {
   states: Record<string, number>;
 }
 
+// ── Learner model (two-layer graph model, shadow — WORKSTREAMS 7.4d) ─────────
+
+export interface LearnerModelRow {
+  key: string;
+  subskill_id: string;
+  grade: string;
+  skill_id: string;
+  /** Published parent-facing sentence, else the first line of the author text. */
+  label: string;
+  unit: string;
+  p_mastered: number;
+  p_right: number;
+  /** P(not mastered and every prerequisite mastered). */
+  p_ready: number;
+  seen: boolean;
+  answers: number;
+}
+
+export interface LearnerModelSubject {
+  subject: string;
+  graph_version: string;
+  validation: { status?: string; [k: string]: unknown };
+  observations: number;
+  updated_at?: string;
+  general_ability?: { mean: number | null; sd: number | null };
+  counts: { subskills?: number; seen?: number; mastered?: number; mastered_seen?: number; ready?: number };
+  ready: LearnerModelRow[];
+  working_on: LearnerModelRow[];
+  mastered: LearnerModelRow[];
+}
+
+export interface LearnerModelResponse {
+  student_id: number;
+  subjects: LearnerModelSubject[];
+}
+
+export interface LearnerInfluenceRow {
+  subject: string;
+  key: string;
+  label: string;
+  unit: string;
+  grade: string;
+  /** [before, after] */
+  pm: [number, number];
+  pc: [number, number];
+  d_pc: number;
+  d_pm: number;
+  caused_by: string[];
+  relations: string[];
+}
+
+export interface LearnerInfluenceResponse {
+  since: string;
+  until: string | null;
+  answers: number;
+  practised: LearnerInfluenceRow[];
+  upstream: LearnerInfluenceRow[];
+  downstream: LearnerInfluenceRow[];
+  per_answer: Array<{
+    ts: string;
+    subject: string;
+    source: string;
+    cause: { key: string; label: string; primitive_type: string | null; eval_mode: string | null; x: number; p_right_predicted: number };
+    moved: Array<{ key: string; rel: string; hops: number; pm: [number, number]; pc: [number, number]; label?: string }>;
+    general_shift: number;
+  }>;
+  /** Per practised subskill, what its answers did along the prerequisite graph. */
+  by_cause?: LearnerCause[];
+  /** Subskills that became ready to learn during the window. */
+  unlocked?: Array<{ key: string; label: string; grade: string; ready: [number, number] }>;
+}
+
+/** A graph neighbour a practised subskill moved. */
+export interface LearnerCauseLink {
+  key: string;
+  label: string;
+  grade: string;
+  rel: 'prerequisite' | 'unlocks';
+  hops: number | null;
+  /** [before, after] chance of getting it right */
+  pc: [number, number];
+  pm: [number, number];
+  /** raw move in pc */
+  d_pc: number;
+  /** move beyond the general-ability shift every subskill took */
+  d_own: number;
+  became_ready: boolean;
+}
+
+export interface LearnerCause {
+  key: string;
+  subject: string;
+  label: string;
+  grade: string;
+  answers: number;
+  /** mean first-try fraction over the window's answers */
+  first_try: number;
+  /** [before, after] chance of getting it right; null if not recorded */
+  pc: [number, number] | null;
+  /** prerequisites the answers made more likely */
+  foundations: LearnerCauseLink[];
+  /** prerequisites the answers made less likely */
+  check: LearnerCauseLink[];
+  /** next skills brought within reach */
+  next: LearnerCauseLink[];
+  /** next skills pushed further away */
+  further: LearnerCauseLink[];
+}
+
 export interface StudentProfileResponse {
   student_id: number;
   /** The student's grade of record — the Snapshot's default grade filter. Null if unset. */
@@ -779,6 +888,29 @@ export const analyticsApi = {
     const queryString = params.toString();
     const endpoint = `/api/analytics/student/${studentId}/profile${queryString ? `?${queryString}` : ''}`;
     return authApi.get<StudentProfileResponse>(endpoint);
+  },
+
+  // Two-layer learner model state (shadow): mastered / ready-next / working-on
+  // per subject, read from the stored state (no replay).
+  async getLearnerModel(studentId: number, options: { subject?: string; top?: number } = {}): Promise<LearnerModelResponse> {
+    const params = new URLSearchParams();
+    if (options.subject) params.append('subject', options.subject);
+    if (options.top) params.append('top', String(options.top));
+    const q = params.toString();
+    return authApi.get<LearnerModelResponse>(`/api/analytics/student/${studentId}/learner-model${q ? `?${q}` : ''}`);
+  },
+
+  // What the answers since `since` (a lesson or Pulse start) did to the model:
+  // practised subskills, prerequisites (upstream) and next skills (downstream).
+  async getLearnerInfluence(
+    studentId: number,
+    options: { since: string; until?: string; subject?: string; top?: number },
+  ): Promise<LearnerInfluenceResponse> {
+    const params = new URLSearchParams({ since: options.since });
+    if (options.until) params.append('until', options.until);
+    if (options.subject) params.append('subject', options.subject);
+    if (options.top) params.append('top', String(options.top));
+    return authApi.get<LearnerInfluenceResponse>(`/api/analytics/student/${studentId}/learner-model/influence?${params}`);
   },
 
   // Progress report: practice, the grade map, masteries, struggles, interests.

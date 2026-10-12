@@ -31,9 +31,13 @@ import { useEvaluationContext } from '../evaluation';
 import type { DemonstratedSkill, PrimitiveEvaluationResult } from '../evaluation';
 import {
   analyticsApi,
+  type LearnerInfluenceResponse,
+  type LearnerInfluenceRow,
   type SessionProgressTarget,
   type SessionTargetObjective,
 } from '@/lib/studentAnalyticsAPI';
+import MasteryBands from './MasteryBands';
+import LessonImpact from './LessonImpact';
 import {
   LuminaCard,
   LuminaCardContent,
@@ -73,10 +77,6 @@ function toCurriculumGrade(gradeLevel?: string): string | undefined {
   if (gradeLevel === 'kindergarten') return 'Kindergarten';
   if (gradeLevel === 'preschool') return 'Preschool';
   return undefined;
-}
-
-function formatPct(p: number | null): string {
-  return p === null ? '—' : `${Math.round(p * 100)}%`;
 }
 
 /**
@@ -339,10 +339,6 @@ const ProgressRow: React.FC<{ row: SessionProgressTarget; fallbackDescription?: 
   fallbackDescription,
 }) => {
   const description = row.description || fallbackDescription || humanize(row.subskillId);
-  const deltaPts =
-    row.pBefore !== null && row.pAfter !== null
-      ? Math.round((row.pAfter - row.pBefore) * 100)
-      : null;
   const mastered = row.gateAdvanced && row.gateAfter >= 4;
 
   return (
@@ -358,18 +354,9 @@ const ProgressRow: React.FC<{ row: SessionProgressTarget; fallbackDescription?: 
         </div>
       </div>
       <div className="flex items-center gap-3 flex-shrink-0">
-        <div className="text-sm font-mono">
-          <span className="text-slate-500">{row.firstMeasurement ? 'new' : formatPct(row.pBefore)}</span>
-          <span className="text-slate-600 mx-1.5">{'→'}</span>
-          <span className={`font-bold ${accentText[row.pAfter !== null && row.pAfter >= 0.7 ? 'emerald' : 'amber']}`}>
-            {formatPct(row.pAfter)}
-          </span>
-          {deltaPts !== null && deltaPts !== 0 && (
-            <span className={`ml-1.5 text-xs ${deltaPts > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {deltaPts > 0 ? '+' : ''}{deltaPts}
-            </span>
-          )}
-        </div>
+        {row.pAfter !== null && (
+          <MasteryBands p={row.pAfter} before={row.firstMeasurement || row.pBefore === null ? undefined : row.pBefore} />
+        )}
         {mastered ? (
           <LuminaBadge accent="emerald">Mastered!</LuminaBadge>
         ) : row.gateAdvanced ? (
@@ -383,6 +370,41 @@ const ProgressRow: React.FC<{ row: SessionProgressTarget; fallbackDescription?: 
     </div>
   );
 };
+
+/** One skill the learner model moved this lesson: band before -> after. */
+const ModelRow: React.FC<{ row: LearnerInfluenceRow; gate?: SessionProgressTarget }> = ({ row, gate }) => (
+  <div className="rounded-xl bg-white/[0.02] border border-white/5 px-4 py-3 flex items-center gap-4">
+    <div className="flex-1 min-w-0">
+      <div className="text-sm text-slate-200 leading-snug line-clamp-2">{row.label}</div>
+      {row.unit && <div className="text-xs text-slate-500 mt-1">{row.unit}</div>}
+    </div>
+    <div className="flex items-center gap-3 flex-shrink-0">
+      <MasteryBands p={row.pc[1]} before={row.pc[0]} />
+      {gate?.gateAdvanced && gate.gateAfter >= 4 && <LuminaBadge accent="emerald">Mastered!</LuminaBadge>}
+    </div>
+  </div>
+);
+
+/** Lifted skills the student did not practise: one line each. */
+const RippleList: React.FC<{ title: string; lede: string; rows: LearnerInfluenceRow[] }> = ({ title, lede, rows }) =>
+  rows.length === 0 ? null : (
+    <div>
+      <LuminaSectionLabel>{title}</LuminaSectionLabel>
+      <p className="text-xs text-slate-500 mt-1 mb-2">{lede}</p>
+      <div className="space-y-1">
+        {rows.map((r) => (
+          <div key={r.key} className="rounded-lg bg-white/[0.02] border border-white/5 px-3 py-2 flex items-center gap-3">
+            <span className="text-sm text-slate-300 leading-snug line-clamp-2 flex-1 min-w-0">{r.label}</span>
+            <MasteryBands p={r.pc[1]} before={r.pc[0]} hideLabel />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+/** Keep skills that rose by at least 2 points, biggest rise first. */
+const risen = (rows: LearnerInfluenceRow[], n: number) =>
+  rows.filter((r) => r.d_pc >= 0.02).sort((a, b) => b.d_pc - a.d_pc).slice(0, n);
 
 const NEXT_KIND_LABEL: Record<string, { label: string; accent: LuminaAccent }> = {
   confirm: { label: 'ready to confirm', accent: 'emerald' },
@@ -433,9 +455,10 @@ const LessonSummaryModal: React.FC<{
   topic?: string;
   progress: SessionProgressTarget[];
   progressDescriptions: Map<string, string>;
+  influence: LearnerInfluenceResponse | null;
   nextPicks: SessionTargetObjective[];
   onClose: () => void;
-}> = ({ stats, groups, breakdown, engagement, topic, progress, progressDescriptions, nextPicks, onClose }) => {
+}> = ({ stats, groups, breakdown, engagement, topic, progress, progressDescriptions, influence, nextPicks, onClose }) => {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -541,7 +564,30 @@ const LessonSummaryModal: React.FC<{
 
           {/* Progress delta — the loop made visible: how the model's estimate
               of each targeted subskill moved because of THIS session. */}
-          {progress.length > 0 && (
+          {influence && (influence.by_cause?.length ?? 0) > 0 ? (
+            <LessonImpact influence={influence} />
+          ) : influence && influence.practised.length > 0 ? (
+            <div className="space-y-5">
+              <div>
+                <LuminaSectionLabel>Your progress</LuminaSectionLabel>
+                <p className="text-xs text-slate-500 mt-1 mb-2">
+                  Your chance of getting each skill right, before this lesson and now.
+                </p>
+                <div className="space-y-2">
+                  {influence.practised.map((row) => (
+                    <ModelRow key={row.key} row={row}
+                      gate={progress.find((p) => row.key.endsWith(`:${p.subskillId}`))} />
+                  ))}
+                </div>
+              </div>
+              <RippleList title="Next skills got easier"
+                lede="These build on what you practised, so they are within reach now."
+                rows={risen(influence.downstream, 3)} />
+              <RippleList title="Foundations confirmed"
+                lede="Doing well today also shows these earlier skills are in place."
+                rows={risen(influence.upstream, 3)} />
+            </div>
+          ) : progress.length > 0 && (
             <div>
               <LuminaSectionLabel>Your progress</LuminaSectionLabel>
               <div className="mt-2 space-y-2">
@@ -618,6 +664,7 @@ export const LessonSummary: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [progress, setProgress] = useState<SessionProgressTarget[]>([]);
   const [nextPicks, setNextPicks] = useState<SessionTargetObjective[]>([]);
+  const [influence, setInfluence] = useState<LearnerInfluenceResponse | null>(null);
 
   const results = context?.submittedResults ?? [];
   const log = context?.demonstratedSkillLog ?? [];
@@ -687,10 +734,26 @@ export const LessonSummary: React.FC = () => {
       .getSessionProgress(studentId, { subject, grade, since, targets })
       .then((r) => setProgress(r.targets ?? []))
       .catch(() => setProgress([]));
+    // The learner model updates in the background after each submit, so the
+    // last answer can land a moment after the modal opens: ask once more then.
+    let cancelled = false;
+    const loadInfluence = (retry: boolean) =>
+      analyticsApi
+        .getLearnerInfluence(studentId, { since, top: 6 })
+        .then((r) => {
+          if (cancelled) return;
+          setInfluence(r);
+          if (retry && r.answers < results.length) setTimeout(() => loadInfluence(false), 2000);
+        })
+        .catch(() => !cancelled && setInfluence(null));
+    loadInfluence(true);
     analyticsApi
       .getSessionTargets(studentId, { subject, grade, count: 3 })
       .then((r) => setNextPicks(r.objectives ?? []))
       .catch(() => setNextPicks([]));
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -739,6 +802,7 @@ export const LessonSummary: React.FC = () => {
           topic={context?.topic}
           progress={progress}
           progressDescriptions={progressDescriptions}
+          influence={influence}
           nextPicks={nextPicks}
           onClose={() => setOpen(false)}
         />
