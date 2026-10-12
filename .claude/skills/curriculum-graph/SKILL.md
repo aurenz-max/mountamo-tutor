@@ -120,16 +120,36 @@ activity-worded subskill ("sort cards with 90% accuracy") is fixed in the
 curriculum through draft → publish, never by rewording the Jev question
 (telling Jev "judge the capability" made literacy worse, 0.90).
 
+**Publish — the handoff to the app.** The graph lives in Firestore as its own
+collection; it never touches `curriculum_published`, `curriculum_graphs` or
+the typed edges.
+```
+learner_graphs/{SUBJECT}                                  {active_version, previous_version}
+learner_graphs/{SUBJECT}/versions/{vid}                   method, params, counts, validation
+learner_graphs/{SUBJECT}/versions/{vid}/nodes/{grade}:{subskill_id}
+    grade ("Kindergarten" | "1".."12"), subskill_id, skill_id, unit_id, label,
+    parents: [{key, relation R|E|related, step, easier_form, fluency, score, in_model}]
+```
+```bash
+venv/Scripts/python -m scripts.graph_jev_pilot.publish_learner_graph plan     # build from jev_answers.json; nothing written
+venv/Scripts/python -m scripts.graph_jev_pilot.publish_learner_graph apply    # new version per subject, activated last
+venv/Scripts/python -m scripts.graph_jev_pilot.publish_learner_graph verify   # read back through the backend reader
+```
+Rollback: set `learner_graphs/{SUBJECT}.active_version` to `previous_version`.
+Backend consumers read it only through `app/services/learner_graph.py`
+(`get_learner_graph(fs, subject)` → `prerequisites(key)`, `unlocks(key)`,
+`LearnerGraph.key(grade, subskill_id)`, `validation`). Republish after
+`jev-build` or a new labelled check (update `VALIDATION` in the script).
+
 **Then check what the graph does**, not only its labels: the learner-model lab
 (`/pulse-agent lab ...`) runs the frontier selector on it — "served with a
 prerequisite missing" should be ~0 and subskills mastered should beat today.
 
-**Status (10-11):** scored literacy GK–G1, math GK–G5. Remaining: literacy
-G2–G5, science GK–G4, social studies GK–G4 (about 210k pairs, ~$2.70); no
-published G5 science or social studies. Labelled sheets: literacy (22 pairs,
-AUC 0.92), math G3–G5 (30 pairs, awaiting labels). Storage: one graph per
-subject across grades — production storage is per grade today (WORKSTREAMS
-7.2c), so publishing waits on that work.
+**Status (10-12):** scored and PUBLISHED for all four subjects, every
+published grade (math GK–G5 726 subskills, literacy GK–G5 490, science GK–G4
+374, social studies GK–G4 463; 471k pairs, ~$3.20). Validation: literacy
+partial (22 pairs, AUC 0.92, K–1 only), math G3–G5 sheet awaiting labels,
+science and social studies unvalidated.
 
 ---
 
