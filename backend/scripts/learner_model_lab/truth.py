@@ -39,6 +39,7 @@ GUESS, SLIP, NOISE = 0.03, 0.05, 0.08
 #   zone     gain x 4P(1-P): most learning near 50% success
 #   success  gain x P: children learn from what they get right
 LEARNING = "ready"
+TRANSFER = 0.0       # share of practice on an easier form that reaches the harder skill (run.py --transfer)
 
 
 @dataclass
@@ -114,6 +115,13 @@ class TruthStudent:
             self._eff = e
         return self._eff
 
+    def _e_children(self, k: int):
+        if not hasattr(self, "_ech"):
+            self._ech = {}
+        if k not in self._ech:
+            self._ech[k] = self.g.easier_children(k, self.g.truth_parents)
+        return self._ech[k]
+
     def mastered(self) -> List[bool]:
         e = self.eff()
         return [e[k] >= nd.beta_med + MASTERY_MARGIN for k, nd in enumerate(self.g.nodes)]
@@ -160,4 +168,8 @@ class TruthStudent:
         mult = {"ready": ready, "flat": 1.0, "zone": 4 * prob * (1 - prob), "success": prob}[LEARNING]
         t = self.theta[k]
         self.theta[k] = min(10.0, t + self.p.lr * max(0.0, self.p.cap - t) / self.p.cap * mult)
+        if TRANSFER:
+            for c, e in self._e_children(k):
+                tc = self.theta[c]
+                self.theta[c] = min(10.0, tc + TRANSFER * e * self.p.lr * max(0.0, self.p.cap - tc) / self.p.cap * mult)
         self._eff = None

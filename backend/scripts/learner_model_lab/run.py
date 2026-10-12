@@ -17,6 +17,7 @@ Usage (from backend/):
 from __future__ import annotations
 
 import argparse
+import os
 import itertools
 import json
 import math
@@ -39,7 +40,8 @@ from .truth import PERSONAS, PERSONAS_BY_SUBJECT, TruthStudent
 OUT = ROOT / "backend" / "reports" / "learner-model-lab" / "frontier"   # gitignored
 CHECKPOINTS = (10, 20, 40, 60, 100)
 PASS = 6.0
-POLICIES = ("today", "bayes_value", "layered_value")
+POLICIES = ("today", "layered_base", "layered_value")
+# layered_base: unweighted frontier value (before the success fixes); layered_value: success-weighted + transfer
 SUBJECT = "LANGUAGE_ARTS"  # set per worker from --subject
 CHALLENGES = 4             # challenges per served item, scored first-try like real reviews
 N_EFF = 1 + 0.5 * (CHALLENGES - 1)
@@ -156,13 +158,14 @@ def e1(g: Graph, persona: str, seed: int, n_items: int) -> Dict:
 
 def e2(g: Graph, persona: str, seed: int, n_items: int, which: str) -> Dict:
     truth = TruthStudent(g, PERSONAS_BY_SUBJECT[SUBJECT][persona], seed)
-    e = (BaselineEngine(g) if which == "today" else LayeredEngine(g, seed=seed) if which == "layered_value"
+    e = (BaselineEngine(g) if which == "today" else LayeredEngine(g, seed=seed) if which.startswith("layered")
          else B.BayesEngine(g, seed=seed))
     pick = {"today": lambda: e.select(g.items),
             "bayes": lambda: e.select(g.items),
             "bayes_floor": lambda: e.select(g.items, min_p=0.6),
             "bayes_value": lambda: e.select_value(g.items),
-            "layered_value": lambda: e.select_value(g.items)}[which]
+            "layered_value": lambda: e.select_value(g.items),
+            "layered_base": lambda: e._select_value_unweighted()}[which]
     weak = PERSONAS_BY_SUBJECT[SUBJECT][persona].weak
     front, on_gap = [], []
     start = sum(truth.mastered())
@@ -188,39 +191,77 @@ def e2(g: Graph, persona: str, seed: int, n_items: int, which: str) -> Dict:
             "checkpoints": cps, "first_items": served[:8]}
 
 
-_G = None
+_G: Dict[str, Graph] = {}
 
 
-def _child(job) -> Dict:
-    """One simulated child: E1 plus every E2 policy. Runs in a worker process."""
-    global _G, SUBJECT
-    persona, seed, n_items, learning, subject = job
+def _job(job) -> tuple:
+    """One unit of work in a worker process: E1 for a child, or one E2 policy
+    for a child. Small jobs keep every core busy to the end of a sweep."""
+    global SUBJECT
+    kind, cfg, persona, seed, n_items, policy = job
+    learning, subject, transfer = cfg
     SUBJECT = subject
-    if _G is None:
-        _G = load(subject)
-    truth_mod.LEARNING = learning
-    r = {"persona": persona, "seed": seed, "e1": e1(_G, persona, seed, n_items)}
-    r["e2"] = {w: e2(_G, persona, seed, n_items, w) for w in POLICIES}
-    return r
+    truth_mod.LEARNING, truth_mod.TRANSFER = learning, transfer
+    if subject not in _G:
+        _G[subject] = load(subject)
+    g = _G[subject]
+    res = e1(g, persona, seed, n_items) if kind == "e1" else e2(g, persona, seed, n_items, policy)
+    return kind, cfg, persona, seed, policy, res
+
+
+def _single_thread_blas() -> None:
+    """16 worker processes each running a multi-threaded BLAS fight for the
+    cores; one thread per worker. Set before the pool spawns its workers."""
+    for v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ[v] = "1"
+
+
+def sweep(configs: List[tuple], personas_of, seeds: int, n_items: int, workers: int, out_of) -> None:
+    """Every (config x persona x seed x {E1, each policy}) job in ONE pool."""
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+    _single_thread_blas()
+    jobs = []
+    for cfg in configs:
+        for p in personas_of(cfg):
+            for s in range(seeds):
+                jobs.append(("e1", cfg, p, s, n_items, None))
+                jobs += [("e2", cfg, p, s, n_items, w) for w in POLICIES]
+    t0 = time.time()
+    rows: Dict[tuple, Dict] = {}
+    with ProcessPoolExecutor(max_workers=workers or os.cpu_count()) as pool:
+        futs = [pool.submit(_job, j) for j in jobs]
+        for i, f in enumerate(as_completed(futs), 1):
+            kind, cfg, persona, seed, policy, res = f.result()
+            r = rows.setdefault((cfg, persona, seed), {"persona": persona, "seed": seed, "e2": {}})
+            if kind == "e1":
+                r["e1"] = res
+            else:
+                r["e2"][policy] = res
+            if i % max(1, len(jobs) // 10) == 0:
+                print(f"[{time.time() - t0:6.0f}s] {i}/{len(jobs)} jobs", flush=True)
+    for cfg in configs:
+        out = out_of(cfg)
+        out.mkdir(parents=True, exist_ok=True)
+        cr = [r for (c, _, _), r in rows.items() if c == cfg]
+        (out / "results.json").write_text(json.dumps(cr, indent=1), encoding="utf-8")
+        global OUT
+        OUT = out
+        print(f"\n=== learning={cfg[0]} subject={cfg[1]} transfer={cfg[2]} -> {out}")
+        summarize(cr, n_items)
+    print(f"sweep done: {len(jobs)} jobs in {time.time() - t0:.0f}s")
 
 
 def run(args) -> None:
-    from concurrent.futures import ProcessPoolExecutor
-    import os
-    OUT.mkdir(parents=True, exist_ok=True)
     personas = args.personas or list(PERSONAS_BY_SUBJECT[args.subject])
-    jobs = [(p, s, args.items, args.learning, args.subject) for p in personas for s in range(args.seeds)]
-    t0 = time.time()
-    rows = []
-    with ProcessPoolExecutor(max_workers=args.workers or os.cpu_count()) as pool:
-        for r in pool.map(_child, jobs):
-            rows.append(r)
-            persona, seed = r["persona"], r["seed"]
-            print(f"[{time.time() - t0:6.0f}s] {persona:16s} s{seed} "
-                  f"loss today {r['e1']['loss']['today']:.3f} bayes {r['e1']['loss']['bayes']:.3f} | "
-                  f"E2 acc " + " ".join(f"{w} {r['e2'][w]['checkpoints'][args.items]['acc']:.2f}" for w in POLICIES), flush=True)
-    (OUT / "results.json").write_text(json.dumps(rows, indent=1), encoding="utf-8")
-    summarize(rows, args.items)
+    configs = [(lr, args.subject, tr) for lr in args.learning for tr in args.transfer]
+    single = len(configs) == 1
+
+    base = OUT
+
+    def out_of(cfg):
+        return base if single else base / f"{cfg[1].lower()}-{cfg[0]}-t{cfg[2]}"
+
+    sweep(configs, lambda cfg: personas, args.seeds, args.items, args.workers, out_of)
 
 
 def summarize(rows: List[Dict], n_items: int) -> None:
@@ -242,7 +283,7 @@ def summarize(rows: List[Dict], n_items: int) -> None:
                  f"{avg(lambda r: c(r, 'today', 'brier')):.3f} | {avg(lambda r: c(r, 'bayes', 'brier')):.3f} | "
                  f"{avg(lambda r: c(r, 'today', 'gap_acc')):.2f} | {avg(lambda r: c(r, 'bayes', 'gap_acc')):.2f} |")
     L += ["\n## E2 — each engine picks its own items\n",
-          "Three cells per metric: today / bayes info gain with a 60% success floor / bayes frontier value.\n",
+          "Three cells per metric: " + " / ".join(POLICIES) + ".\n",
           "| Persona | Balanced diagnosis acc | Success rate | Served with prereq missing | Served on true frontier | Items on the persona's gap | Max miss streak | Subskills mastered gain |",
           "|---|---|---|---|---|---|---|---|"]
     for p in dict.fromkeys(r["persona"] for r in rows):
@@ -266,9 +307,10 @@ def main() -> None:
     r.add_argument("--items", type=int, default=60)
     r.add_argument("--seeds", type=int, default=4)
     r.add_argument("--personas", nargs="*")
-    r.add_argument("--subject", default="LANGUAGE_ARTS", choices=["LANGUAGE_ARTS", "MATHEMATICS"])
+    r.add_argument("--subject", default="LANGUAGE_ARTS", choices=["LANGUAGE_ARTS", "MATHEMATICS", "SCIENCE", "SOCIAL_STUDIES"])
+    r.add_argument("--transfer", type=float, nargs="+", default=[0.0], help="truth model: share of easier-form practice reaching the harder skill")
     r.add_argument("--workers", type=int, default=0, help="processes; 0 = one per CPU")
-    r.add_argument("--learning", default="ready", choices=["ready", "flat", "zone", "success"])
+    r.add_argument("--learning", nargs="+", default=["ready"], choices=["ready", "flat", "zone", "success"])
     r.add_argument("--out", default=None, help="report directory (default: the dated lab report)")
     s = sub.add_parser("summarize")
     s.add_argument("--items", type=int, default=60)

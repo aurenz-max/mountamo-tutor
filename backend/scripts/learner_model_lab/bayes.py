@@ -30,9 +30,11 @@ answer raises the best L available next (one-step look-ahead, computed by
 reweighting the chains by P(answer | chain)). Information counts only when
 it changes what gets taught next.
 
-Learning over time: each practice item on k gives a READY child (every R
-prerequisite mastered) a LAMBDA chance of mastering k, so after n practices
-    P(K_k = 1 | ready) = 1 - (1 - prior)(1 - LAMBDA)^n
+Learning over time: a practice item on k answered with first-try success x
+gives a READY child (every R prerequisite mastered) a LAMBDA * x chance of
+mastering k; practising an easier form j of k (E edge, easier_form score e)
+gives k a TRANSFER * e * LAMBDA * x chance. After practice t = 1..T
+    P(K_k = 1 | ready) = 1 - (1 - prior) * prod_t (1 - chance_t)
 Repeated failure after practice is then evidence that a prerequisite is
 missing, which moves the frontier down to it. Older answers on k keep weight
 GAMMA per later practice, so early failures stop counting against later
@@ -54,6 +56,7 @@ MIN_STEP = 0.8
 NONMASTER_HEADROOM = 0.7
 LAMBDA = 0.15        # P(one practice item moves a ready, unmastered child to mastery); expert prior
 GAMMA = 0.85         # weight kept by older answers on a subskill each time it is practised again
+TRANSFER = 0.5       # share of an easier form's practice that counts toward the harder skill (expert prior)
 SLIP = 0.05          # a 9/10 from a master is not evidence against mastery
 
 
@@ -105,6 +108,8 @@ class BayesEngine:
         self.req = [np.array(g.required(k, MIN_STEP), dtype=int) for k in range(n)]
         self.rpa = [r[r != k] for k, r in enumerate(self.req)]
         self.nprac = np.zeros(n)
+        self.noln = np.zeros(n)          # log P(not learned from practice so far), per subskill
+        self.e_children = [g.easier_children(j, g.parents) for j in range(n)]
         self._dirty = set(range(n))
         self._node_of = np.array([it.node for it in g.items])
         self._ix = {id(it): j for j, it in enumerate(g.items)}
@@ -154,8 +159,8 @@ class BayesEngine:
     def _pk(self, k: int, phi):
         """P(K_k = 1 | parents, ability, practice so far)."""
         p = sig(self._z(k, phi))
-        if self.learn and self.nprac[k]:
-            p = np.where(self._ready(k), 1 - (1 - p) * (1 - LAMBDA) ** self.nprac[k], p)
+        if self.learn and self.noln[k] < 0:
+            p = np.where(self._ready(k), 1 - (1 - p) * np.exp(self.noln[k]), p)
         return np.clip(p, 1e-9, 1 - 1e-9)
 
     def _kpad(self):
@@ -195,22 +200,24 @@ class BayesEngine:
         self._dirty.add(k)
         self._dirty.update(self.ch[k])
 
-    def _prior_terms(self) -> np.ndarray:
+    def _prior_terms(self, only=None) -> np.ndarray:
         """(C, |PHI|, n) log P(K_k | parents, phi = each grid point, practice).
         Independent of the current phi, so it is cached and only the columns
-        whose subskill or parents changed are recomputed."""
+        whose subskill or parents changed are recomputed. `only`: the columns
+        the caller will read; other changed columns stay pending."""
         if not hasattr(self, "_lpri"):
             self._lpri = np.zeros((self.C, len(PHI), self.g.n))
-        if self._dirty:
-            cols = np.array(sorted(self._dirty))
-            self._dirty = set()
+        todo = self._dirty if only is None else (self._dirty & only)
+        if todo:
+            cols = np.array(sorted(todo))
+            self._dirty -= todo
             ps = ((self._kpad()[:, self._PA[cols]] - 1.0) * self._PW[cols][None]).sum(axis=2)
             P = sig(PHI[None, :, None] - self.bmed[cols][None, None, :] + ps[:, None, :])
             if self.learn:
                 for i, k in enumerate(cols):
-                    if self.nprac[k]:
+                    if self.noln[k] < 0:
                         r = self._ready(k)[:, None]
-                        P[:, :, i] = np.where(r, 1 - (1 - P[:, :, i]) * (1 - LAMBDA) ** self.nprac[k], P[:, :, i])
+                        P[:, :, i] = np.where(r, 1 - (1 - P[:, :, i]) * np.exp(self.noln[k]), P[:, :, i])
             P = np.clip(P, 1e-9, 1 - 1e-9)
             Kc = self.K[:, None, cols]
             self._lpri[:, :, cols] = Kc * np.log(P) + (1 - Kc) * np.log1p(-P)
@@ -262,8 +269,7 @@ class BayesEngine:
         if len(self.obs) % 10 == 0:
             self.sweep(range(self.g.n))
         if self.learn:  # the item was also practice
-            self.nprac[it.node] += 1
-            self._dirty.add(it.node)
+            self.practice(it.node, score / 10.0)
             for _ in range(2):
                 self.sweep(local)
 
@@ -284,6 +290,15 @@ class BayesEngine:
                 for k in set(o["req"].tolist()):
                     self._gby[k].append(key)
             self._groups[key]["sx"], self._groups[key]["s1x"] = sx, s1x
+
+    def practice(self, j: int, x: float) -> None:
+        """An item of j answered with first-try success x is also practice."""
+        self.nprac[j] += 1
+        self.noln[j] += np.log1p(-LAMBDA * x)
+        self._dirty.add(j)
+        for k, e in self.e_children[j]:
+            self.noln[k] += np.log1p(-TRANSFER * e * LAMBDA * x)
+            self._dirty.add(k)
 
     def frontier(self) -> np.ndarray:
         """(C, n): 1 where the chain has k unmastered and all of k's R prerequisites mastered."""

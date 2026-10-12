@@ -67,6 +67,12 @@ class Graph:
     truth_scores: List[List[float]]
     items: List[Item]
     step: Dict[Tuple[int, int], float]   # Jev `step` score per scored pair
+    easier: Dict[Tuple[int, int], float] = field(default_factory=dict)  # Jev `easier_form` per pair
+
+    def easier_children(self, j: int, parents: List[List[int]], min_easier: float = 0.6, max_step: float = 0.8) -> List[Tuple[int, float]]:
+        """Subskills that are a harder version of j (E edges, not R): (child, easier score)."""
+        return [(k, self.easier[(j, k)]) for k in range(self.n) if j in parents[k]
+                and self.easier.get((j, k), 0.0) >= min_easier and self.step.get((j, k), 0.0) < max_step]
 
     def required(self, k: int, min_step: float) -> List[int]:
         """Task-graph row for an item of node k: k plus every model parent
@@ -133,7 +139,12 @@ def _dag(n: int, scored: List[Tuple[float, int, int]], cap: int | None) -> Tuple
     return parents, scores
 
 
-SCOPE = {"LANGUAGE_ARTS": ("GK", "G1"), "MATHEMATICS": ("GK", "G1", "G2", "G3", "G4", "G5")}  # grades scored by Jev so far
+SCOPE = {  # grades scored by Jev (all published grades as of 10-11)
+    "MATHEMATICS": ("GK", "G1", "G2", "G3", "G4", "G5"),
+    "LANGUAGE_ARTS": ("GK", "G1", "G2", "G3", "G4", "G5"),
+    "SCIENCE": ("GK", "G1", "G2", "G3", "G4"),
+    "SOCIAL_STUDIES": ("GK", "G1", "G2", "G3", "G4"),
+}
 
 
 def load(subject: str = "LANGUAGE_ARTS", grades=None, min_score: float = 0.6, max_parents: int = 3) -> Graph:
@@ -160,6 +171,7 @@ def load(subject: str = "LANGUAGE_ARTS", grades=None, min_score: float = 0.6, ma
 
     scored: Dict[Tuple[int, int], float] = {}
     step: Dict[Tuple[int, int], float] = {}
+    easier: Dict[Tuple[int, int], float] = {}
     for v in jev.values():
         if v.get("subject") != subject:
             continue
@@ -168,6 +180,7 @@ def load(subject: str = "LANGUAGE_ARTS", grades=None, min_score: float = 0.6, ma
         if a is None or b is None or a == b:
             continue
         step[(a, b)] = v.get("step", 0.0)
+        easier[(a, b)] = v.get("easier_form", 0.0)
         s = max(v.get("step", 0.0), v.get("easier_form", 0.0))
         if s >= min_score:
             scored[(a, b)] = s
@@ -177,7 +190,7 @@ def load(subject: str = "LANGUAGE_ARTS", grades=None, min_score: float = 0.6, ma
     mp, mw = _dag(len(nodes), pairs, max_parents)
     tp, ts = _dag(len(nodes), pairs, None)
     return Graph(nodes=nodes, index=index, parents=mp, weights=mw,
-                 truth_parents=tp, truth_scores=ts, items=items, step=step)
+                 truth_parents=tp, truth_scores=ts, items=items, step=step, easier=easier)
 
 
 if __name__ == "__main__":

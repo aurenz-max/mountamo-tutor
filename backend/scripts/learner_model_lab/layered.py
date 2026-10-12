@@ -43,6 +43,8 @@ from .graph import MASTERY_MARGIN, Graph, Item
 TH = np.linspace(0.0, 10.0, 101)
 BASE_MEAN, BASE_SD = 3.0, 2.0
 DIFFUSION_SD = 0.2
+TOP_K = 200               # items the look-ahead considers
+SUCCESS_WEIGHTED = True   # False = the earlier unweighted frontier value (for comparison)
 WITHIN = "value"   # item choice inside the chosen subskill: "value" (look-ahead) or "easiest"
 
 
@@ -113,7 +115,7 @@ class LayeredEngine(BayesEngine):
     def _gibbs_phi(self) -> None:
         """phi given the relevant subskills only (barren ones sum out exactly)."""
         rel = np.array(sorted(self.relevant), dtype=int)
-        lp = self.logphi[None, :] + (self._prior_terms()[:, :, rel].sum(axis=2) if len(rel) else 0.0)
+        lp = self.logphi[None, :] + (self._prior_terms(self.relevant)[:, :, rel].sum(axis=2) if len(rel) else 0.0)
         lp -= lp.max(axis=1, keepdims=True)
         pr = np.exp(lp)
         pr /= pr.sum(axis=1, keepdims=True)
@@ -177,29 +179,87 @@ class LayeredEngine(BayesEngine):
             for _ in range(2):
                 self.sweep(sorted(self.relevant))
         if self.learn:
-            self.nprac[k] += 1
-            self._dirty.add(k)
+            self.practice(k, x)
             self.sweep(local)
         self._redraw_barren()
 
+    def _all_dists(self) -> np.ndarray:
+        """(n, grid) theta distribution for every subskill: posterior where
+        touched, else the graph-reshaped prior (vectorized _prior)."""
+        n = self.g.n
+        phi_mean = float(B.PHI[self.f].mean())
+        sib: Dict[str, list] = {}
+        for j, p in self.post.items():
+            sib.setdefault(self.g.nodes[j].skill, []).append(float((TH * p).sum()))
+        means = np.array([np.mean(sib[nd.skill]) if nd.skill in sib else phi_mean for nd in self.g.nodes])
+        base = np.exp(-0.5 * ((TH[None, :] - means[:, None]) / BASE_SD) ** 2)
+        base /= base.sum(axis=1, keepdims=True)
+        pk = self.K.mean(axis=0)
+        b1 = (base * self.above).sum(axis=1)
+        b0 = 1.0 - b1
+        ok = (b1 > 1e-9) & (b0 > 1e-9)
+        shaped = np.where(self.above, base * (pk / np.maximum(b1, 1e-12))[:, None],
+                          base * ((1 - pk) / np.maximum(b0, 1e-12))[:, None])
+        D = np.where(ok[:, None], shaped, base)
+        for j, p in self.post.items():
+            D[j] = p
+        return D
+
     def _item_split(self):
-        """Per item: P(right | k mastered) and P(right | not), from theta_k."""
-        p1 = np.empty(len(self._items))
-        p0 = np.empty(len(self._items))
-        cache: Dict[int, np.ndarray] = {}
-        for j, it in enumerate(self._items):
-            k = it.node
-            if k not in cache:
-                cache[k] = self.theta_dist(k)
-            d, up = cache[k], self.above[k]
-            P = p_item(it.a, it.beta, it.c)
-            m1, m0 = d[up].sum(), d[~up].sum()
-            p1[j] = (d * P)[up].sum() / m1 if m1 > 1e-12 else P[up].mean()
-            p0[j] = (d * P)[~up].sum() / m0 if m0 > 1e-12 else P[~up].mean()
+        """Per item: P(right | k mastered) and P(right | not), from theta_k.
+        Item response curves are fixed, so they are built once."""
+        if not hasattr(self, "_PI"):
+            self._PI = np.clip(self._it_c[:, None] + (1 - self._it_c[:, None])
+                               * sig(self._it_a[:, None] * (TH[None, :] - self._it_beta[:, None])), 1e-6, 1 - 1e-6)
+            self._UP = self.above[self._node_of]
+        D = self._all_dists()[self._node_of]                    # (I, grid)
+        up = self._UP
+        m1 = (D * up).sum(axis=1)
+        m0 = (D * ~up).sum(axis=1)
+        DP = D * self._PI
+        fb1 = (self._PI * up).sum(axis=1) / np.maximum(up.sum(axis=1), 1)
+        fb0 = (self._PI * ~up).sum(axis=1) / np.maximum((~up).sum(axis=1), 1)
+        p1 = np.where(m1 > 1e-12, (DP * up).sum(axis=1) / np.maximum(m1, 1e-300), fb1)
+        p0 = np.where(m0 > 1e-12, (DP * ~up).sum(axis=1) / np.maximum(m0, 1e-300), fb0)
         return p1, p0
 
+    def _transfer_matrix(self) -> np.ndarray:
+        """(n, n): column j = what practising j teaches: j itself plus TRANSFER x
+        easier_form score to each harder version of j."""
+        if not hasattr(self, "_T"):
+            T = np.eye(self.g.n)
+            for j, kids in enumerate(self.e_children):
+                for k, e in kids:
+                    T[k, j] = B.TRANSFER * e
+            self._T = T
+        return self._T
+
     def select_value(self, items: List[Item]) -> Item:
+        """Expected learning from serving an item: P(right) x the teaching value
+        of what it practises (its subskill plus harder versions via transfer),
+        plus a one-step look-ahead on the same quantity. Success weighting is
+        what makes an easier item, or an easier form, worth serving."""
         assert items is self._items
+        if not SUCCESS_WEIGHTED:
+            return self._select_value_unweighted()
+        p1, p0 = self._item_split()
+        Kn = self.K[:, self._node_of]
+        P = np.clip(Kn * p1[None, :] + (1 - Kn) * p0[None, :], 1e-6, 1 - 1e-6)    # (C, I)
+        Vt = self.teach_value() @ self._transfer_matrix()                         # (C, n)
+        M = P * Vt[:, self._node_of]                                               # (C, I) learning per chain
+        gain = M.mean(axis=0)
+        # look-ahead only over the TOP_K items by immediate gain, as candidates
+        # and as the next step: the best next item is almost always among them,
+        # and it turns an I x I product into TOP_K x TOP_K (3,110 math items)
+        top = np.argsort(gain)[-TOP_K:]
+        Pt, Mt = P[:, top], M[:, top]
+        W1 = Pt / Pt.sum(axis=0, keepdims=True)
+        W0 = (1 - Pt) / (1 - Pt).sum(axis=0, keepdims=True)
+        pbar = Pt.mean(axis=0)
+        value = B.LAMBDA * (gain[top] + pbar * (W1.T @ Mt).max(axis=1) + (1 - pbar) * (W0.T @ Mt).max(axis=1) - gain.max())
+        return self._items[int(top[int(value.argmax())])]
+
+    def _select_value_unweighted(self) -> Item:
         p1, p0 = self._item_split()
         Kn = self.K[:, self._node_of]                                     # (C, I)
         P = np.clip(Kn * p1[None, :] + (1 - Kn) * p0[None, :], 1e-6, 1 - 1e-6)
