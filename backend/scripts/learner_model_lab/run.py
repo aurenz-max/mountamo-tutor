@@ -78,7 +78,7 @@ def exact(sg: Graph, obs: List[tuple]) -> np.ndarray:
         for gi, phi in enumerate(B.PHI):
             lp = eng.logphi[gi]
             for k in range(n):
-                z = phi - eng.bmed[k] + ((K[eng.pa[k]] - 1) @ eng.w[k] if len(eng.pa[k]) else 0.0)
+                z = eng.coef[k] * phi + eng.icpt[k] + ((K[eng.pa[k]] - 1) @ eng.w[k] if len(eng.pa[k]) else 0.0)
                 lp += float(B.logsig(z if K[k] else -z))
             for it, score in obs:
                 m = bool(K[eng.req[it.node]].prod())

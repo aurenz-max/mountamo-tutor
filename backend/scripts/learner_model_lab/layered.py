@@ -137,6 +137,8 @@ class LayeredEngine(BayesEngine):
         pk = self._pk(k, phi)
         d = np.log(pk) - np.log1p(-pk) + self.lr[k]
         for c in self.ch[k]:
+            if c not in self.relevant:  # barren: sums out exactly; conditioning on it sticks the chain
+                continue
             kc = K[:, c] > 0.5
             K[:, k] = 1.0
             p1 = self._pk(c, phi)

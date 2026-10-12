@@ -47,6 +47,7 @@ from . import truth as truth_mod
 from .baseline import BaselineEngine
 from .evidence import Evidence, from_review, load_reviews, node_lookup
 from .graph import ROOT, Item, load
+from .kst import SimpleEngine
 from .layered import LayeredEngine
 from .simsource import Simulator, harvest, usage
 from .truth import PERSONAS_BY_SUBJECT, TruthStudent
@@ -54,6 +55,7 @@ from .truth import PERSONAS_BY_SUBJECT, TruthStudent
 LAB = ROOT / "backend" / "reports" / "learner-model-lab"   # gitignored; outputs and pulled reviews
 REVIEWS_1004 = LAB / "reviews_1004.json"                   # template + real-replay source (refresh with `pull`)
 ENGINES = ("today", "today_first", "bayes", "layered")
+GRADE_OF_RECORD = 0   # 1004 is in kindergarten
 
 
 def n_eff(n: int) -> float:
@@ -74,12 +76,16 @@ def auc(pairs) -> float | None:
     return wins / (len(pos) * len(neg))
 
 
-def replay(g, evidence: List[Evidence], seed: int = 0, engines=ENGINES) -> Dict:
+def replay(g, evidence: List[Evidence], seed: int = 0, engines=ENGINES, keep: Dict | None = None) -> Dict:
     make = {"today": lambda: BaselineEngine(g), "today_first": lambda: BaselineEngine(g),
-            "bayes": lambda: B.BayesEngine(g, seed=seed), "layered": lambda: LayeredEngine(g, seed=seed)}
+            "bayes": lambda: B.BayesEngine(g, seed=seed), "layered": lambda: LayeredEngine(g, seed=seed),
+            "simple": lambda: SimpleEngine(g, grade=GRADE_OF_RECORD)}
     eng = {k: make[k]() for k in engines}
+    if keep is not None:
+        keep.update(eng)
     pairs = {k: [] for k in eng}
     first_pairs = {k: [] for k in eng}   # the first review on each subskill
+    first_rows = {k: [] for k in eng}    # (node, predicted P, first-try right, challenges) per first review
     after_easy = {k: [] for k in eng}    # reviews of k after an easier form of k was practised
     e_parents: Dict[int, set] = {}
     for j in range(g.n):
@@ -87,8 +93,7 @@ def replay(g, evidence: List[Evidence], seed: int = 0, engines=ENGINES) -> Dict:
             e_parents.setdefault(k, set()).add(j)
     seen = set()
     for e in evidence:
-        a, c = get_item_discrimination(e.primitive, e.mode)
-        it = Item(node=e.node, mode=e.mode, beta=get_prior_beta(e.primitive, e.mode), a=a, c=c)
+        it = g.make_item(e.node, e.primitive, e.mode)
         new = e.node not in seen
         easy_before = bool(e_parents.get(e.node, set()) & seen)
         seen.add(e.node)
@@ -97,6 +102,7 @@ def replay(g, evidence: List[Evidence], seed: int = 0, engines=ENGINES) -> Dict:
             pairs[k].extend((p, y) for y in e.first)
             if new:
                 first_pairs[k].extend((p, y) for y in e.first)
+                first_rows[k].append((e.node, p, sum(e.first), len(e.first)))
             if easy_before:
                 after_easy[k].extend((p, y) for y in e.first)
         first = 10.0 * sum(e.first) / len(e.first)
@@ -114,6 +120,7 @@ def replay(g, evidence: List[Evidence], seed: int = 0, engines=ENGINES) -> Dict:
                   "first_p": st.mean(p for p, _ in first_pairs[k]) if first_pairs[k] else None,
                   "first_acc": st.mean(y for _, y in first_pairs[k]) if first_pairs[k] else None,
                   "first_n": len(first_pairs[k]),
+                  "first_rows": first_rows[k],
                   "after_easy_loss": st.mean(xent(y, p) for p, y in after_easy[k]) if after_easy[k] else None,
                   "after_easy_n": len(after_easy[k]),
                   "after_easy_acc": st.mean(y for _, y in after_easy[k]) if after_easy[k] else None,
@@ -148,6 +155,148 @@ def run_transfer(a) -> None:
     out = LAB / f"transfer-{a.subject.lower()}-{a.student}.json"
     out.write_text(json.dumps(rows, indent=1), encoding="utf-8")
     print(f"-> {out}")
+
+
+# ── anchor: skill location (7.13) on student 1004 ─────────────────────────
+
+# "+chain": non-root priors from the Jev link conditionals (bayes.CHAIN)
+ANCHOR_CONFIGS = [("off", 1.0), ("grade", 1.0), ("grade+chain", 1.0), ("grade+lor", 1.0)]
+OVERREACH_GRADES = ("G3", "G4", "G5")   # >= 2 grades above 1004's grade of record (K)
+
+
+def _per_grade(g, m, seen) -> Dict:
+    from .graph import GRADE_INDEX
+    out = {}
+    for gr in GRADE_INDEX:
+        ks = [k for k, nd in enumerate(g.nodes) if nd.grade == gr]
+        un = [k for k in ks if k not in seen]
+        out[gr] = {"n": len(ks), "seen": len(ks) - len(un), "mastered": sum(m[k] > 0.5 for k in ks),
+                   "untouched_mastered": sum(m[k] > 0.5 for k in un),
+                   "untouched_max": max((m[k] for k in un), default=0.0)}
+    return out
+
+
+def _first_loss(g, rows, low: bool):
+    """Per-challenge log loss on first reviews, K-G1 subskills (low) or G2+."""
+    from .graph import GRADE_INDEX
+    tot = n = 0.0
+    for node, p, right, cnt in rows:
+        if (GRADE_INDEX[g.nodes[node].grade] <= 1) == low:
+            tot += right * xent(True, p) + (cnt - right) * xent(False, p)
+            n += cnt
+    return (tot / n if n else None), int(n)
+
+
+def _anchor_job(job):
+    subject, anchor, step = job
+    from . import graph as G
+    G.ANCHOR, G.GRADE_STEP = anchor.split("+")[0], step
+    B.CHAIN = "lor" if anchor.endswith("+lor") else anchor.endswith("+chain")
+    g = load(subject)
+    ev = load_reviews(REVIEWS_1004, g)
+    eng: Dict = {}
+    res = replay(g, ev, 0, engines=("today", "layered"), keep=eng)
+    per_grade = _per_grade(g, eng["layered"].mastery(), {e.node for e in ev})
+    fr = res["layered"]["first_rows"]
+    # the claim under test: evidence on K-G1 alone must not make G3+ mastered
+    low = [e for e in ev if G.GRADE_INDEX[g.nodes[e.node].grade] <= 1]
+    eng_low: Dict = {}
+    replay(g, low, 0, engines=("layered",), keep=eng_low)
+    pg_low = _per_grade(g, eng_low["layered"].mastery(), {e.node for e in low})
+    worst = max(pg_low[gr]["untouched_max"] for gr in OVERREACH_GRADES)
+    return {"anchor": anchor, "step": step, "reviews": len(ev), "low_reviews": len(low), "result": res,
+            "per_grade": per_grade, "per_grade_low": pg_low,
+            "first_loss_k1": _first_loss(g, fr, True), "first_loss_g2up": _first_loss(g, fr, False),
+            "overreach_max": worst, "overreach_pass": worst < 0.5}
+
+
+def run_anchor(a) -> None:
+    """Replay 1004 under each skill-location setting: prediction quality, and
+    how many subskills the model calls mastered per grade. Assertion: a K
+    student's untouched G3+ subskills all stay below P(mastered) 0.5."""
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    jobs = [(a.subject, an, st_) for an, st_ in ANCHOR_CONFIGS]
+    with ProcessPoolExecutor(max_workers=len(jobs)) as pool:
+        rows = list(pool.map(_anchor_job, jobs))
+    f3 = lambda v: "—" if v is None else f"{v:.3f}"
+    k1n, hin = rows[0]["first_loss_k1"][1], rows[0]["first_loss_g2up"][1]
+    L = [f"# Skill location (7.13) — student 1004, {a.subject}\n",
+         "Layered model replaying 1004's reviews. `today` is the production per-skill estimator (registry betas, unchanged by the anchor).\n",
+         "## All reviews\n",
+         f"| Anchor | Step | Loss layered (today) | AUC layered (today) | First-encounter loss K-G1 ({k1n} ch) | G2+ ({hin} ch) | Mastered K / G1 / G2 / G3 / G4 / G5 | Untouched G3-G5 mastered |",
+         "|---|---|---|---|---|---|---|---|"]
+    for r in rows:
+        ly, td, pg = r["result"]["layered"], r["result"]["today"], r["per_grade"]
+        L.append(f"| {r['anchor']} | {r['step']} | {ly['loss']:.3f} ({td['loss']:.3f}) | {ly['auc'] or 0:.3f} ({td['auc'] or 0:.3f}) | "
+                 f"{f3(r['first_loss_k1'][0])} | {f3(r['first_loss_g2up'][0])} | " + " / ".join(str(pg[gr]['mastered']) for gr in pg) + " | "
+                 f"{sum(pg[gr]['untouched_mastered'] for gr in OVERREACH_GRADES)} |")
+    L += [f"\n## K-G1 reviews only ({rows[0]['low_reviews']}) — assertion: no untouched G3+ subskill reaches P(mastered) 0.5\n",
+          "| Anchor | Step | Mastered K / G1 / G2 / G3 / G4 / G5 | Untouched G3-G5 mastered | Max P untouched G3+ | Assertion |",
+          "|---|---|---|---|---|---|"]
+    for r in rows:
+        pg = r["per_grade_low"]
+        L.append(f"| {r['anchor']} | {r['step']} | " + " / ".join(str(pg[gr]['mastered']) for gr in pg) + " | "
+                 f"{sum(pg[gr]['untouched_mastered'] for gr in OVERREACH_GRADES)} | {r['overreach_max']:.2f} | "
+                 f"{'PASS' if r['overreach_pass'] else 'FAIL'} |")
+    seen = " / ".join(f"{gr} {rows[0]['per_grade'][gr]['seen']}/{rows[0]['per_grade'][gr]['n']}" for gr in rows[0]["per_grade"])
+    L.append(f"\nSubskills 1004 has reviews on (seen/total): {seen}. Reviews: {rows[0]['reviews']}.")
+    out = LAB / f"anchor-{a.subject.lower()}-1004"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "results.json").write_text(json.dumps(rows, indent=1), encoding="utf-8")
+    (out / "summary.md").write_text("\n".join(L) + "\n", encoding="utf-8")
+    print("\n".join(L))
+
+
+# ── kst: the simple model (rules over the graph) against the layered model ─
+
+def _kst_job(job):
+    subject, which = job
+    g = load(subject)
+    ev = load_reviews(REVIEWS_1004, g)
+    from .graph import GRADE_INDEX
+    if which == "K-G1 only":
+        ev = [e for e in ev if GRADE_INDEX[g.nodes[e.node].grade] <= 1]
+    eng: Dict = {}
+    res = replay(g, ev, 0, engines=("today", "layered", "simple"), keep=eng)
+    seen = {e.node for e in ev}
+    out = {"which": which, "reviews": len(ev), "result": {k: {m: v for m, v in r.items() if m != "first_rows"} for k, r in res.items()}}
+    for k in ("layered", "simple"):
+        out[k] = {"per_grade": _per_grade(g, eng[k].mastery(), seen),
+                  "first_k1": _first_loss(g, res[k]["first_rows"], True), "first_g2": _first_loss(g, res[k]["first_rows"], False)}
+    rd = eng["simple"].ready()
+    fr = eng["layered"].frontier().mean(axis=0)
+    out["simple"]["ready"] = [g.nodes[k].key for k in range(g.n) if rd[k]]
+    out["layered"]["ready"] = [g.nodes[k].key for k in range(g.n) if fr[k] > 0.3 and k not in seen]
+    out["labels"] = {nd.key: nd.label.split("\n")[0][:80] for nd in g.nodes}
+    return out
+
+
+def run_kst(a) -> None:
+    import collections
+    from .graph import GRADE_INDEX
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    with ProcessPoolExecutor(max_workers=2) as pool:
+        rows = list(pool.map(_kst_job, [(a.subject, "all reviews"), (a.subject, "K-G1 only")]))
+    f3 = lambda v: "—" if v is None else f"{v:.3f}"
+    L = [f"# Simple model (knowledge-space rules) vs layered — student 1004, {a.subject}\n"]
+    for r in rows:
+        res = r["result"]
+        L += [f"## {r['which']} ({r['reviews']} reviews)\n",
+              "| Engine | Loss | AUC | First-encounter loss K-G1 | G2+ | Known K / G1 / G2 / G3 / G4 / G5 | Untouched G3-G5 known | Ready by grade |",
+              "|---|---|---|---|---|---|---|---|",
+              f"| today | {res['today']['loss']:.3f} | {res['today']['auc'] or 0:.3f} | | | | | |"]
+        for k in ("layered", "simple"):
+            pg = r[k]["per_grade"]
+            rg = collections.Counter(x.split(":")[0] for x in r[k]["ready"])
+            L.append(f"| {k} | {res[k]['loss']:.3f} | {res[k]['auc'] or 0:.3f} | {f3(r[k]['first_k1'][0])} | {f3(r[k]['first_g2'][0])} | "
+                     + " / ".join(str(pg[gr]['mastered']) for gr in pg) + f" | {sum(pg[gr]['untouched_mastered'] for gr in OVERREACH_GRADES)} | "
+                     + ", ".join(f"{gr} {rg[gr]}" for gr in GRADE_INDEX if rg[gr]) + " |")
+        L.append("\nSimple model, ready to learn (first 8): " + "; ".join(f"{x} {r['labels'][x][:50]}" for x in r["simple"]["ready"][:8]) + "\n")
+    out = LAB / f"kst-{a.subject.lower()}-1004"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "results.json").write_text(json.dumps(rows, indent=1), encoding="utf-8")
+    (out / "summary.md").write_text("\n".join(L) + "\n", encoding="utf-8")
+    print("\n".join(L))
 
 
 # ── sim ─────────────────────────────────────────────────────────────────────
@@ -264,10 +413,14 @@ def main() -> None:
     tr.add_argument("--subject", default="MATHEMATICS")
     tr.add_argument("--student", type=int, default=1004)
     tr.add_argument("--values", type=float, nargs="+", default=[0.0, 0.15, 0.3, 0.6, 1.0])
+    an = sub.add_parser("anchor")
+    an.add_argument("--subject", default="MATHEMATICS")
+    ks = sub.add_parser("kst")
+    ks.add_argument("--subject", default="MATHEMATICS")
     pl = sub.add_parser("pull")
     pl.add_argument("--student", type=int, default=1004)
     a = ap.parse_args()
-    {"sim": run_sim, "real": run_real, "pull": run_pull, "transfer": run_transfer}[a.cmd](a)
+    {"sim": run_sim, "real": run_real, "pull": run_pull, "transfer": run_transfer, "anchor": run_anchor, "kst": run_kst}[a.cmd](a)
 
 
 if __name__ == "__main__":

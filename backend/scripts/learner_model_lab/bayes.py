@@ -57,7 +57,18 @@ NONMASTER_HEADROOM = 0.7
 LAMBDA = 0.15        # P(one practice item moves a ready, unmastered child to mastery); expert prior
 GAMMA = 0.85         # weight kept by older answers on a subskill each time it is practised again
 TRANSFER = 0.5       # share of an easier form's practice that counts toward the harder skill (expert prior)
-SLIP = 0.05          # a 9/10 from a master is not evidence against mastery
+# Chain prior (7.13). Off: logit P(K_k) = (phi - beta_k) + sum_j w_jk (K_j - 1),
+# w = W_SCALE x Jev confidence that the link exists. On: a subskill whose model
+# parents all carry Jev conditionals takes its prior from them,
+#   none of its parents known  logit = mean_j logit P(right | j not known)
+#   all of them known          logit = max_j logit P(right | j known, untaught)
+#   the gap between the two is split over the parents by each link's own
+#   log-odds ratio (a link answered P(with) <= P(without) carries no weight),
+# and phi only adjusts it: + CHAIN_RHO x (phi - beta_k). Roots keep phi - beta_k.
+CHAIN = False
+CHAIN_RHO = 0.3
+REACH = None         # frontier gate: tau_k - phi <= REACH (None = off; 7.13)
+SLIP = 0.05         # a 9/10 from a master is not evidence against mastery
 
 
 def logsig(x):
@@ -101,6 +112,14 @@ class BayesEngine:
         self.bmed = np.array([nd.beta_med for nd in g.nodes])
         self.pa = [np.array(p, dtype=int) for p in g.parents]
         self.w = [W_SCALE * np.array(w, dtype=float) for w in g.weights]
+        # z_k = coef_k x phi + icpt_k + sum_j w_jk (K_j - 1)
+        self.coef = np.ones(n)
+        self.icpt = -self.bmed.copy()
+        self.chained = np.zeros(n, bool)
+        if CHAIN == "lor":
+            self._link_lor(g)
+        elif CHAIN:
+            self._chain_cpt(g)
         self.ch: List[List[int]] = [[] for _ in range(n)]
         for k, ps in enumerate(g.parents):
             for p in ps:
@@ -143,10 +162,36 @@ class BayesEngine:
                 tgt[t, j] = 1.0
         self._tgt = tgt
 
+    def _link_lor(self, g: Graph) -> None:
+        """Link weight = Jev's log-odds ratio logit P(right | j known) - logit P(right | j not known),
+        in place of W_SCALE x confidence that the link exists. The level stays phi - beta_k:
+        Jev answered for a grade-typical student, so its answers measure how much a
+        link matters, not where a child who lacks everything starts."""
+        lg = lambda p: float(np.log(np.clip(p, 0.02, 0.98) / (1 - np.clip(p, 0.02, 0.98))))
+        for k, ps in enumerate(g.parents):
+            self.w[k] = np.array([max(0.0, lg(g.cond[(j, k)][1]) - lg(g.cond[(j, k)][0])) if (j, k) in g.cond
+                                  else W_SCALE * s for j, s in zip(ps, g.weights[k])])
+
+    def _chain_cpt(self, g: Graph) -> None:
+        lg = lambda p: float(np.log(np.clip(p, 0.02, 0.98) / (1 - np.clip(p, 0.02, 0.98))))
+        for k, ps in enumerate(g.parents):
+            if not ps or any((j, k) not in g.cond for j in ps):
+                continue
+            lo = [lg(g.cond[(j, k)][0]) for j in ps]
+            hi = [lg(g.cond[(j, k)][1]) for j in ps]
+            raw = np.array([max(0.0, h - l) for h, l in zip(hi, lo)])
+            none, full = float(np.mean(lo)), max(hi)
+            gap = max(0.0, full - none)
+            self.w[k] = gap * raw / raw.sum() if raw.sum() > 0 else np.zeros(len(ps))
+            self.coef[k] = CHAIN_RHO
+            # all parents known: z = full + rho (phi - beta_k)
+            self.icpt[k] = none + float(self.w[k].sum()) - CHAIN_RHO * self.bmed[k]
+            self.chained[k] = True
+
     # ── model pieces ──────────────────────────────────────────────────────
     def _z(self, k: int, phi=None):
         phi = PHI[self.f] if phi is None else phi
-        z = phi - self.bmed[k]
+        z = self.coef[k] * phi + self.icpt[k]
         if len(self.pa[k]):
             z = z + (self.K[:, self.pa[k]] - 1.0) @ self.w[k]
         return z
@@ -212,7 +257,7 @@ class BayesEngine:
             cols = np.array(sorted(todo))
             self._dirty -= todo
             ps = ((self._kpad()[:, self._PA[cols]] - 1.0) * self._PW[cols][None]).sum(axis=2)
-            P = sig(PHI[None, :, None] - self.bmed[cols][None, None, :] + ps[:, None, :])
+            P = sig(self.coef[cols][None, None, :] * PHI[None, :, None] + self.icpt[cols][None, None, :] + ps[:, None, :])
             if self.learn:
                 for i, k in enumerate(cols):
                     if self.noln[k] < 0:
@@ -301,8 +346,15 @@ class BayesEngine:
             self._dirty.add(k)
 
     def frontier(self) -> np.ndarray:
-        """(C, n): 1 where the chain has k unmastered and all of k's R prerequisites mastered."""
-        return (1.0 - self.K) * self._kpad()[:, self._RP].prod(axis=2)
+        """(C, n): 1 where the chain has k unmastered and all of k's R prerequisites
+        mastered. With REACH set, k must also be within reach of the chain's
+        ability: tau_k - phi <= REACH. A subskill with no R prerequisite (a graph
+        root, or one whose parents are only easier-form or related) is otherwise
+        ready for every child, whatever its grade."""
+        F = (1.0 - self.K) * self._kpad()[:, self._RP].prod(axis=2)
+        if REACH is not None:
+            F = F * (PHI[self.f][:, None] >= self.bmed[None, :] + MASTERY_MARGIN - REACH)
+        return F
 
     def _pmatrix(self) -> np.ndarray:
         M = self.node_mastered()[:, self._node_of] > 0.5

@@ -22,7 +22,7 @@ import json
 import statistics
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from app.services.calibration.problem_type_registry import (
     PROBLEM_TYPE_REGISTRY,
@@ -34,6 +34,28 @@ ROOT = Path(__file__).resolve().parents[3]
 PILOT = ROOT / "backend" / "reports" / "graph-jev-pilot-2026-10-11"
 MASTERY_MARGIN = 1.4  # theta - beta at which a 2PL item with a=1 gives P = 0.80
 
+# Skill location (7.13). A subskill's beta used to be the median registry
+# beta of its primitive's modes: how hard the ACTIVITY is, the same for a K
+# and a G4 skill served by one primitive. With ANCHOR on, a subskill sits at
+# its grade's place on the 0-10 scale, and an item's beta is that location
+# plus the mode's offset from its primitive's median (the registry keeps
+# ordering modes; it no longer places the skill).
+#   off    registry beta (before 7.13)
+#   grade  GRADE_BASE + GRADE_STEP x grade index
+#   depth  grade, plus a within-grade offset from the subskill's depth in the
+#          same-grade prerequisite graph, spread over DEPTH_SPREAD x GRADE_STEP
+#   blend  grade, plus ACTIVITY_WEIGHT x how far the primitive's registry
+#          median sits from its grade's typical one (an easy activity placed
+#          at G3 sits below the G3 anchor)
+ANCHOR = "off"
+GRADE_BASE = 2.5      # K: the median registry beta of the K subskills
+GRADE_STEP = 1.0
+DEPTH_SPREAD = 0.8
+ACTIVITY_WEIGHT = 0.5
+ACTIVITY_CAP = 1.5
+MODE_OFFSET_CAP = 1.0
+GRADE_INDEX = {"GK": 0, "G1": 1, "G2": 2, "G3": 3, "G4": 4, "G5": 5}
+
 
 @dataclass
 class Item:
@@ -42,6 +64,7 @@ class Item:
     beta: float
     a: float
     c: float
+    raw_beta: Optional[float] = None   # registry beta, for today's engine when ANCHOR is on
 
 
 @dataclass
@@ -55,6 +78,7 @@ class Node:
     primitive: str
     items: List[Item] = field(default_factory=list)
     beta_med: float = 3.0
+    raw_beta_med: float = 3.0
 
 
 @dataclass
@@ -68,6 +92,16 @@ class Graph:
     items: List[Item]
     step: Dict[Tuple[int, int], float]   # Jev `step` score per scored pair
     easier: Dict[Tuple[int, int], float] = field(default_factory=dict)  # Jev `easier_form` per pair
+    anchored: bool = False
+    cond: Dict[Tuple[int, int], Tuple[float, float]] = field(default_factory=dict)  # (parent, child) -> (P right | parent not known, P right | parent known, child untaught)
+
+    def make_item(self, k: int, primitive: str, mode: str) -> Item:
+        """The item a review of subskill k on (primitive, mode) is, on this graph's scale."""
+        a, c = get_item_discrimination(primitive, mode)
+        raw = get_prior_beta(primitive, mode)
+        if not self.anchored:
+            return Item(node=k, mode=mode, beta=raw, a=a, c=c, raw_beta=raw)
+        return Item(node=k, mode=mode, beta=self.nodes[k].beta_med + mode_offset(primitive, mode), a=a, c=c, raw_beta=raw)
 
     def easier_children(self, j: int, parents: List[List[int]], min_easier: float = 0.6, max_step: float = 0.8) -> List[Tuple[int, float]]:
         """Subskills that are a harder version of j (E edges, not R): (child, easier score)."""
@@ -109,6 +143,58 @@ def _modes(raw: dict) -> List[str]:
     if em:
         return list(em)
     return list(PROBLEM_TYPE_REGISTRY.get(raw.get("primitive_type") or "", {}).keys()) or ["default"]
+
+
+def mode_offset(primitive: str, mode: str) -> float:
+    """A mode's beta relative to its primitive's median mode, capped."""
+    modes = PROBLEM_TYPE_REGISTRY.get(primitive) or {}
+    if not modes:
+        return 0.0
+    med = statistics.median(cfg.prior_beta for cfg in modes.values())
+    off = get_prior_beta(primitive, mode) - med
+    return max(-MODE_OFFSET_CAP, min(MODE_OFFSET_CAP, off))
+
+
+def _same_grade_depth(nodes, parents) -> List[float]:
+    """Per subskill, its longest same-grade prerequisite chain, scaled 0-1 within its grade."""
+    memo: Dict[int, int] = {}
+
+    def d(i: int) -> int:
+        if i not in memo:
+            memo[i] = 0
+            memo[i] = max((1 + d(p) for p in parents[i] if nodes[p].grade == nodes[i].grade), default=0)
+        return memo[i]
+
+    raw = [d(i) for i in range(len(nodes))]
+    top: Dict[str, int] = {}
+    for i, nd in enumerate(nodes):
+        top[nd.grade] = max(top.get(nd.grade, 0), raw[i])
+    return [raw[i] / top[nd.grade] if top[nd.grade] else 0.5 for i, nd in enumerate(nodes)]
+
+
+def _activity_dev(nodes) -> List[float]:
+    """Per subskill, its primitive's registry median minus its grade's typical
+    one, capped. Primitives whose registry betas are already relative to the
+    skill (practice-problem derive_*, median <= 0.5) carry no deviation."""
+    absolute = [nd.raw_beta_med > 0.5 for nd in nodes]
+    med: Dict[str, float] = {}
+    for gr in GRADE_INDEX:
+        bs = [nd.raw_beta_med for nd, ab in zip(nodes, absolute) if ab and nd.grade == gr]
+        med[gr] = statistics.median(bs) if bs else 0.0
+    return [max(-ACTIVITY_CAP, min(ACTIVITY_CAP, nd.raw_beta_med - med[nd.grade])) if ab else 0.0
+            for nd, ab in zip(nodes, absolute)]
+
+
+def _anchor(nodes, parents) -> None:
+    depth = _same_grade_depth(nodes, parents) if ANCHOR == "depth" else [0.5] * len(nodes)
+    dev = _activity_dev(nodes) if ANCHOR == "blend" else [0.0] * len(nodes)
+    for i, nd in enumerate(nodes):
+        loc = GRADE_BASE + GRADE_STEP * GRADE_INDEX[nd.grade] + ACTIVITY_WEIGHT * dev[i]
+        if ANCHOR == "depth":
+            loc += DEPTH_SPREAD * GRADE_STEP * (depth[i] - 0.5)
+        nd.beta_med = loc
+        for it in nd.items:
+            it.beta = loc + mode_offset(nd.primitive, it.mode)
 
 
 def _dag(n: int, scored: List[Tuple[float, int, int]], cap: int | None) -> Tuple[List[List[int]], List[List[float]]]:
@@ -165,8 +251,9 @@ def load(subject: str = "LANGUAGE_ARTS", grades=None, min_score: float = 0.6, ma
     for i, nd in enumerate(nodes):
         for m in nd._modes:  # type: ignore[attr-defined]
             a, c = get_item_discrimination(nd.primitive, m)
-            nd.items.append(Item(node=i, mode=m, beta=get_prior_beta(nd.primitive, m), a=a, c=c))
-        nd.beta_med = statistics.median(it.beta for it in nd.items)
+            b = get_prior_beta(nd.primitive, m)
+            nd.items.append(Item(node=i, mode=m, beta=b, a=a, c=c, raw_beta=b))
+        nd.beta_med = nd.raw_beta_med = statistics.median(it.beta for it in nd.items)
         items.extend(nd.items)
 
     scored: Dict[Tuple[int, int], float] = {}
@@ -189,8 +276,18 @@ def load(subject: str = "LANGUAGE_ARTS", grades=None, min_score: float = 0.6, ma
 
     mp, mw = _dag(len(nodes), pairs, max_parents)
     tp, ts = _dag(len(nodes), pairs, None)
+    if ANCHOR != "off":
+        _anchor(nodes, mp)
+    cond = {}
+    cpath = PILOT / f"jev_conditionals_{subject.lower()}.json"
+    if cpath.exists():
+        for v in json.loads(cpath.read_text(encoding="utf-8")).values():
+            a, b = index.get(v["parent"]), index.get(v["target"])
+            if a is not None and b is not None:
+                cond[(a, b)] = (v["p_without"], v["p_with"])
     return Graph(nodes=nodes, index=index, parents=mp, weights=mw,
-                 truth_parents=tp, truth_scores=ts, items=items, step=step, easier=easier)
+                 truth_parents=tp, truth_scores=ts, items=items, step=step, easier=easier,
+                 anchored=ANCHOR != "off", cond=cond)
 
 
 if __name__ == "__main__":

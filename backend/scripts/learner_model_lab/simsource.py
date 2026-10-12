@@ -94,8 +94,7 @@ class Simulator:
         prim, mode = key.split("|", 1)
         tpl = self.templates.get(key) or DEFAULT
         n = rng.choices(list(tpl.sizes), weights=list(tpl.sizes.values()))[0]
-        a, c = get_item_discrimination(prim, mode)
-        it = Item(node=k, mode=mode, beta=get_prior_beta(prim, mode), a=a, c=c)
+        it = self.g.make_item(k, prim, mode)
         results = []
         for i in range(n):
             p = truth.p_right(it)

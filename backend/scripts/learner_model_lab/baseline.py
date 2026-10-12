@@ -21,6 +21,11 @@ from app.services.calibration_engine import CalibrationEngine, item_information,
 from .graph import MASTERY_MARGIN, Graph, Item
 
 
+def _beta(it: Item) -> float:
+    """Production prices items with the registry beta, whatever the lab's anchor."""
+    return it.beta if it.raw_beta is None else it.raw_beta
+
+
 class BaselineEngine:
     name = "today"
 
@@ -37,24 +42,24 @@ class BaselineEngine:
 
     def predict(self, it: Item) -> float:
         a = self._ability(it.node)
-        return p_correct(a.theta, it.a, it.beta, it.c)
+        return p_correct(a.theta, it.a, _beta(it), it.c)
 
     def observe(self, it: Item, score: float, n: float = 1.0) -> None:
         a = self._ability(it.node)
         self.ab[a.skill_id] = self.cal._update_student_theta(
-            a, it.beta, score / 10.0, datetime.now(timezone.utc),
+            a, _beta(it), score / 10.0, datetime.now(timezone.utc),
             self.g.nodes[it.node].primitive, it.mode, score, it.a, it.c, n)
 
     def mastery(self) -> List[float]:
         out = []
         for k, nd in enumerate(self.g.nodes):
             a = self._ability(k)
-            z = (a.theta - (nd.beta_med + MASTERY_MARGIN)) / max(a.sigma, 1e-3)
+            z = (a.theta - (nd.raw_beta_med + MASTERY_MARGIN)) / max(a.sigma, 1e-3)
             out.append(0.5 * (1 + math.erf(z / math.sqrt(2))))
         return out
 
     def select(self, items: List[Item]) -> Item:
         def util(it: Item) -> float:
             a = self._ability(it.node)
-            return item_information(a.theta, it.a, it.beta, it.c) * a.sigma ** 2
+            return item_information(a.theta, it.a, _beta(it), it.c) * a.sigma ** 2
         return max(items, key=util)
