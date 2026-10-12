@@ -51,6 +51,9 @@ LEAPFROG_CREDIBILITY_WEIGHT = 1  # indirect observations credited per leapfrog
 
 # Per-skill cap in current-band selection — prevents one skill dominating a session
 MAX_CURRENT_ITEMS_PER_SKILL = 3
+# Share of a Pulse session the learner model spends confirming what it believes
+# is mastered but the lifecycle has not recorded (the rest teaches).
+PULSE_CONFIRM_SHARE = 0.34
 
 # θ → mode mapping thresholds (PRD §3.1)
 THETA_TO_MODE = [
@@ -126,6 +129,10 @@ class PulseItemSpec(BaseModel):
     eval_mode_hint: Optional[str] = None
     gate_reference_beta: Optional[float] = None
     frontier_context: Optional[ItemFrontierContext] = None
+    # Learner-model selection (LearnerStateService.select): learn | confirm
+    selection_kind: Optional[str] = None
+    selection_reason: Optional[str] = None
+    p_right: Optional[float] = None
 
 
 class CreatePulseSessionRequest(BaseModel):
@@ -165,6 +172,10 @@ class PulseResultRequest(BaseModel):
     primitive_type: str
     eval_mode: str
     duration_ms: int = Field(ge=0)
+    # Per-challenge first-try results when the primitive reports them; the
+    # learner state reads these instead of the final score (retry-until-correct
+    # primitives finish at 10).
+    first_try: Optional[List[bool]] = None
 
 
 class ThetaUpdate(BaseModel):

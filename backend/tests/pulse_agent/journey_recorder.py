@@ -39,8 +39,9 @@ class ItemResult:
     theta_after: float
     gate_before: int
     gate_after: int
-    leapfrog_triggered: bool = False
+    leapfrog_triggered: bool = False          # retired with leapfrog (always False)
     inferred_skills: List[str] = field(default_factory=list)
+    selection_kind: Optional[str] = None      # learner model: learn | confirm
 
     # IRT result data (from calibration after scoring)
     p_correct: Optional[float] = None
@@ -48,6 +49,10 @@ class ItemResult:
     discrimination_a: Optional[float] = None
     p_blended: Optional[float] = None       # credibility-blended P used for gate checks
     empirical_p: Optional[float] = None     # empirical pass rate (score/10 weighted)
+
+    # The engine's priced item identity (WORKSTREAMS 7.5/7.6)
+    primitive_affinity: Optional[str] = None
+    eval_mode_name: Optional[str] = None
 
     # Frontier context (from session assembly — why was this item chosen?)
     dag_distance: Optional[int] = None

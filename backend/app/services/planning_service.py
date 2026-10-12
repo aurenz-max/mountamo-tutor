@@ -1031,6 +1031,7 @@ class PlanningService:
                     # Step 1a (retention is lifecycle's job, not the pacer's).
                     continue
                 selector_added = 0
+                learner_graph = False
                 if self.analytics:
                     try:
                         targets = await self.analytics.select_session_targets(
@@ -1039,6 +1040,7 @@ class PlanningService:
                             grade=self._subject_grade(subj, student_grade, grade_overrides),
                             count=pace.selector_count if pace else 5,
                         )
+                        learner_graph = not targets.get("no_learner_graph")
                         for o in targets.get("objectives", []):
                             all_candidates.append({
                                 "skill_id":         o["subskillId"],
@@ -1063,7 +1065,10 @@ class PlanningService:
                             f"[SESSION_PLAN] Selector failed for {subj}, "
                             f"falling back to unlocked scan: {e}"
                         )
-                if selector_added:
+                if selector_added or learner_graph:
+                    # The learner model is the one selection brain; the
+                    # unlocked scan below serves only subjects with no
+                    # learner graph (or a selector error).
                     continue
 
                 try:

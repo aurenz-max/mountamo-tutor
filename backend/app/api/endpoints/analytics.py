@@ -18,7 +18,7 @@ from ...services.ai_recommendations import AIRecommendationService
 from ...services.firestore_analytics import FirestoreAnalyticsService
 from ...services.progress_report import ProgressReportService
 from ...services.progress_report_narrative import get_narrative as get_progress_narrative
-from ...dependencies import get_firestore_analytics_service
+from ...dependencies import get_firestore_analytics_service, get_learner_state_service
 from ...core.config import settings
 
 router = APIRouter()
@@ -1847,3 +1847,56 @@ async def analytics_health_check(
             "user_id": user_id,
             "timestamp": datetime.now().isoformat()
         }
+
+# ============================================================================
+# LEARNER MODEL (two-layer graph model, shadow — WORKSTREAMS 7.4d)
+# ============================================================================
+
+LEARNER_MODEL_SUBJECTS = ("MATHEMATICS", "LANGUAGE_ARTS", "SCIENCE", "SOCIAL_STUDIES")
+
+
+def _check_student_access(user_context: dict, student_id: int) -> None:
+    if user_context["student_id"] != student_id and not getattr(settings, 'ALLOW_ANY_STUDENT_ANALYTICS', False):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Access denied to student {student_id}")
+
+
+@router.get("/student/{student_id}/learner-model")
+async def get_learner_model(
+    student_id: int,
+    subject: Optional[str] = Query(None, description="One subject; omitted = every published learner graph"),
+    top: int = Query(8, ge=1, le=50),
+    user_context: dict = Depends(get_user_context),
+    learner_state=Depends(get_learner_state_service),
+):
+    """The stored two-layer state as a profile section: per subject, what the
+    model believes is mastered, what the student is ready to learn next (all
+    prerequisites mastered, not yet mastered) and what they are working on.
+    Reads one doc per subject; never replays history. Shadow: nothing that
+    picks content reads this yet."""
+    _check_student_access(user_context, student_id)
+    subjects = [subject] if subject else list(LEARNER_MODEL_SUBJECTS)
+    out = []
+    for s in subjects:
+        sec = await learner_state.profile(student_id, s, top=top)
+        if sec is not None:
+            out.append(sec)
+    return {"student_id": student_id, "subjects": out}
+
+
+@router.get("/student/{student_id}/learner-model/influence")
+async def get_learner_model_influence(
+    student_id: int,
+    since: str = Query(..., description="ISO timestamp: start of the lesson or Pulse session"),
+    until: Optional[str] = Query(None),
+    subject: Optional[str] = Query(None),
+    top: int = Query(10, ge=1, le=50),
+    user_context: dict = Depends(get_user_context),
+    learner_state=Depends(get_learner_state_service),
+):
+    """What the answers since `since` did to the model: the subskills practised
+    (P(right) before -> after), the prerequisites they gave evidence for
+    (upstream) and the next skills they made more likely (downstream), plus
+    the same per answer. For after-lesson and after-Pulse review."""
+    _check_student_access(user_context, student_id)
+    return await learner_state.influence(student_id, since, until, subject, top=top)

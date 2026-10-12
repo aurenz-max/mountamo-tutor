@@ -9,6 +9,7 @@ Pulse uses for variety.
   learner_graphs/{SUBJECT}/versions/{vid}       method, params, counts, validation
   learner_graphs/{SUBJECT}/versions/{vid}/nodes/{grade}:{subskill_id}
       grade ("Kindergarten" | "1".."12"), subskill_id, skill_id, unit_id, label,
+      beta (median prior beta of the subskill's items; mastered = theta >= beta + 1.4),
       parents: [{key, relation R|E|related, step, easier_form, fluency, score, in_model}]
 
 Node keys carry the grade because bare subskill ids repeat across grades.
@@ -89,7 +90,8 @@ def build(subject: str) -> dict:
             n_cross += g.nodes[p].grade != nd.grade
         nodes[_key(g, k)] = {"grade": GRADE_KEY[nd.grade], "subskill_id": nd.sid,
                              "skill_id": nd.skill.split(":", 1)[1], "unit_id": nd.unit.split(":", 1)[1],
-                             "label": nd.label.split("\n")[0].strip(), "parents": parents}
+                             "label": nd.label.split("\n")[0].strip(), "beta": round(nd.beta_med, 3),
+                             "parents": parents}
     body = json.dumps(nodes, sort_keys=True)
     vid = f"jev-{datetime.now(timezone.utc):%Y%m%d}-{hashlib.sha1(body.encode()).hexdigest()[:8]}"
     meta = {"created_at": datetime.now(timezone.utc).isoformat(), "subject": subject,

@@ -2293,6 +2293,38 @@ class FirestoreService:
     # STUDENT PLANNING FIELDS (capacity, development patterns, aggregate metrics)
     # ============================================================================
 
+    # ── Learner state (two-layer model, shadow; app/services/learner_model) ──
+
+    def _learner_state_doc(self, student_id, subject: str):
+        return self._student_doc(student_id).collection('learner_state').document(subject)
+
+    async def get_learner_state(self, student_id, subject: str) -> Optional[Dict[str, Any]]:
+        doc = self._learner_state_doc(student_id, subject).get()
+        return doc.to_dict() if doc.exists else None
+
+    async def get_learner_grid(self, student_id, subject: str, key: str) -> Optional[Dict[str, Any]]:
+        doc = self._learner_state_doc(student_id, subject).collection('grids').document(key).get()
+        return doc.to_dict() if doc.exists else None
+
+    async def save_learner_update(self, student_id, subject: str, summary: Dict[str, Any],
+                                  grids: Dict[str, Dict[str, Any]], event: Dict[str, Any]) -> None:
+        """Summary, the touched grids and the event in one batch: all or nothing."""
+        ref = self._learner_state_doc(student_id, subject)
+        batch = self.client.batch()
+        batch.set(ref, summary)
+        for key, grid in grids.items():
+            batch.set(ref.collection('grids').document(key), grid)
+        batch.set(self._student_doc(student_id).collection('learner_events').document(event['event_id']), event)
+        batch.commit()
+
+    async def get_learner_events(self, student_id, since: str, until: Optional[str] = None,
+                                 subject: Optional[str] = None) -> List[Dict[str, Any]]:
+        q = self._student_doc(student_id).collection('learner_events').where('ts', '>=', since)
+        if until:
+            q = q.where('ts', '<=', until)
+        rows = [d.to_dict() for d in q.stream()]
+        return [r for r in rows if subject is None or r.get('subject') == subject]
+
     async def get_student_planning_fields(
         self,
         student_id: int

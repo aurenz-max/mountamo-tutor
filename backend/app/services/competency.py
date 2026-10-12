@@ -33,6 +33,7 @@ class CompetencyService:
         self.firestore_service = None  # Will be set by dependency injection
         self.mastery_lifecycle_engine = None  # Will be set by dependency injection
         self.calibration_engine = None  # Will be set by dependency injection
+        self.learner_state_service = None  # two-layer learner model, shadow (dependency injection)
         self.curriculum_service = curriculum_service
         
         # Competency calculation settings
@@ -219,6 +220,8 @@ class CompetencyService:
         eval_mode: Optional[str] = None,
         attempt_id: Optional[str] = None,
         evidence_parts: int = 1,
+        first_try: Optional[List[bool]] = None,
+        grade: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Update competency based on problem evaluation.
 
@@ -227,6 +230,9 @@ class CompetencyService:
         `evidence_parts` is the number of independently scored parts inside
         the submission (multi-challenge primitives) — threaded to calibration
         (likelihood weight) and the mastery lifecycle (evidence volume).
+        `first_try` (per-challenge first-try results) and `grade` (the lesson's
+        grade, which picks the node when a subskill id repeats across grades)
+        feed only the shadow learner state.
         """
         logger.info(f"🔍 COMPETENCY_SERVICE: === UPDATE_COMPETENCY_FROM_PROBLEM ===")
         logger.info(f"🔍 COMPETENCY_SERVICE: Student: {student_id}, Subject: {subject}, Skill: {skill_id}, Subskill: {subskill_id}, Source: {source}")
@@ -509,6 +515,15 @@ class CompetencyService:
                         )
                 except Exception as ml_err:
                     logger.error(f"⚠️ COMPETENCY_SERVICE: Mastery lifecycle engine error (non-fatal): {ml_err}")
+
+            # --- Learner state hook: two-layer model, shadow (WORKSTREAMS 7.4d) ---
+            # After the canonical fan-out; never raises, runs in the background in production.
+            if self.learner_state_service and source != "diagnostic":
+                await self.learner_state_service.submit(
+                    student_id=student_id, subject=subject, subskill_id=subskill_id, score=score,
+                    primitive_type=primitive_type, eval_mode=eval_mode, first_try=first_try,
+                    evidence_parts=evidence_parts, grade=grade, source=source, attempt_id=attempt_id,
+                )
 
             logger.info(f"✅ COMPETENCY_SERVICE: Competency update successful")
             return result

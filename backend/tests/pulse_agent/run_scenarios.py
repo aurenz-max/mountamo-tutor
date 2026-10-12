@@ -88,6 +88,8 @@ def build_engine() -> tuple:
         mastery_lifecycle_engine=mastery_lifecycle_engine,
         learning_paths_service=learning_paths_service,
     )
+    from app.services.learner_model.service import LearnerStateService
+    pulse_engine.learner_state = LearnerStateService(firestore_service, background=False)
     return pulse_engine, firestore_service
 
 
@@ -181,6 +183,11 @@ async def build_engine_in_memory(
         mastery_lifecycle_engine=mastery_lifecycle_engine,
         learning_paths_service=learning_paths_service,
     )
+    # The learner model selects Pulse items: published learner graph (read-only),
+    # state in memory, observed inline so the next session sees every answer
+    from app.services.learner_model.service import LearnerStateService
+    from .full_loop import _published_learner_graph
+    pulse_engine.learner_state = LearnerStateService(mem_fs, graph_source=_published_learner_graph, background=False)
 
     logger.info(
         f"[InMemory] Engine ready: {len(subjects)} subject(s) loaded, "

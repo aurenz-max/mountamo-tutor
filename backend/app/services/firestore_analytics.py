@@ -69,6 +69,7 @@ class FirestoreAnalyticsService:
         self.fs = firestore_service
         self.curriculum = curriculum_service
         self.learning_paths = learning_paths_service
+        self.learner_state = None  # LearnerStateService: the one selection brain (lazy)
 
         # Response cache — 2-minute TTL (data is live, cache absorbs rapid re-requests)
         self._cache: Dict[str, Tuple[datetime, Any]] = {}
@@ -1817,151 +1818,43 @@ class FirestoreAnalyticsService:
         subject: str,
         grade: Optional[str] = None,
         count: int = 4,
-        diversity_lambda: float = 0.7,
     ) -> Dict[str, Any]:
         """
-        Pick the next lesson's target subskills from knowledge-graph state.
+        Pick the next lesson's target subskills: the learner model's picks
+        (`LearnerStateService.select`), the same brain that assembles Pulse
+        sessions. Two target kinds:
 
-        Pure IRT selection over get_knowledge_graph_progress nodes — the same
-        p_correct (at hardest-assigned-mode β) the mastery gates check, no
-        hand-tuned urgency formulas. Two target kinds:
+        - "confirm": the model believes the subskill mastered but the mastery
+          lifecycle has not recorded it; the lesson's job is the evidence that
+          advances the gate. Half the picks when supply allows.
+        - "learn": expected learning, P(right) x teaching value over the Jev
+          learner graph (frontier, unlock, easier-form transfer).
 
-        - "confirm": p_correct >= next gate's GATE_P_THRESHOLDS entry — the
-          model believes the student is ready; the lesson's job is to produce
-          the eval evidence that advances the gate.
-        - "learn": p_correct below the next gate threshold — ranked by
-          p_correct descending, so picks sit closest to the decision boundary
-          (most productive practice, most informative evidence).
-
-        Nodes without IRT data (untested skills) are "cold_start" fallbacks,
-        shallowest-first.
-
-        diversity_lambda shapes lesson COMPOSITION, never priority: each
-        candidate's score is discounted by λ^k where k = picks already made
-        from its parent skill, so a skill's 2nd/3rd subskill must beat other
-        skills' best by a widening margin. λ=1 recovers the pure ranking
-        exactly (no discount); λ→0 approaches strict round-robin. This
-        replaces the old max_per_skill hard cap, which both scattered picks
-        AND stranded budget at every massed-practice-decay setting in the
-        planner-lab toy sim. The default 0.7 is an aesthetic prior; the
-        pulse-planner harness is what will calibrate it.
+        `grade` (a per-subject promotion override) moves the exposure window;
+        default is the student's grade of record. A subject with no learner
+        graph returns no objectives and `no_learner_graph: True` (the planner's
+        legacy unlocked scan still serves those subjects).
 
         Output objectives are preBuiltObjectives-shaped so any consumer
         (tray fill mode, daily plan) can launch them directly.
         """
-        from app.models.mastery_lifecycle import GATE_P_THRESHOLDS
-
-        kg = await self.get_knowledge_graph_progress(
-            student_id, subject, include_nodes=True, grade=grade
+        if self.learner_state is None:
+            from app.services.learner_model.service import LearnerStateService
+            self.learner_state = LearnerStateService(self.fs)
+        sel = await self.learner_state.select(
+            student_id, subject, count=count, confirm_share=0.5, grade=grade,
         )
-        nodes = kg.get("nodes", [])
-        status_by_id = {n["subskill_id"]: n["status"] for n in nodes}
-
-        ELIGIBLE = {"frontier", "in_progress", "in_review"}
-        confirm: List[Dict[str, Any]] = []
-        learn: List[Dict[str, Any]] = []
-        cold_start: List[Dict[str, Any]] = []
-
-        for n in nodes:
-            # The graph carries both skill and subskill nodes; lessons target
-            # subskills only (skill nodes have no eval modes or lifecycle).
-            if n.get("entity_type") != "subskill":
-                continue
-            if n["status"] not in ELIGIBLE:
-                continue
-            prereqs = n.get("prerequisite_ids", [])
-            prereqs_ready = all(
-                status_by_id.get(p) in ("mastered", "inferred") for p in prereqs
-            )
-            gate = n.get("current_gate", 0)
-            next_gate = min(gate + 1, 4)
-            threshold = GATE_P_THRESHOLDS[next_gate]
-            p = n.get("p_correct")
-
-            candidate = {
-                "subskill_id": n["subskill_id"],
-                "skill_id": n.get("skill_id", ""),
-                "description": n.get("description", ""),
-                "status": n["status"],
-                "current_gate": gate,
-                "next_gate": next_gate,
-                "gate_threshold": threshold,
-                "p_correct": p,
-                "sigma": n.get("sigma"),
-                "depth": n.get("depth", 0),
-                "prereqs_ready": prereqs_ready,
-            }
-
-            if p is None:
-                candidate["kind"] = "cold_start"
-                candidate["reason"] = (
-                    "no IRT estimate yet (untested skill) - frontier node, "
-                    f"depth {candidate['depth']}"
-                )
-                cold_start.append(candidate)
-            elif p >= threshold:
-                candidate["kind"] = "confirm"
-                candidate["reason"] = (
-                    f"P(correct) {p:.3f} >= gate-{next_gate} threshold "
-                    f"{threshold:.2f} - evaluate to confirm and advance the gate"
-                )
-                confirm.append(candidate)
-            else:
-                candidate["kind"] = "learn"
-                candidate["reason"] = (
-                    f"P(correct) {p:.3f} below gate-{next_gate} threshold "
-                    f"{threshold:.2f} - productive practice at the learning edge"
-                )
-                learn.append(candidate)
-
-        # Rank: confirm by readiness (highest p first, prereqs-ready first);
-        # learn by closeness to the decision boundary (highest p first);
-        # cold_start shallowest-first so prerequisites come before dependents.
-        confirm.sort(key=lambda c: (not c["prereqs_ready"], -(c["p_correct"] or 0)))
-        learn.sort(key=lambda c: (not c["prereqs_ready"], -(c["p_correct"] or 0)))
-        cold_start.sort(key=lambda c: (not c["prereqs_ready"], c["depth"]))
-
-        # Compose: aim for half confirm / half learn, backfill from whichever
-        # pool has supply, then cold_start. Diversity via λ discount, not a cap.
-        per_skill: Dict[str, int] = defaultdict(int)
-        picked: List[Dict[str, Any]] = []
-
-        def take(pool: List[Dict[str, Any]], want: int, base_score) -> None:
-            # Greedy: each step picks the candidate maximizing
-            # (prereqs_ready, base_score × λ^k). Pools are pre-sorted, so
-            # ties resolve to the pool's pure-IRT order (λ=1 ⇒ identical).
-            while want > 0 and len(picked) < count:
-                best: Optional[Dict[str, Any]] = None
-                best_key: Optional[tuple] = None
-                for c in pool:
-                    if c in picked:
-                        continue
-                    discount = diversity_lambda ** per_skill[c["skill_id"]]
-                    key = (c["prereqs_ready"], base_score(c) * discount)
-                    if best is None or key > best_key:
-                        best, best_key = c, key
-                if best is None:
-                    return
-                picked.append(best)
-                per_skill[best["skill_id"]] += 1
-                want -= 1
-
-        # confirm/learn score on p_correct (both pools rank highest-p first);
-        # cold_start scores shallowest-first so prereqs precede dependents.
-        p_score = lambda c: c["p_correct"] or 0.0
-        depth_score = lambda c: 1.0 / (1.0 + max(0, c["depth"]))
-
-        take(confirm, count - count // 2, p_score)
-        take(learn, count - len(picked), p_score)
-        take(confirm, count - len(picked), p_score)
-        take(cold_start, count - len(picked), depth_score)
+        if sel is None:
+            return {"student_id": student_id, "subject": subject, "grade": grade,
+                    "selector": "learner_model", "no_learner_graph": True,
+                    "objectives": [], "pool_sizes": {}}
 
         # Curriculum titles for the picks (unit title, skill description) so
         # consumers like the Lesson Builder tray can render/compose the topic
         # without a second lookup. Best-effort: the CLI probe runs without a
         # CurriculumService and still works.
         subskill_lookup: Dict[str, Dict[str, Any]] = {}
-        if self.curriculum and picked:
+        if self.curriculum and sel["picks"]:
             try:
                 hierarchy = await self._build_curriculum_hierarchy(subject, grade)
                 subskill_lookup = hierarchy.get("subskill_lookup", {})
@@ -1972,28 +1865,31 @@ class FirestoreAnalyticsService:
         # model state — confirm targets get "apply" (produce gate evidence),
         # learn targets "identify"/"explain" by whether the gate is open yet.
         objectives = []
-        for c in picked:
-            if c["kind"] == "confirm":
+        for p in sel["picks"]:
+            if p["kind"] == "confirm":
                 verb = "apply"
-            elif c["current_gate"] == 0:
+            elif p["current_gate"] == 0:
                 verb = "identify"
             else:
                 verb = "explain"
-            cur = subskill_lookup.get(c["subskill_id"], {})
+            cur = subskill_lookup.get(p["subskill_id"], {})
             objectives.append(
                 {
-                    "id": c["subskill_id"],
-                    "text": c["description"],
+                    "id": p["subskill_id"],
+                    "text": p["description"],
                     "verb": verb,
-                    "subskillId": c["subskill_id"],
-                    "skillId": c["skill_id"],
+                    "subskillId": p["subskill_id"],
+                    "skillId": p["skill_id"],
+                    "grade": p["grade"],
                     "skillDescription": cur.get("skill_description", ""),
                     "unitId": cur.get("unit_id", ""),
                     "unitTitle": cur.get("unit_title", ""),
-                    "kind": c["kind"],
-                    "reason": c["reason"],
-                    "pCorrect": c["p_correct"],
-                    "currentGate": c["current_gate"],
+                    "kind": p["kind"],
+                    "reason": p["reason"],
+                    "pCorrect": p["p_right"],
+                    "pMastered": p["p_mastered"],
+                    "targetBeta": p["target_beta"],
+                    "currentGate": p["current_gate"],
                 }
             )
 
@@ -2001,13 +1897,10 @@ class FirestoreAnalyticsService:
             "student_id": student_id,
             "subject": subject,
             "grade": grade,
-            "diversity_lambda": diversity_lambda,
+            "selector": "learner_model",
+            "graph_version": sel.get("graph_version"),
             "objectives": objectives,
-            "pool_sizes": {
-                "confirm": len(confirm),
-                "learn": len(learn),
-                "cold_start": len(cold_start),
-            },
+            "pool_sizes": sel.get("pool_sizes", {}),
         }
 
     # ------------------------------------------------------------------

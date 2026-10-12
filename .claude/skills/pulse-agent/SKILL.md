@@ -13,13 +13,13 @@ description: >-
 # Pulse Agent — Synthetic Student Journey Simulator
 
 Run synthetic student profiles through Lumina's adaptive machinery without a
-real student or browser. Modes 1–3 exercise the PRODUCTION engine (the
-regression harness while it is live); mode 4 is where a replacement learner
-model is judged against it.
+real student or browser. Modes 1–3 exercise the PRODUCTION engine (since
+2026-10-12 the learner model selects); mode 4 is the offline lab that judges
+learner-model changes.
 
 1. **Engine mode** (v1, default) — scripted archetype scores drive PulseEngine
-   directly. Validates IRT-derived mastery, unified item selection, leapfrog
-   unlock propagation.
+   directly. Validates IRT-derived mastery and that every item comes from the
+   learner model.
 2. **Truth mode** (`--truth`) — scores come from a LatentStudent ground-truth
    model (2PL response vs item β on the engine's 0-10 θ scale, with learning,
    forgetting, and per-skill weakness clusters). Validates the ESTIMATOR:
@@ -103,6 +103,28 @@ Cosmos is deprecated: the loop runs `CompetencyService` with `cosmos_db=None`
 - `/pulse-agent lab frontier MATHEMATICS` — selection lab, every policy
 - `/pulse-agent lab check` — Gibbs sampler vs exact enumeration (run after
   any change to the graph model's inference)
+
+## Production selector (user ruling 2026-10-12)
+
+The learner model is the only selection brain: `PulseEngine.assemble_session`
+and `select_session_targets` both call `LearnerStateService.select`. Leapfrog,
+cold-start DAG probes and Fisher x sigma^2 over the published graph are gone;
+`selection_sweep.py` (which patched `select_best_mode`) was deleted. Engine,
+truth and loop modes wire a `LearnerStateService` on the published learner
+graph (read-only) with in-memory state, and answer each item with the registry
+mode nearest its `target_beta` (`full_loop._nearest_registry_mode`, mirroring
+the frontend pin). Assertions that replaced the leapfrog ones:
+`items_from_learner_model` / `pulse_from_learner_model` (every item has a
+kind), `discovery` / `discovery_active` (capable students get confirm items on
+never-practised subskills), `miss_streak` (truth) / `pulse_miss_streak` (loop),
+<= 3 misses (score < 5) in a row.
+
+10-12 switch, 10-day loops vs the old engine (seed 42, K math): steady 23
+distinct targets vs 7, 4 at gate 4 vs 0; gifted 77 subskills seen vs 56, 10
+discovery checks, but 11 at gate 4 vs 19 (breadth over depth) and 100% pulse
+success; struggling loop 82% pulse success. Truth mode: struggling 70% success
+vs 19%, longest miss run 4 vs 6 (`miss_streak` FAILS at 3: nothing easier than
+K in the graph, roadmap P5.5). Reports: `backend/reports/sunset-after/`.
 
 ## Lab mode (learner-model lab)
 
@@ -217,13 +239,13 @@ cd backend && python -m tests.pulse_agent.run_scenarios --profile <name> \
 
 Loop mode logs one line per virtual day:
 ```
-Day 3/15: plan=8 subskills, did 24 lesson + 6 pulse items, avg=7.7, mastered=24, leapfrogs=1
+Day 3/15: plan=8 subskills, did 24 lesson + 6 pulse items, avg=7.7, mastered=24, pulse learn/confirm=4/2
 ```
 
 ### Step 4: Present Results
 
 **Engine/truth mode:** assertion table, session timeline, notable events
-(leapfrogs, θ trends). Truth runs add the Truth vs Estimate section (θ_true
+(confirm/discovery items, θ trends). Truth runs add the Truth vs Estimate section (θ_true
 vs θ_est per skill, MAE/bias, convergence-over-sessions).
 
 **Loop mode:** every run also emits a self-contained interactive HTML dashboard
@@ -234,14 +256,15 @@ gate distribution; rendered from `loop_report_template.html` by
 presenting results. The markdown report
 (`reports/<grade>/loop_report_<name>_<subject>.md`) has:
 - Assertions (parity, serve integrity, plan coverage, responsiveness,
-  mastered-leaves-targets, plan-not-stale, leapfrogging-active,
+  mastered-leaves-targets, plan-not-stale, pulse-from-learner-model,
+  discovery-active, pulse-miss-streak,
   reviews-surfaced, weakness routing)
 - Curriculum Progression (per subject: total subskills, mastered day 1 →
   final, % mastered, still-active — "how far did the student get")
 - Day Timeline (planned → done, per-subject item split, gate advances,
-  leapfrogs, cumulative mastered, learn targets per day)
-- Leapfrog Audit (every graph jump: day, subject, frontier probe passed,
-  ancestors inferred, score — "is leapfrogging occurring" is answered here)
+  pulse learn/confirm, cumulative mastered, learn targets per day)
+- Pulse Audit (first/last day: each item's subskill, kind, band, target β,
+  model P(right), score — read this to judge what the learner model served)
 - Recommendation Audit (first/mid/last day: every selector pick with its
   kind/verb/P(correct)/reason — read this to judge whether the selection
   brain behaves sensibly)
@@ -268,9 +291,13 @@ presenting results. The markdown report
   and the planner/selector re-serves mastered work. Classify by subskill-id
   membership (or fetch unfiltered + key by id); also check `_norm_subject` /
   `rollup_subject_key` strip `_GK` as well as `_G<digits>`.
-- `leapfrogging_active` FAIL → a capable student never jumped ahead. Check
-  frontier probe assembly (pulse band mix) and `_check_leapfrog` ancestor
-  inference; also confirm the harness is reading `result.leapfrog`.
+- `discovery_active` FAIL → a capable student was never checked on a
+  never-practised subskill. Check `LearnerStateService.select`'s confirm pool
+  (P(mastered) >= 0.8, gate < 4, within the grade of record) and its
+  unseen/seen interleave.
+- `pulse_miss_streak` FAIL → the selector served a long run of items the child
+  missed. Check teach gain (P(right) x value) and whether easier forms exist
+  below the child in the learner graph.
 - `reviews_surfaced` FAIL → retests fell due (virtual clock) but no
   review/retest blocks appeared in daily plans. Check `get_mastery_retests_due`
   wiring and that plan blocks label them `review`/`retest`.
@@ -315,7 +342,7 @@ All profiles are subject-agnostic; subject/grade set at runtime.
 | Theta never changes | CalibrationEngine not writing abilities |
 | Gates stuck despite high θ, low σ | `derive_gate_from_irt()` thresholds |
 | All items same band every session | Transfer prior broken in `_assemble_unified()` |
-| Leapfrogs on low scores | Frontier pass threshold bug |
+| Confirm items keep repeating one subskill | gate-4 exclusion or lifecycle subskill-id resolution in `select` |
 | `plan=0 subskills` every loop day | CurriculumService not initialized, published curriculum not loaded at bootstrap, or velocity allocator sees 0 weeks remaining (school-year config) |
 | Same subskills planned as "new" day after day | Subject-string filter on lifecycle reads (see `plan_not_stale` above) — mastered docs invisible to planner/selector |
 | Profile attempts frozen across loop days | Analytics TTL cache not cleared per virtual day |

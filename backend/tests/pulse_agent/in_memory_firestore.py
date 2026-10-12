@@ -157,6 +157,11 @@ class InMemoryFirestoreService:
         # buckets. The sim advances it; None = wall clock (v1 behavior).
         self.virtual_now: Optional[datetime] = None
 
+        # students/{sid}/learner_state/{SUBJECT} (+ grids) and learner_events
+        self._learner_state: Dict[tuple, Dict[str, Any]] = {}
+        self._learner_grids: Dict[tuple, Dict[str, Any]] = {}
+        self._learner_events: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+
         # Raw-client facade (pulse_sessions leapfrog stats in analytics)
         self.client = _FakeClient(self)
 
@@ -977,6 +982,27 @@ class InMemoryFirestoreService:
     # ==================================================================
     # PLANNING (student planning fields + daily session plan docs)
     # ==================================================================
+
+    # -- learner state (two-layer model, shadow) ------------------------------
+
+    async def get_learner_state(self, student_id, subject: str) -> Optional[Dict[str, Any]]:
+        d = self._learner_state.get((str(student_id), subject))
+        return copy.deepcopy(d) if d else None
+
+    async def get_learner_grid(self, student_id, subject: str, key: str) -> Optional[Dict[str, Any]]:
+        return copy.deepcopy(self._learner_grids.get((str(student_id), subject, key)))
+
+    async def save_learner_update(self, student_id, subject, summary, grids, event) -> None:
+        self._learner_state[(str(student_id), subject)] = copy.deepcopy(summary)
+        for key, grid in grids.items():
+            self._learner_grids[(str(student_id), subject, key)] = copy.deepcopy(grid)
+        self._learner_events[str(student_id)].append(copy.deepcopy(event))
+        self._write_count += 1
+
+    async def get_learner_events(self, student_id, since, until=None, subject=None) -> List[Dict[str, Any]]:
+        return [copy.deepcopy(e) for e in self._learner_events.get(str(student_id), [])
+                if e["ts"] >= since and (until is None or e["ts"] <= until)
+                and (subject is None or e.get("subject") == subject)]
 
     async def get_student_planning_fields(self, student_id: int) -> Dict[str, Any]:
         self._read_count += 1

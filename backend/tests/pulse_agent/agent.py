@@ -212,10 +212,10 @@ class PulseAgentRunner:
         for item in session_resp.items:
             score = strategy.score_item(item)
 
-            # We need primitive_type and eval_mode — use the item's affinity
-            # or fall back to a default
-            primitive_type = item.primitive_affinity or "ten-frame"
-            eval_mode = item.eval_mode_name or "identify"
+            # The engine names no primitive (7.5): like the frontend's pin,
+            # answer with the registry mode nearest the item's target_beta
+            from .full_loop import _nearest_registry_mode
+            primitive_type, eval_mode = _nearest_registry_mode(item.target_beta)
 
             result_req = PulseResultRequest(
                 item_id=item.item_id,
@@ -285,6 +285,9 @@ class PulseAgentRunner:
                 description=item.description,
                 target_mode=item.target_mode,
                 target_beta=item.target_beta,
+                primitive_affinity=item.primitive_affinity,
+                eval_mode_name=item.eval_mode_name,
+                selection_kind=item.selection_kind,
                 score=score,
                 theta_before=old_theta,
                 theta_after=new_theta,

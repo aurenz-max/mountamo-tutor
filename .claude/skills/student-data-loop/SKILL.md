@@ -121,9 +121,26 @@ four stat tiles, per-subject mastery bars. It fails quietly (renders null) so
 the rest of the profile view never blocks on it.
 
 ### 7. Closing the loop — the Lesson Entry Contract
-The same L1 state the profile displays is what selects the next problem: θ/σ
-feed Fisher-information item selection and P(correct) gate checks (pure IRT —
-no hand-tuned urgency formulas), and the generation-context endpoint
+**ONE selection brain (user ruling 2026-10-12): the two-layer learner model.**
+`LearnerStateService.select` (`app/services/learner_model/service.py`) picks
+every Pulse item (`PulseEngine.assemble_session`) and every session target
+(`select_session_targets` wraps it, so the daily planner, Recommended Lesson
+and the forecast head follow). Teach picks = P(right) x teaching value over the
+Jev learner graph (`learner_graphs/{SUBJECT}`); confirm picks = model
+P(mastered) >= 0.8 while the lifecycle gate is < 4 (alternating never-practised
+"discovery" with practised). Lifecycle-mastered subskills and gate-4 stability
+are the lifecycle's retest schedule. Picks carry `target_beta`, never a
+primitive. RETIRED: Fisher x sigma^2 utility over the published curriculum
+graph, cold-start DAG probes, leapfrog, the KG-P(correct) session selector.
+The planner's unlocked scan survives only for subjects with no learner graph
+(`no_learner_graph: True`). State: `students/{id}/learner_state/{SUBJECT}`
+(+ `grids/`, `learner_events/`), written by `observe` from CompetencyService and
+PulseEngine. Known gap: Pulse answers are not L0, so `backfill_learner_state`
+cannot rebuild their half (roadmap `my-tutoring-app/qa/pulse/ROADMAP.md` P1).
+
+The same L1 state the profile displays is what selects the next problem: the
+learner model selects (above), lifecycle P(correct) gate checks record mastery
+(pure IRT — no hand-tuned urgency formulas), and the generation-context endpoint
 (`POST /api/student-profile/generation-context`) folds ability + lifecycle
 into the STUDENT PROFILE block Gemini sees when generating content. A
 submission literally changes what the student sees next.
@@ -150,7 +167,8 @@ recommendation surfaces in the Deprecation Ledger below.
    endpoint-with-no-consumer. Current fill modes: hand-picked (curriculum
    browser `selectionMode`) and the daily plan (`DailyLessonPlan` →
    `handleBlockStart`, backed by `PlanningService`). Third (shipped
-   2026-07-03): the IRT session-scope selector — "Recommended Lesson" in
+   2026-07-03; since 2026-10-12 its body is `LearnerStateService.select`,
+   the history below is the old KG-P(correct) version): the IRT session-scope selector — "Recommended Lesson" in
    `IdleScreen.tsx` next to Build Lesson. Chain:
    `FirestoreAnalyticsService.select_session_targets` (picks learn/confirm
    targets from per-subskill P(correct) at hardest-assigned-mode β vs

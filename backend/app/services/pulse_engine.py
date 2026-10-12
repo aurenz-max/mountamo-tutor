@@ -1,7 +1,8 @@
 """
 Lumina Pulse Engine — Adaptive Learning Loop
 
-Unified session assembly + result processing orchestrator.
+Session assembly (the learner model chooses: LearnerStateService.select) +
+result processing orchestrator.
 Composes existing services (CalibrationEngine, MasteryLifecycleEngine,
 LearningPathsService) into one adaptive loop.
 
@@ -14,27 +15,18 @@ import asyncio
 import logging
 import math
 import uuid
-from collections import defaultdict, deque
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple
+from collections import defaultdict
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Set
 
 from ..db.firestore_service import FirestoreService
-from ..models.calibration import DEFAULT_STUDENT_THETA, DEFAULT_THETA_SIGMA
-from ..models.mastery_lifecycle import (
-    INITIAL_STABILITY,
-    SIGMA_DIFFUSION_RATE,
-)
+from ..models.calibration import DEFAULT_STUDENT_THETA
 from ..models.pulse import (
     DEFAULT_PULSE_ITEM_COUNT,
-    FRONTIER_MAX_JUMP,
-    FRONTIER_PASS_THRESHOLD,
-    FRONTIER_PROBE_MODE,
-    MAX_CURRENT_ITEMS_PER_SKILL,
     PRIMITIVE_HISTORY_WINDOW,
-    CreatePulseSessionRequest,
+    PULSE_CONFIRM_SHARE,
     GateUpdate,
     IrtProbabilityData,
-    ItemFrontierContext,
     SessionIrtSummary,
     LeapfrogEvent,
     PulseBand,
@@ -45,31 +37,21 @@ from ..models.pulse import (
     PulseSessionResponse,
     PulseSessionSummary,
     RecentPrimitive,
-    SessionFrontierContext,
     SkillDetail,
     SkillUnlockProgress,
     ThetaUpdate,
-    UnitProgress,
-    max_beta_for_modes,
-    mode_to_beta,
     theta_to_mode,
 )
 from ..services.calibration_engine import CalibrationEngine, item_information
 from ..services.calibration.problem_type_registry import (
-    PROBLEM_TYPE_REGISTRY,
-    get_item_discrimination,
     get_item_key,
 )
-from ..services.dag_analysis import DAGAnalysisEngine
 from ..services.learning_paths import LearningPathsService
 
-from ..services.mastery_lifecycle_engine import (
-    MasteryLifecycleEngine,
-    derive_retention_state,
-    effective_theta,
-)
+from ..services.mastery_lifecycle_engine import MasteryLifecycleEngine
 
 logger = logging.getLogger(__name__)
+
 
 
 class PulseEngine:
@@ -90,61 +72,11 @@ class PulseEngine:
         self.calibration = calibration_engine
         self.mastery = mastery_lifecycle_engine
         self.learning_paths = learning_paths_service
+        self.learner_state = None  # LearnerStateService, shadow (set by dependency injection)
         logger.info("PulseEngine initialized")
 
     # ------------------------------------------------------------------
-    # Max-information mode selection (replaces theta_to_mode for 2PL/3PL)
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def select_best_mode(
-        theta: float, primitive_type: str,
-        allowed_modes: list[str] | None = None,
-    ) -> tuple[int, float, str]:
-        """Select the eval mode that gives maximum Fisher information.
-
-        Returns (mode_number, target_beta, eval_mode_name). Falls back to
-        theta_to_mode() for primitives not in the registry.
-
-        If *allowed_modes* is provided (from curriculum target_eval_modes),
-        only those modes are considered — IRT selects the best within the
-        curriculum-constrained set.
-        """
-        modes = PROBLEM_TYPE_REGISTRY.get(primitive_type)
-        if not modes:
-            mode = theta_to_mode(theta)
-            return mode, mode_to_beta(mode), "default"
-
-        best_mode_num = 1
-        best_beta = 3.5
-        best_info = -1.0
-        best_name = "default"
-
-        # Eval modes are keyed by name; we need to map them to mode numbers.
-        # Sort by beta (ascending) and assign mode 1, 2, 3, ...
-        sorted_modes = sorted(modes.items(), key=lambda x: x[1].prior_beta)
-
-        for idx, (eval_mode_name, config) in enumerate(sorted_modes, start=1):
-            # If curriculum constrains the allowed modes, skip others
-            if allowed_modes and eval_mode_name not in allowed_modes:
-                continue
-            a, c = get_item_discrimination(primitive_type, eval_mode_name)
-            info = item_information(theta, a, config.prior_beta, c)
-            if info > best_info:
-                best_info = info
-                best_mode_num = idx
-                best_beta = config.prior_beta
-                best_name = eval_mode_name
-
-        # mode_number is the 1-6 scaffolding TIER (PulseItemSpec, UI "Tier
-        # n/6", theta_to_mode), not a ladder index. Densified primitives
-        # carry 7+ eval modes, so the β-sorted index can exceed the scale —
-        # every mode past the 6th is top-tier. β and eval_mode_name stay
-        # exact; only the tier label clamps.
-        return min(best_mode_num, 6), best_beta, best_name
-
-    # ------------------------------------------------------------------
-    # Session assembly
+    # Session assembly — the learner model chooses (WORKSTREAMS 7.4, user 10-12)
     # ------------------------------------------------------------------
 
     async def assemble_session(
@@ -154,7 +86,17 @@ class PulseEngine:
         item_count: int = DEFAULT_PULSE_ITEM_COUNT,
         now_override: Optional[datetime] = None,
     ) -> PulseSessionResponse:
-        """Compose a Pulse session from 3 bands (or cold-start probes)."""
+        """Compose a Pulse session from the two-layer learner model.
+
+        `LearnerStateService.select` is the one selection brain (the session
+        planner's targets come from the same call): teach picks by P(right) x
+        teaching value over the Jev learner graph, confirm picks where the
+        model believes mastery the lifecycle has not recorded yet. Each item
+        names a subskill and the target_beta of its typical item; the frontend
+        picks the primitive and mode (7.5). Cold start needs no special path:
+        an empty state is the graph's prior, and confirm picks check what it
+        infers. The published curriculum graph, Fisher x sigma^2 utility and
+        leapfrog probes are retired."""
         now = now_override or datetime.now(timezone.utc)
         session_id = f"pulse-{uuid.uuid4().hex[:12]}"
 
@@ -163,13 +105,37 @@ class PulseEngine:
             f"subject={subject}, items={item_count}"
         )
 
-        # 1. Load student state
-        lifecycles = await self.firestore.get_all_mastery_lifecycles(
-            student_id, subject=subject
+        if self.learner_state is None:
+            raise RuntimeError("PulseEngine needs the learner model (LearnerStateService)")
+        sel = await self.learner_state.select(
+            student_id, subject, count=item_count, confirm_share=PULSE_CONFIRM_SHARE,
         )
-        abilities = await self.firestore.get_all_student_abilities(student_id)
+        if sel is None:
+            logger.warning(f"[PULSE] No learner graph for subject {subject}")
+            return PulseSessionResponse(
+                session_id=session_id, student_id=student_id, subject=subject,
+                is_cold_start=True, items=[], session_meta={"error": "no_learner_graph"},
+            )
 
-        # Load primitive history for diversity tracking
+        is_cold_start = sel.get("observations", 0) == 0
+        items: List[PulseItemSpec] = []
+        for i, p in enumerate(sel["picks"]):
+            items.append(PulseItemSpec(
+                item_id=f"pulse-item-{i:03d}",
+                band=PulseBand.CURRENT if p["seen"] else PulseBand.FRONTIER,
+                subskill_id=p["subskill_id"],
+                skill_id=p["skill_id"],
+                subject=subject,
+                description=p["description"] or p["label"],
+                target_mode=theta_to_mode(p["target_beta"]),
+                target_beta=p["target_beta"],
+                lesson_group_id=f"{p['kind']}-{p['skill_id']}",
+                selection_kind=p["kind"],
+                selection_reason=p["reason"],
+                p_right=p["p_right"],
+            ))
+
+        # Load primitive history for diversity tracking (frontend rotation)
         prim_history_doc = await self.firestore.get_pulse_primitive_history(student_id)
         recent_entries: List[Dict] = (
             prim_history_doc.get("entries", []) if prim_history_doc else []
@@ -184,64 +150,6 @@ class PulseEngine:
             for e in recent_entries[-PRIMITIVE_HISTORY_WINDOW:]
         ]
 
-        # Build lookup maps
-        gate_map: Dict[str, int] = {}
-        retention_map: Dict[str, str] = {}  # subskill_id → retention_state
-        lifecycle_map: Dict[str, Dict] = {}
-        for lc in lifecycles:
-            sid = lc.get("subskill_id", "")
-            gate_map[sid] = lc.get("current_gate", 0)
-            rs, _ = derive_retention_state(lc)
-            retention_map[sid] = rs
-            lifecycle_map[sid] = lc
-
-        theta_map: Dict[str, float] = {}
-        sigma_map: Dict[str, float] = {}  # skill_id → σ (uncertainty)
-        for ab in abilities:
-            sid = ab.get("skill_id", "")
-            theta_map[sid] = ab.get("theta", DEFAULT_STUDENT_THETA)
-            sigma_map[sid] = ab.get("sigma", DEFAULT_THETA_SIGMA)
-
-        # 2. Load DAG: the grade this student studies the subject at
-        graph_data = await self.learning_paths._student_graph(student_id, subject)
-        if not graph_data or "graph" not in graph_data:
-            logger.warning(f"[PULSE] No graph found for subject {subject}")
-            return PulseSessionResponse(
-                session_id=session_id,
-                student_id=student_id,
-                subject=subject,
-                is_cold_start=True,
-                items=[],
-                session_meta={"error": "no_graph"},
-            )
-
-        graph = graph_data["graph"]
-        all_nodes = [n for n in graph.get("nodes", []) if n.get("type", n.get("entity_type", "")) == "subskill"]
-        all_edges = graph.get("edges", [])
-        node_map = {n["id"]: n for n in all_nodes}
-        node_ids = set(node_map.keys())
-
-        # 3. Cold start check
-        is_cold_start = len(lifecycles) == 0
-
-        if is_cold_start:
-            items = self._assemble_cold_start(
-                all_nodes, all_edges, node_map, subject, item_count
-            )
-        else:
-            items = await self._assemble_unified(
-                student_id, subject, item_count, all_nodes, all_edges,
-                node_map, node_ids, gate_map, retention_map, lifecycle_map,
-                theta_map, sigma_map, now,
-            )
-
-        # 4. Compute frontier context (graph position data for the frontend)
-        session_frontier_ctx = self._compute_frontier_context(
-            items, all_nodes, all_edges, node_map,
-            gate_map, lifecycle_map, is_cold_start, now,
-        )
-
-        # 5. Persist session
         band_counts = {b.value: 0 for b in PulseBand}
         for item in items:
             band_counts[item.band.value] += 1
@@ -257,6 +165,8 @@ class PulseEngine:
             "items_completed": 0,
             "items_total": len(items),
             "leapfrogs": [],
+            "selector": {"engine": "learner_model", "graph_version": sel.get("graph_version"),
+                         "pool_sizes": sel.get("pool_sizes")},
             "created_at": now.isoformat(),
             "updated_at": now.isoformat(),
             "completed_at": None,
@@ -264,9 +174,8 @@ class PulseEngine:
         await self.firestore.save_pulse_session(session_id, session_doc)
 
         logger.info(
-            f"[PULSE] Session {session_id} assembled: "
-            f"{len(items)} items, cold_start={is_cold_start}, "
-            f"bands={band_counts}"
+            f"[PULSE] Session {session_id} assembled by the learner model: "
+            f"{len(items)} items, cold_start={is_cold_start}, pools={sel.get('pool_sizes')}"
         )
 
         return PulseSessionResponse(
@@ -279,562 +188,10 @@ class PulseEngine:
             session_meta={
                 "band_counts": band_counts,
                 "total_items": len(items),
-                "total_nodes_in_subject": len(all_nodes),
+                "selector": "learner_model",
+                "pool_sizes": sel.get("pool_sizes"),
             },
-            frontier_context=session_frontier_ctx,
         )
-
-    def _assemble_cold_start(
-        self,
-        all_nodes: List[Dict],
-        all_edges: List[Dict],
-        node_map: Dict[str, Dict],
-        subject: str,
-        item_count: int,
-    ) -> List[PulseItemSpec]:
-        """Cold start: 100% frontier probes at topological midpoints."""
-        logger.info("[PULSE] Cold start mode — all items are frontier probes")
-
-        # Topological sort requires a DAG — only prerequisite edges form a DAG.
-        # Non-prerequisite edges (parallel, reinforces, builds_on, applies) can
-        # have cycles by design and must be excluded from topo sort.
-        prereq_edges = [
-            e for e in all_edges
-            if e.get("is_prerequisite", False)
-            or e.get("relationship", "prerequisite") == "prerequisite"
-        ]
-
-        # Use DAGAnalysisEngine to compute metrics and select midpoints
-        topo_order = DAGAnalysisEngine.topological_sort(all_nodes, prereq_edges)
-        metrics = DAGAnalysisEngine.compute_node_metrics(
-            all_nodes, prereq_edges, topo_order
-        )
-
-        # Select midpoints of independent chains
-        probes = DAGAnalysisEngine.select_initial_probes(
-            metrics, all_nodes, prereq_edges, max_probes=item_count,
-        )
-
-        items: List[PulseItemSpec] = []
-        for i, probe in enumerate(probes):
-            node = node_map.get(probe.subskill_id, {})
-            prim_type = node.get("primitive_type", "ten-frame")
-            allowed_modes = node.get("eval_modes")
-            items.append(PulseItemSpec(
-                item_id=f"pulse-item-{i:03d}",
-                band=PulseBand.FRONTIER,
-                subskill_id=probe.subskill_id,
-                skill_id=node.get("skill_id", probe.skill_id),
-                subject=subject,
-                description=probe.description or node.get("description", ""),
-                target_mode=FRONTIER_PROBE_MODE,
-                target_beta=mode_to_beta(FRONTIER_PROBE_MODE),
-                primitive_affinity=prim_type,
-                gate_reference_beta=max_beta_for_modes(prim_type, allowed_modes),
-                lesson_group_id=f"cold-{i:03d}",
-            ))
-
-        return items
-
-    async def _assemble_unified(
-        self,
-        student_id: int,
-        subject: str,
-        item_count: int,
-        all_nodes: List[Dict],
-        all_edges: List[Dict],
-        node_map: Dict[str, Dict],
-        node_ids: Set[str],
-        gate_map: Dict[str, int],
-        retention_map: Dict[str, str],
-        lifecycle_map: Dict[str, Dict],
-        theta_map: Dict[str, float],
-        sigma_map: Dict[str, float],
-        now: datetime,
-    ) -> List[PulseItemSpec]:
-        """IRT item selection via expected posterior variance reduction.
-
-        Every candidate is scored by:
-
-            utility = I(eff_θ; a, β, c) × σ²
-
-        Fisher information I measures item informativeness. Multiplying
-        by σ² (posterior variance) gives the expected reduction in
-        uncertainty — the standard CAT criterion. This naturally favors
-        unseen skills (high σ) over well-known ones (low σ) without
-        heuristic multipliers.
-
-        eff_θ incorporates forgetting (effective_theta decay model).
-
-        Band labels (frontier/current/review) are derived from state for
-        frontend display, not used for selection.
-        """
-
-        # 1. Gather ALL candidate skills from three sources
-        unlocked = await self.learning_paths.get_unlocked_entities(
-            student_id, entity_type="subskill", subject=subject,
-        )
-        unlocked_in_graph = {sid for sid in unlocked if sid in node_ids}
-        mastered_ids = {sid for sid, rs in retention_map.items() if rs == "mastered"}
-
-        # BFS forward to discover frontier probes (skills beyond current reach)
-        bfs_seed = unlocked_in_graph - mastered_ids
-        probe_ids = self._bfs_forward(
-            bfs_seed, mastered_ids, all_edges, node_map,
-        )
-
-        # Promote tested frontier items to the unlocked pool.
-        # Skills discovered via leapfrog may bypass prerequisite checks in
-        # get_unlocked_entities(), leaving them "locked" despite having
-        # lifecycle docs from prior testing.  Without this, they re-enter
-        # as frontier probes every session — triggering vacuous leapfrogs
-        # (0 new skills unlocked) and starving current/review items.
-        promoted = set()
-        for nid, _depth in probe_ids:
-            if nid in lifecycle_map:
-                promoted.add(nid)
-                unlocked_in_graph.add(nid)
-        if promoted:
-            probe_ids = [(nid, d) for nid, d in probe_ids if nid not in promoted]
-            logger.info(
-                f"[PULSE] Promoted {len(promoted)} tested frontier items to "
-                f"current pool: {sorted(promoted)[:5]}..."
-            )
-
-        # 2. Compute transfer prior: use the student's average θ across
-        # known skills instead of the global default.  This lets gifted
-        # students' frontier probes start near their true ability, so
-        # Fisher information doesn't artificially inflate frontier utility.
-        # Falls back to DEFAULT_STUDENT_THETA on cold-start / first session.
-        known_thetas = list(theta_map.values())
-        transfer_prior = (
-            sum(known_thetas) / len(known_thetas)
-            if known_thetas
-            else DEFAULT_STUDENT_THETA
-        )
-
-        # Score every candidate with a single utility function
-        scored: List[Tuple[float, str, str, Dict, int]] = []  # (utility, sid, band, node, depth)
-
-        if now.tzinfo is None:
-            now = now.replace(tzinfo=timezone.utc)
-
-        for sid in unlocked_in_graph:
-            if sid in mastered_ids:
-                continue
-            node = node_map.get(sid, {})
-            # Skip skill-level grouping nodes — only subskills are testable
-            if node.get("type") == "skill":
-                continue
-            skill_id = node.get("skill_id", "") or sid
-            rs = retention_map.get(sid, "not_started")
-            lc = lifecycle_map.get(sid)
-
-            # θ and σ for this skill
-            # Truly unseen (no lifecycle doc): transfer prior + max uncertainty.
-            # Gate-0 WITH lifecycle doc: student has been tested — use real
-            # calibrated θ/σ so utility reflects actual measurement need.
-            # Without this, gate-0 items get σ=2.0 (44× inflated utility)
-            # and permanently block frontier probes via depth tie-break.
-            if rs == "not_started" and not lc:
-                theta = transfer_prior
-                sigma = DEFAULT_THETA_SIGMA
-            else:
-                theta = theta_map.get(skill_id, transfer_prior)
-                sigma = sigma_map.get(skill_id, DEFAULT_THETA_SIGMA)
-            prim_type = node.get("primitive_type", "ten-frame")
-            allowed_modes = node.get("eval_modes")  # curriculum-constrained
-            _, beta, eval_mode_name = self.select_best_mode(theta, prim_type, allowed_modes)
-            a, c = get_item_discrimination(prim_type, eval_mode_name)
-
-            # Decay-adjusted theta for tested skills (forgetting model)
-            eff_theta = theta
-            days_since = 0.0
-            stability = INITIAL_STABILITY
-            has_history = lc is not None  # gate-0 or active — both have history
-            if has_history:
-                last_reviewed = lc.get("last_reviewed")
-                stability = lc.get("stability", INITIAL_STABILITY)
-                if last_reviewed:
-                    try:
-                        last_dt = datetime.fromisoformat(
-                            last_reviewed.replace("Z", "+00:00")
-                        )
-                        days_since = max(0.0, (now - last_dt).total_seconds() / 86400)
-                        eff_theta = effective_theta(theta, days_since, stability)
-                    except (ValueError, TypeError):
-                        pass
-
-            # Posterior diffusion: σ grows without new observations.
-            # Matches effective_theta decay — both θ erosion and σ growth
-            # model the Bayesian reality that stale estimates are less certain.
-            eff_sigma = sigma
-            if has_history and days_since > 0:
-                eff_sigma = math.sqrt(sigma ** 2 + SIGMA_DIFFUSION_RATE ** 2 * days_since)
-                eff_sigma = min(eff_sigma, DEFAULT_THETA_SIGMA)
-
-            # Expected posterior variance reduction: I(θ) × σ²
-            # Standard CAT criterion — naturally favors high-uncertainty
-            # skills (unseen/new) over well-known ones.
-            info = item_information(eff_theta, a, beta, c)
-            utility = info * (eff_sigma ** 2)
-
-            # Derive band label from state
-            if not has_history:
-                band = PulseBand.CURRENT  # truly unseen
-            elif days_since > stability * 0.5:
-                band = PulseBand.REVIEW
-            else:
-                band = PulseBand.CURRENT
-
-            scored.append((utility, sid, band.value, node, 0))
-
-        # Score frontier probe candidates (not yet unlocked/observed)
-        for nid, depth in probe_ids:
-            if nid in mastered_ids or nid in unlocked_in_graph:
-                continue
-            node = node_map.get(nid)
-            # Skip nodes not in the subskill graph (skill-level parents, orphans)
-            if not node or node.get("type") == "skill":
-                continue
-            # Skip already-probed frontier items — they have lifecycle docs
-            # but couldn't unlock (prerequisite constraints). Re-probing
-            # provides no new information and starves consolidation.
-            if nid in lifecycle_map:
-                continue
-            skill_id = node.get("skill_id", "") or nid
-            prim_type = node.get("primitive_type", "ten-frame")
-
-            # If this skill has been probed before, use real θ/σ from
-            # the ability doc instead of defaults. Prevents frontier items
-            # from permanently dominating with σ=2.0 after being tested.
-            theta = theta_map.get(skill_id, transfer_prior)
-            sigma = sigma_map.get(skill_id, DEFAULT_THETA_SIGMA)
-
-            allowed_modes = node.get("eval_modes")  # curriculum-constrained
-            _, beta, eval_mode_name = self.select_best_mode(theta, prim_type, allowed_modes)
-            a, c = get_item_discrimination(prim_type, eval_mode_name)
-
-            info = item_information(theta, a, beta, c)
-            utility = info * (sigma ** 2)
-            scored.append((utility, nid, PulseBand.FRONTIER.value, node, depth))
-
-        # 3. Sort by utility descending, depth ascending as tie-breaker
-        #    (closer frontier skills win ties over distant ones)
-        scored.sort(key=lambda x: (-x[0], x[4]))
-
-        items: List[PulseItemSpec] = []
-        skill_counts: Dict[str, int] = defaultdict(int)
-
-        for utility, sid, band_label, node, _depth in scored:
-            if len(items) >= item_count:
-                break
-            skill_id = node.get("skill_id", "") or sid
-            if skill_counts[skill_id] >= MAX_CURRENT_ITEMS_PER_SKILL:
-                continue
-            skill_counts[skill_id] += 1
-
-            theta = theta_map.get(skill_id, DEFAULT_STUDENT_THETA)
-            prim_type = node.get("primitive_type", "ten-frame")
-            allowed_modes = node.get("eval_modes")  # curriculum-constrained
-
-            if band_label == PulseBand.FRONTIER.value:
-                mode = FRONTIER_PROBE_MODE
-                beta = mode_to_beta(FRONTIER_PROBE_MODE)
-                eval_mode = None
-            else:
-                mode, beta, eval_mode_name = self.select_best_mode(
-                    theta, prim_type, allowed_modes
-                )
-                eval_mode = eval_mode_name if eval_mode_name != "default" else None
-
-            items.append(PulseItemSpec(
-                item_id=f"pulse-item-{len(items):03d}",
-                band=PulseBand(band_label),
-                subskill_id=sid,
-                skill_id=skill_id,
-                subject=subject,
-                description=node.get("description", "") or node.get("label", ""),
-                target_mode=mode,
-                target_beta=beta,
-                eval_mode_name=eval_mode,
-                primitive_affinity=prim_type,
-                eval_mode_hint=eval_mode if allowed_modes else None,
-                gate_reference_beta=max_beta_for_modes(prim_type, allowed_modes),
-                lesson_group_id=f"{band_label}-{skill_id}",
-            ))
-
-        if not items:
-            logger.warning("[PULSE] No items available from unified selector")
-            return []
-
-        # Log band distribution (emergent, not enforced)
-        band_counts = defaultdict(int)
-        for item in items:
-            band_counts[item.band.value] += 1
-        logger.info(
-            f"[PULSE] Unified selection: {len(items)} items, "
-            f"bands={dict(band_counts)} (emergent from utility ranking)"
-        )
-
-        return items
-
-    # ------------------------------------------------------------------
-    # Graph exploration
-    # ------------------------------------------------------------------
-
-    def _bfs_forward(
-        self,
-        seed_ids: Set[str],
-        mastered_ids: Set[str],
-        all_edges: List[Dict],
-        node_map: Dict[str, Dict],
-    ) -> List[Tuple[str, int]]:
-        """BFS forward from seed skills to discover frontier probe candidates.
-
-        Traverses all edge types (not just prerequisites) for broad discovery.
-        Returns (node_id, depth) sorted by proximity to depth midpoint.
-        """
-        forward: Dict[str, List[Tuple[str, float]]] = defaultdict(list)
-        for edge in all_edges:
-            strength = edge.get("strength", 1.0)
-            forward[edge["source"]].append((edge["target"], strength))
-
-        for targets in forward.values():
-            targets.sort(key=lambda t: -t[1])
-
-        visited: Set[str] = set()
-        candidates: List[Tuple[str, int]] = []
-        candidate_strength: Dict[str, float] = {}
-        queue: deque = deque()
-
-        # Seed from both non-mastered and mastered to bridge disconnected regions
-        for fid in seed_ids | mastered_ids:
-            for child, strength in forward.get(fid, []):
-                if child not in mastered_ids and child not in seed_ids:
-                    queue.append((child, 1, strength))
-
-        while queue:
-            nid, depth, path_strength = queue.popleft()
-            if nid in visited or depth > FRONTIER_MAX_JUMP:
-                continue
-            visited.add(nid)
-            if nid not in mastered_ids and nid not in seed_ids and nid in node_map:
-                candidates.append((nid, depth))
-                candidate_strength[nid] = path_strength
-            if depth < FRONTIER_MAX_JUMP:
-                for child, strength in forward.get(nid, []):
-                    if child not in visited:
-                        queue.append((child, depth + 1, strength))
-
-        if candidates:
-            max_depth = max(d for _, d in candidates)
-            midpoint = max(1, (max_depth + 1) // 2)
-            candidates.sort(
-                key=lambda x: (
-                    abs(x[1] - midpoint),
-                    x[1],
-                    -candidate_strength.get(x[0], 1.0),
-                )
-            )
-
-        return candidates
-
-    # ------------------------------------------------------------------
-    # Frontier context computation
-    # ------------------------------------------------------------------
-
-    def _compute_frontier_context(
-        self,
-        items: List[PulseItemSpec],
-        all_nodes: List[Dict],
-        all_edges: List[Dict],
-        node_map: Dict[str, Dict],
-        gate_map: Dict[str, int],
-        lifecycle_map: Dict[str, Dict],
-        is_cold_start: bool,
-        now: datetime,
-    ) -> SessionFrontierContext:
-        """
-        Enrich each item with graph-position context and build session summary.
-
-        All data comes from already-loaded state — no new DB calls.
-        """
-        if not items:
-            return SessionFrontierContext()
-
-        # --- Pre-compute unit-level stats ---
-        # Group ALL subskill nodes by skill_id (= unit)
-        unit_nodes: Dict[str, List[Dict]] = defaultdict(list)
-        for node in all_nodes:
-            skill_id = node.get("skill_id", "")
-            if skill_id:
-                unit_nodes[skill_id].append(node)
-
-        unit_stats: Dict[str, Dict] = {}
-        for skill_id, nodes in unit_nodes.items():
-            total = len(nodes)
-            mastered = sum(
-                1 for n in nodes if gate_map.get(n["id"], 0) >= 1
-            )
-            # Use best available label
-            label = (
-                nodes[0].get("skill_description", "")
-                or nodes[0].get("parent_label", "")
-                or nodes[0].get("unit_title", "")
-                or skill_id
-            )
-            unit_stats[skill_id] = {
-                "total": total,
-                "mastered": mastered,
-                "label": label,
-                "remaining": total - mastered,
-            }
-
-        # --- Pre-compute forward edges for downstream lookups ---
-        forward: Dict[str, List[str]] = defaultdict(list)
-        for edge in all_edges:
-            forward[edge["source"]].append(edge["target"])
-
-        # --- Pre-compute topological depth ---
-        # Only prerequisite edges form a DAG; non-prerequisite edges can cycle.
-        prereq_edges = [
-            e for e in all_edges
-            if e.get("is_prerequisite", False)
-            or e.get("relationship", "prerequisite") == "prerequisite"
-        ]
-        topo_order = DAGAnalysisEngine.topological_sort(all_nodes, prereq_edges)
-        metrics = DAGAnalysisEngine.compute_node_metrics(
-            all_nodes, prereq_edges, topo_order
-        )
-        max_depth = max((m.depth for m in metrics.values()), default=0)
-
-        # Frontier depth = avg depth of frontier-band items
-        frontier_depths = []
-
-        # --- Per-item context ---
-        mastered_ids = {sid for sid, gate in gate_map.items() if gate >= 1}
-
-        for item in items:
-            skill_id = item.skill_id
-            us = unit_stats.get(skill_id, {})
-            unit_name = us.get("label", skill_id)
-            unit_mastered = us.get("mastered", 0)
-            unit_total = us.get("total", 0)
-
-            ctx = ItemFrontierContext(
-                unit_name=unit_name,
-                unit_mastered=unit_mastered,
-                unit_total=unit_total,
-            )
-
-            if item.band == PulseBand.FRONTIER:
-                # Compute dag_distance from probe candidates (BFS depth)
-                # Re-derive depth via node metrics
-                node_metric = metrics.get(item.subskill_id)
-                ctx.dag_distance = node_metric.depth if node_metric else 0
-                frontier_depths.append(ctx.dag_distance)
-
-                # Find ancestors that would be inferred on leapfrog
-                if not is_cold_start:
-                    ancestors = DAGAnalysisEngine.get_ancestors(
-                        item.subskill_id, all_edges
-                    )
-                    # Filter to non-mastered ancestors (would be inferred)
-                    inferable = [
-                        a for a in ancestors
-                        if gate_map.get(a, 0) < 2 and a in node_map
-                    ]
-                    ctx.ancestors_if_passed = len(inferable)
-                    # Human-readable names (max 5)
-                    ctx.ancestor_skill_names = [
-                        node_map[a].get("description", "")
-                        or node_map[a].get("label", a)
-                        for a in inferable[:5]
-                    ]
-
-            elif item.band == PulseBand.CURRENT:
-                # Find next downstream skill name
-                children = forward.get(item.subskill_id, [])
-                for child_id in children:
-                    child_node = node_map.get(child_id, {})
-                    child_skill = child_node.get("skill_id", "")
-                    if child_skill and child_skill != skill_id:
-                        child_us = unit_stats.get(child_skill, {})
-                        ctx.next_skill_name = child_us.get("label", child_skill)
-                        break
-                    elif child_node:
-                        ctx.next_skill_name = (
-                            child_node.get("description", "")
-                            or child_node.get("label", "")
-                        )
-                        break
-
-            elif item.band == PulseBand.REVIEW:
-                # Compute time-ago for last tested
-                lc = lifecycle_map.get(item.subskill_id, {})
-                last_tested = lc.get("last_tested_at") or lc.get("updated_at")
-                if last_tested:
-                    ctx.last_tested_ago = self._format_time_ago(last_tested, now)
-
-            item.frontier_context = ctx
-
-        # --- Session-level context ---
-        total_mastered = sum(1 for gate in gate_map.values() if gate >= 1)
-        total_nodes = len(all_nodes)
-
-        # Build units_in_progress (units with at least one mastered but not all)
-        units_in_progress = []
-        for skill_id, stats in unit_stats.items():
-            if 0 < stats["mastered"] < stats["total"]:
-                units_in_progress.append(UnitProgress(
-                    unit_name=stats["label"],
-                    skill_id=skill_id,
-                    mastered=stats["mastered"],
-                    total=stats["total"],
-                    branches_remaining=stats["remaining"],
-                ))
-        # Sort by completion ratio ascending (most work remaining first)
-        units_in_progress.sort(
-            key=lambda u: u.mastered / u.total if u.total > 0 else 0
-        )
-
-        frontier_depth = (
-            round(sum(frontier_depths) / len(frontier_depths))
-            if frontier_depths else 0
-        )
-
-        return SessionFrontierContext(
-            frontier_depth=frontier_depth,
-            max_depth=max_depth,
-            total_mastered=total_mastered,
-            total_nodes=total_nodes,
-            units_in_progress=units_in_progress[:10],  # cap at 10
-        )
-
-    @staticmethod
-    def _format_time_ago(iso_string: str, now: datetime) -> str:
-        """Convert an ISO timestamp to a human-readable 'X ago' string."""
-        try:
-            dt = datetime.fromisoformat(iso_string.replace("Z", "+00:00"))
-            delta = now - dt
-            days = delta.days
-            if days == 0:
-                hours = delta.seconds // 3600
-                if hours == 0:
-                    return "just now"
-                return f"{hours}h ago"
-            if days == 1:
-                return "yesterday"
-            if days < 7:
-                return f"{days} days ago"
-            weeks = days // 7
-            if weeks == 1:
-                return "1 week ago"
-            return f"{weeks} weeks ago"
-        except (ValueError, TypeError):
-            return ""
-
     # ------------------------------------------------------------------
     # Result processing
     # ------------------------------------------------------------------
@@ -996,15 +353,17 @@ class PulseEngine:
                 new_gate=new_gate,
             )
 
-        # 5. Leapfrog check (frontier band only)
-        leapfrog = None
-        if band == PulseBand.FRONTIER.value:
-            leapfrog = await self._check_leapfrog(
-                student_id, session_id, session, item_spec,
-                result.score, subject, now,
-                probe_theta=new_theta,
-                defer_competency=defer_competency,
+        # 4b. Learner state: the model that chooses the next items (never raises).
+        # Leapfrog is retired: the graph infers ancestors of a shown subskill
+        # itself, and confirm picks check what it infers.
+        if self.learner_state is not None:
+            await self.learner_state.submit(
+                student_id=student_id, subject=subject, subskill_id=subskill_id, score=result.score,
+                primitive_type=result.primitive_type, eval_mode=result.eval_mode,
+                first_try=result.first_try, source="pulse", attempt_id=f"{session_id}:{result.item_id}",
+                timestamp=now.isoformat(),
             )
+        leapfrog = None
 
         # 6. Update session doc (always mutate in-memory)
         items[item_index]["score"] = result.score
@@ -1111,177 +470,6 @@ class PulseEngine:
                 "is_complete": is_complete,
                 "bands_summary": bands_summary,
             },
-        )
-
-    async def _check_leapfrog(
-        self,
-        student_id: int,
-        session_id: str,
-        session: Dict,
-        item_spec: Dict,
-        score: float,
-        subject: str,
-        now: datetime,
-        *,
-        probe_theta: Optional[float] = None,
-        defer_competency: bool = False,
-    ) -> Optional[LeapfrogEvent]:
-        """Check if a frontier probe triggers leapfrog unlock.
-
-        When a frontier probe passes, we unlock its prerequisite ancestors
-        for testing — but we don't fabricate θ, σ, lifecycle, or ability
-        docs. Those are created naturally when the student is actually
-        tested on each skill.
-
-        The unified selector will see these newly-unlocked skills as
-        not_started (no lifecycle, DEFAULT_STUDENT_THETA, max prior σ)
-        and naturally prioritize them via high Fisher information.
-
-        Deduplication: skills already inferred earlier in this session
-        (tracked in session["_session_inferred_skills"]) are skipped,
-        avoiding redundant writes when multiple probes share ancestors.
-        """
-        lesson_group_id = item_spec.get("lesson_group_id", "")
-
-        # Find all items in this lesson group
-        group_items = [
-            it for it in session.get("items", [])
-            if it.get("lesson_group_id") == lesson_group_id
-            and it.get("band") == PulseBand.FRONTIER.value
-        ]
-
-        # Check if all items in the group are now scored
-        scored_items = []
-        for it in group_items:
-            if it.get("item_id") == item_spec.get("item_id"):
-                scored_items.append(score)
-            elif it.get("score") is not None:
-                scored_items.append(it["score"])
-
-        if len(scored_items) < len(group_items):
-            return None
-
-        avg_score = sum(scored_items) / len(scored_items)
-        if avg_score < FRONTIER_PASS_THRESHOLD:
-            logger.info(
-                f"[PULSE] Frontier group {lesson_group_id} failed: "
-                f"avg={avg_score:.1f} < {FRONTIER_PASS_THRESHOLD}"
-            )
-            return None
-
-        # Leapfrog triggered
-        probed_skills = [it.get("subskill_id", "") for it in group_items]
-        logger.info(
-            f"[PULSE] LEAPFROG! Group {lesson_group_id} passed: "
-            f"avg={avg_score:.1f}, probed={probed_skills}"
-        )
-
-        # Load graph and find ancestors
-        graph_data = await self.learning_paths._student_graph(student_id, subject)
-        if not graph_data or "graph" not in graph_data:
-            return None
-
-        all_edges = graph_data["graph"].get("edges", [])
-        all_nodes = graph_data["graph"].get("nodes", [])
-        node_map = {n["id"]: n for n in all_nodes}
-
-        all_ancestor_ids: Set[str] = set()
-        for probed_id in probed_skills:
-            all_ancestor_ids.update(DAGAnalysisEngine.get_ancestors(probed_id, all_edges))
-
-        candidate_ids = list(set(probed_skills) | all_ancestor_ids)
-
-        # Deduplicate: skip skills already inferred earlier in this session.
-        # Multiple frontier probes often share the same ancestors — no need
-        # to re-check lifecycle or re-write competency for them.
-        already_inferred: Set[str] = session.get("_session_inferred_skills", set())
-        candidate_ids = [sid for sid in candidate_ids if sid not in already_inferred]
-
-        if not candidate_ids:
-            logger.info(
-                f"[PULSE] Leapfrog {lesson_group_id}: all {len(all_ancestor_ids)} "
-                f"ancestors already inferred this session — skipping"
-            )
-            return LeapfrogEvent(
-                lesson_group_id=lesson_group_id,
-                probed_skills=probed_skills,
-                inferred_skills=[],
-                aggregate_score=avg_score,
-            )
-
-        lifecycle_batch = await self.firestore.get_mastery_lifecycles_batch(
-            student_id, candidate_ids
-        )
-
-        # Filter to skills not yet active
-        inferred_skills: List[str] = []
-        for sid in candidate_ids:
-            existing = lifecycle_batch.get(sid)
-            if existing:
-                rs, _ = derive_retention_state(existing)
-                if rs != "not_started":
-                    continue
-            inferred_skills.append(sid)
-
-        inferred_skills = list(set(inferred_skills))
-
-        # Track all inferred skills for dedup on subsequent leapfrogs
-        if not isinstance(already_inferred, set):
-            already_inferred = set(already_inferred)
-        already_inferred.update(inferred_skills)
-        session["_session_inferred_skills"] = already_inferred
-
-        if not inferred_skills:
-            return LeapfrogEvent(
-                lesson_group_id=lesson_group_id,
-                probed_skills=probed_skills,
-                inferred_skills=[],
-                aggregate_score=avg_score,
-            )
-
-        # Seed ONLY competency docs — just enough for unlock propagation.
-        # No lifecycle, no ability, no fabricated θ/σ. The student will
-        # be tested on these skills naturally via the unified selector.
-        leapfrog_competency_entries = [
-            {
-                "student_id": student_id,
-                "subject": subject,
-                "skill_id": node_map.get(sid, {}).get("skill_id", sid),
-                "subskill_id": sid,
-                "score": avg_score,
-                "credibility": 0.1,  # minimal — just enough for unlock propagation
-                "total_attempts": 0,
-            }
-            for sid in inferred_skills
-        ]
-
-        if defer_competency:
-            # Seeds go in their own deferred batch — they write via
-            # update_competency directly (fixed floor for unlock propagation),
-            # unlike eval writes which blend via apply_competency_eval.
-            session.setdefault("_pending_competency_seeds", []).extend(
-                leapfrog_competency_entries
-            )
-        else:
-            await asyncio.gather(*(
-                self.firestore.update_competency(**entry)
-                for entry in leapfrog_competency_entries
-            ))
-
-        # Mark that unlocks need refreshing — caller (process_result) will
-        # flush once per session instead of once per leapfrog.
-        session.setdefault("_pending_unlock_refresh", set()).add(subject)
-
-        logger.info(
-            f"[PULSE] Leapfrog unlocked {len(inferred_skills)} skills for testing: "
-            f"{inferred_skills[:5]}..."
-        )
-
-        return LeapfrogEvent(
-            lesson_group_id=lesson_group_id,
-            probed_skills=probed_skills,
-            inferred_skills=inferred_skills,
-            aggregate_score=avg_score,
         )
 
     # ------------------------------------------------------------------

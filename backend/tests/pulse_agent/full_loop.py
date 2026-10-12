@@ -65,6 +65,40 @@ DEFAULT_PRIMITIVE = "ten-frame"  # fallback primitive identity for lesson items
 PULSE_ITEMS_PER_DAY = 6
 
 
+_LG_CACHE: Dict[str, Any] = {}
+
+
+_REGISTRY_BY_BETA: List[tuple] = []
+
+
+def _nearest_registry_mode(beta: float) -> tuple:
+    """(primitive, eval_mode) whose registry prior beta is nearest `beta`."""
+    if not _REGISTRY_BY_BETA:
+        from app.services.calibration.problem_type_registry import PROBLEM_TYPE_REGISTRY
+        _REGISTRY_BY_BETA.extend(sorted(
+            (cfg.prior_beta, prim, mode)
+            for prim, modes in PROBLEM_TYPE_REGISTRY.items() for mode, cfg in modes.items()
+            if mode != "default"))
+    b, prim, mode = min(_REGISTRY_BY_BETA, key=lambda r: (abs(r[0] - beta), r[1], r[2]))
+    return prim, mode
+
+
+async def _published_learner_graph(subject: str):
+    """Read-only fetch of the published learner graph (same doctrine as
+    --seed-from: real reads, in-memory writes)."""
+    from app.services.curriculum_scope import subject_key
+    s = subject_key(subject)
+    if s not in _LG_CACHE:
+        try:
+            from app.db.firestore_service import FirestoreService
+            from app.services.learner_graph import get_learner_graph
+            _LG_CACHE[s] = await get_learner_graph(FirestoreService(), s)
+        except Exception as e:
+            logger.warning(f"learner graph {s} unavailable: {e}")
+            _LG_CACHE[s] = None
+    return _LG_CACHE[s]
+
+
 def base_subject_key(subject: Optional[str]) -> str:
     """Planner-side subject key for a grade-prefixed graph id.
 
@@ -131,9 +165,10 @@ class DaySnapshot:
     gate_advances: int = 0
     lesson_items_by_subject: Dict[str, int] = field(default_factory=dict)
     pulse_subject: str = ""
-    # Leapfrog unlocks fired by today's pulse session:
-    # [{probed_skills, inferred_skills, aggregate_score, subject}]
+    # Leapfrog is retired (the learner model selects); kept empty for report compat
     leapfrogs: List[Dict[str, Any]] = field(default_factory=list)
+    # today's pulse items in order: [{subskill_id, kind, band, target_beta, p_right, score}]
+    pulse_log: List[Dict[str, Any]] = field(default_factory=list)
 
     # Evening: canonical profile serve
     profile_total_attempts: int = 0
@@ -145,6 +180,10 @@ class DaySnapshot:
     mastered_by_subject: Dict[str, int] = field(default_factory=dict)
     active_by_subject: Dict[str, int] = field(default_factory=dict)
     mastered_subskills: List[str] = field(default_factory=list)
+    # Two-layer learner state (shadow, 7.4d): events written today, and the
+    # evening profile read straight from the stored state (no replay)
+    learner_events: int = 0
+    learner_profile: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
 
 @dataclass
@@ -180,6 +219,8 @@ class LoopTimeline:
     inferred_mastery_count: int = 0
     # the actual subskill ids in that set (for badging in the report)
     inferred_subskills: List[str] = field(default_factory=list)
+    # learner state at journey end: events, observations, truth agreement
+    learner_final: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def total_items(self) -> int:
@@ -292,6 +333,16 @@ class FullLoopRunner:
         self.competency.firestore_service = mem_fs
         self.competency.calibration_engine = self.calibration
         self.competency.mastery_lifecycle_engine = self.mastery
+
+        # Two-layer learner state (shadow, 7.4d) on BOTH submission paths,
+        # awaited inline so the evening read sees the day's answers. The graph
+        # comes from the published learner_graphs (one read-only fetch per
+        # subject); no graph -> observe() returns None and the loop runs as before.
+        from app.services.learner_model.service import LearnerStateService
+        self.learner_state = LearnerStateService(mem_fs, graph_source=_published_learner_graph, background=False)
+        self.competency.learner_state_service = self.learner_state
+        pulse_engine.learner_state = self.learner_state
+        self.analytics.learner_state = self.learner_state   # the one selection brain
 
     # -- item difficulty (same source the engine uses) -----------------------
 
@@ -407,8 +458,9 @@ class FullLoopRunner:
     ) -> tuple:
         """One pulse session via PulseEngine's production path.
 
-        Returns (n_items, scores, gate_advances, leapfrogs) — leapfrog
-        unlock events are the graph-jump evidence the report audits."""
+        Returns (n_items, scores, gate_advances, log). The engine names no
+        primitive (7.5); like the frontend's pin, the sim answers with the
+        registry mode whose prior beta is nearest the item's target_beta."""
         pulse_subject = subject_id or profile.subject
         session_resp = await self.engine.assemble_session(
             student_id=profile.student_id,
@@ -418,32 +470,29 @@ class FullLoopRunner:
         )
         scores: List[float] = []
         gate_advances = 0
-        leapfrogs: List[Dict[str, Any]] = []
+        log: List[Dict[str, Any]] = []
         for item in session_resp.items:
             score = student.answer(item)
+            prim, mode = _nearest_registry_mode(item.target_beta)
             result = await self.engine.process_result(
                 student_id=profile.student_id,
                 session_id=session_resp.session_id,
                 result=PulseResultRequest(
                     item_id=item.item_id,
                     score=score,
-                    primitive_type=item.primitive_affinity or DEFAULT_PRIMITIVE,
-                    eval_mode=item.eval_mode_name or "identify",
+                    primitive_type=prim,
+                    eval_mode=mode,
                     duration_ms=5000,
                 ),
                 now_override=virtual_now,
             )
             if result.gate_update and result.gate_update.new_gate > result.gate_update.old_gate:
                 gate_advances += 1
-            if result.leapfrog:
-                leapfrogs.append({
-                    "subject": pulse_subject,
-                    "probed_skills": list(result.leapfrog.probed_skills),
-                    "inferred_skills": list(result.leapfrog.inferred_skills),
-                    "aggregate_score": result.leapfrog.aggregate_score,
-                })
+            log.append({"subskill_id": item.subskill_id, "kind": item.selection_kind,
+                        "band": item.band.value, "target_beta": item.target_beta,
+                        "p_right": item.p_right, "score": score})
             scores.append(score)
-        return len(scores), scores, gate_advances, leapfrogs
+        return len(scores), scores, gate_advances, log
 
     # -- journey ---------------------------------------------------------------
 
@@ -634,7 +683,7 @@ class FullLoopRunner:
                 pulse_subject = subjects[(day_num - 1) % len(subjects)]
                 day.pulse_subject = pulse_subject
                 try:
-                    n, scores, adv, leapfrogs = await self._do_pulse_session(
+                    n, scores, adv, plog = await self._do_pulse_session(
                         profile,
                         students[base_subject_key(pulse_subject)],
                         virtual_now,
@@ -642,7 +691,7 @@ class FullLoopRunner:
                     )
                     day.pulse_items = n
                     day.gate_advances = adv
-                    day.leapfrogs = leapfrogs
+                    day.pulse_log = plog
                     all_scores.extend(scores)
                 except Exception as e:
                     logger.warning(f"  Day {day_num}: pulse session failed: {e}")
@@ -686,12 +735,21 @@ class FullLoopRunner:
                         break
             day.mastered_subskills.sort()
 
+            day.learner_events = len([e for e in self.fs._learner_events.get(str(profile.student_id), [])
+                                      if e["ts"][:10] == day.date])
+            for s in {base_subject_key(x) for x in subjects}:
+                sec = await self.learner_state.profile(profile.student_id, s, top=3)
+                if sec and sec.get("observations"):
+                    day.learner_profile[s] = {"observations": sec["observations"], **sec["counts"],
+                                              "phi": sec["general_ability"]["mean"]}
+
             timeline.days.append(day)
             logger.info(
                 f"  Day {day_num}/{days}: plan={len(day.plan_subskills)} subskills, "
                 f"did {day.lesson_items} lesson + {day.pulse_items} pulse items, "
                 f"avg={day.avg_score:.1f}, mastered={sum(day.mastered_by_subject.values())}, "
-                f"leapfrogs={len(day.leapfrogs)}"
+                f"pulse learn/confirm={sum(it.get('kind') == 'learn' for it in day.pulse_log)}/"
+                f"{sum(it.get('kind') == 'confirm' for it in day.pulse_log)}"
             )
 
             # Cross-grade auto-promote: the grade frontier is exhausted when
@@ -746,11 +804,41 @@ class FullLoopRunner:
             for a in abilities
         }
 
+        timeline.learner_final = await self._learner_final(profile, students)
+
         # L2 rebuild contract: replay L0 through the production backfill logic
         timeline.parity = await self.check_rollup_parity(
             profile.student_id, skip=seeded_from is not None
         )
         return timeline
+
+    async def _learner_final(self, profile: SyntheticProfile, students: Dict[str, LatentStudent]) -> Dict[str, Any]:
+        """Learner state vs the journey: one event per on-graph answer, the
+        stored observation counts, and agreement with the latent truth (the
+        truth's P(right) on each seen subskill's typical item, from its skill's
+        true theta, vs the model's P(right) there)."""
+        import json as _json
+        from app.services.calibration_engine import p_correct as _p
+        events = self.fs._learner_events.get(str(profile.student_id), [])
+        out: Dict[str, Any] = {"events": len(events), "subjects": {}, "pairs": []}
+        for (sid, subj), doc in self.fs._learner_state.items():
+            if sid != str(profile.student_id):
+                continue
+            lg = await _published_learner_graph(subj)
+            ro = _json.loads(doc["readout_json"])
+            touched = _json.loads(doc["state_json"])["touched"]
+            st = students.get(subj)
+            pairs = []
+            for key, t in touched.items():
+                nd = lg.nodes.get(key) if lg else None
+                if not nd or st is None or nd.get("skill_id") not in st.theta_true:
+                    continue
+                pr = st.params
+                truth = pr.guess + (1 - pr.guess - pr.slip) * _p(st.theta_true[nd["skill_id"]], DEFAULT_DISCRIMINATION_A, float(nd.get("beta") or 3.0))
+                pairs.append((ro[key][1], truth, t["n"]))
+            out["subjects"][subj] = {"n_obs": doc["n_obs"], "seen": len(touched), "truth_pairs": len(pairs)}
+            out["pairs"].extend(pairs)
+        return out
 
     # -- cross-grade auto-promote (ISSUE_CROSS_GRADE_PROGRESSION prototype) ----
 
@@ -1223,21 +1311,40 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
         ),
     ))
 
-    # 7. LEAPFROGGING: capable students in a grade-level curriculum should
-    # jump ahead via frontier probes. Low-ability archetypes are exempt.
+    # 7. THE LEARNER MODEL SELECTS PULSE (user 10-12: one brain). Every
+    # pulse item carries the model's kind; capable students get confirm items
+    # on subskills they never practised (what leapfrog probes used to do);
+    # no child sits through a long run of misses.
+    plog = [it for d in days for it in d.pulse_log]
+    unlabelled = sum(1 for it in plog if it.get("kind") not in ("learn", "confirm"))
+    results.append(AssertionResult(
+        name="pulse_from_learner_model",
+        passed=bool(plog) and unlabelled == 0,
+        message=f"{len(plog)} pulse items, {unlabelled} without a learner-model kind",
+    ))
     from .truth_model import TRUTH_PARAMS as _TP
     theta0 = getattr(_TP.get(timeline.archetype), "base_theta", 0.0)
-    lf = timeline.total_leapfrogs
-    inferred = timeline.inferred_mastery_count
+    discovered = sum(1 for it in plog if it.get("kind") == "confirm" and it.get("band") == "frontier")
     expected = theta0 >= 4.5 and len(days) >= 10
     results.append(AssertionResult(
-        name="leapfrogging_active",
-        passed=(lf > 0 or inferred > 0) if expected else True,
+        name="discovery_active",
+        passed=(discovered > 0 or timeline.inferred_mastery_count > 0) if expected else True,
         message=(
-            f"{lf} leapfrog events; {inferred} subskills mastered without "
-            f"lesson work (frontier/leapfrog inference)"
+            f"{discovered} confirm items on never-practised subskills; "
+            f"{timeline.inferred_mastery_count} subskills mastered without lesson work"
             + ("" if expected else " — not expected for this archetype, informational")
         ),
+    ))
+    streak = worst = 0
+    for it in plog:
+        streak = streak + 1 if it["score"] < 5.0 else 0
+        worst = max(worst, streak)
+    hits = sum(1 for it in plog if it["score"] >= 5.0)
+    results.append(AssertionResult(
+        name="pulse_miss_streak",
+        passed=worst <= 3,
+        message=(f"longest run of pulse misses (score < 5) {worst}; "
+                 f"pulse success {hits}/{len(plog)} ({hits / max(1, len(plog)):.0%})"),
     ))
 
     # 8. REVIEWS SURFACE: when mastery retests fall due on the virtual
@@ -1288,6 +1395,39 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
             ),
         ))
 
+    # 9b. Learner state (shadow, 7.4d): every answer on a learner-graph
+    # subskill updated the stored state once, and the stored state agrees
+    # with the latent truth on the subskills it has seen
+    lf = timeline.learner_final or {}
+    if lf:
+        n_obs = sum(v["n_obs"] for v in lf["subjects"].values())
+        results.append(AssertionResult(
+            name="learner_state_updates_on_submit",
+            passed=lf["events"] > 0 and lf["events"] == n_obs,
+            message=(f"{lf['events']} learner events for {timeline.total_items} items "
+                     f"(the rest are off the learner graph); stored observations {n_obs}; "
+                     + ", ".join(f"{k}: {v['n_obs']} answers, {v['seen']} seen" for k, v in lf["subjects"].items())),
+        ))
+        pairs = lf.get("pairs") or []
+        if len(pairs) >= 5:
+            import statistics as _st
+            mae = _st.mean(abs(a - b) for a, b, _ in pairs)
+            def _rank(v):
+                order = sorted(range(len(v)), key=lambda i: v[i])
+                r = [0.0] * len(v)
+                for pos, i in enumerate(order):
+                    r[i] = float(pos)
+                return r
+            ra, rb = _rank([a for a, _, _ in pairs]), _rank([b for _, b, _ in pairs])
+            rho = _st.correlation(ra, rb) if len(set(ra)) > 1 and len(set(rb)) > 1 else 0.0
+            lf["truth_mae"], lf["truth_rho"] = round(mae, 3), round(rho, 3)
+            results.append(AssertionResult(
+                name="learner_state_tracks_truth",
+                passed=rho > 0.3,
+                message=(f"{len(pairs)} seen subskills: model P(right) vs truth P(right) on the typical item, "
+                         f"Spearman {rho:.2f}, MAE {mae:.2f}"),
+            ))
+
     # 10. Weakness routing (selective_weakness only): truly-weak skills get picked
     if timeline.archetype == "selective_weakness" and timeline.truth_snapshot:
         truths = timeline.truth_snapshot
@@ -1329,7 +1469,7 @@ def generate_loop_report(timeline: LoopTimeline, results: List[Any]) -> str:
     )
     _h(f"- Student: {timeline.student_id}  |  Subjects: {', '.join(subjects)}  |  Grade: {grade_path}")
     _h(f"- Days: {len(timeline.days)}  |  Items: {timeline.total_items}"
-       f"  |  Leapfrog events: {timeline.total_leapfrogs}"
+       f"  |  Pulse items: {sum(d.pulse_items for d in timeline.days)} (learner model)"
        + (f"  |  Seeded from: {timeline.seeded_from}" if timeline.seeded_from else ""))
     _h("")
 
@@ -1374,8 +1514,8 @@ def generate_loop_report(timeline: LoopTimeline, results: List[Any]) -> str:
 
     _h("## Day Timeline")
     _h("")
-    _h("| Day | Date | Planned | Done (lesson+pulse) | By subject | Avg | Gate adv | Leapfrogs | Mastered | Learn targets |")
-    _h("|-----|------|---------|---------------------|------------|-----|----------|-----------|----------|---------------|")
+    _h("| Day | Date | Planned | Done (lesson+pulse) | By subject | Avg | Gate adv | Pulse learn/confirm | Mastered | Learn targets |")
+    _h("|-----|------|---------|---------------------|------------|-----|----------|---------------------|----------|---------------|")
     for d in timeline.days:
         learn = [t["subskillId"] for t in d.targets if t.get("kind") == "learn"]
         by_subj = " ".join(
@@ -1385,33 +1525,30 @@ def generate_loop_report(timeline: LoopTimeline, results: List[Any]) -> str:
         _h(
             f"| {d.day_number} | {d.date} | {len(d.plan_subskills)} | "
             f"{d.lesson_items}+{d.pulse_items} | {by_subj} | {d.avg_score:.1f} | "
-            f"{d.gate_advances} | {len(d.leapfrogs)} | "
+            f"{d.gate_advances} | {sum(it.get('kind') == 'learn' for it in d.pulse_log)}/"
+            f"{sum(it.get('kind') == 'confirm' for it in d.pulse_log)} | "
             f"{sum(d.mastered_by_subject.values())} | "
             f"{', '.join(learn[:3])}{'…' if len(learn) > 3 else ''} |"
         )
     _h("")
 
-    # Leapfrog audit — every graph jump, with what it inferred
-    all_leapfrogs = [
-        (d.day_number, lf) for d in timeline.days for lf in d.leapfrogs
-    ]
-    _h("## Leapfrog Audit")
+    # Pulse audit — what the learner model served, first and last day
+    _h("## Pulse Audit (learner model, first/last day)")
     _h("")
-    if all_leapfrogs:
-        _h("| Day | Subject | Probed (frontier pass) | Inferred ancestors | Score |")
-        _h("|-----|---------|------------------------|--------------------|-------|")
-        for day_num, lf in all_leapfrogs[:40]:
-            probed = ", ".join(lf.get("probed_skills", [])[:3])
-            inferred = lf.get("inferred_skills", [])
-            inf_str = ", ".join(inferred[:4]) + ("…" if len(inferred) > 4 else "")
-            _h(f"| {day_num} | {lf.get('subject', '')} | {probed} | "
-               f"{inf_str} ({len(inferred)}) | {lf.get('aggregate_score', 0):.1f} |")
-        if len(all_leapfrogs) > 40:
-            _h("")
-            _h(f"…and {len(all_leapfrogs) - 40} more events.")
-    else:
-        _h("No leapfrog events fired this journey.")
-    _h("")
+    pdays = [d for d in timeline.days if d.pulse_log]
+    for d in ([pdays[0], pdays[-1]] if len(pdays) > 1 else pdays):
+        _h(f"**Day {d.day_number}**")
+        _h("")
+        _h("| Subskill | Kind | Band | target β | P(right) | Score |")
+        _h("|----------|------|------|----------|----------|-------|")
+        for it in d.pulse_log:
+            pr = it.get("p_right")
+            _h(f"| `{it['subskill_id']}` | {it.get('kind')} | {it.get('band')} | "
+               f"{it.get('target_beta', 0):.2f} | {'-' if pr is None else f'{pr:.2f}'} | {it['score']:.1f} |")
+        _h("")
+    if not pdays:
+        _h("No pulse items served this journey.")
+        _h("")
 
     # Recommendation audit — why the selector picked what it picked
     _h("## Recommendation Audit (first/mid/last day)")

@@ -261,6 +261,9 @@ async def get_competency_service() -> CompetencyService:
             # Inject calibration engine for IRT item β / student θ (Difficulty PRD §5–6)
             _competency_service.calibration_engine = get_calibration_engine(firestore_service)
 
+            # Two-layer learner model, shadow: updated on every submission (7.4d)
+            _competency_service.learner_state_service = get_learner_state_service(firestore_service)
+
             # Initialize - clean and simple
             await _competency_service.initialize()
             logger.info("✅ CompetencyService initialized successfully")
@@ -420,6 +423,20 @@ def get_mastery_lifecycle_engine(
     return _mastery_lifecycle_engine
 
 
+_learner_state_service = None
+
+
+def get_learner_state_service(
+    firestore_service: FirestoreService = Depends(get_firestore_service)
+):
+    """Get or create the LearnerStateService singleton: the two-layer learner model, the one selection brain."""
+    global _learner_state_service
+    if _learner_state_service is None:
+        from .services.learner_model.service import LearnerStateService
+        _learner_state_service = LearnerStateService(firestore_service)
+    return _learner_state_service
+
+
 def get_calibration_engine(
     firestore_service: FirestoreService = Depends(get_firestore_service)
 ) -> CalibrationEngine:
@@ -462,6 +479,7 @@ async def get_pulse_engine(
             mastery_lifecycle_engine=mastery_lifecycle_engine,
             learning_paths_service=learning_paths_service,
         )
+        _pulse_engine.learner_state = get_learner_state_service(firestore_service)
         logger.info("PulseEngine initialized successfully")
     return _pulse_engine
 
@@ -496,6 +514,7 @@ async def get_firestore_analytics_service(
             curriculum_service=curriculum_service,
             learning_paths_service=learning_paths_service,
         )
+        _firestore_analytics_service.learner_state = get_learner_state_service(firestore_service)
         logger.info("✅ FirestoreAnalyticsService initialized successfully")
     return _firestore_analytics_service
 
