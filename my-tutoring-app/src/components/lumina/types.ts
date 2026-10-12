@@ -2107,10 +2107,10 @@ export interface VisualPrimitiveSpec {
   /** Structured number range from the manifest — grade-level appropriate. Null for non-numeric primitives. */
   numberRange?: { min: number; max: number } | null;
   /**
-   * Eval mode (the SKILL / task type the primitive evaluates): the Pulse item's
-   * IRT-chosen `eval_mode_name`, pinned in code after the manifest call when the
-   * manifest kept the item's `primitive_affinity`. Read by the generator via
-   * config.targetEvalMode. Absent otherwise (the generator resolves its own mode
+   * Eval mode (the SKILL / task type the primitive evaluates), pinned by
+   * resolvePulseEvalModes: of the modes that fit the subskill, the one nearest
+   * the engine's target_beta. Read by the generator via config.targetEvalMode.
+   * Absent when fit could not be resolved (the generator resolves its own mode
    * from intent).
    */
   targetEvalMode?: string;

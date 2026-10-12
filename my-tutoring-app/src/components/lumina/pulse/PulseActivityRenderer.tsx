@@ -10,6 +10,7 @@ import { KnowledgeCheck } from '../primitives/KnowledgeCheck';
 import { AIHelper } from '../components/AIHelper';
 import { EvaluationProvider } from '../evaluation';
 import { pulseApi } from './pulseApi';
+import { firstTryResults } from './firstTry';
 import type { ComponentId, HydratedPracticeItem, SessionBrief } from '../types';
 import type { PrimitiveEvaluationResult } from '../evaluation/types';
 import type { GradeLevel } from '../components/GradeLevelSelector';
@@ -245,14 +246,22 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
   const currentItem = state.items[state.currentIndex];
   const currentSpec = currentItem?.spec;
 
-  // Whether this item runs on the teaching workspace: the lesson rule, with the item's
-  // IRT-chosen mode as the pin and its subskill as the one objective. Never inferred from content.
+  // Whether this item runs on the teaching workspace: the lesson rule, with the mode
+  // resolvePulseEvalModes pinned as the pin and the subskill as the one objective.
+  // A standard problem mounts knowledge-check, which runs only on the workspace, so it binds by
+  // the same rule (no pin: `mixed`) instead of rendering the "needs the tutor" card.
   const binding = useMemo(() => {
-    const visual = currentItem?.hydrated?.manifestItem.visualPrimitive;
-    const visualData = currentItem?.hydrated?.visualData;
-    if (!visual || !visualData || !currentSpec) return null;
-    return workspaceBinding({ instanceId: currentSpec.item_id, primitiveId: visual.componentId,
-      pin: currentSpec.eval_mode_name, objectiveIds: [currentSpec.subskill_id], data: visualData.data ?? visualData });
+    const hydrated = currentItem?.hydrated;
+    if (!hydrated || !currentSpec) return null;
+    const visual = hydrated.manifestItem.visualPrimitive;
+    const visualData = hydrated.visualData;
+    if (visual && visualData) {
+      return workspaceBinding({ instanceId: currentSpec.item_id, primitiveId: visual.componentId,
+        pin: visual.targetEvalMode, objectiveIds: [currentSpec.subskill_id], data: visualData.data ?? visualData });
+    }
+    if (!hydrated.problemData) return null;
+    return workspaceBinding({ instanceId: currentSpec.item_id, primitiveId: 'knowledge-check', pin: undefined,
+      objectiveIds: [currentSpec.subskill_id], data: { problems: [hydrated.problemData] } });
   }, [currentItem?.hydrated, currentSpec]);
 
   // -------------------------------------------------------------------------
@@ -273,12 +282,9 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
         band: spec.band,
         target_mode: spec.target_mode,
         target_beta: spec.target_beta,
-        eval_mode_name: spec.eval_mode_name,
         skill_id: spec.skill_id,
         subskill_id: spec.subskill_id,
         subject: spec.subject,
-        primitive_affinity: spec.primitive_affinity,
-        eval_mode_hint: spec.eval_mode_hint,
       })),
       gradeLevel,
       recentPrimitives: recentPrimitives?.length ? recentPrimitives : undefined,
@@ -397,7 +403,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
     const primitiveType = String(evalResult.primitiveType || currentItem.primitiveId || 'unknown');
     const evalMode = evalResult.metrics?.evalMode
       || currentItem.hydrated?.manifestItem.standardProblem?.evalMode
-      || currentSpec.eval_mode_name
+      || currentItem.hydrated?.manifestItem.visualPrimitive?.targetEvalMode
       || (currentItem.hydrated?.manifestItem.visualPrimitive ? 'visual' : 'standard');
     const scoreOn10 = score / 10;
 
@@ -410,6 +416,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
         primitive_type: primitiveType,
         eval_mode: evalMode,
         duration_ms: durationMs,
+        first_try: firstTryResults(evalResult),
       });
 
       console.log(`${LOG} Backend response for item ${state.currentIndex + 1}: theta=${response.theta_update.new_theta.toFixed(2)} gate=${response.gate_update?.new_gate ?? '-'} complete=${response.session_progress.is_complete}`);
@@ -566,17 +573,24 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
 
     // === STANDARD PROBLEM ===
     if (problemData) {
-      return (
+      const kcData = { problems: [problemData] };
+      const check = (
         <KnowledgeCheck
           data={{
-            problems: [problemData],
+            ...kcData,
             instanceId: currentSpec.item_id,
             onEvaluationSubmit: handleEvaluation,
             skillId: currentSpec.skill_id,
             subskillId: currentSpec.subskill_id,
+            ...(binding && { objectiveId: binding.objectiveId }),
           }}
+          {...workspaceMountProps(binding ?? undefined)}
         />
       );
+      return binding ? (
+        <PulseWorkspace key={currentSpec.item_id} binding={binding} data={kcData} sessionId={sessionId}
+          topic={currentSpec.description} gradeLevel={gradeLevel}>{check}</PulseWorkspace>
+      ) : check;
     }
 
     return renderFallback(manifestItem.problemText);

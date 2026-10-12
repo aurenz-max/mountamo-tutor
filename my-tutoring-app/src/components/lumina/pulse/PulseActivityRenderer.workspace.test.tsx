@@ -90,7 +90,7 @@ type Family = keyof typeof FAMILIES;
 /** What Pulse records as the eval mode on the scripted drill, per family (slice 1 evidence):
  *  counting-board reports its first challenge's catalog mode from the shared `handleFinished`,
  *  the DI packs report the session `challengeType`, and number-sequencer and letter-sound-link
- *  report none, so the item's `eval_mode_name` is recorded. */
+ *  report none, so the item's pinned `targetEvalMode` is recorded. */
 const RECORDED: Record<Family, { reported: string | undefined; recorded: string }> = {
   'counting-board': { reported: 'count', recorded: 'count' },
   'number-sequencer': { reported: undefined, recorded: 'before_after' },
@@ -103,10 +103,11 @@ const RECORDED: Record<Family, { reported: string | undefined; recorded: string 
 interface ItemInput { family: Family; mode?: string; data?: unknown }
 const spec = (index: number, input: ItemInput): PulseItemSpec => ({ item_id: `pulse-item-00${index}`, band: 'current',
   subskill_id: `sub-${input.family}`, skill_id: `skill-${input.family}`, subject: 'MATHEMATICS', description: `Practice ${input.family}`,
-  target_mode: 2, target_beta: 2, eval_mode_name: 'mode' in input ? input.mode : FAMILIES[input.family].mode,
-  lesson_group_id: 'current-g', primitive_affinity: input.family });
+  target_mode: 2, target_beta: 2, lesson_group_id: 'current-g' });
+/** The mode resolvePulseEvalModes pinned on the manifest item (the engine names none). */
 const hydrated = (s: PulseItemSpec, input: ItemInput) => ({ manifestItem: { instanceId: s.item_id, problemText: s.description,
-  difficulty: 'medium', visualPrimitive: { componentId: input.family, intent: s.description, successCriteria: { description: '' } },
+  difficulty: 'medium', visualPrimitive: { componentId: input.family, intent: s.description, successCriteria: { description: '' },
+    targetEvalMode: 'mode' in input ? input.mode : FAMILIES[input.family].mode },
   standardProblem: null }, visualData: input.data ?? FAMILIES[input.family].data });
 const response = (complete: boolean) => ({ theta_update: { new_theta: 2, sigma: 1 }, gate_update: null, gate_progress: null,
   irt: null, leapfrog: null, session_progress: { is_complete: complete } });
@@ -216,7 +217,8 @@ it.each(Object.keys(FAMILIES) as Family[])('%s submits once, and Pulse records w
   await h.next('Finish Session');
   expect(seam.pulseSubmit).toHaveBeenCalledTimes(1);
   expect(seam.pulseSubmit.mock.calls[0]).toEqual(['pulse-session', { item_id: h.specs[0].item_id, score: 10,
-    primitive_type: family, eval_mode: RECORDED[family].recorded, duration_ms: expect.any(Number) }]);
+    primitive_type: family, eval_mode: RECORDED[family].recorded, duration_ms: expect.any(Number),
+    first_try: FAMILIES[family].answers.map(() => true) }]);
   expect(h.complete).toHaveBeenCalledTimes(1);
   expect(seam.results).toHaveLength(1);
   expect(useJudgedScriptRunner).not.toHaveBeenCalled();

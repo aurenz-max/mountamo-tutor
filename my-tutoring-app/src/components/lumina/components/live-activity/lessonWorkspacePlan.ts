@@ -12,7 +12,7 @@ export interface LessonWorkspaceItem {
 }
 
 /** One mounted primitive a host is deciding about. `pin` is the host's RESOLVED eval-mode pin:
- *  a lesson section's manifest `targetEvalMode`, a Pulse item's IRT-chosen `eval_mode_name`. None binds as `mixed`. */
+ *  a lesson section's manifest `targetEvalMode`, a Pulse item's resolved `targetEvalMode`. None binds as `mixed`. */
 export interface WorkspaceCandidate {
   instanceId: string;
   primitiveId: string;
@@ -33,8 +33,10 @@ export function workspaceBinding({ instanceId, primitiveId, pin, objectiveIds, d
   // No pin means the generator chose freely across the family's modes: that content is `mixed`.
   // A blend (`a|b`) or `mixed` pin binds when every mode it names is one the family binds.
   const mode = typeof pin === 'string' && pin ? pin : 'mixed';
+  // A section that spans several objectives (the final knowledge check covers them all) binds under
+  // its first, the same objective its unbound mount attributes evaluation to.
   if (!adapter.bindsTeachingWorkspace || !pinBindsWorkspace(primitiveId, adapter.modes, mode)
-    || objectiveIds.length !== 1) return null;
+    || objectiveIds.length === 0) return null;
   try {
     // The family's own mount state counts its askable items, whatever its payload calls them
     // (`challenges`, phonics-blender's `words`); an empty or unaskable pool does not bind. An

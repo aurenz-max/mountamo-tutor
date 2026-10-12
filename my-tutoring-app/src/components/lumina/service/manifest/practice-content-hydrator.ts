@@ -66,7 +66,7 @@ export async function hydratePracticeManifest(
         config: {
           intent: item.visualPrimitive!.intent || item.problemText,
           ...(nr && { numberRange: nr }),
-          // Pinned by resolvePracticeEvalModes — short-circuits the generator's
+          // Pinned by resolvePulseEvalModes — short-circuits the generator's
           // own per-item eval-mode micro-call. Absent → generator self-resolves.
           ...(item.visualPrimitive!.targetEvalMode && { targetEvalMode: item.visualPrimitive!.targetEvalMode }),
           difficulty: item.difficulty,

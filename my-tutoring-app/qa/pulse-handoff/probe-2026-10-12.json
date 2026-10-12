@@ -1,0 +1,547 @@
+{
+  "report": [
+    {
+      "profile": "Cold-Start Cleo",
+      "session": 0,
+      "rows": [
+        {
+          "item": "pulse-item-000",
+          "band": "frontier",
+          "subskill": "Count up to 10 objects in various arrangements (linear, scattered, circular) with consistent accuracy",
+          "targetBeta": 2,
+          "targetMode": 6,
+          "difficulty": "easy",
+          "engineAffinity": "counting-board",
+          "kind": "visual:counting-board",
+          "modes": [
+            "subitize_perceptual@0.5",
+            "count@1",
+            "give_me_n@1.5",
+            "build_n@1.6",
+            "recount_moved@1.8",
+            "subitize@2",
+            "group@2",
+            "add_more@2.2",
+            "take_away@2.4",
+            "count_on@2.5",
+            "compare@2.5"
+          ],
+          "pin": "count",
+          "resolverLine": "[Pulse] mode pulse-item-000 counting-board: fitting [count] → count (target β 2.0 Δβ=-1.0, resolved)"
+        },
+        {
+          "item": "pulse-item-001",
+          "band": "frontier",
+          "subskill": "Compare two groups of up to 5 objects using one-to-one correspondence and the terms \"more than,\" \"less than,\" and \"equal to\"",
+          "targetBeta": 1.5,
+          "targetMode": 1,
+          "difficulty": "easy",
+          "engineAffinity": "comparison-builder",
+          "kind": "visual:ten-frame",
+          "modes": [
+            "build@1.5",
+            "decompose@2",
+            "build_teen@2",
+            "build_pair@2.1",
+            "subitize@2.5",
+            "decompose_teen@3",
+            "make_ten@3.5",
+            "operate@4.5"
+          ],
+          "pin": null,
+          "resolverLine": "[Pulse] mode pulse-item-001 ten-frame: fitting [∅] → unpinned (target β 1.5, unresolved)"
+        },
+        {
+          "item": "pulse-item-002",
+          "band": "frontier",
+          "subskill": "Compare and describe objects' attributes (longer/shorter, heavier/lighter) using direct observation and manipulation",
+          "targetBeta": 1.5,
+          "targetMode": 1,
+          "difficulty": "easy",
+          "engineAffinity": "length-lab",
+          "kind": "visual:length-lab",
+          "modes": [
+            "compare@1.5",
+            "estimate_then_tile@2",
+            "two_unit_compare@3",
+            "tile_and_count@2.5",
+            "order@3.5",
+            "indirect@4.5"
+          ],
+          "pin": "compare",
+          "resolverLine": "[Pulse] mode pulse-item-002 length-lab: fitting [compare] → compare (target β 1.5 Δβ=+0.0, resolved)"
+        },
+        {
+          "item": "pulse-item-003",
+          "band": "frontier",
+          "subskill": "Order 3 familiar activities from shortest to longest duration (e.g., washing hands, eating snack, playing outside)",
+          "targetBeta": 4.5,
+          "targetMode": 4,
+          "difficulty": "medium",
+          "engineAffinity": "comparison-builder",
+          "kind": "standard:sequencing_activity/analyze",
+          "modes": [],
+          "pin": null,
+          "resolverLine": null
+        },
+        {
+          "item": "pulse-item-004",
+          "band": "frontier",
+          "subskill": "Identify missing elements within AB patterns",
+          "targetBeta": 5.5,
+          "targetMode": 5,
+          "difficulty": "medium",
+          "engineAffinity": "pattern-builder",
+          "kind": "visual:pattern-builder",
+          "modes": [
+            "extend@1.5",
+            "identify_core@2.5",
+            "translate@3.5",
+            "create@4.5",
+            "find_rule@5.5"
+          ],
+          "pin": "extend",
+          "resolverLine": "[Pulse] mode pulse-item-004 pattern-builder: fitting [extend] → extend (target β 5.5 Δβ=-4.0, resolved) MISMATCH: no fitting mode within 1 β"
+        },
+        {
+          "item": "pulse-item-005",
+          "band": "frontier",
+          "subskill": "Connect addition and subtraction as inverse operations within 10 using related facts",
+          "targetBeta": 3.5,
+          "targetMode": 4,
+          "difficulty": "medium",
+          "engineAffinity": "number-bond",
+          "kind": "visual:number-bond",
+          "modes": [
+            "decompose@1.5",
+            "ten_and_ones@2",
+            "missing_part@2.5",
+            "related_fact@3",
+            "fact_family@3.5",
+            "build_equation@4.5"
+          ],
+          "pin": "related_fact",
+          "resolverLine": "[Pulse] mode pulse-item-005 number-bond: fitting [related_fact] → related_fact (target β 3.5 Δβ=-0.5, resolved)"
+        }
+      ],
+      "built": null
+    },
+    {
+      "profile": "Struggling Sofia",
+      "session": 4,
+      "rows": [
+        {
+          "item": "pulse-item-000",
+          "band": "current",
+          "subskill": "Sort picture cards into temperature categories (hot, warm, cold) with real-world examples",
+          "targetBeta": 2.5,
+          "targetMode": 2,
+          "difficulty": "easy",
+          "engineAffinity": "sorting-station",
+          "kind": "visual:sorting-station",
+          "modes": [
+            "sort_one@1.5",
+            "sort_attribute@2.5",
+            "sort_variety@3",
+            "count_compare@3.5",
+            "odd_one_out@4",
+            "two_attributes@5",
+            "tally_record@5.5"
+          ],
+          "pin": "sort_one",
+          "resolverLine": "[Pulse] mode pulse-item-000 sorting-station: fitting [sort_one] → sort_one (target β 2.5 Δβ=-1.0, resolved)"
+        },
+        {
+          "item": "pulse-item-001",
+          "band": "current",
+          "subskill": "Count forward from any given number up to 100 and identify sequence errors",
+          "targetBeta": 2.5,
+          "targetMode": 2,
+          "difficulty": "easy",
+          "engineAffinity": "hundreds-chart",
+          "kind": "visual:number-line",
+          "modes": [
+            "identify@0.5",
+            "plot@1.5",
+            "jump@2.5",
+            "build_hops@2.6",
+            "order@3.5",
+            "between@4.5"
+          ],
+          "pin": "jump",
+          "resolverLine": "[Pulse] mode pulse-item-001 number-line: fitting [jump] → jump (target β 2.5 Δβ=+0.0, resolved)"
+        },
+        {
+          "item": "pulse-item-002",
+          "band": "current",
+          "subskill": "Explain complex sorting rules using \"because\" statements",
+          "targetBeta": 2.5,
+          "targetMode": 2,
+          "difficulty": "easy",
+          "engineAffinity": "sorting-station",
+          "kind": "standard:multiple_choice/apply",
+          "modes": [],
+          "pin": null,
+          "resolverLine": null
+        },
+        {
+          "item": "pulse-item-003",
+          "band": "current",
+          "subskill": "Solve subtraction word problems within 5 using objects, drawings, and equations",
+          "targetBeta": 2.5,
+          "targetMode": 2,
+          "difficulty": "easy",
+          "engineAffinity": "addition-subtraction-scene",
+          "kind": "visual:ten-frame",
+          "modes": [
+            "build@1.5",
+            "decompose@2",
+            "build_teen@2",
+            "build_pair@2.1",
+            "subitize@2.5",
+            "decompose_teen@3",
+            "make_ten@3.5",
+            "operate@4.5"
+          ],
+          "pin": "operate",
+          "resolverLine": "[Pulse] mode pulse-item-003 ten-frame: fitting [operate] → operate (target β 2.5 Δβ=+2.0, resolved) MISMATCH: no fitting mode within 1 β"
+        },
+        {
+          "item": "pulse-item-004",
+          "band": "current",
+          "subskill": "Draw hour hand to show specific whole-hour times on a blank clock face",
+          "targetBeta": 2.5,
+          "targetMode": 5,
+          "difficulty": "easy",
+          "engineAffinity": "analog-clock",
+          "kind": "visual:analog-clock",
+          "modes": [
+            "hand_name@0.8",
+            "count_face@1",
+            "hear_time@1.3",
+            "read@1.5",
+            "set_time@2.5",
+            "match@3.5",
+            "elapsed@4.5"
+          ],
+          "pin": "set_time",
+          "resolverLine": "[Pulse] mode pulse-item-004 analog-clock: fitting [set_time] → set_time (target β 2.5 Δβ=+0.0, resolved)"
+        },
+        {
+          "item": "pulse-item-005",
+          "band": "current",
+          "subskill": "Sort the same set of objects using a different single attribute",
+          "targetBeta": 2.5,
+          "targetMode": 2,
+          "difficulty": "easy",
+          "engineAffinity": "sorting-station",
+          "kind": "standard:categorization_activity/apply",
+          "modes": [],
+          "pin": null,
+          "resolverLine": null
+        }
+      ],
+      "built": null
+    },
+    {
+      "profile": "Steady Sam",
+      "session": 9,
+      "rows": [
+        {
+          "item": "pulse-item-000",
+          "band": "current",
+          "subskill": "Count and recognize numbers from 21-100, with emphasis on decade numbers",
+          "targetBeta": 3.5,
+          "targetMode": 3,
+          "difficulty": "medium",
+          "engineAffinity": "hundreds-chart",
+          "kind": "visual:base-ten-blocks",
+          "modes": [
+            "build_number@1.5",
+            "build_two_ways@2",
+            "read_blocks@2.5",
+            "regroup@3.5",
+            "operate@4.5"
+          ],
+          "pin": "read_blocks",
+          "resolverLine": "[Pulse] mode pulse-item-000 base-ten-blocks: fitting [read_blocks] → read_blocks (target β 3.5 Δβ=-1.0, resolved)"
+        },
+        {
+          "item": "pulse-item-001",
+          "band": "current",
+          "subskill": "Solve subtraction word problems within 5 using objects, drawings, and equations",
+          "targetBeta": 3.5,
+          "targetMode": 3,
+          "difficulty": "medium",
+          "engineAffinity": "addition-subtraction-scene",
+          "kind": "visual:addition-subtraction-scene",
+          "modes": [
+            "act_out@1.5",
+            "build_equation@2.5",
+            "solve_story@3.5",
+            "create_story@4.5"
+          ],
+          "pin": "solve_story",
+          "resolverLine": "[Pulse] mode pulse-item-001 addition-subtraction-scene: fitting [act_out, solve_story] → solve_story (target β 3.5 Δβ=+0.0, resolved)"
+        },
+        {
+          "item": "pulse-item-002",
+          "band": "current",
+          "subskill": "Identify and describe shapes in real-world environments using geometric vocabulary (sides, corners) and basic attributes (curved vs. straight sides)",
+          "targetBeta": 3.5,
+          "targetMode": 4,
+          "difficulty": "medium",
+          "engineAffinity": "shape-sorter",
+          "kind": "standard:multiple_choice/apply",
+          "modes": [],
+          "pin": null,
+          "resolverLine": null
+        },
+        {
+          "item": "pulse-item-003",
+          "band": "current",
+          "subskill": "Recognize and match shapes in different orientations and sizes, including shapes in real-world objects",
+          "targetBeta": 3.5,
+          "targetMode": 4,
+          "difficulty": "medium",
+          "engineAffinity": "shape-sorter",
+          "kind": "visual:sorting-station",
+          "modes": [
+            "sort_one@1.5",
+            "sort_attribute@2.5",
+            "sort_variety@3",
+            "count_compare@3.5",
+            "odd_one_out@4",
+            "two_attributes@5",
+            "tally_record@5.5"
+          ],
+          "pin": "sort_attribute",
+          "resolverLine": "[Pulse] mode pulse-item-003 sorting-station: fitting [sort_one, sort_attribute] → sort_attribute (target β 3.5 Δβ=-1.0, resolved)"
+        },
+        {
+          "item": "pulse-item-004",
+          "band": "current",
+          "subskill": "Create and solve real-world subtraction situations within 10 using various representations",
+          "targetBeta": 3.5,
+          "targetMode": 3,
+          "difficulty": "medium",
+          "engineAffinity": "addition-subtraction-scene",
+          "kind": "visual:ten-frame",
+          "modes": [
+            "build@1.5",
+            "decompose@2",
+            "build_teen@2",
+            "build_pair@2.1",
+            "subitize@2.5",
+            "decompose_teen@3",
+            "make_ten@3.5",
+            "operate@4.5"
+          ],
+          "pin": "operate",
+          "resolverLine": "[Pulse] mode pulse-item-004 ten-frame: fitting [operate] → operate (target β 3.5 Δβ=+1.0, resolved)"
+        },
+        {
+          "item": "pulse-item-005",
+          "band": "current",
+          "subskill": "Count backwards from 10 to 0 using concrete objects and number lines, practicing correct descending sequence",
+          "targetBeta": 3.5,
+          "targetMode": 5,
+          "difficulty": "medium",
+          "engineAffinity": "number-line",
+          "kind": "visual:number-line",
+          "modes": [
+            "identify@0.5",
+            "plot@1.5",
+            "jump@2.5",
+            "build_hops@2.6",
+            "order@3.5",
+            "between@4.5"
+          ],
+          "pin": "jump",
+          "resolverLine": "[Pulse] mode pulse-item-005 number-line: fitting [jump] → jump (target β 3.5 Δβ=-1.0, resolved)"
+        }
+      ],
+      "built": null
+    },
+    {
+      "profile": "Gifted Grace",
+      "session": 11,
+      "rows": [
+        {
+          "item": "pulse-item-000",
+          "band": "review",
+          "subskill": "Explain data representations to others using simple comparative language",
+          "targetBeta": 6,
+          "targetMode": 4,
+          "difficulty": "hard",
+          "engineAffinity": "knowledge-check",
+          "kind": "standard:multiple_choice/evaluate",
+          "modes": [],
+          "pin": null,
+          "resolverLine": null
+        },
+        {
+          "item": "pulse-item-001",
+          "band": "frontier",
+          "subskill": "Count objects in groups of 2 up to 20 (skip counting) and track running totals as objects change",
+          "targetBeta": 2.5,
+          "targetMode": 2,
+          "difficulty": "easy",
+          "engineAffinity": "skip-counting-runner",
+          "kind": "visual:skip-counting-runner",
+          "modes": [
+            "count_along@1.5",
+            "predict@2.5",
+            "fill_missing@3.5",
+            "find_skip_value@4.5",
+            "connect_multiplication@5.5"
+          ],
+          "pin": "predict",
+          "resolverLine": "[Pulse] mode pulse-item-001 skip-counting-runner: fitting [count_along, predict] → predict (target β 2.5 Δβ=+0.0, resolved)"
+        },
+        {
+          "item": "pulse-item-002",
+          "band": "review",
+          "subskill": "Represent numbers 11-15 as ten ones plus additional ones using manipulatives",
+          "targetBeta": 3.5,
+          "targetMode": 6,
+          "difficulty": "medium",
+          "engineAffinity": "ten-frame",
+          "kind": "visual:ten-frame",
+          "modes": [
+            "build@1.5",
+            "decompose@2",
+            "build_teen@2",
+            "build_pair@2.1",
+            "subitize@2.5",
+            "decompose_teen@3",
+            "make_ten@3.5",
+            "operate@4.5"
+          ],
+          "pin": "build_teen",
+          "resolverLine": "[Pulse] mode pulse-item-002 ten-frame: fitting [build_teen] → build_teen (target β 3.5 Δβ=-1.5, resolved) MISMATCH: no fitting mode within 1 β"
+        },
+        {
+          "item": "pulse-item-003",
+          "band": "review",
+          "subskill": "Compare two numbers between 11-20 using place value understanding and visual models",
+          "targetBeta": 4.5,
+          "targetMode": 4,
+          "difficulty": "medium",
+          "engineAffinity": "comparison-builder",
+          "kind": "visual:base-ten-blocks",
+          "modes": [
+            "build_number@1.5",
+            "build_two_ways@2",
+            "read_blocks@2.5",
+            "regroup@3.5",
+            "operate@4.5"
+          ],
+          "pin": "build_number",
+          "resolverLine": "[Pulse] mode pulse-item-003 base-ten-blocks: fitting [build_number] → build_number (target β 4.5 Δβ=-3.0, resolved) MISMATCH: no fitting mode within 1 β"
+        },
+        {
+          "item": "pulse-item-004",
+          "band": "review",
+          "subskill": "Add and subtract fluently within 5 using mental strategies",
+          "targetBeta": 5.5,
+          "targetMode": 5,
+          "difficulty": "medium",
+          "engineAffinity": "math-fact-fluency",
+          "kind": "visual:number-line",
+          "modes": [
+            "identify@0.5",
+            "plot@1.5",
+            "jump@2.5",
+            "build_hops@2.6",
+            "order@3.5",
+            "between@4.5"
+          ],
+          "pin": "jump",
+          "resolverLine": "[Pulse] mode pulse-item-004 number-line: fitting [jump] → jump (target β 5.5 Δβ=-3.0, resolved) MISMATCH: no fitting mode within 1 β"
+        },
+        {
+          "item": "pulse-item-005",
+          "band": "review",
+          "subskill": "Read and interpret simple graphs to answer \"how many\" and \"which has more/less\" questions",
+          "targetBeta": 4.5,
+          "targetMode": 3,
+          "difficulty": "medium",
+          "engineAffinity": "knowledge-check",
+          "kind": "visual:bar-model",
+          "modes": [
+            "read_one_to_one@1.2",
+            "most_least@1.4",
+            "compare_bars@1.5",
+            "match_to_bar@1.6",
+            "build_one_to_one@1.8",
+            "make_graph@1.9",
+            "say_what_it_shows@2",
+            "compare_two_graphs@2.2",
+            "read_scale@2.5",
+            "picture_graph@3",
+            "scaled_bar_graph@3.5",
+            "graph_word_problem@4.5",
+            "build_graph@5.5"
+          ],
+          "pin": "match_to_bar",
+          "resolverLine": "[Pulse] mode pulse-item-005 bar-model: fitting [read_one_to_one, most_least, match_to_bar] → match_to_bar (target β 4.5 Δβ=-2.9, resolved) MISMATCH: no fitting mode within 1 β"
+        }
+      ],
+      "built": null
+    }
+  ],
+  "logs": [
+    "[Pulse] mode pulse-item-000 counting-board: fitting [count] → count (target β 2.0 Δβ=-1.0, resolved)",
+    "[Pulse] mode pulse-item-001 ten-frame: fitting [∅] → unpinned (target β 1.5, unresolved)",
+    "[Pulse] mode pulse-item-002 length-lab: fitting [compare] → compare (target β 1.5 Δβ=+0.0, resolved)",
+    "[Pulse] mode pulse-item-004 pattern-builder: fitting [extend] → extend (target β 5.5 Δβ=-4.0, resolved) MISMATCH: no fitting mode within 1 β",
+    "[Pulse] mode pulse-item-005 number-bond: fitting [related_fact] → related_fact (target β 3.5 Δβ=-0.5, resolved)",
+    "[Pulse] Manifest generated: 6 items",
+    "[Pulse]   1. pulse-item-000 → visual:counting-board (easy)",
+    "[Pulse]   2. pulse-item-001 → visual:ten-frame (easy)",
+    "[Pulse]   3. pulse-item-002 → visual:length-lab (easy)",
+    "[Pulse]   4. pulse-item-003 → standard:sequencing_activity (medium)",
+    "[Pulse]   5. pulse-item-004 → visual:pattern-builder (medium)",
+    "[Pulse]   6. pulse-item-005 → visual:number-bond (medium)",
+    "[Pulse]   Visual: 5, Standard: 1",
+    "[Pulse] mode pulse-item-000 sorting-station: fitting [sort_one] → sort_one (target β 2.5 Δβ=-1.0, resolved)",
+    "[Pulse] mode pulse-item-001 number-line: fitting [jump] → jump (target β 2.5 Δβ=+0.0, resolved)",
+    "[Pulse] mode pulse-item-003 ten-frame: fitting [operate] → operate (target β 2.5 Δβ=+2.0, resolved) MISMATCH: no fitting mode within 1 β",
+    "[Pulse] mode pulse-item-004 analog-clock: fitting [set_time] → set_time (target β 2.5 Δβ=+0.0, resolved)",
+    "[Pulse] Manifest generated: 6 items",
+    "[Pulse]   1. pulse-item-000 → visual:sorting-station (easy)",
+    "[Pulse]   2. pulse-item-001 → visual:number-line (easy)",
+    "[Pulse]   3. pulse-item-002 → standard:multiple_choice (easy)",
+    "[Pulse]   4. pulse-item-003 → visual:ten-frame (easy)",
+    "[Pulse]   5. pulse-item-004 → visual:analog-clock (easy)",
+    "[Pulse]   6. pulse-item-005 → standard:categorization_activity (easy)",
+    "[Pulse]   Visual: 4, Standard: 2",
+    "[Pulse] mode pulse-item-000 base-ten-blocks: fitting [read_blocks] → read_blocks (target β 3.5 Δβ=-1.0, resolved)",
+    "[Pulse] mode pulse-item-001 addition-subtraction-scene: fitting [act_out, solve_story] → solve_story (target β 3.5 Δβ=+0.0, resolved)",
+    "[Pulse] mode pulse-item-003 sorting-station: fitting [sort_one, sort_attribute] → sort_attribute (target β 3.5 Δβ=-1.0, resolved)",
+    "[Pulse] mode pulse-item-004 ten-frame: fitting [operate] → operate (target β 3.5 Δβ=+1.0, resolved)",
+    "[Pulse] mode pulse-item-005 number-line: fitting [jump] → jump (target β 3.5 Δβ=-1.0, resolved)",
+    "[Pulse] Manifest generated: 6 items",
+    "[Pulse]   1. pulse-item-000 → visual:base-ten-blocks (medium)",
+    "[Pulse]   2. pulse-item-001 → visual:addition-subtraction-scene (medium)",
+    "[Pulse]   3. pulse-item-002 → standard:multiple_choice (medium)",
+    "[Pulse]   4. pulse-item-003 → visual:sorting-station (medium)",
+    "[Pulse]   5. pulse-item-004 → visual:ten-frame (medium)",
+    "[Pulse]   6. pulse-item-005 → visual:number-line (medium)",
+    "[Pulse]   Visual: 5, Standard: 1",
+    "[Pulse] mode pulse-item-001 skip-counting-runner: fitting [count_along, predict] → predict (target β 2.5 Δβ=+0.0, resolved)",
+    "[Pulse] mode pulse-item-002 ten-frame: fitting [build_teen] → build_teen (target β 3.5 Δβ=-1.5, resolved) MISMATCH: no fitting mode within 1 β",
+    "[Pulse] mode pulse-item-003 base-ten-blocks: fitting [build_number] → build_number (target β 4.5 Δβ=-3.0, resolved) MISMATCH: no fitting mode within 1 β",
+    "[Pulse] mode pulse-item-004 number-line: fitting [jump] → jump (target β 5.5 Δβ=-3.0, resolved) MISMATCH: no fitting mode within 1 β",
+    "[Pulse] mode pulse-item-005 bar-model: fitting [read_one_to_one, most_least, match_to_bar] → match_to_bar (target β 4.5 Δβ=-2.9, resolved) MISMATCH: no fitting mode within 1 β",
+    "[Pulse] Manifest generated: 6 items",
+    "[Pulse]   1. pulse-item-000 → standard:multiple_choice (hard)",
+    "[Pulse]   2. pulse-item-001 → visual:skip-counting-runner (easy)",
+    "[Pulse]   3. pulse-item-002 → visual:ten-frame (medium)",
+    "[Pulse]   4. pulse-item-003 → visual:base-ten-blocks (medium)",
+    "[Pulse]   5. pulse-item-004 → visual:number-line (medium)",
+    "[Pulse]   6. pulse-item-005 → visual:bar-model (medium)",
+    "[Pulse]   Visual: 5, Standard: 1"
+  ]
+}

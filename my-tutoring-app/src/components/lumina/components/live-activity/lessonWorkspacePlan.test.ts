@@ -33,10 +33,18 @@ describe('ordinary lesson workspace eligibility', () => {
     expect(lessonWorkspaceItems(exhibit('identify|count', shapes)).size).toBe(0);
     expect(lessonWorkspaceItems(exhibit('mixed', shapes)).size).toBe(0);
   });
-  it('leaves caregiver, ambiguous-objective and incompatible payload paths on their existing controller', () => {
-    for (const patch of [{ audience: 'caregiver' }, { objectiveIds: [] }, { objectiveIds: ['one', 'two'] }, { data: {} }]) {
+  it('leaves caregiver, objective-less and incompatible payload paths on their existing controller', () => {
+    for (const patch of [{ audience: 'caregiver' }, { objectiveIds: [] }, { data: {} }]) {
       expect(lessonWorkspaceItems(exhibit('count', { ...section, ...patch })).size).toBe(0);
     }
+  });
+  it('binds a section spanning several objectives under its first (the final knowledge check covers them all)', () => {
+    expect(lessonWorkspaceItems(exhibit('count', { ...section, objectiveIds: ['one', 'two'] })).get('one'))
+      .toMatchObject({ objectiveId: 'one', evalMode: 'count' });
+    const check = { componentId: 'knowledge-check', instanceId: 'final', title: 'Check', objectiveIds: ['one', 'two', 'three'],
+      data: { problems: [{ type: 'true_false', id: 'tf', difficulty: 'easy', gradeLevel: '1', rationale: '', teachingNote: '',
+        successCriteria: [], statement: 'A spider has eight legs', correct: true }] } };
+    expect(lessonWorkspaceItems(exhibit('', check)).get('final')).toMatchObject({ objectiveId: 'one', evalMode: 'mixed' });
   });
 
   const train = (type: string, challenge: Record<string, unknown>) => ({ componentId: 'number-sequencer',

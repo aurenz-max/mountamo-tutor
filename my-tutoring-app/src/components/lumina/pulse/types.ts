@@ -106,6 +106,8 @@ export interface PulseResultRequest {
   primitive_type: string;
   eval_mode: string;
   duration_ms: number;
+  /** Per-challenge first-try results when the primitive reports them (learner state reads these, not the final score). */
+  first_try?: boolean[];
 }
 
 export interface ThetaUpdate {

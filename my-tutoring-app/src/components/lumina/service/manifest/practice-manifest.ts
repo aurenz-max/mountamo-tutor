@@ -10,10 +10,10 @@ import { Type, Schema, ThinkingLevel } from "@google/genai";
 import { PracticeManifest, CURRICULUM_SUBJECT_IDS } from "../../types";
 import { ai } from "../geminiClient";
 import { buildPracticeVisualCatalogContext } from "./practice-visual-catalog";
-import { getComponentById } from "./catalog";
+import { resolvePulseEvalModes } from "./resolvePulseEvalModes";
 
 /**
- * Map target_beta to nearest Bloom's tier when eval_mode_name is not available.
+ * Map target_beta to the nearest Bloom's tier.
  * Thresholds are midpoints between adjacent tier betas (1.5, 3.0, 4.5, 6.0).
  */
 function betaToBloomsTier(beta: number): string {
@@ -21,6 +21,21 @@ function betaToBloomsTier(beta: number): string {
   if (beta <= 3.75) return 'apply';
   if (beta <= 5.25) return 'analyze';
   return 'evaluate';
+}
+
+/**
+ * Scaffolding tier (1-6) from target_beta, on the backend's THETA_TO_MODE
+ * thresholds (models/pulse.py). The engine's target_mode is an index into the
+ * curriculum primitive's own mode ladder, so it means nothing once the manifest
+ * picks another primitive; target_beta is primitive-free.
+ */
+export function betaToScaffoldingMode(beta: number): number {
+  if (beta < 2.0) return 1;
+  if (beta < 3.0) return 2;
+  if (beta < 4.5) return 3;
+  if (beta < 6.0) return 4;
+  if (beta < 7.5) return 5;
+  return 6;
 }
 
 /**
@@ -300,14 +315,11 @@ export interface PulseManifestItemInput {
   band: string;       // 'frontier' | 'current' | 'review'
   target_mode: number; // 1-6
   target_beta: number;
-  eval_mode_name?: string; // e.g. 'recall', 'apply', 'analyze', 'evaluate'
   skill_id: string;
   subskill_id: string;
   subject: string;
-  /** Curriculum-assigned primitive from curriculum_published (e.g. 'number-line', 'ten-frame') */
-  primitive_affinity?: string;
-  /** Curriculum-assigned eval mode — tells the generator which mode to use (e.g. 'subitize', 'plot') */
-  eval_mode_hint?: string;
+  // No primitive or eval mode: the manifest picks the primitive from the live
+  // catalog, and resolvePulseEvalModes maps target_beta onto its fitting modes.
 }
 
 /**
@@ -334,23 +346,17 @@ export const generatePulseManifest = async (
 
   // Build per-item specifications for the prompt
   const itemSpecList = items.map((item, i) => {
-    const scaffolding = MODE_SCAFFOLDING[item.target_mode] || MODE_SCAFFOLDING[4];
+    const tier = betaToScaffoldingMode(item.target_beta);
+    const scaffolding = MODE_SCAFFOLDING[tier];
     const bandLabel = item.band === 'frontier' ? 'FRONTIER PROBE (student may not know this yet — fair assessment, no assumed instruction)'
       : item.band === 'review' ? 'REVIEW (student has seen this — focus on recall and fluency)'
       : 'CURRENT LEARNING (actively learning — balance challenge with support)';
 
-    const affinityLine = item.primitive_affinity
-      ? `\n- PREFERRED PRIMITIVE: "${item.primitive_affinity}" (curriculum-assigned — use this if it exists in the catalog and fits the skill)`
-      : '';
-    const evalModeLine = item.eval_mode_hint
-      ? `\n- EVAL MODE: "${item.eval_mode_hint}" (curriculum-assigned — use this mode for the primitive)`
-      : '';
-
     return `### Item ${i + 1}: "${item.item_id}"
 - Skill: ${item.description}
 - Band: ${bandLabel}
-- Scaffolding: Mode ${item.target_mode}/6 — "${scaffolding.label}" (difficulty: ${scaffolding.difficulty})
-- ${scaffolding.instruction}${affinityLine}${evalModeLine}`;
+- Scaffolding: Mode ${tier}/6 — "${scaffolding.label}" (difficulty: ${scaffolding.difficulty})
+- ${scaffolding.instruction}`;
   }).join('\n\n');
 
   const prompt = `You are an educational content designer creating a Lumina Pulse session — an adaptive, multi-skill practice loop.
@@ -459,25 +465,13 @@ Return ONLY valid JSON matching the schema.`;
     manifest.items[i].instanceId = items[i].item_id;
   }
 
-  // The Pulse engine chose eval_mode_name for the item's primitive_affinity by IRT. When the
-  // manifest kept that primitive, the generator builds that mode, so the content is the task the
-  // engine records and prices. Another primitive, or a mode its catalog lacks, keeps self-resolution.
-  for (let i = 0; i < manifest.items.length && i < items.length; i++) {
-    const visual = manifest.items[i].visualPrimitive;
-    const { eval_mode_name: mode, primitive_affinity: affinity } = items[i];
-    if (visual && mode && visual.componentId === affinity
-      && getComponentById(visual.componentId)?.evalModes?.some(m => m.evalMode === mode)) visual.targetEvalMode = mode;
-  }
-
-  // Inject Bloom's tier eval mode into standard problems for IRT-adaptive difficulty.
-  // Uses eval_mode_name from backend if available, otherwise derives from target_beta.
+  // The engine's difficulty is set in code, never left to the manifest's own pick:
+  // config.difficulty follows target_beta's tier, standard problems its Bloom tier.
   for (let i = 0; i < manifest.items.length && i < items.length; i++) {
     const item = manifest.items[i];
-    const input = items[i];
-    if (item.standardProblem) {
-      const tier = input.eval_mode_name || betaToBloomsTier(input.target_beta);
-      item.standardProblem.evalMode = tier;
-    }
+    const scaffolding = MODE_SCAFFOLDING[betaToScaffoldingMode(items[i].target_beta)];
+    item.difficulty = scaffolding.difficulty as typeof item.difficulty;
+    if (item.standardProblem) item.standardProblem.evalMode = betaToBloomsTier(items[i].target_beta);
   }
 
   // Post-manifest diversity enforcement: convert duplicate visual primitives
@@ -496,7 +490,7 @@ Return ONLY valid JSON matching the schema.`;
         item.standardProblem = {
           problemType: fallback as any,
           generationIntent: `Generate a ${fallback.replace(/_/g, ' ')} problem about: ${item.problemText}`,
-          evalMode: input ? (input.eval_mode_name || betaToBloomsTier(input.target_beta)) : undefined,
+          evalMode: input ? betaToBloomsTier(input.target_beta) : undefined,
         };
         item.visualPrimitive = null;
       } else {
@@ -518,10 +512,15 @@ Return ONLY valid JSON matching the schema.`;
       item.standardProblem = {
         problemType: fallback as any,
         generationIntent: `Generate a ${fallback.replace(/_/g, ' ')} problem about: ${item.problemText}`,
-        evalMode: input ? (input.eval_mode_name || betaToBloomsTier(input.target_beta)) : undefined,
+        evalMode: input ? betaToBloomsTier(input.target_beta) : undefined,
       };
     }
   }
+
+  // Map the engine's target_beta onto the chosen primitive's fitting modes (pins
+  // visualPrimitive.targetEvalMode). Runs last so it sees the final visuals.
+  callbacks?.onProgress?.('Matching difficulty to each activity...');
+  await resolvePulseEvalModes(manifest, items, gradeLevel);
 
   const visualCount = manifest.items.filter(i => i.visualPrimitive).length;
   const standardCount = manifest.items.filter(i => i.standardProblem).length;
