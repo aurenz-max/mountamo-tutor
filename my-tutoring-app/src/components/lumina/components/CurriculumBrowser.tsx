@@ -308,6 +308,87 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
   // Don't render for unauthenticated users
   if (!user) return null;
 
+  const renderError = () => error && (
+    <div className="flex items-center justify-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-4">
+      <span className="text-red-300 text-sm">{error}</span>
+      <button
+        onClick={() => {
+          setError(null);
+          if (!subjectsLoaded) {
+            setSubjectsLoaded(false);
+            ensureSubjectsLoaded();
+          } else if (selectedSubject) {
+            cacheRef.current.delete(subjectKey(selectedSubject));
+            handleSubjectSelect(selectedSubject);
+          }
+        }}
+        className="text-red-300 hover:text-red-200 text-sm underline"
+      >
+        Retry
+      </button>
+    </div>
+  );
+
+  const renderCurriculumPanel = () => (
+    <>
+      {renderError()}
+
+      {/* Loading skeleton */}
+      {loadingCurriculum && (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-16 rounded-xl bg-slate-800/50 animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {/* Curriculum accordion tree */}
+      {curriculumData && curriculumData.length > 0 && selectedSubject && (
+        <Accordion type="single" collapsible className="space-y-2">
+          {curriculumData.map(unit => (
+            <AccordionItem
+              key={unit.id}
+              value={unit.id}
+              className="border border-white/10 rounded-xl overflow-hidden bg-slate-900/40 backdrop-blur-xl"
+            >
+              <AccordionTrigger className="px-5 py-4 text-slate-100 hover:no-underline hover:bg-white/5 [&[data-state=open]]:bg-white/5">
+                <div className="flex items-center gap-3 text-left">
+                  <span className="font-semibold">{unit.title}</span>
+                  {unit.grade && (
+                    <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">
+                      {gradeLabel(unit.grade)}
+                    </Badge>
+                  )}
+                  <span className="text-xs text-slate-500">{unit.skills.length} skills</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-5 pb-4">
+                <div className="space-y-2">
+                  {unit.skills.map(skill => (
+                    <SkillRow
+                      key={skill.id}
+                      skill={skill}
+                      unit={unit}
+                      subject={selectedSubject.subject_name}
+                      onSelect={onSelectTopic}
+                      selectionMode={selectionMode}
+                      selectedIds={selectedIds}
+                      onToggleSubskill={onToggleSubskill}
+                    />
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
+
+      {curriculumData && curriculumData.length === 0 && selectedSubject && (
+        <p className="text-center text-slate-500 text-sm">No curriculum found for {selectedSubject.subject_name}.</p>
+      )}
+    </>
+  );
+
   return (
     <div>
       {/* Section divider */}
@@ -349,15 +430,18 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
       )}
 
       {subjectsLoaded && subjects.length > 0 && (() => {
-        // Group subjects by grade
+        // Group subjects by normalized grade label — the backend spells the same
+        // grade more than one way ("5" vs "Grade 5"), which split one grade into two rows.
         const grouped = new Map<string, SubjectInfo[]>();
         for (const s of subjects) {
-          const key = s.grade ?? '';
+          const key = s.grade ? gradeLabel(s.grade) : '';
           const list = grouped.get(key) ?? [];
           list.push(s);
           grouped.set(key, list);
         }
-        const sortedGrades = Array.from(grouped.keys()).sort(gradeSort);
+        const sortedGrades = Array.from(grouped.keys()).sort((a, b) =>
+          gradeSort(grouped.get(a)![0].grade ?? '', grouped.get(b)![0].grade ?? ''),
+        );
 
         return (
           <div className="space-y-4 mb-6">
@@ -367,7 +451,7 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
                   <div className="flex items-center gap-2 mb-2.5">
                     <GraduationCap className="w-4 h-4 text-slate-400" />
                     <span className="text-sm font-medium text-slate-300">
-                      {gradeLabel(grade)}
+                      {grade}
                     </span>
                     <div className="h-px flex-1 bg-slate-700/60" />
                   </div>
@@ -387,6 +471,10 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
                     </button>
                   ))}
                 </div>
+                {/* Units open directly under the grade row whose pill was clicked */}
+                {selectedSubject && grouped.get(grade)!.some(s => subjectKey(s) === subjectKey(selectedSubject)) && (
+                  <div className="mt-4">{renderCurriculumPanel()}</div>
+                )}
               </div>
             ))}
           </div>
@@ -397,81 +485,8 @@ export const CurriculumBrowser: React.FC<CurriculumBrowserProps> = ({
         <p className="text-center text-slate-500 text-sm">No curriculum available.</p>
       )}
 
-      {/* Error state */}
-      {error && (
-        <div className="flex items-center justify-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-4">
-          <span className="text-red-300 text-sm">{error}</span>
-          <button
-            onClick={() => {
-              setError(null);
-              if (!subjectsLoaded) {
-                setSubjectsLoaded(false);
-                ensureSubjectsLoaded();
-              } else if (selectedSubject) {
-                cacheRef.current.delete(subjectKey(selectedSubject));
-                handleSubjectSelect(selectedSubject);
-              }
-            }}
-            className="text-red-300 hover:text-red-200 text-sm underline"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* Loading skeleton */}
-      {loadingCurriculum && (
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-16 rounded-xl bg-slate-800/50 animate-pulse" />
-          ))}
-        </div>
-      )}
-
-      {/* Curriculum accordion tree */}
-      {curriculumData && curriculumData.length > 0 && selectedSubject && (
-        <Accordion type="single" collapsible className="space-y-2">
-          {curriculumData.map(unit => (
-            <AccordionItem
-              key={unit.id}
-              value={unit.id}
-              className="border border-white/10 rounded-xl overflow-hidden bg-slate-900/40 backdrop-blur-xl"
-            >
-              <AccordionTrigger className="px-5 py-4 text-slate-100 hover:no-underline hover:bg-white/5 [&[data-state=open]]:bg-white/5">
-                <div className="flex items-center gap-3 text-left">
-                  <span className="font-semibold">{unit.title}</span>
-                  {unit.grade && (
-                    <Badge variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">
-                      Grade {unit.grade}
-                    </Badge>
-                  )}
-                  <span className="text-xs text-slate-500">{unit.skills.length} skills</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-5 pb-4">
-                <div className="space-y-2">
-                  {unit.skills.map(skill => (
-                    <SkillRow
-                      key={skill.id}
-                      skill={skill}
-                      unit={unit}
-                      subject={selectedSubject.subject_name}
-                      onSelect={onSelectTopic}
-                      selectionMode={selectionMode}
-                      selectedIds={selectedIds}
-                      onToggleSubskill={onToggleSubskill}
-                    />
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      )}
-
-      {curriculumData && curriculumData.length === 0 && selectedSubject && (
-        <p className="text-center text-slate-500 text-sm">No curriculum found for {selectedSubject.subject_name}.</p>
-      )}
+      {/* Subject-list load error (no subject selected yet) */}
+      {!selectedSubject && renderError()}
     </div>
   );
 };
