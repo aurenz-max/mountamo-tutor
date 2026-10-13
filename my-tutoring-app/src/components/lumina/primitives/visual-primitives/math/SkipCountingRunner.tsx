@@ -28,7 +28,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import {
   INPUT_LABEL, aidsFor, describeSkipWork, fillFits, gapsOf, linePositions, nextLanding, openingSpots, parseJumps,
-  skipMatches, skipMiss, workspaceAssignment, workspaceScene, type SkipAids, type SkipLine, type SkipView,
+  skipMatches, skipMiss, spokenSkipKey, workspaceAssignment, workspaceScene, type SkipAids, type SkipLine, type SkipView,
 } from './skipCountingWorkspace';
 import {
   ARRAY_ROWS, COUNT_TRAIL, DOTS_FACT, HOP_DOTS, JUMP_MARKS, JUMP_SIZES, MODEL_COUNT, PRACTICE_NOTE, RING_GAPS, STEP_ARCS,
@@ -197,12 +197,17 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   // -------------------------------------------------------------------------
   /** Bound below, once the setters exist; the progress hook calls it only after render. */
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  /** Bound below; a spoken answer the observer credited (`onSolved`). */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** The challenge a correct check already recorded, so its `onSolved` records nothing twice. */
+  const checkedCorrect = useRef<string | null>(null);
   const progress = useController({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    workspace, assignment: ch => workspaceAssignment(ch, line),
     onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -483,7 +488,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     const ch = currentChallenge!;
     const correct = skipMatches(ch, activeLine, work);
     progress.commitCheck(describeSkipWork(ch, activeLine, work), correct, correct ? undefined : skipMiss(ch, activeLine, work));
-    if (correct) { SoundManager.playCorrect(); setSolvedId(ch.id); } else SoundManager.playIncorrect();
+    if (correct) { SoundManager.playCorrect(); setSolvedId(ch.id); checkedCorrect.current = ch.id; } else SoundManager.playIncorrect();
     return correct;
   };
 
@@ -617,6 +622,31 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     }
   };
 
+  // A spoken number the observer credited (`onSolved` fires once per challenge, for a check too): the result a correct
+  // check records, and the credited number shown as a correct check shows it. The shared lifecycle plays the sound.
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    const key = solved ? spokenSkipKey(solved, line) : null;
+    if (!solved || key === null || checkedCorrect.current === solved.id) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setSolvedId(solved.id);
+    if (solved.type === 'predict') {
+      setPredictionInput(String(key)); setPredictedPosition(key);
+      setFeedback(`Yes! ${key} is correct!`);
+      setCurrentStreak(prev => { const n = prev + 1; setLongestStreak(l => Math.max(l, n)); return n; });
+    } else if (solved.type === 'fill_missing') {
+      setFilled([key]); setFillInput('');
+      setFeedback(`Yes! ${key} is in the sequence!`);
+    } else if (solved.type === 'find_skip_value') {
+      setFillInput(String(key)); setPatternIdentified(true);
+      setFeedback(`You got it! We're counting by ${key}s!`);
+    } else {
+      setMultiplicationInput(String(key)); setMultiplicationConnectionMade(true);
+      setFeedback(`Correct! ${key} × ${line.skipValue} = ${key * line.skipValue}`);
+    }
+    setFeedbackType('success');
+  };
+
   // count_along: the learner taps the tick where the character lands next. The right tick makes the jump; a tick
   // further on is a checked miss, without naming the next number.
   const isTapJumpMode = currentChallenge?.type === 'count_along' && !autoPlay && !isCurrentChallengeComplete
@@ -742,7 +772,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
           const easier = practiceItem(sessionChallenge, leverSession);
           if (!easier) return 'This item is already the plainest of its kind.';
           setLeverState(next); setPractice(easier); showChallenge(easier.challenge, easier.line, false);
-          return { practice: workspaceAssignment(easier.challenge) };
+          return { practice: workspaceAssignment(easier.challenge, easier.line) };
         }
         setLeverState(next);
         return true as const;

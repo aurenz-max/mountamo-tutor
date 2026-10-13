@@ -29,6 +29,20 @@ export const postObservation = <Request, Decision>(path: string, abstain: (reaso
     return response.ok ? response.json() : abstain('unavailable');
   };
 
+/** The observation routes a lesson reads. */
+const OBSERVATION_ROUTES = ['/api/lumina/observe-dialogue', '/api/lumina/observe-learner', '/api/lumina/observe-spoken-miss'];
+let warmed = false;
+/** Touch each route once per page with an invalid body (answered 400, no model call), so the first real reading of
+ *  a session does not wait on the route loading. 2026-10-13 pulse check: the first reading timed out at 4 s; every
+ *  later one took 130-300 ms. */
+export function warmObservationRoutes() {
+  // Not under test: a mocked fetch would count the warm-up as a lesson request.
+  if (warmed || typeof fetch !== 'function' || process.env.NODE_ENV === 'test') return;
+  warmed = true;
+  for (const path of OBSERVATION_ROUTES)
+    void Promise.resolve().then(() => fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).catch(() => {});
+}
+
 export const probability = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1;
 export const boundedText = (v: unknown, max: number) => typeof v === 'string' && v.length <= max;
 export const validItemScope = (v: any): v is ItemScope =>

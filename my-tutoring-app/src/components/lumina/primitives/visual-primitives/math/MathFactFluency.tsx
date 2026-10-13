@@ -294,6 +294,8 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   /** Bound after the state it clears is declared; the progress hook calls it only after render. */
   const reopen = useRef<(retry: boolean) => void>(() => {});
+  /** Bound below: records a fact the learner answered aloud and the tutor's feedback credited. */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
 
   // -------------------------------------------------------------------------
   // Challenge progress: the teaching workspace owns it
@@ -304,6 +306,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: mathFactAssignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
+    onSolved: index => solvedAloud.current(index),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -410,6 +413,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
     }
     const responseTime = Date.now() - openedAt.current;
     const responseTimeSec = responseTime / 1000;
+    if (correct) checkedCorrect.current = currentChallenge.id;
 
     setTotalAnswered(prev => prev + 1);
     setResponseTimes(prev => [...prev, responseTimeSec]);
@@ -439,6 +443,30 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
       setFeedbackType('error');
     }
     progress.commitCheck(describeMathFactCheck(currentChallenge, response), correct, mathFactMiss(currentChallenge, response));
+  };
+
+  // A spoken answer the observer credited (`onSolved` fires once per fact, for a tap too): the same books as a
+  // correct tap, which `check` already kept.
+  const checkedCorrect = useRef<string | null>(null);
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    if (!solved || checkedCorrect.current === solved.id) return;
+    const responseTime = Date.now() - openedAt.current;
+    const responseTimeSec = responseTime / 1000;
+    const newStreak = streak + 1;
+    setTotalAnswered(prev => prev + 1);
+    setTotalCorrect(prev => prev + 1);
+    setResponseTimes(prev => [...prev, responseTimeSec]);
+    setStreak(newStreak);
+    if (newStreak > bestStreak) setBestStreak(newStreak);
+    setFeedback('Correct!');
+    setFeedbackType('success');
+    if (solved.options?.includes(solved.correctAnswer)) setSelectedAnswer(solved.correctAnswer);
+    else setTypedAnswer(String(solved.correctAnswer));
+    recordResult({
+      challengeId: solved.id, correct: true, attempts: currentAttempts + 1, timeMs: responseTime, responseTimeSec,
+      isFast: currentAttempts === 0 && responseTimeSec <= targetResponseTime, streak: newStreak,
+    });
   };
 
   const handleSelectOption = (value: number) => {

@@ -219,6 +219,18 @@ curriculum row to break. Channel [4] (calibration) requires auth and was not rea
   saved payloads clean. `qa/eval-reports/spatial-scene-levers-2026-10-08.md`.
 - **Probe:** the two suites above.
 
+### R18 — `identify`/`describe` take the word said OR tapped; geometry judges both · OBSERVED (2026-10-13)
+- **Property:** A tap and Check is checked by the scene against `correctPosition` (R12 unchanged). The same word may be
+  said aloud: the item is spoken with `acceptsGesture`, and JEV credits only from the tutor's feedback against
+  `expectedAnswer` (`wordExpectedAnswer`). That key credits every word R3's geometry makes true for the drawn pair
+  (`on`/`on top of` beside `above` only when the two touch), names the contact word as NOT it when there is a gap, and
+  does not credit a bare "beside"/"next to" when the answer names a side. The ask and scene facts never name the word.
+  Spoken misses reuse the tap's ids (`opposite_word`/`same_axis_word`/`other_axis_word`). Cell modes stay tap-only.
+- **Demanded by:** both consumers (VB-1, ROLLOUT.md "Voice beside the tap").
+- **Evidence:** `SpatialScene.spoken.workspace.test.tsx`; `scripts/tutor-verdict-probe.mjs --spatial` 27/27, false credit
+  0 (`qa/tutor-reports/spatial-scene-tutor-verdict-2026-10-13.json`); journey sweep J14 fixed for both modes.
+- **Probe:** the two above.
+
 ## Conflicts
 
 ### C1 — R1 vs the LA preposition consumer — **RESOLVED 2026-08-05 via rung 3 (config axis)**
@@ -308,7 +320,11 @@ The 2026-06-07 curriculum-fit sweep scored this entry **0.766 "diffuse"** and fl
 
 ## Changelog
 
-- **2026-10-09 (latest)** — `/add-support-tiers`: R17 added (levers, place misses). R8 holds: the tier still only
+- **2026-10-13 (latest)** — VB-1 voice beside the tap: R18 added. `identify`/`describe` are spoken items with
+  `acceptsGesture`; the key now reaches the observer as `expectedAnswer` (it was gesture-only with no key). R12 holds: the
+  tap still has one defensible option; the spoken key is wider only where R3 geometry makes another word true. R3 holds:
+  `on`/`under` stay contact-scoped in the spoken key. R11/R13/R14/R16/R17 untouched; cell modes stay gesture. Compatible.
+- **2026-10-09** — `/add-support-tiers`: R17 added (levers, place misses). R8 holds: the tier still only
   toggles display (easy now also starts the reference ring). R11/R13/R14 hold: no lever writes `correctCell` or
   `acceptableCells`; the ring is refused on `place_in`. R16 holds: side labels never name the relation. Compatible.
 - **2026-09-27** — handoff 19 (shared runtime, `/add-live-tutor-tools`): the workspace reads the eval mode from the wrapper's lesson pin, not a mode rebuilt in this primitive (slice 1), and publishes the scene after every render, so the scene setter drops its publish call and default fields (slice 3). Its checks now call `commitCheck`, which counts the attempt and records the correct result on both paths; its own attempt counter and base-only result records are deleted (slice 4). Wiring only: no content, check, miss, verdict or tutor input changed; the sweep over saved payloads (J1-J8) and this primitive's tests pass. Compatible: no requirement changed.

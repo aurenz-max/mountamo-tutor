@@ -7,7 +7,7 @@
 // conversation: the learner transcript, the tutor reply, the prior tutor turn and the
 // evidence state.
 //
-//   node scripts/tutor-verdict-probe.mjs [--shapes|--letters|--words|--trains|--facts|--links|--sentences|--procedure|--wordproblem] [out.json] [--dry]
+//   node scripts/tutor-verdict-probe.mjs [--skipcount|--hundreds|--coins|--clock|--length|--spatial|--timeseq|--calendar|--compare|--addfacts|--fluency|--shapes|--letters|--words|--trains|--facts|--links|--sentences|--procedure|--wordproblem] [out.json] [--dry]
 //
 // No domain flag runs counting-board. `--dry` prints each model input without calling the route.
 import { writeFileSync } from 'node:fs';
@@ -212,7 +212,7 @@ const wordLevers = await domain('direct-instruction/diWordReadingLevers.ts');
 const wordItem = challenge => {
   const item = only(words.buildWordReadingItems([challenge]), challenge.id);
   const scene = words.workspaceScene(item);
-  const onScreen = wordLevers.wordLeverFacts(item, wordLevers.startingLevers(item, [item]), [item]);
+  const onScreen = wordLevers.wordLeverFacts(item, [], [item]);
   return { assignment: words.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
 };
 const WORD_ITEMS = {
@@ -264,7 +264,7 @@ const factLevers = await domain('direct-instruction/diMathFactsLevers.ts');
 const factItem = challenge => {
   const item = only(facts.buildMathFactItems([challenge]), challenge.id);
   const scene = facts.workspaceScene(item);
-  const onScreen = factLevers.mathFactLeverFacts(item, factLevers.startingLevers(item));
+  const onScreen = factLevers.mathFactLeverFacts(item, []);
   return { assignment: facts.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
 };
 const FACT_ITEMS = {
@@ -414,7 +414,7 @@ const sentenceLevers = await domain('direct-instruction/diSentenceReadingLevers.
 const sentenceItem = challenge => {
   const item = only(sentences.buildSentenceReadingItems([challenge]), challenge.id);
   const scene = sentences.workspaceScene(item);
-  const onScreen = sentenceLevers.sentenceLeverFacts(item, sentenceLevers.startingLevers(item, [item]), [item]);
+  const onScreen = sentenceLevers.sentenceLeverFacts(item, [], [item]);
   return { assignment: sentences.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
 };
 const SENTENCE_ITEMS = {
@@ -556,7 +556,342 @@ const WORD_PROBLEM_CASES = [
   ['solve', 'two', "That's correct, there are two spotted shells!", 'correct', 'advance', 'solve'],
 ];
 
+// ── math-fact-fluency (a number said aloud beside the tap/Submit check) ─────────
+// Session 2026-10-13 750ca99a: "18" said to 9 + 9 was praised and never credited, because every item was gesture-only.
+const fluency = await domain('math/mathFactFluencyWorkspace.ts');
+const fluencyItem = challenge => ({ assignment: fluency.mathFactAssignment(challenge), scene: fluency.mathFactScene(challenge, { maxNumber: 10 }) });
+const FLUENCY_ITEMS = {
+  recall: fluencyItem({ id: 'c1', type: 'speed-round', instruction: 'What is 9 + 9?', operation: 'addition', operand1: 9, operand2: 9,
+    result: 18, equation: '9 + 9 = 18', correctAnswer: 18, unknownPosition: 'result' }),
+  missing: fluencyItem({ id: 'n1', type: 'missing-number', instruction: 'What number is missing?', operation: 'addition', operand1: 3,
+    operand2: 4, result: 7, equation: '3 + 4 = 7', correctAnswer: 4, unknownPosition: 'operand2' }),
+};
+const FLUENCY_CASES = [
+  // Verbatim from the session.
+  ['session_18', '18', "That's it, nine plus nine is eighteen.", 'correct', 'advance', 'recall', "Let's figure out what nine plus nine equals."],
+  ['words', 'eighteen', 'Yes, eighteen!', 'correct', 'advance', 'recall'],
+  ['noisy', 'eighty', "That's right, eighteen.", 'correct', 'advance', 'recall'],
+  ['multilingual', 'dieciocho', 'Yes, eighteen is right!', 'correct', 'advance', 'recall'],
+  ['decade_praise', 'eighty', 'Yes, eighty!', 'none', 'none', 'recall'],
+  ['operand_echo_praise', 'nine', 'Great, nine!', 'none', 'none', 'recall'],
+  ['retry', 'seventeen', 'Close, but not quite. Try counting on from nine again.', 'incorrect', 'retry', 'recall'],
+  ['help', "I don't know", 'Think about a double: what is nine and nine together?', 'none', 'none', 'recall'],
+  ['tutor_answers', '', 'Nine plus nine is eighteen.', 'none', 'none', 'recall'],
+  ['missing', 'four', 'Yes, three plus four makes seven.', 'correct', 'advance', 'missing'],
+  ['missing_total_said', 'seven', 'Seven is the total. What do we add to three to make seven?', 'incorrect', 'retry', 'missing',
+    undefined, { alsoAccept: [{ verdict: 'none', transition: 'none' }] }],
+];
+
+// ── fast-fact (a choice said aloud beside the tap) ─────────────────────────────
+const fastFact = await domain('core/fastFactWorkspace.ts');
+const fastItem = challenge => ({ assignment: fastFact.workspaceAssignment(challenge), scene: fastFact.workspaceScene(challenge, { picked: null }) });
+const FAST_ITEMS = {
+  sum: fastItem({ id: 'c', type: 'core', challengeType: 'recall', prompt: { text: '7 + 3 = ?', subtext: 'Find the sum' }, correctAnswer: '10',
+    responseMode: 'choice', options: ['21', '10', '9', '12'] }),
+  capital: fastItem({ id: 'a', type: 'core', challengeType: 'apply', prompt: { text: 'Denver is the capital of which state?' }, correctAnswer: 'Colorado',
+    responseMode: 'choice', options: ['Utah', 'Colorado', 'Kansas'] }),
+};
+const FAST_CASES = [
+  ['sum', 'ten', 'Yes, seven plus three is ten!', 'correct', 'advance', 'sum'],
+  ['sum_digits', '10', "That's right, ten.", 'correct', 'advance', 'sum'],
+  ['wrong_operation_praise', 'twenty one', 'Great, twenty one!', 'none', 'none', 'sum'],
+  ['retry', 'nine', 'Close, but not quite. Try again.', 'incorrect', 'retry', 'sum'],
+  ['reads_choices', 'which ones', 'The choices are twenty one, ten, nine and twelve.', 'none', 'none', 'sum'],
+  ['capital', 'Colorado', 'Yes, Denver is the capital of Colorado.', 'correct', 'advance', 'capital'],
+  ['capital_wrong_praise', 'Utah', 'Nice, Utah!', 'none', 'none', 'capital'],
+];
+
+// ── addition-fact-strategies (the sum said aloud beside the 0-18 pad) ──────────
+const addFacts = await domain('math/additionFactStrategiesWorkspace.ts');
+const addItem = challenge => ({ assignment: addFacts.additionFactAssignment(challenge),
+  scene: addFacts.additionFactScene(challenge, { strategy: challenge.type }) });
+const ADD_ITEMS = {
+  near: addItem({ id: 'f1', type: 'facts_7_8', a: 7, b: 8, sum: 15 }),
+};
+const ADD_CASES = [
+  ['digits', '15', "That's right, seven plus eight is fifteen.", 'correct', 'advance', 'near', 'What is seven plus eight?'],
+  ['words', 'fifteen', 'Yes, fifteen!', 'correct', 'advance', 'near'],
+  ['noisy', 'fifty', "That's it, fifteen.", 'correct', 'advance', 'near'],
+  ['wrong_praise', 'fourteen', 'Great job, fourteen!', 'none', 'none', 'near'],
+  ['retry', 'fourteen', 'Close, but not quite. Seven plus seven is fourteen, so what is one more?', 'incorrect', 'retry', 'near'],
+  ['help', "I don't know", 'Do you know seven plus seven? Start there.', 'none', 'none', 'near'],
+  ['tutor_answers', '', 'Seven plus eight is fifteen.', 'none', 'none', 'near'],
+];
+
+// ── comparison-builder (a comparison or one number said aloud beside the tap) ──
+const compare = await domain('math/comparisonBuilderWorkspace.ts');
+const compareItem = challenge => ({ assignment: compare.workspaceAssignment(challenge), scene: compare.workspaceScene(challenge,
+  { selected: null, ordered: [], oneMore: null, oneLess: null, shuffled: [], countsShown: false }) });
+const COMPARE_ITEMS = {
+  numbers: compareItem({ id: 'n1', type: 'compare-numbers', instruction: 'Compare 8 and 5. Which sign goes between them?',
+    leftNumber: 8, rightNumber: 5, correctSymbol: '>' }),
+  groups: compareItem({ id: 'g1', type: 'compare-groups', instruction: 'Does the left group have more, fewer, or the same as the right group?',
+    leftGroup: { count: 3, objectType: 'apples' }, rightGroup: { count: 5, objectType: 'stars' }, correctAnswer: 'less' }),
+  less: compareItem({ id: 's1', type: 'one-more-one-less', instruction: 'What number is one less than 6?', targetNumber: 6, askFor: 'one-less' }),
+};
+const COMPARE_CASES = [
+  ['bigger', 'eight is bigger', 'Yes! Eight is greater than five.', 'correct', 'advance', 'numbers'],
+  ['relation_words', 'greater than', "That's right, eight is greater than five.", 'correct', 'advance', 'numbers'],
+  ['wrong_praise', 'less than', 'Great job!', 'none', 'none', 'numbers'],
+  ['retry', 'five is bigger', 'Not quite. Count up: which comes later, five or eight?', 'incorrect', 'retry', 'numbers'],
+  ['help', "I don't know", "Let's think: when you count, which comes later, five or eight?", 'none', 'none', 'numbers'],
+  ['tutor_answers', '', 'Eight is greater than five.', 'none', 'none', 'numbers'],
+  ['groups_fewer', 'fewer', 'Yes, the left group has fewer!', 'correct', 'advance', 'groups'],
+  ['groups_same_praise', 'the same', 'Nice!', 'none', 'none', 'groups'],
+  ['one_less', 'five', 'Yes, one less than six is five.', 'correct', 'advance', 'less'],
+  ['no_step_praise', 'six', 'Great, six!', 'none', 'none', 'less'],
+];
+
+// ── calendar-explorer (a weekday, date or count said aloud beside the tap) ─────
+const calendar = await domain('calendar/calendarExplorerWorkspace.ts');
+const calendarItem = challenge => ({ assignment: calendar.calendarGridAssignment(challenge), scene: calendar.calendarGridScene(challenge,
+  { showDayHeaders: true, showMonthLabel: true, showTargetDayColumn: true, revealPolicy: '' }) });
+const calChallenge = over => ({ id: 'c1', type: 'identify', month: 3, year: 2025, options: [], hint: '', narration: '', ...over });
+const CALENDAR_ITEMS = {
+  weekday: calendarItem(calChallenge({ question: 'What day of the week is March 15, 2025?', correctAnswer: 'Saturday',
+    options: ['Thursday', 'Friday', 'Saturday', 'Sunday'] })),
+  date: calendarItem(calChallenge({ question: 'What date is the second Tuesday of March 2025?', correctAnswer: '11' })),
+  count: calendarItem(calChallenge({ type: 'count', question: 'How many Fridays are in October 2025?', month: 10, correctAnswer: '5',
+    options: ['4', '5', '6', '7'], targetDayOfWeek: 'Friday' })),
+  offset: calendarItem(calChallenge({ type: 'day_offset', question: 'Start on Tuesday. Count forward 3 days. What day do you land on?',
+    correctAnswer: 'Friday', options: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    startDay: 'Tuesday', offsetDays: 3 })),
+};
+const CALENDAR_CASES = [
+  ['weekday_sentence', "it's a Saturday", 'Yes, March 15 is a Saturday!', 'correct', 'advance', 'weekday'],
+  ['date_ordinal', 'on the eleventh', "That's right, the second Tuesday is the eleventh.", 'correct', 'advance', 'date'],
+  ['date_digits', '11', 'Yes, eleven!', 'correct', 'advance', 'date'],
+  ['count_words', 'five Fridays', 'Yes! October has five Fridays.', 'correct', 'advance', 'count'],
+  ['offset', 'Friday', 'Right, three days after Tuesday is Friday.', 'correct', 'advance', 'offset'],
+  ['wrong_praise', 'Friday', 'Great job!', 'none', 'none', 'weekday'],
+  ['adjacent_date_praise', 'the twelfth', 'Nice, the twelfth!', 'none', 'none', 'date'],
+  ['start_day_praise', 'Tuesday', 'Good, Tuesday!', 'none', 'none', 'offset'],
+  ['retry', 'four', 'Not quite. Count the Fridays again, one in each row.', 'incorrect', 'retry', 'count'],
+  ['help', "I don't know", 'Find the 15 on the calendar. What is at the top of its column?', 'none', 'none', 'weekday'],
+  ['tutor_answers', '', 'March 15 is a Saturday.', 'none', 'none', 'weekday'],
+];
+
+// ── time-sequencer (a time of day, a card, which takes longer or a schedule activity said aloud beside the tap) ──
+const timeSeq = await domain('math/timeSequencerWorkspace.ts');
+const timeItem = challenge => ({ assignment: timeSeq.workspaceAssignment(challenge), scene: timeSeq.workspaceScene(challenge, timeSeq.EMPTY_TIME_VIEW) });
+const tsCard = (id, label) => ({ id, label, emoji: '' });
+const TIMESEQ_ITEMS = {
+  time: timeItem({ id: 't1', type: 'match-time-of-day', instruction: 'When do you eat breakfast?', event: tsCard('b', 'Eat breakfast'),
+    correctPeriod: 'morning' }),
+  before: timeItem({ id: 'ba1', type: 'before-after', instruction: 'What happens before you go to school?', referenceEvent: tsCard('s', 'Go to school'),
+    relation: 'before', options: [tsCard('o1', 'Eat breakfast'), tsCard('o2', 'Eat dinner'), tsCard('o3', 'Go to bed')], correctEvent: 'o1' }),
+  duration: timeItem({ id: 'd1', type: 'duration-compare', instruction: 'Which takes longer?', eventA: tsCard('a', 'Brush your teeth'),
+    eventB: tsCard('b', 'A whole school day'), correctAnswer: 'B' }),
+  schedule: timeItem({ id: 'r1', type: 'read-schedule', instruction: 'Look at the field trip schedule! What activity is planned for 8:00 AM?',
+    targetTime: '8:00 AM', schedule: [{ time: '8:00 AM', activity: 'Board the big yellow bus', emoji: '' },
+      { time: '9:30 AM', activity: 'Arrive at the Science Museum', emoji: '' }, { time: '12:00 PM', activity: 'Eat packed lunches', emoji: '' }],
+    activityOptions: ['Eat packed lunches', 'Board the big yellow bus', 'Arrive at the Science Museum'], correctActivity: 'Board the big yellow bus' }),
+};
+const TIMESEQ_CASES = [
+  ['period', 'in the morning', 'Yes! We eat breakfast in the morning.', 'correct', 'advance', 'time'],
+  ['period_wrong_praise', 'afternoon', 'Great job, afternoon!', 'none', 'none', 'time'],
+  ['event_paraphrase', 'breakfast', "That's right, you eat breakfast before school.", 'correct', 'advance', 'before'],
+  ['event_wrong_praise', 'eat dinner', 'Nice thinking!', 'none', 'none', 'before'],
+  ['schedule_paraphrase', 'get on the bus', 'Yes! At 8:00 AM we board the big yellow bus.', 'correct', 'advance', 'schedule'],
+  ['longer', 'the school day', 'Right, a whole school day takes much longer than brushing your teeth.', 'correct', 'advance', 'duration'],
+  ['retry', 'go to bed', 'Not quite. What do you do right before you leave for school?', 'incorrect', 'retry', 'before'],
+  ['help', "I don't know", 'Think about your morning. Is it light or dark when you eat breakfast?', 'none', 'none', 'time'],
+  ['tutor_answers', '', 'We eat breakfast in the morning.', 'none', 'none', 'time'],
+];
+
+// ── spatial-scene (identify / describe: a position word said aloud beside the tap) ─────
+const spatial = await domain('math/spatialSceneWorkspace.ts');
+const spatialItem = challenge => ({ assignment: spatial.spatialAssignment(challenge), scene: spatial.spatialScene(challenge, {}) });
+const ssThing = (name, row, col) => ({ name, image: '', position: { row, col } });
+const SPATIAL_ITEMS = {
+  // The ball two rows above the box: "above"; "on" is not it (a gap).
+  gap: spatialItem({ id: 's1', type: 'identify', instruction: 'Where is the ball?', targetObject: ssThing('ball', 0, 1),
+    sceneObjects: [ssThing('box', 2, 1), ssThing('ball', 0, 1), ssThing('tree', 0, 0), ssThing('star', 2, 2)],
+    correctPosition: 'above', referenceObjectName: 'box', options: ['below', 'above', 'beside'] }),
+  // The ball resting on the box: "above" and "on" are both true.
+  touching: spatialItem({ id: 's2', type: 'identify', instruction: 'Where is the ball?', targetObject: ssThing('ball', 1, 1),
+    sceneObjects: [ssThing('box', 2, 1), ssThing('ball', 1, 1), ssThing('tree', 0, 0), ssThing('star', 2, 2)],
+    correctPosition: 'above', referenceObjectName: 'box', options: ['below', 'above', 'beside'] }),
+  // The cat just left of the box: "left of"; a bare "next to" names no side.
+  left: spatialItem({ id: 's3', type: 'describe', instruction: 'Which word tells where the cat is?', targetObject: ssThing('cat', 2, 0),
+    sceneObjects: [ssThing('box', 2, 1), ssThing('cat', 2, 0), ssThing('tree', 0, 0), ssThing('star', 0, 2)],
+    correctPosition: 'left_of', referenceObjectName: 'box', options: ['right_of', 'left_of', 'above'] }),
+};
+const SPATIAL_CASES = [
+  ['phrase', "it's above the box", 'Yes! The ball is above the box.', 'correct', 'advance', 'gap'],
+  ['on_top_touching', 'on top of the box', "That's right, the ball is on top of the box!", 'correct', 'advance', 'touching'],
+  ['opposite_praise', 'below', 'Great job!', 'none', 'none', 'gap'],
+  ['contact_gap_praise', 'on the box', 'Nice, on the box!', 'none', 'none', 'gap'],
+  ['side_named', 'to the left of the box', 'Yes! The cat is to the left of the box.', 'correct', 'advance', 'left'],
+  ['bare_beside_praise', 'next to the box', 'Good, next to it!', 'none', 'none', 'left'],
+  ['retry', 'below the box', 'Not quite. Look again: is the ball higher or lower than the box?', 'incorrect', 'retry', 'gap'],
+  ['help', "I don't know", 'Look at the ball. Is it higher up or lower down than the box?', 'none', 'none', 'gap'],
+  ['tutor_answers', '', 'The ball is above the box.', 'none', 'none', 'gap'],
+];
+
+// ── length-lab (compare / indirect: which object, said aloud beside the tap) ─────
+const length = await domain('math/lengthLabWorkspace.ts');
+const LENGTH_VIEW = { answer: null, tiles: 0, estimate: null, countA: null, countB: null, unitA: 'cubes', unitB: 'cubes', order: [],
+  ticksShown: false, fitShown: true };
+const lengthItem = challenge => ({ assignment: length.workspaceAssignment(challenge), scene: length.workspaceScene(challenge, LENGTH_VIEW) });
+const llBase = { hint: '', narration: '', objectColor0: '#f00', objectColor1: '#0f0' };
+const LENGTH_ITEMS = {
+  // The crayon is the shorter; the question asks which is shorter.
+  shorter: lengthItem({ ...llBase, id: 'l1', type: 'compare', instruction: 'Look at the crayon and the pencil. Which one is shorter?',
+    objectName0: 'crayon', objectLength0: 3, objectName1: 'pencil', objectLength1: 6, correctAnswer: 'shorter' }),
+  // The crayon is the shorter; the question asks which is longer (the toothbrush).
+  longer: lengthItem({ ...llBase, id: 'l2', type: 'compare', instruction: 'Look at the crayon and the toothbrush. Which one is longer?',
+    objectName0: 'crayon', objectLength0: 3, objectName1: 'toothbrush', objectLength1: 7, correctAnswer: 'shorter' }),
+  indirect: lengthItem({ ...llBase, id: 'l3', type: 'indirect', instruction: 'Which is longer, the pencil or the ribbon?',
+    objectName0: 'pencil', objectLength0: 4, objectName1: 'ribbon', objectLength1: 8, correctAnswer: 'ribbon',
+    clue0: 'The pencil is shorter than the string.', clue1: 'The ribbon is longer than the string.',
+    referenceObjectName: 'string', referenceObjectLength: 6, referenceObjectColor: '#888' }),
+};
+const LENGTH_CASES = [
+  ['object_named', 'the crayon', 'Yes! The crayon is shorter than the pencil.', 'correct', 'advance', 'shorter'],
+  ['sentence', 'the toothbrush is longer', "That's right, the toothbrush is longer!", 'correct', 'advance', 'longer'],
+  ['button_wording', 'crayon is shorter', 'Yes, the crayon is shorter, so the toothbrush is the longer one.', 'correct', 'advance', 'longer'],
+  ['other_object_praise', 'the pencil', 'Great job!', 'none', 'none', 'shorter'],
+  ['longer_when_shorter_praise', 'the pencil is longer', 'Nice work!', 'none', 'none', 'shorter'],
+  ['chain_phrase', 'the ribbon', 'Yes! The clues tell us the ribbon is longer.', 'correct', 'advance', 'indirect'],
+  ['chain_other_praise', 'pencil', 'Good thinking!', 'none', 'none', 'indirect'],
+  ['retry', 'the same', 'Not quite. Look at where each one ends. Which one stops first?', 'incorrect', 'retry', 'shorter'],
+  ['help', "I don't know", 'Look at the far ends of the two bars. Which one stops sooner?', 'none', 'none', 'shorter'],
+  ['tutor_answers', '', 'The crayon is shorter than the pencil.', 'none', 'none', 'shorter'],
+];
+
+// ── analog-clock (read / match / elapsed / hand_name: a time, a duration or a hand, said aloud beside the pick) ─────
+const clock = await domain('math/analogClockWorkspace.ts');
+const CLOCK_VIEW = { selectedOption: null, pickedHand: null, countedNumerals: [], displayHour: 12, displayMinute: 0,
+  minuteNumbersShown: false, handLegendShown: false, digitalEchoShown: false };
+const clockItem = challenge => ({ assignment: clock.workspaceAssignment(challenge), scene: clock.workspaceScene(challenge, CLOCK_VIEW) });
+const clockRead = (id, type, hour, minute, options) => clockItem({ id, type, hint: '', targetHour: hour, targetMinute: minute,
+  instruction: type === 'match' ? 'Find the digital time for this clock.' : 'What time does the clock show?',
+  option0: options[0], option1: options[1], option2: options[2], option3: options[3],
+  correctOptionIndex: options.indexOf(`${hour}:${String(minute).padStart(2, '0')}`) });
+const CLOCK_ITEMS = {
+  oclock: clockRead('k1', 'read', 3, 0, ['4:00', '3:00', '2:00', '3:30']),
+  quarter: clockRead('k2', 'match', 3, 15, ['3:15', '4:15', '3:03', '2:15']),
+  // The short hand sits just before the 4: "four forty-five" is the hour it is moving toward; "nine fifteen" swaps the hands.
+  quarterTo: clockRead('k3', 'read', 3, 45, ['4:45', '9:15', '3:45', '2:45']),
+  elapsed: clockItem({ id: 'k4', type: 'elapsed', instruction: 'A movie starts at 2:00 and ends at 3:30. How long is it?', hint: '',
+    targetHour: 3, targetMinute: 30, startHour: 2, startMinute: 0, option0: '30 minutes', option1: '1 hour 30 minutes',
+    option2: '2 hours 30 minutes', option3: '1 hour', correctOptionIndex: 1 }),
+  hand: clockItem({ id: 'k5', type: 'hand_name', instruction: 'Touch the hand that tells us the hour.', hint: '', targetHour: 4,
+    targetMinute: 30, targetHand: 'hour' }),
+};
+const CLOCK_CASES = [
+  ['oclock_words', "three o'clock", "Yes! It's three o'clock.", 'correct', 'advance', 'oclock'],
+  ['oclock_digits', '3:00', "That's right, 3:00!", 'correct', 'advance', 'oclock'],
+  ['quarter_past', 'quarter past three', 'Yes! Quarter past three.', 'correct', 'advance', 'quarter'],
+  ['three_fifteen', 'three fifteen', 'Right, three fifteen!', 'correct', 'advance', 'quarter'],
+  ['quarter_to', 'quarter to four', 'Yes! It is quarter to four.', 'correct', 'advance', 'quarterTo'],
+  ['next_hour_praise', 'four forty-five', 'Great job!', 'none', 'none', 'quarterTo'],
+  ['hands_swapped_praise', 'nine fifteen', 'Nice work!', 'none', 'none', 'quarterTo'],
+  ['elapsed', 'an hour and a half', "That's right, one hour and thirty minutes.", 'correct', 'advance', 'elapsed'],
+  ['hand_short', 'the short one', 'Yes! The short hand tells the hour.', 'correct', 'advance', 'hand'],
+  ['retry', 'three three', 'Not quite. Look at the long hand and count by fives to it.', 'incorrect', 'retry', 'quarter'],
+  ['tutor_answers', '', "It's quarter past three.", 'none', 'none', 'quarter'],
+];
+
+// ── coin-counter (count / compare / make-change: an amount or a group, said aloud beside the typed answer) ─────
+const coins = await domain('math/coinCounterWorkspace.ts');
+const COIN_VIEW = { selectedCoin: null, countInput: '', counted: 0, enacted: null, placed: [], selectedGroup: null, changeInput: '',
+  valuesShown: true, runningTotalShown: true };
+const coinItem = challenge => ({ assignment: coins.workspaceAssignment(challenge, '2'), scene: coins.workspaceScene(challenge, COIN_VIEW) });
+const COIN_ITEMS = {
+  // 3 dimes and 2 pennies: 5 coins, 32¢.
+  mixed: coinItem({ id: 'n1', type: 'count', instruction: 'How much money is shown?', countMode: 'mixed',
+    displayedCoins: [{ type: 'dime', count: 3 }, { type: 'penny', count: 2 }], correctTotal: 32 }),
+  // 2 dimes and a nickel: 25¢; the dimes taken for nickels make 15¢.
+  dimeNickel: coinItem({ id: 'n2', type: 'count', instruction: 'Count the money.', countMode: 'mixed',
+    displayedCoins: [{ type: 'dime', count: 2 }, { type: 'nickel', count: 1 }], correctTotal: 25 }),
+  // Group A has more coins (6 pennies) but group B (one dime) is worth more.
+  compare: coinItem({ id: 'n3', type: 'compare', instruction: 'Which group has more money?', groupA: [{ type: 'penny', count: 6 }],
+    groupB: [{ type: 'dime', count: 1 }], correctGroup: 'B' }),
+  equal: coinItem({ id: 'n4', type: 'compare', instruction: 'Which group has more money?', groupA: [{ type: 'dime', count: 1 }],
+    groupB: [{ type: 'nickel', count: 2 }], correctGroup: 'equal' }),
+  change: coinItem({ id: 'n5', type: 'make-change', instruction: 'You pay 50¢ for a 35¢ toy. What is your change?',
+    paidAmount: 50, itemCost: 35, correctChange: 15 }),
+};
+const COIN_CASES = [
+  ['total_digits', '32 cents', 'Yes! 32 cents.', 'correct', 'advance', 'mixed'],
+  ['total_words', 'thirty-two', "That's right, thirty-two cents!", 'correct', 'advance', 'mixed'],
+  ['counted_coins_praise', 'five cents', 'Great job!', 'none', 'none', 'mixed'],
+  ['dime_as_nickel_praise', 'fifteen cents', 'Nice work!', 'none', 'none', 'dimeNickel'],
+  ['compare_second', 'the second one', 'Yes! Group B has more money.', 'correct', 'advance', 'compare'],
+  ['more_coins_praise', 'group A', 'Good thinking!', 'none', 'none', 'compare'],
+  ['compare_same', "they're the same", 'Yes! Both groups are worth ten cents.', 'correct', 'advance', 'equal'],
+  ['change_said', 'fifteen cents', 'Right, your change is 15 cents!', 'correct', 'advance', 'change'],
+  ['retry', 'thirty-five', 'Not quite. That is what the toy costs. How much do you get back?', 'incorrect', 'retry', 'change'],
+  ['tutor_answers', '', 'The total is 32 cents.', 'none', 'none', 'mixed'],
+];
+
+// ── skip-counting-runner (predict / find_skip_value / connect_multiplication: a number said aloud beside the box) ─────
+const skip = await domain('math/skipCountingWorkspace.ts');
+const SKIP_LINE = { skipValue: 5, startFrom: 0, endAt: 30, direction: 'forward' };
+const skipItem = challenge => {
+  const spots = skip.openingSpots(SKIP_LINE, challenge);
+  return { assignment: skip.workspaceAssignment(challenge, SKIP_LINE), scene: skip.workspaceScene(challenge,
+    { line: SKIP_LINE, character: 'frog', supportTier: 'medium', aids: skip.aidsFor(challenge, {}) },
+    { position: spots[spots.length - 1], landings: spots, filled: [], answer: null }) };
+};
+const SKIP_ITEMS = {
+  // The frog stands on 15 on a count by 5s: the next landing is 20.
+  predict: skipItem({ id: 's1', type: 'predict', instruction: 'Where will the frog land next?', hint: '', narration: '', startPosition: 15 }),
+  find: skipItem({ id: 's2', type: 'find_skip_value', instruction: 'How far does the frog jump each time?', hint: '', narration: '', startPosition: 0 }),
+  // 0 to 20 in jumps of 5: 4 jumps.
+  connect: skipItem({ id: 's3', type: 'connect_multiplication', instruction: 'The frog jumped from 0 to 20. How many jumps of 5 did it make? Finish the multiplication fact.',
+    hint: '', narration: '', startPosition: 20 }),
+};
+const SKIP_CASES = [
+  ['predict_digits', '20', 'Yes! The frog lands on 20.', 'correct', 'advance', 'predict'],
+  ['connect_words', 'four', "That's right, four jumps of five make twenty.", 'correct', 'advance', 'connect'],
+  ['find_by_fives', 'by fives', 'Yes, it counts by fives!', 'correct', 'advance', 'find'],
+  ['counted_on_one_praise', 'sixteen', 'Great job!', 'none', 'none', 'predict'],
+  ['last_landing_praise', 'fifteen', 'Nice work!', 'none', 'none', 'predict'],
+  ['retry', 'ten', 'Not quite. Look at just one jump. How far does the frog go?', 'incorrect', 'retry', 'find'],
+  ['help', "I don't know", 'Look at two landings next to each other. What changes from one to the next?', 'none', 'none', 'find'],
+  ['tutor_answers', '', 'The frog lands on 20 next.', 'none', 'none', 'predict'],
+];
+
+// ── hundreds-chart (identify_pattern / find_skip_value: a description or a skip value, said aloud beside the pick) ─────
+const hundreds = await domain('math/hundredsChartWorkspace.ts');
+const hundredsItem = challenge => ({ assignment: hundreds.hundredsChartAssignment(challenge), scene: hundreds.hundredsChartScene(challenge, { gridMax: 100 }) });
+const FIVES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+const HUNDREDS_ITEMS = {
+  identify: hundredsItem({ id: 'h1', type: 'identify_pattern', instruction: 'Look at the highlighted cells. Which description best matches the visual pattern on the grid?',
+    skipValue: 5, startNumber: 5, givenCells: FIVES, correctCells: FIVES, hint: '', correctAnswer: 'Two vertical columns (5th and 10th)',
+    options: ['They fill every other row', 'Every other cell in each row', 'Two vertical columns (5th and 10th)', 'A diagonal stripe across the grid'] }),
+  // 5, 10, 15, 20 highlighted: the skip value is 5.
+  find: hundredsItem({ id: 'h2', type: 'find_skip_value', instruction: 'Look at the highlighted numbers. What is the skip value (how much is added each step)?',
+    skipValue: 5, startNumber: 5, givenCells: [5, 10, 15, 20], correctCells: [5, 10, 15, 20], hint: '', correctAnswer: '5', options: ['2', '5', '10', '3'] }),
+};
+const HUNDREDS_CASES = [
+  ['find_digits', '5', 'Yes! It goes up by 5 each time.', 'correct', 'advance', 'find'],
+  ['find_by_fives', 'by fives', "That's right, counting by fives!", 'correct', 'advance', 'find'],
+  ['identify_words', 'two columns', 'Yes! The highlighted numbers make two columns.', 'correct', 'advance', 'identify'],
+  ['off_by_one_praise', 'four', 'Great job!', 'none', 'none', 'find'],
+  ['last_highlighted_praise', 'twenty', 'Nice work!', 'none', 'none', 'find'],
+  ['wrong_shape_praise', 'a diagonal', 'Good thinking!', 'none', 'none', 'identify'],
+  ['retry', 'ten', "That's not it. Try again.", 'incorrect', 'retry', 'find'],
+  ['help', "I don't know", 'Look at where the highlighted numbers sit. Are they in a row, a column, or a slant?', 'none', 'none', 'identify'],
+  ['tutor_answers', '', 'The skip value is 5.', 'none', 'none', 'find'],
+];
+
 const DOMAINS = [
+  { flag: '--hundreds', report: 'hundreds-chart', items: HUNDREDS_ITEMS, cases: HUNDREDS_CASES },
+  { flag: '--skipcount', report: 'skip-counting-runner', items: SKIP_ITEMS, cases: SKIP_CASES },
+  { flag: '--coins', report: 'coin-counter', items: COIN_ITEMS, cases: COIN_CASES },
+  { flag: '--clock', report: 'analog-clock', items: CLOCK_ITEMS, cases: CLOCK_CASES },
+  { flag: '--length', report: 'length-lab', items: LENGTH_ITEMS, cases: LENGTH_CASES },
+  { flag: '--spatial', report: 'spatial-scene', items: SPATIAL_ITEMS, cases: SPATIAL_CASES },
+  { flag: '--timeseq', report: 'time-sequencer', items: TIMESEQ_ITEMS, cases: TIMESEQ_CASES },
+  { flag: '--calendar', report: 'calendar-explorer', items: CALENDAR_ITEMS, cases: CALENDAR_CASES },
+  { flag: '--compare', report: 'comparison-builder', items: COMPARE_ITEMS, cases: COMPARE_CASES },
+  { flag: '--addfacts', report: 'addition-fact-strategies', items: ADD_ITEMS, cases: ADD_CASES },
+  { flag: '--fastfact', report: 'fast-fact', items: FAST_ITEMS, cases: FAST_CASES },
+  { flag: '--fluency', report: 'math-fact-fluency', items: FLUENCY_ITEMS, cases: FLUENCY_CASES },
   { flag: '--shapes', report: 'shape-sorter', items: SHAPE_ITEMS, cases: SHAPE_CASES },
   { flag: '--letters', report: 'di-letter-sounds', items: SOUND_ITEMS, cases: SOUND_CASES },
   { flag: '--words', report: 'di-word-reading', items: WORD_ITEMS, cases: WORD_CASES },

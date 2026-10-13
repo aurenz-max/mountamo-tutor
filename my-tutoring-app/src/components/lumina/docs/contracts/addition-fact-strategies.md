@@ -18,8 +18,8 @@
 ### R1 — one strategy family per session; a fact's `type` is that family
 - The root `strategy` is the session's family; every challenge's `type` equals it, so it matches the mode's catalog `challengeTypes`. Probe: eval-test route, typesFound per mode.
 
-### R2 — the answer never reaches the screen or the tutor before the child taps it
-- The slot shows "?" until solved; the pad is always 0-18. The scene and the assignment never carry the sum; the worked example (first fact only) is a different fact and is named to the tutor by its addends only. Probe: `AdditionFactStrategies.workspace.test.tsx`.
+### R2 — no unearned credit; the answer never reaches the screen or the scene before the child answers (re-based 2026-10-13)
+- The slot shows "?" until solved; the pad is always 0-18. A tap is checked by `additionFactMatches` through `commitCheck`. The sum may also be said aloud: every item is spoken with `acceptsGesture`, `expectedAnswer` names the sum for the observer only, and JEV credits only from the tutor's feedback against it. The scene facts never carry the sum; the worked example (first fact only) is a different fact and is named to the tutor by its addends only. Probe: `AdditionFactStrategies.workspace.test.tsx`, `scripts/tutor-verdict-probe.mjs --addfacts`.
 
 ### R3 — the sum window is the objective's
 - A lesson that names a sum ceiling ("sums up to 10") gets only facts under it and only families that can fill a session under it; a pinned family with nothing under the window keeps its full sums. Probe: generator tests; fit probe draws.
@@ -32,3 +32,4 @@
 
 ## History
 - 2026-10-03 — derived. Workspace-only from this date (comebacks and scripted cues removed; see the W1 report).
+- 2026-10-13 — R2 re-based. "No key reaches the tutor" protected no unearned credit; a sum said aloud was never credited because every item was gesture-only. Every fact is now a spoken item that also takes the tap (`TeachingItem.acceptsGesture`); JEV verdict probe 21/21, false credit 0.

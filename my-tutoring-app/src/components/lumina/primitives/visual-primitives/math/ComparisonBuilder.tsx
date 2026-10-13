@@ -374,12 +374,17 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   // A fresh challenge and Try again both start from an empty answer (bound below, once the setters exist).
   const openItem = useRef<(retry: boolean) => void>(() => {});
+  /** Bound below; a spoken answer the observer credited (`onSolved`). */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
+  const tappedCorrect = useRef<string | null>(null);
   const progress = useController({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: workspaceAssignment,
     onItemOpened: (_index, retry) => openItem.current(retry),
+    onSolved: (index) => solvedAloud.current(index),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -658,6 +663,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     const leftCount = currentChallenge.leftGroup?.count ?? 0;
     const rightCount = currentChallenge.rightGroup?.count ?? 0;
     const view = { selected: answer, ordered: [], oneMore: null, oneLess: null };
+    if (correct) tappedCorrect.current = currentChallenge.id;
     commitCheck.current(describeComparison(currentChallenge, view), correct, comparisonMiss(currentChallenge, view));
 
     if (correct) {
@@ -742,6 +748,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     if (!currentChallenge || !selected) return false;
     const correct = selected === currentChallenge.correctSymbol;
     const view = { selected, ordered: [], oneMore: null, oneLess: null };
+    if (correct) tappedCorrect.current = currentChallenge.id;
     commitCheck.current(describeComparison(currentChallenge, view), correct, comparisonMiss(currentChallenge, view));
 
     if (correct) {
@@ -879,6 +886,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
       correct = moreVal === target + 1 && lessVal === target - 1;
     }
     const view = { selected: null, ordered: [], oneMore: moreVal, oneLess: lessVal };
+    if (correct) tappedCorrect.current = currentChallenge.id;
     commitCheck.current(describeComparison(currentChallenge, view), correct, comparisonMiss(currentChallenge, view));
 
     if (correct) {
@@ -1189,6 +1197,22 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   }, []);
   // Workspace path: Try again clears this response (an easier practice item stays); a fresh challenge clears everything.
   openItem.current = retry => { if (retry) clearResponse(); else resetForNewChallenge(); };
+
+  // A spoken answer the observer credited (`onSolved` fires once per challenge, for a tap too): the result a correct
+  // tap records, and the credited choice shown as a tap would show it. The shared lifecycle plays the success sound.
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    if (!solved || tappedCorrect.current === solved.id) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    if (solved.type === 'compare-groups') { setSelectedAnswer(solved.correctAnswer ?? null); setShowLines(true); }
+    else if (solved.type === 'compare-numbers') setSelectedAnswer(solved.correctSymbol ?? null);
+    else if (solved.type === 'one-more-one-less' && solved.targetNumber !== undefined) {
+      if ((solved.askFor ?? 'both') === 'one-more') setOneMoreAnswer(solved.targetNumber + 1);
+      else setOneLessAnswer(solved.targetNumber - 1);
+    }
+    setFeedback("That's right!");
+    setFeedbackType('success');
+  };
 
   // ── Live tutor runtime ──────────────────────────────────────────────
   // The tutor drives the learner's OWN handlers; grading and progression are

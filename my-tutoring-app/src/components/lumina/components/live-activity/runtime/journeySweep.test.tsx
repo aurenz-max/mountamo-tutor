@@ -57,6 +57,7 @@ export const JOURNEY_INVARIANTS = {
   'J12-item-miss-answered': "On a mode with levers, a checked miss on an item is answered by a lever on that item, or is in the catalog's unanswered list (J9 counts the mode's items together, so one item's gap passed it)",
   'J13-help-lever-keeps-item': "On an item with help levers, after a miss each help lever the observer can pull commits, puts the key nowhere new on screen or in the scene facts, and the row's correct input still credits the item (time-sequencer 10-09: a pulled picture renamed the answer buttons)",
   'J10-clean-record': 'A clean program (every item right first time) submits once, and the record says so: passed, score 100, every item first try, no assistance',
+  'J14-sayable-is-spoken': "An item whose correct input names one sayable answer (a number, or a word or short phrase on the button pressed) also takes it spoken: it is a speech item with acceptsGesture (math-fact-fluency 10-13: \"18\" said aloud was praised and never credited)",
   'J11-recovery-record': 'The wrong-then-right program submits once, and the record says so: every item solved, each miss in teachingAttempts before its correct try, the score and first-response score set by the first-response gate',
 } as const;
 type Invariant = keyof typeof JOURNEY_INVARIANTS;
@@ -163,6 +164,43 @@ function screenText(h: WorkspaceHarness): string {
 }
 
 const sentText = (from: number) => seam.send.mock.calls.slice(from).map(c => typeof c[0] === 'string' ? c[0] : '').join(' ');
+
+/** Buttons that send or step an answer rather than name it. */
+const SUBMITS = /^(submit|check|check answer|check my answer|enter|done|go|i'm done!?)$/i;
+const STEPS = /^(one more|one less)$/i;
+/** A button that does something (adds a coin, pours, joins) or only says where it is ("Coin 1"): no answer to say. */
+const NOT_AN_ANSWER = /^((add|put|pour|join|pick|split|cut|unroll|tap|drag|show|make|move|clear)\b|(coin|group|clock face|picture|option|card|slot|cell|tick|part|slice)\s+\w+$)/i;
+/**
+ * J14: the one answer a gesture item's correct input names, when a learner could just say it: a number, a time, a
+ * fraction, a comparison sign, or a word or short phrase (at most three words) on the button pressed or the text typed.
+ * A stepper (One more ... Submit) names its number. Null for a build, a drag, a placement, several
+ * picks, an action button, or a choice known only by its position.
+ */
+function sayableAnswer(correct: DriverInput[], root: HTMLElement): string | null {
+  const text = (a: DriverInput): string | null => {
+    if (a.type === 'check') return 'check';
+    if (a.type === 'write') return a.text;
+    if (a.type === 'choose') return a.label;
+    if (a.type === 'touch' && a.target) {
+      const el = root.querySelector(`[data-pip-object="${a.target}"]`);
+      return (el?.getAttribute('aria-label') || el?.textContent || '').trim() || null;
+    }
+    return null;
+  };
+  if (correct.some(a => !['write', 'choose', 'touch', 'check'].includes(a.type))) return null;
+  const said = correct.map(text).map(t => t?.replace(/^answer\s+/i, '').replace(/\s+/g, ' ').trim() ?? null);
+  if (said.some(t => !t)) return null;
+  const steps = said.filter(t => STEPS.test(t!)).length;
+  const named = said.filter(t => !SUBMITS.test(t!) && !STEPS.test(t!));
+  if (steps && !named.length) return 'a number set with the stepper';
+  // Several picks (an order, a build digit by digit, x and y) are not one answer to say.
+  if (named.length !== 1) return null;
+  const answer = named[0]!;
+  if (NOT_AN_ANSWER.test(answer)) return null;
+  const sayable = /^-?\d+([.:/]\d+)?$/.test(answer) || /^[<>=]$/.test(answer) || NUMBER_WORDS.includes(answer.toLowerCase())
+    || (/^[a-z0-9][a-z0-9' -]*$/i.test(answer) && answer.split(' ').length <= 3 && answer.length <= 24);
+  return sayable ? answer : null;
+}
 
 /** The driver's learner vocabulary (`scripts/primitive-runtime-driver.mjs`), in jsdom. Returns the spoken text, if any. */
 function perform(h: WorkspaceHarness, inputs: DriverInput[]): string | null {
@@ -383,6 +421,11 @@ async function drive({ primitiveId, evalMode, data, file }: Payload & { file: st
     const wrong = program === 'clean' ? [] : inputs('wrong', item), correct = inputs('correct', item);
     if (!wrong || !correct) break;
     if (!correct.length) { find('J1-drivable', `${item}: the row has no correct input`); break; }
+    // J14, once per payload (the clean program's first item): a gesture-only item a learner could answer aloud.
+    if (program === 'clean' && n === 0 && h.state().task!.demand?.response === 'gesture') {
+      const sayable = sayableAnswer(correct, h.view.container);
+      if (sayable) find('J14-sayable-is-spoken', `${item}: the correct input names "${sayable}", but the item takes only the gesture`);
+    }
     // A key the ask itself states ("Give me four bears") is the assignment, not a secret.
     const ask = h.state().task!.task;
     const keys = keyPhrases(expected, correct, wrong, h.view.container).filter(k => !forms(k).some(f => occurrences(ask, f)));

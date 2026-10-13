@@ -159,7 +159,7 @@ it('elapsed: start hands appear on the pull, the sweep follows the learner\'s ow
   h.press('Reset');
   expect(q(h, '[data-lever="sweep"]')).toHaveLength(0);
   expect(h.dispatch('pull_lever', { lever: 'simpler_item' }).status).toBe('committed');
-  expect(h.state().task!.task).toBe('The clock starts at 5:00 and stops at 7:00. How much time passed?');
+  expect(h.state().task!.task.startsWith('The clock starts at 5:00 and stops at 7:00. How much time passed?')).toBe(true);
   expect(q(h, 'button').map(b => b.textContent)).not.toContain('1 hour 30 minutes');
 });
 

@@ -442,6 +442,10 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  /** Bound below; a spoken answer the observer credited (`onSolved`). */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
+  const tappedCorrect = useRef<string | null>(null);
   const progress = useController({
     challenges,
     getChallengeId: (ch) => ch.id,
@@ -449,6 +453,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     workspace, assignment: workspaceAssignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
+    onSolved: (index) => solvedAloud.current(index),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -726,6 +731,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
 
     if (correct) SoundManager.playCorrect();
     else SoundManager.playIncorrect();
+    if (correct) tappedCorrect.current = currentChallenge.id;
     // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
     const work = timeView.current;
     commitCheck.current(describeTimeWork(currentChallenge, work), correct,
@@ -799,6 +805,20 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
       { challengeResults: result.outcomes, learningResponses: result.learningResponses,
         teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
       undefined, result.diagnosisEvidence);
+  };
+
+  // A spoken answer the observer credited (`onSolved` fires once per challenge, for a tap too): the result a correct
+  // tap records, and the credited choice shown as a correct tap shows it. The shared lifecycle plays the success sound.
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    if (!solved || tappedCorrect.current === solved.id) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    if (solved.type === 'match-time-of-day') setSelectedPeriod(solved.correctPeriod ?? null);
+    else if (solved.type === 'before-after') setSelectedEvent(solved.correctEvent ?? null);
+    else if (solved.type === 'duration-compare') setDurationAnswer(solved.correctAnswer ?? null);
+    else if (solved.type === 'read-schedule') setScheduleAnswer(solved.correctActivity ?? null);
+    setFeedback("Yes, that's right!");
+    setFeedbackType('success');
   };
 
   // Auto-submit

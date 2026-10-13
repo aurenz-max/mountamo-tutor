@@ -666,12 +666,17 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
   // ── Challenge Progress. On the workspace path the runtime moves the index. ──
   /** Bound below, once the setters exist; the progress hook calls it only after render. */
   const openItem = useRef<(retry: boolean) => void>(() => {});
+  /** Bound below; a spoken answer the observer credited (`onSolved`). */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
+  const tappedCorrect = useRef<string | null>(null);
   const progress = useController({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: workspaceAssignment,
     onItemOpened: (_index, retry) => openItem.current(retry),
+    onSolved: (index) => solvedAloud.current(index),
   });
   const {
     currentIndex,
@@ -781,10 +786,22 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
   const commit = (work: LengthView): boolean => {
     const ch = currentChallenge!;
     const correct = lengthLabMatches(ch, work);
+    if (correct) tappedCorrect.current = ch.id;
     progress.commitCheck(describeLengthWork(ch, work), correct, correct ? undefined : lengthMiss(ch, work));
     // The scripted path moves on after one try, so a miss is the challenge's result there.
     if (!correct && !tutorOwned) recordResult({ challengeId: ch.id, correct: false, attempts: currentAttempts + 1 });
     return correct;
+  };
+
+  // A spoken compare or indirect answer the observer credited (`onSolved` fires once per challenge, for a tap too):
+  // the result a correct tap records, and the credited choice shown as a correct tap shows it. The shared lifecycle
+  // plays the success sound.
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    if (!solved || tappedCorrect.current === solved.id || (solved.type !== 'compare' && solved.type !== 'indirect')) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setSelectedAnswer(solved.correctAnswer);
+    setShowFeedback(true);
   };
 
   // ── Announce challenge to AI ──

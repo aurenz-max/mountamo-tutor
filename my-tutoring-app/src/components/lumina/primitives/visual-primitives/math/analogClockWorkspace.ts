@@ -2,16 +2,149 @@
  * Analog clock on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
  * (qa/workspace-rollout/ROLLOUT.md, C10).
  *
- * Pure: the component and any probe read the same assignment and scene. Every challenge is answered on the
- * screen (a touched hand, the numbers touched in order, a picked time, face or duration, or hands moved) and
- * checked by the activity's own check, so the tutor is never handed the time the dial shows, the right
- * option, which hand is asked for, or the elapsed duration.
+ * Pure: the component and any probe read the same assignment and scene. read, match and elapsed ask for one time or
+ * duration and hand_name for one of two hands, so each may also be said aloud: the item is spoken with
+ * `acceptsGesture`, and JEV judges it from the tutor's feedback against `expectedAnswer` (VB-1, 2026-10-13); a tap
+ * and Check is still checked by the activity. set_time (hands moved), count_face (numbers touched in order) and
+ * hear_time (a picture of a face, which has no name to say) stay tap-only. The tutor is never handed the time the
+ * dial shows, the right option, which hand is asked for, or the elapsed duration.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { ClockChallenge } from './AnalogClock';
 
+/** The modes whose answer is one thing a learner can say. */
+export const isSpokenClock = (c: ClockChallenge) =>
+  c.type === 'read' || c.type === 'match' || c.type === 'elapsed' || c.type === 'hand_name';
+
 export function workspaceAssignment(challenge: ClockChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
+  const expectedAnswer = clockExpectedAnswer(challenge);
+  if (!expectedAnswer) return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
+  const how = challenge.type === 'hand_name' ? 'saying which hand it is, the short one or the long one, or touching it'
+    : challenge.type === 'elapsed' ? 'saying how long it took, or picking a duration' : 'saying the time, or picking it';
+  return { id: challenge.id, task: `${challenge.instruction} The learner answers by ${how}.`,
+    response: 'speech', acceptsGesture: true, expectedAnswer, misses: clockSpokenMisses(challenge) };
+}
+
+// ── Spoken times and durations ────────────────────────────────────────────────
+const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+  'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty'];
+/** 0-59 in words: "forty-five". */
+const words = (n: number) => n < 20 ? ONES[n] : TENS[Math.floor(n / 10)] + (n % 10 ? `-${ONES[n % 10]}` : '');
+const hour12 = (h: number) => ((h % 12) + 12) % 12 || 12;
+const clockTime = (hour: number, minute: number) => `${hour12(hour)}:${String(minute).padStart(2, '0')}`;
+
+/** The plain readings of a time, "four forty-five" and "4:45": the forms a miss is spoken in. */
+const plainTime = (hour: number, minute: number) => {
+  const h = words(hour12(hour));
+  return [minute === 0 ? `${h} o'clock` : `${h} ${minute < 10 ? `oh ${words(minute)}` : words(minute)}`, clockTime(hour, minute)];
+};
+
+/** Every natural way to say a time on the dial. */
+export function spokenTimeForms(hour: number, minute: number): string[] {
+  const h = words(hour12(hour)), next = words(hour12(hour + 1));
+  const forms = plainTime(hour, minute);
+  if (minute === 0) forms.push(h);
+  if (minute === 15) forms.push(`quarter past ${h}`, `a quarter after ${h}`);
+  if (minute === 30) forms.push(`half past ${h}`);
+  if (minute === 45) forms.push(`quarter to ${next}`, `a quarter till ${next}`);
+  if (minute > 0 && minute < 30) forms.push(`${words(minute)} past ${h}`, `${words(minute)} after ${h}`);
+  if (minute > 30) forms.push(`${words(60 - minute)} to ${next}`);
+  return forms;
+}
+
+const hoursText = (h: number) => h === 1 ? 'one hour' : `${words(h)} hours`;
+const durationText = (mins: number) => {
+  const h = Math.floor(mins / 60), m = mins % 60, ms = `${words(m)} minute${m === 1 ? '' : 's'}`;
+  return h && m ? `${hoursText(h)} ${ms}` : h ? hoursText(h) : ms;
+};
+
+/** Every natural way to say a duration. */
+export function spokenDurationForms(mins: number): string[] {
+  const h = Math.floor(mins / 60), m = mins % 60;
+  const forms = [durationText(mins)];
+  if (h && m) forms.push(`${hoursText(h)} and ${words(m)} minutes`);
+  if (h === 1 && m) forms.push(`${mins} minutes`);
+  if (mins === 60) forms.push('an hour', 'sixty minutes');
+  if (m === 30) forms.push(...(h ? [`${h === 1 ? 'an hour' : hoursText(h)} and a half`, `${words(h)} and a half hours`] : ['half an hour']));
+  if (mins === 15) forms.push('a quarter of an hour');
+  if (mins === 45) forms.push('three quarters of an hour');
+  return forms;
+}
+
+const quoted = (forms: string[]) => forms.map(f => `"${f}"`).join(', ');
+
+/** The one answer a spoken read, match, elapsed or hand_name item is judged against, with the ways of saying it. */
+export function clockExpectedAnswer(c: ClockChallenge): string | undefined {
+  if (!isSpokenClock(c)) return undefined;
+  if (c.type === 'hand_name') {
+    if (!c.targetHand) return undefined;
+    const [is, isNot, small, big] = c.targetHand === 'hour' ? ['short', 'long', 'little', 'big'] : ['long', 'short', 'big', 'little'];
+    return `the ${is} hand (the ${c.targetHand} hand is the ${is} one); said as "the ${is} one", "the ${is} hand" or "the `
+      + `${small} one". Naming the ${isNot} one ("the ${isNot} hand", "the ${big} one") is not it. Saying only "the `
+      + `${c.targetHand} hand" repeats the question without telling which hand that is, so it is not an answer yet.`;
+  }
+  if (c.type === 'elapsed') {
+    const mins = elapsedMinutes(c);
+    return `${durationText(mins)} (from ${clockTime(c.startHour ?? c.targetHour, c.startMinute ?? 0)} to `
+      + `${clockTime(c.targetHour, c.targetMinute)}); said as ${quoted(spokenDurationForms(mins))}. Any other duration is `
+      + 'not it, and naming the start or end time is a time, not how long it took.';
+  }
+  const { targetHour: hour, targetMinute: minute } = c;
+  const next = words(hour12(hour + 1));
+  return `${clockTime(hour, minute)}; said as ${quoted(spokenTimeForms(hour, minute))}. `
+    + (minute > 30 ? `"... to ${next}" names the right time; "${next} ${words(minute)}" does not. ` : '')
+    + (minute === 0 ? '' : `"${words(hour12(hour))} o'clock" alone, or the minutes with no hour, is not it. `)
+    + 'Any other hour or minutes is not it.';
+}
+
+/** A spoken item's known wrong answers, with the tap's ids (`clockMiss`, the catalog's lists), in `timeMiss` order. */
+export function clockSpokenMisses(c: ClockChallenge): KnownMiss[] {
+  if (!isSpokenClock(c)) return [];
+  if (c.type === 'hand_name') {
+    if (!c.targetHand) return [];
+    const other = c.targetHand === 'hour' ? 'long' : 'short';
+    return [{ id: 'other_hand', pattern: `The learner names the ${other} hand, the one that tells the `
+      + `${c.targetHand === 'hour' ? 'minutes' : 'hour'}.`, examples: [`the ${other} one`, `the ${other} hand`] }];
+  }
+  if (c.type === 'elapsed') {
+    const want = elapsedMinutes(c);
+    const wrong = clockOptions(c).map(durationMinutes).filter((m): m is number => m !== null && m !== want);
+    const hourOff = [want + 60, ...(want > 60 ? [want - 60] : [])];
+    const miss = (id: string, pattern: string, values: number[]): KnownMiss =>
+      values.length ? { id, pattern, examples: values.slice(0, 4).map(durationText) } : { id, pattern };
+    return [
+      miss('hour_off', `The learner's duration is an hour off: ${hourOff.map(durationText).join(' or ')}.`, hourOff),
+      miss('too_short', `The learner's duration is shorter than ${durationText(want)}, and not by exactly an hour.`,
+        wrong.filter(m => m < want && want - m !== 60)),
+      miss('too_long', `The learner's duration is longer than ${durationText(want)}, and not by exactly an hour.`,
+        wrong.filter(m => m > want && m - want !== 60)),
+    ];
+  }
+  const { targetHour: hour, targetMinute: minute } = c;
+  const h = words(hour12(hour));
+  const misses: KnownMiss[] = [];
+  const swapped = { hour: minute / 5 || 12, minute: (hour % 12) * 5 };
+  if (minute % 5 === 0 && swapped.minute !== minute) misses.push({ id: 'hands_swapped', pattern: 'The learner reads the '
+    + `hour off the long hand and the minutes off the short hand: ${clockTime(swapped.hour, swapped.minute)}.`,
+  examples: plainTime(swapped.hour, swapped.minute) });
+  misses.push(
+    { id: 'next_hour', pattern: `The minutes are right but the hour is one too many: ${clockTime(hour + 1, minute)}, the `
+      + 'number the short hand is moving toward.', examples: plainTime(hour + 1, minute) },
+    { id: 'previous_hour', pattern: `The minutes are right but the hour is one too few: ${clockTime(hour - 1, minute)}.`,
+      examples: plainTime(hour - 1, minute) },
+    { id: 'wrong_hour', pattern: `The minutes are right but the hour is two or more away from ${h}.` },
+  );
+  if (minute % 5 === 0 && minute > 0) misses.push({ id: 'minute_as_number', pattern: 'The learner takes the number the '
+    + `long hand points at as the minutes: ${clockTime(hour, minute / 5)}.`,
+  examples: Array.from(new Set([...plainTime(hour, minute / 5), `${h} ${words(minute / 5)}`])) });
+  misses.push(
+    { id: 'wrong_minute', pattern: `The hour is right (${h}) but the minutes are not ${words(minute)}`
+      + (minute ? `, or the learner says ${h} o'clock.` : '.') },
+    { id: 'other_time', pattern: 'Both the hour and the minutes are wrong.' },
+  );
+  return misses;
 }
 
 export interface ClockView {
@@ -134,6 +267,12 @@ export function clockMiss(challenge: ClockChallenge | null, view: ClockView): Cl
   }
 }
 
+/** What a spoken mode's answer is, which the scene withholds until the learner answers. */
+const WITHHELD: Record<string, string> = {
+  read: 'the time the clock shows or which choice is right', match: 'the time the clock shows or which choice is right',
+  elapsed: 'how long it took or which duration is right', hand_name: 'whether the short or the long hand is the one asked for',
+};
+
 /** What is drawn and asked. The options on screen are listed; the time on the dial, the right one, never. */
 export function workspaceScene(challenge: ClockChallenge, view: ClockView): WorkspaceScene {
   const drawn: Record<string, string | number> = {};
@@ -146,7 +285,7 @@ export function workspaceScene(challenge: ClockChallenge, view: ClockView): Work
   switch (challenge.type) {
     case 'hand_name':
       drawn.clock = 'a clock face with numbers 1 to 12, one short hand and one long hand';
-      drawn.howToAnswer = 'touch a hand, then press Check';
+      drawn.howToAnswer = 'say which hand, the short one or the long one, or touch a hand and press Check';
       break;
     case 'count_face':
       drawn.clock = 'a clock face whose numbers 1 to 12 can each be touched';
@@ -165,13 +304,13 @@ export function workspaceScene(challenge: ClockChallenge, view: ClockView): Work
     case 'elapsed':
       drawn.clock = 'a clock face showing the start time, with a stopwatch (Start, Stop, Reset) that runs its hands forward';
       drawn.durationChoices = clockOptions(challenge).join('; ');
-      drawn.howToAnswer = 'pick how long it took, then press Check';
+      drawn.howToAnswer = 'say how long it took, or pick a duration and press Check';
       aids();
       break;
     default:
       drawn.clock = 'a clock face showing a time with its two hands; the time is the answer and is not given to you';
       drawn.timeChoices = clockOptions(challenge).join(', ');
-      drawn.howToAnswer = 'pick the time the clock shows, then press Check';
+      drawn.howToAnswer = 'say the time the clock shows, or pick it and press Check';
       aids();
   }
   return {
@@ -179,8 +318,11 @@ export function workspaceScene(challenge: ClockChallenge, view: ClockView): Work
     facts: {
       kind: challenge.type, ...drawn,
       learnerWork: describeClockWork(challenge, view),
-      constraints: 'The learner answers on the screen: touches a hand or the numbers, picks a time, a clock face or a duration, '
-        + 'or moves the hands, then presses Check; the activity checks it itself. You cannot touch, pick or move anything for the learner.',
+      constraints: isSpokenClock(challenge)
+        ? 'The learner says the answer, or picks or touches it and presses Check; a Check is checked by the activity. '
+          + `Before the learner has answered, never name ${WITHHELD[challenge.type]}. You cannot touch or pick anything for the learner.`
+        : 'The learner answers on the screen: touches the numbers, picks a clock face, '
+          + 'or moves the hands, then presses Check; the activity checks it itself. You cannot touch, pick or move anything for the learner.',
     },
   };
 }

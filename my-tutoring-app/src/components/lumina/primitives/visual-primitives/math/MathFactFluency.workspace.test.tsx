@@ -52,19 +52,25 @@ it('every catalog mode binds', () => {
   }
 });
 
-it.each(MODES)('%s: a checked gesture that publishes no key; a wrong answer reopens clean on Try again, the right one completes once',
+it.each(MODES)('%s: a checked gesture; a wrong answer reopens clean on Try again, the right one completes once',
   async (mode, type) => {
     const c = CHALLENGES[type];
     seam.evaluationContext = { lesson: 'test' };
     const h = mountWorkspace({ primitiveId: 'math-fact-fluency', evalMode: mode, data: facts([c]) });
     const task = h.state().task!;
-    expect(task.workspace!.expectedAnswer).toBeUndefined();
-    expect(task.demand.response).toBe('gesture');
-    const published = JSON.stringify(task);
-    expect(published).not.toMatch(/correctAnswer|visualCount/);
-    // The full equation carries the answer; only a printed choice may show it.
-    if (type !== 'match') expect(published).not.toContain(c.equation);
-    expect(published).not.toMatch(/\b7 dots\b|of 7\b/);
+    expect(JSON.stringify(task)).not.toMatch(/correctAnswer|visualCount/);
+    if (type === 'match') {
+      // A match is tapped only: its key never reaches the tutor.
+      expect(task.workspace!.expectedAnswer).toBeUndefined();
+      expect(task.demand.response).toBe('gesture');
+    } else {
+      // A number answer may also be said aloud: the observer judges the tutor's feedback against the key.
+      expect(task.workspace!.expectedAnswer?.startsWith(`${c.correctAnswer} (`)).toBe(true);
+      expect(task.demand.response).toBe('speech');
+    }
+    // The scene never states the answer or the picture's count; only a printed equation choice may show it.
+    if (type !== 'match') expect(JSON.stringify(task.demand)).not.toContain(c.equation);
+    expect(JSON.stringify(task.demand)).not.toMatch(/\b7 dots\b|of 7\b/);
 
     perform(h, c, true);
     expect(h.state().task!.evidence.correctness).toBe('incorrect');
@@ -89,6 +95,27 @@ it.each(MODES)('%s: a checked gesture that publishes no key; a wrong answer reop
     await flushScoring();
     expect(seam.submit).toHaveBeenCalledOnce();
   });
+
+it.each(MODES.filter(([, type]) => type !== 'match'))('%s: a number said aloud and credited by the tutor completes the fact', async (mode, type) => {
+  const c = CHALLENGES[type];
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mountWorkspace({ primitiveId: 'math-fact-fluency', evalMode: mode, data: facts([c]) });
+  h.say(String(c.correctAnswer + 1)); h.feedback('incorrect', 'retry');
+  h.say(String(c.correctAnswer)); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().status).toBe('completed');
+  await flushScoring();
+  expect(seam.submit).toHaveBeenCalledOnce();
+});
+
+it('a tap after a spoken answer is checked by the activity and ends the pending speech', () => {
+  const c = CHALLENGES['speed-round'];
+  const h = mountWorkspace({ primitiveId: 'math-fact-fluency', evalMode: 'speed_round', data: facts([c]) });
+  h.say('eight');
+  expect(h.state().task!.workspace!.pendingResponse).toBeDefined();
+  perform(h, c, false);
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  expect(h.state().task!.workspace!.pendingResponse).toBeUndefined();
+});
 
 it('a picture match is checked by the picture tapped', () => {
   const c: MathFactFluencyChallenge = { ...fact, id: 'p1', type: 'match', instruction: 'Which picture shows 3 + 4?', matchDirection: 'equation-to-visual',

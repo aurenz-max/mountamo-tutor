@@ -39,10 +39,21 @@ const scene = (correctPosition: SpatialSceneChallenge['correctPosition']) => ch(
   { sceneObjects: [obj('cat', 1, 0), obj('tree', 1, 2)], targetObject: obj('cat', 1, 0), referenceObjectName: 'tree', correctPosition });
 it.each([
   [scene('left_of'), ['The cat is right of the tree.']], [scene('in_front_of'), ['The cat is behind the tree.']],
-  [scene('next_to'), []], [above, []],
+  [scene('next_to'), []],
 ] as const)('spoken %#: only the reversed relation', (c, examples) => {
   const misses = spatialSpokenMisses(c);
   expect(misses.flatMap(m => m.examples ?? [])).toEqual(examples);
   expect(misses.every(m => m.id === 'opposite_word')).toBe(true);
   expect(spatialAssignment(c).misses).toEqual(misses.length ? misses : undefined);
+});
+
+// VB-1: a spoken position word names its miss with the tap's ids, every untrue word grouped under one.
+it('spoken word: each untrue word under the id its tap would get', () => {
+  const misses = spatialSpokenMisses(above);
+  expect(misses.map(m => [m.id, m.examples])).toEqual([
+    ['opposite_word', ['The cat is below the box.', 'The cat is under the box.']],
+    ['same_axis_word', ['The cat is on the box.']],
+    ['other_axis_word', ['The cat is beside the box.', 'The cat is left of the box.', 'The cat is right of the box.']],
+  ]);
+  expect(spatialAssignment(above).misses).toEqual(misses);
 });

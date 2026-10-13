@@ -10,7 +10,7 @@ import { abstainItemScore, gradeOf, scoreSession, type AttemptGrade, type ItemSc
 import { OBSERVATION_TIMEOUT_MS, postObservation } from './observationContract';
 import { abstainSpokenMiss, type KnownMiss, type SpokenMissDecision, type SpokenMissRequest } from './spokenMissContract';
 import { SoundManager } from '../../../utils/SoundManager';
-import { latestLearnerUtterance } from './learnerUtterance';
+import { isFillerUtterance, latestLearnerUtterance } from './learnerUtterance';
 import { lastMiss, nextLever } from './observerLever';
 import { useWorkspacePin } from './workspacePin';
 import { pinAllowsMissFromWords } from '../pinnedModes';
@@ -22,6 +22,12 @@ export interface TeachingItem {
   /** Full assignment answer for tutor-feedback assessment, not a transcript parser. */
   expectedAnswer?: string;
   response: 'speech' | 'gesture';
+  /**
+   * A spoken item whose activity check also takes a gesture (a number the learner may say or tap). Speech is
+   * judged from tutor feedback as on any spoken item; a gesture is checked by the activity and ends the pending
+   * spoken answer. Gesture items ignore it.
+   */
+  acceptsGesture?: boolean;
   /** Checks gesture submissions only. Speech is judged by the tutor. The key stays private. */
   checkResponse: (response: string) => boolean | null;
   /**
@@ -401,6 +407,14 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
         && (session.getSnapshot().phase === 'working' || session.getSnapshot().phase === 'checked' && session.getSnapshot().lastResponse?.correct === false) && speech
         && !examinedSpeech.current.has(speech.id)) {
       examinedSpeech.current.add(speech.id);
+      // Filler or noise is no answer: it neither opens a pending answer (nothing for a tutor reply to credit) nor
+      // replaces one already waiting, so the record keeps what the learner actually said.
+      if (isFillerUtterance(speech.text)) {
+        runtime?.trace.record({ stage: 'learner_response', status: 'context', reason: 'Not an answer: filler or noise transcript.',
+          input: { utterance: speech.text, scope: { instanceId: latest.current.instanceId, itemId: currentItem().id } } });
+        trackWork(); changed();
+        return;
+      }
       pendingSpeech.current = { id: speech.id, text: speech.text };
       runtime?.trace.record({ stage: 'learner_response', status: 'context', reason: 'Awaiting tutor feedback; transcript is supporting context.',
         input: { task: currentItem().task, utterance: speech.text,
@@ -442,7 +456,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   // A/B 2026-10-07: with the fact the tutor taught during the build; without a rule it did the counting itself.
   useEffect(() => {
     const w = work.current;
-    if (!w.touched || w.noted === w.sig || state.phase !== 'working' || ai.isAudioPlaying || item.response !== 'gesture') return;
+    if (!w.touched || w.noted === w.sig || state.phase !== 'working' || ai.isAudioPlaying || (item.response !== 'gesture' && !item.acceptsGesture)) return;
     const sig = w.sig;
     const timer = setTimeout(() => {
       if (work.current.sig !== sig || !work.current.touched || aiRef.current.isAudioPlaying) return;
@@ -450,7 +464,7 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
       noteLearner(`The learner changed their work and has stopped for ${WORK_PAUSE_MS / 1000} seconds without submitting it.`);
     }, WORK_PAUSE_MS);
     return () => clearTimeout(timer);
-  }, [workTick, state.phase, ai.isAudioPlaying, item.id, item.response]);
+  }, [workTick, state.phase, ai.isAudioPlaying, item.id, item.response, item.acceptsGesture]);
 
   /**
    * Handoff 20 Part B: which of the item's known wrong answers this pending answer is, read from the learner's
@@ -479,9 +493,13 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   };
 
   const submitGestureResponse = (response: string, miss?: string) => {
-    if (!mounted.current || !activeRef.current || suspended.current || currentItem().id !== item.id || currentItem().response !== 'gesture') return;
+    const open = currentItem();
+    if (!mounted.current || !activeRef.current || suspended.current || open.id !== item.id
+      || (open.response !== 'gesture' && !open.acceptsGesture)) return;
     const correct = checkResponse(response);
     if (correct === null || !session.submit(`gesture:${++gestureSequence.current}`, response, 'gesture', correct, false, undefined, miss)) return;
+    // The checked gesture answers the item: speech heard before it no longer waits for a verdict.
+    if (open.response === 'speech') rescope();
     if (correct && !session.getSnapshot().practice) latest.current.onSolved?.(session.getSnapshot().index, response);
     // Facts trigger the live conversation: what the learner did and what the board found, no instruction. A tail
     // telling the tutor to respond changed no reply in a text replay (2026-10-07); how they got there rides in the

@@ -22,10 +22,10 @@
 - **Demanded by:** every consumer ([[no-timer-on-fact-fluency]]).
 - **Probe:** `MathFactFluency.workspace.test.tsx`; scene `timing` fact present.
 
-### R2 — One checked gesture per item; the key never reaches the tutor · OBSERVED
-- **Property:** Every answer is checked by `mathFactMatches` and committed through `commitCheck`; scene facts name what is drawn ("the learner counts it"), never a count or the answer.
-- **Demanded by:** live workspace (C9).
-- **Probe:** `mathFactFluencyWorkspace.test.ts`, `MathFactFluency.workspace.test.tsx`.
+### R2 — No unearned credit; a match's key never reaches the tutor · OBSERVED (re-based 2026-10-13)
+- **Property:** A tap or Submit is checked by `mathFactMatches` and committed through `commitCheck`. A number answer (`choice`, `stepper` channels) may also be said aloud: the item is spoken with `acceptsGesture`, `expectedAnswer` names the number, and JEV credits only from the tutor's feedback against it. A match (equation ↔ picture) stays gesture-only and publishes no key. Scene facts name what is drawn ("the learner counts it"), never a count or the answer.
+- **Demanded by:** live workspace (C9); spoken answers (session 2026-10-13 750ca99a).
+- **Probe:** `mathFactFluencyWorkspace.test.ts`, `MathFactFluency.workspace.test.tsx`, `scripts/tutor-verdict-probe.mjs --fluency`.
 
 ### R3 — missing_number blank assigned in code · OBSERVED
 - **Property:** `missingNumberPosition()` picks the blank after operand reconciliation; easy/medium alternate count-on and start-unknown, hard is start-unknown.
@@ -64,3 +64,4 @@ None open.
 
 - 2026-10-02: derived (initial, static). 8 requirements, 0 conflicts. R6-R8 added with the M3 lever slice.
 - 2026-10-08: R6 speed_round misses listed as unanswered; R7 fingers pictures get `two_parts` / `count_marks` (dots under the hands), and per-item miss coverage is probed on every saved payload.
+- 2026-10-13: R2 re-based. "One checked gesture per item" protected no unearned credit and no key leak; a spoken "18" to 9 + 9 was praised and never credited (session 750ca99a). Number answers are now spoken items that also take the tap/Submit (`TeachingItem.acceptsGesture`); JEV verdict probe 33/33, false credit 0.

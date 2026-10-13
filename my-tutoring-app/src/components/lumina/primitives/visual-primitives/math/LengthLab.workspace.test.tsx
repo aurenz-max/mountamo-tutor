@@ -77,8 +77,14 @@ it.each(Object.values(CASES))('$c.type: a checked gesture that publishes no key;
     seam.evaluationContext = { lesson: 'test' };
     const h = mountWorkspace({ primitiveId: 'length-lab', evalMode: c.type, data: lab([c]) });
     const task = h.state().task!;
-    expect(task.workspace!.expectedAnswer).toBeUndefined();
-    expect(task.demand.response).toBe('gesture');
+    // A one-choice compare or indirect is also spoken (LengthLab.spoken.workspace.test.tsx); the rest are tap-only, no key.
+    if (c.type === 'compare' || c.type === 'indirect') {
+      expect(task.demand.response).toBe('speech');
+      expect(task.task.startsWith(c.instruction)).toBe(true);
+    } else {
+      expect(task.workspace!.expectedAnswer).toBeUndefined();
+      expect(task.demand.response).toBe('gesture');
+    }
     expect(JSON.stringify(task.demand)).not.toMatch(secret);
     expect(JSON.stringify(task.demand)).not.toMatch(/correctAnswer|correctUnitCount|correctOrderCsv|objectLength/);
     expect(seam.legacyAI).not.toHaveBeenCalled();

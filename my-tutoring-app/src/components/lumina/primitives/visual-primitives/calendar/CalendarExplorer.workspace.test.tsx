@@ -43,14 +43,23 @@ const headers = () => screen.queryAllByTestId('day-header');
 const tinted = () => document.querySelectorAll('[data-target-day="true"]');
 
 describe('the grid on the workspace', () => {
-  it.each(['identify', 'mark_events', 'count', 'pattern', 'day_offset', 'interval_count'])('%s binds and its key never reaches the tutor', mode => {
+  // VB-1 (2026-10-13): a question with one weekday, date or count to say is a spoken item that also takes the tap, so
+  // its key reaches the observer as `expectedAnswer`; marking an event stays a tap with no key.
+  it.each(['identify', 'mark_events', 'count', 'pattern', 'day_offset', 'interval_count'])('%s binds; only mark_events keeps its key from the tutor', mode => {
     const c = mode === 'day_offset' ? base({ type: 'day_offset', correctAnswer: 'Friday', options: ['Thursday', 'Friday'], startDay: 'Tuesday', offsetDays: 3 })
       : mode === 'count' ? count() : base({ type: mode as CalendarExplorerChallenge['type'] });
     const d = data([c]);
     expect(workspaceBinding({ instanceId: 'ws', primitiveId: 'calendar-explorer', pin: mode, objectiveIds: ['o'], data: d })).not.toBeNull();
     const h = mount(d, mode);
-    expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
-    expect(h.state().task!.task).toBe(c.question);
+    if (mode === 'mark_events') {
+      expect(h.state().task!.demand.response).toBe('gesture');
+      expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+      expect(h.state().task!.task).toBe(c.question);
+    } else {
+      expect(h.state().task!.demand.response).toBe('speech');
+      expect(h.state().task!.workspace!.expectedAnswer).toBeTruthy();
+      expect(h.state().task!.task).toMatch(new RegExp(`^${c.question.replace(/[?.]/g, m => `[${m}]`)} The learner answers by saying`));
+    }
     expect(screen.queryByRole('button', { name: /Next Question|See Results/ })).toBeNull();
   });
 
@@ -69,7 +78,7 @@ describe('the grid on the workspace', () => {
     expect(h.state().task!.evidence.correctness).toBe('correct');
     h.dispatch('advance'); h.confirmVisible();
     // The scene follows the active challenge.
-    expect(h.state().task!.task).toBe('What date is the second Tuesday of March 2025?');
+    expect(h.state().task!.task).toMatch(/^What date is the second Tuesday of March 2025[?]/);
     fireEvent.click(screen.getByTestId('date-11'));
     check();
     h.dispatch('advance'); h.confirmVisible();

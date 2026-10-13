@@ -39,8 +39,17 @@ function key(item: KnowledgeCheckItem): string | undefined {
   switch (item.kind) {
     case 'choice_tap':
     case 'point_to':
-    case 'on_screen':
       return undefined; // checked by the activity
+    case 'on_screen': {
+      // A multiple-choice or true/false problem worked on screen takes its answer said aloud too (user ruling 10-12):
+      // the work on screen is checked by the problem, the spoken answer from the tutor's feedback against this key.
+      const k = item.spokenKey;
+      if (!k) return undefined;
+      if ('truth' in k) return key({ ...item, kind: 'true_false', correctBool: k.truth });
+      const others = k.others.map(o => `"${o}"`).join(', ');
+      return `"${k.answer}", alone or in a short sentence, or the part of it that tells it apart from the other choices on `
+        + `the screen.${others ? ` ${others} ${k.others.length > 1 ? 'are' : 'is'} wrong, and so is naming two choices or hedging between them.` : ''}`;
+    }
     case 'true_false':
       return `${item.correctBool ? 'true' : 'false'}: the statement is ${item.correctBool ? 'true' : 'false'}. `
         + `${item.correctBool ? '"yes", "yeah", "right", "it is"' : '"no", "nope", "wrong", "it is not"'} count too, alone or in `
@@ -103,8 +112,10 @@ export function knowledgeCheckMiss(item: KnowledgeCheckItem, tappedId: string): 
 export function knowledgeCheckAssignment(item: KnowledgeCheckItem): TeachingAssignment {
   const expectedAnswer = key(item);
   const misses = expectedAnswer ? knowledgeCheckSpokenMisses(item) : [];
+  // An on_screen item with a spoken key is a spoken item whose problem surface also checks a gesture.
   return expectedAnswer
-    ? { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}) }
+    ? { id: item.id, task: ask(item), response: 'speech', expectedAnswer, ...(misses.length ? { misses } : {}),
+      ...(item.kind === 'on_screen' ? { acceptsGesture: true } : {}) }
     : { id: item.id, task: ask(item), response: 'gesture' };
 }
 
@@ -181,7 +192,9 @@ export function knowledgeCheckScene(item: KnowledgeCheckItem, preReader: boolean
   if (item.wordBank?.length) facts.wordBank = `Word bank: ${item.wordBank.join(', ')}.`;
   facts.constraints = (item.kind === 'choice_tap' ? 'The learner answers by touching one choice; the activity checks the touch.'
     : item.kind === 'point_to' ? 'The learner answers by touching one sign in the number sentence; the activity checks the touch.'
-    : item.kind === 'on_screen' ? 'The learner works this problem on the screen with their hands; the problem checks the work.'
+    : item.kind === 'on_screen' ? item.spokenKey
+      ? 'The learner may answer out loud or work this problem on the screen; either one answers it. The screen checks the work; an answer said aloud is not marked until it is credited.'
+      : 'The learner works this problem on the screen with their hands; the problem checks the work. An answer said out loud is not recorded; only the work on the screen answers it.'
       : 'The learner answers out loud; nothing marks the answer until it is credited.')
     + (preReader ? ' The learner does not read yet: read the question and every choice aloud.' : '');
   return { objects: [], facts };

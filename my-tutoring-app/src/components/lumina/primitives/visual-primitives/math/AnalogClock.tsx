@@ -29,7 +29,7 @@ import type { TeachingEvaluationResult } from '../../../components/live-activity
 import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { clockMiss, describeClockWork, workspaceAssignment, workspaceScene, type ClockView } from './analogClockWorkspace';
+import { clockMiss, describeClockWork, isSpokenClock, workspaceAssignment, workspaceScene, type ClockView } from './analogClockWorkspace';
 import {
   DIGITAL_ECHO_LEVER, HAND_LEGEND_LEVER, MINUTE_NUMBERS_LEVER, ROUND_ARROW_LEVER, RUNNING_MODEL_LEVER, SHORT_HANDS_LEVER,
   START_SWEEP_LEVER, analogClockLevers, leverFacts, practiceItem, runningModelHour, sweptMinutes,
@@ -619,6 +619,10 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  /** Bound below; a spoken answer the observer credited (`onSolved`). */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
+  const tappedCorrect = useRef<string | null>(null);
   const progress = useController({
     challenges,
     getChallengeId: (ch) => ch.id,
@@ -626,6 +630,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     workspace, assignment: workspaceAssignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
+    onSolved: index => solvedAloud.current(index),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -911,13 +916,16 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       // The clock's own fields; `commitCheck` below adds the verdict and the attempts on both paths. A practice item
       // (the simplify lever) records nothing: it is not the session's challenge.
       if (practice) setPracticeSolved(true);
-      else recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        score: Math.max(100 - (currentAttempts * 25), 25),
-        targetTime,
-      });
+      else {
+        tappedCorrect.current = currentChallenge.id;
+        recordResult({
+          challengeId: currentChallenge.id,
+          correct: true,
+          attempts: currentAttempts + 1,
+          score: Math.max(100 - (currentAttempts * 25), 25),
+          targetTime,
+        });
+      }
       sendText(
         `[ANSWER_CORRECT] Student got it right on attempt ${currentAttempts + 1}. Target: ${targetTime}. Congratulate briefly!`,
         { silent: true },
@@ -945,6 +953,20 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     pickedHand, countedNumerals, practice,
     currentAttempts, hasSubmittedEvaluation, recordResult, sendText, tutorOwned,
   ]);
+
+  // A spoken read, match, elapsed or hand_name answer the observer credited (`onSolved` fires once per challenge, for a
+  // tap too): the result a correct tap records, and the credited choice shown as a correct tap shows it. The shared
+  // lifecycle plays the success sound.
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    if (!solved || tappedCorrect.current === solved.id || !isSpokenClock(solved)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1,
+      score: Math.max(100 - (currentAttempts * 25), 25), targetTime: formatTime(solved.targetHour, solved.targetMinute) });
+    if (solved.type === 'hand_name') setPickedHand(solved.targetHand ?? null);
+    else setSelectedOption(solved.correctOptionIndex ?? null);
+    setFeedback('Correct!');
+    setFeedbackType('success');
+  };
 
   // ── K clock parts: pointing at a hand, and counting the face ──────────────
   const handleHandClick = useCallback((hand: 'hour' | 'minute') => {

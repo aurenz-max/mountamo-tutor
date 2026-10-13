@@ -24,14 +24,16 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       + 'and live tutor judgment.',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'Two kinds of session. The calendar: the learner taps a date or one of the printed options and presses '
-        + 'Check; the activity checks the pick and you are told what was picked, never the answer. Follow the reveal '
-        + 'policy in the scene facts: at the hard tier the day headers and the tinted days are gone on purpose, so do '
-        + 'not recite the day order or name the column. The chain: say the day or month you are given, then the '
-        + 'learner says the one that comes next; it is judged against the successor you are given, and the given day '
-        + 'said back is not it. There are no printed day or month names in the chain. Before an attempt never say the '
-        + 'answer. The replay button asks you to repeat the question only. You cannot tap, mark or change the calendar.',
-      // The calendar's own check (`calendarMiss`), by answer kind. identify and pattern ask for a weekday or a date.
+      guidance: 'Two kinds of session. The calendar: when the answer is a day of the week, a date or a count, the learner '
+        + 'may say it or tap it (a date on the calendar or a printed option, then Check); a spoken answer is a real answer, '
+        + 'so tell them plainly whether it is right. A tap is checked by the activity and you are told what was picked; '
+        + 'marking an event is tap only. Follow the reveal policy in the scene facts: at the hard tier the day headers and '
+        + 'the tinted days are gone on purpose, so do not recite the day order or name the column. The chain: say the day '
+        + 'or month you are given, then the learner says the one that comes next; it is judged against the successor you '
+        + 'are given, and the given day said back is not it. Before the learner has answered never say the answer. The '
+        + 'replay button asks you to repeat the question only. You cannot tap, mark or change the calendar.',
+      // The calendar's own check (`calendarMiss`), by answer kind. identify and pattern ask for a weekday or a date. A
+      // spoken grid answer names the same ids (`calendarGridSpokenMisses`).
       // day_sequence is spoken and reuses the weekday kinds (`calendarSpokenMisses`, handoff 20 Part B); month_sequence
       // names the same four for months. Every mode has levers (`calendarExplorerLevers.ts`); no miss is unanswered.
       levers: true,
@@ -109,7 +111,7 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'identify',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Identify Dates',
         beta: -1.5,
         scaffoldingMode: 2,
@@ -136,7 +138,7 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'count',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Count Days',
         beta: 0.0,
         scaffoldingMode: 3,
@@ -154,7 +156,7 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'day_offset',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Count Days Forward',
         beta: 1.0,
         scaffoldingMode: 4,
@@ -163,7 +165,7 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'interval_count',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Days Between Events',
         beta: 1.25,
         scaffoldingMode: 4,
@@ -172,7 +174,7 @@ export const CALENDAR_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'pattern',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Calendar Patterns',
         beta: 1.5,
         scaffoldingMode: 5,

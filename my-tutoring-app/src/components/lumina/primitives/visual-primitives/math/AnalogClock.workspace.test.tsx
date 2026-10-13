@@ -2,8 +2,8 @@
 /**
  * W1 minimal binding, plain shape: the real AnalogClock on the shared teaching workspace, mounted the way a lesson
  * mounts it. The activity's own check commits a checked gesture with its named miss; the runtime owns progression;
- * the scored session is what gets submitted. The tutor is never handed the time on the dial, the right option or
- * which hand is asked for.
+ * the scored session is what gets submitted. The scene never hands the tutor the time on the dial, the right option
+ * or which hand is asked for.
  */
 vi.mock('@/contexts/LuminaAIContext', async () => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).luminaAIContextSeam());
 vi.mock('@/components/lumina/hooks/useLiveVoiceTurns', async original => (await import('@/components/lumina/components/live-activity/runtime/testing/liveRuntimeSeams')).voiceTurnsSeam(original as any));
@@ -48,12 +48,17 @@ const mount = (evalMode: string, challenges: ClockChallenge[], gradeBand: Analog
 const demand = (h: WorkspaceHarness) => h.state().task!.demand as Record<string, unknown>;
 const check = (h: WorkspaceHarness) => h.press(/check/i);
 
-it.each(Object.keys(CHALLENGES))('%s mounts under tutor ownership with no scripted cue and no published key', mode => {
+/** Answered aloud or by tap (VB-1); the rest are tap-only. AnalogClock.spoken.workspace.test.tsx drives the speech. */
+const SPOKEN_MODES = ['read', 'match', 'elapsed', 'hand_name'];
+
+it.each(Object.keys(CHALLENGES))('%s mounts under tutor ownership with no scripted cue and no key in the scene', mode => {
   const c = CHALLENGES[mode];
   const h = mount(mode, [c]);
   expect(h.state().owner).toBe('tutor');
-  expect(h.state().task!.task).toBe(c.instruction);
-  expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+  expect(h.state().task!.task.startsWith(c.instruction)).toBe(true);
+  // A spoken item's key goes to the observer only (`expectedAnswer`), never into the scene the tutor reads.
+  if (SPOKEN_MODES.includes(mode)) expect(h.state().task!.workspace!.expectedAnswer).toBeTruthy();
+  else expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   // The options are on screen, so they are facts; what the dial shows and which option is right are not.
   const { timeChoices: _t, durationChoices: _d, ...rest } = demand(h);
   expect(JSON.stringify(rest)).not.toMatch(KEY[mode]);

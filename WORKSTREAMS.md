@@ -47,6 +47,7 @@ Exit: every bound mode's misses are defined once as `{ id, pattern }`; gesture c
 | 1.2 | Gesture misses for bound families | `/add-support-tiers` · handoff 20 A | DONE 09-27 (RP-7 closed) |
 | 1.3 | Miss definitions carry their observable pattern (today only in docblocks); the packet and `spoken_miss` read them; doctrine says what to do with a miss | `/add-live-tutor-tools` · handoff 20 (new) | open; packet side needs `runtime/` |
 | 1.4 | Spoken misses wired (59 families) | `/add-live-tutor-tools` · handoff 20 Part B | DONE 09-28 (`b431d545`; route file still untracked): 0 FP in 3630; report `qa/tutor-reports/spoken-miss/wired-2026-09-28.md` |
+| 1.6 | Voice beside the tap: sayable answers take speech + the tap (pilot math-fact-fluency DONE 10-13) | `/add-live-tutor-tools` · `qa/workspace-rollout/ROLLOUT.md` VB-1..4 | ACTIVE (10-13): sweep J14 added; VB-1 DONE (11 K-2 families, 0 false credit); next VB-2, plus shared VB-F1/F2 |
 | 1.5 | Consolidation slices 5-7; RP-3/4/5/6 | `/add-live-tutor-tools`, `/eval-fix` · handoffs 19, 20 | slice 6 evidence merge DONE 09-27 (live-host refusal half open); rest unblocked once 1.4 is committed |
 
 ## Phase 2 — The ladder tests a passing student first, then a miss (NEXT)

@@ -3309,10 +3309,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       grades: ['Kindergarten', 'Grade 1'],
       // Every mode publishes levers (`comparisonBuilderLevers.ts`, handoff 21 M2).
       levers: true,
-      guidance: 'The learner answers by tapping on the screen: a side or the equals sign, a number or a symbol, number '
-        + 'cards in order, or a number cell, then Check where there is one; the activity checks the answer itself. Which '
-        + 'side has more, the symbol, the sorted order and the number one more or one less are each the answer on their own '
-        + 'mode: never say one before the check. Counting each group with the learner is teaching; naming the winner is not. '
+      guidance: 'Comparing groups or numbers, or finding one more or one less, the learner may say the answer or tap it; '
+        + 'a spoken answer is real, so tell them plainly whether it is right. Number cards in order and a one-more-and-one-less '
+        + 'pair are tap only. Every tap is checked by the activity. Which side has more, the symbol, the sorted order and the number one more or one '
+        + 'less are each the answer: never say one before the learner has answered. Counting each group with the learner is teaching; naming the winner is not. '
         + 'A Kindergarten learner cannot read: read the instruction aloud and name the choice being made, because the '
         + 'pictures, arrows and bars on screen carry no words. You cannot tap, choose or order anything for the learner.',
       // The activity's own check (`comparisonMiss`), every mode.
@@ -3521,19 +3521,20 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'skip-counting-runner',
     description: 'Rhythmic skip counting with animated number line jumps for grades 1-3. A character (frog, kangaroo, rabbit, rocket) jumps along a number line in equal leaps, landing on multiples. Students count along, predict landing spots, identify skip values, fill missing numbers, and connect to multiplication facts. Parallel array visualization links skip counting to multiplication. Supports forward and backward counting. ESSENTIAL for grades 1-3 skip counting, multiplication foundations, and number pattern recognition.',
     constraints: 'Best for grades 1-3. Grades 1-2: skip by 2s, 5s, 10s, forward only, count_along and predict challenges. Grades 2-3: skip by 3s, 4s, backward counting, multiplication connections.',
-    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 4 },
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type', 'spoken'], role: ['visualize', 'apply'], minutes: 4 },
     teachingWorkspace: {
       levers: true,
       grades: ['Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'The runner checks the learner’s work itself, and you are not told the answer. On count along the learner '
-        + 'taps the number where the character lands next, one jump at a time, then presses Check; a tap further on is a '
-        + 'miss. On the other kinds the learner types a number and presses Check: the next landing (predict), each number '
-        + 'hidden as "?" (fill missing, one at a time), how far each jump goes (find the skip value), or how many jumps '
-        + 'reach the number (multiplication: the box completes "? × jump size = number reached"). Those are the answers: '
-        + 'before the learner has checked, never say them, never count on past the character or across a "?", never give '
-        + 'the difference between two landings when the jump size is asked, and never count the jumps to the end. Do not '
-        + 'tell the learner what to add to which number; ask what changes from one number to the next. Say the '
-        + 'instruction in your own words first. You cannot tap, type or jump for the learner.',
+      guidance: 'On predict, find the skip value, multiplication, and a fill missing item with one "?", the learner may '
+        + 'say the number or type it and press Check: the next landing (predict), the hidden number, how far each jump '
+        + 'goes, or how many jumps reach the number (the box completes "? × jump size = number reached"). A spoken answer '
+        + 'is a real answer, so tell them plainly whether it is right; a Check is checked by the activity. Count along is '
+        + 'tap only: the learner taps the number where the character lands next, one jump at a time, then presses Check, '
+        + 'and a tap further on is a miss. A fill missing item with two or more "?" is typed, one number at a time. '
+        + 'Before the learner has answered, never say the answer, never count on past the character or across a "?", '
+        + 'never give the difference between two landings when the jump size is asked, and never count the jumps to the '
+        + 'end. Ask what changes from one number to the next. Say the instruction in your own words first. You cannot '
+        + 'tap, type or jump for the learner.',
       // The runner's own check (`skipMiss`); levers in skipCountingLevers.ts.
       misses: missLists(SKIP_MISSES_BY_MODE),
     },
@@ -3549,7 +3550,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'predict',
-        affordances: { answers: ['type'] },
+        affordances: { answers: ['type', 'spoken'] },
         label: 'Predict (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -3558,6 +3559,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'fill_missing',
+        // Spoken only on a one-gap item (the easy tier); two or more gaps are typed one at a time, so not tagged spoken.
         affordances: { answers: ['type'] },
         label: 'Fill Missing (Tier 3)',
         beta: 3.5,
@@ -3567,7 +3569,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'find_skip_value',
-        affordances: { answers: ['type'] },
+        affordances: { answers: ['type', 'spoken'] },
         label: 'Find Skip Value (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -3576,7 +3578,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'connect_multiplication',
-        affordances: { answers: ['type'] },
+        affordances: { answers: ['type', 'spoken'] },
         label: 'Connect Multiplication (Tier 5)',
         beta: 5.5,
         scaffoldingMode: 5,
@@ -3615,10 +3617,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'hundreds-chart',
     description: 'Interactive number grid (10 numbers per row) for counting and skip-counting pattern discovery. The grid ceiling follows the lesson: a "counting to 10" lesson renders a 1-10 board and counting IN ORDER (by 1s), while an unbounded skip-counting lesson renders the full 1-100 chart. Students highlight sequences, complete partially shown patterns, identify visual column/row/diagonal relationships, and determine skip intervals. Connects number grid topology to multiplication foundations. Good for K counting-to-10/20 and ESSENTIAL for grades 1-3 skip counting, pattern recognition, and place value understanding.',
     constraints: 'K: counting in order on a small board (1-10, 1-20), highlight mode; skip counting by 2s, 5s and 10s at K when the objective names it (the board sizes up to the ceiling the objective states). Grades 1-2: skip by 2s, 5s, 10s, highlight and complete modes. Grades 2-3: skip by 3s, 4s, identify and find_skip_value modes. State the ceiling in the topic or intent ("to 10", "within 50") — the grid sizes itself to it and defaults to 1-100 when the lesson names none. Skip intervals too coarse for a small board are dropped automatically.',
-    affordances: { representation: 'symbolic', reader: 'none', answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
+    affordances: { representation: 'symbolic', reader: 'none', answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 5 },
     evalModes: [
       {
         evalMode: 'highlight_sequence',
+        affordances: { answers: ['tap'] },
         label: 'Highlight Sequence (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -3627,6 +3630,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'complete_sequence',
+        affordances: { answers: ['tap'] },
         label: 'Complete Sequence (Tier 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -3637,7 +3641,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         evalMode: 'identify_pattern',
         // Sentence options ("Every other cell in each row") — a text-only answer
         // surface with no read-aloud; the child decodes alone (reader-fit PRE 2026-09-05).
-        affordances: { reader: 'developing' },
+        affordances: { reader: 'developing', answers: ['tap', 'spoken'] },
         label: 'Identify Pattern (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -3646,6 +3650,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'find_skip_value',
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Find Skip Value (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -3695,12 +3700,14 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     teachingWorkspace: {
       levers: true,
       grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'The chart checks the learner’s work itself: the learner taps numbers on the chart, or picks a choice, and '
-        + 'presses Check, and you are not told the answer. The learner may not read the instruction: say it in your own '
-        + 'words first; on a board that ends at 10 or 20 the task is counting in order, one tap per number. Which numbers '
-        + 'belong, the shape the highlighted cells make and the skip value are the answers: before the learner has checked, '
-        + 'never say them, never count the pattern on past the highlighted numbers, and never give the difference between '
-        + 'two highlighted numbers. You cannot tap or pick for the learner.',
+      guidance: 'On identify the pattern and find the skip value the learner may say the answer or tap the choice and press '
+        + 'Check; a spoken answer is a real answer, so tell them plainly whether it is right. A Check is checked by the '
+        + 'chart. Highlighting and completing a pattern are tap only: the learner taps the numbers and presses Check. The '
+        + 'learner may not read the instruction: say it in your own words first; on a board that ends at 10 or 20 the task '
+        + 'is counting in order, one tap per number. Which numbers belong, the shape the highlighted cells make and the '
+        + 'skip value are the answers: before the learner has answered, never say them, never count the pattern on past '
+        + 'the highlighted numbers, and never give the difference between two highlighted numbers. You cannot tap or pick '
+        + 'for the learner.',
       // The chart's own check (`hundredsChartMiss`); identify_pattern names what the chosen description describes.
       // Levers: hundredsChartLevers.ts (report qa/eval-reports/hundreds-chart-levers-2026-10-08.md).
       misses: missLists<HundredsChartMiss>({
@@ -5499,10 +5506,12 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     teachingWorkspace: {
       levers: true,
       grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The activity checks the learner’s answer itself: the learner taps a number, an equation or a picture, or '
-        + 'sets a number with the − and + buttons and presses Submit, and you are not told the answer. The learner may not '
+      guidance: 'When the answer is a number, the learner may say it aloud or tap it (or set it with the − and + buttons and '
+        + 'press Submit); a spoken number is a real answer, so tell the learner plainly whether it is right. A tap or Submit '
+        + 'is checked by the activity. A match between an equation and a picture is answered by tapping only, and you are '
+        + 'not told which one matches. The learner may not '
         + 'read: say the instruction and the printed fact in your own words first. There is no timer: never mention speed, '
-        + 'never hurry the learner, and let them think. Before the learner has checked, never say the answer, how many a '
+        + 'never hurry the learner, and let them think. Before the learner has answered, never say the answer, how many a '
         + 'picture shows, or which choice matches; coach only as far as the support tier allows (count the picture, count '
         + 'on from the bigger number, think backwards from the total). You cannot tap or enter a number for the learner.',
       // The activity's own check (`mathFactMiss`), every mode.
@@ -5560,11 +5569,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     teachingWorkspace: {
       levers: true,
       grades: ['Grade 1', 'Grade 2'],
-      guidance: 'The activity checks the learner’s answer itself: the learner taps the total on a 0 to 18 number pad, and you '
-        + 'are not told the answer. Each session practises one strategy, named on screen; teach that strategy (adding zero, '
+      guidance: 'The learner may say the total aloud or tap it on a 0 to 18 number pad; a spoken number is a real answer, so '
+        + 'tell the learner plainly whether it is right. A tap is checked by the activity. Each session practises one strategy, named on screen; teach that strategy (adding zero, '
         + 'one more, doubles, the turn-around, two more, or using a fact they know for the big facts), not counting all from '
         + 'one. The first fact sits beside a worked example of a different fact. There is no timer: never mention speed or '
-        + 'hurry the learner. Before the learner has checked, never say the total, count the objects aloud to their end, or '
+        + 'hurry the learner. Before the learner has answered, never say the total, count the objects aloud to their end, or '
         + 'say a number that narrows it. After a miss the screen adds help on its own (the flipped fact, then objects to '
         + 'count); point to it in your own words. You cannot tap a number for the learner.',
       // The activity's own check (`additionFactMiss`), every mode.
@@ -5727,9 +5736,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'length-lab',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The activity checks the answer itself, and you are not told it: the learner taps a choice, lays units along '
-        + 'an object with + and presses Check, or taps three objects into the slots and presses Check Order. You are not told '
-        + 'any length, unit count or order. Before the check, and after a wrong one, never say which object is longer or '
+      guidance: 'On compare and indirect the learner may say the answer or tap one choice; a spoken answer is a real '
+        + 'answer, so tell them plainly whether it is right. A tap is checked by the activity. Laying units along an object '
+        + '(+ and Check), measuring with two units, and putting three objects in order (Check Order) are tap only, checked '
+        + 'by the activity; you are not told any length, unit count or order. Before the learner has answered, and after '
+        + 'a wrong answer, never say which object is longer or '
         + 'shorter, how many units reach the end, whether to add or take away units, which unit was needed more, or where an object goes: ask the learner to look where their units end against the object. Teaching is how to '
         + 'measure: line up the starting ends and look at the far ends; lay units end to end with no gaps and no overlaps, '
         + 'from one end of the object to the other, and count each one once; compare two objects at a time; on indirect, '
@@ -5758,7 +5769,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'compare',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Compare (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -5803,7 +5814,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'indirect',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Indirect (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -5832,14 +5843,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'analog-clock',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'The activity checks the answer itself, and you are not told it: the learner touches a hand or the numbers, '
-        + 'picks a time, a clock face or a duration, or moves the hands, then presses Check. Before the check, and after a '
-        + 'wrong one, never say the time a clock shows, which choice or face is right, whether the short or the long hand is '
+      guidance: 'On read, match, elapsed and hand_name the learner may say the answer or pick it and press Check; a spoken '
+        + 'answer is a real answer, so tell them plainly whether it is right. A Check is checked by the activity. Setting the '
+        + 'hands, counting the face and picking a face on hear_time are tap only. Before the learner has answered, and after a '
+        + 'wrong answer, never say the time a clock shows, which choice or face is right, whether the short or the long hand is '
         + 'the one asked for, or how long something took. Teaching is fine: one hand is short and one is long, ask which '
         + 'number the short hand is on or just past, count by fives round the face together without saying where the count '
         + 'stops. On hand_name which hand tells the hour or the minutes is the question, and there are only two: say how '
-        + 'each hand moves (fast or slow), but never tie short or long to the hour or the '
-        + 'minutes, and never tell the learner to touch the other hand, even after a wrong touch. When the minute numbers or the hand legend are hidden, do '
+        + 'each hand moves (fast or slow), never tell the learner to pick the other hand, even after a wrong answer, and if '
+        + 'they say only "the hour hand", ask which one that is. When the minute numbers or the hand legend are hidden, do '
         + 'not supply them: ask. On set_time the time to show is the task, so you may say it, but do not tell the learner '
         + 'the hands are right before Check. A Kindergarten learner may not read: read the question aloud; on hear_time '
         + 'saying the time asked for is the task, not the answer. You cannot touch, pick or move anything for the learner.',
@@ -5870,7 +5882,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'hand_name',
-        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'] },
+        affordances: { representation: 'pictorial', reader: 'none', answers: ['tap', 'spoken'] },
         label: 'Which Hand (K)',
         beta: 0.8,
         scaffoldingMode: 1,
@@ -5897,7 +5909,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'read',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Read Time (Tier 1)',
         beta: 1.5,
         scaffoldingMode: 2,
@@ -5915,7 +5927,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'match',
-        affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap'] },
+        affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'] },
         label: 'Match (Tier 2)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -5924,7 +5936,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'elapsed',
-        affordances: { answers: ['manipulate'] },
+        affordances: { answers: ['manipulate', 'spoken'] },
         label: 'Elapsed Time (Tier 3)',
         beta: 4.5,
         scaffoldingMode: 4,
@@ -5974,11 +5986,13 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     id: 'coin-counter',
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'The activity checks the answer itself, and you are not told it: the learner taps a coin or a group, taps '
-        + 'coins in or out, or types a number, then presses Check. On identify the coins are drawn by size and color only: '
-        + 'never name, number or point to the coin to tap; describing what a named coin looks like is teaching. Before the '
-        + 'check, and after a wrong one, never say a total, the group with more money, the change, or which coin to add or '
-        + 'take out. When coin values are hidden on screen, do not say what a coin is worth: ask the learner. Counting aloud '
+      guidance: 'Counting coins to a total, comparing two groups and making change, the learner may say the answer or type '
+        + 'or tap it and press Check; a spoken answer is a real answer, so tell them plainly whether it is right. A Check is '
+        + 'checked by the activity. Identify, the Kindergarten and Grade 1 count of like coins, and building an amount are '
+        + 'answered on the screen only. On identify the coins are drawn by size and color only: never name, number or point '
+        + 'to the coin to tap; describing what a named coin looks like is teaching. Before the learner has answered, and '
+        + 'after a wrong answer, never say a total, the group with more money, the change, or which coin to add or take '
+        + 'out. When coin values are hidden on screen, do not say what a coin is worth: ask the learner. Counting aloud '
         + 'together by a coin’s value is teaching; saying where the count ends is not. A Kindergarten or Grade 1 learner may '
         + 'not read: read the instruction aloud, and on a count of like coins tell them to tap each coin once to count it '
         + '(at Grade 1, then type the total). On show-amount the learner makes the amount any way they like and presses '
@@ -6063,7 +6077,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'count-mixed',
-        affordances: { representation: 'pictorial', reader: 'emerging', answers: ['type'] },
+        affordances: { representation: 'pictorial', reader: 'emerging', answers: ['type', 'spoken'] },
         label: 'Count Mixed Coins (Scaffold 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -6072,7 +6086,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'compare',
-        affordances: { representation: 'pictorial', answers: ['tap'] },
+        affordances: { representation: 'pictorial', answers: ['tap', 'spoken'] },
         label: 'Compare (Scaffold 2)',
         beta: 3.0,
         scaffoldingMode: 2,
@@ -6099,7 +6113,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'make-change',
-        affordances: { representation: 'pictorial', answers: ['type'] },
+        affordances: { representation: 'pictorial', answers: ['type', 'spoken'] },
         label: 'Make Change (Scaffold 3)',
         beta: 4.5,
         scaffoldingMode: 3,
@@ -6147,9 +6161,11 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'The activity checks the answer itself, and you are not told it: the learner taps the cards in the order '
-        + 'they happen, or taps one choice (a time of day, a card, an activity), then presses Check. Tapping a placed card '
-        + 'takes it back out. Before the check, and after a wrong one, never say the order, which card comes first or next, '
+      guidance: 'On a one-choice challenge (a time of day, a card, which takes longer, an activity) the learner may say the '
+        + 'answer or tap it and press Check; a spoken answer is a real answer, so tell them plainly whether it is right. A tap is checked by '
+        + 'the activity. Putting cards in order is tap only: the learner taps the cards in the order they happen, then '
+        + 'presses Check; tapping a placed card takes it back out. Before the learner has answered, and after a wrong '
+        + 'answer, never say the order, which card comes first or next, '
         + 'the time of day, which activity takes longer, or what happens at the schedule time. Asking about the learner’s '
         + 'own day (what do you do when you wake up? is it light or dark then?) is teaching; then stop and let the learner '
         + 'answer: never answer it for them or tie it to a choice (not “that is the morning”, not “a cookie is quick”). At '
@@ -6161,6 +6177,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       // Every mode publishes a help and a simplify lever (`timeSequencerLevers.ts`); each answers every miss of its mode.
       levers: true,
       // The activity's own check (`timeSequencerMiss`), every mode.
+      // A spoken choice names the same ids (`timeSpokenMisses`); the orders stay tap-only.
       misses: missLists<TimeSequencerMiss>({
         'sequence-3': ['reversed', 'swapped_pair', 'wrong_first'],
         'time-of-day': ['next_period', 'far_period'],
@@ -6182,6 +6199,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'time-of-day',
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Time of Day (Scaffold 1)',
         beta: 1.5,
         scaffoldingMode: 1,
@@ -6198,6 +6216,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'before-after',
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Before/After (Scaffold 2)',
         beta: 2.5,
         scaffoldingMode: 2,
@@ -6206,6 +6225,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'duration-compare',
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Duration Compare (Scaffold 2)',
         beta: 3.0,
         scaffoldingMode: 2,
@@ -6227,7 +6247,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'read-schedule',
-        affordances: { representation: 'symbolic', reader: 'developing', answers: ['tap'] },
+        affordances: { representation: 'symbolic', reader: 'developing', answers: ['tap', 'spoken'] },
         label: 'Read Schedule (Scaffold 3)',
         beta: 4.0,
         scaffoldingMode: 3,
@@ -6263,9 +6283,10 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The scene checks the word choices, cell taps and direction steps itself: the learner picks or taps and '
-        + 'presses Check (a direction step is checked as it is placed), and you are not told the answer. The '
-        + 'position word or cell is the answer: never say it before the learner has checked. On the spoken scene '
+      guidance: 'On a word choice the learner says the position word, or taps one and presses Check. A spoken answer is '
+        + 'real: you are told the right word, so tell the learner plainly whether it is right. A tap is checked by the '
+        + 'scene. Placing a thing (a cell tap or a direction step) is tap only, and the scene checks it. Never say the '
+        + 'position word or cell before the learner has answered. On the spoken scene '
         + 'the learner says where the object is from the YOU arrow, naming the relation and the other object; left '
         + 'and right are as the learner sees them, and in front of means nearer the arrow. Never give the relation '
         + 'before an attempt. You cannot pick, tap or place for the learner.',
@@ -6285,7 +6306,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
     evalModes: [
       {
         evalMode: 'identify',
-        affordances: { reader: 'emerging', answers: ['tap'] },
+        affordances: { reader: 'emerging', answers: ['tap', 'spoken'] },
         label: 'Identify (Scaffold 1)',
         beta: 1.0,
         scaffoldingMode: 1,
@@ -6312,7 +6333,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'describe',
-        affordances: { reader: 'emerging', answers: ['tap'] },
+        affordances: { reader: 'emerging', answers: ['tap', 'spoken'] },
         label: 'Describe (Scaffold 3)',
         beta: 3.0,
         scaffoldingMode: 3,

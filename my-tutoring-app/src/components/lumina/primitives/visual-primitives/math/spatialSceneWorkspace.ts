@@ -2,7 +2,11 @@
  * Spatial scene on the shared tutor/JEV teaching workspace, W1 minimal binding
  * (qa/workspace-rollout/ROLLOUT.md, batch B3), plain shape: `useWorkspaceProgress` in place of
  * `useChallengeProgress`. Every challenge is one workspace item:
- *   - identify / describe: the learner picks a position word and presses Check (the key stays hidden);
+ *   - identify / describe: one position word, so the learner may say it or tap it and press Check (VB-1,
+ *     2026-10-13): a speech item with `acceptsGesture`. JEV judges a spoken answer from the tutor's feedback
+ *     against `expectedAnswer`, which credits every word the scene's geometry makes true (contract R3/R12: `on`
+ *     and `under` only when the two things touch) but not a bare "beside" when the answer names a side; a tap
+ *     is still checked by the scene;
  *   - place / place_in / place_between: the learner taps a cell and presses Check;
  *   - follow_directions: every step placement is checked; a wrong step is a checked miss that keeps
  *     the steps already placed, and the last right step is the success;
@@ -12,6 +16,8 @@ import type { TeachingAssignment, WorkspaceScene } from '../../../components/liv
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { SpatialSceneChallenge } from './SpatialScene';
 import { modelSpatialDescription } from './spatialSceneDescriptionScript';
+// A cycle (the levers import `placeCellCorrect`); both sides use the other only inside functions.
+import { holds } from './spatialSceneLevers';
 
 const relationText = (relation: string) => relation.replaceAll('_', ' ');
 
@@ -24,6 +30,7 @@ export const describeSceneAsk = (c: SpatialSceneChallenge) =>
  * (right of for left of, behind for in front of). The rest of a description is open, so nothing else is listed.
  */
 export function spatialSpokenMisses(c: SpatialSceneChallenge): KnownMiss[] {
+  if (c.type === 'identify' || c.type === 'describe') return wordSpokenMisses(c);
   // `OPPOSITE` (below) is the harness's wrong relation, already in words.
   const opposite = c.type === 'describe_scene' ? OPPOSITE[c.correctPosition] : undefined;
   if (!opposite) return [];
@@ -41,7 +48,78 @@ export function spatialAssignment(c: SpatialSceneChallenge): TeachingAssignment 
         + `object ${c.referenceObjectName}, from the YOU viewpoint, for example "${modelSpatialDescription(c)}"`,
       ...(misses.length ? { misses } : {}) };
   }
+  if (c.type === 'identify' || c.type === 'describe') {
+    const misses = wordSpokenMisses(c);
+    return { id: c.id, task: `${c.instruction} The learner answers by saying the position word, or tapping one and `
+      + 'pressing Check.', response: 'speech', acceptsGesture: true, expectedAnswer: wordExpectedAnswer(c),
+    ...(misses.length ? { misses } : {}) };
+  }
   return { id: c.id, task: c.instruction, response: 'gesture' };
+}
+
+/**
+ * The position words a learner may say, as groups of one meaning (beside = next to), each with its spoken forms.
+ * `on`/`under` are their own groups: contract R3 makes them contact-scoped, so they are not synonyms of above/below.
+ */
+const SAID: ReadonlyArray<{ words: readonly string[]; forms: readonly string[] }> = [
+  { words: ['above'], forms: ['above', 'over'] },
+  { words: ['below'], forms: ['below'] },
+  { words: ['on'], forms: ['on', 'on top of'] },
+  { words: ['under'], forms: ['under', 'underneath', 'beneath'] },
+  { words: ['beside', 'next_to'], forms: ['beside', 'next to', 'by'] },
+  { words: ['left_of'], forms: ['left of', 'to the left of'] },
+  { words: ['right_of'], forms: ['right of', 'to the right of'] },
+];
+const quoteOr = (forms: readonly string[]) => forms.map(f => `"${f}"`).join(', ').replace(/, ([^,]*)$/, ' or $1');
+
+/**
+ * Which said groups the scene's geometry makes true (`holds`, the executable R3), and which it does not. A bare
+ * "beside" is true when the answer is left of / right of but does not say which side, so it is neither.
+ */
+function wordGroups(c: SpatialSceneChallenge) {
+  const ref = c.sceneObjects.find(o => o.name === c.referenceObjectName)?.position, t = c.targetObject.position;
+  const sided = c.correctPosition === 'left_of' || c.correctPosition === 'right_of';
+  const truth = (g: typeof SAID[number]) => g.words.includes(c.correctPosition)
+    || (ref ? holds(g.words[0], t, ref) === true : false);
+  const right = SAID.filter(truth), vague = sided ? SAID.filter(g => g.words.includes('beside') && truth(g)) : [];
+  return { right: right.filter(g => !vague.includes(g)), vague, wrong: SAID.filter(g => !truth(g)) };
+}
+
+/** identify / describe: the one position word, the natural ways of saying it, and the near words that are not it. */
+export function wordExpectedAnswer(c: SpatialSceneChallenge): string {
+  const t = c.targetObject.name, ref = c.referenceObjectName ?? 'the other thing', key = relationText(c.correctPosition);
+  const { right, vague, wrong } = wordGroups(c);
+  // The contact word on the answer's own side (on for above, under for below), untrue because there is a gap.
+  const contact = ({ above: 'on', below: 'under' } as Record<string, string>)[c.correctPosition];
+  const touch = wrong.filter(g => g.words[0] === contact);
+  const horizontal = ['beside', 'next_to', 'left_of', 'right_of'].includes(c.correctPosition);
+  return `"${key}": the ${t} is ${key} the ${ref}. Said as ${quoteOr(right.flatMap(g => g.forms))}, alone or in a `
+    + `sentence such as "it's ${key} the ${ref}".`
+    + (touch.length ? ` ${quoteOr(touch[0].forms)} is not it: that word means touching, and there is a gap.` : '')
+    + (vague.length ? ` A bare "beside" or "next to" is true but does not say which side: not the answer yet.` : '')
+    + (horizontal ? ' Left and right are as the learner sees the screen.' : '')
+    + ` ${quoteOr(wrong.filter(g => !touch.includes(g)).map(g => g.forms[0]))} is not it.`;
+}
+
+const MISS_GLOSS: Record<string, string> = {
+  opposite_word: 'the word that points the other way',
+  same_axis_word: 'a word on the same line that does not fit how far apart they are',
+  other_axis_word: 'a word for the other direction (side to side for up and down, or the reverse)',
+};
+
+/** identify / describe: each untrue word, named by the tap's own `spatialMiss` id. */
+function wordSpokenMisses(c: SpatialSceneChallenge): KnownMiss[] {
+  const t = c.targetObject.name, ref = c.referenceObjectName, key = relationText(c.correctPosition);
+  if (!ref) return [];
+  const byId = new Map<string, string[]>();
+  for (const g of wordGroups(c).wrong) {
+    const id = spatialMiss(c, { option: g.words[0] });
+    if (id) byId.set(id, [...(byId.get(id) ?? []), g.forms[0]]);
+  }
+  return Object.keys(MISS_GLOSS).filter(id => byId.has(id)).map(id => ({ id,
+    pattern: `The ${t} is ${key} the ${ref}. The learner says the ${t} is ${quoteOr(byId.get(id)!)} the ${ref}: `
+      + `${MISS_GLOSS[id]}.`,
+    examples: byId.get(id)!.map(f => `The ${t} is ${f} the ${ref}.`) }));
 }
 
 /** The learner's checked work in their terms, never the key. */
@@ -123,8 +201,11 @@ export function spatialMiss(c: SpatialSceneChallenge, view: { option?: string | 
 }
 
 const CONSTRAINTS: Record<SpatialSceneChallenge['type'], string> = {
-  identify: 'The learner picks a position word and presses Check; the scene checks it. The position word is the answer.',
-  describe: 'The learner picks the word that describes where the object is and presses Check; the scene checks it.',
+  identify: 'The learner says the position word, or taps one and presses Check; a tap is checked by the scene. Left '
+    + 'and right are as the learner sees the screen. Before the learner has answered, never say the position word.',
+  describe: 'The learner says the word that describes where the object is, or taps one and presses Check; a tap is '
+    + 'checked by the scene. Left and right are as the learner sees the screen. Before the learner has answered, never '
+    + 'say the position word.',
   place: 'The learner taps an empty cell and presses Check; the scene checks the cell.',
   place_in: 'The learner taps the thing the object goes inside and presses Check; the scene checks it.',
   place_between: 'The learner taps the empty cell with one object on each side and presses Check; the scene checks it.',

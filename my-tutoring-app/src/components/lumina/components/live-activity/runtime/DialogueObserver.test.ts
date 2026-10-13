@@ -180,3 +180,53 @@ it('lets a verdict the reply itself grounds commit once, with nothing from the w
   expect(s.execute).toHaveBeenCalledOnce();
   expect(((s.execute.mock.calls as unknown[][])[0][0] as any).action.input.dialogue.fromWords).toBeUndefined();
 });
+
+// 2026-10-11 di-shapes: echo transcribed as "¿Qué?" barged in after "That's exactly right"; the affirmation was discarded.
+it.each(['before turn end', 'during playback'])('judges a spoken reply cut by a barge-in %s, and the input that cut it does not discard it', async when => {
+  const s = setup(true); let resolve!: (decision: DialogueDecision) => void;
+  s.classify.mockImplementation(() => new Promise(r => { resolve = r; }));
+  s.observer.learnerText('three', true); s.observer.output('Yes, three!');
+  if (when === 'during playback') { s.observer.end(true); expect(s.classify).not.toHaveBeenCalled(); }
+  s.observer.interrupt(); s.observer.end(false);
+  expect(s.classify).toHaveBeenCalledOnce();
+  expect((s.classify.mock.calls[0] as unknown[])[0]).toMatchObject({ learner: 'three', tutor: 'Yes, three!' });
+  s.observer.learnerText('¿Qué?', true); s.observer.output('Hmm?');
+  resolve({ ...success, verdictConfidence: 1 }); await settle();
+  expect(s.execute).toHaveBeenCalledWith(expect.objectContaining({ action: expect.objectContaining({ operation: 'apply_tutor_verdict' }) }));
+});
+it('does not judge an interrupted turn with no spoken words, and close still discards a cut reply', async () => {
+  const s = setup(true); s.observer.learnerText('three', true); s.observer.output('<no speech>'); s.observer.interrupt();
+  expect(s.classify).not.toHaveBeenCalled();
+  let resolve!: (decision: DialogueDecision) => void;
+  s.classify.mockImplementation(() => new Promise(r => { resolve = r; }));
+  s.observer.learnerText('three', true); s.observer.output('Yes, three!'); s.observer.interrupt(); s.observer.close();
+  resolve(success); await settle(); expect(s.execute).not.toHaveBeenCalled();
+});
+
+/** A reading that never answers until its signal aborts it. */
+const hang = (signal: AbortSignal) => new Promise<DialogueDecision>((_, reject) =>
+  signal.addEventListener('abort', () => reject(new Error('aborted'))));
+
+it('asks a timed-out reading once more, and only once', async () => {
+  vi.useFakeTimers();
+  const s = setup(true);
+  s.classify.mockImplementation((...args: unknown[]) => hang(args[1] as AbortSignal));
+  s.turn(); await settle();
+  expect(s.classify).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(4000);
+  expect(s.classify).toHaveBeenCalledTimes(2);
+  expect(s.report).toHaveBeenCalledWith(expect.objectContaining({ type: 'dialogue_observation', reason: 'timeout' }));
+  s.classify.mockImplementation(async () => success);
+  await vi.advanceTimersByTimeAsync(4000);
+  expect(s.classify).toHaveBeenCalledTimes(2);
+});
+
+it('a timed-out reading that then succeeds commits the verdict', async () => {
+  vi.useFakeTimers();
+  const s = setup(true); let calls = 0;
+  s.classify.mockImplementation((...args: unknown[]) => ++calls === 1 ? hang(args[1] as AbortSignal)
+    : Promise.resolve({ ...success, verdictConfidence: .99 }));
+  s.turn(); await vi.advanceTimersByTimeAsync(4000); await settle();
+  expect(s.execute).toHaveBeenCalledOnce();
+  expect(s.observer.pending).toBe(false);
+});

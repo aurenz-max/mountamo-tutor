@@ -19,13 +19,18 @@
 - **Property:** `prelabelFirstSlot` seeds `correctOrder[0]` and nothing else, on a fresh item and after Try again.
 - **Probe:** `TimeSequencer.workspace.test.tsx` "a pre-placed first card returns after Try again".
 
-### R3 — shared teaching workspace (W1, plain shape) · OBSERVED 2026-10-09
+### R3 — shared teaching workspace (W1, plain shape) · OBSERVED 2026-10-09 (re-based 2026-10-13)
 - **Property:** with a catalog `teachingWorkspace`, the tutor owns the lesson: the activity's own Check commits
   a checked gesture with a named miss (`timeSequencerMiss`), the runtime owns progression (no Next button, no
   scripted `sendText`, `useLuminaAI` disabled), input closes until Try again, and evaluation submits only under
-  a lesson's provider. The tutor packet carries no key: cards are listed alphabetically (never in the day's
-  order), clock-sequence hours are not listed, and no `correct*` field is published.
-- **Probe:** `TimeSequencer.workspace.test.tsx` (every catalog mode); journey sweep on
+  a lesson's provider. No `correct*` field is published. An order (sequence-events, clock-sequence) is tap-only and
+  carries no key: cards are listed alphabetically (never in the day's order) and clock-sequence hours are not listed.
+  A one-choice challenge (time-of-day, before-after, duration-compare, read-schedule) may also be said aloud: the item
+  is spoken with `acceptsGesture`, `expectedAnswer` names the choice and its paraphrases, JEV credits only from the
+  tutor's feedback against it, the tap stays checked by the activity, and the scene tells the tutor never to name the
+  answer before the learner has answered. A spoken credit is recorded once, as a correct tap is (`onSolved`).
+- **Probe:** `TimeSequencer.workspace.test.tsx` (every catalog mode), `TimeSequencer.spoken.workspace.test.tsx`,
+  `scripts/tutor-verdict-probe.mjs --timeseq`; journey sweep on
   `runtime/testing/w1-payloads/time-sequencer.*.json`; tutor replay
   `qa/tutor-reports/replay/time-sequencer-2026-10-09.json`.
 - **Scripted path:** `withWorkspaceController` keeps the legacy `useScriptedProgress` path and the catalog
@@ -41,3 +46,7 @@
   time (`practiceLeaks`); it is ungraded and the full item comes back blank. The tier's sky strip counts as pulled.
   Read-schedule answer buttons carry `aria-label` (the option-pictures lever adds an emoji to their text).
 - **Probe:** `timeSequencerLevers.test.ts`, `TimeSequencer.levers.workspace.test.tsx`; journey sweep J9/J12.
+
+## Changelog
+
+- 2026-10-13: R3 re-based (VB-1). "Every challenge answered on the screen, no key to the tutor" protected no unearned credit for the one-choice modes; their answer is one sayable choice. time-of-day, before-after, duration-compare and read-schedule are now spoken items that also take the tap (`TeachingItem.acceptsGesture`); the orders stay tap-only with no key. JEV verdict probe 27/27, false credit 0 (one expectedAnswer wording revision for duration-compare).

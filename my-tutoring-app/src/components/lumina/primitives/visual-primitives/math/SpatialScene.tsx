@@ -443,6 +443,8 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
   /** Handlers the progress hook calls back into, bound after the state they touch is declared. */
   const reopen = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedSpoken = useRef<(index: number) => void>(() => {});
+  /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
+  const tappedCorrect = useRef<string | null>(null);
 
   // ── Challenge Progress: the teaching workspace owns it ─────────────
   const progress = useWorkspaceProgress({
@@ -531,9 +533,19 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
     if (!retry || currentChallenge?.type !== 'follow_directions') { resetDomainState(); return; }
     setFeedback(''); setFeedbackType('');
   };
-  // A spoken description has no check of its own: its credit is the observer's.
+  // A spoken description has no check of its own: its credit is the observer's. A spoken position word (identify,
+  // describe) records what a correct tap records and shows the credited word picked; `onSolved` fires for a correct
+  // tap too, which is already recorded. The shared lifecycle plays the success sound.
   solvedSpoken.current = (index) => {
     const challenge = challenges[index];
+    if (challenge?.type === 'identify' || challenge?.type === 'describe') {
+      if (tappedCorrect.current === challenge.id) return;
+      progress.mergeResult({ challengeId: challenge.id, correct: true, attempts: currentAttempts + 1 });
+      setSelectedOption(challenge.correctPosition);
+      setFeedback(`Yes! The ${challenge.targetObject.name} is ${(POSITION_LABELS[challenge.correctPosition] ?? challenge.correctPosition).toLowerCase()} the ${challenge.referenceObjectName}!`);
+      setFeedbackType('success');
+      return;
+    }
     if (challenge?.type !== 'describe_scene') return;
     recordResult({ challengeId: challenge.id, correct: true, attempts: Math.max(1, currentAttempts + 1),
       relation: challenge.correctPosition, referenceObjectName: challenge.referenceObjectName });
@@ -660,6 +672,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
       case 'follow_directions': return; // handled step-by-step
     }
     const view = { option: selectedOption, cell: selectedCell };
+    if (correct) tappedCorrect.current = currentChallenge.id;
     progress.commitCheck(describeSpatialCheck(currentChallenge, view), correct, correct ? undefined : spatialMiss(currentChallenge, view));
   }, [currentChallenge, currentAttempts, handleCheckIdentify, handleCheckPlace, handleCheckDescribe, recordResult, progress, selectedOption, selectedCell]);
 

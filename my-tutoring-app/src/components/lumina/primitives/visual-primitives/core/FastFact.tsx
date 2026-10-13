@@ -215,6 +215,8 @@ const FastFactSurface = ({ data, className, runtimePlanItemId, tutorOwned, useCo
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  /** Bound below: records a challenge the learner answered aloud and the tutor's feedback credited. */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
   const progress = useController({
     challenges,
     getChallengeId: (ch) => ch.id,
@@ -222,6 +224,7 @@ const FastFactSurface = ({ data, className, runtimePlanItemId, tutorOwned, useCo
     workspace, assignment: workspaceAssignment,
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
+    onSolved: index => solvedAloud.current(index),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -421,6 +424,7 @@ const FastFactSurface = ({ data, className, runtimePlanItemId, tutorOwned, useCo
     setResponseTimes(prev => [...prev, responseTimeSec]);
 
     if (correct) {
+      tappedCorrect.current = currentChallenge.id;
       SoundManager.playCorrect();   // ← immediate per-challenge feedback
       setTotalCorrect(prev => prev + 1);
       const newStreak = streak + 1;
@@ -506,6 +510,24 @@ const FastFactSurface = ({ data, className, runtimePlanItemId, tutorOwned, useCo
     targetResponseTime, currentAttempts, maxAttemptsPerChallenge, tutorOwned,
     isConnected, sendText, recordResult,
   ]);
+
+  // A spoken answer the observer credited (`onSolved` fires once per challenge, for a tap too): the books a correct
+  // tap keeps, with the matching choice shown as picked. The shared lifecycle plays the success sound.
+  const tappedCorrect = useRef<string | null>(null);
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    if (!solved || tappedCorrect.current === solved.id) return;
+    const newStreak = streak + 1;
+    setTotalAnswered(prev => prev + 1);
+    setTotalCorrect(prev => prev + 1);
+    setResponseTimes(prev => [...prev, (Date.now() - challengeStartTime) / 1000]);
+    setStreak(newStreak);
+    if (newStreak > bestStreak) setBestStreak(newStreak);
+    setSelectedAnswer(solved.options.find(o => isAnswerCorrect(o, solved)) ?? null);
+    setFeedback('Correct!');
+    setFeedbackType('success');
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+  };
 
   const handleSelectOption = useCallback((value: string) => {
     if (isCurrentChallengeComplete || allChallengesComplete || learnerBlocked()) return;

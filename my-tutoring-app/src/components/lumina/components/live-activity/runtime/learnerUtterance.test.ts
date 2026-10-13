@@ -1,5 +1,5 @@
-import { expect, it } from 'vitest';
-import { latestLearnerUtterance } from './learnerUtterance';
+import { describe, expect, it } from 'vitest';
+import { isFillerUtterance, latestLearnerUtterance } from './learnerUtterance';
 it('reassembles provider fragments and rejects a late tail from an old item', () => {
   const messages = [{ role: 'user' as const, content: 'can you help me count ', timestamp: 1, streamId: 4 },
     { role: 'user' as const, content: 'three', timestamp: 2, streamId: 4 }];
@@ -19,4 +19,10 @@ it('waits for final audio text, including an empty final chunk and interleaved t
   expect(latestLearnerUtterance(messages, 1)).toBeNull();
   expect(latestLearnerUtterance([...messages,
     { ...start, streamId: 10, content: 'four', timestamp: 5, transcriptFinished: true }], 0)?.text).toBe('four');
+});
+
+describe('isFillerUtterance', () => {
+  it.each(['¿Qué?', 'que', 'Huh?', 'what?', '', '...', '你好'])('%j answers nothing', text => expect(isFillerUtterance(text)).toBe(true));
+  it.each(['líquido', 'a glass window', 'no', 'yes', 'true', '3', 'wet sand', 'what is it', 'ah', 'hmm', 'mmm'])('%j is an answer', text =>
+    expect(isFillerUtterance(text)).toBe(false));
 });

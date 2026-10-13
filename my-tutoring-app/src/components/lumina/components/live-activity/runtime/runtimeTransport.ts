@@ -3,7 +3,7 @@ import { LearnerObserver, classifyLearnerIntent, type LearnerIntentClassifier } 
 import { helpBeforeLastWrong, leverTrigger, type LeverEvent } from './observerLever';
 import { LEARNER_FACTS_NOTE, type LearnerSignals } from './learnerSignals';
 import type { LearnerObservation } from './learnerIntentContract';
-import { itemScopeKey } from './observationContract';
+import { itemScopeKey, warmObservationRoutes } from './observationContract';
 import { parseTutorCommand, type RuntimeSnapshot } from './contract';
 import type { LiveLessonRuntime } from './LiveLessonRuntime';
 import type { ComposedMove } from './moveContract';
@@ -75,6 +75,7 @@ export class RuntimeTransport {
         this.publish();
       if (report.status === 'observed' && report.flags!.helpRequested) void this.pullLever('help');
     });
+    if (classify === classifyDialogue) warmObservationRoutes();
     this.dialogue = new DialogueObserver(runtime.getSnapshot, classify, command => this.dispatch(command, true), message => {
       if (message.type === 'dialogue_observation') runtime.trace.record({ stage: 'dialogue', status: String(message.status),
         reason: String(message.reason), input: message.input, result: message });

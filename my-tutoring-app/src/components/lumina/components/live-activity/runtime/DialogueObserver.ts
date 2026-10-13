@@ -26,6 +26,8 @@ export class DialogueObserver {
   private waitingForAudio = false;
   private audioPending = false;
   private cuedResponse = '';
+  /** Observations of a barge-in-cut reply. New input does not cancel them; only close() does. */
+  private durable = new Set<AbortController>();
   pending = false;
   constructor(private snapshot: () => RuntimeSnapshot, private classify: DialogueClassifier,
     private execute: (command: TutorCommand) => Promise<string | undefined>,
@@ -66,7 +68,7 @@ export class DialogueObserver {
   }
   end(audioPending: boolean) { this.ended = true; this.audio(audioPending); }
   stateChanged() { if (this.ended && !this.consumed) this.audio(this.audioPending); }
-  audio(pending: boolean) {
+  audio(pending: boolean, durable = false) {
     this.audioPending = pending;
     if (this.closed || !this.ended || this.consumed) return;
     if (pending) {
@@ -95,18 +97,28 @@ export class DialogueObserver {
       activity: { responseSource: s.task.evidence.recentResponses.at(-1)?.source ?? null,
         attemptNumber: s.task.evidence.attemptNumber, objects: w.objects, demonstration: w.demonstration,
         facts: s.task.demand, assistance: { level: s.task.support.level, answerExposure: s.task.support.answerExposure } } };
-    void this.observe(request);
+    void this.observe(request, durable);
   }
-  interrupt() { this.learnerStart(); this.ended = false; }
-  close() { this.closed = true; this.interrupt(); }
-  private async observe(request: DialogueRequest) {
+  /** A barge-in stops playback; it does not unsay the words the tutor already spoke. The cut reply is
+   *  judged as it stands (JEV decides whether the feedback finished), and the input that cut it, often
+   *  echo or noise transcribed as "¿Qué?", does not discard that judgement. 2026-10-11 di-shapes: three
+   *  affirmed answers were never credited because a barge-in landed after "That's exactly right". */
+  interrupt() {
+    if (!this.closed && !this.consumed && hasSpokenWords(this.text)) { this.ended = true; this.audio(false, true); }
+    this.learnerStart(); this.ended = false;
+  }
+  close() { this.closed = true; this.durable.forEach(a => a.abort()); this.durable.clear(); this.interrupt(); }
+  private async observe(request: DialogueRequest, durable = false, retried = false) {
     const generation = this.generation, abort = new AbortController();
-    this.abort = abort; this.pending = true;
+    let timedOut = false;
+    // A durable observation is not discarded when a later exchange begins.
+    const live = () => durable || generation === this.generation;
+    if (durable) this.durable.add(abort); else { this.abort = abort; this.pending = true; }
     this.report({ type: 'dialogue_observation', ...abstain('completed_exchange'), status: 'observing', scope: request.scope, input: request });
-    const timer = setTimeout(() => abort.abort(), OBSERVATION_TIMEOUT_MS);
+    const timer = setTimeout(() => { timedOut = true; abort.abort(); }, OBSERVATION_TIMEOUT_MS);
     try {
       const decision = await this.classify(request, abort.signal);
-      if (this.closed || generation !== this.generation || abort.signal.aborted) return;
+      if (this.closed || !live() || abort.signal.aborted) return;
       const state = this.snapshot();
       const current = sameItemScope(state, request.scope) && state.revision === request.scope.revision && state.status === 'active';
       let status: string | undefined = current ? 'abstained' : 'stale';
@@ -143,8 +155,9 @@ export class DialogueObserver {
           commandId: `dialogue:${request.scope.sessionEpoch}:${generation}:${request.scope.revision}`,
           action });
         runtimeReason = status === 'visible' ? 'Action applied and visible.' : `Action receipt: ${status ?? 'unavailable'}.`;
-        if (status === 'visible' && transition === 'advance' && generation === this.generation && !this.closed) {
-          this.learner = '';
+        if (status === 'visible' && transition === 'advance' && live() && !this.closed) {
+          // Words the learner began after a barge-in belong to the next exchange.
+          if (generation === this.generation) this.learner = '';
           const next = this.snapshot();
           if (next.status === 'active' && next.task?.phase === 'working' && next.instanceId === request.scope.instanceId
               && next.task.itemId !== request.scope.itemId)
@@ -156,7 +169,7 @@ export class DialogueObserver {
       // A wrong spoken answer is known from the learner's words: the workspace records it as not credited when the
       // lesson's mode allows it and `spoken_miss` named a miss for this very response (asked first, read-only, so
       // nothing is offered that would be refused). The tutor never has to say "not yet"; its affirmation still credits.
-      if (status === 'abstained' && spoken && decision.creditsNothing === true && generation === this.generation && !this.closed
+      if (status === 'abstained' && spoken && decision.creditsNothing === true && live() && !this.closed
           && this.acceptsMissFromWords(request.pendingResponse!.id)) {
         const words = await this.execute({ sessionEpoch: request.scope.sessionEpoch, instanceId: request.scope.instanceId,
           itemId: request.scope.itemId, expectedRevision: request.scope.revision,
@@ -180,8 +193,14 @@ export class DialogueObserver {
             + "still open. Tell the learner plainly, in your own words, whether they have solved the current task." });
       }
       if (!this.closed) this.report({ type: 'dialogue_observation', scope: request.scope, input: request, ...decision, status, runtimeReason });
-    } catch { if (generation === this.generation && !this.closed) this.report({ type: 'dialogue_observation',
-      scope: request.scope, ...abstain(abort.signal.aborted ? 'timeout' : 'unavailable'), status: 'abstained' }); }
-    finally { clearTimeout(timer); if (generation === this.generation) { this.pending = false; this.abort = null; } }
+    } catch {
+      if (!live() || this.closed) return;
+      this.report({ type: 'dialogue_observation', scope: request.scope, ...abstain(timedOut ? 'timeout' : 'unavailable'), status: 'abstained' });
+      // The exchange is consumed, so nothing else would judge it: a timed-out reading is asked once more (2026-10-13
+      // pulse check: the first reading of a session timed out on a cold route and a credited answer sat open).
+      if (timedOut && !retried) void this.observe(request, durable, true);
+    }
+    // A retry already owns `abort`/`pending`; only the reading that still owns them releases them.
+    finally { clearTimeout(timer); this.durable.delete(abort); if (!durable && generation === this.generation && this.abort === abort) { this.pending = false; this.abort = null; } }
   }
 }

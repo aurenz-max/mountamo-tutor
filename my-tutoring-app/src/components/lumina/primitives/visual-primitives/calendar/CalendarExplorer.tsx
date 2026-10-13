@@ -4,8 +4,10 @@
  * CalendarExplorer — a monthly calendar (tap a date or an option, then Check) and a spoken
  * day/month successor chain. Both run only on the shared tutor/JEV teaching workspace (workspace
  * rollout C4; the scripted runner and the click-era Check/Next progression were retired, LA-14,
- * user ruling 09-23: one path). The grid's Check is the activity's own check of the learner's pick;
- * the chain's spoken answer is judged by the observer; the runtime owns progression on both. An
+ * user ruling 09-23: one path). The grid's Check is the activity's own check of the learner's pick; a
+ * grid question with one weekday, date or count to say also takes it aloud (VB-1, 2026-10-13), and a
+ * spoken answer the observer credits is recorded as a correct tap would be. The chain's spoken answer
+ * is judged by the observer; the runtime owns progression on both. An
  * unbound mount shows the shared "needs the tutor" card.
  */
 
@@ -289,6 +291,10 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
   });
 
   // ── Challenge Progress ──────────────────────────────────────────
+  /** Bound below; a spoken answer the observer credited (`onSolved`). */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
+  const tappedCorrect = useRef<string | null>(null);
   const progress = useCalendarProgress<CalendarExplorerChallenge>({
     challenges, getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
@@ -301,6 +307,7 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
       if (!retry) { setPractice(null); setTicks({ item: '', dates: [] }); }
       challengeStartRef.current = Date.now();
     },
+    onSolved: (index) => solvedAloud.current(index),
   });
   const {
     currentIndex,
@@ -419,6 +426,7 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     if (!currentChallenge || selectedAnswer === null || learnerBlocked()) return;
 
     const isCorrect = selectedAnswer.toLowerCase().trim() === currentChallenge.correctAnswer.toLowerCase().trim();
+    if (isCorrect && !practice) tappedCorrect.current = currentChallenge.id;
     // An easier practice question is ungraded: it records nothing for the session.
     if (!practice) recordResult({
       challengeId: currentChallenge.id,
@@ -458,6 +466,21 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     submitResult(score >= 60, score, metrics);
     setSubmittedResult({ score });
   }, [allChallengesComplete, challengeResults, challenges.length, progress.recordsEvaluation, submitResult]);
+
+  // A spoken answer the observer credited (`onSolved` fires once per challenge, for a tap too): the result a correct
+  // tap records, and the credited day shown as a correct tap shows it. The shared lifecycle plays the success sound.
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    if (!solved || tappedCorrect.current === solved.id) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1,
+      timeMs: Date.now() - challengeStartRef.current });
+    const shown = isGridAnswerChallenge(solved) ? solved.correctAnswer.trim()
+      : solved.options?.find(o => o.trim().toLowerCase() === solved.correctAnswer.trim().toLowerCase()) ?? solved.correctAnswer;
+    setSelectedAnswer(shown);
+    if (isGridAnswerChallenge(solved)) setClickedDate(Number(shown));
+    setFeedback({ correct: true, message: 'Correct!' });
+    if (solved.highlightDates) setHighlightedDates(new Set(solved.highlightDates));
+  };
 
   // ── Determine if we can proceed ─────────────────────────────────
   // A checked miss reopens on Try again, so only a correct result closes the question.

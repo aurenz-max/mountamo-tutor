@@ -277,6 +277,7 @@ import { practiceItem as shadowPracticeItem, practiceParent as shadowPracticePar
 import { easierComparisonChoice, maxWorkableAngle, minimumPushSetting, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { practiceFromId as rampPracticeFromId } from '../../primitives/visual-primitives/engineering/rampLabLevers';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
+import { BUILD_WITNESSES as SHAPE_BUILD_WITNESSES, WRONG_BUILD as WRONG_SHAPE_BUILD } from '../../primitives/visual-primitives/direct-instruction/diShapesBuild';
 import { diSpokenPracticeHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeWorkspace';
 import { diDiceRollHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
 import { deductionItems, diDeductionHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDeductionWorkspace';
@@ -2536,6 +2537,22 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="trait"]' }, demonstration: { selector: '[data-tutor-ring]', kind: 'count' },
       closed: { selector: '[aria-label^="Open The"]', kind: 'count' } },
   },
+  'curator-brief': {
+    execution: 'teaching',
+    component: 'primitives/CuratorBrief.tsx',
+    instanceId: 'brief',
+    defaults: { grade: 'Kindergarten', mode: 'mixed', di: false,
+      topic: 'Recognizing and Creating Patterns: extend AB patterns with colors, shapes, or sounds' },
+    // The retired section-reading tag: a model that voices it is reading the old scaffold.
+    leakTokens: ['READ_SECTION'],
+    prompts: { opening: 'What are we doing today?', hint: 'What does that mean?', example: 'Can you show me?' },
+    // Nothing is graded: the learner taps an "I wonder" choice, and later presses Start.
+    inputsFor: (intent) => intent === 'explore' ? [{ type: 'touch', target: 'wonder-0' }]
+      : intent === 'finish' ? [{ type: 'touch', target: 'wonder-0' }, { type: 'choose', label: 'Start' }]
+      : [],
+    probes: { mounted: { selector: '[data-pip-object="hook"]' }, demonstration: { selector: '[data-tutor-ring]', kind: 'count' },
+      picture: { selector: '[data-pip-object="picture"] img', kind: 'count' } },
+  },
   'you-and-me': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/YouAndMe.tsx',
@@ -2717,11 +2734,23 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       topic: 'Naming flat shapes: circle, square, triangle, rectangle' },
     leakTokens: RETIRED_DI_CUE_TAGS,
     prompts: WORKSPACE_PROMPTS,
-    // One spoken answer per item: the shape name or count, or a plainly different one.
+    // One spoken answer per item: the shape name or count, or a plainly different one. build_shape through the real
+    // dot taps: a witness of the named shape (or a three-or-four-sided miss), closed on its first corner, then "I'm
+    // done!". Try again keeps the shape, so a right try clears it first; a second wrong presses done on the kept one.
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current di-shapes item');
+      if (c.challengeType === 'build_shape') {
+        const done: DriverInput = { type: 'choose', label: "I'm done!" };
+        if (intent === 'wrong' && ctx.demand?.shapeClosed === 'yes') return [done];
+        const shape: Array<{ x: number; y: number }> | undefined = intent === 'wrong'
+          ? (c.shape === 'triangle' ? WRONG_SHAPE_BUILD.triangle : WRONG_SHAPE_BUILD.other) : SHAPE_BUILD_WITNESSES[c.shape]?.[0];
+        if (!shape) throw new Error(`di-shapes build_shape: no witness for ${c.shape}`);
+        const tap = (p: { x: number; y: number }): DriverInput => ({ type: 'touch', target: `dot-${p.x}-${p.y}` });
+        const kept = Number(ctx.demand?.cornersPlaced ?? 0) > 0;
+        return [...(kept ? [{ type: 'choose' as const, label: 'Clear Shape' }] : []), ...shape.map(tap), tap(shape[0]), done];
+      }
       const answers = diShapesHarnessAnswers(c);
       return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
     },

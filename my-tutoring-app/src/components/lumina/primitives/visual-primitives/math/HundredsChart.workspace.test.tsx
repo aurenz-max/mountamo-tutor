@@ -50,13 +50,15 @@ it('every catalog mode binds', () => {
   }
 });
 
-it.each(Object.values(CHALLENGES))('$type: a checked gesture that publishes no key; a wrong Check reopens clean on Try again, the right one completes once',
+it.each(Object.values(CHALLENGES))('$type: a Check the scene never answers; a wrong Check reopens clean on Try again, the right one completes once',
   async (c) => {
     seam.evaluationContext = { lesson: 'test' };
     const h = mountWorkspace({ primitiveId: 'hundreds-chart', evalMode: c.type, data: chart([c]) });
     const task = h.state().task!;
-    expect(task.workspace!.expectedAnswer).toBeUndefined();
-    expect(task.demand.response).toBe('gesture');
+    // A choice may also be said aloud (VB-1; HundredsChart.spoken.workspace.test.tsx); the cell modes stay gesture with no key.
+    const spoken = c.type === 'identify_pattern' || c.type === 'find_skip_value';
+    expect(task.demand.response).toBe(spoken ? 'speech' : 'gesture');
+    expect(!!task.workspace!.expectedAnswer).toBe(spoken);
     const published = JSON.stringify(task);
     if (c.type === 'identify_pattern') expect(published).not.toMatch(/correctAnswer/);
     if (c.type === 'highlight_sequence') expect(published).not.toMatch(/2, 4, 6/);

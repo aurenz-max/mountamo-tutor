@@ -160,6 +160,16 @@ treat "how many real attempts exist" as unknown, not zero.
 - **Evidence:** `coinCounterLevers.test.ts`, `CoinCounter.levers.workspace.test.tsx`; report
   `qa/eval-reports/coin-counter-levers-2026-10-08.md`.
 
+### R14 — a total, a group or the change may be said aloud; identify, enacted counts and builds stay on screen · OBSERVED (NEW 2026-10-13)
+- **Property:** a `count` that is not enacted (every `count-mixed` card, a `count-like` card from Grade 2), `compare` and
+  `make-change` are spoken items with `acceptsGesture` (`isSpokenCoin`): JEV judges the spoken amount or group against
+  `expectedAnswer` (`coinExpectedAnswer`), wrong ones map to the tap's miss ids (`coinSpokenMisses`, in the catalog's
+  lists), and the typed or tapped answer and Check is still checked by the activity. Tap only: `identify` (the question
+  names the coin, so the answer is which drawn coin; R4 holds), the K and G1 like counts (R9, R11: tapping or tagging every
+  coin is part of the answer), and `make-amount` / `fewest-coins` / `show-amount`. The scene never states the key.
+- **Evidence:** `CoinCounter.spoken.workspace.test.tsx`; journey sweep (J14 cleared for count-mixed and make-change);
+  `qa/tutor-reports/coin-counter-tutor-verdict-2026-10-13.json` (30/30, 0 false credit).
+
 ## Conflicts
 
 ### C1 — R9 (K count-like enacted) vs R3 (count-mixed typed) — **RESOLVED 2026-07-25 via fork rung 1 (eval-mode split) + rung 2 (band gate)**
@@ -309,3 +319,6 @@ total teaches the interval by demonstration). **Kept default-true.** Sole except
   build sentence. Existing coin-counter suites green.
 - 2026-10-08 — levers on every mode (R13), `/add-support-tiers`. No existing path removed: the tier aids, enacted counts
   (R9, R11), typed mixed count (R3) and identify's hidden name/value (R4) are unchanged until a lever is pulled.
+- 2026-10-13 — voice beside the tap (R14, ROLLOUT.md VB-1). Nothing removed: R3's typed total and Check, R9/R11's enacted
+  counts, R4's unnamed identify coins and every build path are unchanged; a spoken total, group or change is one more way
+  to answer. Existing coin-counter suites green; the gesture-only "no key" assertions re-based to the kept modes.

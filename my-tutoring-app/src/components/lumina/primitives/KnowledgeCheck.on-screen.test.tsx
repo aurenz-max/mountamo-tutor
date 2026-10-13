@@ -37,11 +37,12 @@ it('the unaskable problem is worked on screen: its check is the verdict, a retry
   const h = mount([TF, LEAKY]);
   h.say('yes'); h.feedback('correct', 'advance'); h.confirmVisible();
 
-  // The problem's own surface renders inside the session, and the tutor is told it is a gesture.
+  // The problem's own surface renders inside the session; a multiple-choice problem takes its answer said aloud too
+  // (user ruling 10-12), so the tutor is told either one answers it.
   expect(document.querySelector('[data-on-screen="p1-screen"]')).not.toBeNull();
-  expect(h.state().task!.demand.response).toBe('gesture');
-  expect(h.state().task!.demand.constraints).toMatch(/works this problem on the screen/);
-  expect(h.state().task!.task).toBe('Which animal is the cow that says moo? Do it on the screen.');
+  expect(h.state().task!.demand.response).toBe('speech');
+  expect(h.state().task!.demand.constraints).toMatch(/answer out loud or work this problem on the screen/);
+  expect(h.state().task!.task).toBe('Which animal is the cow that says moo? Tell me, or show me on the screen.');
 
   answer('duck');
   expect(h.state().task!.workspace!.lastResponse?.correct).toBe(false);
@@ -57,4 +58,29 @@ it('the unaskable problem is worked on screen: its check is the verdict, a retry
   const sent = seam.submit.mock.calls.map(c => c[0] as { instanceId?: string });
   // The inner surface is local-only: the backend sees exactly the two ::pN records the session writes.
   expect(sent.map(r => r.instanceId).sort()).toEqual(['check::p0', 'check::p1']);
+});
+
+it('a multiple-choice problem worked on screen is credited from the answer said aloud', async () => {
+  seam.evaluationContext = recordingEvaluationContext();
+  const h = mount([TF, LEAKY]);
+  h.say('yes'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"cow"/);
+  h.say('the cow'); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().status).toBe('completed');
+});
+
+it('"¿Qué?" is no answer: it opens nothing to credit and does not replace the answer already waiting', () => {
+  seam.evaluationContext = recordingEvaluationContext();
+  const h = mount([TF, LEAKY]);
+  // 2026-10-13 pulse check p1-tf: echo transcribed as "¿Qué?" was credited as a true/false answer.
+  h.say('¿Qué?');
+  expect(h.state().task!.workspace!.pendingResponse).toBeUndefined();
+  expect(h.offer('apply_tutor_verdict')).toBeUndefined();
+  // p0-mc: the real answer stays the one the tutor's reply is judged against.
+  h.say('yes');
+  const waiting = h.state().task!.workspace!.pendingResponse;
+  h.say('¿Qué?');
+  expect(h.state().task!.workspace!.pendingResponse).toEqual(waiting);
+  h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().task!.workspace!.attempts[0]).toMatchObject({ itemId: 'p0-tf', response: 'yes', correct: true });
 });

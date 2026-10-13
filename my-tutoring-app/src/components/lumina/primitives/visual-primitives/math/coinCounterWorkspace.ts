@@ -2,11 +2,16 @@
  * Coin counter on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
  * (qa/workspace-rollout/ROLLOUT.md).
  *
- * Pure: the component and any probe read the same assignment and scene. Every challenge is answered on
- * the screen (a tapped coin or group, placed coins, or a typed number) and checked by the activity's own
- * check, so the tutor is never handed `correctTotal`, `correctGroup`, `correctChange` or which coin to tap.
+ * Pure: the component and any probe read the same assignment and scene. A count (typed total), compare (which group)
+ * and make-change (typed change) ask for one amount or one group, so each may also be said aloud: the item is spoken
+ * with `acceptsGesture`, and JEV judges it from the tutor's feedback against `expectedAnswer` (VB-1, 2026-10-13); a
+ * typed or tapped answer and Check is still checked by the activity. Kept tap-only: identify (the question names the
+ * coin, so the answer is which drawn coin, a position the size_row lever reorders), the Kindergarten and Grade 1 like
+ * counts (tapping or tagging every coin is part of the answer, R9/R11), and the builds (make-amount, fewest-coins,
+ * show-amount). The scene never states a total, the group with more money, the change or which coin to tap.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { CoinCounterChallenge, CoinDef, CoinType } from './CoinCounter';
 
 export const COIN_CENTS: Record<CoinType, number> = { penny: 1, nickel: 5, dime: 10, quarter: 25, 'half-dollar': 50, dollar: 100 };
@@ -21,8 +26,123 @@ const tally = (coins: readonly CoinType[]): CoinDef[] => {
   return Array.from(by, ([type, count]) => ({ type, count }));
 };
 
-export function workspaceAssignment(challenge: CoinCounterChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
+/** A like-coin count at Kindergarten (taps) or Grade 1 (tags, then the typed total): the taps are part of the answer. */
+export const enactedCount = (c: CoinCounterChallenge, gradeBand: string): 'tap' | 'tag' | null =>
+  c.type === 'count' && c.countMode === 'like' && (c.displayedCoins ?? []).some(d => d.count > 0)
+    ? gradeBand === 'K' ? 'tap' : gradeBand === '1' ? 'tag' : null : null;
+
+/** The challenges whose answer is one amount or one group a learner can say. */
+export const isSpokenCoin = (c: CoinCounterChallenge, gradeBand: string) =>
+  (c.type === 'count' && !enactedCount(c, gradeBand)) || c.type === 'compare' || c.type === 'make-change';
+
+/** `gradeBand` defaults as the component's does. */
+export function workspaceAssignment(challenge: CoinCounterChallenge, gradeBand = '1'): TeachingAssignment {
+  const expectedAnswer = isSpokenCoin(challenge, gradeBand) ? coinExpectedAnswer(challenge) : undefined;
+  if (!expectedAnswer) return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
+  const how = challenge.type === 'compare' ? 'saying which group, or tapping it and pressing Check'
+    : challenge.type === 'make-change' ? 'saying the change, or typing it and pressing Check'
+      : 'saying the total, or typing it and pressing Check';
+  return { id: challenge.id, task: `${challenge.instruction} The learner answers by ${how}.`,
+    response: 'speech', acceptsGesture: true, expectedAnswer, misses: coinSpokenMisses(challenge) };
+}
+
+// ── Spoken amounts ────────────────────────────────────────────────────────────
+const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+  'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+/** 0-999 in words: "forty-five", "one hundred twenty-five". */
+const words = (n: number): string => n < 20 ? ONES[n] : n < 100 ? TENS[Math.floor(n / 10)] + (n % 10 ? `-${ONES[n % 10]}` : '')
+  : `${ONES[Math.floor(n / 100)]} hundred${n % 100 ? ` ${words(n % 100)}` : ''}`;
+const centsWord = (n: number) => n === 1 ? 'cent' : 'cents';
+
+/** Every natural way to say an amount of money: "13 cents", "thirteen cents", "thirteen", "13¢"; "$1.25" and up. */
+export function spokenCentsForms(n: number): string[] {
+  if (n < 100) return [`${n} ${centsWord(n)}`, `${words(n)} ${centsWord(n)}`, words(n), `${n}¢`];
+  const d = Math.floor(n / 100), r = n % 100, dollars = d === 1 ? 'one dollar' : `${words(d)} dollars`;
+  return [`$${d}.${String(r).padStart(2, '0')}`, r ? `${dollars} and ${words(r)} ${centsWord(r)}` : dollars,
+    ...(r ? [`${d === 1 ? 'a dollar' : `${words(d)} dollars`} ${words(r)}`] : d === 1 ? ['a dollar'] : []),
+    `${n} cents`, `${words(n)} cents`];
+}
+/** The two plainest forms, for a miss's examples. */
+const said = (n: number) => [`${words(n)} ${centsWord(n)}`, `${n} ${centsWord(n)}`];
+const quoted = (forms: string[]) => forms.map(f => `"${f}"`).join(', ');
+
+/** The one answer a spoken count, compare or make-change item is judged against, with the ways of saying it. */
+export function coinExpectedAnswer(c: CoinCounterChallenge): string | undefined {
+  if (c.type === 'count') {
+    const coins = c.displayedCoins ?? [], total = c.correctTotal ?? centsOf(coins);
+    const count = coins.reduce((n, d) => n + d.count, 0);
+    return `${total}¢ in all (${listCoins(coins)}); said as ${quoted(spokenCentsForms(total))}. Naming the coins without `
+      + 'a total is not an answer yet. '
+      + (count !== total ? `The number of coins (${count}) is not the total. ` : '')
+      + 'Any other amount is not it.';
+  }
+  if (c.type === 'make-change') {
+    const change = c.correctChange ?? (c.paidAmount ?? 0) - (c.itemCost ?? 0);
+    return `${change}¢ of change (${c.paidAmount ?? 0}¢ paid for a ${c.itemCost ?? 0}¢ item); said as `
+      + `${quoted(spokenCentsForms(change))}. Naming coins worth exactly ${change}¢ in all is also it. The price, the `
+      + 'amount paid, or any other amount is not it.';
+  }
+  if (c.type === 'compare' && c.correctGroup) {
+    if (c.correctGroup === 'equal') return 'they are worth the same; said as "they are equal", "the same", "both", '
+      + '"they are worth the same". Naming group A or group B as worth more is not it.';
+    const [is, side, nth] = c.correctGroup === 'A' ? ['A', 'left', 'first'] : ['B', 'right', 'second'];
+    const other = is === 'A' ? 'B' : 'A';
+    return `group ${is}, the group on the ${side}; said as "group ${is}", "${is}", "the ${nth} one", "the ${side} one". `
+      + `Naming group ${other}, or saying they are worth the same, is not it.`;
+  }
+  return undefined;
+}
+
+/**
+ * A spoken item's known wrong answers, with the tap's ids (`coinMiss`, the catalog's lists), in `coinMiss` order. An
+ * amount that is the key is never an example, and an amount two misses share goes to the first.
+ */
+export function coinSpokenMisses(c: CoinCounterChallenge): KnownMiss[] {
+  const misses: KnownMiss[] = [];
+  const claimed = new Set<number>();
+  const amounts = (id: string, pattern: string, values: number[]) => {
+    const fresh = Array.from(new Set(values)).filter(v => v > 0 && !claimed.has(v));
+    if (!fresh.length) return;
+    fresh.forEach(v => claimed.add(v));
+    misses.push({ id, pattern: `${pattern}: ${fresh.map(v => `${v}¢`).join(' or ')}.`,
+      examples: fresh.slice(0, 3).flatMap(said).slice(0, 6) });
+  };
+  if (c.type === 'count') {
+    const coins = c.displayedCoins ?? [], key = c.correctTotal ?? centsOf(coins);
+    const count = coins.reduce((n, d) => n + d.count, 0), kinds = coins.map(d => COIN_CENTS[d.type]);
+    claimed.add(key);
+    amounts('counted_coins', `The learner counts the coins (${count}) instead of what they are worth`, [count]);
+    if (coins.length > 1) amounts('all_one_kind', 'The learner values every coin as one of the kinds shown', kinds.map(v => count * v));
+    amounts('one_coin_short', 'The learner’s total is one coin short', kinds.map(v => key - v));
+    amounts('one_coin_over', 'The learner’s total is one coin too many', kinds.map(v => key + v));
+    misses.push({ id: 'short', pattern: `Any other total below ${key}¢.` }, { id: 'over', pattern: `Any other total above ${key}¢.` });
+    return misses;
+  }
+  if (c.type === 'make-change') {
+    const paid = c.paidAmount ?? 0, cost = c.itemCost ?? 0, key = c.correctChange ?? paid - cost;
+    claimed.add(key);
+    amounts('gave_cost', 'The learner says the price of the item', [cost]);
+    amounts('gave_paid', 'The learner says the amount paid', [paid]);
+    amounts('added', 'The learner adds the price to the amount paid', [paid + cost]);
+    misses.push({ id: 'short', pattern: `Any other amount below ${key}¢.` }, { id: 'over', pattern: `Any other amount above ${key}¢.` });
+    return misses;
+  }
+  if (c.type === 'compare' && c.correctGroup) {
+    if (c.correctGroup === 'equal') return [{ id: 'missed_equal', pattern: 'The learner names group A or group B as worth '
+      + 'more, but both groups are worth the same.', examples: ['group A', 'group B', 'the first one', 'the second one'] }];
+    const other = c.correctGroup === 'A' ? 'B' : 'A';
+    const count = (g: readonly CoinDef[] = []) => g.reduce((n, d) => n + d.count, 0);
+    const otherCoins = count(other === 'A' ? c.groupA : c.groupB), keyCoins = count(c.correctGroup === 'A' ? c.groupA : c.groupB);
+    const examples = [`group ${other}`, other === 'A' ? 'the first one' : 'the second one'];
+    return [
+      otherCoins > keyCoins
+        ? { id: 'more_coins', pattern: `The learner names group ${other}, which has more coins but less money.`, examples }
+        : { id: 'reversed', pattern: `The learner names group ${other}, which is worth less.`, examples },
+      { id: 'said_equal', pattern: 'The learner says the two groups are worth the same.', examples: ['they are equal', 'the same'] },
+    ];
+  }
+  return [];
 }
 
 export interface CoinView {
@@ -176,22 +296,35 @@ export function workspaceScene(challenge: CoinCounterChallenge, view: CoinView):
     drawn.centsMade = centsOf(tally(view.placed));
     for (const type of challenge.availableCoins ?? []) drawn[TRAY_KEY[type]] = view.placed.filter(c => c === type).length;
   } else if (challenge.type === 'compare') {
-    drawn.groups = `A: ${listCoins(challenge.groupA ?? [])}; B: ${listCoins(challenge.groupB ?? [])}`;
+    drawn.groups = `A (left): ${listCoins(challenge.groupA ?? [])}; B (right): ${listCoins(challenge.groupB ?? [])}`;
     drawn.coinValues = values;
+    drawn.howToAnswer = 'say which group is worth more, or that they are worth the same; or tap a group or They’re Equal and press Check';
   } else {
     drawn.paid = `${challenge.paidAmount ?? 0}¢`;
     drawn.itemCost = `${challenge.itemCost ?? 0}¢`;
+    drawn.howToAnswer = 'say the change, or type it in cents and press Check';
   }
+  if (challenge.type === 'count' && !view.enacted) drawn.howToAnswer = 'say the total, or type it in cents and press Check';
+  // `view.enacted` is the component's reading of the grade band, the one its assignment used.
+  const spoken = challenge.type === 'compare' || challenge.type === 'make-change' || (challenge.type === 'count' && !view.enacted);
   return {
     objects: [],
     facts: {
       kind: challenge.type, ...drawn,
       learnerWork: describeCoinWork(challenge, view),
-      constraints: 'The learner answers on the screen: taps a coin or a group, taps coins in or out, or types a number '
-        + 'and presses Check; the activity checks the work itself. You cannot tap, place or type for the learner.',
+      constraints: spoken
+        ? 'The learner says the answer, or types it or taps a group and presses Check; a Check is checked by the activity. '
+          + `Before the learner has answered, never name ${WITHHELD[challenge.type]}. You cannot tap or type for the learner.`
+        : 'The learner answers on the screen: taps a coin or a group, taps coins in or out, or types a number '
+          + 'and presses Check; the activity checks the work itself. You cannot tap, place or type for the learner.',
     },
   };
 }
+
+/** What a spoken mode's answer is, which the scene withholds until the learner answers. */
+const WITHHELD: Record<string, string> = {
+  count: 'the total', compare: 'which group is worth more or whether they are worth the same', 'make-change': 'the change',
+};
 
 /** The fewest coins from `available` (unlimited supply) that make `target`, largest first; null when none can. */
 export function fewestCoins(target: number, available: readonly CoinType[]): CoinType[] | null {

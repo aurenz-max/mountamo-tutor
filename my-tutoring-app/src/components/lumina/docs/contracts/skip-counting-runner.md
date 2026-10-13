@@ -5,10 +5,11 @@
 
 ## Requirements
 
-### R1 — every mode binds the shared teaching workspace with no key reaching the tutor · OBSERVED (2026-10-09)
-- **Property:** all five modes are gesture items checked by the runner's own check (`skipMatches`); each wrong check names a `SkipCountingMiss` from the catalog list. count_along: the learner taps each next landing then Check; a tap past it is a checked miss. predict, find_skip_value, connect_multiplication: a typed number and Check. fill_missing: one gap at a time; a fitting fill with gaps left is progress, not a check; the item is credited on its last gap. Scene facts name the line, where the character stands, the landings made, the gap count and which aids are drawn; never the next landing, a gap, the jump size on find, or the jump count on connect. Nothing moves on its own on the workspace path (easy auto-play becomes tapping). Try again keeps the landings made and the gaps filled and clears what was typed. The generated hint is not shown on the workspace.
-- **Demanded by:** qa/workspace-rollout/ROLLOUT.md C12.
-- **Evidence:** `SkipCountingRunner.workspace.test.tsx` 12; sweep J1-J13 on 5 payloads, 0 findings, 28/28 misses named; replay 5 x 5 (`qa/tutor-reports/skip-counting-runner-w1-2026-10-09.md`).
+### R1 — every mode binds the shared teaching workspace with no unearned credit and no key reaching the tutor · OBSERVED (re-based 2026-10-13)
+- **Property:** every typed number or tap is checked by the runner's own check (`skipMatches`); each wrong check names a `SkipCountingMiss` from the catalog list. count_along: the learner taps each next landing then Check; a tap past it is a checked miss. predict, find_skip_value, connect_multiplication: a typed number and Check. fill_missing: one gap at a time; a fitting fill with gaps left is progress, not a check; the item is credited on its last gap. Scene facts name the line, where the character stands, the landings made, the gap count and which aids are drawn; never the next landing, a gap, the jump size on find, or the jump count on connect. Nothing moves on its own on the workspace path (easy auto-play becomes tapping). Try again keeps the landings made and the gaps filled and clears what was typed. The generated hint is not shown on the workspace.
+- **Spoken (2026-10-13, VB-1):** predict, find_skip_value, connect_multiplication and a fill_missing item with exactly one gap are spoken items with `acceptsGesture` (`spokenSkipKey`): JEV judges the spoken number against `expectedAnswer` (`skipExpectedAnswer`, observer-only; the scene still never states it), wrong ones map to the check's miss ids (`skipSpokenMisses`, in the catalog's lists), and the typed number and Check is still checked by the activity. Gesture only: count_along (the taps are the count) and a fill_missing item with two or more gaps (one runtime item checked one gap at a time, so no single spoken answer).
+- **Demanded by:** qa/workspace-rollout/ROLLOUT.md C12; VB-1.
+- **Evidence:** `SkipCountingRunner.workspace.test.tsx` 12; `SkipCountingRunner.spoken.workspace.test.tsx`; `scripts/tutor-verdict-probe.mjs --skipcount` (21/24, false credit 0; `qa/tutor-reports/skip-counting-runner-tutor-verdict-2026-10-13.json`); sweep J1-J13 on 5 payloads, 0 findings, 28/28 misses named; replay 5 x 5 (`qa/tutor-reports/skip-counting-runner-w1-2026-10-09.md`).
 - **Probe:** `SkipCountingRunner.workspace.test.tsx`; `journeySweep -t skip-counting-runner`.
 
 ### R2 — nothing on screen names the mode's answer · OBSERVED (2026-10-09)
@@ -23,3 +24,4 @@
 ## Changelog
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C12).
+- 2026-10-13 — R1 re-based (VB-1, voice beside the tap). "All five modes are gesture items" protected no unearned credit and no key in the scene; both still hold. A one-number item may now also be said aloud; the typed number and Check, Try again, and count_along's taps are unchanged. The gesture-only assertions in `SkipCountingRunner.workspace.test.tsx` re-based to the kept modes.

@@ -70,14 +70,17 @@ function mount(evalMode: string, challenges: CoinCounterChallenge[], gradeBand: 
   return { runtime, transport, sent, state, dispatch, confirmVisible, choose, write, check };
 }
 
-it.each(Object.keys(CHALLENGES))('%s mounts under tutor ownership with no scripted cue and no published key', mode => {
+it.each(Object.keys(CHALLENGES))('%s mounts under tutor ownership with no scripted cue and no key in the scene', mode => {
   const c = CHALLENGES[mode];
   const h = mount(mode, [c]);
   expect(h.state().owner).toBe('tutor');
-  expect(h.state().task!.task).toBe(c.instruction);
-  expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+  // A total, a group or the change may be said aloud (VB-1): those items carry the key for JEV's judgment
+  // (`CoinCounter.spoken.workspace.test.tsx`); identify and the builds stay gesture with none.
+  const spoken = ['count-like', 'count-mixed', 'compare', 'make-change'].includes(mode);
+  expect(h.state().task!.task.startsWith(c.instruction)).toBe(true);
+  expect(h.state().task!.workspace!.expectedAnswer === undefined).toBe(!spoken);
   const demand = JSON.stringify(h.state().task!.demand);
-  // The gesture key never reaches the tutor: no total, winner, change or target coin position.
+  // The scene never reaches the tutor with the key: no total, winner, change or target coin position.
   expect(demand).not.toMatch(/correct|\b32¢|"20|\b15¢|coin 2/i);
   expect(seam.legacy).not.toHaveBeenCalled();
   expect(screen.queryByRole('button', { name: /next challenge/i })).toBeNull();

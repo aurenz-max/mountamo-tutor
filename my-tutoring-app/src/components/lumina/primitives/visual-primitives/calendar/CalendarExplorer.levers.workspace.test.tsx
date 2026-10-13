@@ -80,7 +80,7 @@ it('identify "third Wednesday": the tint (a second pull refused, nothing changes
     screen: h.view.container.innerHTML }).toEqual(before);
 
   h.dispatch('pull_lever', { lever: SIMPLER_LEVER });
-  expect(h.state().task).toMatchObject({ itemId: 'c1~simpler', task: 'What date is the first Wednesday of January 2025?' });
+  expect(h.state().task).toMatchObject({ itemId: 'c1~simpler', task: expect.stringMatching(/^What date is the first Wednesday of January 2025\? The learner answers by saying/) });
   expect(h.state().task!.demand.practice).toMatch(/ungraded/);
   expect(levers(h)).toEqual([]);
   expect(q(h, '[data-target-day="true"]')).toHaveLength(0);
@@ -95,7 +95,7 @@ it('identify "third Wednesday": the tint (a second pull refused, nothing changes
   expect(last(h)).toMatchObject({ itemId: 'c1~simpler', correct: true });
 
   h.dispatch('advance'); h.confirmVisible();
-  expect(h.state().task).toMatchObject({ itemId: 'c1', task: 'What date is the third Wednesday of January 2025?' });
+  expect(h.state().task).toMatchObject({ itemId: 'c1', task: expect.stringMatching(/^What date is the third Wednesday of January 2025\? The learner answers by saying/) });
   expect(screen.queryByText(/Selected:/)).toBeNull();
   expect(screen.queryByText('Practice question')).toBeNull();
   expect(q(h, '[data-target-day="true"]')).toHaveLength(5);

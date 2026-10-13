@@ -2,17 +2,70 @@
  * Length lab on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
  * (qa/workspace-rollout/ROLLOUT.md, batch C10).
  *
- * Pure: the component and any probe read the same assignment and scene. Every challenge is answered on
- * the screen (a tapped choice, tiles laid with + and Check, or three objects placed in order) and checked
- * by the activity's own check, so the tutor is never handed `correctAnswer`, `correctUnitCount`,
- * `correctOrderCsv` or the objects' lengths.
+ * Pure: the component and any probe read the same assignment and scene. A tap, tiles laid with + and Check, or
+ * three objects placed in order are checked by the activity's own check. compare and indirect ask for one choice,
+ * which may also be said aloud: the item is spoken with `acceptsGesture`, and JEV judges it from the tutor's
+ * feedback against `expectedAnswer` (VB-1, 2026-10-13). tile_and_count and estimate_then_tile are checked on the
+ * tiles laid, order on the slots, and two_unit_compare asks its question only after both measurements, so those
+ * stay tap-only; the tutor is never handed `correctUnitCount`, `correctOrderCsv` or the objects' lengths.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { LengthLabChallenge } from './LengthLab';
 
+const isSpoken = (c: LengthLabChallenge) => c.type === 'compare' || c.type === 'indirect';
+
 export function workspaceAssignment(challenge: LengthLabChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
+  const expectedAnswer = lengthExpectedAnswer(challenge);
+  if (!expectedAnswer) return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
+  return { id: challenge.id, task: `${challenge.instruction} The learner answers by saying it, or tapping one choice.`,
+    response: 'speech', acceptsGesture: true, expectedAnswer, misses: lengthSpokenMisses(challenge) };
 }
+
+/** The one answer a spoken compare or indirect choice is judged against, with the natural ways of saying it. */
+export function lengthExpectedAnswer(c: LengthLabChallenge): string | undefined {
+  const a = c.objectName0, b = c.objectName1;
+  if (!isSpoken(c) || !a || !b) return undefined;
+  if (c.correctAnswer === 'same') return `the same length (neither the ${a} nor the ${b} is longer); said as "the same", `
+    + `"same length", "they are the same" or "neither". Naming either object as longer or shorter is not it.`;
+  if (c.type === 'indirect') {
+    const key = c.correctAnswer, other = key === a ? b : key === b ? a : '';
+    if (!other) return undefined;
+    return `the ${key} (the clues make the ${key} longer than the ${other}); said as "${key}", "the ${key}" or "the ${key} `
+      + `is longer". Naming the ${other}${c.referenceObjectName ? ` or the ${c.referenceObjectName}` : ''}, or saying they `
+      + 'are the same, is not it.';
+  }
+  if (c.correctAnswer !== 'longer' && c.correctAnswer !== 'shorter') return undefined;
+  const [long, short] = c.correctAnswer === 'longer' ? [a, b] : [b, a];
+  const opposite = c.correctAnswer === 'longer' ? 'shorter' : 'longer';
+  return `the ${long} is longer and the ${short} is shorter. Credit naming the object the question asks for: the ${long} `
+    + `when it asks which is longer, the ${short} when it asks which is shorter, alone ("the ${long}") or in a sentence `
+    + `("the ${long} is longer"); or saying the choice as the screen words it, "${a} is ${c.correctAnswer}". Naming the `
+    + `other object, calling the ${a} ${opposite}, or saying they are the same length is not it.`;
+}
+
+/** A spoken choice's known wrong answers, with the tap's ids (`lengthMiss`, the catalog's lists), most specific first. */
+export function lengthSpokenMisses(c: LengthLabChallenge): KnownMiss[] {
+  const a = c.objectName0, b = c.objectName1;
+  if (!isSpoken(c) || !a || !b) return [];
+  if (c.correctAnswer === 'same') return [{ id: c.type === 'compare' ? 'missed_same' : 'chose_shorter',
+    pattern: `The ${a} and the ${b} are the same length, but the learner names one of them as longer or shorter.`,
+    examples: [`the ${a}`, `the ${b} is longer`] }];
+  const same = { id: 'said_same', pattern: 'The learner says the two are the same length, though one is longer.',
+    examples: ['the same', 'same length'] };
+  if (c.type === 'indirect') {
+    const key = c.correctAnswer, other = key === a ? b : a;
+    return [{ id: 'chose_shorter', pattern: `The answer is the ${key}. The learner names the ${other}, the shorter one, as longer.`,
+      examples: [`the ${other}`, `the ${other} is longer`] }, same];
+  }
+  const [long, short] = c.correctAnswer === 'longer' ? [a, b] : [b, a];
+  return [{ id: 'reversed', pattern: `The ${long} is longer. The learner swaps longer and shorter: names the ${short} as `
+    + `longer, or the ${long} as shorter, or names the ${short} when asked which is longer.`,
+  examples: [`the ${short} is longer`, `the ${long} is shorter`] }, same];
+}
+
+/** What a spoken mode's answer is, which the scene withholds until the learner answers. */
+const WITHHELD = 'which object is longer or shorter, or whether they are the same length';
 
 export interface LengthView {
   /** compare: 'longer' | 'shorter' | 'same'; indirect: an object name or 'same'; two_unit_compare: a unit. */
@@ -166,8 +219,11 @@ export function workspaceScene(c: LengthLabChallenge, view: LengthView): Workspa
     facts: {
       kind: c.type, ...drawn,
       learnerWork: describeLengthWork(c, view),
-      constraints: 'The learner answers on the screen: taps a choice, lays units with + and Check, or taps objects '
-        + 'into order and presses Check; the activity checks the work itself. You cannot tap, lay or place for the learner.',
+      constraints: isSpoken(c)
+        ? 'The learner says the answer or taps one choice; a tap is checked by the activity. Before the learner has '
+          + `answered, never name ${WITHHELD}. You cannot tap for the learner.`
+        : 'The learner answers on the screen: taps a choice, lays units with + and Check, or taps objects '
+          + 'into order and presses Check; the activity checks the work itself. You cannot tap, lay or place for the learner.',
     },
   };
 }

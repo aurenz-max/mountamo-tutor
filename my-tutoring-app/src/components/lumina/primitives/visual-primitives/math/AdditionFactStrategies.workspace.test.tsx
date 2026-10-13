@@ -16,7 +16,7 @@ import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContrac
 import { workspaceBinding } from '../../../components/live-activity/lessonWorkspacePlan';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { AdditionFactStrategiesData, AdditionFactStrategy } from './AdditionFactStrategies';
-import { additionFactHarnessInputs, additionFactMiss } from './additionFactStrategiesWorkspace';
+import { additionFactHarnessInputs, additionFactMiss, additionFactSpokenMisses } from './additionFactStrategiesWorkspace';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -52,19 +52,20 @@ it('every catalog mode binds', () => {
   }
 });
 
-it.each(MODES)('%s: a checked tap that publishes no key; a wrong tap draws nothing on its own, Try again reopens the pad, the right one completes once',
+it.each(MODES)('%s: a checked tap beside a spoken key; a wrong tap draws nothing on its own, Try again reopens the pad, the right one completes once',
   async (mode, strategy) => {
     const data = session(strategy, FACTS[strategy]);
     const [[a, b]] = FACTS[strategy];
     seam.evaluationContext = { lesson: 'test' };
     const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: mode, data });
     const task = h.state().task!;
-    expect(task.workspace!.expectedAnswer).toBeUndefined();
-    expect(task.demand.response).toBe('gesture');
+    // The sum may be said aloud: the observer judges the tutor's feedback against the key; the tap stays checked.
+    expect(task.workspace!.expectedAnswer?.startsWith(`${a + b} (${a} + ${b} = ${a + b})`)).toBe(true);
+    expect(task.demand.response).toBe('speech');
     expect(task.demand).toMatchObject({ problem: `${a} + ${b} = ?` });
-    const published = JSON.stringify(task);
-    expect(published).not.toMatch(/"sum"|knownFact/);
-    expect(published).not.toContain(`= ${a + b}`);
+    expect(JSON.stringify(task)).not.toMatch(/"sum"|knownFact/);
+    // The scene the tutor reads never states the sum.
+    expect(JSON.stringify(task.demand)).not.toContain(`= ${a + b}`);
 
     perform(h, data, true);
     expect(h.state().task!.evidence.correctness).toBe('incorrect');
@@ -86,6 +87,53 @@ it.each(MODES)('%s: a checked tap that publishes no key; a wrong tap draws nothi
     await flushScoring();
     expect(seam.submit).toHaveBeenCalledOnce();
   });
+
+it.each(MODES)('%s: the sum said aloud and credited by the tutor completes the fact once', async (mode, strategy) => {
+  const data = session(strategy, FACTS[strategy]);
+  const [[a, b]] = FACTS[strategy];
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: mode, data });
+  h.say(String(a + b + 1)); h.feedback('incorrect', 'retry');
+  h.say(String(a + b)); h.feedback('correct', 'advance');
+  // The credit is recorded as a result: the session's summary shows on screen.
+  expect(h.view.container.textContent).toContain('facts right on the first try');
+  h.confirmVisible();
+  expect(h.state().status).toBe('completed');
+  await flushScoring();
+  expect(seam.submit).toHaveBeenCalledOnce();
+});
+
+it('a credited spoken sum fills the slot, and a later fact still takes the tap', () => {
+  const data = session('doubles', [[6, 6], [3, 3]]);
+  const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: 'doubles', data });
+  h.say('twelve'); h.feedback('correct');
+  expect(h.view.container.querySelector('[data-fact]')!.textContent).toContain('12');
+  h.dispatch('advance'); h.confirmVisible();
+  expect(h.state().task!.itemId).toBe('afs-2');
+  perform(h, data, false);
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+});
+
+it('a tap after a spoken answer is checked by the activity and ends the pending speech', () => {
+  const data = session('doubles', [[6, 6]]);
+  const h = mountWorkspace({ primitiveId: 'addition-fact-strategies', evalMode: 'doubles', data });
+  h.say('twelve');
+  expect(h.state().task!.workspace!.pendingResponse).toBeDefined();
+  perform(h, data, false);
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  expect(h.state().task!.workspace!.pendingResponse).toBeUndefined();
+});
+
+it('every spoken miss is one the catalog lists, and the addend miss comes first', () => {
+  const listed = ['addend', 'one_short', 'one_over', 'short_by_more', 'over_by_more'];
+  for (const [a, b] of Object.values(FACTS).flat()) {
+    const misses = additionFactSpokenMisses({ id: 'x', type: 'facts_mixed', a, b, sum: a + b });
+    expect(misses.length).toBeGreaterThan(0);
+    for (const m of misses) expect(listed).toContain(m.id);
+    expect(misses.some(m => m.pattern.includes(`${a + b},`))).toBe(false);
+  }
+  expect(additionFactSpokenMisses({ id: 'x', type: 'plus_two', a: 5, b: 2, sum: 7 })[0]).toMatchObject({ id: 'addend' });
+});
 
 it('the worked example sits beside the first fact only, and its total never reaches the tutor', () => {
   const data = session('doubles', [[6, 6], [3, 3]], { a: 4, b: 4 });

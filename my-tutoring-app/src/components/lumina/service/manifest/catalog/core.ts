@@ -317,10 +317,10 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     teachingWorkspace: {
       grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8',
         'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
-      guidance: 'A fact drill with no timer: never mention speed, a clock or answering quickly. The learner taps one '
-        + 'choice and the activity checks it at once; you are not told the answer. Read the question aloud, and for a '
-        + 'young learner read every choice aloud in the order shown, in the same voice for each. Before a tap, and after '
-        + 'a wrong one, never say the answer, which choice it is, or rule choices out until one is left. A counting picture '
+      guidance: 'A fact drill with no timer: never mention speed, a clock or answering quickly. The learner says a choice or '
+        + 'taps it; a spoken choice is a real answer, and a tap is checked by the activity at once. When the choices are '
+        + 'pictures you are not told the answer. Read the question aloud, and for a young learner read every choice aloud '
+        + 'in the order shown, in the same voice for each. Before an answer, and after a wrong one, never say the answer, which choice it is, or rule choices out until one is left. A counting picture '
         + 'is counted by the learner: point them to it, never say how many. Teaching is how to get to the fact: what the '
         + 'question asks, a related fact they know, a way to work it out that the learner then carries out. Never count, '
         + 'add or work it through yourself, not even to one step short of the end. You cannot tap for the learner.',

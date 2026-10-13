@@ -22,7 +22,8 @@
 ### R3 — shared teaching workspace (W1, plain shape) · OBSERVED (NEW 2026-10-09)
 - `withWorkspaceController('analog-clock', ...)`; every Check is `commitCheck(describeClockWork, correct, clockMiss)`.
   The tutor gets the task, the options on screen and the learner's work; never the dial's time, the right option,
-  the asked-for hand or the duration. Untiered sessions state no reading aid as hidden.
+  the asked-for hand or the duration (a spoken mode's key goes to the observer only, R5). Untiered sessions state no
+  reading aid as hidden.
 - On the workspace path: no Next, no scripted `sendText`, `useLuminaAI` disabled, no generated hint on screen after a
   miss (read/match hints can name where the hands point), and Try again opens the challenge blank (hands back at
   12:00 on `set_time`, the stopwatch reset on `elapsed`).
@@ -43,6 +44,16 @@
   full item comes back blank; Try again on a practice item keeps it.
 - Every pull is recorded on the next attempt (`assisted`, `levers`). **Probe:** `AnalogClock.levers.workspace.test.tsx`.
 
+### R5 — read, match, elapsed and hand_name take a spoken answer beside the tap · OBSERVED (NEW 2026-10-13)
+- `response: 'speech'`, `acceptsGesture: true` (ROLLOUT.md VB-1): JEV judges the spoken time, duration or hand from
+  the tutor's feedback against `expectedAnswer` (`clockExpectedAnswer`, every natural form: "three o'clock", "3:00",
+  "quarter past three", "three fifteen", "quarter to four"); the pick and Check stays the activity's check. Spoken
+  misses use the tap's catalog ids (`clockSpokenMisses`): the next/previous hour, the hands swapped, the long hand's
+  number as the minutes; an hour off on elapsed; the other hand. "The hour hand" alone is not credited on hand_name.
+- A spoken credit records the result a correct tap records and shows the credited choice (`onSolved`); a correct tap
+  is never recorded twice. set_time, count_face and hear_time stay gesture (hands moved, numbers touched, a face with
+  no name). **Probe:** `AnalogClock.spoken.workspace.test.tsx`; `scripts/tutor-verdict-probe.mjs --clock`.
+
 ## Gaps
 
 ### G1 — generated read/match hints name the hand positions · OPEN
@@ -58,3 +69,4 @@
 
 - 2026-10-09 — created with the W1 workspace binding (R3).
 - 2026-10-09 — R4 levers on every mode (`/add-support-tiers`; qa/eval-reports/analog-clock-levers-2026-10-09.md).
+- 2026-10-13 — R5 spoken answers on read, match, elapsed and hand_name (VB-1); R3 re-based (the key reaches the observer only).

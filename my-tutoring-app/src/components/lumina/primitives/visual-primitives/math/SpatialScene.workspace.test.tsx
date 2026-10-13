@@ -48,9 +48,12 @@ it('every catalog mode binds', () => {
   }
 });
 
-it('a word choice is checked by the scene; the key is not published', () => {
+it('a word choice may be said or tapped; a tap is checked by the scene; the ask never names the word', () => {
   const h = mountWorkspace({ primitiveId: 'spatial-scene', evalMode: 'identify', data: scene([IDENTIFY]) });
-  expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+  // VB-1: the word is sayable, so the key goes to the observer as expectedAnswer; the ask stays silent.
+  expect(h.state().task!.demand.response).toBe('speech');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"above"/);
+  expect(h.state().task!.task).not.toMatch(/above/);
   act(() => { fireEvent.click(screen.getByRole('button', { name: 'Below' })); });
   act(() => { fireEvent.click(screen.getByRole('button', { name: /check/i })); });
   expect(h.state().task!.evidence.correctness).toBe('incorrect');

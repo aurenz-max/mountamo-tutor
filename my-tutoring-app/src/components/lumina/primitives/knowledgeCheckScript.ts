@@ -229,9 +229,13 @@ export interface KnowledgeCheckItem extends JudgedScriptItem {
   /** on_screen: the answer as the cap-reached close says it ("first dig, then load"); empty when the problem's
    *  answer has no short spoken form. */
   closeAnswer?: string;
+  /** on_screen from a multiple-choice or true/false problem: the key a spoken answer is judged against, so the
+   *  item takes the answer said aloud as well as the work on screen (user ruling 10-12). Absent for kinds with no
+   *  short spoken form (sequencing). */
+  spokenKey?: { answer: string; others: string[] } | { truth: boolean };
 }
 
-// ── Small helpers (family idiom) ────────────────────────────────────────────
+// ── Small helpers (family idiom)────────────────────────────────────────────
 
 /** Printed/spoken form. Double quotes are stripped — a stray `"` would close
  *  the `Say exactly: "…"` span the tutor reads. */
@@ -690,6 +694,10 @@ const onScreenItem = (p: ProblemData, problemIndex: number): KnowledgeCheckItem 
     : 'textWithBlanks' in p ? blankSpokenSentence(p.textWithBlanks) : '';
   const stem = sanitize(String(raw ?? ''));
   const closeAnswer = closeAnswerOf(p);
+  const spokenKey: KnowledgeCheckItem['spokenKey'] = p.type === 'true_false' ? { truth: !!p.correct }
+    : p.type === 'multiple_choice' && closeAnswer ? { answer: stripEnd(closeAnswer),
+      others: (p.options ?? []).filter((o) => o.id !== p.correctOptionId).map((o) => stripEnd(sanitize(o.text))).filter(Boolean) }
+    : undefined;
   return {
     id: `p${problemIndex}-screen`,
     kind: 'on_screen',
@@ -699,6 +707,7 @@ const onScreenItem = (p: ProblemData, problemIndex: number): KnowledgeCheckItem 
     problemIndex,
     prompt: stem && !opensWithSentinel(stem) ? stem : 'Look at this one on the screen.',
     ...(closeAnswer ? { closeAnswer } : {}),
+    ...(spokenKey ? { spokenKey } : {}),
   };
 };
 
@@ -778,7 +787,7 @@ export const askFor = (item: KnowledgeCheckItem): string => {
     case 'point_to':
       return `Your turn. Look at the number sentence. ${item.prompt}`;
     case 'on_screen':
-      return `Your turn. ${item.prompt} Do it on the screen.`;
+      return `Your turn. ${item.prompt} ${item.spokenKey ? 'Tell me, or show me on the screen.' : 'Do it on the screen.'}`;
   }
 };
 

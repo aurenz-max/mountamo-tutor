@@ -66,8 +66,14 @@ it.each(Object.keys(CHALLENGES))('%s: a checked tap that publishes no key; a wro
     seam.evaluationContext = { lesson: 'test' };
     const h = mountWorkspace({ primitiveId: 'time-sequencer', evalMode: mode, data: d });
     const task = h.state().task!;
-    expect(task.task).toBe(c.instruction);
-    expect(task.workspace!.expectedAnswer).toBeUndefined();
+    // An order is tap-only with no key; a one-choice challenge is also spoken (TimeSequencer.spoken.workspace.test.tsx).
+    if (c.events) {
+      expect(task.task).toBe(c.instruction);
+      expect(task.workspace!.expectedAnswer).toBeUndefined();
+    } else {
+      expect(task.task.startsWith(c.instruction)).toBe(true);
+      expect(task.demand.response).toBe('speech');
+    }
     const published = JSON.stringify(task);
     expect(published).not.toMatch(/correctOrder|correctPeriod|correctEvent|correctAnswer|correctActivity|clockHour/);
     // Cards are listed alphabetically, not in the day's order.

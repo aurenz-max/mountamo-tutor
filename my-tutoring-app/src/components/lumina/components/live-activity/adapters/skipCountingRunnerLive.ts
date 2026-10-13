@@ -1,5 +1,5 @@
 import type { SkipCountingRunnerData } from '../../../primitives/visual-primitives/math/SkipCountingRunner';
-import { gapsOf, jumpsTo, linePositions, nextLanding, openingSpots, workspaceAssignment }
+import { gapsOf, jumpsTo, lineOf, linePositions, nextLanding, openingSpots, workspaceAssignment }
   from '../../../primitives/visual-primitives/math/skipCountingWorkspace';
 import { validateChallengePool, workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
@@ -27,5 +27,5 @@ export function validateSkipCountingRunnerData(value: unknown): SkipCountingRunn
 /** What the live adapter needs from the runner; the catalog's `teachingWorkspace` declares the rest. */
 export const skipCountingRunnerLiveDomain: WorkspaceDomain<SkipCountingRunnerData> = {
   validate: validateSkipCountingRunnerData,
-  initialState: d => workspaceOpening({ title: d.title, task: workspaceAssignment(d.challenges[0]).task, total: d.challenges.length }),
+  initialState: d => workspaceOpening({ title: d.title, task: workspaceAssignment(d.challenges[0], lineOf(d)).task, total: d.challenges.length }),
 };

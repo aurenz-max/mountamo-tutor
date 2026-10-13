@@ -65,6 +65,26 @@ journeys) is pulled per primitive only when a W1 smoke drive or a human sitting 
 | addition-fact-strategies (birth 10-02; plain shape, every mode a checked tap on the 0-18 pad) | W1 | [addition-fact-strategies-workspace-2026-10-03.md](../tutor-reports/addition-fact-strategies-workspace-2026-10-03.md). Gate: workspace test, sweep J1-J11 on 6 payloads, replay 0/30 misses. |
 | DEAD: runner-owned sandbox handoff, `'di-runner'` owner value, `RUNNER_GUIDANCE`/`runnerLessonStart` (frontend) | — | 09-23, no report. **Residue, owned by LA-14 retirement (`07-census.md`):** the backend bridge `live_activity_tools.py` still accepts `teachingOwner: 'di-runner'` and emits `activity_ready` for it, and `run_live_runtime.py` (`judged_runner`), `run_live_lesson_plan.py` and `scripts/live-lesson-plan-fixture.mjs` still branch on it (the live route's `diPlan` probe was removed with it). No frontend adapter sends that value. |
 
+## Voice beside the tap (VB, user 2026-10-13)
+
+An item whose answer is one number, word or short phrase takes it spoken as well as tapped: `response: 'speech'`,
+`acceptsGesture: true`, `expectedAnswer`, known spoken misses. JEV judges speech from the tutor's feedback; the tap
+stays the activity's code check. Pilot: `math-fact-fluency` (every number mode; JEV probe 33/33, 0 false credit; user
+practiced it 10-13, session `020822`). Check: sweep rule `J14-sayable-is-spoken`; each row's payloads sit in
+`journey-sweep-baseline.json` until done. Recipe per family: the domain assignment branches by mode as
+`mathFactSpoken` does; the component records a spoken credit in `onSolved` (`MathFactFluency.tsx` `solvedAloud`);
+guidance says the learner may say or tap it; workspace test + one verdict-probe case set. Build modes stay gesture.
+
+| Row | Primitives | Status |
+| --- | --- | --- |
+| VB-1 | K-2: `fast-fact`, `addition-fact-strategies`, `comparison-builder`, `calendar-explorer`, `time-sequencer`, `spatial-scene`, `length-lab`, `analog-clock`, `coin-counter`, `skip-counting-runner`, `hundreds-chart` | done 10-13: every sayable mode spoken + tap; builds, orders, positional picks and K-1 enacted counts stay gesture (reasons in each contract). JEV probes (`tutor-verdict-probe.mjs --fastfact --addfacts --compare --calendar --timeseq --spatial --length --clock --coins --skipcount --hundreds`): 0 false credit on every final run; under-credit goes to confirm_credit (calendar day_offset 3/33, length-lab indirect phrasing 3/30, skip-count retry split). No browser or Live run beyond the pilot |
+| VB-F1 | Shared: a spoken credit on a simplify-lever practice item fires no `onSolved`, so the screen shows nothing while the tutor holds the item (spatial-scene, analog-clock). `/add-live-tutor-tools` | queued |
+| VB-F2 | Shared: bare praise ("Great job!") after a WRONG spoken answer scored 0.90-0.91 correct on hundreds-chart before its scene published `learnerWork`; the observer never sees the learner's words. The scoring pass re-grades the record, but the flow credits. Measure across spoken families before any doctrine or observer change. `/add-live-tutor-tools` | queued |
+| VB-2 | 3-5 math: `multiplication-explorer`, `equation-builder`, `bar-model`, `array-grid`, `area-model`, `fraction-circles`, `polygon-area-builder`, `angle-workshop`, `circle-explorer`, `double-number-line`, `ratio-table`, `percent-bar`, `shape-composer`, `strategy-picker`, `net-folder`, `histogram` | queued |
+| VB-3 | 6+: `coordinate-graph`, `slope-triangle`, `matrix-display`, `two-way-table`, `distribution-explorer`, `formula-lab`, `parameter-explorer`, `function-sketch` | queued |
+| VB-4 | science/literacy: `habitat-diorama`, `molecule-constructor`, `poetry-lab`, `story-bridge`, `letter-sound-link`, `knowledge-check` (check: options may be rendered math) | queued |
+| — | `letter-spotter`, `periodic-table`: gesture by design (the item names the target) | not converted |
+
 ## Queue
 
 **Pause 2026-10-09 (end of session).** Next pull: C23 (`constellation-builder`, `planetary-explorer`; `telescope-simulator` has 0 modes). Recipe: one subagent per primitive, W1 + levers in one pass, briefs in the C10-C22 pattern (see `../tutor-reports/*-w1-2026-10-09.md`). About 26 queued ids have eval modes; about 27 have none (mostly sims and display panels): register an existing code-checked task as a mode first, else HELD. Rulings owed are listed in the C10-C22 Done rows and the HELD rows.

@@ -2,19 +2,138 @@
  * Time sequencer on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
  * (qa/workspace-rollout/ROLLOUT.md).
  *
- * Pure: the component and any probe read the same assignment and scene. Every challenge is answered on the
- * screen (cards tapped in order, or one choice) and checked by the activity's own check, so the tutor is never
- * handed `correctOrder`, `correctPeriod`, `correctEvent`, `correctAnswer` or `correctActivity`.
+ * Pure: the component and any probe read the same assignment and scene. A tap is checked by the activity's own
+ * check. A one-choice challenge (a time of day, the card before or after, which takes longer, the activity at a
+ * schedule time) may also be said aloud: the item is spoken with `acceptsGesture`, and JEV judges it from the
+ * tutor's feedback against `expectedAnswer` (VB-1, 2026-10-13). An order (sequence-events, clock-sequence) is
+ * several answers at once: it stays tap-only, and the tutor is never handed `correctOrder` or the clock hours.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { EventCard, TimeSequencerChallenge } from './TimeSequencer';
 
 export const PERIODS = ['morning', 'afternoon', 'evening', 'night'] as const;
 export type Period = typeof PERIODS[number];
 
 export function workspaceAssignment(challenge: TimeSequencerChallenge): TeachingAssignment {
-  return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
+  const expectedAnswer = timeExpectedAnswer(challenge);
+  if (!expectedAnswer) return { id: challenge.id, task: challenge.instruction, response: 'gesture' };
+  return { id: challenge.id, task: `${challenge.instruction} The learner answers by saying it, or tapping one choice and `
+    + 'pressing Check.', response: 'speech', acceptsGesture: true, expectedAnswer, misses: timeSpokenMisses(challenge) };
 }
+
+const SHORT_STOP = new Set(['the', 'a', 'an', 'your', 'my', 'our', 'to', 'at', 'in', 'of', 'on', 'and', 'up', 'out',
+  'with', 'for', 'some', 'back', 'from', 'into', 'off']);
+const contentWords = (s: string) => s.toLowerCase().replace(/[^a-z\s']/g, ' ').split(/\s+/)
+  .filter(w => w.length > 2 && !SHORT_STOP.has(w));
+/** A word of a label that no other named label has, for a short way of saying it ("Board the big yellow bus": "bus"). */
+function ownWord(label: string, others: readonly string[]): string | undefined {
+  const taken = new Set(others.flatMap(contentWords));
+  return contentWords(label).reverse().find(w => !taken.has(w));
+}
+const quoted = (labels: readonly string[]) => labels.map(l => `"${l}"`).join(', ');
+const sayAs = (label: string, others: readonly string[]) => {
+  const own = ownWord(label, others);
+  return `said as "${label}" or a shorter way of saying the same activity${own ? ` (such as "${own}" or "the ${own}")` : ''}`;
+};
+
+/** The one answer a spoken choice is judged against, with the natural ways a learner says it; none for an order. */
+export function timeExpectedAnswer(c: TimeSequencerChallenge): string | undefined {
+  if (c.type === 'match-time-of-day') {
+    const p = c.correctPeriod;
+    if (!p) return undefined;
+    const night = p === 'night' ? ', "at night" or "nighttime"' : '';
+    return `${cap(p)} ("${c.event?.label ?? 'the activity'}" happens in the ${p}); said as "${p}", "in the ${p}"${night} `
+      + `or in a sentence such as "I do it in the ${p}". Any other time of day is not it.`;
+  }
+  if (c.type === 'before-after') {
+    const key = c.options?.find(o => o.id === c.correctEvent);
+    if (!key) return undefined;
+    const others = (c.options ?? []).filter(o => o.id !== key.id).map(o => o.label), ref = c.referenceEvent?.label ?? '';
+    return `the card "${key.label}" (it happens ${c.relation} "${ref}"); ${sayAs(key.label, [...others, ref])}. `
+      + `Another card${others.length ? ` (${quoted(others)})` : ''}${ref ? ` or "${ref}" itself` : ''} is not it.`;
+  }
+  if (c.type === 'duration-compare') {
+    const a = c.eventA?.label, b = c.eventB?.label;
+    if (!a || !b || !c.correctAnswer) return undefined;
+    if (c.correctAnswer === 'same') return `about the same ("${a}" and "${b}" take about the same time); said as "the same", `
+      + '"about the same", "same time" or "they take the same". Naming either one as taking longer is not it.';
+    const [long, short] = c.correctAnswer === 'A' ? [a, b] : [b, a];
+    const which = c.correctAnswer === 'A' ? 'the first one' : 'the second one';
+    // Two content words where the label has them ("A whole school day": "school day"); one word reads too thin.
+    const short2 = contentWords(long).slice(-2).join(' ') || long;
+    return `"${long}" (it takes longer than "${short}"); said as "${long}", a shorter way of saying the same activity `
+      + `(such as "${short2}" or "the ${short2}"), or "${which}". "${short}", or "about the same", is not it.`;
+  }
+  if (c.type === 'read-schedule') {
+    const key = c.correctActivity;
+    if (!key) return undefined;
+    const others = Array.from(new Set([...(c.activityOptions ?? []), ...(c.schedule ?? []).map(r => r.activity)])).filter(o => o !== key);
+    return `"${key}", the activity in the row at ${c.targetTime}; ${sayAs(key, others)}. Another activity on the schedule `
+      + 'or among the choices is not it.';
+  }
+  return undefined;
+}
+
+/**
+ * A spoken choice's known wrong answers, with the tap's ids (`timeSequencerMiss`, the catalog's lists), most specific
+ * first. Each pattern names the answer and the wrong answer the learner gives.
+ */
+export function timeSpokenMisses(c: TimeSequencerChallenge): KnownMiss[] {
+  if (c.type === 'match-time-of-day') {
+    const key = PERIODS.indexOf(c.correctPeriod as Period);
+    if (key < 0) return [];
+    const near = [PERIODS[(key + 3) % 4], PERIODS[(key + 1) % 4]], far = PERIODS[(key + 2) % 4];
+    const fact = `The answer is ${PERIODS[key]}.`;
+    return [
+      { id: 'next_period', pattern: `${fact} The learner's answer is ${near.join(' or ')}, a neighbouring part of the day.`, examples: near },
+      { id: 'far_period', pattern: `${fact} The learner's answer is ${far}, the opposite part of the day.`, examples: [far] },
+    ];
+  }
+  if (c.type === 'before-after') {
+    const key = c.options?.find(o => o.id === c.correctEvent);
+    if (!key) return [];
+    const others = (c.options ?? []).filter(o => o.id !== key.id).map(o => o.label), ref = c.referenceEvent?.label;
+    return [{ id: 'other_event', pattern: `The answer is "${key.label}". The learner names another card`
+      + `${others.length ? `: ${quoted(others)}` : ''}${ref ? ` (or "${ref}", the card the question is about)` : ''}.`,
+    examples: [...others, ...(ref ? [ref] : [])] }];
+  }
+  if (c.type === 'duration-compare') {
+    const a = c.eventA?.label, b = c.eventB?.label;
+    if (!a || !b || !c.correctAnswer) return [];
+    if (c.correctAnswer === 'same') return [{ id: 'missed_same', pattern: `"${a}" and "${b}" take about the same time, but `
+      + 'the learner names one of them as taking longer.', examples: [a, b] }];
+    const short = c.correctAnswer === 'A' ? b : a;
+    return [
+      { id: 'said_same', pattern: 'The learner says the two take about the same time, though one takes longer.', examples: ['the same', 'about the same'] },
+      { id: 'shorter_one', pattern: `The learner names "${short}", the quicker one, as taking longer.`, examples: [short] },
+    ];
+  }
+  if (c.type === 'read-schedule') {
+    const key = c.correctActivity, rows = c.schedule ?? [];
+    if (!key) return [];
+    const at = rows.findIndex(r => r.time === c.targetTime);
+    const said = Array.from(new Set([...(c.activityOptions ?? []), ...rows.map(r => r.activity)])).filter(o => o !== key);
+    const rowOf = (o: string) => rows.findIndex(r => r.activity === o);
+    const next = said.filter(o => rowOf(o) >= 0 && at >= 0 && Math.abs(rowOf(o) - at) === 1);
+    const other = said.filter(o => rowOf(o) >= 0 && !next.includes(o)), off = said.filter(o => rowOf(o) < 0);
+    const fact = `The answer is "${key}", the activity at ${c.targetTime}.`;
+    return [
+      ...(next.length ? [{ id: 'next_row', pattern: `${fact} The learner's answer is ${quoted(next)}, the activity one row above or below.`, examples: next }] : []),
+      ...(other.length ? [{ id: 'other_row', pattern: `${fact} The learner's answer is ${quoted(other)}, from another row of the schedule.`, examples: other }] : []),
+      ...(off.length ? [{ id: 'not_on_schedule', pattern: `${fact} The learner's answer is ${quoted(off)}, a choice that is not on the schedule.`, examples: off }] : []),
+    ];
+  }
+  return [];
+}
+
+/** What a spoken mode's answer is, which the scene withholds until the learner answers. */
+const WITHHELD: Partial<Record<TimeSequencerChallenge['type'], string>> = {
+  'match-time-of-day': 'the time of day the activity happens in',
+  'before-after': 'which card is the answer',
+  'duration-compare': 'which activity takes longer, or whether they take about the same time',
+  'read-schedule': 'the activity at the asked time',
+};
 
 export interface TimeView {
   /** Card ids in the order the learner tapped them (sequence-events, clock-sequence). */
@@ -142,8 +261,11 @@ export function workspaceScene(challenge: TimeSequencerChallenge, view: TimeView
     facts: {
       kind: challenge.type, ...drawn,
       learnerWork: describeTimeWork(challenge, view),
-      constraints: 'The learner answers on the screen: taps the cards in order, or taps one choice, and presses Check; '
-        + 'the activity checks the work itself. You cannot tap or order cards for the learner.',
+      constraints: isOrdering(challenge)
+        ? 'The learner answers on the screen: taps the cards in order and presses Check; the activity checks the work '
+          + 'itself. You cannot tap or order cards for the learner.'
+        : 'The learner says the answer or taps one choice, then presses Check; a tap is checked by the activity. Before '
+          + `the learner has answered, never name ${WITHHELD[challenge.type] ?? 'the answer'}. You cannot tap for the learner.`,
     },
   };
 }

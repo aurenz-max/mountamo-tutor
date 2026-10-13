@@ -103,7 +103,8 @@
     "J1-drivable": "by design: the check is the Gemini inspector, which the dry sweep has no model for; OpenBuilder.workspace.test.tsx drives the commit with a stubbed inspector"
   },
   "strategy-picker.compare": {
-    "J1-drivable": "handoff 21 SW-8 (by design)"
+    "J1-drivable": "handoff 21 SW-8 (by design)",
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
   },
   "push-pull-arena.observe": {
     "J11-recovery-record": "handoff 19 slice 9a (user ruling)"
@@ -124,7 +125,8 @@
     "J1-drivable": "handoff 24 SW-L1"
   },
   "habitat-diorama.connect": {
-    "J12-item-miss-answered": "qa/support-levers/QUEUE-item-gaps-2026-10-09.md"
+    "J12-item-miss-answered": "qa/support-levers/QUEUE-item-gaps-2026-10-09.md",
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
   },
   "pattern-builder.create": {
     "J12-item-miss-answered": "qa/support-levers/QUEUE-item-gaps-2026-10-09.md"
@@ -148,5 +150,257 @@
   "letter-workshop.write": {
     "J10-clean-record": "docs/contracts/letter-workshop.md: copy/write sessions are localOnly (provisional formation scoring, no adaptive record until /student-data-loop calibration; user ruling owed)",
     "J11-recovery-record": "docs/contracts/letter-workshop.md: copy/write sessions are localOnly (provisional formation scoring, no adaptive record until /student-data-loop calibration; user ruling owed)"
+  },
+  "angle-workshop.classify_pairs": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "angle-workshop.solve_algebraic": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "angle-workshop.solve_unknown": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "angle-workshop.transversal": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "area-model.perimeter": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "array-grid.count_array": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "bar-model.compare_bars": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "bar-model.graph_word_problem": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "bar-model.match_to_bar": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "bar-model.most_least": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "bar-model.picture_graph": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "bar-model.read_one_to_one": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "bar-model.read_scale": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "bar-model.scaled_bar_graph": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "circle-explorer.area": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "circle-explorer.circumference": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "circle-explorer.composite": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "circle-explorer.reverse": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "coordinate-graph.find_intercept": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "coordinate-graph.find_slope": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "distribution-explorer.compute_advanced": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "distribution-explorer.compute_basic": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "distribution-explorer.identify": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "double-number-line.equivalent_ratios": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "double-number-line.find_missing": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "double-number-line.unit_rate": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "equation-builder.balance-both-sides": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "equation-builder.missing-operand": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "equation-builder.missing-result": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "equation-builder.true-false": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "formula-lab.free-explore": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "formula-lab.transfer-apply": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "fraction-circles.identify": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "function-sketch.classify-shape": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "function-sketch.compare-functions": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "habitat-diorama.restore": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
+  },
+  "histogram.estimate_center": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "histogram.identify_shape": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "histogram.read_frequency": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "knowledge-check.apply.math": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
+  },
+  "knowledge-check.recall": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
+  },
+  "knowledge-check.recall.math": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
+  },
+  "knowledge-check.recall.science": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
+  },
+  "letter-sound-link.hear_see": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
+  },
+  "letter-sound-link.hear_see-voicing": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
+  },
+  "letter-spotter.find_it": {
+    "J14-sayable-is-spoken": "gesture by design: the item names the letter to find, so saying it repeats the target (census 2026-10-13)"
+  },
+  "letter-spotter.match_it": {
+    "J14-sayable-is-spoken": "gesture by design: the item names the letter to find, so saying it repeats the target (census 2026-10-13)"
+  },
+  "matrix-display.determinant_inverse": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "molecule-constructor.identify": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
+  },
+  "multiplication-explorer.build": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "multiplication-explorer.commutative": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "multiplication-explorer.connect": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "multiplication-explorer.distributive": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "multiplication-explorer.fluency": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "multiplication-explorer.missing_factor": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "net-folder.identify_solid": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "net-folder.match_faces": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "net-folder.surface_area": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "net-folder.valid_net": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "parameter-explorer.predict-direction": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "parameter-explorer.predict-value": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "percent-bar.find_part": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "percent-bar.identify_percent": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "periodic-table.explore": {
+    "J14-sayable-is-spoken": "gesture by design: the element to locate is named in the question, so saying it proves nothing (census 2026-10-13)"
+  },
+  "poetry-lab.analysis": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
+  },
+  "polygon-area-builder.composite_area": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "polygon-area-builder.coordinate_polygon": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "polygon-area-builder.find_area_trapezoid": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "polygon-area-builder.find_area_triangle_parallelogram": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "ratio-table.build_ratio": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "ratio-table.find_multiplier": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "ratio-table.missing_value": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "ratio-table.unit_rate": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "shape-composer.how-many-ways": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "slope-triangle.calculate": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "story-bridge.match_character": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-4: number/word answers become speech + acceptsGesture"
+  },
+  "strategy-picker.choose": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "strategy-picker.guided": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "strategy-picker.match": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "strategy-picker.try_another": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
+  },
+  "two-way-table.conditional_probability": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "two-way-table.independence_test": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "two-way-table.joint_probability": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "two-way-table.marginal_distribution": {
+    "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
   }
 }

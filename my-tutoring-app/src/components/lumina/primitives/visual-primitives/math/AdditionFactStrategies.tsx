@@ -327,6 +327,8 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
   const workspace = useRef<TeachingWorkspace | null>(null);
   /** Bound after the state it clears is declared; the progress hook calls it only after render. */
   const reopen = useRef<(retry: boolean) => void>(() => {});
+  /** Bound below; a spoken answer the observer credited (`onSolved`). */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
 
   // ── Progress: the teaching workspace owns it ───────────────────
   const progress = useAdditionFactProgress({
@@ -334,6 +336,7 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
     instanceId, objectiveId: data.objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: additionFactAssignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
+    onSolved: (index) => solvedAloud.current(index),
   });
   const { currentIndex, currentAttempts, results, isComplete, recordResult } = progress;
   const canAttempt = progress.canAttempt !== false;
@@ -408,6 +411,7 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
     }
     if (currentAttempts === 0) firstResponseMsRef.current.push(Date.now() - openedAt.current);
     if (correct) {
+      tappedCorrect.current = item.id;
       SoundManager.playCorrect();
       const attempts = currentAttempts + 1;
       recordResult({ challengeId: item.id, correct: true, attempts, score: scoreFor(attempts), a: item.a, b: item.b });
@@ -416,6 +420,17 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
       setWrong((w) => [...w, value]);
     }
     progress.commitCheck(describeAdditionFactCheck(value), correct, additionFactMiss(item, value));
+  };
+
+  // A spoken answer the observer credited (`onSolved` fires once per fact, for a tap too): the result a correct tap
+  // records, so the slot shows the sum. The shared lifecycle plays the success sound.
+  const tappedCorrect = useRef<string | null>(null);
+  solvedAloud.current = (index) => {
+    const solvedFact = challenges[index];
+    if (!solvedFact || tappedCorrect.current === solvedFact.id) return;
+    if (currentAttempts === 0) firstResponseMsRef.current.push(Date.now() - openedAt.current);
+    const attempts = currentAttempts + 1;
+    progress.mergeResult({ challengeId: solvedFact.id, correct: true, attempts, score: scoreFor(attempts), a: solvedFact.a, b: solvedFact.b });
   };
 
   // ── Completion: once every fact is solved, submit once (only under an evaluation provider) ──

@@ -84,13 +84,16 @@ it('every catalog mode binds', () => {
   }
 });
 
-it.each(Object.values(CASES))('$c.type: a checked gesture that publishes no key; a wrong check names its miss, Try again keeps the work made, the right one completes once',
+it.each(Object.values(CASES))('$c.type: a check the scene never answers; a wrong check names its miss, Try again keeps the work made, the right one completes once',
   async ({ c, wrong, right, miss, kept, secret }) => {
     seam.evaluationContext = { lesson: 'test' };
     const h = mountWorkspace({ primitiveId: 'skip-counting-runner', evalMode: c.type, data: runner([c]) as never });
     const task = h.state().task!;
-    expect(task.workspace!.expectedAnswer).toBeUndefined();
-    expect(task.demand.response).toBe('gesture');
+    // A one-number item may also be said aloud (VB-1; SkipCountingRunner.spoken.workspace.test.tsx); count_along
+    // and a fill_missing item with two "?" stay gesture with no key.
+    const spoken = c.type !== 'count_along' && c.type !== 'fill_missing';
+    expect(task.demand.response).toBe(spoken ? 'speech' : 'gesture');
+    expect(!!task.workspace!.expectedAnswer).toBe(spoken);
     expect(JSON.stringify(task.demand)).not.toMatch(secret);
     expect(JSON.stringify(task.demand)).not.toMatch(/hiddenPositions|targetFact|startPosition/);
     expect(seam.legacyAI).not.toHaveBeenCalled();

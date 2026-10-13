@@ -51,7 +51,7 @@ it('every catalog mode has a hand-built challenge', () => {
   expect(MODES.sort()).toEqual(Object.keys(CHALLENGES).sort());
 });
 
-it.each(Object.keys(CHALLENGES))('%s: one checked tap that publishes no key; a wrong one names its miss and shows no answer, Try again clears it, the right one completes once',
+it.each(Object.keys(CHALLENGES))('%s: one checked tap; a wrong one names its miss and shows no answer, Try again clears it, the right one completes once',
   async mode => {
     const c = CHALLENGES[mode];
     const d = data([c]);
@@ -61,7 +61,9 @@ it.each(Object.keys(CHALLENGES))('%s: one checked tap that publishes no key; a w
     expect(h.view.container.textContent).not.toMatch(/ready to practice/i);
     const task = h.state().task!;
     expect(task.task).toContain(c.prompt.text);
-    expect(task.workspace!.expectedAnswer).toBeUndefined();
+    // Every choice can be said, so the item also takes it spoken: the observer judges against the key.
+    expect(task.workspace!.expectedAnswer).toBe(c.correctAnswer);
+    expect(task.demand.response).toBe('speech');
     expect(JSON.stringify(task)).not.toMatch(/correctAnswer|acceptableAnswers|Because it is/);
     expect(task.demand).toMatchObject({ choices: c.options.join(' | '), learnerWork: 'No choice tapped yet' });
     expect(seam.legacyAI).not.toHaveBeenCalled();
@@ -86,6 +88,24 @@ it.each(Object.keys(CHALLENGES))('%s: one checked tap that publishes no key; a w
     await flushScoring();
     expect(seam.submit).toHaveBeenCalledOnce();
   });
+
+it.each(Object.keys(CHALLENGES))('%s: a choice said aloud and credited by the tutor completes the challenge', async mode => {
+  const c = CHALLENGES[mode];
+  seam.evaluationContext = { lesson: 'test' };
+  const h = mountWorkspace({ primitiveId: 'fast-fact', evalMode: mode, data: data([c]) });
+  h.say(c.options.find(o => o !== c.correctAnswer)!); h.feedback('incorrect', 'retry');
+  h.say(c.correctAnswer); h.feedback('correct', 'advance'); h.confirmVisible();
+  expect(h.state().status).toBe('completed');
+  await flushScoring();
+  expect(seam.submit).toHaveBeenCalledOnce();
+});
+
+it('picture choices stay a tap and publish no key', () => {
+  const c = fact('p', 'recognize', 'Which one is a cat?', '🐱', ['🐶', '🐱', '🐭']);
+  const h = mountWorkspace({ primitiveId: 'fast-fact', evalMode: 'recognize', data: data([c]) });
+  expect(h.state().task!.demand.response).toBe('gesture');
+  expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+});
 
 it('a counting picture\'s label drops the count the alt text states', () => {
   const c = { ...CHALLENGES.recognize, prompt: { text: 'How many stars?', visual: { type: 'emoji' as const, emoji: '⭐⭐⭐⭐', alt: '4 yellow stars' } } };

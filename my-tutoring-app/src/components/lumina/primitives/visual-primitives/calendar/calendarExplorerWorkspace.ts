@@ -5,13 +5,16 @@
  *
  * Pure: the component and the journey read the same assignments and scenes. Two surfaces:
  *  - the calendar grid (identify, mark_events, count, pattern, day_offset, interval_count): the
- *    learner taps a date or an option and presses Check; the activity checks it, and the key never
- *    reaches the tutor;
+ *    learner taps a date or an option and presses Check, and the activity checks it. A question whose
+ *    answer is one weekday, date or count (identify, count, pattern, day_offset, interval_count) may
+ *    also be said aloud: the item is spoken with `acceptsGesture`, and JEV judges it from the tutor's
+ *    feedback against `expectedAnswer` (VB-1, 2026-10-13). mark_events stays tap-only: its date is
+ *    printed in the ask, so the task is placing the marker, and saying the date back proves nothing;
  *  - the spoken chain (day_sequence, month_sequence): the tutor says a day or month and the
  *    learner says the one that comes next.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
-import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import { spokenNumber, type KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { CalendarExplorerChallenge } from './CalendarExplorer';
 import { calendarSequenceHarnessAnswers, type CalendarDaySequenceItem, type CalendarSequenceItem } from './calendarExplorerScript';
 
@@ -22,8 +25,14 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
 export const isGridDateAnswer = (c: CalendarExplorerChallenge) =>
   (c.type === 'identify' || c.type === 'mark_events') && /^\d+$/.test((c.correctAnswer ?? '').trim());
 
-export const calendarGridAssignment = (c: CalendarExplorerChallenge): TeachingAssignment =>
-  ({ id: c.id, task: c.question, response: 'gesture' });
+export function calendarGridAssignment(c: CalendarExplorerChallenge): TeachingAssignment {
+  const expectedAnswer = calendarExpectedAnswer(c);
+  if (!expectedAnswer) return { id: c.id, task: c.question, response: 'gesture' };
+  const how = isGridDateAnswer(c) ? 'saying the date, or tapping it on the calendar and pressing Check'
+    : 'saying it, or tapping one of the printed options and pressing Check';
+  return { id: c.id, task: `${c.question} The learner answers by ${how}.`, response: 'speech', acceptsGesture: true,
+    expectedAnswer, misses: calendarGridSpokenMisses(c) };
+}
 
 export interface CalendarGridView {
   showDayHeaders: boolean;
@@ -46,9 +55,15 @@ export function calendarGridScene(c: CalendarExplorerChallenge, view: CalendarGr
     if (c.markedDates?.length) facts.markedDates = c.markedDates.join(', ');
   }
   if (!isGridDateAnswer(c) && c.options?.length) facts.options = c.options.join(', ');
-  facts.constraints = isGridDateAnswer(c)
-    ? 'The learner taps a date on the calendar, then presses Check; the activity checks it. You cannot tap.'
-    : 'The learner taps one of the printed options, then presses Check; the activity checks it. You cannot tap.';
+  const kind = calendarAnswerKind(c);
+  facts.constraints = !kind
+    ? isGridDateAnswer(c)
+      ? 'The learner taps a date on the calendar, then presses Check; the activity checks it. You cannot tap.'
+      : 'The learner taps one of the printed options, then presses Check; the activity checks it. You cannot tap.'
+    : (isGridDateAnswer(c) ? 'The learner says the date or taps it on the calendar, then presses Check'
+      : 'The learner says the answer or taps one of the printed options, then presses Check')
+      + `; a tap is checked by the activity. Before the learner has answered, never name the ${WITHHELD[kind]} that `
+      + 'answers the question. You cannot tap.';
   if (view.revealPolicy) facts.revealPolicy = view.revealPolicy.replace(/^\[SUPPORT_TIER \w+\]\s*/, '');
   return { objects: [], facts };
 }
@@ -73,6 +88,102 @@ const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'frida
 const weekday = (s: string) => WEEKDAYS.indexOf(s.trim().toLowerCase());
 /** "15" or "March 15" as the day of the month. */
 const dateNumber = (s: string) => { const m = /^(?:[a-z]+\s+)?(\d{1,2})$/i.exec(s.trim()); return m ? Number(m[1]) : NaN; };
+const dayName = (i: number) => { const d = WEEKDAYS[((i % 7) + 7) % 7]; return d[0].toUpperCase() + d.slice(1); };
+const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+
+/** The kind of one sayable answer a grid question has; none for a placement (mark_events) or an answer of another shape. */
+export type CalendarAnswerKind = 'weekday' | 'date' | 'count';
+
+export function calendarAnswerKind(c: CalendarExplorerChallenge): CalendarAnswerKind | undefined {
+  const key = (c.correctAnswer ?? '').trim();
+  if (c.type === 'count' || c.type === 'interval_count') return /^\d+$/.test(key) ? 'count' : undefined;
+  if (c.type !== 'identify' && c.type !== 'pattern' && c.type !== 'day_offset') return undefined;
+  if (weekday(key) >= 0) return 'weekday';
+  return c.type !== 'day_offset' && Number.isFinite(dateNumber(key)) ? 'date' : undefined;
+}
+
+/** What a spoken grid question withholds until the learner answers. */
+const WITHHELD: Record<CalendarAnswerKind, string> = { weekday: 'day of the week', date: 'date', count: 'number' };
+
+/** The one answer a spoken grid question is judged against, with the natural ways a learner says it. */
+export function calendarExpectedAnswer(c: CalendarExplorerChallenge): string | undefined {
+  const kind = calendarAnswerKind(c), key = (c.correctAnswer ?? '').trim();
+  if (kind === 'weekday') {
+    const day = dayName(weekday(key));
+    const why = c.type === 'day_offset' && c.startDay && c.offsetDays
+      ? ` (${c.offsetDays} ${c.offsetDays === 1 ? 'day' : 'days'} forward from ${c.startDay} lands on ${day})` : '';
+    return `${day}${why}; said as "${day}" or in a sentence such as "it's ${day}" or "on a ${day}". Any other day of the `
+      + 'week is not it.';
+  }
+  if (kind === 'date') {
+    const n = dateNumber(key), month = /^[a-z]+/i.exec(key)?.[0] ?? (c.type === 'identify' ? MONTH_NAMES[c.month - 1] : undefined);
+    return `the ${ordinal(n)}${month ? ` (${month} ${n})` : ''}; said as the number ("${n}" or "${spokenNumber(n)}"), as `
+      + `"the ${ordinal(n)}"${month ? ` or as "${month} ${n}"` : ''}. A date one day or a week away is not it.`;
+  }
+  if (kind === 'count') {
+    const n = Number(key), unit = c.type === 'count' && c.targetDayOfWeek ? `${dayName(weekday(c.targetDayOfWeek))}s` : 'days';
+    const why = c.type === 'count'
+      ? c.targetDayOfWeek ? ` (${MONTH_NAMES[c.month - 1]} ${c.year} has ${n} ${unit})` : ''
+      : c.intervalStartDate !== undefined && c.intervalEndDate !== undefined
+        ? c.countConvention === 'inclusive'
+          ? ` (from the ${ordinal(c.intervalStartDate)} through the ${ordinal(c.intervalEndDate)}, counting both marked days)`
+          : ` (between the ${ordinal(c.intervalStartDate)} and the ${ordinal(c.intervalEndDate)}, not counting either marked day)`
+        : '';
+    return `${n}${why}; said as a number, digits or words ("${n}", "${spokenNumber(n)}" or "${spokenNumber(n)} ${unit}"). `
+      + 'One more or one fewer is not it.';
+  }
+  return undefined;
+}
+
+/**
+ * A spoken grid answer's known wrong answers, with the tap's ids (`calendarMiss`, the catalog's lists), most specific
+ * first: a weekday's start day (day_offset), the day before and after, any other day; a date a week away, one day
+ * away, any other date; a count one less, one more, any other count.
+ */
+export function calendarGridSpokenMisses(c: CalendarExplorerChallenge): KnownMiss[] {
+  const kind = calendarAnswerKind(c), key = (c.correctAnswer ?? '').trim();
+  if (kind === 'weekday') {
+    const want = weekday(key), start = c.type === 'day_offset' && c.startDay ? weekday(c.startDay) : -1;
+    const fact = `The answer is ${dayName(want)}.`;
+    const hasStart = start >= 0 && start !== want;
+    const near = [[-1, 'day_before', 'the day before it'], [1, 'day_after', 'the day after it']] as const;
+    const other = [3, 2, 4].map(d => (want + d) % 7).find(d => d !== start)!;
+    return [
+      ...(hasStart ? [{ id: 'start_day', pattern: `${fact} The learner's answer is ${dayName(start)}, the day the count starts from.`,
+        examples: [dayName(start)] }] : []),
+      ...near.filter(([d]) => !hasStart || (want + d + 7) % 7 !== start).map(([d, id, what]) =>
+        ({ id, pattern: `${fact} The learner's answer is ${dayName(want + d)}, ${what}.`, examples: [dayName(want + d)] })),
+      { id: 'other_day', pattern: `${fact} The learner's answer is another day of the week, not ${dayName(want - 1)}, `
+        + `${dayName(want)} or ${dayName(want + 1)}${hasStart ? ` (or ${dayName(start)}, the start day)` : ''}.`, examples: [dayName(other)] },
+    ];
+  }
+  if (kind === 'date') {
+    const n = dateNumber(key), last = new Date(c.year, c.month, 0).getDate() || 31;
+    const fact = `The answer is the ${ordinal(n)}.`;
+    const inMonth = (d: number) => d >= 1 && d <= last;
+    const week = [n - 7, n + 7].filter(inMonth), next = [n - 1, n + 1].filter(inMonth);
+    const other = [n + 3, n - 3, n + 2, n - 2].find(inMonth);
+    const say = (ds: number[]) => ds.map(d => `the ${ordinal(d)}`).join(' or ');
+    return [
+      ...(week.length ? [{ id: 'same_column_date', pattern: `${fact} The learner's answer is a whole number of weeks away, such as `
+        + `${say(week)}: the same day of the week.`, examples: week.map(d => `the ${ordinal(d)}`) }] : []),
+      ...(next.length ? [{ id: 'next_to_date', pattern: `${fact} The learner's answer is ${say(next)}, one day away.`,
+        examples: next.map(d => `the ${ordinal(d)}`) }] : []),
+      ...(other ? [{ id: 'other_date', pattern: `${fact} The learner's answer is another date, not one day or a whole number of `
+        + 'weeks away.', examples: [`the ${ordinal(other)}`] }] : []),
+    ];
+  }
+  if (kind === 'count') {
+    const n = Number(key), fact = `The answer is ${n}.`;
+    return [
+      ...(n - 1 >= 0 ? [{ id: 'one_less', pattern: `${fact} The learner's answer is ${n - 1}, one less.`, examples: [spokenNumber(n - 1)] }] : []),
+      { id: 'one_more', pattern: `${fact} The learner's answer is ${n + 1}, one more.`, examples: [spokenNumber(n + 1)] },
+      { id: 'other_count', pattern: `${fact} The learner's answer is another number, not ${n - 1}, ${n} or ${n + 1}.`,
+        examples: [spokenNumber(n + 2)] },
+    ];
+  }
+  return [];
+}
 
 export function calendarMiss(c: CalendarExplorerChallenge, picked: string): CalendarMiss | undefined {
   const key = c.correctAnswer ?? '';

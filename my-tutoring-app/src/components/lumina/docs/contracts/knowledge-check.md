@@ -324,3 +324,11 @@ problem needs a picture.
 - 2026-10-09 — `spread_pictures` help lever (J12 gap `knowledge-check.recall` p0-mct). R10 extended; R11 unchanged (the
   drop guard is untouched, the new lever answers the count misses where the drop cannot be offered). R1-R9 untouched:
   render-only addition behind a pull, no generator or checker change.
+- 2026-10-12 — **spoken answers on `on_screen` items (user ruling 10-12; changes R6/C8).** A multiple-choice or
+  true/false problem worked on screen now also takes its answer said aloud: `onScreenItem` records a `spokenKey`, the
+  assignment is a speech item with `acceptsGesture`, and its `expectedAnswer` names the key and the other choices. The
+  problem surface still checks a gesture, and a checked gesture ends the pending spoken answer. Sequencing keeps
+  gesture-only. Before: C8's "touched items publish no key" covered `on_screen`, so a spoken "wet sand" was praised four
+  times and never credited (pulse check 2026-10-13, p7-screen). The scene fact and the ask ("Tell me, or show me on the
+  screen.") say either answers it; a gesture-only `on_screen` item's fact says a spoken answer is not recorded. R7/R8
+  hold (one `::pN` record per problem; `KnowledgeCheck.on-screen.test.tsx` adds the spoken case).

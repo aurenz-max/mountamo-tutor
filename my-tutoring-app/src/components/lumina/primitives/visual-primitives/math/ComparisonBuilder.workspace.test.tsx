@@ -72,14 +72,21 @@ function mount(evalMode: string, challenges: ComparisonBuilderChallenge[], grade
   return { runtime, transport, sent, state, dispatch, confirmVisible, choose, check };
 }
 
-it.each(Object.keys(MODE_KIND))('%s mounts under tutor ownership with no scripted cue and no published key', mode => {
+it.each(Object.keys(MODE_KIND))('%s mounts under tutor ownership with no scripted cue and no key in the scene', mode => {
   const c = challengeFor(MODE_KIND[mode]);
   const h = mount(mode, [c]);
   expect(h.state().owner).toBe('tutor');
-  expect(h.state().task!.task).toBe(c.instruction);
-  expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+  expect(h.state().task!.task.startsWith(c.instruction)).toBe(true);
+  // One sayable answer is a spoken item that still takes the tap; the order stays a tap with no key.
+  if (mode === 'order') {
+    expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
+    expect(h.state().task!.demand.response).toBe('gesture');
+  } else {
+    expect(h.state().task!.workspace!.expectedAnswer).toBeTruthy();
+    expect(h.state().task!.demand.response).toBe('speech');
+  }
   const demand = JSON.stringify(h.state().task!.demand);
-  // The gesture key never reaches the tutor: no symbol, no sorted order, no target + 1.
+  // The scene the tutor reads never states the key: no symbol, no sorted order, no target + 1.
   expect(demand).not.toMatch(/correct|">"|2, 5, 8|: ?7[,}]/);
   expect(seam.legacy).not.toHaveBeenCalled();
   expect(screen.queryByRole('button', { name: /next challenge/i })).toBeNull();

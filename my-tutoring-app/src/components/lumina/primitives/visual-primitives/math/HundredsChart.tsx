@@ -23,7 +23,7 @@ import type { HundredsChartMetrics } from '../../../evaluation/types';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useWorkspaceProgressFor } from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { describeHundredsChartCheck, hundredsChartAssignment, hundredsChartMatches, hundredsChartMiss, hundredsChartScene }
+import { describeHundredsChartCheck, hundredsChartAssignment, hundredsChartKey, hundredsChartMatches, hundredsChartMiss, hundredsChartScene }
   from './hundredsChartWorkspace';
 import {
   DOTS_LEVER, MODEL_LEVER, PRACTICE_NOTE, TALLY_LEVER, TALLY_FACT, dotsFact, hopDots, hundredsChartLevers, modelChart, modelFact,
@@ -137,6 +137,10 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
   /** Bound after the state it clears is declared; the progress hook calls it only after render. */
   const reopen = useRef<(retry: boolean) => void>(() => {});
+  /** Bound below; a spoken answer the observer credited (`onSolved`). */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** The challenge a correct Check already recorded, so its `onSolved` records nothing twice. */
+  const checkedCorrect = useRef<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Challenge progress: the teaching workspace owns it
@@ -147,6 +151,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
     workspace, assignment: hundredsChartAssignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
+    onSolved: index => solvedAloud.current(index),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -332,6 +337,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
       setFeedbackType('success');
 
       const score = Math.max(0, 100 - currentRetries * RETRY_PENALTY * 100);
+      checkedCorrect.current = currentChallenge.id;
       recordResult({
         challengeId: currentChallenge.id,
         correct: true,
@@ -345,6 +351,19 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
       setFeedbackType('error');
     }
     progress.commitCheck(describeHundredsChartCheck(currentChallenge, view), isCorrect, hundredsChartMiss(currentChallenge, view));
+  };
+
+  // A spoken description or skip value the observer credited (`onSolved` fires once per challenge, for a Check too):
+  // the result a correct Check records, and the credited choice shown as chosen. The shared lifecycle plays the sound.
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    const key = solved ? hundredsChartKey(solved) : null;
+    if (!solved || key === null || checkedCorrect.current === solved.id) return;
+    recordResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1,
+      score: Math.max(0, 100 - currentRetries * RETRY_PENALTY * 100) });
+    setSelectedOption(key);
+    setFeedback('Correct!');
+    setFeedbackType('success');
   };
 
   // -------------------------------------------------------------------------
@@ -393,11 +412,11 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
   const tally = sessionChallenge && helpOn(TALLY_LEVER) ? rowTally(sessionChallenge, tapped, gridMax) : null;
   const shownModel: ChartModel | null = sessionChallenge && helpOn(MODEL_LEVER) ? modelChart(sessionChallenge, leverSession) : null;
 
-  // What the tutor and the observer are shown, republished every render. Derived from the challenge
-  // alone, so opening an item adds no revision after the advance.
+  // What the tutor and the observer are shown, republished every render: the challenge, and on a choice mode the
+  // choice tapped so far.
   useLayoutEffect(() => {
     if (!currentChallenge || !sessionChallenge) return;
-    const scene = hundredsChartScene(currentChallenge, { gridMax });
+    const scene = hundredsChartScene(currentChallenge, { gridMax, option: selectedOption });
     const levers = practice ? [] : itemLevers;
     const onScreen = [
       dotCells ? dotsFact(sessionChallenge, tapped) : null,

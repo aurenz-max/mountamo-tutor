@@ -2,12 +2,14 @@
  * Fast fact on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
  * (qa/workspace-rollout/ROLLOUT.md).
  *
- * Pure: the component and any probe read the same assignment and scene. Every challenge is one tap on a choice,
- * checked by the activity's own `isAnswerCorrect`, so the tutor is never handed `correctAnswer`,
- * `acceptableAnswers`, `explanation`, or a counting picture's count. The drill is untimed (user ruling: no timer on
+ * Pure: the component and any probe read the same assignment and scene. A tap on a choice is checked by the
+ * activity's own `isAnswerCorrect`. When every choice can be said (`factSpoken`), the challenge also takes its answer
+ * spoken (ROLLOUT VB): the key reaches the observer as `expectedAnswer` and JEV judges the tutor's feedback against it.
+ * The scene never states `explanation` or a counting picture's count. The drill is untimed (user ruling: no timer on
  * fact fluency): response time is never published and nothing advances or grades on a clock.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { spokenNumber, type KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { FastFactChallenge } from './FastFact';
 
 const norm = (s: string) => s.trim().toLowerCase();
@@ -26,8 +28,47 @@ export function factQuestion(challenge: FastFactChallenge): string {
   return sub ? `${sub} ${challenge.prompt.text}` : challenge.prompt.text;
 }
 
+/** A choice a learner can say: a number, a word or a short phrase (no emoji, symbols or pictures). */
+const SAYABLE = /^[A-Za-z0-9À-ÿ][A-Za-z0-9À-ÿ '.,:/-]*$/;
+const sayable = (option: string) => SAYABLE.test(option.trim()) && option.trim().length <= 30 && option.trim().split(/\s+/).length <= 4;
+
+/**
+ * Whether the challenge also takes its answer spoken (ROLLOUT VB): every choice can be said and names itself, so saying
+ * one is as deliberate as tapping it. A choice row of pictures or symbols stays a tap.
+ */
+export const factSpoken = (challenge: FastFactChallenge) => challenge.options.length > 0 && challenge.options.every(sayable);
+
+/**
+ * A spoken answer's known wrong answers (handoff 20 Part B), named with the tap's ids (`fastFactMiss`), concrete for this
+ * challenge and most specific first.
+ */
+export function fastFactSpokenMisses(challenge: FastFactChallenge): KnownMiss[] {
+  if (!factSpoken(challenge)) return [];
+  const key = challenge.correctAnswer.trim();
+  const others = challenge.options.map(o => o.trim()).filter(o => !isAnswerCorrect(o, challenge));
+  if (!NUM.test(key)) {
+    return others.length ? [{ id: 'other_choice', pattern: `The learner's answer is another of the choices: ${others.join(', ')}.`,
+      examples: others.slice(0, 3) }] : [];
+  }
+  const want = Number(key);
+  const expr = parseExpression(`${challenge.prompt.text} ${challenge.prompt.visual?.largeText ?? ''}`);
+  const operations = expr ? otherOperationResults(expr).filter(n => Number.isInteger(n) && n !== want && n >= 0) : [];
+  return [
+    ...(operations.length ? [{ id: 'wrong_operation', pattern: `The learner's answer is ${operations.join(' or ')}: the two numbers in the question combined by another operation.`,
+      examples: operations.map(String) }] : []),
+    ...(want - 1 >= 0 && !operations.includes(want - 1) ? [{ id: 'one_less', pattern: `The learner's answer is ${want - 1}, one less than the answer.`, examples: [spokenNumber(want - 1)] }] : []),
+    ...(!operations.includes(want + 1) ? [{ id: 'one_more', pattern: `The learner's answer is ${want + 1}, one more than the answer.`, examples: [spokenNumber(want + 1)] }] : []),
+    { id: 'other_number', pattern: 'The learner\'s answer is some other number.' },
+  ];
+}
+
 export function workspaceAssignment(challenge: FastFactChallenge): TeachingAssignment {
-  return { id: challenge.id, task: factQuestion(challenge), response: 'gesture' };
+  if (!factSpoken(challenge)) return { id: challenge.id, task: factQuestion(challenge), response: 'gesture' };
+  const also = (challenge.acceptableAnswers ?? []).filter(a => norm(a) !== norm(challenge.correctAnswer));
+  return { id: challenge.id, task: `${factQuestion(challenge)} The learner answers by saying a choice or tapping it.`,
+    response: 'speech', acceptsGesture: true,
+    expectedAnswer: `${challenge.correctAnswer}${also.length ? ` (also accepted: ${also.join(', ')})` : ''}`,
+    misses: fastFactSpokenMisses(challenge) };
 }
 
 export interface FastFactView {
@@ -112,8 +153,9 @@ export function workspaceScene(challenge: FastFactChallenge, view: FastFactView)
       ...drawn,
       choices: challenge.options.join(' | '),
       learnerWork: describeFactWork(challenge, view),
-      constraints: 'The learner answers by tapping one choice; the tap is checked at once by the activity. There is no '
-        + 'timer. You cannot tap for the learner.',
+      constraints: (factSpoken(challenge) ? 'The learner answers by saying one choice or tapping it; a tap is checked at once by the activity. '
+        : 'The learner answers by tapping one choice; the tap is checked at once by the activity. ')
+        + 'There is no timer. You cannot tap for the learner.',
     },
   };
 }

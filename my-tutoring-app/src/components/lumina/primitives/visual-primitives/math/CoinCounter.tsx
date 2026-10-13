@@ -29,7 +29,7 @@ import type { TeachingEvaluationResult } from '../../../components/live-activity
 import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
-import { COIN_CENTS, coinMiss, describeCoinWork, workspaceAssignment, workspaceScene, type CoinView } from './coinCounterWorkspace';
+import { COIN_CENTS, coinMiss, describeCoinWork, isSpokenCoin, workspaceAssignment, workspaceScene, type CoinView } from './coinCounterWorkspace';
 import {
   CHANGE_BAR_LEVER, COIN_VALUES_LEVER, PRACTICE_NOTE, RUNNING_TOTAL_LEVER, SIZE_ROW_LEVER, SKIP_STRIP_LEVER, SORT_LEVER, VALUE_TAGS_LEVER,
   changeBar, coinCounterLevers, leverFacts, practiceItem, runningValues, sizeOrder, skipStrip, sortedRows, type CoinLeverView,
@@ -287,13 +287,19 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   // Bound below, once the setters and the evaluation exist.
   const openItem = useRef<(retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  /** Bound below; a spoken answer the observer credited (`onSolved`). */
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
+  const tappedCorrect = useRef<string | null>(null);
   const progress = useController({
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: workspaceAssignment,
+    // The grade band decides whether a like count is enacted (tap only) or a total the learner may say.
+    workspace, assignment: ch => workspaceAssignment(ch, gradeBand),
     onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: result => finish.current(result),
+    onSolved: index => solvedAloud.current(index),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -626,6 +632,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
 
     if (correct) SoundManager.playCorrect();
     else SoundManager.playIncorrect();
+    if (correct) tappedCorrect.current = currentChallenge.id;
     // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
     const work = coinView.current;
     commitCheck.current(describeCoinWork(currentChallenge, work), correct,
@@ -703,6 +710,26 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       { challengeResults: result.outcomes, learningResponses: result.learningResponses,
         teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
       undefined, result.diagnosisEvidence);
+  };
+
+  // A spoken total, group or change the observer credited (`onSolved` fires once per challenge, for a tap too): the
+  // result a correct tap records, and the credited answer shown as a correct tap shows it. The shared lifecycle plays
+  // the success sound.
+  solvedAloud.current = (index) => {
+    const solved = challenges[index];
+    if (!solved || tappedCorrect.current === solved.id || !isSpokenCoin(solved, gradeBand)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    if (solved.type === 'count') {
+      setCountInput(String(solved.correctTotal ?? 0));
+      setFeedback(`Yes! The total is ${formatCents(solved.correctTotal ?? 0)}!`);
+    } else if (solved.type === 'make-change') {
+      setChangeInput(String(solved.correctChange ?? 0));
+      setFeedback(`Yes! The change is ${formatCents(solved.correctChange ?? 0)}!`);
+    } else {
+      setSelectedGroup(solved.correctGroup ?? null);
+      setFeedback(solved.correctGroup === 'equal' ? 'Correct! Both groups are worth the same.' : `Correct! Group ${solved.correctGroup} has more.`);
+    }
+    setFeedbackType('success');
   };
 
   // Auto-submit when all complete
@@ -797,7 +824,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           if (!easier) return 'This item has no easier ask; try a help lever.';
           // The practice item and the full item share no work: both start blank.
           setLeverState(pulled); resetDomainState(); setPractice(easier);
-          return { practice: workspaceAssignment(easier) };
+          return { practice: workspaceAssignment(easier, gradeBand) };
         }
         setLeverState(pulled);
         return true;

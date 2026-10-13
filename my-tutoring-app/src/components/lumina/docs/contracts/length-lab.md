@@ -6,7 +6,7 @@
 ## Requirements
 
 ### R1 — every mode binds the shared teaching workspace with no key reaching the tutor · OBSERVED (2026-10-09)
-- **Property:** all six modes (compare, estimate_then_tile, two_unit_compare, tile_and_count, order, indirect) are gesture items checked by the activity's own check (`lengthLabMatches`); each wrong check names a `LengthMiss` from the catalog list. Scene facts name the objects, units, clues and on-screen choices, never a length, a count, the order or the answer. On the workspace a wrong tile count does not print the right count (Try again follows); Try again clears the tiles, the slots and the choice, and keeps an estimate's guess (never graded). The scripted path is unchanged: one try per challenge, Next, wrong tile counts print the right count.
+- **Property:** all six modes (compare, estimate_then_tile, two_unit_compare, tile_and_count, order, indirect) take a gesture checked by the activity's own check (`lengthLabMatches`); compare and indirect are also spoken (R3), the other four are gesture-only with no `expectedAnswer`; each wrong check names a `LengthMiss` from the catalog list. Scene facts name the objects, units, clues and on-screen choices, never a length, a count, the order or the answer. On the workspace a wrong tile count does not print the right count (Try again follows); Try again clears the tiles, the slots and the choice, and keeps an estimate's guess (never graded). The scripted path is unchanged: one try per challenge, Next, wrong tile counts print the right count.
 - **Demanded by:** qa/workspace-rollout/ROLLOUT.md C10.
 - **Evidence:** `LengthLab.workspace.test.tsx` 10; sweep J1-J8 on 6 payloads, 0 findings, 19/19 misses named; replay 6 x 5 (`qa/tutor-reports/replay/length-lab-2026-10-09.json`).
 - **Probe:** `LengthLab.workspace.test.tsx`; `journeySweep -t length-lab`.
@@ -17,7 +17,14 @@
 - **Evidence:** `lengthLabLevers.test.ts` 25, `LengthLab.levers.workspace.test.tsx` 6; sweep J1-J12 on 6 payloads, 0 findings; replay 6 x 5 all checks 0 (`qa/eval-reports/length-lab-levers-2026-10-09.md`).
 - **Probe:** `lengthLabLevers.test.ts`; `LengthLab.levers.workspace.test.tsx`; `journeySweep -t length-lab`.
 
+### R3 — compare and indirect take the answer spoken or tapped · OBSERVED (2026-10-13)
+- **Property:** a compare or indirect challenge is `response: 'speech'` with `acceptsGesture`, an `expectedAnswer` naming the object the question asks for (or the same length) and the natural ways of saying it, and `misses` from the catalog list (`reversed`, `said_same`, `missed_same`; `chose_shorter`, `said_same`). Naming the other object, or the opposite word about the other object ("the pencil is longer" when asked which is shorter), is not credited. A credited spoken answer records the result once and shows the credited choice; a tap still ends any pending spoken answer and is checked by the activity; a correct tap is recorded once. The scene's constraints say the learner may say or tap and withhold which object is longer. tile_and_count and estimate_then_tile (checked on the tiles laid), two_unit_compare (its question opens only after both measurements) and order (several answers) stay gesture-only.
+- **Demanded by:** qa/workspace-rollout/ROLLOUT.md VB-1 (voice beside the tap).
+- **Evidence:** `LengthLab.spoken.workspace.test.tsx` 8; sweep J14 fixed on compare and indirect; `tutor-verdict-probe.mjs --length` 26/30, false credit 0 (`qa/tutor-reports/length-lab-tutor-verdict-2026-10-13.json`).
+- **Probe:** `LengthLab.spoken.workspace.test.tsx`; `node scripts/tutor-verdict-probe.mjs --length`.
+
 ## Changelog
 
 - 2026-10-09 — created with R1 (W1 plain-shape binding).
 - 2026-10-09 — R2 (levers, every mode).
+- 2026-10-13 — R3 (compare and indirect spoken beside the tap, VB-1); R1 re-based.
