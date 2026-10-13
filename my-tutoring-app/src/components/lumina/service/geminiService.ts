@@ -153,6 +153,13 @@ export const generateConceptImage = async (prompt: string, aspectRatio?: string)
  * - mediaGenerators.ts (3): media-player, flashcard-deck, image-comparison
  * - foundationGenerators.ts (1): foundation-explorer
  */
+/** The item with the fit gate's reasons appended to its intent, for the one redraw. */
+function withRedrawNotes(item: any, notes: string[]): any {
+  const suffix = `\n\nA previous attempt was rejected. Fix this:\n${notes.map((n) => `- ${n}`).join('\n')}`;
+  const intent = `${item.config?.intent ?? item.intent ?? ''}${suffix}`;
+  return { ...item, intent, config: { ...(item.config ?? {}), intent } };
+}
+
 export const generateComponentContent = async (
   item: any, // ManifestItem
   topic: string,
@@ -170,13 +177,46 @@ export const generateComponentContent = async (
     }
     // Catalog-declared observation consumers. The catalog says which primitives
     // take server-delivered learning observations and when; this service names none.
-    const consumer = getComponentById(item.componentId)?.learningObservations;
-    if (consumer) {
-      const { generateWithLearningObservations } = await import('./generation/learningObservationServer');
-      return generateWithLearningObservations({ ...item, topic }, consumer,
-        async config => await generator({ ...item, config }, topic, gradeLevelContext, normalizedGrade) as any);
+    const entry = getComponentById(item.componentId);
+    const consumer = entry?.learningObservations;
+    // `notes` (fit gate redraw): why the previous attempt missed the objective,
+    // appended to the intent every context-native generator already reads.
+    const run = async (notes: string[]) => {
+      const it = notes.length ? withRedrawNotes(item, notes) : item;
+      if (consumer) {
+        const { generateWithLearningObservations } = await import('./generation/learningObservationServer');
+        return generateWithLearningObservations({ ...it, topic }, consumer,
+          async config => await generator({ ...it, config }, topic, gradeLevelContext, normalizedGrade) as any);
+      }
+      return await generator(it, topic, gradeLevelContext, normalizedGrade);
+    };
+
+    // Graded content is checked against its objective before it ships (fitGate/).
+    // Ungraded teaching surfaces have no tasks to check.
+    // Off under vitest (no network, no ledger writes) unless a test turns it on.
+    const gateOff = process.env.LUMINA_FIT_GATE === 'off' || (process.env.VITEST && process.env.LUMINA_FIT_GATE !== 'on');
+    if (gateOff || entry?.supportsEvaluation === false || entry?.teachingWorkspace?.ungraded) {
+      return await run([]);
     }
-    return await generator(item, topic, gradeLevelContext, normalizedGrade);
+    const config = (item.config ?? {}) as Record<string, unknown>;
+    const objective = String(config.objectiveText || config.intent || item.intent || topic || '').trim();
+    if (!objective) return await run([]);
+    const canonicalGrade = normalizeObjectiveGrade(config.objectiveGrade) ?? normalizeObjectiveGrade(gradeLevel);
+    const { generateWithFitGate } = await import('./fitGate/fitGate');
+    const { result, verdict } = await generateWithFitGate({
+      componentId: item.componentId,
+      evalMode: (config.targetEvalMode as string | undefined) ?? undefined,
+      objective,
+      grade: canonicalGrade === 'K' ? 'Kindergarten' : canonicalGrade ? `Grade ${canonicalGrade}` : normalizedGrade,
+      canonicalGrade,
+      gradeLevel: normalizedGrade,
+      subskillId: (config.objectiveId as string | undefined) ?? undefined,
+      source: (config.fitSource as string | undefined) ?? undefined,
+    }, run);
+    // The verdict rides beside the payload (never inside `data`), so a caller
+    // can substitute an activity that still misses after the redraw.
+    if (verdict && result && typeof result === 'object') (result as Record<string, unknown>).fitGate = verdict;
+    return result;
   }
 
   console.warn(`Unknown component type: ${item.componentId}`);
