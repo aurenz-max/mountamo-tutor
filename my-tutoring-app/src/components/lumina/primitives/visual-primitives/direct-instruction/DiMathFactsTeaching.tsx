@@ -56,8 +56,9 @@ import type { DiMathFactsMetrics } from '../../../evaluation/types';
 import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
 import { buildMathFactItems, workspaceAssignment, workspaceScene, type MathFactItem } from './diMathFactsDomain';
 import { DOTS_LEVER, MODEL_LEVER, PATH_LEVER, TAKE_AWAY_LEVER, dotGroups, mathFactLeverFacts, mathFactLevers,
-  modelFor, numberPath, simplerItem, startingLevers, takeAwayDots } from './diMathFactsLevers';
+  modelFor, numberPath, simplerItem, takeAwayDots } from './diMathFactsLevers';
 import type { DiMathFactsData } from './DiMathFacts';
+import { DiModelCard } from './DiModelCard';
 
 export interface DiMathFactsTeachingProps {
   data: DiMathFactsData;
@@ -73,7 +74,7 @@ const COPY = {
 };
 
 const LEVERS: DiStageLevers<MathFactItem> = {
-  declare: mathFactLevers, onScreen: mathFactLeverFacts, starting: startingLevers, simpler: simplerItem,
+  declare: mathFactLevers, onScreen: mathFactLeverFacts, simpler: simplerItem,
 };
 
 /** Dots in rows of five, so a group is seen rather than counted one by one. `crossed` marks the last ones. */
@@ -129,14 +130,12 @@ function stimulus(item: MathFactItem, marks: readonly string[], view: DiStageVie
           })
           : <span>{item.display}</span>}
       </div>
-      {model && <div data-lever={MODEL_LEVER} data-model-fact={model.display}
-        aria-label={`My turn: ${model.problem} is ${model.answerWord}`}
-        className="flex flex-col items-center gap-1 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2">
-        <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
-        <span className="text-3xl font-semibold text-purple-100">
+      {model && <DiModelCard lever={MODEL_LEVER} data-model-fact={model.display}
+        aria-label={`My turn: ${model.problem} is ${model.answerWord}`} className="flex flex-col items-center gap-1">
+        <span className="text-3xl font-semibold">
           {model.challengeType === 'name_numeral' ? model.display : model.solvedDisplay}
         </span>
-      </div>}
+      </DiModelCard>}
     </div>
     {path && <div data-lever={PATH_LEVER} aria-label="A number path ending in an empty box" className="flex items-center gap-2">
       {path.map(n => <span key={n} data-path-number={n}

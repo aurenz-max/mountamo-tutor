@@ -28,8 +28,8 @@ import type { DiWorkedProcedureMetrics, PrimitiveEvaluationResult } from '../../
 import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
 import { itemsFromProblems, type DiWorkedProcedureData, type WorkedProcedureItem } from './diWorkedProcedureScript';
 import { workedProcedureAssignment, workedProcedureItems, workedProcedureScene } from './diWorkedProcedureWorkspace';
-import { MODEL_PROBLEM, TAKE_AWAY_CUBES, TOP_BLOCKS, fewerColumnsFor, modelFor, procedureLeverFacts, procedureLevers,
-  startingLevers } from './diWorkedProcedureLevers';
+import { MODEL_PROBLEM, TAKE_AWAY_CUBES, TOP_BLOCKS, fewerColumnsFor, modelFor, procedureLeverFacts, procedureLevers } from './diWorkedProcedureLevers';
+import { DiModelCard } from './DiModelCard';
 
 export type {
   DiWorkedProcedureData,
@@ -128,11 +128,10 @@ function ModelCard({ item }: { item: WorkedProcedureItem }) {
   const steps = useMemo(() => plan ? itemsFromProblems([{ id: 'model', minuend: plan.minuend, subtrahend: plan.subtrahend,
     challengeType: item.challengeType }]).items : [], [plan, item.challengeType]);
   if (!plan || !steps.length) return null;
-  return <div data-lever={MODEL_PROBLEM} data-model-problem={`${plan.minuend}-${plan.subtrahend}`} aria-label="My turn: a different subtraction, worked"
-    className="flex items-center gap-2 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-3">
-    <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
+  return <DiModelCard lever={MODEL_PROBLEM} data-model-problem={`${plan.minuend}-${plan.subtrahend}`} aria-label="My turn: a different subtraction, worked"
+    className="flex items-center gap-2 px-3 py-0">
     <ProblemColumns item={steps[0]} steps={steps} credited={() => true} marked={false} compact />
-  </div>;
+  </DiModelCard>;
 }
 
 function ProcedureStage({ item, steps, view, marked }: { item: WorkedProcedureItem; steps: WorkedProcedureItem[]; view: DiStageView;
@@ -156,7 +155,7 @@ const problemCounter = (item: WorkedProcedureItem, items: readonly WorkedProcedu
   ({ current: item.problemIndex + 1, total: new Set(items.map(candidate => candidate.problemId)).size });
 
 const LEVERS: DiStageLevers<WorkedProcedureItem> = {
-  declare: procedureLevers, onScreen: procedureLeverFacts, starting: startingLevers,
+  declare: procedureLevers, onScreen: procedureLeverFacts,
   simpler: (item, lever, lastMiss) => lever === 'fewer_columns' ? fewerColumnsFor(item, lastMiss) : null,
 };
 

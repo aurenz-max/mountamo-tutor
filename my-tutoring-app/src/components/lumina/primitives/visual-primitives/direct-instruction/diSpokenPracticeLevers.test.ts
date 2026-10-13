@@ -5,7 +5,7 @@ import { findChoiceMenuDefects, type SpokenPracticeItem } from './diSpokenPracti
 import { spokenPracticeSpokenMisses } from './diSpokenPracticeWorkspace';
 import { EASIER_ITEM, FAR_PAIR, FIVE_ROWS, MODEL_ANSWER, MODEL_COUNT, MODEL_EXPLAIN, MODEL_READ, SHORT_WORD, SMALLER_GROUP, SOUND_DOTS,
   TOUCH_MARKS, WORD_MODEL, WORD_UNDERLINE, answerModelFor, countModelFor, easierItemFor, farPairFor, readModelFor, shortWordFor,
-  smallerGroupFor, spareLeaks, spokenLeverFacts, spokenLevers, startingLevers, wordModelFor } from './diSpokenPracticeLevers';
+  smallerGroupFor, spareLeaks, spokenLeverFacts, spokenLevers, wordModelFor } from './diSpokenPracticeLevers';
 import countP from '../../../components/live-activity/runtime/testing/w1-payloads/di-spoken-practice.count_and_say.json';
 import compareP from '../../../components/live-activity/runtime/testing/w1-payloads/di-spoken-practice.compare_choice.json';
 import readP from '../../../components/live-activity/runtime/testing/w1-payloads/di-spoken-practice.read_aloud.json';
@@ -124,12 +124,6 @@ describe('say_answer and explain_concept: the generator\'s spares (R3)', () => {
 });
 
 describe('starting positions and which lever answers which miss', () => {
-  it('easy (or no tier) starts with the mode\'s model; hard with nothing', () => {
-    expect(startingLevers(withCount(6), [withCount(6)], [])).toEqual([MODEL_COUNT]);
-    expect(startingLevers({ ...withCount(6), supportTier: 'hard' }, [withCount(6)], [])).toEqual([]);
-    expect(startingLevers(COMPARE.items[0], COMPARE.items, [])).toEqual([WORD_MODEL]);
-    expect(startingLevers(EXPLAIN.items[0], EXPLAIN.items, EXPLAIN.spares)).toEqual([MODEL_EXPLAIN]);
-  });
 
   it.each([
     ['skipped_a_number', [MODEL_COUNT], TOUCH_MARKS],

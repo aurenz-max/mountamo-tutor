@@ -97,9 +97,6 @@ export function sharedTerms(item: DeductionItem): { rule: string; case: string }
 /** The answer frame's printed text. */
 export const frameText = (item: DeductionItem) => item.shape === 'conclude' ? `${capitalize(item.case.subject)} ___.` : '___ because ___';
 
-export const startingLevers = (item: DeductionItem, items: readonly DeductionItem[], spares: readonly DeductionRuleSpec[]): string[] =>
-  item.supportTier === 'easy' || !item.supportTier ? (modelRuleFor(item, items, spares) ? [MODEL_CASE] : []) : [];
-
 export function deductionLevers(item: DeductionItem | null, pulled: readonly string[], items: readonly DeductionItem[],
     spares: readonly DeductionRuleSpec[]): WorkspaceLever[] {
   if (!item) return [];

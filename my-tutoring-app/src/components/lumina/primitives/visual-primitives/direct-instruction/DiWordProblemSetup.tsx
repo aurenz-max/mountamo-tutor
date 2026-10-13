@@ -51,10 +51,11 @@ import { SHAPE_WORD, type Quantity } from './diWordProblemPlan';
 import type { DiWordProblemSetupData, WordProblemItem, WordProblemStepKind } from './diWordProblemScript';
 import { boardComplete, bigSlotMatches, describePlacement, wordProblemAssignment, wordProblemItems, wordProblemMiss,
   wordProblemScene, type FamilyPlacements } from './diWordProblemWorkspace';
-import { COUNT_DOTS, MODEL_STORY, READ_ALONG, STORY_LINKS, WITHIN_TEN, countDotsFor, modelStoriesFor, startingLevers, storySentences,
+import { COUNT_DOTS, MODEL_STORY, READ_ALONG, STORY_LINKS, WITHIN_TEN, countDotsFor, modelStoriesFor, storySentences,
   withinTenSteps, wordProblemLeverFacts, wordProblemLevers } from './diWordProblemLevers';
 import { familySpoken, numberWord as spokenNumber } from './diWordProblemPlan';
 import { practiceScore } from '../../../hooks/usePhaseResults';
+import { DiModelCard } from './DiModelCard';
 
 export type {
   DiWordProblemSetupData,
@@ -136,7 +137,7 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
   const [practice, setPractice] = useState<{ for: string; steps: WordProblemItem[] } | null>(null);
   const practiceSteps = practice && practice.for === sessionItem?.id ? practice.steps : null;
-  const pulled = !sessionItem ? [] : leverState.item === sessionItem.id ? leverState.pulled : startingLevers(sessionItem);
+  const pulled = !sessionItem ? [] : leverState.item === sessionItem.id ? leverState.pulled : [];
   const current = practiceSteps?.find(item => item.kind === 'solve') ?? sessionItem;
   const sessionSteps = useMemo(() => items.filter(item => item.problemId === sessionItem?.problemId), [items, sessionItem?.problemId]);
   const steps = practiceSteps ?? sessionSteps;
@@ -388,13 +389,13 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
           </div>}
           {shown.includes(MODEL_STORY) && (() => {
             const models = modelStoriesFor(sessionItem);
-            return models && <div data-lever={MODEL_STORY} aria-label="My turn: different stories, solved"
-              className="space-y-2 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-3 text-sm text-purple-100">
+            return models && <DiModelCard lever={MODEL_STORY} aria-label="My turn: different stories, solved"
+              className="space-y-2 py-3 text-sm">
               {models.map(m => <div key={m.frameId} data-model-story={m.operation} className="space-y-0.5">
-                <div>🗣️ {m.story}</div>
-                <div className="text-purple-200/80">Big amount: {m.big.label}. {familySpoken(m)}. {m.operation === 'add' ? 'Add' : 'Subtract'}: {spokenNumber(m.answer)}.</div>
+                <div>{m.story}</div>
+                <div className="text-slate-300">Big amount: {m.big.label}. {familySpoken(m)}. {m.operation === 'add' ? 'Add' : 'Subtract'}: {spokenNumber(m.answer)}.</div>
               </div>)}
-            </div>;
+            </DiModelCard>;
           })()}
         </div>
       </LuminaCardContent>

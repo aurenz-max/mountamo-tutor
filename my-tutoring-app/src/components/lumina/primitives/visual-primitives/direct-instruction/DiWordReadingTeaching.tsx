@@ -45,9 +45,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { DiWordReadingMetrics } from '../../../evaluation/types';
 import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
 import { buildWordReadingItems, workspaceAssignment, workspaceScene, type WordReadingItem } from './diWordReadingDomain';
-import { BLEND_SLIDE, MODEL_WORD, SOUND_DOTS, TRACKING_ARROW, modelFor, shortWordFor, startingLevers, wordLeverFacts,
+import { BLEND_SLIDE, MODEL_WORD, SOUND_DOTS, TRACKING_ARROW, modelFor, shortWordFor, wordLeverFacts,
   wordLevers, type WordModel } from './diWordReadingLevers';
 import type { DiWordReadingData } from './DiWordReading';
+import { DiModelCard } from './DiModelCard';
 
 export interface DiWordReadingTeachingProps {
   data: DiWordReadingData;
@@ -64,12 +65,11 @@ const COPY = {
 
 /** The model card: a different word, smaller than the child's, with its picture when it has one. */
 function ModelCard({ model }: { model: WordModel }) {
-  return <div data-lever={MODEL_WORD} data-model-word={model.word} aria-label="My turn: a different word"
-    className="flex items-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2">
-    <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
+  return <DiModelCard lever={MODEL_WORD} data-model-word={model.word} aria-label="My turn: a different word"
+    className="flex items-center gap-3">
     {model.emoji && <span aria-hidden="true" className="text-3xl leading-none">{model.emoji}</span>}
-    <span className="text-3xl font-bold lowercase text-purple-100">{model.word}</span>
-  </div>;
+    <span className="text-3xl font-bold lowercase">{model.word}</span>
+  </DiModelCard>;
 }
 
 /** The printed word, its marks and any silent lever on it. Keyed by item. */
@@ -129,7 +129,6 @@ export default function DiWordReadingTeaching({ data, className, runtimePlanItem
   const levers = useMemo<DiStageLevers<WordReadingItem>>(() => ({
     declare: (item, pulled) => wordLevers(item, pulled, items),
     onScreen: (item, pulled) => wordLeverFacts(item, pulled, items),
-    starting: item => startingLevers(item, items),
     simpler: item => shortWordFor(item, items),
   }), [items]);
   return <DiTeachingStage<WordReadingItem, DiWordReadingMetrics> primitiveId="di-word-reading" data={data}

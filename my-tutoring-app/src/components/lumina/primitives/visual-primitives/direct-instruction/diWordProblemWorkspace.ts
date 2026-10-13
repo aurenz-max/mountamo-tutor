@@ -167,10 +167,10 @@ export function wordProblemScene(item: WordProblemItem, view: { familyShown: boo
       ...(hands ? item.plan.quantities.map(q => ({ id: q.id, selected: false, group: 'story-part card', label: q.label })) : []),
     ],
     facts: { kind: item.kind, printedStory: item.plan.story,
-      // DI's model is a DIFFERENT story, never this one (ruling 2026-10-02): easy starts with the model card; no tier is
+      // DI's model is a DIFFERENT story, never this one (ruling 2026-10-02): easy pulls the model card first; no tier is
       // medium in this pack.
       support: item.supportTier === 'easy'
-        ? 'the model card of different stories starts on screen: say every one as your turn, then hand this step back. Never do this step'
+        ? 'before the learner tries, pull the model lever (a card of different stories): say every one as your turn, then hand this step back. Never do this step'
         : item.supportTier === 'hard' ? 'work it cold: model nothing before the learner tries'
           : 'the learner tries first; after a miss, model different stories with the model_story lever, never this one',
       constraints: hands

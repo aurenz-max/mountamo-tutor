@@ -20,10 +20,10 @@ import type { DiSpokenPracticeMetrics, PrimitiveEvaluationResult } from '../../.
 import { SoundManager } from '../../../utils/SoundManager';
 import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
 import { FIVE_ROWS, MODEL_ANSWER, MODEL_COUNT, MODEL_EXPLAIN, MODEL_READ, SOUND_DOTS, TOUCH_MARKS, WORD_MODEL, WORD_UNDERLINE,
-  answerModelFor, countModelFor, easierItemFor, farPairFor, readModelFor, shortWordFor, smallerGroupFor, spokenLeverFacts, spokenLevers,
-  startingLevers, wordModelFor } from './diSpokenPracticeLevers';
+  answerModelFor, countModelFor, easierItemFor, farPairFor, readModelFor, shortWordFor, smallerGroupFor, spokenLeverFacts, spokenLevers, wordModelFor } from './diSpokenPracticeLevers';
 import type { SpokenPracticeItem, SpokenPracticeMode } from './diSpokenPracticeScript';
 import { spokenPracticeAssignment, spokenPracticeScene } from './diSpokenPracticeWorkspace';
+import { DiModelCard } from './DiModelCard';
 
 export type { SpokenPracticeItem, SpokenPracticeMode } from './diSpokenPracticeScript';
 
@@ -73,9 +73,8 @@ const picture = (emoji: string, label: string) =>
 /** The model card: a DIFFERENT item, solved (count, a pair per menu word, a word, or a spare question). */
 function ModelCard({ item, items, spares, pulled }: { item: SpokenPracticeItem; items: readonly SpokenPracticeItem[];
   spares: readonly SpokenPracticeItem[]; pulled: readonly string[] }) {
-  const frame = (lever: string, body: React.ReactNode) => <div data-lever={lever} aria-label="My turn: a different one"
-    className="flex flex-wrap items-center justify-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2 text-purple-100">
-    <span aria-hidden="true" className="text-xl leading-none">🗣️</span>{body}</div>;
+  const frame = (lever: string, body: React.ReactNode) => <DiModelCard lever={lever} aria-label="My turn: a different one"
+    className="flex flex-wrap items-center justify-center gap-3">{body}</DiModelCard>;
   if (pulled.includes(MODEL_COUNT)) {
     const m = countModelFor(item, items);
     return m && frame(MODEL_COUNT, <span data-model-count={m.count} className="flex flex-wrap gap-1 text-2xl">
@@ -172,7 +171,6 @@ export const DiSpokenPractice: React.FC<DiSpokenPracticeProps> = ({ data, classN
   const levers = useMemo<DiStageLevers<SpokenPracticeItem>>(() => ({
     declare: (item, pulled) => spokenLevers(item, pulled, items, spares),
     onScreen: (item, pulled) => spokenLeverFacts(item, pulled, items, spares),
-    starting: item => startingLevers(item, items, spares),
     simpler: (item, lever) => lever === 'smaller_group' ? smallerGroupFor(item, items) : lever === 'far_pair' ? farPairFor(item, items)
       : lever === 'short_word' ? shortWordFor(item, items) : lever === 'easier_item' ? easierItemFor(item, items, spares) : null,
   }), [items, spares]);

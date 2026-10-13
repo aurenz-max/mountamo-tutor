@@ -4,8 +4,7 @@ import { DI_CATALOG } from '../../../service/manifest/catalog/di';
 import { SIGHT_LOOKALIKES } from '../literacy/spokenReadingMisses';
 import { buildWordReadingItems, diWordReadingSpokenMisses, type DiWordReadingChallenge, type WordReadingItem } from './diWordReadingDomain';
 import type { DiWordReadingChallengeType } from './diWordReadingModes';
-import { BLEND_SLIDE, MODEL_WORD, SHORT_WORD, SOUND_DOTS, TRACKING_ARROW, blendOf, modelFor, modelLeaks, shortWordFor,
-  startingLevers, wordLeverFacts, wordLevers } from './diWordReadingLevers';
+import { BLEND_SLIDE, MODEL_WORD, SHORT_WORD, SOUND_DOTS, TRACKING_ARROW, blendOf, modelFor, modelLeaks, shortWordFor, wordLeverFacts, wordLevers } from './diWordReadingLevers';
 import cvcReading from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-reading.cvc_reading.json';
 import readWord from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-reading.read_word.json';
 import sightWord from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-reading.sight_word.json';
@@ -88,11 +87,6 @@ describe('the lever set, and which lever answers which miss', () => {
     expect(wordLevers(sight, [], [sight]).map(l => l.id)).toEqual([MODEL_WORD]);
   });
 
-  it('easy (or no tier) starts with the model; medium and hard with nothing', () => {
-    const [easy] = items(['cat'], 'read_word'), [hard] = items(['cat'], 'read_word', 'hard');
-    expect(startingLevers(easy, [easy])).toEqual([MODEL_WORD]);
-    expect(startingLevers(hard, [hard])).toEqual([]);
-  });
 
   it.each([
     ['sounds_no_word', [MODEL_WORD], BLEND_SLIDE],

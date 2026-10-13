@@ -198,9 +198,6 @@ export function simplerItem(item: MathFactItem, lever: string): MathFactItem | n
   }
 }
 
-/** Levers an item's tier starts with on screen. A starting position is not a pull and is never recorded. */
-export const startingLevers = (item: MathFactItem): string[] => item.supportTier === 'easy' && modelFor(item) ? [MODEL_LEVER] : [];
-
 export function mathFactLevers(item: MathFactItem | null, pulled: readonly string[]): WorkspaceLever[] {
   if (!item) return [];
   const misses = MODE_MISSES[item.challengeType];

@@ -337,12 +337,12 @@ export const workspaceScene = (item: MathFactItem): WorkspaceScene => ({
   facts: { kind: item.challengeType, assignment: item.assignment, printedProblem: item.display,
     spokenProblem: item.problem,
     // The tier the child is meant to meet this fact at. DI's model is on a PARALLEL fact, never this one
-    // (user ruling 2026-10-02): easy starts with the `model_fact` card on screen, medium and hard start
-    // without it, and at `hard` the point of the item is that nothing models first.
+    // (user ruling 2026-10-02): easy pulls the `model_fact` card before the learner tries, medium models
+    // only after a miss, and at `hard` the point of the item is that nothing models first.
     support: item.supportTier === 'hard'
       ? 'answer it cold: model nothing before the learner answers, and never say this fact\'s answer'
       : item.supportTier === 'medium' ? 'the learner tries first; after a miss, model a different fact with the model_fact lever, never this one'
-        : 'the model card of a different fact starts on screen: say it as your turn, then ask this problem. Never model this problem',
+        : 'before the learner tries, pull the model lever (a card of a different fact): say it as your turn, then ask this problem. Never model this problem',
     countingRoute: item.countingRoute === null
       ? 'none — counting the sequence is not a route to this answer'
       : `counting ${item.countingRoute} to the answer is a legitimate route`,

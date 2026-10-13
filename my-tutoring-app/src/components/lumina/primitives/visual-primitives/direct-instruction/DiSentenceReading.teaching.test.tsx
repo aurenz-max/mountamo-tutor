@@ -36,7 +36,6 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiSentenceReading, { type DiSentenceReadingData } from './DiSentenceReading';
-import { sentenceLeverFacts, startingLevers } from './diSentenceReadingLevers';
 import { DI_SENTENCE_READING_WORKSPACE_MODES, buildSentenceReadingItems, workspaceAssignment, workspaceScene,
   type DiSentenceReadingChallenge, type DiSentenceReadingChallengeType } from './diSentenceReadingDomain';
 import { validateDiSentenceReadingData }
@@ -351,10 +350,8 @@ it('publishes exactly the domain assignment and scene that the verdict probe rep
   const item = buildSentenceReadingItems(CHALLENGES.decodable_sentence)[0];
   const { task, expectedAnswer, response } = workspaceAssignment(item), scene = workspaceScene(item);
   expect(h.state().task!.task).toBe(task);
-  // Plus what the tier's starting levers draw (the easy model card), which the probe adds the same way.
-  const session = buildSentenceReadingItems(CHALLENGES.decodable_sentence);
-  const onScreen = sentenceLeverFacts(item, startingLevers(item, session), session);
-  expect(h.state().task!.demand).toEqual({ ...scene.facts, onScreen, response, presentation: 'ready' });
+  // No lever starts on screen, so the demand carries no onScreen fact.
+  expect(h.state().task!.demand).toEqual({ ...scene.facts, response, presentation: 'ready' });
   expect(h.state().task!.workspace).toMatchObject({ objects: scene.objects, expectedAnswer });
 });
 

@@ -35,6 +35,7 @@ import { FIRST_BOX, KEYWORD_SOUNDS, MODEL_SOUND, SOUND_ARROW, letterLeverFacts, 
   startingLevers } from './diLetterSoundsLevers';
 import type { LetterSoundMenuEntry } from './diLetterSoundsMenu';
 import type { DiLetterSoundsData } from './DiLetterSounds';
+import { DiModelCard } from './DiModelCard';
 
 export interface DiLetterSoundsTeachingProps {
   data: DiLetterSoundsData;
@@ -51,12 +52,11 @@ const COPY = {
 
 /** The model card: a DIFFERENT letter with its picture (onset: a different picture with its word). */
 function ModelCard({ model, onset }: { model: LetterSoundMenuEntry; onset: boolean }) {
-  return <div data-lever={MODEL_SOUND} data-model-letter={model.letter} aria-label={`My turn: ${onset ? model.keyword : `the letter ${model.letter}`}`}
-    className="flex items-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2">
-    <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
+  return <DiModelCard lever={MODEL_SOUND} data-model-letter={model.letter} aria-label={`My turn: ${onset ? model.keyword : `the letter ${model.letter}`}`}
+    className="flex items-center gap-3">
     <span aria-hidden="true" className="text-4xl leading-none">{model.emoji}</span>
-    <span className={`font-bold text-purple-100 ${onset ? 'text-2xl lowercase' : 'text-4xl'}`}>{onset ? model.keyword : model.letter}</span>
-  </div>;
+    <span className={`font-bold ${onset ? 'text-2xl lowercase' : 'text-4xl'}`}>{onset ? model.keyword : model.letter}</span>
+  </DiModelCard>;
 }
 
 function stimulus(item: LetterSoundItem, marks: readonly string[], view: DiStageView, model: LetterSoundMenuEntry | null) {
@@ -102,7 +102,7 @@ export default function DiLetterSoundsTeaching({ data, className, runtimePlanIte
   const levers = useMemo<DiStageLevers<LetterSoundItem>>(() => ({
     declare: (item, pulled) => letterLevers(item, pulled, items),
     onScreen: (item, pulled) => letterLeverFacts(item, pulled, items),
-    starting: item => startingLevers(item, items),
+    starting: startingLevers,
   }), [items]);
   return <DiTeachingStage<LetterSoundItem, DiLetterSoundsMetrics> primitiveId="di-letter-sounds" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}

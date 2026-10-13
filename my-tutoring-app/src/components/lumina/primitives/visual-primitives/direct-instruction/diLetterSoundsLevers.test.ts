@@ -81,14 +81,14 @@ describe('the lever set per mode', () => {
     expect(pictureShown(word, [])).toBe(true);
   });
 
-  it('easy starts with the model (and the picture on a letter item); medium and hard with nothing', () => {
+  it('easy starts with the picture on a letter item, never the model; medium and hard with nothing', () => {
     const [easy] = items(['m'], 'letter_sound', 'easy'), [none] = items(['m'], 'letter_sound');
-    expect(startingLevers(easy, [easy])).toEqual([MODEL_SOUND, KEYWORD_PICTURE]);
-    expect(startingLevers(none, [none])).toEqual([MODEL_SOUND, KEYWORD_PICTURE]);
+    expect(startingLevers(easy)).toEqual([KEYWORD_PICTURE]);
+    expect(startingLevers(none)).toEqual([KEYWORD_PICTURE]);
     const [medium] = items(['m'], 'letter_sound', 'medium');
-    expect(startingLevers(medium, [medium])).toEqual([]);
+    expect(startingLevers(medium)).toEqual([]);
     const [onsetEasy] = items(['m'], 'first_sound_in_word', 'easy');
-    expect(startingLevers(onsetEasy, [onsetEasy])).toEqual([MODEL_SOUND]);
+    expect(startingLevers(onsetEasy)).toEqual([]);
   });
 
   it('first_box has one box per sound of the word, from a code table', () => {

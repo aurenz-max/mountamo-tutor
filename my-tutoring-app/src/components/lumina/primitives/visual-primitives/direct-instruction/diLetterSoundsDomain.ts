@@ -273,11 +273,11 @@ export const workspaceScene = (item: LetterSoundItem, view?: { pulled: readonly 
     ],
     facts: { kind: item.challengeType, assignment: item.assignment,
       keyword: item.keyword, elicitation: item.elicitation, articulation: item.articulation,
-      // DI's model is a PARALLEL letter, never this one (user ruling 2026-10-02): easy starts with the model card (and
-      // the keyword picture) on screen, medium and hard without them.
+      // DI's model is a PARALLEL letter, never this one (user ruling 2026-10-02): easy pulls the model card before the
+      // learner tries (only the keyword picture starts on screen), medium and hard without either.
       support: item.supportTier === 'hard' ? 'answer it cold: model nothing before the learner answers, and never say this sound'
         : item.supportTier === 'medium' ? 'the learner tries first; after a miss, model a different letter with the model_sound lever, never this one'
-          : 'the model card of a different letter starts on screen: say it as your turn, then ask this one. Never say this sound',
+          : 'before the learner tries, pull the model lever (a card of a different letter): say it as your turn, then ask this one. Never say this sound',
       ...(item.stimulus === 'letter' ? { printedLetter: item.letter } : { printedWord: item.keyword }),
       markMeaning: 'Purple dashed marks are yours. They point at the card or the picture while you teach; '
         + 'they are not the learner answering, and they never move the gold ring off the stimulus.' },

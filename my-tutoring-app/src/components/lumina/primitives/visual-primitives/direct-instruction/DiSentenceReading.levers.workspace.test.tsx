@@ -45,14 +45,16 @@ it('hard read_sentence: the underline and the dots (CVC words only) draw marks; 
   h.close();
 });
 
-it('easy starts with a model sentence sharing no word; a read under it records no lever', () => {
+it('easy starts with no model; the pulled card shows a sentence sharing no word', () => {
   const h = mount('decodable_sentence', sentence('The cat sat on a mat.', 'decodable_sentence', 'easy', 'c1'));
+  expect(q(h, '[data-lever="model_sentence"]')).toHaveLength(0);
+  h.dispatch('pull_lever', { lever: 'model_sentence' });
   const model = q(h, '[data-lever="model_sentence"]');
   expect(model).toHaveLength(1);
   const shown = model[0].getAttribute('data-model-sentence')!;
   expect(words(shown).some(w => words('The cat sat on a mat.').includes(w))).toBe(false);
   h.say('The cat sat on a mat.'); h.feedback('correct');
-  expect(h.state().task!.workspace!.attempts.at(-1)!.levers ?? []).toEqual([]);
+  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['model_sentence']);
   h.close();
 });
 

@@ -42,13 +42,15 @@ it('hard cvc_reading: dots under each letter and the arrow say nothing; the next
   h.close();
 });
 
-it('easy starts with a model of a different word (sharing no letter); a try under it records no lever', () => {
+it('easy starts with no model; the pulled card shows a different word sharing no letter', () => {
   const h = mount('read_word', cvc('cat', 'read_word', 'easy', 'c1'));
+  expect(q(h, '[data-lever="model_word"]')).toHaveLength(0);
+  h.dispatch('pull_lever', { lever: 'model_word' });
   const model = q(h, '[data-lever="model_word"]');
   expect(model).toHaveLength(1);
   expect(model[0].getAttribute('data-model-word')!.split('').some(l => 'cat'.includes(l))).toBe(false);
   h.say('cat'); h.feedback('correct');
-  expect(h.state().task!.workspace!.attempts.at(-1)!.levers ?? []).toEqual([]);
+  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['model_word']);
   h.close();
 });
 

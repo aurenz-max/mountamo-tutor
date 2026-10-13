@@ -4,7 +4,7 @@ import { DI_CATALOG } from '../../../service/manifest/catalog/di';
 import { itemsFromRules, type DeductionItem, type DeductionRuleSpec } from './diDeductionScript';
 import { deductionSpokenMisses } from './diDeductionWorkspace';
 import { ANSWER_FRAME, COUNTEREXAMPLE_CARD, MODEL_CASE, SHARED_TERM, contentWords, counterexampleFact, counterexampleFor,
-  deductionLeverFacts, deductionLevers, frameText, modelCases, modelRuleFor, spareLeaks, sparesFor, startingLevers } from './diDeductionLevers';
+  deductionLeverFacts, deductionLevers, frameText, modelCases, modelRuleFor, spareLeaks, sparesFor } from './diDeductionLevers';
 import concludeP from '../../../components/live-activity/runtime/testing/w1-payloads/di-deduction.conclude.json';
 import denyP from '../../../components/live-activity/runtime/testing/w1-payloads/di-deduction.deny.json';
 import cannotP from '../../../components/live-activity/runtime/testing/w1-payloads/di-deduction.cannot_tell.json';
@@ -98,12 +98,6 @@ describe('help on the cards, and the counterexample practice case', () => {
 });
 
 describe('starting positions and which lever answers which miss', () => {
-  it('easy or no tier starts with the model; medium and hard with nothing', () => {
-    const [easy] = items([BIRDS]);
-    expect(startingLevers(easy, [easy], [SPIDERS])).toEqual([MODEL_CASE]);
-    const hard = itemsFromRules([BIRDS], 'hard').items[0];
-    expect(startingLevers(hard, [hard], [SPIDERS])).toEqual([]);
-  });
 
   it.each([
     ['backwards_yes', [MODEL_CASE], COUNTEREXAMPLE_CARD],

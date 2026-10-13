@@ -142,7 +142,7 @@ export function spokenPracticeScene(item: SpokenPracticeItem): WorkspaceScene {
       // DI's model is a DIFFERENT item, never this one (ruling 2026-10-02): easy (or no tier) starts with its card.
       support: item.supportTier === 'hard' ? 'answer it cold: model nothing before the learner answers, and never say this answer'
         : item.supportTier === 'medium' ? 'the learner tries first; after a miss, model a different item with the model lever, never this one'
-          : 'the model card of a different item starts on screen: say it as your turn, then ask this one. Never model this one' },
+          : 'before the learner tries, pull the model lever (a card of a different item): say it as your turn, then ask this one. Never model this one' },
   };
 }
 

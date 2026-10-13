@@ -74,9 +74,6 @@ export function shortWordFor(item: WordReadingItem, items: readonly WordReadingI
   return built ?? null;
 }
 
-export const startingLevers = (item: WordReadingItem, items: readonly WordReadingItem[]): string[] =>
-  item.supportTier === 'easy' && modelFor(item, items) ? [MODEL_WORD] : [];
-
 export function wordLevers(item: WordReadingItem | null, pulled: readonly string[], items: readonly WordReadingItem[]): WorkspaceLever[] {
   if (!item) return [];
   const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,

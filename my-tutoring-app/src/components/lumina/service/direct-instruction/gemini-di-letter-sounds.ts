@@ -92,7 +92,7 @@ const resolveSupportStructure = (
       ? 'cold — no lever starts on screen'
       : tier === 'medium'
         ? 'no lever starts on screen; the tutor pulls them as needed'
-        : 'the model lever (a DIFFERENT item, solved) starts on screen; never the child\'s own item modelled (10-02 ruling)',
+        : 'only the keyword picture starts on screen; the tutor pulls the model lever (a DIFFERENT item, solved) before the child tries; never the child\'s own item modelled (10-02 ruling)',
 });
 
 type MenuEntry = LetterSoundMenuEntry;

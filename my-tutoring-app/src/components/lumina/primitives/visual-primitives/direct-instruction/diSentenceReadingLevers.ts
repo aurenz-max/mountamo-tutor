@@ -82,9 +82,6 @@ export function simplerLine(item: SentenceReadingItem, lever: string, items: rea
   return null;
 }
 
-export const startingLevers = (item: SentenceReadingItem, items: readonly SentenceReadingItem[]): string[] =>
-  item.supportTier === 'easy' && modelFor(item, items) ? [MODEL_SENTENCE] : [];
-
 export function sentenceLevers(item: SentenceReadingItem | null, pulled: readonly string[], items: readonly SentenceReadingItem[]): WorkspaceLever[] {
   if (!item) return [];
   const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,

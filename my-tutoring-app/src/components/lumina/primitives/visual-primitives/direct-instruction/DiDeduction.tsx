@@ -28,7 +28,8 @@ import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView }
 import type { DeductionItem, DeductionRuleSpec, DiDeductionData } from './diDeductionScript';
 import { deductionAssignment, deductionItems, deductionScene } from './diDeductionWorkspace';
 import { ANSWER_FRAME, MODEL_CASE, SHARED_TERM, counterexampleFact, counterexampleFor, deductionLeverFacts, deductionLevers,
-  frameText, modelCases, modelRuleFor, sharedTerms, startingLevers } from './diDeductionLevers';
+  frameText, modelCases, modelRuleFor, sharedTerms } from './diDeductionLevers';
+import { DiModelCard } from './DiModelCard';
 
 export type {
   DeductionChallengeType,
@@ -59,11 +60,11 @@ function Lit({ text, phrase }: { text: string; phrase?: string }) {
 
 /** The model card: a different rule, every answer it has, each with its reason. */
 function ModelCard({ spare }: { spare: DeductionRuleSpec }) {
-  return <div data-lever={MODEL_CASE} data-model-rule={spare.id} aria-label="My turn: a different rule"
-    className="space-y-1 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-3 text-sm text-purple-100">
-    <div className="font-semibold">🗣️ All {spare.categoryPlural} {spare.propertyPlural}.</div>
-    {modelCases(spare).map(c => <div key={c.shape} data-model-shape={c.shape}>{c.caseText} <span className="text-purple-200/80">{c.reason}</span></div>)}
-  </div>;
+  return <DiModelCard lever={MODEL_CASE} data-model-rule={spare.id} aria-label="My turn: a different rule"
+    className="space-y-1 py-3 text-sm">
+    <div className="font-semibold">All {spare.categoryPlural} {spare.propertyPlural}.</div>
+    {modelCases(spare).map(c => <div key={c.shape} data-model-shape={c.shape}>{c.caseText} <span className="text-slate-300">{c.reason}</span></div>)}
+  </DiModelCard>;
 }
 
 function stimulus(item: DeductionItem, marks: readonly string[], view: DiStageView, spare: DeductionRuleSpec | null) {
@@ -137,7 +138,6 @@ export const DiDeduction: React.FC<DiDeductionProps> = ({ data, className, runti
   const levers = useMemo<DiStageLevers<DeductionItem>>(() => ({
     declare: (item, pulled) => deductionLevers(item, pulled, items, spares),
     onScreen: (item, pulled) => deductionLeverFacts(item, pulled, items, spares),
-    starting: item => startingLevers(item, items, spares),
     simpler: item => counterexampleFor(item, items, spares),
   }), [items, spares]);
   return <DiTeachingStage<DeductionItem, DiDeductionMetrics> primitiveId="di-deduction" data={data}

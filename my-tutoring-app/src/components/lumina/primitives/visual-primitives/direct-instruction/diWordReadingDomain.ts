@@ -246,7 +246,7 @@ export const workspaceScene = (item: WordReadingItem): WorkspaceScene => ({
     // No `soundOut` fact (R2, 2026-10-03): "sss-aaa-mmm" was a ready script for blending the child's own word.
     support: item.supportTier === 'hard' ? 'read it cold: model nothing before the learner reads, and never say this word'
       : item.supportTier === 'medium' ? 'the learner reads first; after a miss, model a different word with the model_word lever, never this one'
-        : 'the model card of a different word starts on screen: read it as your turn, then ask for this one. Never say this word',
+        : 'before the learner tries, pull the model lever (a card of a different word): read it as your turn, then ask for this one. Never say this word',
     markMeaning: 'Purple dashed marks are yours. They point at the whole word or at one of its printed '
       + 'letters while you teach; they are not the learner reading, and they never move the gold ring off '
       + 'the word.' },

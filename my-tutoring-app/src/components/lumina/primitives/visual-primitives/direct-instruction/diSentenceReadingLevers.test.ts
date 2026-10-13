@@ -5,7 +5,7 @@ import { buildSentenceReadingItems, type DiSentenceReadingChallenge, type Senten
 import type { DiSentenceReadingChallengeType } from './diSentenceReadingModes';
 import { SENTENCE_MENU } from './diSentenceReadingMenu';
 import { MODEL_SENTENCE, SHORT_LINE, SHORT_SIGHT_LINE, SOUND_DOTS, TRACKING_UNDERLINE, isCvcWord, modelFor, sentenceLeverFacts,
-  sentenceLevers, simplerLine, startingLevers } from './diSentenceReadingLevers';
+  sentenceLevers, simplerLine } from './diSentenceReadingLevers';
 import decodable from '../../../components/live-activity/runtime/testing/w1-payloads/di-sentence-reading.decodable_sentence.json';
 import read from '../../../components/live-activity/runtime/testing/w1-payloads/di-sentence-reading.read_sentence.json';
 import review from '../../../components/live-activity/runtime/testing/w1-payloads/di-sentence-reading.sentence_review.json';
@@ -90,11 +90,6 @@ describe('simplify: a shorter line of the same mode', () => {
 });
 
 describe('the lever set and which lever answers which miss', () => {
-  it('easy (or no tier) starts with the model; medium and hard with nothing', () => {
-    const [easy] = items(['The dog is hot.'], 'read_sentence'), [hard] = items(['The dog is hot.'], 'read_sentence', 'hard');
-    expect(startingLevers(easy, [easy])).toEqual([MODEL_SENTENCE]);
-    expect(startingLevers(hard, [hard])).toEqual([]);
-  });
 
   it.each([
     ['word_skip', [], MODEL_SENTENCE],

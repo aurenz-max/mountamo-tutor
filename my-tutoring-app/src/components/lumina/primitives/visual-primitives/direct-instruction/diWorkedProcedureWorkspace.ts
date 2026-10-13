@@ -106,7 +106,7 @@ export function workedProcedureScene(item: WorkedProcedureItem): WorkspaceScene 
       // DI's model is a DIFFERENT problem, never this one (ruling 2026-10-02): easy starts with its card on screen; no tier
       // is medium in this pack.
       support: item.supportTier === 'easy'
-        ? 'the model card of a different subtraction starts on screen: walk every column of it as your turn, then ask this column. Never work this problem'
+        ? 'before the learner tries, pull the model lever (a card of a different subtraction): walk every column of it as your turn, then ask this column. Never work this problem'
         : item.supportTier === 'hard' ? 'work it cold: model nothing before the learner tries, and never say a step answer of this problem'
           : 'the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one',
       constraints: 'The learner says the move or the number aloud; the page writes each step only after it is credited. '

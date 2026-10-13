@@ -61,11 +61,10 @@ export function modelFor(item: LetterSoundItem, items: readonly LetterSoundItem[
   return MENU.filter(pass).sort((a, b) => Number(anywhere.has(a.letter)) - Number(anywhere.has(b.letter)))[0] ?? null;
 }
 
-/** Levers an item's tier starts with on screen (no tier is easy). Not a pull; never recorded. */
-export function startingLevers(item: LetterSoundItem, items: readonly LetterSoundItem[]): string[] {
-  if (item.supportTier !== 'easy') return [];
-  return [...(modelFor(item, items) ? [MODEL_SOUND] : []), ...(isGrapheme(item) ? [KEYWORD_PICTURE] : [])];
-}
+/** Levers an item's tier starts with on screen (no tier is easy). Not a pull; never recorded. The model card never
+ *  starts on screen: shown before the tutor's "my turn" it is an unexplained second letter. */
+export const startingLevers = (item: LetterSoundItem): string[] =>
+  item.supportTier === 'easy' && isGrapheme(item) ? [KEYWORD_PICTURE] : [];
 
 /** The keyword picture is on screen: always on an onset item (it carries the spoken word), else only as a lever. */
 export const pictureShown = (item: LetterSoundItem, pulled: readonly string[]) =>

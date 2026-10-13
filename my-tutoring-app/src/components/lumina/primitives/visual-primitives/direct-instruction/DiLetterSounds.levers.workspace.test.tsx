@@ -51,15 +51,18 @@ it('hard letter_sound: no picture until the keyword_picture lever; the arrow say
   h.close();
 });
 
-it('easy starts with a model of a different letter and the picture; a try under them records no lever', () => {
+it('easy starts with the picture and no model; the pulled card shows a different letter', () => {
   const h = mount('letter_sound', letter('s', 'letter_sound', 'easy', 's1'), letter('f', 'letter_sound', 'easy', 'f1'));
+  expect(q(h, '[data-sound-object="picture"]')).toHaveLength(1);
+  expect(q(h, '[data-lever="model_sound"]')).toHaveLength(0);
+  h.dispatch('pull_lever', { lever: 'model_sound' });
   const model = q(h, '[data-lever="model_sound"]');
   expect(model).toHaveLength(1);
   expect(['s', 'z', 'f']).not.toContain(model[0].getAttribute('data-model-letter'));
   expect(q(h, '[data-sound-object="picture"]')).toHaveLength(1);
   expect(String(h.state().task!.demand.onScreen)).not.toContain('sss');
   h.say('sss'); h.feedback('correct');
-  expect(h.state().task!.workspace!.attempts.at(-1)!.levers ?? []).toEqual([]);
+  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['model_sound']);
   h.close();
 });
 

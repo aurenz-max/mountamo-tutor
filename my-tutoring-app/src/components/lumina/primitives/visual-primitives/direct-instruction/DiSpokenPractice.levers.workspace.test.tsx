@@ -50,12 +50,14 @@ it('count_and_say at hard: tapped pictures get rings, rows of five; no numeral; 
   h.close();
 });
 
-it('compare_choice at easy: the model card has one pair per menu word (R1); a try under it records no lever', () => {
+it('compare_choice at easy starts with no model; the pulled card has one pair per menu word (R1)', () => {
   const items = first(compareP);
   const h = mount('compare_choice', items);
+  expect(q(h, '[data-lever="word_model"]')).toHaveLength(0);
+  h.dispatch('pull_lever', { lever: 'word_model' });
   expect(q(h, '[data-lever="word_model"] [data-model-pair]').map(e => e.getAttribute('data-model-pair'))).toEqual(items[0].choices);
   h.say(items[0].expectedAnswer); h.feedback('correct');
-  expect(h.state().task!.workspace!.attempts.at(-1)!.levers ?? []).toEqual([]);
+  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['word_model']);
   h.close();
 });
 

@@ -112,10 +112,6 @@ export function fewerColumnsFor(item: WorkedProcedureItem, lastMiss?: string): W
   return null;
 }
 
-/** Levers an item's tier starts with on screen: only easy (no tier is medium in this pack). Not a pull. */
-export const startingLevers = (item: WorkedProcedureItem): string[] =>
-  item.supportTier === 'easy' && modelFor(item) ? [MODEL_PROBLEM] : [];
-
 const regroupDecide = (item: WorkedProcedureItem) => item.challengeType === 'subtract_regroup' && item.kind === 'decide';
 
 export function procedureLevers(item: WorkedProcedureItem | null, pulled: readonly string[], lastMiss?: string): WorkspaceLever[] {

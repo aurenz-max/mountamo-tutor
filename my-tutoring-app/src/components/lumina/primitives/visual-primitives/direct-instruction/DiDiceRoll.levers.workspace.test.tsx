@@ -46,15 +46,17 @@ it('count_pips at medium: tapped dots get rings and no number; the next try carr
   h.close();
 });
 
-it('easy starts with a model of a different roll, before the roll; a try under it records no lever', () => {
+it('easy starts with no model; the pulled card shows a different roll, before the roll', () => {
   const h = mount('count_pips', rollOf('count_pips', 3, 0, 'easy', 'e1'));
+  expect(q(h, '[data-lever="model_roll"]')).toHaveLength(0);
+  h.dispatch('pull_lever', { lever: 'model_roll' });
   const model = q(h, '[data-lever="model_roll"]');
   expect(model).toHaveLength(1);
   expect(model[0].getAttribute('data-model-roll')).not.toBe('3');
   expect(String(h.state().task!.demand.onScreen)).toMatch(/different roll, solved/);
   roll();
   h.say('three'); h.feedback('correct');
-  expect(h.state().task!.workspace!.attempts.at(-1)!.levers ?? []).toEqual([]);
+  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['model_roll']);
   h.close();
 });
 

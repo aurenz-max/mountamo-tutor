@@ -3,8 +3,7 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { buildMathFactItems, mathFactSpokenMisses, type DiMathFactsChallenge, type MathFactItem } from './diMathFactsDomain';
 import type { DiMathFactsChallengeType } from './diMathFactsModes';
 import { DECADE_LEVER, DIGIT_LEVER, DOTS_LEVER, MODEL_LEVER, PATH_LEVER, SMALLER_LEVER, TAKE_AWAY_LEVER, TAKE_ONE_LEVER,
-  dotGroups, factItem, factParts, mathFactLeverFacts, mathFactLevers, modelFor, modelLeaks, numberPath, saysWords, simplerItem,
-  startingLevers, takeAwayDots } from './diMathFactsLevers';
+  dotGroups, factItem, factParts, mathFactLeverFacts, mathFactLevers, modelFor, modelLeaks, numberPath, saysWords, simplerItem, takeAwayDots } from './diMathFactsLevers';
 import answerFact from '../../../components/live-activity/runtime/testing/w1-payloads/di-math-facts.answer_fact.json';
 import countingNext from '../../../components/live-activity/runtime/testing/w1-payloads/di-math-facts.counting_next.json';
 import factReview from '../../../components/live-activity/runtime/testing/w1-payloads/di-math-facts.fact_review.json';
@@ -61,11 +60,6 @@ describe('model_fact: a different fact of the same kind, never a route to this a
     expect(modelFor(fact('name_numeral', 9))!.display).toBe('6');
   });
 
-  it('starts on screen at easy only', () => {
-    expect(startingLevers({ ...fact('answer_fact', 3, 2), supportTier: 'easy' })).toEqual([MODEL_LEVER]);
-    expect(startingLevers({ ...fact('answer_fact', 3, 2), supportTier: 'medium' })).toEqual([]);
-    expect(startingLevers({ ...fact('answer_fact', 3, 2), supportTier: 'hard' })).toEqual([]);
-  });
 });
 
 describe('help levers draw only what is printed', () => {

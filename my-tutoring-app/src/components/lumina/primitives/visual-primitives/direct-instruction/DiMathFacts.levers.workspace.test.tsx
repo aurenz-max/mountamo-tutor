@@ -54,16 +54,18 @@ it('answer_fact at medium: the model is a different fact, dots draw only the pri
   h.close();
 });
 
-it('easy starts with the model card on screen, and a first try under it is not recorded as a pull', () => {
+it('easy starts with no model on screen; the tier tells the tutor to pull it first', () => {
   const h = mountWorkspace({ primitiveId: 'di-math-facts', evalMode: 'answer_fact', instanceId: 'facts',
     data: data('answer_fact', challenge('answer_fact', 4, 1, 'easy', 'e1')) });
-  expect(levers(h)[0]).toEqual(['model_fact', true]);
+  expect(levers(h)[0]).toEqual(['model_fact', false]);
+  expect(q(h, '[data-lever="model_fact"]')).toHaveLength(0);
+  expect(h.state().task!.demand.support).toMatch(/before the learner tries, pull the model lever/);
+  h.dispatch('pull_lever', { lever: 'model_fact' });
   expect(q(h, '[data-lever="model_fact"]')).toHaveLength(1);
-  expect(h.state().task!.demand.support).toMatch(/model card of a different fact/);
   h.say('five'); h.feedback('correct');
   const last = h.state().task!.workspace!.attempts.at(-1)!;
   expect(last.correct).toBe(true);
-  expect(last.levers ?? []).toEqual([]);
+  expect(last.levers).toEqual(['model_fact']);
   h.close();
 });
 

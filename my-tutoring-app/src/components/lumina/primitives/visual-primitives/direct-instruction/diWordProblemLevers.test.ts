@@ -4,7 +4,7 @@ import { DI_CATALOG } from '../../../service/manifest/catalog/di';
 import { FRAME_IDS, themeUsable, type StoryTheme } from './diWordProblemPlan';
 import { itemsFromProblems, type WordProblemItem, type WordProblemProblemSpec } from './diWordProblemScript';
 import { wordProblemSpokenMisses } from './diWordProblemWorkspace';
-import { COUNT_DOTS, MODEL_STORY, READ_ALONG, STORY_LINKS, WITHIN_TEN, countDotsFor, modelStoriesFor, startingLevers, storyLeaks,
+import { COUNT_DOTS, MODEL_STORY, READ_ALONG, STORY_LINKS, WITHIN_TEN, countDotsFor, modelStoriesFor, storyLeaks,
   storySentences, withinTenFor, withinTenSteps, wordProblemLeverFacts, wordProblemLevers } from './diWordProblemLevers';
 import findP from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-problem-setup.find_big_number.json';
 import buildP from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-problem-setup.build_family.json';
@@ -111,10 +111,6 @@ describe('within_ten: the same frame with small numbers, sharing none of the ite
 });
 
 describe('starting positions and which lever answers which miss', () => {
-  it('only easy starts with the model (no tier is medium)', () => {
-    expect(startingLevers(steps('change:gain_end', 8, 5, 'build_family', 20, 'easy')[0])).toEqual([MODEL_STORY]);
-    expect(startingLevers(steps('change:gain_end', 8, 5)[0])).toEqual([]);
-  });
 
   it.each([
     ['printed_small_in_big', 'big_number', [MODEL_STORY], STORY_LINKS],

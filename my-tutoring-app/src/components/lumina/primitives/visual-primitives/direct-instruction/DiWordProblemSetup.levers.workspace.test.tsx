@@ -41,13 +41,15 @@ const buildFamily = (h: WorkspaceHarness) => {
   settle(); h.dispatch('advance'); h.confirmVisible();
 };
 
-it('easy starts with two different stories solved, one add and one subtract; a placement under it records no lever', () => {
+it('easy starts with no model; the pulled card shows two different stories solved, one add and one subtract', () => {
   const h = mount(pack('build_family', 'easy'));
+  expect(q(h, '[data-lever="model_story"]')).toHaveLength(0);
+  h.dispatch('pull_lever', { lever: 'model_story' });
   expect(q(h, '[data-lever="model_story"] [data-model-story]').map(e => e.getAttribute('data-model-story')).sort()).toEqual(['add', 'subtract']);
   expect(q(h, '[data-lever="model_story"]')[0].textContent).not.toMatch(/\b(12|8|20)\b/);
   buildFamily(h);
   expect(h.state().task!.workspace!.attempts.at(-1)).toMatchObject({ correct: true });
-  expect(h.state().task!.workspace!.attempts.at(-1)!.levers ?? []).toEqual([]);
+  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['model_story']);
   h.close();
 });
 

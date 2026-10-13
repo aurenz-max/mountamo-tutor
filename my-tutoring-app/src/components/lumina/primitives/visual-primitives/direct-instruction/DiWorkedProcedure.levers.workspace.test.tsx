@@ -47,14 +47,16 @@ it('a regroup decide step at medium: top_blocks draws pieces and no number; the 
   h.close();
 });
 
-it('easy starts with a different problem, fully worked; a try under it records no lever', () => {
+it('easy starts with no model; the pulled card shows a different problem, fully worked', () => {
   const h = mount('subtract_no_regroup', { id: 'b', minuend: 57, subtrahend: 23, challengeType: 'subtract_no_regroup', supportTier: 'easy' });
+  expect(q(h, '[data-lever="model_problem"]')).toHaveLength(0);
+  h.dispatch('pull_lever', { lever: 'model_problem' });
   const model = q(h, '[data-lever="model_problem"]');
   expect(model).toHaveLength(1);
   expect(model[0].getAttribute('data-model-problem')).not.toBe('57-23');
   expect(String(h.state().task!.demand.onScreen)).toMatch(/fully worked/);
   h.say('no regrouping, seven minus three is four'); h.feedback('correct');
-  expect(h.state().task!.workspace!.attempts.at(-1)!.levers ?? []).toEqual([]);
+  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['model_problem']);
   h.close();
 });
 

@@ -5,7 +5,7 @@ import { planSubtraction } from './diWorkedProcedurePlan';
 import { itemsFromProblems, type WorkedProblemSpec, type WorkedProcedureItem } from './diWorkedProcedureScript';
 import { workedProcedureSpokenMisses } from './diWorkedProcedureWorkspace';
 import { FEWER_COLUMNS, MODEL_PROBLEM, TAKE_AWAY_CUBES, TOP_BLOCKS, fewerColumnsFor, modelFor, modelLeaks, modelWalk,
-  procedureLeverFacts, procedureLevers, startingLevers } from './diWorkedProcedureLevers';
+  procedureLeverFacts, procedureLevers } from './diWorkedProcedureLevers';
 import noRegroup from '../../../components/live-activity/runtime/testing/w1-payloads/di-worked-procedure.subtract_no_regroup.json';
 import regroup from '../../../components/live-activity/runtime/testing/w1-payloads/di-worked-procedure.subtract_regroup.json';
 import regroup3 from '../../../components/live-activity/runtime/testing/w1-payloads/di-worked-procedure.subtract_regroup-3digit-hard.json';
@@ -98,10 +98,6 @@ describe('fewer_columns: only on a 3-digit tens regroup, only after no_decrement
 });
 
 describe('starting positions and which lever answers which miss', () => {
-  it('only easy starts with the model (no tier is medium in this pack)', () => {
-    expect(startingLevers(steps(52, 28, 'subtract_regroup', 'easy')[0])).toEqual([MODEL_PROBLEM]);
-    expect(startingLevers(steps(52, 28)[0])).toEqual([]);
-  });
 
   it.each([
     ['upside_down_column', [], MODEL_PROBLEM],

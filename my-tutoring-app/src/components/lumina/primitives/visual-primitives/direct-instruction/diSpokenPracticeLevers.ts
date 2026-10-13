@@ -211,11 +211,6 @@ function modelLever(item: SpokenPracticeItem, items: readonly SpokenPracticeItem
   }
 }
 
-export const startingLevers = (item: SpokenPracticeItem, items: readonly SpokenPracticeItem[], spares: readonly SpokenPracticeItem[]): string[] => {
-  const model = modelLever(item, items, spares);
-  return (item.supportTier ?? 'easy') === 'easy' && model ? [model] : [];
-};
-
 export const MODE_MISSES: Readonly<Record<string, readonly string[]>> = {
   count_and_say: ['skipped_a_number', ...OFF_BY],
   compare_choice: ['other_menu_word', 'said_same', 'said_thing_name'],

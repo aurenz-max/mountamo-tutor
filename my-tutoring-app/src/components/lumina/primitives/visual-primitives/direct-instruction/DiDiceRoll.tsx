@@ -25,8 +25,8 @@ import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView }
 import { diceValuesFor, isTwoDiceChallenge, type DiDiceRollChallenge, type DiDiceRollChallengeType,
   type DieValue } from './diDiceRollScript';
 import { diceAssignment, diceScene } from './diDiceRollWorkspace';
-import { BRACKET_LEVER, MODEL_LEVER, TOUCH_LEVER, compareModels, diceLeverFacts, diceLevers, modelFor, simplerRoll,
-  startingLevers } from './diDiceRollLevers';
+import { BRACKET_LEVER, MODEL_LEVER, TOUCH_LEVER, compareModels, diceLeverFacts, diceLevers, modelFor, simplerRoll } from './diDiceRollLevers';
+import { DiModelCard } from './DiModelCard';
 
 export type {
   DiDiceRollChallenge,
@@ -180,10 +180,9 @@ function ModelRoll({ item }: { item: DiDiceRollChallenge }) {
   // R1: a comparison shows one pair per answer (left more, right more, same), so the card points at none of them.
   const models = compareModels(item) ?? [modelFor(item)].filter((m): m is DiDiceRollChallenge => !!m);
   if (!models.length) return null;
-  return <div data-lever={MODEL_LEVER} data-model-roll={models.map(m => diceValuesFor(m).join('-')).join(' ')}
+  return <DiModelCard lever={MODEL_LEVER} data-model-roll={models.map(m => diceValuesFor(m).join('-')).join(' ')}
     aria-label={`My turn: ${models.length > 1 ? 'different rolls' : 'a different roll'}`}
-    className="mt-5 flex flex-wrap items-center justify-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2">
-    <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
+    className="mt-5 flex flex-wrap items-center justify-center gap-3">
     {models.map(model => {
       const faces = diceValuesFor(model);
       const relation = model.challengeType === 'compare_dice' ? model.spokenAnswer : undefined;
@@ -193,11 +192,11 @@ function ModelRoll({ item }: { item: DiDiceRollChallenge }) {
           <span aria-hidden="true" data-model-star={index === star || undefined} className="h-5 text-base leading-none">{index === star ? '⭐' : ''}</span>
           <Die value={value} size="sm" className="!h-12 !w-12 !p-1.5" />
         </div>)}
-        {relation === 'same' && <span aria-hidden="true" className="mb-3 text-2xl font-semibold text-purple-100">=</span>}
-        {model.challengeType !== 'compare_dice' && <span className="text-3xl font-semibold text-purple-100">= {answerNumber(model)}</span>}
+        {relation === 'same' && <span aria-hidden="true" className="mb-3 text-2xl font-semibold">=</span>}
+        {model.challengeType !== 'compare_dice' && <span className="text-3xl font-semibold">= {answerNumber(model)}</span>}
       </div>;
     })}
-  </div>;
+  </DiModelCard>;
 }
 
 /** The covered dice, the controlled roll, and, once credited, the answer under them. Keyed by item, so
@@ -285,7 +284,7 @@ const DiceStage: React.FC<{ item: DiDiceRollChallenge; view: DiStageView; marked
 };
 
 const LEVERS: DiStageLevers<DiDiceRollChallenge> = {
-  declare: diceLevers, onScreen: diceLeverFacts, starting: startingLevers, simpler: simplerRoll,
+  declare: diceLevers, onScreen: diceLeverFacts, simpler: simplerRoll,
 };
 
 /** Credited rolls, each drawn small with its answer. */

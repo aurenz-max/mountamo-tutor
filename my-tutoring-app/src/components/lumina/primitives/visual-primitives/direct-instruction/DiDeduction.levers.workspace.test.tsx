@@ -33,12 +33,14 @@ const mount = (mode: 'conclude' | 'deny' | 'cannot_tell', supportTier?: 'easy' |
     ...(supportTier ? { supportTier } : {}) } });
 const q = (h: WorkspaceHarness, sel: string) => Array.from(h.view.container.querySelectorAll(sel));
 
-it('easy conclude: the model card works a different rule through yes, no and can\'t tell; a try under it records no lever', () => {
+it('easy conclude starts with no model; the pulled card works a different rule through yes, no and can\'t tell', () => {
   const h = mount('conclude');
+  expect(q(h, '[data-lever="model_case"]')).toHaveLength(0);
+  h.dispatch('pull_lever', { lever: 'model_case' });
   expect(q(h, '[data-lever="model_case"] [data-model-shape]').map(e => e.getAttribute('data-model-shape'))).toEqual(['conclude', 'deny', 'cannot_tell']);
   expect(q(h, '[data-lever="model_case"]')[0].textContent).not.toMatch(/bird|robin|turtle/i);
   h.say('a robin lays eggs'); h.feedback('correct');
-  expect(h.state().task!.workspace!.attempts.at(-1)!.levers ?? []).toEqual([]);
+  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['model_case']);
   h.close();
 });
 

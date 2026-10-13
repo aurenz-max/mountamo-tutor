@@ -137,10 +137,6 @@ export function simplerRoll(item: DiDiceRollChallenge, lever: string): DiDiceRol
   }
 }
 
-/** Levers an item's tier starts with on screen (no tier is easy here). Not a pull; never recorded. */
-export const startingLevers = (item: DiDiceRollChallenge): string[] =>
-  (item.supportTier ?? 'easy') === 'easy' && modelFor(item) ? [MODEL_LEVER] : [];
-
 export function diceLevers(item: DiDiceRollChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
   if (!item) return [];
   const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,

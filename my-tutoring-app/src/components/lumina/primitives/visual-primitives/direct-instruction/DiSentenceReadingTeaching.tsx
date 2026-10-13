@@ -46,10 +46,11 @@ import type { DiSentenceReadingMetrics } from '../../../evaluation/types';
 import { LuminaPrintSupport } from '../../../ui/LuminaPrintSupport';
 import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
 import { MODEL_SENTENCE, SOUND_DOTS, TRACKING_UNDERLINE, isCvcWord, modelFor, sentenceLeverFacts, sentenceLevers,
-  simplerLine, startingLevers } from './diSentenceReadingLevers';
+  simplerLine } from './diSentenceReadingLevers';
 import { buildSentenceReadingItems, workspaceAssignment, workspaceScene, type SentenceReadingItem }
   from './diSentenceReadingDomain';
 import type { DiSentenceReadingData } from './DiSentenceReading';
+import { DiModelCard } from './DiModelCard';
 
 export interface DiSentenceReadingTeachingProps {
   data: DiSentenceReadingData;
@@ -79,12 +80,10 @@ function stimulus(item: SentenceReadingItem, marks: readonly string[], view: DiS
         ? <LuminaPrintSupport text={item.text} trackingUnderline={underline} soundDots={dots} dotWord={word => isCvcWord(word)} />
         : item.text}
     </div>
-    {model && view.pulled.includes(MODEL_SENTENCE) && <div data-lever={MODEL_SENTENCE} data-model-sentence={model}
-      aria-label="My turn: a different sentence"
-      className="flex items-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-4 py-2">
-      <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
-      <span className="text-2xl font-semibold text-purple-100">{model}</span>
-    </div>}
+    {model && view.pulled.includes(MODEL_SENTENCE) && <DiModelCard lever={MODEL_SENTENCE} data-model-sentence={model}
+      aria-label="My turn: a different sentence" className="flex items-center gap-3">
+      <span className="text-2xl font-semibold">{model}</span>
+    </DiModelCard>}
   </div>;
 }
 
@@ -106,7 +105,6 @@ export default function DiSentenceReadingTeaching({ data, className, runtimePlan
   const levers = useMemo<DiStageLevers<SentenceReadingItem>>(() => ({
     declare: (item, pulled) => sentenceLevers(item, pulled, items),
     onScreen: (item, pulled) => sentenceLeverFacts(item, pulled, items),
-    starting: item => startingLevers(item, items),
     simpler: (item, lever) => simplerLine(item, lever, items),
   }), [items]);
   return <DiTeachingStage<SentenceReadingItem, DiSentenceReadingMetrics> primitiveId="di-sentence-reading" data={data}

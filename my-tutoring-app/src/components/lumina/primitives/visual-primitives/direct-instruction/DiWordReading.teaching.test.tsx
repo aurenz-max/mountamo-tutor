@@ -36,7 +36,6 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiWordReading, { type DiWordReadingData } from './DiWordReading';
-import { startingLevers, wordLeverFacts } from './diWordReadingLevers';
 import { DI_WORD_READING_WORKSPACE_MODES, buildWordReadingItems, workspaceAssignment, workspaceScene,
   type DiWordReadingChallenge, type DiWordReadingChallengeType } from './diWordReadingDomain';
 import { validateDiWordReadingData } from '../../../components/live-activity/adapters/diWordReadingLive';
@@ -116,8 +115,8 @@ it.each(ALL_MODES)('%s publishes a factual ask with no scripted cue and no tutor
   expect(JSON.stringify(task)).not.toMatch(/Speak exactly|say exactly/i);
   // The model sees help and demonstration. Recording and progression are observer-only.
   expect(h.state().affordances.filter(a => !a.controller).map(a => (a.action as any).operation ?? a.action.type).sort())
-    // A sight word starts with its model on screen and has no other lever; a decodable word still has levers to pull.
-    .toEqual(mode === 'sight_word' ? ['begin_help', 'demonstrate'] : ['begin_help', 'demonstrate', 'pull_lever']);
+    // No lever starts on screen, so every mode has a lever to pull.
+    .toEqual(['begin_help', 'demonstrate', 'pull_lever']);
   expect(runtimePacket(h.state()).choices.some(a => ['retry', 'advance'].includes(a.action.type))).toBe(false);
   expect(task.evidence.attemptNumber).toBe(0);
   expect(task.support).toEqual({ level: 0, answerExposure: 'none' });
@@ -366,10 +365,8 @@ it('publishes exactly the domain assignment and scene that the verdict probe rep
   const item = buildWordReadingItems(CHALLENGES.cvc_reading)[0];
   const { task, expectedAnswer, response } = workspaceAssignment(item), scene = workspaceScene(item);
   expect(h.state().task!.task).toBe(task);
-  // Plus what the tier's starting levers draw (the easy model card), which the probe adds the same way.
-  const session = buildWordReadingItems(CHALLENGES.cvc_reading);
-  const onScreen = wordLeverFacts(item, startingLevers(item, session), session);
-  expect(h.state().task!.demand).toEqual({ ...scene.facts, onScreen, response, presentation: 'ready' });
+  // No lever starts on screen, so the demand carries no onScreen fact.
+  expect(h.state().task!.demand).toEqual({ ...scene.facts, response, presentation: 'ready' });
   expect(h.state().task!.workspace).toMatchObject({ objects: scene.objects, expectedAnswer });
 });
 

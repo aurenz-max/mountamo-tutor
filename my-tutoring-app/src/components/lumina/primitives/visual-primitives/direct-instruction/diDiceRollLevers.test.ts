@@ -4,7 +4,7 @@ import type { DiDiceRollChallenge, DiDiceRollChallengeType } from './diDiceRollS
 import { diceChallengeValid, diceSpokenMisses } from './diDiceRollWorkspace';
 import { saysWords } from './diMathFactsLevers';
 import { compareModels, BRACKET_LEVER, FAR_LEVER, FEWER_LEVER, MODEL_LEVER, SMALLER_LEVER, TOUCH_LEVER, diceItem, diceLeverFacts,
-  diceLevers, modelFor, modelLeaks, simplerRoll, startingLevers } from './diDiceRollLevers';
+  diceLevers, modelFor, modelLeaks, simplerRoll } from './diDiceRollLevers';
 import compare from '../../../components/live-activity/runtime/testing/w1-payloads/di-dice-roll.compare_dice.json';
 import count from '../../../components/live-activity/runtime/testing/w1-payloads/di-dice-roll.count_pips.json';
 import sum from '../../../components/live-activity/runtime/testing/w1-payloads/di-dice-roll.sum_two_dice.json';
@@ -45,11 +45,6 @@ describe('model_roll: a different roll, never a route to this answer', () => {
     }
   });
 
-  it('starts on screen at easy, or with no tier; not at medium or hard', () => {
-    expect(startingLevers(roll('count_pips', 3))).toEqual([MODEL_LEVER]);
-    expect(startingLevers({ ...roll('count_pips', 3), supportTier: 'medium' })).toEqual([]);
-    expect(startingLevers({ ...roll('count_pips', 3), supportTier: 'hard' })).toEqual([]);
-  });
 });
 
 describe('levers per mode, and what they say', () => {

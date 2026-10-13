@@ -130,9 +130,6 @@ export function withinTenSteps(item: WordProblemItem): WordProblemItem[] | null 
 export const withinTenFor = (item: WordProblemItem): WordProblemItem | null =>
   withinTenSteps(item)?.find(s => s.kind === 'solve') ?? null;
 
-export const startingLevers = (item: WordProblemItem): string[] =>
-  item.supportTier === 'easy' && modelStoriesFor(item) ? [MODEL_STORY] : [];
-
 export function wordProblemLevers(item: WordProblemItem | null, pulled: readonly string[]): WorkspaceLever[] {
   if (!item) return [];
   const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly string[], when: string,
