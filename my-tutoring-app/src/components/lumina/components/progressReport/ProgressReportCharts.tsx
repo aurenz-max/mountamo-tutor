@@ -7,8 +7,9 @@
  * week's numbers. Data: ProgressReportResponse (studentAnalyticsAPI).
  */
 
-import React, { useState } from 'react';
-import type { ProgressReportSubject, ProgressReportWeek } from '@/lib/studentAnalyticsAPI';
+import React, { useRef, useState } from 'react';
+import { surface } from '../../ui/tokens';
+import type { ProgressReportCell, ProgressReportSubject, ProgressReportWeek } from '@/lib/studentAnalyticsAPI';
 
 const shortDate = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -125,39 +126,97 @@ export function AccuracyChart({ weeks }: { weeks: ProgressReportWeek[] }) {
   );
 }
 
-const gateCell = (g: number | null) =>
-  g == null ? 'bg-slate-700/50' : g === 0 ? 'bg-emerald-900/80' : g < 4 ? 'bg-emerald-600/70' : 'bg-emerald-300';
-const gateLabel = (g: number | null) =>
-  g == null ? 'Not started' : g === 0 ? 'Tried, no checks passed yet' : g < 4 ? `Learning: ${g} of 4 checks passed` : 'Mastered';
+type CellState = ProgressReportCell['state'];
+const CELL_CLASS: Record<string, string> = {
+  none: 'bg-slate-700/50', tried: 'bg-emerald-900/80', learning: 'bg-emerald-700/80',
+  shown: 'bg-emerald-500/80', mastered: 'bg-emerald-300',
+};
+const cellClass = (s: CellState) => CELL_CLASS[s ?? 'none'];
+// Older payloads carry gates only.
+const fromGate = (g: number | null): ProgressReportCell => ({
+  state: g == null ? null : g === 0 ? 'tried' : g < 4 ? 'learning' : 'mastered', gate: g, via: null,
+});
+const STATE_NAME: Record<string, string> = {
+  none: 'Not started', tried: 'Tried', learning: 'Learning', shown: 'Shown', mastered: 'Mastered',
+};
+function cellDetail(c: ProgressReportCell): string {
+  switch (c.state) {
+    case 'mastered': return 'Shown and kept over time.';
+    case 'shown': return 'Shown, not yet checked over time.';
+    case 'learning': return c.gate ? `${c.gate} of 4 checks passed.` : 'Practising now.';
+    case 'tried': return 'Tried, no checks passed yet.';
+    default: return 'Not practised yet.';
+  }
+}
+const cellLabel = (c: ProgressReportCell, skill: string) =>
+  `${STATE_NAME[c.state ?? 'none']}: ${skill}. ${cellDetail(c)}${c.via ? ` Through a harder skill: ${c.via}.` : ''}`;
+
+type Tip = { cell: ProgressReportCell; skill: string; x: number; y: number; id: string };
+const TIP_W = 288;
+
+/** Glass hover card for one grid cell, anchored above it inside the grade map. */
+function CellTip({ tip, width }: { tip: Tip; width: number }) {
+  const x = Math.min(Math.max(tip.x, TIP_W / 2), Math.max(TIP_W / 2, width - TIP_W / 2));
+  return (
+    <div role="tooltip"
+      className={`pointer-events-none absolute z-20 rounded-xl border px-3.5 py-3 space-y-1.5 ${surface.elevated}`}
+      style={{ left: x, top: tip.y - 10, width: TIP_W, transform: 'translate(-50%, -100%)' }}>
+      <div className="flex items-center gap-2">
+        <span className={`h-2.5 w-2.5 rounded-[3px] ${cellClass(tip.cell.state)}`} />
+        <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-300">
+          {STATE_NAME[tip.cell.state ?? 'none']}
+        </span>
+      </div>
+      <p className="text-sm font-semibold leading-snug text-slate-100">{tip.skill}</p>
+      <p className="text-xs text-slate-400">{cellDetail(tip.cell)}</p>
+      {tip.cell.via && (
+        <p className="border-t border-white/10 pt-1.5 text-xs leading-snug text-slate-300">
+          <span className="text-slate-500">Through a harder skill: </span>{tip.cell.via}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export const GATE_LEGEND: Array<[string, string]> = [
-  ['Not started', gateCell(null)],
-  ['Tried', gateCell(0)],
-  ['Learning (checks 1-3)', gateCell(2)],
-  ['Mastered', gateCell(4)],
+  ['Not started', cellClass(null)],
+  ['Tried', cellClass('tried')],
+  ['Learning', cellClass('learning')],
+  ['Shown (by this skill or a harder one)', cellClass('shown')],
+  ['Mastered (shown and kept over time)', cellClass('mastered')],
 ];
 
 export function GradeMap({ subjects }: { subjects: ProgressReportSubject[] }) {
   const [open, setOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(subjects.map((s) => [s.subject, s.mastered + s.learning > 0 && s.subject !== 'SOCIAL_STUDIES'])),
+    Object.fromEntries(subjects.map((s) => [s.subject, s.mastered + (s.shown ?? 0) + s.learning > 0 && s.subject !== 'SOCIAL_STUDIES'])),
   );
+  const box = useRef<HTMLDivElement>(null);
+  const [tip, setTip] = useState<Tip | null>(null);
+  const show = (e: React.SyntheticEvent<HTMLElement>, cell: ProgressReportCell, skill: string, id: string) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const b = box.current?.getBoundingClientRect();
+    if (b) setTip({ cell, skill, id, x: r.left + r.width / 2 - b.left, y: r.top - b.top });
+  };
   return (
-    <div className="divide-y divide-white/10">
+    <div ref={box} className="relative divide-y divide-white/10" onMouseLeave={() => setTip(null)}>
+      {tip && <CellTip tip={tip} width={box.current?.clientWidth ?? TIP_W} />}
       {subjects.map((s) => {
         const pct = (n: number) => `${(n / Math.max(1, s.total)) * 100}%`;
+        const shown = s.shown ?? 0;
         return (
           <div key={s.subject} className="py-4 first:pt-0 last:pb-0 space-y-2.5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h4 className="text-base font-semibold text-slate-100">{s.name}</h4>
               <span className="text-xs text-slate-400 tabular-nums">
-                {s.mastered} mastered · {s.learning} learning · {s.total} skills
+                {s.mastered} mastered · {shown} shown · {s.learning} learning · {s.total} skills
               </span>
             </div>
             <div className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-slate-700/50"
-              role="img" aria-label={`${s.name}: ${s.mastered} mastered, ${s.learning} learning, ${s.tried} tried`}>
-              {s.mastered > 0 && <i className="block h-full bg-emerald-300" style={{ width: pct(s.mastered) }} />}
-              {s.learning > 0 && <i className="block h-full bg-emerald-600/70" style={{ width: pct(s.learning) }} />}
-              {s.tried > 0 && <i className="block h-full bg-emerald-900/80" style={{ width: pct(s.tried) }} />}
+              role="img" aria-label={`${s.name}: ${s.mastered} mastered, ${shown} shown, ${s.learning} learning, ${s.tried} tried`}>
+              {s.mastered > 0 && <i className={`block h-full ${cellClass('mastered')}`} style={{ width: pct(s.mastered) }} />}
+              {shown > 0 && <i className={`block h-full ${cellClass('shown')}`} style={{ width: pct(shown) }} />}
+              {s.learning > 0 && <i className={`block h-full ${cellClass('learning')}`} style={{ width: pct(s.learning) }} />}
+              {s.tried > 0 && <i className={`block h-full ${cellClass('tried')}`} style={{ width: pct(s.tried) }} />}
             </div>
             <button
               type="button"
@@ -174,14 +233,20 @@ export function GradeMap({ subjects }: { subjects: ProgressReportSubject[] }) {
                     <span className="text-slate-400">{u.title}</span>
                     <span className="col-span-2 sm:col-span-1 row-start-2 sm:row-start-auto flex flex-wrap gap-[3px]">
                       {u.skills.flatMap((sk, si) =>
-                        sk.gates.map((g, gi) => (
-                          <i key={`${si}-${gi}`} title={`${gateLabel(g)} — ${sk.description}`}
-                            className={`block h-[9px] w-[9px] rounded-[2px] ${gateCell(g)}`} />
-                        )),
+                        (sk.cells ?? sk.gates.map(fromGate)).map((c, gi) => {
+                          const id = `${s.subject}-${u.title}-${si}-${gi}`;
+                          return (
+                            <i key={id} tabIndex={0} aria-label={cellLabel(c, sk.description)}
+                              onMouseEnter={(e) => show(e, c, sk.description, id)} onFocus={(e) => show(e, c, sk.description, id)}
+                              onBlur={() => setTip(null)}
+                              className={`block h-[9px] w-[9px] cursor-default rounded-[2px] outline-none transition-transform duration-150 ${cellClass(c.state)} ${
+                                tip?.id === id ? 'scale-150 ring-1 ring-white/70' : 'hover:scale-125'}`} />
+                          );
+                        }),
                       )}
                     </span>
                     <span className="text-right text-xs text-slate-500 tabular-nums row-start-1 col-start-2 sm:col-start-auto sm:row-start-auto">
-                      {u.mastered}/{u.total}
+                      {u.mastered + (u.shown ?? 0)}/{u.total}
                     </span>
                   </div>
                 ))}

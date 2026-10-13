@@ -22,6 +22,11 @@ import React from 'react';
 import type { LearnerCause, LearnerCauseLink, LearnerInfluenceResponse } from '@/lib/studentAnalyticsAPI';
 import MasteryBands from './MasteryBands';
 import { LuminaBadge, LuminaSectionLabel } from '../ui';
+import GrownPastBanner from './GrownPastBanner';
+
+/** MATHEMATICS -> Math, LANGUAGE_ARTS -> Language Arts. */
+const subjectName = (key: string): string =>
+  key === 'MATHEMATICS' ? 'Math' : key.toLowerCase().split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
 
 const GROUPS: Array<{ field: keyof Pick<LearnerCause, 'foundations' | 'check' | 'next' | 'further'>; title: string; arrow: string; tone: string }> = [
   { field: 'foundations', title: 'Shows these are in place', arrow: '↑', tone: 'text-emerald-300' },
@@ -85,9 +90,12 @@ export interface LessonImpactProps {
 export default function LessonImpact({ influence, limit = 3 }: LessonImpactProps) {
   const causes = influence.by_cause ?? [];
   const unlocked = influence.unlocked ?? [];
-  if (causes.length === 0) return null;
+  const grown = (influence.milestones ?? []).flatMap((m) =>
+    m.grown_past.map((g) => ({ subject: subjectName(m.subject), grade: g, nowLearning: m.reach_grade })));
+  if (causes.length === 0 && grown.length === 0) return null;
   return (
     <div className="space-y-3">
+      <GrownPastBanner audience="child" items={grown} />
       <div>
         <LuminaSectionLabel>What your work changed</LuminaSectionLabel>
         <p className="text-xs text-slate-500 mt-1">

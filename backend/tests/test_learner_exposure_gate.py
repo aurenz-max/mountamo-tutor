@@ -56,3 +56,66 @@ def test_idempotent_and_off_without_grade():
     once = exposure_gate(g, ro, {"Kindergarten:COUNT": {}}, grade=0)
     assert exposure_gate(g, once, {"Kindergarten:COUNT": {}}, grade=0) == once
     assert exposure_gate(g, ro, {}, grade=None) == ro
+
+
+def test_reach_opens_a_grade_for_each_grade_grown_past():
+    """T1 ruling: K + G1 shown -> G2 opens; K alone -> reach stays at G1."""
+    import numpy as np
+    from types import SimpleNamespace
+    from app.services.learner_model.engine import _reach
+    g = SimpleNamespace(gi=np.array([0] * 5 + [1] * 5 + [2] * 5 + [3] * 5))
+    ev = np.zeros(20)
+    assert _reach(g, ev, 0) == (1, [])
+    ev[:4] = 0.9                       # 80% of K shown
+    assert _reach(g, ev, 0) == (1, [0])
+    ev[5:8] = 0.9                      # 60% of G1 shown
+    assert _reach(g, ev, 0) == (2, [0, 1])
+    ev[10:12] = 0.9                    # 40% of G2: not yet
+    assert _reach(g, ev, 0) == (2, [0, 1])
+
+
+def test_general_ability_alone_does_not_grow_a_grade():
+    """A high model P(mastered) on unpractised at-grade skills is not 'shown'."""
+    import numpy as np
+    from app.services.learner_model.engine import _evidenced
+    pm = np.array([0.95, 0.95, 0.95, 0.95])
+    seen = np.array([True, False, False, False])
+    implied = np.array([0.0, 0.9, 0.0, 0.0])   # skill 1 is an R step of skill 0
+    assert list(_evidenced(pm, seen, implied)) == [0.95, 0.9, 0.0, 0.0]
+
+
+def _chain():
+    """count5 <-R- count20 -E-> count10 ; sub100 -R-> sub10 (all K)."""
+    from app.services.learner_model.engine import GraphArrays
+    P = lambda key, step, easier: {"key": key, "in_model": True, "score": 0.9, "step": step, "easier_form": easier}
+    nodes = {
+        "Kindergarten:C5": {"grade": "Kindergarten", "skill_id": "C", "parents": []},
+        "Kindergarten:C10": {"grade": "Kindergarten", "skill_id": "C", "parents": []},
+        "Kindergarten:C20": {"grade": "Kindergarten", "skill_id": "C",
+                             "parents": [P("Kindergarten:C5", 0.9, 0.2), P("Kindergarten:C10", 0.3, 0.9)]},
+        "Kindergarten:S10": {"grade": "Kindergarten", "skill_id": "S", "parents": []},
+        "Kindergarten:S100": {"grade": "Kindergarten", "skill_id": "S", "parents": [P("Kindergarten:S10", 0.9, 0.1)]},
+    }
+    return GraphArrays.from_nodes("t", nodes)
+
+
+def test_harder_skill_shows_its_steps_and_easier_forms_not_phi():
+    from app.services.learner_model.engine import demonstration
+    g = _chain()
+    ro = {k: [0.95, 0.9, 0.0] for k in g.keys}            # phi reads everything as mastered
+    st = demonstration(g, ro, {"Kindergarten:C20": {}})
+    assert st["Kindergarten:C20"]["state"] == "shown" and st["Kindergarten:C20"]["via"] is None
+    assert st["Kindergarten:C10"] == {**st["Kindergarten:C10"], "state": "shown", "via": "Kindergarten:C20"}  # easier form
+    assert st["Kindergarten:C5"]["state"] == "shown"       # R step
+    assert "Kindergarten:S10" not in st and "Kindergarten:S100" not in st   # general ability alone: nothing
+
+
+def test_retention_flows_down_the_same_edges():
+    from app.services.learner_model.engine import demonstration
+    g = _chain()
+    ro = {k: [0.9, 0.9, 0.0] for k in g.keys}
+    lc = {"Kindergarten:S100": {"current_gate": 4}, "Kindergarten:C20": {"current_gate": 2}}
+    st = demonstration(g, ro, {"Kindergarten:S100": {}, "Kindergarten:C20": {}, "Kindergarten:C10": {}}, lc)
+    assert st["Kindergarten:S10"]["state"] == "mastered" and st["Kindergarten:S10"]["via"] == "Kindergarten:S100"
+    assert st["Kindergarten:C10"]["gate"] == 2 and st["Kindergarten:C10"]["own_gate"] is None
+    assert "Kindergarten:S100" not in [st[k]["via"] for k in ("Kindergarten:C10", "Kindergarten:C5")]

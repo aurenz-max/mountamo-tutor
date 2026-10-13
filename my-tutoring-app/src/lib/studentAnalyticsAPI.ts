@@ -308,10 +308,16 @@ export interface LearnerModelSubject {
   observations: number;
   updated_at?: string;
   general_ability?: { mean: number | null; sd: number | null };
-  counts: { subskills?: number; seen?: number; mastered?: number; mastered_seen?: number; ready?: number };
+  counts: { subskills?: number; seen?: number; mastered?: number; mastered_seen?: number; ready?: number;
+    /** Mastered on the child's own evidence: practised, or a required step of a practised skill. */
+    shown?: number; shown_practised?: number; shown_mastered?: number };
   ready: LearnerModelRow[];
   working_on: LearnerModelRow[];
   mastered: LearnerModelRow[];
+  /** Grades grown past (60% of the grade shown), each opening the next. */
+  grown_past?: Array<{ grade: string; at: string | null }>;
+  /** Highest grade the child may be taught now. */
+  reach_grade?: string | null;
 }
 
 export interface LearnerModelResponse {
@@ -353,6 +359,8 @@ export interface LearnerInfluenceResponse {
   by_cause?: LearnerCause[];
   /** Subskills that became ready to learn during the window. */
   unlocked?: Array<{ key: string; label: string; grade: string; ready: [number, number] }>;
+  /** Grades grown past during the window. */
+  milestones?: Array<{ ts: string; subject: string; grown_past: string[]; reach_grade: string }>;
 }
 
 /** A graph neighbour a practised subskill moved. */
@@ -562,11 +570,22 @@ export interface ProgressReportSubskillStats {
   lessons: number;
 }
 
+/** One grid cell: the learner model's demonstration state (backend engine.demonstration).
+ *  shown = practised, or demonstrated by a harder skill practised (a step inside it or an
+ *  easier form of it); mastered = shown and retained over the lifecycle checks, its own or
+ *  a harder skill's. `via` names the harder skill when the standing came from one. */
+export interface ProgressReportCell {
+  state: 'mastered' | 'shown' | 'learning' | 'tried' | null;
+  gate: number | null;
+  via: string | null;
+}
+
 export interface ProgressReportSubject {
   subject: string;
   name: string;
   total: number;
   mastered: number;
+  shown?: number;
   learning: number;
   tried: number;
   units: Array<{
@@ -574,8 +593,9 @@ export interface ProgressReportSubject {
     title: string;
     total: number;
     mastered: number;
+    shown?: number;
     learning: number;
-    skills: Array<{ skill_id: string | null; description: string; gates: Array<number | null> }>;
+    skills: Array<{ skill_id: string | null; description: string; gates: Array<number | null>; cells?: ProgressReportCell[] }>;
   }>;
 }
 
@@ -607,6 +627,8 @@ export interface ProgressReportResponse {
   }>;
   time_by_subject: Array<{ subject: string; name: string; minutes: number }>;
   grade_mix: Array<{ grade: string; answers: number }>;
+  /** Grades grown past per subject (learner model). */
+  grown_past?: Array<{ subject: string; name: string; grade: string; at: string | null; now_learning: string }>;
   favorite_activities: Array<{ primitive_type: string; answers: number; accuracy: number }>;
   interest_answers: number;
   evidence: {

@@ -22,6 +22,7 @@ import React, { useEffect, useState } from 'react';
 import { LuminaCard, LuminaCardContent, LuminaBadge, LuminaChoiceChip } from '../ui';
 import { analyticsApi, type LearnerModelResponse, type LearnerModelRow } from '@/lib/studentAnalyticsAPI';
 import MasteryBands from './MasteryBands';
+import GrownPastBanner from './GrownPastBanner';
 
 export interface LearnerModelSectionProps {
   studentId: number;
@@ -47,7 +48,11 @@ function SkillRows({ rows }: { rows: LearnerModelRow[] }) {
                 .filter(Boolean).join(' · ')}
             </p>
           </div>
-          <MasteryBands p={r.p_right} className="shrink-0 pt-1" />
+          {/* A band is a claim about the child's own answers; with none, the
+              model's prediction would read as "Got it" on a skill never tried. */}
+          {r.answers
+            ? <MasteryBands p={r.p_right} className="shrink-0 pt-1" />
+            : <span className="shrink-0 pt-1 text-xs text-slate-500">Not started</span>}
         </li>
       ))}
     </ul>
@@ -91,8 +96,12 @@ export default function LearnerModelSection({ studentId }: LearnerModelSectionPr
   const sec = subjects.find((s) => s.subject === subject);
   if (!sec) return null;
 
-  const mastered = sec.counts.mastered ?? 0;
-  const practised = sec.counts.mastered_seen ?? 0;
+  // The demonstration states the report grid reads (backend engine.demonstration):
+  // practised, or demonstrated by a harder skill practised. The model's guess from
+  // general ability is never shown as known (it read 186 language arts skills from 19).
+  const mastered = sec.counts.shown ?? sec.counts.mastered_seen ?? 0;
+  const practised = sec.counts.shown_practised ?? sec.counts.mastered_seen ?? 0;
+  const retained = sec.counts.shown_mastered ?? 0;
 
   return (
     <section className="space-y-4">
@@ -102,14 +111,19 @@ export default function LearnerModelSection({ studentId }: LearnerModelSectionPr
           <LuminaBadge accent="indigo">Preview</LuminaBadge>
         </div>
         <h3 className="text-xl font-bold text-slate-100 text-balance">
-          {mastered} {prettySubject(sec.subject).toLowerCase()} skills likely in place
+          {mastered} {prettySubject(sec.subject).toLowerCase()} skills shown
         </h3>
         <p className="max-w-prose text-sm text-slate-400">
-          {practised} of them were practised directly. The other {Math.max(0, mastered - practised)} come
-          from harder skills they showed: a child who can do the harder skill very likely has the easier one.
+          {practised} of them were practised directly. The other {Math.max(0, mastered - practised)} are
+          steps inside, or easier forms of, harder skills they showed: counting 20 objects shows counting 10.
+          {retained > 0 && <> {retained} have also held up over time (mastered).</>}
           The bars show the chance of getting each skill right today.
         </p>
       </div>
+
+      <GrownPastBanner audience="child" items={(sec.grown_past ?? []).map((g) => ({
+        subject: prettySubject(sec.subject), grade: g.grade, nowLearning: sec.reach_grade,
+      }))} />
 
       {subjects.length > 1 && (
         <div className="flex flex-wrap gap-2">

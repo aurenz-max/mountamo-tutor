@@ -17,6 +17,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { LuminaCard, LuminaCardContent, LuminaSectionLabel, LuminaBadge } from '../../ui';
+import GrownPastBanner from '../GrownPastBanner';
 import {
   analyticsApi,
   type ProgressReportNarrativeResponse,
@@ -205,6 +206,8 @@ export default function ProgressReport({ studentId, displayName }: ProgressRepor
         <LuminaCard topAccent="emerald">
           <LuminaCardContent className="p-6 space-y-5">
             <h2 className="text-2xl font-bold text-slate-100">How is {name} doing?</h2>
+            <GrownPastBanner audience="parent" name={name}
+              items={(r.grown_past ?? []).map((g) => ({ subject: g.name, grade: g.grade, nowLearning: g.now_learning }))} />
             <p className="max-w-prose text-[15px] leading-relaxed text-slate-300">{n?.short_answer ?? text.shortAnswer}</p>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {[

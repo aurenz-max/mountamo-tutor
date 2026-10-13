@@ -39,7 +39,8 @@ from ..calibration.problem_type_registry import (
 )
 from ..curriculum_scope import grade_key, subject_key
 from ..learner_graph import LearnerGraph, get_learner_graph
-from .engine import READY_WINDOW, GraphArrays, LearnerEngine, exposure_gate, grade_index, n_eff
+from .engine import (READY_WINDOW, GraphArrays, LearnerEngine, exposure_gate, grade_index, grade_name,
+                     grade_reach, n_eff, demonstration, counts_toward_grade, MASTERED_STATE)
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,15 @@ MIN_DELTA = 0.02          # smallest readout move an event records (chain noise 
 MAX_CHANGES = 30          # per event
 NET_MIN = 0.01            # a window's net move below this is not reported
 NEIGHBOUR_DEPTH = 3       # hops that count as prerequisite / unlocks
-MASTERED, READY_MIN = 0.8, 0.15
+# READY_MIN: a subskill is "ready" (card list) and teachable (select) only when
+# P(all model prerequisites mastered) clears it. User ruling 10-12 (C4): a teach
+# pick whose parts are not in place is not served, even when general ability
+# predicts a right answer. One number for the card and the selector.
+MASTERED, READY_MIN = 0.8, 0.4
+# A practised subskill the model is already this sure of is not confirmed again:
+# the answer carries no information (a gifted child spent week 4 re-proving
+# "count to 5"). Spaced retention stays the lifecycle's retest schedule.
+CONFIRM_MAX = 0.95
 READY_SHOWN = 0.5          # by_cause: P(ready) at or above this counts as newly within reach
 
 GraphSource = Callable[[str], Awaitable[Optional[LearnerGraph]]]
@@ -67,6 +76,20 @@ def first_try_from_response(primitive_response: Optional[dict]) -> Optional[List
             if isinstance(v, list) and v and all(isinstance(e, dict) and isinstance(e.get("attempts"), (int, float)) for e in v):
                 return [e.get("attempts") == 1 and e.get("correct") is not False for e in v]
     return None
+
+
+def plain_reason(kind: str, seen: bool, p_right: float) -> str:
+    """Why a subskill was picked, in words a parent or child can read. The
+    engine's numbers stay in `reason_detail`. A learn pick is described by how
+    likely the child is to get it right, which is what the selector weighs."""
+    if kind == "confirm":
+        return ("Practised before and looks solid: a quick check to confirm it." if seen
+                else "Looks like something you already know: a quick check to confirm it.")
+    if p_right >= 0.7:
+        return "A good next step: it builds on what you already know."
+    if p_right >= 0.4:
+        return "A stretch: within reach with some help."
+    return "A big stretch: new ground, with lots of support."
 
 
 class LearnerStateService:
@@ -102,6 +125,20 @@ class LearnerStateService:
             pass
         self._grades[str(student_id)] = (time.time(), g)
         return g
+
+    @staticmethod
+    async def _canonical(subskill_id: str) -> str:
+        """The lineage successor of a renamed subskill id (unchanged when none).
+        The learner graph holds canonical ids only, so an answer recorded under
+        a retired id must be resolved before it is keyed (invariant 4)."""
+        if not subskill_id:
+            return subskill_id
+        try:
+            from ..subskill_id_resolver import subskill_id_resolver
+            return await subskill_id_resolver.resolve(subskill_id) or subskill_id
+        except Exception as e:
+            logger.info(f"[LEARNER_STATE] lineage resolve failed for {subskill_id}: {e}")
+            return subskill_id
 
     @staticmethod
     def _resolve_key(lg: LearnerGraph, subskill_id: str, grade: Optional[str]) -> Optional[str]:
@@ -188,6 +225,7 @@ class LearnerStateService:
             lg, ga = hit
             record = await self._student_grade(student_id)
             gidx = grade_index(record)
+            subskill_id = await self._canonical(subskill_id)
             key = self._resolve_key(lg, subskill_id, grade or record)
             if key is None:
                 logger.info(f"[LEARNER_STATE] {subskill_id} ({subject}) not on the learner graph or ambiguous without a grade; skipped")
@@ -220,6 +258,10 @@ class LearnerStateService:
                     return eng, p_before, prior, eng.readout(gidx), eng.phi_summary()
 
                 eng, p_before, prior, after, (phi_m, phi_sd) = await asyncio.to_thread(run)
+                # milestone: a grade newly grown past (the child's work moved the reach)
+                grown_before = set(grade_reach(ga, prior, (state or {}).get("touched", {}), gidx)[1])
+                grown_now = grade_reach(ga, after, eng.touched, gidx)[1]
+                grown_past = dict(doc.get("grown_past") or {})
                 # the pulse-agent's in-memory store carries a virtual clock
                 ts = timestamp or (getattr(self.fs, "virtual_now", None) or datetime.now(timezone.utc)).isoformat()
                 event = {
@@ -231,12 +273,18 @@ class LearnerStateService:
                               "p_right_predicted": round(p_before, 4)},
                 }
                 event["changes"], event["general_pc"] = self._changes(lg, ga, key, prior, after)
+                new_grades = [grade_name(i) for i in grown_now if i not in grown_before and grade_name(i) not in grown_past]
+                for gname in new_grades:
+                    grown_past[gname] = ts
+                if new_grades:
+                    event["milestone"] = {"grown_past": new_grades, "reach_grade": grade_name(max(grown_now) + 1)}
                 await self.fs.save_learner_update(
                     student_id, lg.subject,
                     summary={"graph_version": ga.version, "n_obs": eng.n_obs, "updated_at": ts,
                              "state_json": json.dumps(eng.to_state(), separators=(",", ":")),
                              "readout_json": json.dumps(after, separators=(",", ":")),
-                             "phi_mean": round(phi_m, 3), "phi_sd": round(phi_sd, 3)},
+                             "phi_mean": round(phi_m, 3), "phi_sd": round(phi_sd, 3),
+                             "grown_past": grown_past},
                     grids=eng.dirty_grids(),
                     event={**{k: v for k, v in event.items() if k != "changes"},
                            "changes_json": json.dumps(event["changes"], separators=(",", ":"))},
@@ -287,6 +335,36 @@ class LearnerStateService:
             c.pop("_o")
         return out[:MAX_CHANGES], round(tide, 4)
 
+    async def _lifecycle(self, student_id, lg: LearnerGraph, grade: Optional[str]) -> Dict[str, dict]:
+        """The student's mastery lifecycle docs keyed by learner-graph key."""
+        out: Dict[str, dict] = {}
+        try:
+            for lc in await self.fs.get_all_mastery_lifecycles(student_id) or []:
+                sid = await self._canonical(lc.get("subskill_id", ""))
+                key = self._resolve_key(lg, sid, grade)
+                if key:
+                    out[key] = lc
+        except Exception as e:
+            logger.warning(f"[LEARNER_STATE] lifecycle read failed for {student_id}: {e}")
+        return out
+
+    async def demonstration(self, student_id, subject: str) -> Optional[dict]:
+        """One state per subskill (engine.demonstration) from the stored readout and
+        the lifecycle: what the report grid, the My Progress card and reach read.
+        None when the subject has no learner graph."""
+        hit = await self._graph(subject)
+        if hit is None:
+            return None
+        lg, ga = hit
+        grade = await self._student_grade(student_id)
+        doc = await self.fs.get_learner_state(student_id, lg.subject) or {}
+        touched = json.loads(doc["state_json"]).get("touched", {}) if doc.get("state_json") else {}
+        ro = (exposure_gate(ga, json.loads(doc["readout_json"]), touched, grade_index(grade))
+              if doc.get("readout_json") else {})
+        lifecycle = await self._lifecycle(student_id, lg, grade)
+        return {"lg": lg, "ga": ga, "grade": grade, "doc": doc, "touched": touched, "readout": ro,
+                "lifecycle": lifecycle, "states": demonstration(ga, ro, touched, lifecycle)}
+
     # ── selection: the one brain for Pulse and the session planner ────────
     async def select(self, student_id, subject: str, count: int, confirm_share: float = 0.5,
                      max_per_skill: int = 2, grade: Optional[str] = None) -> Optional[dict]:
@@ -315,14 +393,7 @@ class LearnerStateService:
         state = json.loads(doc["state_json"]) if doc.get("state_json") else None
         grade = grade_key(grade) if grade else await self._student_grade(student_id)
         gidx = grade_index(grade)
-        lifecycle: Dict[str, dict] = {}
-        try:
-            for lc in await self.fs.get_all_mastery_lifecycles(student_id) or []:
-                key = self._resolve_key(lg, lc.get("subskill_id", ""), grade)
-                if key:
-                    lifecycle[key] = lc
-        except Exception as e:
-            logger.warning(f"[LEARNER_STATE] select: lifecycle read failed for {student_id}: {e}")
+        lifecycle = await self._lifecycle(student_id, lg, grade)
 
         def run():
             eng = LearnerEngine.from_state(ga, state, LearnerEngine.seed_for(student_id, int((state or {}).get("n_obs", 0))))
@@ -330,30 +401,37 @@ class LearnerStateService:
             return ro, eng.teaching_gain(ro), set(eng.touched)
 
         ro, gain, touched = await asyncio.to_thread(run)
+        top, _grown = grade_reach(ga, ro, touched, gidx, lifecycle)
+        # gates and retention flow down the demonstration edges: a subskill whose
+        # harder form is lifecycle-mastered is not served, and its confirm item
+        # targets the gate it effectively holds
+        states = demonstration(ga, ro, touched, lifecycle)
         from ...models.mastery_lifecycle import GATE_P_THRESHOLDS
 
-        teach, confirm = [], []
+        teach, confirm, unready = [], [], []
         for k, key in enumerate(ga.keys):
             seen = key in touched
-            if gidx is not None and not seen and ga.gi[k] > gidx + READY_WINDOW:
+            if top is not None and not seen and ga.gi[k] > top:
                 continue
-            lc = lifecycle.get(key) or {}
-            if lc.get("retention_state") == "mastered":
+            st = states.get(key) or {}
+            if st.get("state") == MASTERED_STATE:
                 continue
             pm, pc, ready = ro[key]
-            gate = int(lc.get("current_gate", 0) or 0)
+            gate = max(0, st.get("gate") or 0)
             row = {"key": key, "k": k, "seen": seen, "gate": gate, "pm": pm, "pc": pc, "ready": ready,
                    "gain": float(gain[k]), "skill": ga.skill[k]}
             if pm >= MASTERED:
                 # gate 4 = accuracy shown; what remains is spaced stability,
                 # which the lifecycle's retest schedule owns
-                if gate < 4 and (seen or gidx is None or ga.gi[k] <= gidx):
+                if gate < 4 and (seen or gidx is None or ga.gi[k] <= max(gidx, top - 1))                         and not (seen and pm >= CONFIRM_MAX):
                     row["kind"] = "confirm"
                     confirm.append(row)
             elif gain[k] > 0:
                 row["kind"] = "learn"
-                teach.append(row)
+                (teach if ready >= READY_MIN else unready).append(row)
         teach.sort(key=lambda r: -r["gain"])
+        # last resort (a child below every floor): the most-ready of the rest
+        unready.sort(key=lambda r: (-r["ready"], -r["gain"]))
         # confirm alternates inferred (never practised: discovery, what leapfrog
         # probes did) with practised (gate evidence), each by P(mastered)
         unseen = sorted((r for r in confirm if not r["seen"]), key=lambda r: -r["pm"])
@@ -378,6 +456,7 @@ class LearnerStateService:
         take(confirm, n_confirm)
         take(teach, count - len(picked))
         take(confirm, count - len(picked))
+        take(unready, count - len(picked))
 
         labels = await self._labels() if picked else {}
         out = []
@@ -385,22 +464,25 @@ class LearnerStateService:
             nd = lg.nodes.get(r["key"], {})
             nxt = min(r["gate"] + 1, 4)
             if r["kind"] == "confirm":
-                reason = (f"model P(mastered) {r['pm']:.2f}, lifecycle gate {r['gate']}: "
+                detail = (f"model P(mastered) {r['pm']:.2f}, lifecycle gate {r['gate']}: "
                           f"evidence to advance the gate")
             else:
-                reason = (f"P(right) {r['pc']:.2f} x teaching value: expected learning {r['gain']:.3f} "
+                detail = (f"P(right) {r['pc']:.2f} x teaching value: expected learning {r['gain']:.3f} "
                           f"(P(ready) {r['ready']:.2f})")
+            reason = plain_reason(r["kind"], r["seen"], r["pc"])
             out.append({
                 "key": r["key"], "subskill_id": nd.get("subskill_id"), "skill_id": nd.get("skill_id", ""),
                 "grade": nd.get("grade"), "description": nd.get("label", ""),
                 "label": self._label(labels, lg, r["key"])[0],
-                "kind": r["kind"], "reason": reason, "seen": r["seen"],
+                "kind": r["kind"], "reason": reason, "reason_detail": detail, "seen": r["seen"],
                 "target_beta": round(float(ga.bmed[r["k"]]), 3),
                 "p_right": r["pc"], "p_mastered": r["pm"], "p_ready": r["ready"], "gain": round(r["gain"], 4),
                 "current_gate": r["gate"], "next_gate": nxt, "gate_threshold": GATE_P_THRESHOLDS[nxt],
             })
         return {"subject": lg.subject, "graph_version": lg.version, "student_grade": grade,
-                "observations": int((state or {}).get("n_obs", 0)), "picks": out, "pool_sizes": {"learn": len(teach), "confirm": len(confirm)}}
+                "reach_grade": grade_name(top) if top is not None else None,
+                "grown_past": [grade_name(i) for i in _grown],
+                "observations": int((state or {}).get("n_obs", 0)), "picks": out, "pool_sizes": {"learn": len(teach), "confirm": len(confirm), "unready": len(unready)}}
 
     # ── read path ─────────────────────────────────────────────────────────
     async def profile(self, student_id, subject: str, top: int = 8) -> Optional[dict]:
@@ -421,6 +503,8 @@ class LearnerStateService:
         touched = json.loads(doc["state_json"]).get("touched", {})
         grade = await self._student_grade(student_id)
         ro = exposure_gate(ga, json.loads(doc["readout_json"]), touched, grade_index(grade))
+        lifecycle = await self._lifecycle(student_id, lg, grade)
+        states = demonstration(ga, ro, touched, lifecycle)
         labels = await self._labels()
 
         def row(k):
@@ -433,7 +517,9 @@ class LearnerStateService:
                     "seen": k in touched, "answers": (touched.get(k) or {}).get("n", 0)}
 
         order = lambda g: 0 if g == "Kindergarten" else int(g) if str(g).isdigit() else 99
-        ceiling = order(grade) + 1 if grade else 99
+        top, grown = grade_reach(ga, ro, touched, grade_index(grade), lifecycle)
+        shown = {k for k, v in states.items() if counts_toward_grade(v["state"])}
+        ceiling = top if top is not None else 99
         keys = [k for k in ro if k in lg.nodes and (k in touched or order(lg.nodes[k].get("grade")) <= ceiling)]
         mastered = sorted((k for k in keys if ro[k][0] >= MASTERED), key=lambda k: -ro[k][0])
         # ranked by expected learning, P(ready) x P(right): the lab's success-weighted
@@ -447,9 +533,18 @@ class LearnerStateService:
             "state_graph_version": doc.get("graph_version"), "observations": doc.get("n_obs", 0),
             "updated_at": doc.get("updated_at"), "student_grade": grade,
             "grade_ceiling": None if ceiling == 99 else ceiling,
+            # grades the child has grown past (60% of the grade mastered), with when
+            "grown_past": [{"grade": grade_name(i), "at": (doc.get("grown_past") or {}).get(grade_name(i))}
+                           for i in grown],
+            "reach_grade": grade_name(top) if top is not None else None,
             "general_ability": {"mean": doc.get("phi_mean"), "sd": doc.get("phi_sd")},
             "counts": {"subskills": len(keys), "seen": len(touched),
                        "mastered": len(mastered), "mastered_seen": sum(k in touched for k in mastered),
+                       # the demonstration states (engine.demonstration), the same the report grid reads:
+                       # shown = practised, or demonstrated by something practised; mastered = also retained
+                       "shown": sum(1 for k in keys if k in shown),
+                       "shown_practised": sum(1 for k in keys if k in shown and k in touched),
+                       "shown_mastered": sum(1 for k in keys if states.get(k, {}).get("state") == MASTERED_STATE),
                        "ready": len(ready)},
             "ready": [row(k) for k in ready[:top]],
             "working_on": [row(k) for k in working[:top]],
@@ -496,8 +591,19 @@ class LearnerStateService:
                 rows.append(ent)
         rows.sort(key=lambda r: -abs(r["d_pc"]))
         record = grade_index(await self._student_grade(student_id)) if events else None
-        by_cause, unlocked = self._by_cause(events, labels, practised, record, top)
+        # the reach widens with each grade grown past (milestones in the stored state)
+        ceiling = None
+        if record is not None:
+            grown = 0
+            for subj in {e["subject"] for e in events}:
+                doc = await self.fs.get_learner_state(student_id, subj) or {}
+                grown = max(grown, len(doc.get("grown_past") or {}))
+            ceiling = max(record + READY_WINDOW, record + grown)
+        by_cause, unlocked = self._by_cause(events, labels, practised, ceiling, top)
+        milestones = [{"ts": e.get("ts"), "subject": e["subject"], **e["milestone"]}
+                      for e in events if e.get("milestone")]
         return {
+            "milestones": milestones,
             "since": since, "until": until, "answers": len(events),
             "practised": [r for r in rows if r["key"] in practised],
             "upstream": [r for r in rows if r["key"] not in practised and "prerequisite" in r["relations"]][:top],
@@ -509,7 +615,7 @@ class LearnerStateService:
         }
 
     def _by_cause(self, events: List[dict], labels: Dict[str, dict], practised: set,
-                  record: Optional[int], top: int) -> Tuple[List[dict], List[dict]]:
+                  ceiling: Optional[int], top: int) -> Tuple[List[dict], List[dict]]:
         """Per practised subskill, what its answers did along the graph:
             foundations  prerequisites its answers made more likely (evidence flows down)
             check        prerequisites they made less likely (a miss points at a step)
@@ -517,8 +623,9 @@ class LearnerStateService:
                          when P(ready) crossed READY_SHOWN
             further      subskills they pushed further away
         Each move counts beyond the event's general shift (`d_own`); `d_pc` is the raw move.
-        Subskills more than READY_WINDOW grades above the grade of record are left out:
-        they move with general ability, not with this lesson's evidence."""
+        Subskills above the child's reach (`ceiling`: grade of record + 1, wider for
+        each grade grown past) are left out: they move with general ability, not
+        with this lesson's evidence."""
         causes: Dict[str, dict] = {}
         links: Dict[Tuple[str, str], dict] = {}
         ready_net: Dict[str, List[float]] = {}
@@ -537,7 +644,7 @@ class LearnerStateService:
                 if ch["key"] in practised or ch["rel"] not in ("prerequisite", "unlocks"):
                     continue
                 gi = grade_index(ch["key"].split(":", 1)[0])
-                if record is not None and gi is not None and gi > record + READY_WINDOW:
+                if ceiling is not None and gi is not None and gi > ceiling:
                     continue
                 ln = links.setdefault((ck, ch["key"]), {"key": ch["key"], "rel": ch["rel"], "hops": ch.get("hops"),
                                                         "pc": [ch["pc"][0], ch["pc"][1]], "pm": [ch["pm"][0], ch["pm"][1]],

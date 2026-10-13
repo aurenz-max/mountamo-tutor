@@ -131,6 +131,10 @@ def build_digest(report: Dict[str, Any], name: str) -> Dict[str, Any]:
         "mistake_patterns_recorded": len(report["misconceptions"]),
         "skills_needing_practice": len(practice_only),
         "interests": report.get("interests", []),
+        # grades the child has grown past in a subject, ahead of their grade
+        "grew_past": [{"subject": g["name"], "finished_grade": _grade_name(g["grade"]),
+                       "now_learning_grade": _grade_name(g["now_learning"])}
+                      for g in report.get("grown_past") or []],
     }
 
 
@@ -178,7 +182,7 @@ Facts (the ONLY information you may use):
 {digest}
 
 Write these fields:
-- short_answer: 3-5 sentences answering "how is my child doing?". Cover practice habits, how often answers are right, what is mastered, and the one most useful thing to know next (the "difficulty" fact, in your own words). If mistake patterns were recorded, end by saying they are worth a few minutes at home.
+- short_answer: 3-5 sentences answering "how is my child doing?". If "grew_past" is not empty, the first sentence says it plainly: in that subject they have shown most of the finished grade and are now learning the next one. Cover practice habits, how often answers are right, what is mastered, and the one most useful thing to know next (the "difficulty" fact, in your own words). If mistake patterns were recorded, end by saying they are worth a few minutes at home.
 - learning_headline: under 10 words, answers "are they learning?".
 - learning_lede: 1-2 sentences backing the headline with the weekly numbers.
 - year_lede: 1-2 sentences with the skills total, mastered and learning numbers.

@@ -68,7 +68,21 @@ DIFFUSION_SD = 0.2
 CHAINS = 256
 SWEEPS = 6
 READY_WINDOW = 1             # exposure gate: ready up to this many grades above the grade of record
+# Continual reach (user ruling 10-12, T1): a grade is "grown past" when this share
+# of its subskills is mastered ON EVIDENCE (practised, or an R step of a practised
+# subskill, at P(mastered) >= GROWN_PAST_PM); each grade
+# grown past, starting at the grade of record, opens the next. A K child who has
+# shown K and G1 is taught G2. Above the grade of record a subskill still counts
+# only through the child's own evidence (or as an R step of one), so a grade
+# above is grown past only on real work in it.
+GROWN_PAST_SHARE = 0.6
+GROWN_PAST_PM = 0.8
 SHOWN = 0.5                  # exposure gate: a touched subskill at this P(mastered) counts as shown
+
+
+def grade_name(idx: int) -> str:
+    """0..12 -> grade doc id ("Kindergarten", "1".."12")."""
+    return "Kindergarten" if idx == 0 else str(idx)
 
 
 def grade_index(grade: Optional[str]) -> Optional[int]:
@@ -124,6 +138,7 @@ class GraphArrays:
     order: List[int]
     gi: np.ndarray = field(default=None)          # grade index per subskill (K = 0)
     rch: List[List[int]] = field(default=None)    # R children
+    spa: List[np.ndarray] = field(default=None)   # parents a success here demonstrates: R steps + easier forms
     _PA: np.ndarray = field(default=None)
     _PW: np.ndarray = field(default=None)
     _RP: np.ndarray = field(default=None)
@@ -180,6 +195,12 @@ class GraphArrays:
         for i, r in enumerate(rpa):
             for p in r:
                 g.rch[int(p)].append(i)
+        # Success on a subskill demonstrates its R steps (performed inside it) and its
+        # easier forms (count 20 objects -> count 10 objects): the same pairs the
+        # e_children transfer uses, read in the other direction.
+        g.spa = [np.array(sorted(set(rpa[i].tolist()) | {p for p, s, e in zip(parents[i], steps[i], easier[i])
+                                                         if e >= MIN_EASIER and s < MAX_STEP_E}), dtype=int)
+                 for i in range(n)]
         g._PA = _pad(parents, n)
         g._PW = _pad(weights, 0.0)
         g._RP = _pad([r.tolist() for r in rpa], n)
@@ -197,31 +218,142 @@ def exposure_gate(g: GraphArrays, readout: Dict[str, List[float]], touched, grad
     n = g.n
     pm = np.array([readout[k][0] if k in readout else 0.0 for k in g.keys])
     ready = np.array([readout[k][2] if k in readout else 0.0 for k in g.keys])
-    seen = np.zeros(n, bool)
-    for key in touched:
-        if key in g.index:
-            seen[g.index[key]] = True
-    # shown subskills lend their P(mastered) to their R prerequisites, transitively
-    implied = np.zeros(n)
-    stack = [(int(k), float(pm[k])) for k in np.nonzero(seen & (pm >= SHOWN))[0]]
-    while stack:
-        k, p = stack.pop()
-        for q in g.rpa[k]:
-            q = int(q)
-            if p > implied[q]:
-                implied[q] = p
-                stack.append((q, p))
+    seen = _seen(g, touched)
+    implied = _implied(g, pm, seen)
     above = ~seen & (g.gi > grade)
     pm = np.where(above, implied, np.where(~seen, np.maximum(pm, implied), pm))
+    top, _ = _reach(g, _evidenced(pm, seen, implied), grade)
     # above grade: ready = not mastered and every R prerequisite mastered, from the gated pm
     rp = np.array([float(np.prod(pm[g.rpa[k]])) if len(g.rpa[k]) else 1.0 for k in range(n)])
-    ready = np.where(above, np.where(g.gi <= grade + READY_WINDOW, (1.0 - pm) * rp, 0.0), ready)
+    ready = np.where(above, np.where(g.gi <= top, (1.0 - pm) * rp, 0.0), ready)
     out = dict(readout)
     for k in np.nonzero(above | (implied > 0))[0]:
         key = g.keys[k]
         if key in out:
             out[key] = [round(float(pm[k]), 4), out[key][1], round(float(ready[k]), 4)]
     return out
+
+
+def _seen(g: GraphArrays, touched) -> np.ndarray:
+    seen = np.zeros(g.n, bool)
+    for key in touched:
+        if key in g.index:
+            seen[g.index[key]] = True
+    return seen
+
+
+def _implied(g: GraphArrays, pm: np.ndarray, seen: np.ndarray, via: Optional[np.ndarray] = None) -> np.ndarray:
+    """Shown subskills lend their P(mastered) to what they demonstrate (R steps and
+    easier forms, g.spa), transitively. `via`, when given, receives the index of
+    the practised subskill each credit came from (-1 for none)."""
+    implied = np.zeros(g.n)
+    stack = [(int(k), float(pm[k]), int(k)) for k in np.nonzero(seen & (pm >= SHOWN))[0]]
+    while stack:
+        k, p, src = stack.pop()
+        for q in g.spa[k]:
+            q = int(q)
+            if p > implied[q]:
+                implied[q] = p
+                if via is not None:
+                    via[q] = src
+                stack.append((q, p, src))
+    return implied
+
+
+def _evidenced(pm: np.ndarray, seen: np.ndarray, implied: np.ndarray) -> np.ndarray:
+    """P(mastered) only where the child's own work stands behind it: practised, or
+    demonstrated by something practised (an R step or an easier form of it). General ability alone counts for nothing:
+    "grown past a grade" is a claim about what the child has SHOWN (a 95%-right
+    child read as having shown most of K after 3 hours, report 10-12)."""
+    return np.where(seen, pm, implied)
+
+
+def _reach(g: GraphArrays, evidenced: np.ndarray, grade: int) -> Tuple[int, List[int]]:
+    """(highest grade that may be taught, grades grown past) from evidenced P(mastered)."""
+    level, grown = grade, []
+    while True:
+        mask = g.gi == level
+        if not mask.any() or float((evidenced[mask] >= GROWN_PAST_PM).mean()) < GROWN_PAST_SHARE:
+            break
+        grown.append(level)
+        level += 1
+    return max(grade + READY_WINDOW, level), grown
+
+
+# One state per subskill, read by every surface (My Progress card, report grid,
+# selector, reach). Ladder: mastered > shown > learning > tried > None.
+MASTERED_STATE, SHOWN_STATE, LEARNING_STATE, TRIED_STATE = "mastered", "shown", "learning", "tried"
+
+
+def demonstration(g: GraphArrays, gated: Dict[str, List[float]], touched,
+                  lifecycle: Optional[Dict[str, dict]] = None) -> Dict[str, dict]:
+    """key -> {state, gate, own_gate, retained, pm, via} for every subskill with any
+    standing (practised, demonstrated, or on the lifecycle).
+
+    Evidence and retention travel the same edges (g.spa: R steps and easier
+    forms): a subskill is shown when it was practised or something practised
+    demonstrates it, and its gate is the highest lifecycle gate among itself and
+    everything that demonstrates it (a retest on subtract within 100 is a retest
+    of subtract within 10). General ability (phi) plays no part: it selects, it
+    never reports. `via` is the practised or gated subskill the standing came
+    from when it is not the subskill's own."""
+    lifecycle = lifecycle or {}
+    n = g.n
+    pm = np.array([gated[k][0] if k in gated else 0.0 for k in g.keys])
+    seen = _seen(g, touched)
+    via = np.full(n, -1)
+    ev = _evidenced(pm, seen, _implied(g, pm, seen, via))
+    own = np.full(n, -1)
+    kept = np.zeros(n, bool)
+    for key, lc in lifecycle.items():
+        if key in g.index:
+            k = g.index[key]
+            own[k] = int(lc.get("current_gate", 0) or 0)
+            kept[k] = lc.get("retention_state") == "mastered"
+    gate, gvia = own.copy(), np.full(n, -1)
+    stack = [(int(k), int(own[k]), bool(kept[k]), int(k)) for k in np.nonzero((own > 0) | kept)[0]]
+    while stack:
+        k, gt, kp, src = stack.pop()
+        for q in g.spa[k]:
+            q = int(q)
+            if gt > gate[q] or (kp and not kept[q]):
+                if gt > gate[q]:
+                    gate[q], gvia[q] = gt, src
+                kept[q] = kept[q] or kp
+                stack.append((q, max(gt, int(gate[q])), kept[q], src))
+    out: Dict[str, dict] = {}
+    for k in range(n):
+        if gate[k] >= 4 or kept[k]:
+            st = MASTERED_STATE
+        elif ev[k] >= GROWN_PAST_PM:
+            st = SHOWN_STATE
+        elif seen[k] or gate[k] >= 1:
+            st = LEARNING_STATE
+        elif own[k] == 0:
+            st = TRIED_STATE
+        else:
+            continue
+        src = int(gvia[k]) if st == MASTERED_STATE and gvia[k] >= 0 else (int(via[k]) if not seen[k] and via[k] >= 0 else -1)
+        out[g.keys[k]] = {"state": st, "gate": int(max(gate[k], -1)) if gate[k] >= 0 else None,
+                          "own_gate": int(own[k]) if own[k] >= 0 else None, "retained": bool(kept[k]),
+                          "pm": round(float(ev[k]), 4), "via": g.keys[src] if src >= 0 and src != k else None}
+    return out
+
+
+def counts_toward_grade(state: Optional[str]) -> bool:
+    return state in (MASTERED_STATE, SHOWN_STATE)
+
+
+def grade_reach(g: GraphArrays, gated: Dict[str, List[float]], touched, grade: Optional[int],
+                lifecycle: Optional[Dict[str, dict]] = None) -> Tuple[Optional[int], List[int]]:
+    """(top grade index, grades grown past) from the demonstration states: a
+    subskill counts when shown or mastered. grade None (gradeless student): no
+    ceiling, nothing grown past."""
+    if grade is None:
+        return None, []
+    st = demonstration(g, gated, touched, lifecycle)
+    ev = np.array([1.0 if counts_toward_grade((st.get(k) or {}).get("state")) else 0.0 for k in g.keys])
+    return _reach(g, ev, grade)
 
 
 # ── packing ─────────────────────────────────────────────────────────────────

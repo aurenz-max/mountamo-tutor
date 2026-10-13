@@ -6,6 +6,12 @@ written by an LLM over THIS payload later and never compute anything.
 Queue: my-tutoring-app/qa/parent-report/ROADMAP.md (PR-1).
 
 Rules this module holds:
+  - The grade map reads the learner model's demonstration states
+    (learner_model.engine.demonstration), the same the My Progress card reads:
+    evidence and lifecycle gates both travel the Jev graph's R-step and
+    easier-form edges, so counting 20 objects shows counting 10, and a retest
+    on the harder skill is a retest of the easier one. Dated lists (recently
+    mastered, checks passed per week) stay the subskill's own lifecycle events.
   - Mastery is the lifecycle gate (4 = mastered). The legacy competency score
     (proficiency x credibility, averaged over unattempted subskills) is never
     read — it is what made the old card say "50% mastery" beside "MASTERED".
@@ -254,7 +260,32 @@ class ProgressReportService:
                 w["checks_passed"] += 1
                 w["mastered"] += g == 4
 
-        # 5. the grade map, one cell per subskill
+        # 5. the grade map, one cell per subskill, from the demonstration states
+        from .learner_model.service import LearnerStateService
+        lsv = LearnerStateService(self.fs, background=False)
+        demo: Dict[str, Any] = {}
+        for subj_id in (trees.get(grade_doc) or {}):
+            try:
+                demo[subj_id] = await lsv.demonstration(student_id, _subject_key(subj_id))
+            except Exception as e:
+                logger.warning(f"[PROGRESS_REPORT] demonstration read failed for {student_id} {subj_id}: {e}")
+                demo[subj_id] = None
+
+        def cell(subj_id: str, sid: str) -> Dict[str, Any]:
+            """{state, gate, via} for one grid subskill. Without a learner graph the
+            subskill's own lifecycle gate decides, as before."""
+            d = demo.get(subj_id)
+            own = state[sid]["gate"] if sid in state else None
+            if d:
+                key = lsv._resolve_key(d["lg"], sid, grade_doc)
+                st = d["states"].get(key) if key else None
+                if st:
+                    via = st["via"]
+                    return {"state": st["state"], "gate": st["gate"] if st["gate"] is not None else own,
+                            "via": _clean_description(d["lg"].nodes.get(via, {}).get("label")).split(" Focus:")[0] if via else None}
+            legacy = (None if own is None else "mastered" if own == 4 else "learning" if own >= 1 else "tried")
+            return {"state": legacy, "gate": own, "via": None}
+
         subjects_out = []
         # Per-subskill evidence for every grade-map subskill with any (burst-excluded answers,
         # lifecycle gate and lessons). The journey skills panel reads this.
@@ -262,24 +293,22 @@ class ProgressReportService:
         for subj_id, units in (trees.get(grade_doc) or {}).items():
             key = _subject_key(subj_id)
             S = {"subject": subj_id, "name": _SUBJECT_NAMES.get(key, key.replace("_", " ").title()),
-                 "total": 0, "mastered": 0, "learning": 0, "tried": 0, "units": []}
+                 "total": 0, "mastered": 0, "shown": 0, "learning": 0, "tried": 0, "units": []}
             for u in units:
-                U = {"unit_id": u.get("unit_id"), "title": u["title"], "total": 0, "mastered": 0, "learning": 0, "skills": []}
+                U = {"unit_id": u.get("unit_id"), "title": u["title"], "total": 0, "mastered": 0, "shown": 0,
+                     "learning": 0, "skills": []}
                 for sk in u["skills"]:
-                    gates = []
-                    for sid in sk["subskills"]:
-                        g = state[sid]["gate"] if sid in state else None
-                        gates.append(g)
+                    cells = [cell(subj_id, sid) for sid in sk["subskills"]]
+                    for c in cells:
                         S["total"] += 1
                         U["total"] += 1
-                        if g == 4:
-                            S["mastered"] += 1; U["mastered"] += 1
-                        elif g is not None and g >= 1:
-                            S["learning"] += 1; U["learning"] += 1
-                        elif g == 0:
+                        if c["state"] in ("mastered", "shown", "learning"):
+                            S[c["state"]] += 1; U[c["state"]] += 1
+                        elif c["state"] == "tried":
                             S["tried"] += 1
                     U["skills"].append({"skill_id": sk.get("skill_id"),
-                                        "description": _clean_description(sk["description"]), "gates": gates})
+                                        "description": _clean_description(sk["description"]),
+                                        "gates": [c["gate"] for c in cells], "cells": cells})
                     for sid in sk["subskills"]:
                         at = by_sid.get(sid, [])
                         if sid in state or at:
@@ -342,9 +371,23 @@ class ProgressReportService:
         recent = [a for a in attempts if a["t"].date() >= recent_cut]
         last8 = [w for w in weeks.values() if w["answers"]][-8:]
 
+        # Grades grown past (learner model, T1 ruling 10-12): 60% of a grade's
+        # skills shown, each one opening the next grade. The report leads with it.
+        grown_past: List[Dict[str, Any]] = []
+        try:
+            for subj in ("MATHEMATICS", "LANGUAGE_ARTS", "SCIENCE", "SOCIAL_STUDIES"):
+                prof = await lsv.profile(student_id, subj, top=0)
+                for gp in (prof or {}).get("grown_past") or []:
+                    grown_past.append({"subject": subj, "name": _SUBJECT_NAMES.get(subj, subj.title()),
+                                       "grade": _grade_code(gp["grade"]), "at": gp.get("at"),
+                                       "now_learning": _grade_code(prof.get("reach_grade"))})
+        except Exception as e:
+            logger.warning(f"[PROGRESS_REPORT] grown-past read failed for {student_id}: {e}")
+
         return {
             "student_id": student_id,
             "grade": _grade_code(grade_doc),
+            "grown_past": grown_past,
             "as_of": today.isoformat(),
             "interests": interests,
             "first_activity": attempts[0]["t"].date().isoformat() if attempts else None,
