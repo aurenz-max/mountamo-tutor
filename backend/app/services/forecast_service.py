@@ -39,7 +39,7 @@ from ..models.forecast import (
     UnitDrift,
     UnitForecast,
 )
-from ..models.lesson_plan import ASSUMED_MIN_PER_SUBSKILL, DEFAULT_DAILY_BUDGET_MINUTES
+from ..models.lesson_plan import ASSUMED_MIN_PER_SUBSKILL, daily_budget_minutes
 
 logger = logging.getLogger(__name__)
 
@@ -324,7 +324,7 @@ class ForecastService:
         )
 
         planning = await self.firestore.get_student_planning_fields(student_id)
-        budget = planning.get("daily_budget_minutes", DEFAULT_DAILY_BUDGET_MINUTES)
+        budget = daily_budget_minutes(planning)
         # Grade of record — without it the graph fetch guesses (first-doc-
         # wins scan → Grade 1) and the forecast projects the wrong year.
         grade = planning.get("grade_level")

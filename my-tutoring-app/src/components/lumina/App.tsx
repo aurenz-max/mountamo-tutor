@@ -16,7 +16,7 @@ import { GeneratingScreen } from './components/GeneratingScreen';
 import { GenerationErrorScreen } from './components/GenerationErrorScreen';
 import { DailyLessonPlan } from './DailyLessonPlan';
 import { SessionRibbon } from './components/SessionRibbon';
-import { fetchDailySessionPlan, markSessionBlockComplete, markSessionBlockStarted, prettySubject, type DailySessionPlan, type LessonBlock } from '@/lib/sessionPlanAPI';
+import { fetchDailySessionPlan, localPlanDate, markSessionBlockComplete, markSessionBlockStarted, prettySubject, type DailySessionPlan, type LessonBlock } from '@/lib/sessionPlanAPI';
 import SessionBreakScreen from './components/SessionBreakScreen';
 import { StudentProvider, useStudent } from './contexts/StudentContext';
 import StudentBadge from './components/StudentBadge';
@@ -183,6 +183,33 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
       .catch(err => console.warn('[Session] Home plan fetch failed:', err))
       .finally(() => setSessionPlanLoading(false));
   }, [studentReady, isAnonymous, studentId, adoptPlan]);
+
+  // A tab left open overnight still holds yesterday's plan. When the page
+  // comes back into view on a new day, fetch the new day's plan.
+  const planDate = sessionPlan?.date;
+  useEffect(() => {
+    if (!planDate) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || localPlanDate() === planDate) return;
+      fetchDailySessionPlan(studentId)
+        .then(plan => {
+          setSessionCompletedBlocks(new Set(plan.completed_block_ids ?? []));
+          setSessionPlan(plan);
+          const inPlan = new Set(plan.blocks.map(b => b.block_id));
+          setSessionStats({
+            total: plan.blocks.length,
+            completed: (plan.completed_block_ids ?? []).filter(id => inPlan.has(id)).length,
+          });
+        })
+        .catch(err => console.warn('[Session] New-day plan fetch failed:', err));
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [planDate, studentId]);
 
   // Handle curriculum browser selection
   const handleCurriculumSelect = useCallback((topicString: string, grade?: GradeLevel, curriculum?: CurriculumContext) => {

@@ -226,7 +226,29 @@ def block_cost_minutes(block_type: BlockType, n_subskills: int) -> int:
     cost = BLOCK_COST_BASE_MINUTES[block_type] + BLOCK_COST_MARGINAL_MINUTES[block_type] * n
     return max(1, round(cost))
 
-DEFAULT_DAILY_BUDGET_MINUTES: int = 75
+DEFAULT_DAILY_BUDGET_MINUTES: int = 75   # grade 6+ and gradeless students
+
+# Default daily minutes by grade of record (user ruling C5, 10-12: the budget
+# scales with grade; a K child got 9 blocks / 74 min). An explicit
+# students/{id}.daily_budget_minutes always wins.
+DAILY_BUDGET_MINUTES_BY_GRADE: Dict[int, int] = {0: 30, 1: 40, 2: 45, 3: 50, 4: 55, 5: 60}
+
+
+def default_daily_budget_minutes(grade: Optional[str]) -> int:
+    """The daily budget for a grade of record ("Kindergarten"/"K", "1".."12")."""
+    g = str(grade or "").strip()
+    idx = 0 if g.lower() in ("k", "kindergarten") else (int(g) if g.isdigit() else None)
+    if idx is None:
+        return DEFAULT_DAILY_BUDGET_MINUTES
+    return DAILY_BUDGET_MINUTES_BY_GRADE.get(idx, DEFAULT_DAILY_BUDGET_MINUTES)
+
+
+def daily_budget_minutes(planning_fields: Optional[dict]) -> int:
+    """The student's budget: their own setting, else the grade default."""
+    pf = planning_fields or {}
+    if pf.get("daily_budget_minutes") is not None:
+        return int(pf["daily_budget_minutes"])
+    return default_daily_budget_minutes(pf.get("grade_level"))
 DEFAULT_REVIEW_CAP_PCT: float = 0.50   # PRD §3.3
 
 # ASSUMED cost to take one subskill through its gate ladder. This number is

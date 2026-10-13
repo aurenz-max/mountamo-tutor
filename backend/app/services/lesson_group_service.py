@@ -349,10 +349,12 @@ class LessonGroupService:
         targets — subskills the model already believes are ready, where the
         block's only job is to produce the gate-advancing evidence.
 
-        Returns (pulse_items, remaining). Overflow beyond
-        PULSE_BEAT_MAX_ITEMS keeps the normal retest/lesson block path;
-        "learn" targets are never diverted — they are instruction, not
-        measurement.
+        Returns (pulse_items, remaining). Retest overflow beyond
+        PULSE_BEAT_MAX_ITEMS keeps the dedicated retest block path. Confirm
+        overflow is dropped: it is measurement, and as a teaching block it
+        shipped as a "New Lesson" on a skill the model believes is known.
+        The selector offers it again tomorrow. "learn" targets are never
+        diverted — they are instruction, not measurement.
         """
         retests = [
             c for c in candidates
@@ -363,7 +365,10 @@ class LessonGroupService:
 
         pulse = (retests + confirms)[:PULSE_BEAT_MAX_ITEMS]
         pulse_ids = {id(c) for c in pulse}
-        remaining = [c for c in candidates if id(c) not in pulse_ids]
+        overflow_confirms = {id(c) for c in confirms if id(c) not in pulse_ids}
+        if overflow_confirms:
+            logger.info(f"[SESSION_PLAN] {len(overflow_confirms)} confirm target(s) past the pulse beat deferred")
+        remaining = [c for c in candidates if id(c) not in pulse_ids and id(c) not in overflow_confirms]
         return pulse, remaining
 
     @classmethod
@@ -476,6 +481,7 @@ class LessonGroupService:
         budget_minutes: int = DEFAULT_DAILY_BUDGET_MINUTES,
         review_cap_pct: float = DEFAULT_REVIEW_CAP_PCT,
         subject_budgets: Optional[Dict[str, float]] = None,
+        plan_day: Optional[date] = None,
     ) -> DailySessionPlan:
         """
         Fill the daily time budget with lesson blocks.
@@ -494,7 +500,9 @@ class LessonGroupService:
 
         Returns a DailySessionPlan with 4–5 blocks shaped per PRD §3.4.
         """
-        today = date.today()
+        # The caller owns the clock (the student's day); date.today() is the
+        # server's zone and once stamped a UTC-keyed doc with yesterday.
+        today = plan_day or date.today()
         day_names = [
             "Monday", "Tuesday", "Wednesday", "Thursday",
             "Friday", "Saturday", "Sunday",
@@ -546,12 +554,13 @@ class LessonGroupService:
             review_minutes_used += block.estimated_minutes
 
         # 1. Fill retests first (counted against review budget; exempt from
-        #    subject caps — retention timing is lifecycle's, not the pacer's)
+        #    subject caps — retention timing is lifecycle's, not the pacer's).
+        #    Not charged to the subject's minutes either: charging them let a
+        #    subject's due retests use up its cap, so none of its new lessons fit.
         for block in retests:
             if review_minutes_used + block.estimated_minutes <= review_budget:
                 selected.append(block)
                 review_minutes_used += block.estimated_minutes
-                subject_used[cls._subject_key(block.subject)] += block.estimated_minutes
 
         # 2. Fill practice reviews (up to review cap, within subject budgets)
         for block in practices:

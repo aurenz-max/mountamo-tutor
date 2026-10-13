@@ -132,11 +132,21 @@ export function prettySubject(s: string): string {
 // API fetch
 // ---------------------------------------------------------------------------
 
+/** The device's calendar day (YYYY-MM-DD). The plan is keyed by the
+ *  student's day, not UTC, which rolls over in the evening in the Americas. */
+export function localPlanDate(now: Date = new Date()): string {
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${m}-${d}`;
+}
+
 export async function fetchDailySessionPlan(
   studentId: string | number,
   options?: { refresh?: boolean },
 ): Promise<DailySessionPlan> {
-  const query = options?.refresh ? '?refresh=true' : '';
+  const params = new URLSearchParams({ plan_date: localPlanDate() });
+  if (options?.refresh) params.set('refresh', 'true');
+  const query = `?${params.toString()}`;
   return authApi.get<DailySessionPlan>(
     `/api/daily-activities/daily-plan/${studentId}/session${query}`,
   );

@@ -142,8 +142,9 @@ class TestWeeklyPlan(unittest.TestCase):
 
         # Curriculum: one subject with 20 subskills
         self.curriculum_service.get_available_subjects = AsyncMock(return_value=["Math"])
-        self.curriculum_service.get_curriculum = AsyncMock(
-            return_value=_make_curriculum([[5, 5, 5, 5]])  # 20 subskills
+        # The planner reads the grade-scoped curriculum (7.0).
+        self.curriculum_service.get_student_curriculum = AsyncMock(
+            return_value=_make_curriculum([[5, 5, 5, 5]])
         )
 
         self.service = PlanningService(
@@ -153,7 +154,7 @@ class TestWeeklyPlan(unittest.TestCase):
         )
 
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     def test_all_not_started(self):
         """When no lifecycles exist, all should be 'not_started'."""
@@ -242,7 +243,8 @@ class TestDailyPlan(unittest.TestCase):
 
         # Curriculum: one subject with 20 subskills
         self.curriculum_service.get_available_subjects = AsyncMock(return_value=["Math"])
-        self.curriculum_service.get_curriculum = AsyncMock(
+        # The planner reads the grade-scoped curriculum (7.0).
+        self.curriculum_service.get_student_curriculum = AsyncMock(
             return_value=_make_curriculum([[5, 5, 5, 5]])
         )
 
@@ -258,7 +260,7 @@ class TestDailyPlan(unittest.TestCase):
         )
 
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     def test_no_reviews_all_new(self):
         """With no retests due, all slots go to new skills."""
@@ -270,7 +272,10 @@ class TestDailyPlan(unittest.TestCase):
             self.assertEqual(s["type"], "new")
 
     def test_mastery_retests_have_priority(self):
-        """Mastery retests appear first in the session list."""
+        """The due retest is the first review in the session list.
+
+        The interleave (PRD §8) opens with a new-skill block while the student
+        is fresh, then places reviews most-overdue first."""
         yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
         self.firestore.get_mastery_retests_due = AsyncMock(return_value=[
             {
@@ -284,9 +289,10 @@ class TestDailyPlan(unittest.TestCase):
 
         plan = self._run(self.service.get_daily_plan(student_id=1))
         self.assertGreater(plan.review_slots, 0)
-        # First session should be a review
-        self.assertEqual(plan.sessions[0]["type"], "review")
-        self.assertEqual(plan.sessions[0]["reason"], "mastery_retest")
+        reviews = [s for s in plan.sessions if s["type"] == "review"]
+        self.assertEqual(reviews[0]["skill_id"], "R1")
+        self.assertEqual(reviews[0]["reason"], "mastery_retest")
+        self.assertLessEqual(plan.sessions.index(reviews[0]), 1)
 
     def test_most_overdue_first(self):
         """Most overdue mastery retests sort before less overdue ones."""

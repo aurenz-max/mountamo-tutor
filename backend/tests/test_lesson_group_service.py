@@ -146,6 +146,30 @@ class TestPulseBeat(unittest.TestCase):
         self.assertEqual(len(pulse), PULSE_BEAT_MAX_ITEMS)
         self.assertEqual(len(rest), 2)
 
+    def test_confirm_overflow_is_deferred_not_taught(self):
+        candidates = [_cand(f"R{i}", ctype="review", gate=1, days_overdue=i) for i in range(4)]
+        candidates += [_cand("C1", selection_kind="confirm"), _cand("L1", selection_kind="learn")]
+        pulse, rest = LessonGroupService.split_pulse_candidates(candidates)
+        self.assertNotIn("C1", [p["skill_id"] for p in pulse])
+        # a confirm never becomes a "New Lesson" block
+        self.assertEqual([r["skill_id"] for r in rest], ["L1"])
+
+    def test_retests_do_not_use_up_subject_lesson_minutes(self):
+        # Math's due retests must not spend Math's lesson minutes: otherwise
+        # Science takes the whole lesson budget and Math teaches nothing.
+        retests = LessonGroupService.group_subskills_into_blocks(
+            [_cand(f"R{i}", skill=f"S{i}", ctype="review", gate=2, days_overdue=1) for i in range(3)])
+        math = LessonGroupService.group_subskills_into_blocks([_cand(f"M{i}", unit="Unit B") for i in range(3)])
+        sci = LessonGroupService.group_subskills_into_blocks(
+            [_cand(f"S{k}{i}", subject="Science", unit=f"Unit {k}") for k in "CD" for i in range(3)])
+        lesson_min = math[0].estimated_minutes
+        retest_min = sum(b.estimated_minutes for b in retests)
+        plan = LessonGroupService.build_session_plan(
+            student_id=1, candidate_blocks=retests + math + sci,
+            budget_minutes=max(4 * lesson_min, 2 * retest_min), review_cap_pct=0.5,
+            subject_budgets={"Math": max(retest_min, lesson_min), "Science": 2 * lesson_min})
+        self.assertIn("Math", {b.subject for b in plan.blocks if b.type == BlockType.LESSON})
+
     def test_learn_targets_never_diverted(self):
         candidates = [_cand("L1", selection_kind="learn"), _cand("L2", selection_kind="learn")]
         pulse, rest = LessonGroupService.split_pulse_candidates(candidates)

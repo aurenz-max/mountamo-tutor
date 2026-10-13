@@ -103,6 +103,7 @@ async def get_daily_activities(
 async def get_daily_session_plan(
     student_id: int,
     refresh: bool = Query(False, description="Regenerate today's plan (completed blocks are carried forward)"),
+    plan_date: Optional[str] = Query(None, description="The student's local date (YYYY-MM-DD); within one day of UTC, else UTC is used"),
     user_context: dict = Depends(get_user_context),
     service: PlanningService = Depends(get_planning_service),
 ):
@@ -118,9 +119,11 @@ async def get_daily_session_plan(
     """
     try:
         logger.info(
-            f"GET /daily-activities/daily-plan/{student_id}/session (refresh={refresh})"
+            f"GET /daily-activities/daily-plan/{student_id}/session (refresh={refresh}, plan_date={plan_date})"
         )
-        plan = await service.get_daily_session_plan(student_id, force_refresh=refresh)
+        plan = await service.get_daily_session_plan(
+            student_id, force_refresh=refresh, plan_date=plan_date
+        )
         return plan
     except Exception as e:
         logger.error(f"Error building session plan for student {student_id}: {e}")

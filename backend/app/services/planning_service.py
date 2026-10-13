@@ -837,8 +837,29 @@ class PlanningService:
     # Structured Session Plan — PRD Daily Learning Experience §3
     # ====================================================================
 
+    def _plan_day(self, plan_date: Optional[str]) -> date:
+        """The student's calendar day for the session plan.
+
+        The client sends its local date: UTC rolls over at 8 pm in New York,
+        so a UTC key serves an evening visitor tomorrow's plan and keeps it
+        through the next day. A client date more than one day from UTC (bad
+        clock, malformed) falls back to UTC.
+        """
+        utc_day = self._now().date()
+        if plan_date:
+            try:
+                day = date.fromisoformat(plan_date[:10])
+            except ValueError:
+                return utc_day
+            if abs((day - utc_day).days) <= 1:
+                return day
+        return utc_day
+
     async def get_daily_session_plan(
-        self, student_id: int, force_refresh: bool = False
+        self,
+        student_id: int,
+        force_refresh: bool = False,
+        plan_date: Optional[str] = None,
     ) -> "DailySessionPlan":
         """
         Get-or-create today's structured session plan.
@@ -856,10 +877,19 @@ class PlanningService:
         """
         from ..models.lesson_plan import BlockTimeEntry, DailySessionPlan, LessonBlock
 
-        today_str = self._now().date().isoformat()
+        day = self._plan_day(plan_date)
+        today_str = day.isoformat()
         stored = await self.firestore.get_daily_session_plan_doc(student_id, today_str)
 
-        if stored and not force_refresh:
+        # A doc whose own date is not its key was built on another day (the
+        # old UTC key vs server-local stamp); rebuild it like a refresh.
+        stale = bool(stored) and stored.get("date") != today_str
+        if stale:
+            logger.info(
+                f"[SESSION_PLAN] Stored plan {student_id}/{today_str} is dated "
+                f"{stored.get('date')}; rebuilding"
+            )
+        if stored and not force_refresh and not stale:
             try:
                 return DailySessionPlan.model_validate(
                     {k: v for k, v in stored.items() if k in DailySessionPlan.model_fields}
@@ -870,7 +900,7 @@ class PlanningService:
                     f"regenerating: {e}"
                 )
 
-        plan = await self._build_daily_session_plan(student_id)
+        plan = await self._build_daily_session_plan(student_id, day)
 
         # Refresh carry-forward: the time ledger is observed data — never
         # regenerate it away. Keyed by block_id, so entries for blocks the
@@ -916,6 +946,27 @@ class PlanningService:
             )
         return plan
 
+    async def daily_subject_weights(self, student_id: int) -> Dict[str, Dict[str, Any]]:
+        """Today's per-subject split, for surfaces that select outside the plan's blocks.
+
+        Daily-mix Pulse divides its items by the same pace allocation the daily
+        plan used (remaining work per subject), at each subject's planning grade.
+        Returns {subject: {"weight": minutes, "grade": grade}}; subjects the plan
+        gave no minutes are left out. Without an allocation every subject in the
+        weekly plan weighs the same."""
+        plan = await self.get_daily_session_plan(student_id)
+        planning = await self.firestore.get_student_planning_fields(student_id)
+        grade = plan.grade_level or planning.get("grade_level")
+        overrides = dict(planning.get("subject_grade_overrides") or {})
+        if plan.allocation and plan.allocation.subjects:
+            paces = [(p.subject, p.allocated_minutes) for p in plan.allocation.subjects
+                     if p.allocated_minutes > 0]
+        else:
+            weekly = await self.get_weekly_plan(student_id)
+            paces = [(s, 1.0) for s in weekly.subjects]
+        return {s: {"weight": float(w), "grade": self._subject_grade(s, grade, overrides)}
+                for s, w in paces}
+
     async def mark_session_block_complete(
         self, student_id: int, block_id: str, plan_date: Optional[str] = None
     ) -> bool:
@@ -934,7 +985,9 @@ class PlanningService:
             student_id, target_date, block_id
         )
 
-    async def _build_daily_session_plan(self, student_id: int) -> "DailySessionPlan":
+    async def _build_daily_session_plan(
+        self, student_id: int, plan_day: Optional[date] = None
+    ) -> "DailySessionPlan":
         """
         Build today's structured session plan using lesson groups and a
         time-based capacity model.
@@ -953,10 +1006,10 @@ class PlanningService:
           5. Shape session for cognitive variety
         """
         from ..services.lesson_group_service import LessonGroupService
-        from ..models.lesson_plan import DEFAULT_DAILY_BUDGET_MINUTES, DailySessionPlan
+        from ..models.lesson_plan import DailySessionPlan, daily_budget_minutes
 
         planning = await self.firestore.get_student_planning_fields(student_id)
-        budget_minutes = planning.get("daily_budget_minutes", DEFAULT_DAILY_BUDGET_MINUTES)
+        budget_minutes = daily_budget_minutes(planning)
         # Grade of record (students/{id}.grade_level). Without it the graph
         # fetch falls into first-doc-wins scanning and a K student is served
         # the Grade 1 curriculum everywhere downstream.
@@ -1103,9 +1156,21 @@ class PlanningService:
                         if added >= 20:   # cap per subject; time budget handles final selection
                             break
 
+        # One subskill, one block a day: a due retest wins over a selector pick
+        # of the same subskill (retests are collected first).
+        seen_ids: set = set()
+        deduped: List[Dict[str, Any]] = []
+        for c in all_candidates:
+            sid = c.get("skill_id", "")
+            if sid and sid in seen_ids:
+                continue
+            seen_ids.add(sid)
+            deduped.append(c)
+        all_candidates = deduped
+
         # Empty state
         if not all_candidates:
-            today = self._now().date()
+            today = plan_day or self._now().date()
             day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
             return DailySessionPlan(
                 student_id=str(student_id),
@@ -1149,7 +1214,7 @@ class PlanningService:
                 f"scripts/cleanup_synthetic_lifecycle.py to retire them"
             )
         if not enriched:
-            today = self._now().date()
+            today = plan_day or self._now().date()
             day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
             return DailySessionPlan(
                 student_id=str(student_id),
@@ -1186,6 +1251,7 @@ class PlanningService:
             candidate_blocks=candidate_blocks,
             budget_minutes=budget_minutes,
             subject_budgets=subject_budgets,
+            plan_day=plan_day or self._now().date(),
         )
         plan.allocation = allocation
         # Grade of record rides on the plan so the launch surface generates
@@ -1658,11 +1724,11 @@ class PlanningService:
         Build an interleaved session sequence per PRD Section 8.
 
         Output order:
-          1. Most-overdue mastery retests first (student is fresh)
-          2. Interleaved body: [new_block, review, review, new_block, ...]
+          1. Interleaved body: [new_block, review, review, new_block, ...]
+             - Reviews in queue order (most-overdue retest first)
              - New skill blocks front-loaded in first 60% of total sessions
              - Reviews subject-alternated
-          3. Tail: remaining reviews after the 60% boundary
+          2. Tail: remaining reviews after the 60% boundary
 
         Each returned item has 'session_category' and 'priority' set.
         """
