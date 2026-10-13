@@ -17,6 +17,7 @@ import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers } from '../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace } from '../components/live-activity/runtime/testing/workspaceHarness';
 import { PipSurfaceStore } from './PipSurfaceStore';
+import { BUILD_WITNESSES, WRONG_BUILD } from '../primitives/visual-primitives/direct-instruction/diShapesBuild';
 
 interface Payload { primitiveId: string; evalMode: string; data: Record<string, unknown> }
 const DIR = join(process.cwd(), 'src/components/lumina/components/live-activity/runtime/testing/w1-payloads');
@@ -32,6 +33,23 @@ const mount = ({ primitiveId, evalMode, data }: Payload) => {
   const h = mountWorkspace({ primitiveId, evalMode, data, pipStore: store });
   return { ...h, store, pose: () => store.getActive()?.pose, scope: () => store.getActive()?.scopeId };
 };
+type Mounted = ReturnType<typeof mount>;
+/** A spoken item is answered aloud and judged by the tutor; a build item (di-shapes build_shape) on the board. */
+const answer = (h: Mounted, payload: Payload, right: boolean, transition: 'none' | 'advance') => {
+  const item = (payload.data.challenges as Array<{ id: string; challengeType: string; shape: string }>)
+    .find(c => c.id === h.state().task!.itemId)!;
+  if (item.challengeType !== 'build_shape') {
+    h.say(right ? 'right answer' : 'banana'); h.feedback(right ? 'correct' : 'incorrect', transition); h.confirmVisible();
+    return;
+  }
+  if (h.view.container.querySelector('[data-corner]')) h.press('Clear Shape');
+  const pts = right ? BUILD_WITNESSES[item.shape][0] : item.shape === 'triangle' ? WRONG_BUILD.triangle : WRONG_BUILD.other;
+  for (const p of [...pts, pts[0]]) h.touch(`dot-${p.x}-${p.y}`);
+  h.press("I'm done!");
+  if (transition === 'advance') h.dispatch('advance');
+  h.confirmVisible();
+};
+
 const POINT = { phase: 'introducing', gesture: 'point', targetId: 'stimulus' };
 const LOOK = { phase: 'working', gesture: 'look', targetId: 'stimulus' };
 const CELEBRATE = { phase: 'celebrating', gesture: 'none' };
@@ -54,9 +72,10 @@ describe.each(PAYLOADS)('$primitiveId $evalMode', payload => {
 
   it('a miss is not celebrated; a held credit is', () => {
     const h = mount(payload);
-    h.say('banana'); h.feedback('incorrect', 'none'); h.confirmVisible();
+    answer(h, payload, false, 'none');
     expect(h.pose()?.phase).not.toBe('celebrating');
-    h.say('right answer'); h.feedback('correct', 'none'); h.confirmVisible();
+    if (h.state().task!.workspace!.attempts.at(-1)?.miss) h.dispatch('retry');
+    answer(h, payload, true, 'none');
     expect(h.pose()).toEqual(CELEBRATE);
   });
 
@@ -66,7 +85,7 @@ describe.each(PAYLOADS)('$primitiveId $evalMode', payload => {
     const h = mount(payload);
     const first = h.scope();
     h.speak(true);
-    h.say('right answer'); h.feedback('correct', 'advance'); h.confirmVisible();
+    answer(h, payload, true, 'advance');
     expect(h.scope()).not.toBe(first);
     expect(h.pose()).toEqual(CELEBRATE);  // the praise began on the credited item
     h.speak(false);

@@ -38,6 +38,7 @@ import type { SpokenFactMiss } from '../../../primitives/visual-primitives/direc
 import type { SpokenPracticeMiss } from '../../../primitives/visual-primitives/direct-instruction/diSpokenPracticeWorkspace';
 import type { SpokenProcedureMiss } from '../../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
 import type { SpokenShapeMiss } from '../../../primitives/visual-primitives/math/shapeSorterDomain';
+import { SHAPE_BUILD_MISSES, type ShapeBuildMiss } from '../../../primitives/visual-primitives/direct-instruction/diShapesBuild';
 import type { SpokenDiLetterSoundMiss } from '../../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain';
 import type { SpokenWordReadingMiss } from '../../../primitives/visual-primitives/direct-instruction/diWordReadingDomain';
 import type { SpokenSentenceMiss } from '../../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain';
@@ -562,8 +563,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'di-shapes',
-    description: 'Live-judged Direct Instruction SHAPE PRACTICE over voice: the tutor shows one drawn 2D shape, asks the child, and judges the spoken answer from the audio; any model is a DIFFERENT shape ("My turn: this shape is a hexagon"), never the child\'s own. Two kinds of ask — NAME the shape ("What shape is this?") and COUNT its attributes ("How many sides does this shape have?", "How many corners?"). The child SEES the drawn shape and SPEAKS the answer aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them, and counting the sides and corners (vertices) of straight-sided shapes to confirm what they are. ESSENTIAL for K/G1 MATHEMATICS geometry — 2D shape identification, naming, and side/vertex counting for early learners.',
-    constraints: 'Requires microphone + live audio tutor. FLAT 2D shapes only — NO 3D solids (spheres, cubes, cones, cylinders) and no composing, decomposing, or building shapes from other shapes; use a geometry primitive when composing IS the objective. Side and corner counting ARE supported (count_sides / count_corners), on straight-sided shapes only — a curved shape carries no side count, so a circles-and-ovals objective routes to naming. The manifest must NOT supply specific shapes; the menu-scoped generator selects target shapes from the objective and draws them in code at varied rotations. The drawn shape is the stimulus and the spoken answer is the answer: neither the shape name nor its side/corner count ever appears on screen (or in the title/description) before the child says it.',
+    description: 'Live-judged Direct Instruction SHAPE PRACTICE over voice: the tutor shows one drawn 2D shape, asks the child, and judges the spoken answer from the audio; any model is a DIFFERENT shape ("My turn: this shape is a hexagon"), never the child\'s own. Two kinds of ask — NAME the shape ("What shape is this?") and COUNT its attributes ("How many sides does this shape have?", "How many corners?") — plus an open build: the tutor names a shape ("Make a hexagon") and the child MAKES one on a dot grid. The child SEES the drawn shape and SPEAKS the answer aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them, and counting the sides and corners (vertices) of straight-sided shapes to confirm what they are. ESSENTIAL for K/G1 MATHEMATICS geometry — 2D shape identification, naming, and side/vertex counting for early learners.',
+    constraints: 'Requires microphone + live audio tutor. FLAT 2D shapes only — NO 3D solids (spheres, cubes, cones, cylinders) and no composing, decomposing, or building shapes from other shapes; use a geometry primitive when composing IS the objective (build_shape makes ONE shape from its corners on a dot grid, straight-sided shapes only). Side and corner counting ARE supported (count_sides / count_corners), on straight-sided shapes only — a curved shape carries no side count, so a circles-and-ovals objective routes to naming. The manifest must NOT supply specific shapes; the menu-scoped generator selects target shapes from the objective and draws them in code at varied rotations. The drawn shape is the stimulus and the spoken answer is the answer: neither the shape name nor its side/corner count ever appears on screen (or in the title/description) before the child says it.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     // L1 ladder (2026-08-07, /add-eval-modes). Four task identities over ONE
     // stage. Two response classes, BOTH already benched, so no new sitting was
@@ -595,13 +596,17 @@ export const DI_CATALOG: ComponentDefinition[] = [
         + 'the object is the answer. Never say the answer before the child tries or model this shape or its count: your '
         + 'model is the model lever, a DIFFERENT shape beside it. The support fact says where levers start. On a naming '
         + 'item never describe the shape or offer a choice of names. Stuck with the model on screen: say the model '
-        + 'again, then ask. You cannot draw, rotate or resize the shape.',
+        + 'again, then ask. You cannot draw, rotate or resize the shape. On a build item (kind build_shape) the child '
+        + 'makes the named shape on the dots and the board checks it: never say how many sides or corners it has or '
+        + 'what their shape is short of. You cannot place a corner.',
       levers: true,
       // Every item is spoken: its known wrong answers (`shapesSpokenMisses`, shape-sorter's ids), named by the `spoken_miss` observer.
-      misses: missLists<SpokenShapeMiss>({
+      misses: missLists<SpokenShapeMiss | ShapeBuildMiss>({
         ...sameMisses<SpokenShapeMiss>(['name_shape', 'shape_review'], ['near_name', 'other_shape_name', 'described_shape']),
         find_real_object: ['said_object', 'near_name', 'other_shape_name', 'described_shape'],
         ...sameMisses<SpokenShapeMiss>(['count_sides', 'count_corners'], ['said_shape_name', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
+        // The open build's misses are the board's own check (`shapeBuildMiss`), not words.
+        build_shape: SHAPE_BUILD_MISSES,
       }),
     },
     // Misconception Loop gate 3 — family ruling, see the module docblock.

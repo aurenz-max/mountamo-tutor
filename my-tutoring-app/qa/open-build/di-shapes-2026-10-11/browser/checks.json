@@ -1,0 +1,24 @@
+{
+ "checks": [
+  {
+   "name": "drive ran to the end",
+   "pass": false,
+   "detail": "TimeoutError: page.waitForResponse: Timeout 180000ms exceeded while waiting for event \"response\""
+  }
+ ],
+ "errors": [
+  "./src/components/lumina/config/primitiveRegistry.tsx:8:0\nModule not found: Can't resolve '../primitives/visual-primitives/drawers/drawerRegistry'\n   6 | import { FeatureExhibit } from '../primitives/FeatureExhibit';\n   7 | import { ComparisonPanel } from '../primitives/ComparisonPanel';\n>  8 | impor",
+  "./src/components/lumina/config/primitiveRegistry.tsx:8:0\nModule not found: Can't resolve '../primitives/visual-primitives/drawers/drawerRegistry'\n   6 | import { FeatureExhibit } from '../primitives/FeatureExhibit';\n   7 | import { ComparisonPanel } from '../primitives/ComparisonPanel';\n>  8 | impor",
+  "./src/components/lumina/config/primitiveRegistry.tsx:8:0\nModule not found: Can't resolve '../primitives/visual-primitives/drawers/drawerRegistry'\n   6 | import { FeatureExhibit } from '../primitives/FeatureExhibit';\n   7 | import { ComparisonPanel } from '../primitives/ComparisonPanel';\n>  8 | impor",
+  "./src/components/lumina/config/primitiveRegistry.tsx:8:0\nModule not found: Can't resolve '../primitives/visual-primitives/drawers/drawerRegistry'\n   6 | import { FeatureExhibit } from '../primitives/FeatureExhibit';\n   7 | import { ComparisonPanel } from '../primitives/ComparisonPanel';\n>  8 | impor",
+  "./src/components/lumina/config/primitiveRegistry.tsx:8:0\nModule not found: Can't resolve '../primitives/visual-primitives/drawers/drawerRegistry'\n   6 | import { FeatureExhibit } from '../primitives/FeatureExhibit';\n   7 | import { ComparisonPanel } from '../primitives/ComparisonPanel';\n>  8 | impor",
+  "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+  "./src/components/lumina/config/primitiveRegistry.tsx:8:0\nModule not found: Can't resolve '../primitives/visual-primitives/drawers/drawerRegistry'\n   6 | import { FeatureExhibit } from '../primitives/FeatureExhibit';\n   7 | import { ComparisonPanel } from '../primitives/ComparisonPanel';\n>  8 | impor",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <circle> attribute r: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute rx: Expected length, \"undefined\".",
+  "Error: <ellipse> attribute ry: Expected length, \"undefined\".",
+  "Lumina AI WebSocket error: Event",
+  "Error authenticating Lumina AI (lesson): Error: No authentication token available\n    at eval (webpack-internal:///(app-pages-browser)/./src/contexts/LuminaAIContext.tsx:707:39)"
+ ]
+}

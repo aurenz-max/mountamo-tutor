@@ -7,9 +7,10 @@
  * (`workspaceAssignment`, `workspaceScene`), its drawn stimulus, an optional trail of
  * committed answers, its recap label, its metrics and its wording.
  *
- * Every mode of these packs is spoken, so there is no gesture channel to check and no
- * transcript parser in front of the answer: the tutor hears the audio and JEV reads its
- * completed feedback. Nothing here composes a model line, counts corrections or advances.
+ * Spoken items have no transcript parser in front of the answer: the tutor hears the audio and
+ * JEV reads its completed feedback. A pack's gesture item (an open build) commits through
+ * `view.commit` with the pack's own verdict, which the workspace records as a checked attempt.
+ * Nothing here composes a model line, counts corrections or advances.
  *
  * The trail is keyed on COMMITTED attempts, never on a local phase: the observer submits and
  * advances inside one `flushSync`, so a reward keyed on the current item's phase would render
@@ -66,6 +67,10 @@ export interface DiStageView {
   pulled: readonly string[];
   /** The stimulus is the easier practice item a simplify lever opened, not the session item. */
   practice: boolean;
+  /** A gesture item's commit: the learner's work in words (never the key), the pack's own verdict, and its miss. */
+  commit: (response: string, correct: boolean, miss?: string) => void;
+  /** The learner may act on the item now (not checking, not paused, not between items). */
+  canAttempt: boolean;
 }
 
 /**
@@ -97,11 +102,13 @@ export interface DiTeachingStageProps<Item extends { id: string }, M extends Pri
   scene: (item: Item, view: { ready: boolean; pulled: readonly string[] }) => WorkspaceScene;
   metrics: (result: TeachingEvaluationResult) => M;
   copy: { empty: string; title: string; badge: string; prompt: string; heading: string; celebration: string };
+  /** A per-item badge and prompt, for a pack whose gesture items are not answered aloud. Default: `copy`. */
+  copyFor?: (item: Item) => { badge: string; prompt: string } | null;
   /** The recap row for one item. `solved` is false for a missed item, whose recap must not
    *  print an answer the child never produced. */
   recapLabel: (item: Item, solved: boolean) => string;
   stimulus: (item: Item, marks: readonly string[], view: DiStageView) => ReactNode;
-  /** Items the observer has already credited, for a reward trail under the stimulus. */
+  /** Items the observer has already credited, for a small reward trail under the challenge counter. */
   trail?: (committed: Item[], current: Item) => ReactNode;
   /** The item cannot be answered until the learner does something first (dice-roll's roll): until the
    *  stimulus calls `markReady`, the workspace reports `readyForResponse: false`. */
@@ -140,17 +147,21 @@ export default function DiTeachingStage<Item extends { id: string }, M extends P
 
 function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>({ primitiveId, data, items,
     className, runtimePlanItemId, assignment, scene, metrics, copy, recapLabel, stimulus, trail,
-    awaitsStimulus, counter, levers }:
+    awaitsStimulus, counter, levers, copyFor }:
     DiTeachingStageProps<Item, M>) {
   const instance = useRef(data.instanceId || `${primitiveId}-${Date.now()}`);
   const workspace = useRef<TeachingWorkspace | null>(null);
   const [marks, mark] = useState<string[]>([]);
 
+  // A gesture item's verdict is the pack's own check, set just before the workspace reads it (useWorkspaceRunner).
+  const checked = useRef<{ itemId: string; correct: boolean } | null>(null);
+  const verdictFor = (id: string) => checked.current?.itemId === id ? checked.current.correct : null;
   const assignments = useMemo<TeachingItem[]>(() => items.map(item => ({
-    ...assignment(item), checkResponse: () => null })), [items, assignment]);
+    ...assignment(item), checkResponse: () => verdictFor(item.id) })), [items, assignment]);
 
   const lesson = useTeachingWorkspace({ instanceId: instance.current, primitiveId,
-    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace });
+    objectiveId: data.objectiveId, planItemId: runtimePlanItemId, items: assignments, workspace,
+    checkPractice: verdictFor });
 
   const evaluation = useTeachingEvaluation<M>({ primitiveType: primitiveId, instanceId: instance.current,
     data, assignments, lesson, metrics });
@@ -229,6 +240,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
     return { instanceId: instance.current, scopeId: item.id, label: copy.title, dock: pip.dock.current, targets, pose };
   });
 
+  const itemCopy = copyFor?.(item) ?? copy;
   const summary = lesson.summary;
   if (summary) return <LuminaCard className={className} surface="elevated">
     <LuminaCardContent className="space-y-6">
@@ -241,6 +253,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
     </LuminaCardContent>
   </LuminaCard>;
 
+  const trailNode = trail?.(committed, sessionItem);
   return <LuminaCard className={className} surface="elevated">
     <LuminaCardHeader>
       <div className="flex items-center justify-between gap-3">
@@ -248,21 +261,27 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
           <LuminaCardTitle>{data.title || copy.title}</LuminaCardTitle>
           <LuminaCardDescription>{data.description}</LuminaCardDescription>
         </div>
-        <LuminaBadge accent="cyan">{copy.badge}</LuminaBadge>
+        <LuminaBadge accent="cyan">{itemCopy.badge}</LuminaBadge>
       </div>
     </LuminaCardHeader>
     <LuminaCardContent className="space-y-6">
       <LuminaChallengeCounter {...(counter?.(sessionItem, items) ?? { current: lesson.state.index + 1, total: items.length })}
         variant="dots" />
+      {/* The reward trail sits small under the counter, away from the question: beside the prompt a credited
+          "triangle" chip read as an answer offered for the current item. */}
+      {trailNode && <div data-di-trail className="-mt-3 [&>*]:justify-start" style={{ zoom: 0.75 }}>{trailNode}</div>}
       <div ref={pip.ref('stimulus')} data-pip-object="stimulus">
         {stimulus(item, marks, { committed: committedIds, ready, markReady: () => setReadyIds(prev => new Set(prev).add(item.id)),
-          pulled: practiceItem ? [] : pulled, practice: !!practiceItem })}
+          pulled: practiceItem ? [] : pulled, practice: !!practiceItem, canAttempt: lesson.canAttempt,
+          commit: (response, correct, miss) => {
+            checked.current = { itemId: lesson.currentItemId(), correct };
+            lesson.submitGestureResponse(response, miss);
+          } })}
       </div>
-      {/* Every answer is spoken, so no answer surface lies between the dock and the stimulus. */}
+      {/* A gesture item's answer surface is inside the stimulus, so nothing lies between the dock and it. */}
       {pipStore && <div ref={pip.dock} data-pip-dock={instance.current} className={PIP_DOCK_CLASS} />}
-      {trail?.(committed, sessionItem)}
       <div className="flex justify-center"><LuminaReadAloudGlyph size={22} speaking={lesson.tutorSpeaking} /></div>
-      <p className="text-center text-sm text-slate-400">{copy.prompt}</p>
+      <p className="text-center text-sm text-slate-400">{itemCopy.prompt}</p>
     </LuminaCardContent>
   </LuminaCard>;
 }

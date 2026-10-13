@@ -6,14 +6,15 @@
  * DI's correction is a PARALLEL-ITEM model (user ruling 2026-10-02): a different shape, solved, then the child's.
  *
  * Help (the screen shows more; the question is unchanged):
- * - `model_shape` (name_shape, shape_review): a small card with a DIFFERENT shape, named. Never the item's shape,
+ * - `model_shape` (name_shape, shape_review): a small card with a DIFFERENT shape, its name printed under it. Never the item's shape,
  *   its look-alike (`NEAR_SHAPE`, either way round), a shape sharing an accepted name with it (rhombus/diamond), or
  *   the shape of a session item still to come.
- * - `model_object` (find_real_object): a DIFFERENT object beside the outline of its shape, named. Same rules on the
+ * - `model_object` (find_real_object): a DIFFERENT object beside the outline of its shape, the shape's name printed. Same rules on the
  *   object's shape, and never an object still to come.
  * - `model_count` (count_sides, count_corners): a DIFFERENT polygon with a tick on each side (or a dot on each
- *   corner), its total said. Its count is not within one of the item's, nor the count of an item still to come; its
+ *   corner), its total printed in words ("six sides"). Its count is not within one of the item's, nor the count of an item still to come; its
  *   shape is never the item's. No numeral is drawn and no shape is named.
+ * Every model card shows only while its lever is pulled: no tier starts with it on screen.
  * - `start_mark` (counting): one dot on one side (or corner) of the child's own shape. No number, no order.
  * - `touch_marks` (counting): each side (or corner) of the child's shape can be tapped; a tapped one is marked.
  * Simplify (an ungraded easier item of the same mode; then the full item comes back):
@@ -21,6 +22,14 @@
  *   as a variant, turned past its gentle band, or shrunk, so there is a step to drop.
  * - `fewer_sides` (counting): a prototype polygon with fewer sides (4 or 5 → triangle, 6 → square). None on a
  *   triangle.
+ *
+ * build_shape (the open build; the child MAKES the named shape on dots). Starts bare at every tier: keeping track
+ * of sides IS the task, so the marks come on a miss.
+ * - `model_shape`: a DIFFERENT straight-sided shape, named, a tick on each side. Never the asked shape or its look-alike.
+ * - `side_ticks`: a tick on each side of the child's own shape. No numeral, no order.
+ * - `corner_marks` (square, rectangle): a square-corner mark on each square corner of the child's shape.
+ * - `same_length_marks` (square, rhombus): sides of one length share a colour on the child's shape.
+ * - `make_triangle` (simplify): make a triangle first, ungraded; the asked shape comes back after it.
  *
  * Naming modes get no help on the child's own shape: naming is recognition, and ticks or corner dots would turn it
  * into counting. find_real_object has no simplify: a bare outline is name_shape.
@@ -38,6 +47,10 @@ export const START_MARK = 'start_mark';
 export const TOUCH_MARKS = 'touch_marks';
 export const PLAIN_DRAWING = 'plain_drawing';
 export const FEWER_SIDES = 'fewer_sides';
+export const SIDE_TICKS = 'side_ticks';
+export const CORNER_MARKS = 'corner_marks';
+export const SAME_LENGTH_MARKS = 'same_length_marks';
+export const MAKE_TRIANGLE = 'make_triangle';
 
 const SHAPES = Object.keys(SHAPE_MENU) as DiShapeName[];
 const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six'];
@@ -108,7 +121,9 @@ export function modelFor(item: DiShapesChallenge, items: readonly DiShapesChalle
     return shape ? shapeItem(shape, item.challengeType, id) : null;
   }
   const comingShapes = coming.map(i => i.shape);
-  const shape = SHAPES.filter(s => !shapeLeaks(s, item.shape) && !comingShapes.some(c => shapeLeaks(s, c) || s === c))
+  // A build's model is a shape the child could make: straight sides, so its ticked sides can be shown.
+  const pool = item.challengeType === 'build_shape' ? SHAPES.filter(s => SHAPE_MENU[s].sides != null) : SHAPES;
+  const shape = pool.filter(s => !shapeLeaks(s, item.shape) && !comingShapes.some(c => shapeLeaks(s, c) || s === c))
     .sort(byCore)[0];
   return shape ? shapeItem(shape, item.challengeType, id) : null;
 }
@@ -129,6 +144,9 @@ export function simplerShape(item: DiShapesChallenge, lever: string, items: read
       .sort(byCore)[0];
     return shape ? shapeItem(shape, item.challengeType, id, tier) : null;
   }
+  if (lever === MAKE_TRIANGLE) {
+    return item.challengeType === 'build_shape' && item.shape !== 'triangle' ? shapeItem('triangle', 'build_shape', id, tier) : null;
+  }
   if (lever === FEWER_SIDES) {
     if (!isCountingType(item.challengeType)) return null;
     const n = countOf(item);
@@ -139,12 +157,8 @@ export function simplerShape(item: DiShapesChallenge, lever: string, items: read
 }
 
 /** The model lever of an item's mode. */
-const modelLever = (item: DiShapesChallenge) => item.challengeType === 'name_real_object' ? MODEL_OBJECT
+export const modelLever = (item: DiShapesChallenge) => item.challengeType === 'name_real_object' ? MODEL_OBJECT
   : isCountingType(item.challengeType) ? MODEL_COUNT : MODEL_SHAPE;
-
-/** Levers an item's tier starts with on screen (no tier is easy). Not a pull; never recorded. */
-export const startingLevers = (item: DiShapesChallenge, items: readonly DiShapesChallenge[]): string[] =>
-  (item.supportTier ?? 'easy') === 'easy' && modelFor(item, items) ? [modelLever(item)] : [];
 
 export function shapeLevers(item: DiShapesChallenge | null, pulled: readonly string[], items: readonly DiShapesChallenge[]): WorkspaceLever[] {
   if (!item) return [];
@@ -152,6 +166,7 @@ export function shapeLevers(item: DiShapesChallenge | null, pulled: readonly str
     does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
   const practice = 'Opens an easier one of the same kind first. It is not graded; the full shape comes back after it.';
   const out: WorkspaceLever[] = [];
+  if (item.challengeType === 'build_shape') return buildLevers(item, items, lever, practice);
   const counting = isCountingType(item.challengeType);
   const noun = counting ? countNoun(item.challengeType) : '';
   if (modelFor(item, items)) {
@@ -183,9 +198,43 @@ export function shapeLevers(item: DiShapesChallenge | null, pulled: readonly str
   return out;
 }
 
+type LeverMaker = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[],
+  when: string, does: string) => WorkspaceLever;
+
+/** build_shape's levers. Every `does` names the build ("makes", "the learner's own shape"), never a spoken answer. */
+function buildLevers(item: DiShapesChallenge, items: readonly DiShapesChallenge[], lever: LeverMaker, practice: string): WorkspaceLever[] {
+  const out: WorkspaceLever[] = [];
+  if (modelFor(item, items)) out.push(lever(MODEL_SHAPE, 'help', 'both', ['too_few_sides', 'too_many_sides'],
+    'The learner does not know how to start, or makes a shape with the wrong number of sides.',
+    'Shows a small card with a DIFFERENT shape, named, a tick on each side (onScreen names it). Say it as your turn '
+      + '("My turn: this shape is a …"), then let the learner make theirs. Never say what the asked shape has.'));
+  out.push(lever(SIDE_TICKS, 'help', 'shown', ['too_few_sides', 'too_many_sides'],
+    'The learner loses track of how many sides their shape has.',
+    "Puts a tick on each side of the learner's own shape, so they can count them. No number."));
+  if (item.shape === 'square' || item.shape === 'rectangle') out.push(lever(CORNER_MARKS, 'help', 'shown', ['corners_not_square'],
+    "The learner's corners are not square corners.",
+    "Marks each square corner of the learner's own shape; a corner with no mark is not square."));
+  if (item.shape === 'square' || item.shape === 'rhombus') out.push(lever(SAME_LENGTH_MARKS, 'help', 'shown', ['sides_not_equal', 'made_square'],
+    "The learner's sides are not all the same length.",
+    "Colours the sides of the learner's own shape so sides of one length match."));
+  if (simplerShape(item, MAKE_TRIANGLE, items)) out.push(lever(MAKE_TRIANGLE, 'simplify', 'both',
+    ['too_few_sides', 'too_many_sides', 'corners_not_square', 'sides_not_equal', 'made_square', 'parallel_off'],
+    'This shape is too hard to make yet.', `${practice.replace('the full shape', 'the asked shape')} The easier one is a triangle.`));
+  return out;
+}
+
 /** What the pulled levers put on screen, as a scene fact. Names the model; never the child's answer. */
 export function shapeLeverFacts(item: DiShapesChallenge | null, pulled: readonly string[], items: readonly DiShapesChallenge[]): string {
   if (!item) return '';
+  if (item.challengeType === 'build_shape') {
+    const model = pulled.includes(MODEL_SHAPE) ? modelFor(item, items) : null;
+    return [
+      model && `Beside the grid, a model card shows a different shape, solved: ${model.article} ${model.shapeWord}, a tick on each side. It is not the asked shape.`,
+      pulled.includes(SIDE_TICKS) && "Each side of the learner's own shape has a tick. No number.",
+      pulled.includes(CORNER_MARKS) && "Each square corner of the learner's own shape is marked.",
+      pulled.includes(SAME_LENGTH_MARKS) && "Sides of one length on the learner's own shape share a colour.",
+    ].filter((s): s is string => !!s).join(' ');
+  }
   const model = pulled.some(p => p.startsWith('model_')) ? modelFor(item, items) : null;
   const counting = isCountingType(item.challengeType);
   const noun = counting ? countNoun(item.challengeType) : '';

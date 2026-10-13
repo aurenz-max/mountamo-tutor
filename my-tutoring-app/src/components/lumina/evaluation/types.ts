@@ -3663,7 +3663,7 @@ export interface DiShapesMetrics extends BasePrimitiveMetrics {
   // naming review, real-object naming, and the two attribute-counting skills. On a BLENDED session
   // this is the representative (first item's) identity; the per-item identity
   // lives on each challenge.
-  challengeType: 'name_shape' | 'name_real_object' | 'shape_review' | 'count_sides' | 'count_corners';
+  challengeType: 'name_shape' | 'name_real_object' | 'shape_review' | 'count_sides' | 'count_corners' | 'build_shape';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // total spoken attempts across all shapes (corrections + 1 each)

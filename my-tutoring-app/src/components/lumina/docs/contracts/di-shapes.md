@@ -11,6 +11,7 @@
 | K name 2D shapes regardless of orientation/size (GEOM001-01-A): name_shape, shape_review | catalog + QA | `/curriculum-fit` 2026-08-07; payloads `w1-payloads/di-shapes.name_shape.json`, `.shape_review.json` | 2026-10-03 |
 | K-1 shapes in the world: find_real_object | catalog | payload `.find_real_object.json` (saved 2026-10-03) | 2026-10-03 |
 | G1 count sides and vertices (GEOM001-01-b): count_sides, count_corners | catalog + QA | payloads `.count_sides.json`, `.count_corners.json` | 2026-10-03 |
+| K-1 make named shapes (open build): build_shape | catalog + QA | payload `.build_shape.json` (2026-10-11); `qa/open-build/di-shapes-2026-10-11/generations.json` | 2026-10-11 |
 | Live tutor + JEV on the shared workspace | tutor reports | rollout B3; `sweep-inventory-2026-09-29.json` | 2026-10-03 |
 | Support levers (DI family 3) | `/add-support-tiers` | `qa/support-levers/di-shapes-lever-table-2026-10-03.md`, replay `qa/tutor-reports/replay/di-shapes-*-2026-10-03.json` | 2026-10-03 |
 
@@ -57,6 +58,10 @@
 - **Evidence:** replay 2026-10-03, find_real_object stuck: 5/5 "four equal sides… triangle or square?" before the rule, 0/5 after.
 - **Probe:** `tutor_replay.py --primitive di-shapes --samples 5`.
 
+### R11 — The open build judges the made shape by its defining properties · OBSERVED
+- **Property:** `build_shape` draws nothing: the child makes the named shape on an empty dot grid and "I'm done!" runs `shapeBuildMiss` (sides, then square corners, then equal sides, then one parallel pair). A square is `made_square` for rectangle and rhombus (the K convention of R1). Only straight-sided shapes are asked. Try again keeps the shape; a new or easier item opens an empty grid. The ask states the name (it is the task); no count, tick or square-corner mark is on screen until a lever is pulled; the watcher line names no shape and no number. The levers start bare; the model is a different straight-sided shape (R4).
+- **Probe:** `diShapesBuild.test.ts`, `DiShapes.build.workspace.test.tsx`, journey sweep `di-shapes.build_shape`, `scripts/di-shapes-build-probe.mjs --run`.
+
 ## Conflicts
 
 None open.
@@ -64,8 +69,9 @@ None open.
 ## Catalog projection
 
 - **description / guidance:** faithful as of 2026-10-03 (any model is a different shape; `levers: true`).
-- **evalModes:** faithful. The scripted `tutoring` block is unused on the bound path (`tutoring: null`).
+- **evalModes:** faithful (six, with `build_shape` 2026-10-11). The scripted `tutoring` block is unused on the bound path (`tutoring: null`).
 
 ## Changelog
 
+- 2026-10-11: R11 added with the `build_shape` open build (fork: a new challenge type; R2's "stage draws the shape only" does not apply to a build item, which draws none).
 - 2026-10-03: derived (initial, static) with the DI lever slice. 10 requirements, 0 conflicts.

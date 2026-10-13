@@ -1,0 +1,88 @@
+{
+ "source": "qa/open-build/di-shapes-2026-10-11/generations.json",
+ "primitiveId": "di-shapes",
+ "evalMode": "build_shape",
+ "data": {
+  "title": "Shape Builders!",
+  "description": "Listen to the guide, look at the screen, and name each flat figure out loud.",
+  "challengeType": "build_shape",
+  "gradeLevel": "Kindergarten",
+  "challenges": [
+   {
+    "id": "dish-1-rectangle",
+    "challengeType": "build_shape",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "rectangle",
+     "rectangles",
+     "wectangle"
+    ]
+   },
+   {
+    "id": "dish-2-triangle",
+    "challengeType": "build_shape",
+    "shape": "triangle",
+    "shapeWord": "triangle",
+    "article": "a",
+    "sides": 3,
+    "corners": 3,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "triangle",
+     "triangles",
+     "twiangle"
+    ]
+   },
+   {
+    "id": "dish-3-square",
+    "challengeType": "build_shape",
+    "shape": "square",
+    "shapeWord": "square",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "square",
+     "squares",
+     "sware"
+    ]
+   },
+   {
+    "id": "dish-4-rectangle",
+    "challengeType": "build_shape",
+    "shape": "rectangle",
+    "shapeWord": "rectangle",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "rectangle",
+     "rectangles",
+     "wectangle"
+    ]
+   },
+   {
+    "id": "dish-5-square",
+    "challengeType": "build_shape",
+    "shape": "square",
+    "shapeWord": "square",
+    "article": "a",
+    "sides": 4,
+    "corners": 4,
+    "rotationDeg": 0,
+    "asrAliases": [
+     "square",
+     "squares",
+     "sware"
+    ]
+   }
+  ]
+ }
+}

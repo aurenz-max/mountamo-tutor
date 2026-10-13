@@ -111,7 +111,7 @@ export const DI_TESTER_PRESENTATION: Record<DiPrimitiveId, PrimitivePresentation
   'di-shapes': {
     label: 'Shapes',
     shortLabel: 'Shapes',
-    subtitle: 'Name drawn shapes and speak their visible attributes.',
+    subtitle: 'Name drawn shapes, speak their visible attributes, and make named shapes on dots.',
     defaultGrade: 'kindergarten',
     defaultObjective: 'name basic two-dimensional shapes',
     examples: {
@@ -120,6 +120,7 @@ export const DI_TESTER_PRESENTATION: Record<DiPrimitiveId, PrimitivePresentation
       find_real_object: { objective: 'identify the two-dimensional shape in familiar objects' },
       count_sides: { objective: 'count the sides of triangles, squares, rectangles, pentagons, and hexagons', gradeLevel: 'Grade 1' },
       count_corners: { objective: 'count the corners of triangles, squares, rectangles, pentagons, and hexagons', gradeLevel: 'Grade 1' },
+      build_shape: { objective: 'make triangles, squares, rectangles, and hexagons from their sides and corners' },
     },
   },
   'di-sentence-reading': {

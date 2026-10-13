@@ -4,7 +4,7 @@ import { DI_CATALOG } from '../../../service/manifest/catalog/di';
 import { REAL_WORLD_SHAPE_OBJECTS } from '../shared/realWorldShapeObjects';
 import { SHAPE_MENU } from './diShapesMenu';
 import { FEWER_SIDES, MODEL_COUNT, MODEL_OBJECT, MODEL_SHAPE, PLAIN_DRAWING, START_MARK, TOUCH_MARKS, modelFor, shapeItem,
-  shapeLeaks, shapeLeverFacts, shapeLevers, simplerShape, startingLevers } from './diShapesLevers';
+  shapeLeaks, shapeLeverFacts, shapeLevers, simplerShape } from './diShapesLevers';
 import { shapesSpokenMisses } from './diShapesWorkspace';
 import { isCountingType, type DiShapeName, type DiShapesChallenge } from './diShapesScript';
 import nameShape from '../../../components/live-activity/runtime/testing/w1-payloads/di-shapes.name_shape.json';
@@ -154,9 +154,4 @@ describe('the lever set per mode, and which lever answers which miss', () => {
     }
   });
 
-  it('easy (or no tier) starts with the mode\'s model; medium and hard start with nothing', () => {
-    const easy = item('square', 'count_corners'), medium = { ...easy, supportTier: 'medium' as const };
-    expect(startingLevers(easy, [easy])).toEqual([MODEL_COUNT]);
-    expect(startingLevers(medium, [medium])).toEqual([]);
-  });
 });

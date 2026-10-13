@@ -67,6 +67,11 @@
  * a knob: a square at 45° reads as a DIAMOND, which is a judged alternate for
  * rhombus, so it would be an item with two right answers. See SAFE_ROTATION_DEG.
  *
+ * OPEN BUILD (`build_shape`, 2026-10-11): the tutor names a shape and the child MAKES it on a dot grid. Its pool is
+ * the scope's straight-sided shapes a grid can make (`BUILDABLE_SHAPES`: no circle or oval), widened to the grade's
+ * when the scope has none. The drawing axes of a tier do not apply: nothing is drawn, so rotation, exemplar and
+ * scale stay unset on a build item.
+ *
  * ANSWER-LEAK RULE: the wrapper (title/description) must never contain a
  * shape name — the child produces the answers; they never read or hear them
  * from the chrome first. This binds under the counting modes too: the shape's
@@ -100,6 +105,7 @@ import {
   type RealWorldShapeObjectId,
 } from "../../primitives/visual-primitives/shared/realWorldShapeObjects";
 import { SHAPE_MENU } from '../../primitives/visual-primitives/direct-instruction/diShapesMenu';
+import { isBuildable } from '../../primitives/visual-primitives/direct-instruction/diShapesBuild';
 
 // ── Support tier harness (L3) ───────────────────────────────────────
 
@@ -137,7 +143,7 @@ const resolveSupportStructure = (
       ? 'cold — no lever starts on screen'
       : tier === 'medium'
         ? 'no lever starts on screen; the tutor pulls them as needed'
-        : 'the model lever (a DIFFERENT item, solved) starts on screen; never the child\'s own item modelled (10-02 ruling)',
+        : 'no lever starts on screen; the tutor pulls the model lever (a DIFFERENT item, solved) before the child tries; never the child\'s own item modelled (10-02 ruling)',
 });
 
 // ── Structural difficulty (L4) ──────────────────────────────────────
@@ -409,7 +415,8 @@ const SHAPE_WORD_LOOKUP: Record<string, DiShapeName> = {
 export const parseNamedShapes = (text: string): DiShapeName[] => {
   const named: DiShapeName[] = [];
   const re = new RegExp(
-    `\\b(${Object.keys(SHAPE_WORD_LOOKUP).join('|')})s?\\b`,
+    // "es" plural too: "rhombuses" named no shape before (2026-10-11).
+    `\\b(${Object.keys(SHAPE_WORD_LOOKUP).join('|')})(?:es|s)?\\b`,
     'gi',
   );
   let m: RegExpExecArray | null;
@@ -466,6 +473,11 @@ const buildChallenge = (
       ? { realObjectId: realObject.id, realObjectLabel: realObject.label, rotationDeg: 0 }
       : {}),
   };
+
+  if (type === 'build_shape') {
+    // Nothing is drawn: the child makes the shape. The name is the ask, so it is not an answer to hide.
+    return { ...base, rotationDeg: 0 };
+  }
 
   if (isCountingType(type)) {
     // Pool filtering guarantees a polygon here; the ?? 0 is a type narrowing
@@ -591,7 +603,7 @@ const wrapperSchema: Schema = {
 
 /** Answer-leak guard: any judged shape word (or "diamond") in the wrapper. */
 const leaksShapeNames = (text: string): boolean =>
-  new RegExp(`\\b(${Object.keys(SHAPE_WORD_LOOKUP).join('|')})s?\\b`, 'i').test(text);
+  new RegExp(`\\b(${Object.keys(SHAPE_WORD_LOOKUP).join('|')})(?:es|s)?\\b`, 'i').test(text);
 
 const DEFAULT_TITLE = 'Shape Time';
 const DEFAULT_DESCRIPTION = 'Look at each shape and answer out loud!';
@@ -722,6 +734,10 @@ Return the wrapper JSON only.`;
   const poolFor = (type: DiShapesChallengeType): DiShapeName[] => {
     if (type === 'shape_review') return namedShapes.length > 0 ? namedShapes : gradeMenu;
     if (type === 'name_real_object') return namedShapes.length > 0 ? namedShapes : gradeMenu;
+    if (type === 'build_shape') {
+      const buildable = selected.filter(isBuildable);
+      return buildable.length > 0 ? buildable : gradeMenu.filter(isBuildable);
+    }
     if (!isCountingType(type)) return selected;
     const scoped = polygonsOf(selected);
     if (scoped.length > 0) return scoped;
@@ -790,6 +806,7 @@ Return the wrapper JSON only.`;
       // The object drawing owns its own canonical outline. Shape-rotation and
       // exemplar levers belong to abstract figures and must not distort a door,
       // clock, or sign into a less defensible object.
+      if (ch.challengeType === 'build_shape') continue;
       if (ch.challengeType === 'name_real_object') {
         ch.rotationDeg = 0;
         ch.scalePct = 100;

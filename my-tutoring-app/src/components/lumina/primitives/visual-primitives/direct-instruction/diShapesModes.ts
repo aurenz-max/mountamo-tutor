@@ -4,7 +4,7 @@ import {
 } from '../../../hooks/diModeContract';
 
 export type DiShapesChallengeType =
-  | 'name_shape' | 'name_real_object' | 'shape_review' | 'count_sides' | 'count_corners';
+  | 'name_shape' | 'name_real_object' | 'shape_review' | 'count_sides' | 'count_corners' | 'build_shape';
 
 export interface ShapesModePlanItem extends DiModeItem {
   challengeType: DiShapesChallengeType;
@@ -63,6 +63,21 @@ export const DI_SHAPES_MODES = defineDiModes<ShapesModePlanItem>(
       promptDoc: '"name_real_object": the child sees ONE familiar code-drawn object and SAYS the 2D shape of its outline. Code owns every answer.',
       schemaDescription: "'name_real_object' (say the 2D shape seen in a familiar object)",
     } }, responseClass: responseClassFor, answerStepId: 'answer', groupingKey: (i) => i.challengeType, steps: [step],
+  }),
+  mode({
+    // The inverse of name_shape: the name is said, the shape is made. β above shape_review (making one needs the
+    // shape's defining sides and corners, not only its look) and below counting corners.
+    evalMode: 'build_shape', label: 'Make the Shape (open build)', beta: 2.8, scaffoldingMode: 2,
+    challengeTypes: ['build_shape'],
+    affordances: { representation: 'concrete', answers: ['build'] },
+    description: 'Open build: the tutor names a flat shape ("Make a hexagon") and the child MAKES any one on an empty dot grid, tapping corners and closing the shape, then presses done. Many shapes pass; code checks the defining sides, square corners and equal sides. Straight-sided shapes only.',
+    challengeDocs: { build_shape: {
+      promptDoc: '"build_shape": the tutor names ONE flat straight-sided shape and the child MAKES it on an empty dot grid. Any shape with that name\'s defining properties passes.',
+      schemaDescription: "'build_shape' (make the named shape on a dot grid)",
+    } }, responseClass: 'manipulation', answerStepId: 'answer', groupingKey: (i) => i.challengeType,
+    steps: [{ id: 'answer', actionId: (item: ShapesModePlanItem) => `${item.id}-answer`, label: () => 'Make the shape',
+      icon: '✏️', answerKind: 'gesture' as const, responseClass: 'manipulation' as const,
+      instruction: 'Your turn. Make the shape on the dots.', checkingInstruction: 'Checking your shape.' }],
   }),
   mode({
     evalMode: 'count_sides', label: 'How Many Sides', beta: 3.0, scaffoldingMode: 3,

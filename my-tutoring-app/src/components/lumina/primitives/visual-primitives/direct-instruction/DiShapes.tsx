@@ -22,22 +22,28 @@
  * sits inside the shape's own rotate/scale transform, and the tap handlers are on the <line> and
  * <circle> elements, never on the <g> (jsdom does not dispatch clicks to <g>).
  *
+ * OPEN BUILD (`build_shape`, `ShapeBuildBoard.tsx`): the tutor names a shape and the child MAKES one on an empty dot
+ * grid, then presses "I'm done!"; the code judge (`diShapesBuild.ts`) checks it and the stage commits it as a gesture.
+ * The build lives here, keyed by item, so the scene publishes the made shape's numbers and Try again keeps it.
+ *
  * What the drill also shipped and this path does not report yet: silent per-item response
  * timing (`meanResponseMs` is null) and the Tier-A misconception packet (queued with the other
  * DI packs for /add-misconception-loop).
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import type { PrimitiveEvaluationResult, DiShapesMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
 import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
 import { answerWordFor, countNoun, isCountingType, type DiShapesChallenge, type DiShapesChallengeType,
   type DiShapeName, type ShapeExemplar } from './diShapesScript';
-import { shapesAssignment, shapesScene } from './diShapesWorkspace';
+import { shapesAskFor, shapesAssignment, shapesScene } from './diShapesWorkspace';
 import { geometryFor, pointsAttr } from './diShapesGeometry';
-import { MODEL_COUNT, MODEL_OBJECT, MODEL_SHAPE, START_MARK, TOUCH_MARKS, modelFor, shapeLeverFacts, shapeLevers,
-  simplerShape, startingLevers } from './diShapesLevers';
+import { START_MARK, TOUCH_MARKS, modelFor, modelLever, shapeLeverFacts, shapeLevers, simplerShape } from './diShapesLevers';
+import { DiModelCard } from './DiModelCard';
 import RealWorldShapeObject from '../shared/RealWorldShapeObject';
+import { ShapeBuildBoard } from './ShapeBuildBoard';
+import { EMPTY_SHAPE_BUILD, type ShapeBuildState } from './diShapesBuild';
 
 export type {
   DiShapesChallenge,
@@ -74,6 +80,10 @@ export interface DiShapesProps {
   /** The RESOLVED eval mode from the live mount; never rebuilt from a label. */
   runtimeEvalMode?: string;
 }
+
+/** A build item is made on the dots, not said. */
+const copyFor = (item: DiShapesChallenge) => item.challengeType === 'build_shape'
+  ? { badge: 'Make it', prompt: 'Make the shape on the dots, then press "I\'m done!", or ask for help.' } : null;
 
 /** POST-credit only: "triangle", or "three sides". */
 const rewardLabelFor = (item: DiShapesChallenge): string =>
@@ -177,26 +187,29 @@ const COPY = {
   heading: 'Great shape work!', celebration: 'You answered every shape!',
 };
 
-/** The model card: a DIFFERENT shape (or object), solved, small and apart from the child's (DI's "my turn"). */
+/** The model card: a DIFFERENT shape (or object), solved, small and apart from the child's (DI's "my turn"). It
+ *  prints its own answer ("hexagon", "six sides"): unlabeled, it was a second unexplained shape beside the child's. */
 function ModelCard({ model }: { model: DiShapesChallenge }) {
   const counting = isCountingType(model.challengeType);
-  const lever = model.challengeType === 'name_real_object' ? MODEL_OBJECT : counting ? MODEL_COUNT : MODEL_SHAPE;
-  return <div data-lever={lever} data-model-shape={model.shape}
+  const building = model.challengeType === 'build_shape';
+  return <DiModelCard lever={modelLever(model)} data-model-shape={model.shape}
     aria-label={`My turn: a different ${model.challengeType === 'name_real_object' ? 'object' : 'shape'}`}
-    className="flex items-center gap-3 rounded-xl border-2 border-dashed border-purple-400/70 bg-purple-500/10 px-3 py-2">
-    <span aria-hidden="true" className="text-xl leading-none">🗣️</span>
+    className="flex items-center gap-3 px-3">
     {model.challengeType === 'name_real_object' && model.realObjectId && <>
       <RealWorldShapeObject objectId={model.realObjectId} className="h-20 w-20" showLabel={false} />
-      <span aria-hidden="true" className="text-xl text-purple-200">→</span>
+      <span aria-hidden="true" className="text-xl text-slate-400">→</span>
     </>}
-    <ShapeStage shape={model.shape} rotationDeg={0} className="h-20 w-20" strokeWidth={8} ariaLabel="the model shape"
-      marks={counting ? model.challengeType === 'count_corners' ? { cornerDots: true } : { ticks: true } : undefined} />
-  </div>;
+    <div className="flex flex-col items-center gap-1">
+      <ShapeStage shape={model.shape} rotationDeg={0} className="h-20 w-20" strokeWidth={8} ariaLabel="the model shape"
+        marks={counting ? model.challengeType === 'count_corners' ? { cornerDots: true } : { ticks: true } : building ? { ticks: true } : undefined} />
+      <span data-model-label className="text-base font-semibold">{rewardLabelFor(model)}</span>
+    </div>
+  </DiModelCard>;
 }
 
 /** The child's drawing, any lever marks on it, and the model card beside it. Keyed by item. */
-const ShapeTask: React.FC<{ item: DiShapesChallenge; marked: boolean; view: DiStageView; model: DiShapesChallenge | null }> = ({
-  item, marked, view, model }) => {
+const ShapeTask: React.FC<{ item: DiShapesChallenge; marked: boolean; view: DiStageView; model: DiShapesChallenge | null;
+  build: ShapeBuildState; onBuild: (next: ShapeBuildState) => void }> = ({ item, marked, view, model, build, onBuild }) => {
   const [tapped, setTapped] = useState<ReadonlySet<number>>(new Set());
   const counting = isCountingType(item.challengeType);
   const kind = item.challengeType === 'count_corners' ? 'corner' as const : 'side' as const;
@@ -208,6 +221,15 @@ const ShapeTask: React.FC<{ item: DiShapesChallenge; marked: boolean; view: DiSt
     } } } : {}),
   };
   const showModel = !!model && view.pulled.some(p => p.startsWith('model_'));
+  if (item.challengeType === 'build_shape') return <div data-practice-item={view.practice || undefined}
+    className="flex flex-wrap items-center justify-center gap-6 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-6">
+    <div data-shape-object="shape" data-assignment-target="true" data-tutor-demonstration={marked}
+      className={marked ? 'rounded-2xl outline outline-2 outline-dashed outline-offset-4 outline-purple-400' : ''}>
+      <p className="mb-3 text-center text-lg font-semibold text-slate-100" data-build-ask>{shapesAskFor(item)}</p>
+      <ShapeBuildBoard item={item} build={build} onBuild={onBuild} pulled={view.pulled} canAttempt={view.canAttempt} commit={view.commit} />
+    </div>
+    {showModel && <ModelCard model={model!} />}
+  </div>;
   return <div data-practice-item={view.practice || undefined}
     className="flex min-h-56 flex-wrap items-center justify-center gap-6 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/50 p-8">
     <div data-shape-object="shape" data-assignment-target="true" data-tutor-demonstration={marked}
@@ -241,14 +263,17 @@ export const DiShapes: React.FC<DiShapesProps> = ({ data, className, runtimePlan
   const levers = useMemo<DiStageLevers<DiShapesChallenge>>(() => ({
     declare: (item, pulled) => shapeLevers(item, pulled, items),
     onScreen: (item, pulled) => shapeLeverFacts(item, pulled, items),
-    starting: item => startingLevers(item, items),
     simpler: (item, lever) => simplerShape(item, lever, items),
   }), [items]);
+  // The open build's shapes, by item: Try again keeps one, a new (or practice) item starts empty.
+  const [builds, setBuilds] = useState<Record<string, ShapeBuildState>>({});
+  const scene = useCallback((item: DiShapesChallenge) => shapesScene(item, builds[item.id] ?? EMPTY_SHAPE_BUILD), [builds]);
   return <DiTeachingStage<DiShapesChallenge, DiShapesMetrics> primitiveId="di-shapes" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
-    assignment={shapesAssignment} scene={shapesScene} copy={COPY} trail={creditedShapes} recapLabel={recapLabel} levers={levers}
+    assignment={shapesAssignment} scene={scene} copy={COPY} copyFor={copyFor} trail={creditedShapes} recapLabel={recapLabel} levers={levers}
     stimulus={(item, marks, view) => <ShapeTask key={item.id} item={item} marked={marks.includes('shape')} view={view}
-      model={view.practice ? null : modelFor(item, items)} />}
+      model={view.practice ? null : modelFor(item, items)} build={builds[item.id] ?? EMPTY_SHAPE_BUILD}
+      onBuild={next => setBuilds(prev => ({ ...prev, [item.id]: next }))} />}
     metrics={result => ({ type: 'di-shapes', ...diStageMetrics(result, items, data.challengeType), meanResponseMs: null })} />;
 };
 

@@ -140,6 +140,9 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [runKey, setRunKey] = useState(0);
+  // Offline: play a gesture item (di-shapes build_shape) on the real runtime and lever ladder with no paid Live
+  // session. Spoken items need the tutor to judge them, so Live stays the default.
+  const [tutorMode, setTutorMode] = useState<'offline' | 'live'>('live');
   const [copied, setCopied] = useState(false);
 
   const primitive = useMemo(() => getDiTesterPrimitive(primitiveId), [primitiveId]);
@@ -398,7 +401,18 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
                     {formatBytes(completedRun.validation?.payloadBytes) ? ` · ${formatBytes(completedRun.validation?.payloadBytes)}` : ''}
                   </p>
                 </div>
-                <button type="button" onClick={() => setRunKey((key) => key + 1)} className="shrink-0 rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-700">Reset this run</button>
+                <div className="flex shrink-0 items-center gap-3">
+                  <div role="radiogroup" aria-label="Tutor" className="flex rounded-lg border border-white/10 text-xs">
+                    {(['live', 'offline'] as const).map(m => (
+                      <button key={m} type="button" role="radio" aria-checked={tutorMode === m}
+                        onClick={() => { setTutorMode(m); setRunKey((key) => key + 1); }}
+                        className={`px-3 py-2 ${tutorMode === m ? 'bg-cyan-600/40 text-cyan-100' : 'text-slate-400'}`}>
+                        {m === 'offline' ? 'Offline levers (free)' : 'Live tutor (paid)'}
+                      </button>
+                    ))}
+                  </div>
+                  <button type="button" onClick={() => setRunKey((key) => key + 1)} className="shrink-0 rounded-lg border border-white/10 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-700">Reset this run</button>
+                </div>
               </div>
               {completedRun.status === 'fail' && (
                 <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-100">{completedRun.validation?.runawayError || completedRun.validation?.error || `Unexpected challenge types: ${(completedRun.validation?.disallowedTypes ?? []).join(', ') || 'see payload'}`}</p>
@@ -409,7 +423,7 @@ const DirectInstructionPrimitivesTesterContent: React.FC<Props> = ({ onBack }) =
             <div data-primitive-instance-id={`di-tester-${runKey}`}>
               {/* A bound pack gets its own Live session and tutor face from the host. */}
               <TesterWorkspace key={runKey} primitiveId={generated.id} instanceId={`di-tester-${runKey}`}
-                evalMode={completedRun.evalMode} data={generated.data} topic={completedRun.objective}
+                evalMode={completedRun.evalMode} data={generated.data} topic={completedRun.objective} offline={tutorMode === 'offline'}
                 gradeLevel={completedRun.gradeLevel} onEvaluationSubmit={logEvaluation}>
                 <RenderedPrimitive generated={generated} runKey={runKey} />
                 <CuratorCompanion />

@@ -1,0 +1,701 @@
+{
+ "results": [
+  {
+   "lesson": {
+    "grade": "Kindergarten",
+    "topic": "Naming flat shapes: circle, square, triangle, rectangle",
+    "intent": "Make shapes the tutor names"
+   },
+   "title": "Shape Builders!",
+   "description": "Listen to the prompt and make each figure you hear out loud!",
+   "adapter": "ok",
+   "faults": [],
+   "items": [
+    {
+     "id": "dish-1-triangle",
+     "type": "build_shape",
+     "shape": "triangle",
+     "tier": null,
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_many_sides",
+     "ask": "Make a triangle.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-2-square",
+     "type": "build_shape",
+     "shape": "square",
+     "tier": null,
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a square.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-3-rectangle",
+     "type": "build_shape",
+     "shape": "rectangle",
+     "tier": null,
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a rectangle.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-4-square",
+     "type": "build_shape",
+     "shape": "square",
+     "tier": null,
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a square.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-5-triangle",
+     "type": "build_shape",
+     "shape": "triangle",
+     "tier": null,
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_many_sides",
+     "ask": "Make a triangle.",
+     "sceneHasCount": false
+    }
+   ],
+   "data": {
+    "title": "Shape Builders!",
+    "description": "Listen to the prompt and make each figure you hear out loud!",
+    "challengeType": "build_shape",
+    "gradeLevel": "Kindergarten",
+    "challenges": [
+     {
+      "id": "dish-1-triangle",
+      "challengeType": "build_shape",
+      "shape": "triangle",
+      "shapeWord": "triangle",
+      "article": "a",
+      "sides": 3,
+      "corners": 3,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "triangle",
+       "triangles",
+       "twiangle"
+      ]
+     },
+     {
+      "id": "dish-2-square",
+      "challengeType": "build_shape",
+      "shape": "square",
+      "shapeWord": "square",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "square",
+       "squares",
+       "sware"
+      ]
+     },
+     {
+      "id": "dish-3-rectangle",
+      "challengeType": "build_shape",
+      "shape": "rectangle",
+      "shapeWord": "rectangle",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "rectangle",
+       "rectangles",
+       "wectangle"
+      ]
+     },
+     {
+      "id": "dish-4-square",
+      "challengeType": "build_shape",
+      "shape": "square",
+      "shapeWord": "square",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "square",
+       "squares",
+       "sware"
+      ]
+     },
+     {
+      "id": "dish-5-triangle",
+      "challengeType": "build_shape",
+      "shape": "triangle",
+      "shapeWord": "triangle",
+      "article": "a",
+      "sides": 3,
+      "corners": 3,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "triangle",
+       "triangles",
+       "twiangle"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "grade": "Kindergarten",
+    "topic": "Circles and ovals",
+    "intent": "Build round shapes",
+    "difficulty": "hard"
+   },
+   "title": "Round and Curvy Quest!",
+   "description": "Let us look closely at smooth, curving figures on the screen and say their names out loud!",
+   "adapter": "ok",
+   "faults": [],
+   "items": [
+    {
+     "id": "dish-1-square",
+     "type": "build_shape",
+     "shape": "square",
+     "tier": "hard",
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a square.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-2-rectangle",
+     "type": "build_shape",
+     "shape": "rectangle",
+     "tier": "hard",
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a rectangle.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-3-hexagon",
+     "type": "build_shape",
+     "shape": "hexagon",
+     "tier": "hard",
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a hexagon.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-4-triangle",
+     "type": "build_shape",
+     "shape": "triangle",
+     "tier": "hard",
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_many_sides",
+     "ask": "Make a triangle.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-5-rectangle",
+     "type": "build_shape",
+     "shape": "rectangle",
+     "tier": "hard",
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a rectangle.",
+     "sceneHasCount": false
+    }
+   ],
+   "data": {
+    "title": "Round and Curvy Quest!",
+    "description": "Let us look closely at smooth, curving figures on the screen and say their names out loud!",
+    "challengeType": "build_shape",
+    "gradeLevel": "Kindergarten",
+    "challenges": [
+     {
+      "id": "dish-1-square",
+      "challengeType": "build_shape",
+      "shape": "square",
+      "shapeWord": "square",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "square",
+       "squares",
+       "sware"
+      ],
+      "supportTier": "hard"
+     },
+     {
+      "id": "dish-2-rectangle",
+      "challengeType": "build_shape",
+      "shape": "rectangle",
+      "shapeWord": "rectangle",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "rectangle",
+       "rectangles",
+       "wectangle"
+      ],
+      "supportTier": "hard"
+     },
+     {
+      "id": "dish-3-hexagon",
+      "challengeType": "build_shape",
+      "shape": "hexagon",
+      "shapeWord": "hexagon",
+      "article": "a",
+      "sides": 6,
+      "corners": 6,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "hexagon",
+       "hexagons"
+      ],
+      "supportTier": "hard"
+     },
+     {
+      "id": "dish-4-triangle",
+      "challengeType": "build_shape",
+      "shape": "triangle",
+      "shapeWord": "triangle",
+      "article": "a",
+      "sides": 3,
+      "corners": 3,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "triangle",
+       "triangles",
+       "twiangle"
+      ],
+      "supportTier": "hard"
+     },
+     {
+      "id": "dish-5-rectangle",
+      "challengeType": "build_shape",
+      "shape": "rectangle",
+      "shapeWord": "rectangle",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "rectangle",
+       "rectangles",
+       "wectangle"
+      ],
+      "supportTier": "hard"
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "grade": "Grade 1",
+    "topic": "Squares, rhombuses and trapezoids",
+    "intent": "Build shapes from their defining attributes",
+    "difficulty": "easy"
+   },
+   "title": "Build and Count!",
+   "description": "Let us put pieces together and call out what we see!",
+   "adapter": "ok",
+   "faults": [],
+   "items": [
+    {
+     "id": "dish-1-square",
+     "type": "build_shape",
+     "shape": "square",
+     "tier": "easy",
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a square.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-2-rhombus",
+     "type": "build_shape",
+     "shape": "rhombus",
+     "tier": "easy",
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a rhombus.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-3-trapezoid",
+     "type": "build_shape",
+     "shape": "trapezoid",
+     "tier": "easy",
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a trapezoid.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-4-rhombus",
+     "type": "build_shape",
+     "shape": "rhombus",
+     "tier": "easy",
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a rhombus.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-5-square",
+     "type": "build_shape",
+     "shape": "square",
+     "tier": "easy",
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a square.",
+     "sceneHasCount": false
+    }
+   ],
+   "data": {
+    "title": "Build and Count!",
+    "description": "Let us put pieces together and call out what we see!",
+    "challengeType": "build_shape",
+    "gradeLevel": "Grade 1",
+    "challenges": [
+     {
+      "id": "dish-1-square",
+      "challengeType": "build_shape",
+      "shape": "square",
+      "shapeWord": "square",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "square",
+       "squares",
+       "sware"
+      ],
+      "supportTier": "easy"
+     },
+     {
+      "id": "dish-2-rhombus",
+      "challengeType": "build_shape",
+      "shape": "rhombus",
+      "shapeWord": "rhombus",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "rhombus",
+       "diamond",
+       "rhombuses"
+      ],
+      "supportTier": "easy"
+     },
+     {
+      "id": "dish-3-trapezoid",
+      "challengeType": "build_shape",
+      "shape": "trapezoid",
+      "shapeWord": "trapezoid",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "trapezoid",
+       "trapezoids"
+      ],
+      "supportTier": "easy"
+     },
+     {
+      "id": "dish-4-rhombus",
+      "challengeType": "build_shape",
+      "shape": "rhombus",
+      "shapeWord": "rhombus",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "rhombus",
+       "diamond",
+       "rhombuses"
+      ],
+      "supportTier": "easy"
+     },
+     {
+      "id": "dish-5-square",
+      "challengeType": "build_shape",
+      "shape": "square",
+      "shapeWord": "square",
+      "article": "a",
+      "sides": 4,
+      "corners": 4,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "square",
+       "squares",
+       "sware"
+      ],
+      "supportTier": "easy"
+     }
+    ]
+   }
+  },
+  {
+   "lesson": {
+    "grade": "Grade 1",
+    "topic": "Pentagons and hexagons",
+    "intent": "Draw shapes with a given number of sides"
+   },
+   "title": "Count the Sides!",
+   "description": "Let us count the sides on the drawing and tell your teacher what you see!",
+   "adapter": "ok",
+   "faults": [],
+   "items": [
+    {
+     "id": "dish-1-hexagon",
+     "type": "build_shape",
+     "shape": "hexagon",
+     "tier": null,
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a hexagon.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-2-pentagon",
+     "type": "build_shape",
+     "shape": "pentagon",
+     "tier": null,
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a pentagon.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-3-hexagon",
+     "type": "build_shape",
+     "shape": "hexagon",
+     "tier": null,
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a hexagon.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-4-pentagon",
+     "type": "build_shape",
+     "shape": "pentagon",
+     "tier": null,
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a pentagon.",
+     "sceneHasCount": false
+    },
+    {
+     "id": "dish-5-hexagon",
+     "type": "build_shape",
+     "shape": "hexagon",
+     "tier": null,
+     "rotationDeg": 0,
+     "buildable": true,
+     "pass": [
+      null,
+      null
+     ],
+     "wrong": "too_few_sides",
+     "ask": "Make a hexagon.",
+     "sceneHasCount": false
+    }
+   ],
+   "data": {
+    "title": "Count the Sides!",
+    "description": "Let us count the sides on the drawing and tell your teacher what you see!",
+    "challengeType": "build_shape",
+    "gradeLevel": "Grade 1",
+    "challenges": [
+     {
+      "id": "dish-1-hexagon",
+      "challengeType": "build_shape",
+      "shape": "hexagon",
+      "shapeWord": "hexagon",
+      "article": "a",
+      "sides": 6,
+      "corners": 6,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "hexagon",
+       "hexagons"
+      ]
+     },
+     {
+      "id": "dish-2-pentagon",
+      "challengeType": "build_shape",
+      "shape": "pentagon",
+      "shapeWord": "pentagon",
+      "article": "a",
+      "sides": 5,
+      "corners": 5,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "pentagon",
+       "pentagons"
+      ]
+     },
+     {
+      "id": "dish-3-hexagon",
+      "challengeType": "build_shape",
+      "shape": "hexagon",
+      "shapeWord": "hexagon",
+      "article": "a",
+      "sides": 6,
+      "corners": 6,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "hexagon",
+       "hexagons"
+      ]
+     },
+     {
+      "id": "dish-4-pentagon",
+      "challengeType": "build_shape",
+      "shape": "pentagon",
+      "shapeWord": "pentagon",
+      "article": "a",
+      "sides": 5,
+      "corners": 5,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "pentagon",
+       "pentagons"
+      ]
+     },
+     {
+      "id": "dish-5-hexagon",
+      "challengeType": "build_shape",
+      "shape": "hexagon",
+      "shapeWord": "hexagon",
+      "article": "a",
+      "sides": 6,
+      "corners": 6,
+      "rotationDeg": 0,
+      "asrAliases": [
+       "hexagon",
+       "hexagons"
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "logs": [
+  "DI Shapes Generated: {\n  title: 'Shape Builders!',\n  modes: 'build_shape (explicit)',\n  types: 'build_shape',\n  tier: 'none (easy shape)',\n  scope: 'circle+square+triangle+rectangle [text]',\n  items: [\n    'build_shape:triangle@0°',\n    'build_shape:square@0°',\n    'build_shape:rectangle@0°',\n    'build_shape:square@0°',\n    'build_shape:triangle@0°'\n  ],\n  count: 5\n}",
+  "[DiShapes] Tier \"hard\" applied to single mode build_shape — support: cold — no lever starts on screen; structure: non-prototypical drawings (scalene/obtuse triangle, irregular hexagon, portrait rectangle) at the full rotation cap and varied size, with confusable neighbours placed side by side; confusable adjacencies 1/4. Guardrail: structure changes (which drawing, how rotated, how large, what sits next to what); the shapes, their counts, and the mode identity do not.",
+  "DI Shapes Generated: {\n  title: 'Round and Curvy Quest!',\n  modes: 'build_shape (explicit)',\n  types: 'build_shape',\n  tier: 'hard',\n  scope: 'circle+oval [text]',\n  items: [\n    'build_shape:square@0°',\n    'build_shape:rectangle@0°',\n    'build_shape:hexagon@0°',\n    'build_shape:triangle@0°',\n    'build_shape:rectangle@0°'\n  ],\n  count: 5\n}",
+  "[DiShapes] Tier \"easy\" applied to single mode build_shape — support: the model lever (a DIFFERENT item, solved) starts on screen; never the child's own item modelled (10-02 ruling); structure: textbook drawings, near-upright, full size, with confusable neighbours kept apart; confusable adjacencies 0/4. Guardrail: structure changes (which drawing, how rotated, how large, what sits next to what); the shapes, their counts, and the mode identity do not.",
+  "DI Shapes Generated: {\n  title: 'Build and Count!',\n  modes: 'build_shape (explicit)',\n  types: 'build_shape',\n  tier: 'easy',\n  scope: 'square+rhombus+trapezoid [text]',\n  items: [\n    'build_shape:square@0°',\n    'build_shape:rhombus@0°',\n    'build_shape:trapezoid@0°',\n    'build_shape:rhombus@0°',\n    'build_shape:square@0°'\n  ],\n  count: 5\n}",
+  "DI Shapes Generated: {\n  title: 'Count the Sides!',\n  modes: 'build_shape (explicit)',\n  types: 'build_shape',\n  tier: 'none (easy shape)',\n  scope: 'pentagon+hexagon [text]',\n  items: [\n    'build_shape:hexagon@0°',\n    'build_shape:pentagon@0°',\n    'build_shape:hexagon@0°',\n    'build_shape:pentagon@0°',\n    'build_shape:hexagon@0°'\n  ],\n  count: 5\n}"
+ ]
+}

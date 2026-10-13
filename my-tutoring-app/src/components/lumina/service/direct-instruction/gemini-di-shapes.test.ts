@@ -257,7 +257,7 @@ describe('generateDiShapes — L1 eval modes', () => {
     expect(Array.from(types).sort()).toEqual(['count_sides', 'name_shape']);
   });
 
-  it('SP-21 — the MIXED path spreads across all five identities, not one', async () => {
+  it('SP-21 — the MIXED path spreads across all six identities, not one', async () => {
     // No pin and no resolvable intent → mixed. A Fork A pack must build the
     // spread itself; "mixed" that emits one identity is a lie in the label.
     const data = await generateDiShapes('shapes', 'first grade', {
@@ -266,8 +266,20 @@ describe('generateDiShapes — L1 eval modes', () => {
     });
     const types = new Set(data.challenges.map((c) => c.challengeType));
     expect(Array.from(types).sort()).toEqual([
-      'count_corners', 'count_sides', 'name_real_object', 'name_shape', 'shape_review',
+      'build_shape', 'count_corners', 'count_sides', 'name_real_object', 'name_shape', 'shape_review',
     ]);
+  });
+
+  it('build_shape: a curved scope widens to shapes a dot grid can make; a tier draws nothing', async () => {
+    const curved = await generateDiShapes('circles and ovals', 'kindergarten', { targetEvalMode: 'build_shape', difficulty: 'hard' });
+    expect(curved.challenges.every((c) => c.challengeType === 'build_shape')).toBe(true);
+    expect(curved.challenges.every((c) => !['circle', 'oval'].includes(c.shape))).toBe(true);
+    expect(curved.challenges.every((c) => c.rotationDeg === 0 && c.exemplar === undefined && c.supportTier === 'hard')).toBe(true);
+    const named = await generateDiShapes('triangles and hexagons', 'kindergarten', { targetEvalMode: 'build_shape' });
+    expect(new Set(named.challenges.map((c) => c.shape))).toEqual(new Set(['triangle', 'hexagon']));
+    // An "es" plural names its shape.
+    const rhombuses = await generateDiShapes('squares and rhombuses', 'grade 1', { targetEvalMode: 'build_shape' });
+    expect(new Set(rhombuses.challenges.map((c) => c.shape))).toEqual(new Set(['square', 'rhombus']));
   });
 
   it('the wrapper never leaks a COUNT either (answer-leak rule, counting modes)', async () => {

@@ -59,16 +59,19 @@ it('count_corners: the model marks every corner of a different shape; tap target
   h.close();
 });
 
-it('easy name_shape starts with a model of a different shape; a try under it records no lever', () => {
+it('easy name_shape starts with no model; the pulled card shows a different shape with its name printed', () => {
   const h = mount('name_shape', shape('triangle', 'name_shape', 'easy', 'n1'));
+  expect(q(h, '[data-lever="model_shape"]')).toHaveLength(0);
+  h.dispatch('pull_lever', { lever: 'model_shape' });
   const model = q(h, '[data-lever="model_shape"]');
   expect(model).toHaveLength(1);
   expect(['triangle', 'rhombus']).not.toContain(model[0].getAttribute('data-model-shape'));
+  expect(model[0].querySelector('[data-model-label]')!.textContent).toBe(model[0].getAttribute('data-model-shape'));
   expect(String(h.state().task!.demand.onScreen)).toMatch(/different one, solved/);
   // Naming gets no in-item help: no ticks, dots or tap targets on the child's shape.
   expect(q(h, '[data-shape-object="shape"] [data-shape-tap], [data-shape-object="shape"] [data-shape-tick]')).toHaveLength(0);
   h.say('triangle'); h.feedback('correct');
-  expect(h.state().task!.workspace!.attempts.at(-1)!.levers ?? []).toEqual([]);
+  expect(h.state().task!.workspace!.attempts.at(-1)!.levers).toEqual(['model_shape']);
   h.close();
 });
 

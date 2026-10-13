@@ -69,7 +69,7 @@ describe('DiShapes — the tutor is told the tier and the task, never the answer
     const task = h.state().task!;
     expect(task.demand).toMatchObject({ kind: 'count_sides' });
     // The tier reaches the tutor as where the levers start (the support fact), never as a model of this shape.
-    expect(String(task.demand.support)).toMatch(tier === 'hard' ? /cold/ : tier === 'medium' ? /tries first/ : /model card of a different shape/);
+    expect(String(task.demand.support)).toMatch(tier === 'hard' ? /cold/ : tier === 'medium' ? /tries first/ : /before the learner tries, pull the model lever/);
     const handed = JSON.stringify({ task: task.task, demand: task.demand, objects: task.workspace!.objects }).toLowerCase();
     for (const leak of ['triangle', 'three']) expect(handed, `${tier} leaked "${leak}"`).not.toContain(leak);
     expect(task.workspace!.expectedAnswer).toBe('three');
