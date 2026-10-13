@@ -12,6 +12,18 @@
 import { PracticeManifest, HydratedPracticeItem, ProblemType } from '../../types';
 import { generateComponentContent, normalizeGradeLevel } from '../geminiService';
 import { generateKnowledgeCheck, BloomsTier } from '../knowledge-check/gemini-knowledge-check';
+import { normalizeObjectiveGrade } from '../generation/resolveGenerationContext';
+
+type ManifestItem = PracticeManifest['items'][0];
+
+/** What a generator builds for: the item's own subskill when it has one (Pulse),
+ *  else the session topic and grade. */
+function scopeFor(item: ManifestItem, manifest: PracticeManifest): { topic: string; gradeLevel: string } {
+  return {
+    topic: item.objective?.text || manifest.topic,
+    gradeLevel: item.objective?.grade || manifest.gradeLevel,
+  };
+}
 
 /**
  * Callback fired each time an individual item finishes hydrating.
@@ -56,30 +68,46 @@ export async function hydratePracticeManifest(
   const visualPromises = visualItems.map(async ({ item, index }): Promise<void> => {
     let hydrated: HydratedPracticeItem;
     try {
-      const nr = item.visualPrimitive!.numberRange;
-      console.log(`[Hydrator] ${item.visualPrimitive!.componentId} numberRange from manifest:`, nr ?? 'none');
+      // An item with an objective takes its number scope from the objective
+      // (ctx.scope / objectiveNumberWindow). The manifest's numberRange comes
+      // from a grade table and, being explicit, would override the subskill's
+      // own numbers ("count 11-20" capped at K's 1-10).
+      const nr = item.objective ? null : item.visualPrimitive!.numberRange;
+      console.log(`[Hydrator] ${item.visualPrimitive!.componentId} numberRange:`, nr ?? (item.objective ? 'from objective' : 'none'));
+      const scope = scopeFor(item, manifest);
+      // With an objective, the intent is the subskill too. The manifest's intent
+      // describes one sample problem ("teen number 14"), and generators that
+      // read a range from intent then built the whole session on that one value.
+      const intent = item.objective?.text || item.visualPrimitive!.intent || item.problemText;
 
       const manifestItem = {
         componentId: item.visualPrimitive!.componentId,
         instanceId: item.instanceId,
-        intent: item.visualPrimitive!.intent || item.problemText,
+        intent,
         config: {
-          intent: item.visualPrimitive!.intent || item.problemText,
+          intent,
           ...(nr && { numberRange: nr }),
           // Pinned by resolvePulseEvalModes — short-circuits the generator's
           // own per-item eval-mode micro-call. Absent → generator self-resolves.
           ...(item.visualPrimitive!.targetEvalMode && { targetEvalMode: item.visualPrimitive!.targetEvalMode }),
           difficulty: item.difficulty,
+          ...(item.objective && {
+            objectiveId: item.objective.id,
+            objectiveText: item.objective.text,
+            objectiveGrade: item.objective.grade,
+            fitSource: 'pulse',
+          }),
         },
       };
 
-      const visualData = await generateComponentContent(
-        manifestItem,
-        manifest.topic,
-        manifest.gradeLevel
-      );
+      const visualData = await generateComponentContent(manifestItem, scope.topic, scope.gradeLevel);
 
-      if (visualData) {
+      if (visualData && item.objective && visualData.fitGate?.pass === false) {
+        // Still off the subskill after the fit gate's redraw: a problem built
+        // from the subskill teaches it; the visual would teach something else.
+        console.warn(`[Hydrator] ${item.visualPrimitive!.componentId} misses "${item.objective.text.slice(0, 50)}" after redraw → standard problem`);
+        hydrated = await hydrateAsFallbackProblem(item, manifest);
+      } else if (visualData) {
         hydrated = { manifestItem: item, visualData };
       } else {
         console.warn(`Visual generator returned null for ${item.visualPrimitive!.componentId}, falling back to standard`);
@@ -94,8 +122,20 @@ export async function hydratePracticeManifest(
     onItemHydrated?.(hydrated, index, total);
   });
 
-  // Batch standard items through the KC orchestrator
+  // Standard items that serve a subskill (Pulse): one problem each, built for
+  // that subskill at its grade. Batching them under the session topic gave every
+  // item the same generic problem, whatever subskill it was for.
+  const objectivePromises = standardItems
+    .filter(({ item }) => item.objective)
+    .map(async ({ item, index }): Promise<void> => {
+      results[index] = await hydrateStandardForObjective(item, manifest);
+      onItemHydrated?.(results[index], index, total);
+    });
+  const batchedStandard = standardItems.filter(({ item }) => !item.objective);
+
+  // Batch the remaining standard items through the KC orchestrator
   const standardPromise = (async (): Promise<void> => {
+    const standardItems = batchedStandard;
     if (standardItems.length === 0) return;
 
     // Determine Bloom's tier — use the first item's evalMode (they're typically the same within a manifest)
@@ -164,8 +204,46 @@ export async function hydratePracticeManifest(
     onItemHydrated?.({ manifestItem: item }, index, total);
   }
 
-  await Promise.all([...visualPromises, standardPromise]);
+  await Promise.all([...visualPromises, ...objectivePromises, standardPromise]);
   return results;
+}
+
+/** One standard problem for the item's own subskill and grade. */
+async function hydrateStandardForObjective(
+  item: ManifestItem,
+  manifest: PracticeManifest,
+): Promise<HydratedPracticeItem> {
+  const scope = scopeFor(item, manifest);
+  const grade = normalizeObjectiveGrade(item.objective!.grade);
+  try {
+    // Text problems skip generateComponentContent, so they pass the same fit gate here.
+    const { generateWithFitGate } = await import('../fitGate/fitGate');
+    const { result: problemData } = await generateWithFitGate({
+      componentId: 'knowledge-check',
+      objective: item.objective!.text,
+      grade: grade === 'K' ? 'Kindergarten' : grade ? `Grade ${grade}` : scope.gradeLevel,
+      canonicalGrade: grade,
+      gradeLevel: normalizeGradeLevel(scope.gradeLevel),
+      subskillId: item.objective!.id,
+      source: 'pulse',
+    }, async (notes) => {
+      const problems = await generateKnowledgeCheck(
+        notes.length ? `${scope.topic}\n\nA previous attempt was rejected. Fix this:\n${notes.map((n) => `- ${n}`).join('\n')}` : scope.topic,
+        normalizeGradeLevel(scope.gradeLevel), {
+          problemType: item.standardProblem!.problemType,
+          count: 1,
+          bloomsTier: item.standardProblem!.evalMode as BloomsTier | undefined,
+          objectiveText: item.objective!.text,
+          preciseGrade: grade,
+        });
+      return (Array.isArray(problems) ? problems[0] : problems) ?? null;
+    });
+    if (problemData && item.objective) problemData.objectiveId = item.objective.id;
+    return problemData ? { manifestItem: item, problemData } : { manifestItem: item };
+  } catch (err) {
+    console.warn(`[Hydrator] Standard problem failed for ${item.instanceId}:`, err);
+    return { manifestItem: item };
+  }
 }
 
 /**
@@ -176,12 +254,17 @@ async function hydrateAsFallbackProblem(
   manifest: PracticeManifest
 ): Promise<HydratedPracticeItem> {
   try {
+    const scope = scopeFor(item, manifest);
     const problems = await generateKnowledgeCheck(
-      manifest.topic,
-      normalizeGradeLevel(manifest.gradeLevel),
+      scope.topic,
+      normalizeGradeLevel(scope.gradeLevel),
       {
         problemType: 'multiple_choice' as ProblemType,
         count: 1,
+        ...(item.objective && {
+          objectiveText: item.objective.text,
+          preciseGrade: normalizeObjectiveGrade(item.objective.grade),
+        }),
       }
     );
 

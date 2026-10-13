@@ -69,11 +69,33 @@ generate a second id or drop the parameter.
 
 Review → `FirestoreService.save_problem_review` from submission_service.
 
+### 2b. Pulse answers (user ruling R2, 2026-10-12)
+`PulseEngine.process_result` runs its own prefetch-batched fan-out (IRT,
+lifecycle, `apply_competency_eval`, learner state) and then `_write_l0`: one
+attempt via `save_attempt` (`source='pulse'`, so rollups and the profile count
+it) and one review (problem shown, student work, metrics), both under
+`attempt_id = "{session_id}:{item_id}"`, the learner event's id. The frontend
+(`PulseActivityRenderer`) sends `student_work` / `metrics` / `problem_content`
+and runs the lesson path's misconception + learning-observation capture after
+the submit.
+
+### 2c. First-try (user ruling R3, 2026-10-12)
+Attempts carry `first_try: [bool]` (per challenge, from
+`first_try_from_response`), plus `evidence_parts` and `lesson_grade`.
+`CalibrationEngine.process_submission(first_try=)` sets θ/β from the first-try
+fraction (one part per challenge); the final score still drives lifecycle gate
+evidence. Retry-until-correct primitives finish at 10, so never read θ input
+from the final score when first-try exists.
+
 ### 3. L1 skill state
 - `ability` — θ per (student, skill). Writers resolve curriculum lineage before
   writing (`upsert_student_ability`), so renames can't fork the doc.
 - `mastery_lifecycle` — per-subskill `current_gate` (0–4) + `retention_state`
   (not_started / active / mastered). This chain (ability → lifecycle) is CANON.
+- `learner_state/{SUBJECT}` (+ `grids/`, `learner_events/`) — the two-layer
+  learner model, the one selection brain (§7). Written by
+  `LearnerStateService.observe` from both submission paths; rebuilt from L0
+  attempts by `backfill_learner_state.py` (overwrites; dry-run default).
 - `competencies` — legacy parallel scoring (blended classical average). Slated
   for retirement once `get_student_proficiency_map` (learning-path unlocks)
   migrates off it. Until then it has exactly ONE per-eval writer (invariants).
@@ -135,8 +157,10 @@ graph, cold-start DAG probes, leapfrog, the KG-P(correct) session selector.
 The planner's unlocked scan survives only for subjects with no learner graph
 (`no_learner_graph: True`). State: `students/{id}/learner_state/{SUBJECT}`
 (+ `grids/`, `learner_events/`), written by `observe` from CompetencyService and
-PulseEngine. Known gap: Pulse answers are not L0, so `backfill_learner_state`
-cannot rebuild their half (roadmap `my-tutoring-app/qa/pulse/ROADMAP.md` P1).
+PulseEngine. Rebuild: `scripts/backfill_learner_state.py` replays L0 attempts
+(lesson + Pulse) through the same `observe`; loop assertion
+`learner_state_replay_parity` holds incremental == replay. Teach picks need
+P(ready) >= `READY_MIN` (0.4, the card's ready list uses the same number).
 
 The same L1 state the profile displays is what selects the next problem: the
 learner model selects (above), lifecycle P(correct) gate checks record mastery

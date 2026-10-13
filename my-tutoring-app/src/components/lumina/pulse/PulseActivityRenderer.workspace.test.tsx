@@ -49,6 +49,7 @@ vi.mock('./FrontierContextCard', () => ({ FrontierContextCard: () => null }));
 vi.mock('../primitives/KnowledgeCheck', () => ({ KnowledgeCheck: () => null }));
 vi.mock('../evaluation/api/evaluationApi', () => ({ submitEvaluationToBackend: vi.fn(async () => ({})) }));
 vi.mock('../evaluation/diagnosis/captureMisconception', () => ({ captureMisconception: vi.fn(async () => ({ status: 'skipped' })) }));
+vi.mock('../contexts/StudentContext', () => ({ useStudent: () => ({ studentId: '123', ready: true, isAnonymous: false }) }));
 vi.mock('../evaluation/diagnosis/captureLearningObservation', () => ({ captureLearningObservation: vi.fn(async () => ({ status: 'skipped' })) }));
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../utils/SoundManager', () => ({ SoundManager: { playCorrect: vi.fn(), playPerfect: vi.fn(), pop: vi.fn(), tap: vi.fn(),
@@ -218,7 +219,9 @@ it.each(Object.keys(FAMILIES) as Family[])('%s submits once, and Pulse records w
   expect(seam.pulseSubmit).toHaveBeenCalledTimes(1);
   expect(seam.pulseSubmit.mock.calls[0]).toEqual(['pulse-session', { item_id: h.specs[0].item_id, score: 10,
     primitive_type: family, eval_mode: RECORDED[family].recorded, duration_ms: expect.any(Number),
-    first_try: FAMILIES[family].answers.map(() => true) }]);
+    first_try: FAMILIES[family].answers.map(() => true),
+    // L0 (R2): the review gets the child's work, the metrics and the problem shown
+    student_work: expect.any(Object), metrics: expect.any(Object), problem_content: expect.any(Object) }]);
   expect(h.complete).toHaveBeenCalledTimes(1);
   expect(seam.results).toHaveLength(1);
   expect(useJudgedScriptRunner).not.toHaveBeenCalled();

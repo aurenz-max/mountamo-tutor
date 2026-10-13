@@ -230,9 +230,10 @@ class CompetencyService:
         `evidence_parts` is the number of independently scored parts inside
         the submission (multi-challenge primitives) — threaded to calibration
         (likelihood weight) and the mastery lifecycle (evidence volume).
-        `first_try` (per-challenge first-try results) and `grade` (the lesson's
-        grade, which picks the node when a subskill id repeats across grades)
-        feed only the shadow learner state.
+        `first_try` (per-challenge first-try results) is stored on the attempt
+        and drives θ/β in calibration and the learner state (R3). `grade` (the
+        lesson's grade, which picks the node when a subskill id repeats across
+        grades) is stored on the attempt and feeds the learner state.
         """
         logger.info(f"🔍 COMPETENCY_SERVICE: === UPDATE_COMPETENCY_FROM_PROBLEM ===")
         logger.info(f"🔍 COMPETENCY_SERVICE: Student: {student_id}, Subject: {subject}, Skill: {skill_id}, Subskill: {subskill_id}, Source: {source}")
@@ -331,6 +332,14 @@ class CompetencyService:
                 attempt_extra["eval_mode"] = eval_mode
             if success is not None:
                 attempt_extra["success"] = success
+            if first_try:
+                # L0 carries what the student got right first (R3); replay and
+                # the learner-state rebuild read it from here
+                attempt_extra["first_try"] = [bool(x) for x in first_try]
+            if evidence_parts and evidence_parts > 1:
+                attempt_extra["evidence_parts"] = int(evidence_parts)
+            if grade:
+                attempt_extra["lesson_grade"] = grade
 
             # Save the attempt to both CosmosDB and Firestore (dual write)
             logger.info(f"🔍 COMPETENCY_SERVICE: Saving attempt to databases...")
@@ -476,6 +485,7 @@ class CompetencyService:
                         score=score,
                         source=source,
                         evidence_parts=evidence_parts,
+                        first_try=first_try,
                     )
                     cal_theta = cal_result.get("student_theta")
                     cal_sigma = cal_result.get("sigma")

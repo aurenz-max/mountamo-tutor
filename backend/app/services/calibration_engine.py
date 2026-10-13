@@ -17,7 +17,7 @@ import asyncio
 import logging
 import math
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import List, Any, Dict, Optional
 
 from ..db.firestore_service import FirestoreService
 from ..models.calibration import (
@@ -115,6 +115,7 @@ class CalibrationEngine:
         source: str = "practice",
         *,
         evidence_parts: int = 1,
+        first_try: Optional[List[bool]] = None,
         prefetched_ability: Optional[Dict] = None,
         prefetched_item_calibration: Optional[Dict] = None,
     ) -> Dict[str, Any]:
@@ -144,6 +145,12 @@ class CalibrationEngine:
             student_theta, and earned_level.
         """
         now = datetime.now(timezone.utc)
+        # First-try results win over the final score (user ruling R3, 10-12):
+        # retry-until-correct primitives finish at 10, so the final score says
+        # nothing about what the student knew. Each challenge is one part.
+        if first_try:
+            score = 10.0 * sum(1 for x in first_try if x) / len(first_try)
+            evidence_parts = max(evidence_parts, len(first_try))
         # Continuous response weight: 0.0 (wrong) to 1.0 (perfect)
         # Replaces the old binary is_correct = score >= 9.0
         response_weight = max(0.0, min(1.0, score / 10.0))

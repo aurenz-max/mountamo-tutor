@@ -179,7 +179,11 @@ export const flattenManifestToLayout = (
           grade: o.grade ?? lessonGrade,
         })),
       },
-      objectiveIds: manifest.objectiveBlocks?.map(b => b.objectiveId) || []
+      // A check with no objective blocks (the Daily Pulse beat) still spans the lesson's
+      // objectives; an empty list leaves it unbound from the teaching workspace.
+      objectiveIds: manifest.objectiveBlocks?.length
+        ? manifest.objectiveBlocks.map(b => b.objectiveId)
+        : (objectives ?? []).map(o => o.id),
     });
   }
 

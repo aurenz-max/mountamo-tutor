@@ -741,7 +741,9 @@ class FullLoopRunner:
                 sec = await self.learner_state.profile(profile.student_id, s, top=3)
                 if sec and sec.get("observations"):
                     day.learner_profile[s] = {"observations": sec["observations"], **sec["counts"],
-                                              "phi": sec["general_ability"]["mean"]}
+                                              "phi": sec["general_ability"]["mean"],
+                                              "reach_grade": sec.get("reach_grade"),
+                                              "grown_past": [g["grade"] for g in sec.get("grown_past") or []]}
 
             timeline.days.append(day)
             logger.info(
@@ -805,6 +807,9 @@ class FullLoopRunner:
         }
 
         timeline.learner_final = await self._learner_final(profile, students)
+        timeline.learner_final["replay"] = await self.check_learner_replay_parity(
+            profile.student_id, skip=seeded_from is not None
+        )
 
         # L2 rebuild contract: replay L0 through the production backfill logic
         timeline.parity = await self.check_rollup_parity(
@@ -1014,6 +1019,43 @@ class FullLoopRunner:
         )
         return nxt
 
+    # -- L1 learner-state rebuild oracle (roadmap P1.3) -------------------------
+
+    async def check_learner_replay_parity(self, student_id: int, skip: bool = False) -> Dict[str, Any]:
+        """Replay L0 attempts (lesson + Pulse) through scripts/backfill_learner_state
+        (the production rebuild) and diff against the incrementally kept state."""
+        if skip:
+            return {"checked": False, "reason": "seeded run: state predates the sim's attempts"}
+        import json as _json
+        script_path = Path(__file__).resolve().parent.parent.parent / "scripts" / "backfill_learner_state.py"
+        spec = importlib.util.spec_from_file_location("backfill_learner_state", script_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        attempts = list(self.fs._attempts.get(student_id, []))
+        reviews = list(getattr(self.fs, "_reviews", {}).get(student_id, []))
+        obs = module.observations(attempts, reviews)
+        grade = (await self.fs.get_student_planning_fields(student_id) or {}).get("grade_level")
+        mem = await module.replay(student_id, obs, _published_learner_graph, grade)
+        mismatches, compared = [], 0
+        live = {subj: doc for (sid, subj), doc in self.fs._learner_state.items() if sid == str(student_id)}
+        for subj in sorted(set(live) | set(mem.state)):
+            a, b = live.get(subj), mem.state.get(subj)
+            if a is None or b is None:
+                mismatches.append(f"{subj}: only {'replay' if a is None else 'live'} has state")
+                continue
+            if a["n_obs"] != b["n_obs"]:
+                mismatches.append(f"{subj}: n_obs live {a['n_obs']} vs replay {b['n_obs']}")
+            ra, rb = _json.loads(a["readout_json"]), _json.loads(b["readout_json"])
+            worst = max((abs(ra[k][0] - rb[k][0]) for k in ra if k in rb), default=0.0)
+            compared += len(ra)
+            if worst > 1e-6:
+                mismatches.append(f"{subj}: max P(mastered) diff {worst:.4f}")
+        sources = {}
+        for o in obs:
+            sources[o["source"]] = sources.get(o["source"], 0) + 1
+        return {"checked": True, "match": not mismatches, "mismatches": mismatches,
+                "attempts_replayed": len(obs), "sources": sources, "keys_compared": compared}
+
     # -- L2 parity oracle -------------------------------------------------------
 
     async def check_rollup_parity(
@@ -1184,19 +1226,18 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
             message=f"Skipped — {parity.get('reason', 'not checked')}",
         ))
 
-    # 2. Serve integrity: profile totals reflect every LESSON attempt the sim
-    # made. (Pulse results don't write L0 attempt docs — matching production:
-    # PulseEngine.process_result never calls save_attempt.)
+    # 2. Serve integrity: profile totals reflect every attempt the sim made,
+    # lesson and Pulse (Pulse writes L0 since R2, 10-12: PulseEngine._write_l0).
     sim_lesson_items = sum(d.lesson_items for d in days)
+    sim_pulse_items = sum(d.pulse_items for d in days)
     served = days[-1].profile_total_attempts if days else 0
     new_served = served - timeline.initial_profile_attempts
     results.append(AssertionResult(
         name="serve_integrity",
-        passed=new_served == sim_lesson_items and sim_lesson_items > 0,
+        passed=new_served == sim_lesson_items + sim_pulse_items and sim_lesson_items > 0,
         message=(
             f"Profile serve shows {new_served} new attempts; "
-            f"sim submitted {sim_lesson_items} lesson items "
-            f"(+{sum(d.pulse_items for d in days)} pulse items, no L0 by design)"
+            f"sim submitted {sim_lesson_items} lesson + {sim_pulse_items} pulse items"
         ),
     ))
 
@@ -1427,6 +1468,18 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
                 message=(f"{len(pairs)} seen subskills: model P(right) vs truth P(right) on the typical item, "
                          f"Spearman {rho:.2f}, MAE {mae:.2f}"),
             ))
+
+    # 9c. L1 rebuild contract (P1.3): replaying L0 attempts (lesson + Pulse)
+    # rebuilds the same learner state the submissions kept incrementally
+    rp = (lf or {}).get("replay") or {}
+    if rp.get("checked"):
+        results.append(AssertionResult(
+            name="learner_state_replay_parity",
+            passed=bool(rp.get("match")),
+            message=(f"Replay of {rp.get('attempts_replayed', 0)} L0 attempts {rp.get('sources')} vs incremental "
+                     f"learner state over {rp.get('keys_compared', 0)} subskills: "
+                     + ("MATCH" if rp.get("match") else f"MISMATCH {rp.get('mismatches')}")),
+        ))
 
     # 10. Weakness routing (selective_weakness only): truly-weak skills get picked
     if timeline.archetype == "selective_weakness" and timeline.truth_snapshot:

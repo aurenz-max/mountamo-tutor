@@ -1177,7 +1177,14 @@ async function generateShowJumpChallenges(
     ? buildTierPromptSection('show_jump', tier, 'scaffolding + jump-step depth')
     : '';
 
-  const baselineTuples = selectShowJumpTuples(range, gradeBand, resolveCount('show_jump'), config?.jumpOperation);
+  // Starts and landings stay in the lesson's focus window ("numbers 11-20" on a
+  // 0-20 line), as plot and between already do; the full line only when the
+  // window cannot hold a session of distinct jumps.
+  const jumpCount = resolveCount('show_jump');
+  const focusTuples = config?.focusRange
+    ? selectShowJumpTuples(config.focusRange, gradeBand, jumpCount, config?.jumpOperation) : [];
+  const baselineTuples = focusTuples.length >= jumpCount
+    ? focusTuples : selectShowJumpTuples(range, gradeBand, jumpCount, config?.jumpOperation);
   if (baselineTuples.length === 0) return emptySubResult('jump');
 
   // STRUCTURAL lever: at the hard tier each challenge is TWO chained jumps — the

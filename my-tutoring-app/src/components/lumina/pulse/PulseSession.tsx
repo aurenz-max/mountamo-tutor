@@ -78,6 +78,19 @@ function loadFromStorage(): PulseSessionStorage | null {
 // Props
 // ---------------------------------------------------------------------------
 
+/** A curriculum grade ("Kindergarten", "K", "1".."12") as the prompt-band enum; null if unknown. */
+export function toGradeLevel(raw: unknown): GradeLevel | null {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const g = raw.trim();
+  if (/^(k|kinder(garten)?)$/i.test(g)) return 'kindergarten';
+  const n = Number(g.replace(/^grade\s*/i, ''));
+  if (!Number.isInteger(n) || n < 0) return null;
+  if (n === 0) return 'kindergarten';
+  if (n <= 5) return 'elementary';
+  if (n <= 8) return 'middle-school';
+  return 'high-school';
+}
+
 export interface PulseSessionProps {
   onBack: () => void;
   initialSubject?: string;
@@ -106,6 +119,9 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
   const [sessionItems, setSessionItems] = useState<PulseItemSpec[]>([]);
   const [recentPrimitives, setRecentPrimitives] = useState<RecentPrimitive[]>([]);
   const [isColdStart, setIsColdStart] = useState(false);
+  // The student's grade of record from the engine; the header selector is only a fallback.
+  const [studentGrade, setStudentGrade] = useState<GradeLevel | null>(null);
+  const audienceGrade = studentGrade ?? gradeLevel;
 
   // Summary data (set after session completes)
   const [summary, setSummary] = useState<PulseSessionSummary | null>(null);
@@ -123,11 +139,12 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
   // Create a new session
   // -------------------------------------------------------------------------
 
-  const startSession = useCallback(async (subject: string, itemCount?: number) => {
+  // No subject is today's mix: the backend splits items across subjects as the daily plan does.
+  const startSession = useCallback(async (subject: string | null, itemCount?: number) => {
     setPhase('creating');
     setError(null);
     setStreamingMessage('Setting up your session...');
-    console.log(`${LOG} Creating session for subject="${subject}"`);
+    console.log(`${LOG} Creating session for subject="${subject ?? "today's mix"}"`);
 
     try {
       const response: PulseSessionResponse = await pulseApi.createSession(subject, itemCount);
@@ -137,6 +154,7 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
       setSessionItems(response.items);
       setRecentPrimitives(response.recent_primitives ?? []);
       setIsColdStart(response.is_cold_start);
+      setStudentGrade(toGradeLevel(response.session_meta?.student_grade));
       setSessionFrontierContext(response.frontier_context ?? null);
       setSelectedSubject(subject);
 
@@ -198,6 +216,7 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
 
       setSessionId(stored.sessionId);
       setSessionItems(items);
+      setStudentGrade(toGradeLevel((response as unknown as { student_grade?: string }).student_grade));
       setIsColdStart((response as unknown as { is_cold_start?: boolean }).is_cold_start ?? false);
       setSelectedSubject(stored.subject);
       setPhase('active');
@@ -331,7 +350,7 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
             <PulseActivityRenderer
               sessionId={sessionId}
               items={sessionItems}
-              gradeLevel={gradeLevel}
+              gradeLevel={audienceGrade}
               recentPrimitives={recentPrimitives}
               isColdStart={isColdStart}
               sessionFrontierContext={sessionFrontierContext}
@@ -351,7 +370,7 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
               }}
               onPlayAgain={() => {
                 reset();
-                if (selectedSubject) startSession(selectedSubject);
+                startSession(selectedSubject);
               }}
             />
           )}
@@ -394,6 +413,9 @@ export const PulseSession: React.FC<PulseSessionProps> = ({
 
 // A value must name a published curriculum graph once the backend upper-cases it and turns spaces
 // into underscores. 'language-arts' became LANGUAGE-ARTS and 'reading' has no graph; both failed.
+// The backend's session subject for a Pulse started with no subject.
+const DAILY_MIX = 'DAILY_MIX';
+
 const PULSE_SUBJECTS: { value: string; label: string; icon: string; color: string }[] = [
   { value: 'mathematics', label: 'Mathematics', icon: '\u{1F522}', color: '56, 189, 248' },
   { value: 'science', label: 'Science', icon: '\u{1F52C}', color: '74, 222, 128' },
@@ -404,7 +426,8 @@ const PULSE_SUBJECTS: { value: string; label: string; icon: string; color: strin
 function ResumePrompt({ subject, startedAt, onResume, onDismiss }: {
   subject: string; startedAt: string; onResume: () => void; onDismiss: () => void;
 }) {
-  const label = PULSE_SUBJECTS.find((s) => s.value === subject)?.label || subject;
+  const label = subject === DAILY_MIX ? "Today's mix"
+    : PULSE_SUBJECTS.find((s) => s.value === subject)?.label || subject;
   const ago = formatTimeAgo(startedAt);
 
   return (
@@ -447,8 +470,9 @@ function formatTimeAgo(isoString: string): string {
 // ---------------------------------------------------------------------------
 
 function PulseWelcome({ subject, onSelectSubject, onStart }: {
-  subject: string | null; onSelectSubject: (s: string | null) => void; onStart: (subject: string) => void;
+  subject: string | null; onSelectSubject: (s: string | null) => void; onStart: (subject: string | null) => void;
 }) {
+  const focus = PULSE_SUBJECTS.find((s) => s.value === subject);
   return (
     <div className="flex flex-col items-center justify-center py-16 space-y-8 animate-fade-in">
       <SpotlightCard color="139, 92, 246" className="bg-gradient-to-br from-violet-900/20 to-blue-900/20 max-w-lg w-full">
@@ -464,31 +488,25 @@ function PulseWelcome({ subject, onSelectSubject, onStart }: {
             all tuned to where you are right now. Let&apos;s see what you can do!
           </p>
 
-          {!subject && (
-            <div className="space-y-3">
-              <h4 className="text-[10px] uppercase tracking-widest font-mono text-slate-500">Pick a subject</h4>
-              <div className="grid grid-cols-2 gap-3">
-                {PULSE_SUBJECTS.map((s) => (
-                  <button
-                    key={s.value}
-                    onClick={() => onSelectSubject(s.value)}
-                    className="glass-panel rounded-xl border border-white/10 p-4 text-center hover:border-white/25 transition-all hover:scale-[1.02] cursor-pointer"
-                  >
-                    <span className="text-2xl block mb-1">{s.icon}</span>
-                    <span className="text-sm text-slate-200">{s.label}</span>
-                  </button>
-                ))}
-              </div>
+          <div className="space-y-3">
+            <h4 className="text-[10px] uppercase tracking-widest font-mono text-slate-500">
+              {focus ? `Focusing on ${focus.label}` : "Today's mix · or focus on one subject"}
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              {PULSE_SUBJECTS.map((s) => (
+                <button
+                  key={s.value}
+                  aria-pressed={subject === s.value}
+                  onClick={() => onSelectSubject(subject === s.value ? null : s.value)}
+                  className={`glass-panel rounded-xl border p-4 text-center transition-all hover:scale-[1.02] cursor-pointer ${
+                    subject === s.value ? 'border-violet-400/60 bg-violet-500/10' : 'border-white/10 hover:border-white/25'}`}
+                >
+                  <span className="text-2xl block mb-1">{s.icon}</span>
+                  <span className="text-sm text-slate-200">{s.label}</span>
+                </button>
+              ))}
             </div>
-          )}
-
-          {subject && (
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-lg">{PULSE_SUBJECTS.find((s) => s.value === subject)?.icon || '\u{1F4DD}'}</span>
-              <span className="text-slate-200 font-medium">{PULSE_SUBJECTS.find((s) => s.value === subject)?.label || subject}</span>
-              <button onClick={() => onSelectSubject(null)} className="text-xs text-slate-500 hover:text-slate-300 ml-1">change</button>
-            </div>
-          )}
+          </div>
 
           <div className="grid grid-cols-3 gap-3 mt-4">
             <div className="glass-panel rounded-xl border border-violet-500/20 p-3 text-center">
@@ -506,8 +524,7 @@ function PulseWelcome({ subject, onSelectSubject, onStart }: {
           </div>
 
           <Button
-            onClick={() => subject && onStart(subject)}
-            disabled={!subject}
+            onClick={() => onStart(subject)}
             className="bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-400 hover:to-blue-400 text-white px-10 py-4 text-lg rounded-xl shadow-lg shadow-violet-500/20 transition-all hover:shadow-violet-400/30 hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Start Pulse
@@ -647,7 +664,7 @@ function PulseSummaryCard({ summary, leapfrogs, isColdStart, onDone, onPlayAgain
 
           <div className="flex gap-3 justify-center mt-6">
             <Button onClick={onPlayAgain} className="bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-400 hover:to-blue-400 text-white px-6 py-3 rounded-xl">
-              Play Again
+              Keep going
             </Button>
             <Button variant="ghost" onClick={onDone} className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-300">
               Done

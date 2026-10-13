@@ -15,12 +15,14 @@
  * across all modes — that is the defect this stage exists to prevent.
  */
 
-import { Type, Schema } from '@google/genai';
+import { Type, Schema, ThinkingLevel } from '@google/genai';
 import { ai } from '../geminiClient';
 import { getComponentById } from './catalog';
 import type { PracticeManifest } from '../../types';
 
-const MODEL = 'gemini-flash-lite-latest';
+// Flash, not flash-lite: lite accepted neighbouring skills as fits (build a
+// number for "add 43 + 5"), which is the defect this stage exists to stop.
+const MODEL = 'gemini-flash-latest';
 const RESOLUTION_TIMEOUT_MS = 20000;
 /** Same 1.0-β step the densify skill holds adjacent modes to. */
 export const MISMATCH_BETA = 1.0;
@@ -40,7 +42,8 @@ export interface PulseModePick {
   targetBeta: number;
   /** pinBeta − targetBeta; null when unpinned. */
   deltaBeta: number | null;
-  source: 'single-mode' | 'resolved' | 'unresolved';
+  /** no-fit: the call answered and no mode of this component fits the subskill. */
+  source: 'single-mode' | 'resolved' | 'unresolved' | 'no-fit';
   mismatch: boolean;
 }
 
@@ -99,9 +102,10 @@ function buildPrompt(gradeLevel: string, slots: Slot[]): string {
       .join('\n')}`)
     .join('\n\n');
   return `Each slot is one practice item (${gradeLevel}) for one curriculum subskill, on a component already chosen.
-Each eval mode is a DISTINCT skill, not a difficulty level. For each slot, return EVERY candidate mode whose skill the subskill asks the student to do.
+Each eval mode is a DISTINCT skill, not a difficulty level. For each slot, return EVERY candidate mode whose task IS the subskill: a student doing that mode's task is doing exactly what the subskill names.
 - Judge by skill and content only. Difficulty is chosen afterwards by code, so do not narrow by how hard a mode is.
-- Leave out modes that practise a different skill than the subskill names.
+- Leave out modes that practise a neighbouring skill, a prerequisite, or one part of it: building or counting a number does not fit a subskill about adding, and counting on does not fit a subskill about finding a group of ten.
+- Leave out a mode when this component cannot show the numbers the subskill names (objects to count cannot show 43 + 5), or when the mode contradicts a constraint the subskill states (a mode built on regrouping does not fit "without regrouping").
 - If no mode fits, return an empty list.
 
 SLOTS:
@@ -138,7 +142,7 @@ export async function resolvePulseEvalModes(
       pinBeta: best?.beta ?? null,
       targetBeta: target,
       deltaBeta: delta,
-      source: best ? source : 'unresolved',
+      source: best ? source : source === 'no-fit' ? 'no-fit' : 'unresolved',
       mismatch: delta !== null && Math.abs(delta) > MISMATCH_BETA,
     });
   };
@@ -164,13 +168,15 @@ export async function resolvePulseEvalModes(
 
   if (slots.length > 0) {
     let bySlot = new Map<string, string[]>();
+    let answered = false;
     const abort = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const request = ai.models.generateContent({
         model: MODEL,
         contents: buildPrompt(gradeLevel, slots),
-        config: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA, temperature: 0.2, abortSignal: abort.signal },
+        config: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA, temperature: 0.2, abortSignal: abort.signal,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } },
       });
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => { abort.abort(); reject(new Error(`timed out after ${RESOLUTION_TIMEOUT_MS}ms`)); }, RESOLUTION_TIMEOUT_MS);
@@ -178,6 +184,7 @@ export async function resolvePulseEvalModes(
       const result = await Promise.race([request, timeout]);
       const parsed = result.text ? (JSON.parse(result.text) as { picks?: Array<{ slotId: string; fittingModes?: string[] }> }) : null;
       bySlot = new Map((parsed?.picks ?? []).map((p) => [p.slotId, p.fittingModes ?? []]));
+      answered = !!parsed?.picks;
     } catch (err) {
       console.warn('[resolvePulseEvalModes] fit call failed — items stay unpinned (generator self-resolves):', err);
     } finally {
@@ -186,7 +193,8 @@ export async function resolvePulseEvalModes(
     for (const slot of slots) {
       const raw = bySlot.get(slot.slotId) ?? [];
       const fitting = slot.modes.map((m) => m.evalMode).filter((k) => raw.includes(k));
-      finish(slot.index, slot.componentId, fitting, fitting.length ? 'resolved' : 'unresolved');
+      finish(slot.index, slot.componentId, fitting,
+        fitting.length ? 'resolved' : answered && bySlot.has(slot.slotId) ? 'no-fit' : 'unresolved');
     }
   }
 

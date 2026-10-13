@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Set
 from ..db.firestore_service import FirestoreService
 from ..models.calibration import DEFAULT_STUDENT_THETA
 from ..models.pulse import (
+    DAILY_MIX_SUBJECT,
     DEFAULT_PULSE_ITEM_COUNT,
     PRIMITIVE_HISTORY_WINDOW,
     PULSE_CONFIRM_SHARE,
@@ -82,9 +83,10 @@ class PulseEngine:
     async def assemble_session(
         self,
         student_id: int,
-        subject: str,
+        subject: Optional[str],
         item_count: int = DEFAULT_PULSE_ITEM_COUNT,
         now_override: Optional[datetime] = None,
+        subject_weights: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> PulseSessionResponse:
         """Compose a Pulse session from the two-layer learner model.
 
@@ -96,7 +98,12 @@ class PulseEngine:
         picks the primitive and mode (7.5). Cold start needs no special path:
         an empty state is the graph's prior, and confirm picks check what it
         infers. The published curriculum graph, Fisher x sigma^2 utility and
-        leapfrog probes are retired."""
+        leapfrog probes are retired.
+
+        With no subject the session is the daily mix: `subject_weights` (the
+        daily plan's pace allocation, PlanningService.daily_subject_weights)
+        divides the items across subjects, each subject's picks coming from
+        the same select call, interleaved so no subject runs in a block."""
         now = now_override or datetime.now(timezone.utc)
         session_id = f"pulse-{uuid.uuid4().hex[:12]}"
 
@@ -107,9 +114,15 @@ class PulseEngine:
 
         if self.learner_state is None:
             raise RuntimeError("PulseEngine needs the learner model (LearnerStateService)")
-        sel = await self.learner_state.select(
-            student_id, subject, count=item_count, confirm_share=PULSE_CONFIRM_SHARE,
-        )
+        if subject:
+            sel = await self.learner_state.select(
+                student_id, subject, count=item_count, confirm_share=PULSE_CONFIRM_SHARE,
+            )
+            if sel is not None:
+                sel["picks"] = [{**p, "subject": subject} for p in sel["picks"]]
+        else:
+            subject = DAILY_MIX_SUBJECT
+            sel = await self._select_daily_mix(student_id, item_count, subject_weights or {})
         if sel is None:
             logger.warning(f"[PULSE] No learner graph for subject {subject}")
             return PulseSessionResponse(
@@ -125,7 +138,7 @@ class PulseEngine:
                 band=PulseBand.CURRENT if p["seen"] else PulseBand.FRONTIER,
                 subskill_id=p["subskill_id"],
                 skill_id=p["skill_id"],
-                subject=subject,
+                subject=p["subject"],
                 description=p["description"] or p["label"],
                 target_mode=theta_to_mode(p["target_beta"]),
                 target_beta=p["target_beta"],
@@ -133,6 +146,7 @@ class PulseEngine:
                 selection_kind=p["kind"],
                 selection_reason=p["reason"],
                 p_right=p["p_right"],
+                grade=p.get("grade"),
             ))
 
         # Load primitive history for diversity tracking (frontend rotation)
@@ -164,6 +178,7 @@ class PulseEngine:
             "band_counts": band_counts,
             "items_completed": 0,
             "items_total": len(items),
+            "student_grade": sel.get("student_grade"),
             "leapfrogs": [],
             "selector": {"engine": "learner_model", "graph_version": sel.get("graph_version"),
                          "pool_sizes": sel.get("pool_sizes")},
@@ -190,11 +205,137 @@ class PulseEngine:
                 "total_items": len(items),
                 "selector": "learner_model",
                 "pool_sizes": sel.get("pool_sizes"),
+                "student_grade": sel.get("student_grade"),
+                **({"subject_quota": sel["subject_quota"]} if "subject_quota" in sel else {}),
             },
         )
+
+    async def _select_daily_mix(self, student_id: int, item_count: int,
+                                subject_weights: Dict[str, Dict[str, Any]]) -> Optional[dict]:
+        """Daily-mix picks: each subject's quota of `item_count` follows its
+        weight (largest remainder), and select runs at that quota so its own
+        confirm/learn split and per-skill cap apply per subject. A subject
+        whose graph offers fewer picks than its quota passes the rest to the
+        heaviest subject that still has picks. Picks are dealt round-robin by
+        subject. None when no subject has a learner graph."""
+        order = sorted((s for s, w in subject_weights.items() if w.get("weight", 0) > 0),
+                       key=lambda s: -subject_weights[s]["weight"])
+        if not order:
+            return None
+        total = sum(subject_weights[s]["weight"] for s in order)
+        exact = {s: item_count * subject_weights[s]["weight"] / total for s in order}
+        quota = {s: int(exact[s]) for s in order}
+        for s in sorted(order, key=lambda s: -(exact[s] - quota[s]))[:item_count - sum(quota.values())]:
+            quota[s] += 1
+
+        async def pick(s: str, n: int) -> Optional[dict]:
+            return await self.learner_state.select(student_id, s, count=n,
+                                                   confirm_share=PULSE_CONFIRM_SHARE,
+                                                   grade=subject_weights[s].get("grade"))
+
+        sel_by = dict(zip(order, await asyncio.gather(*(
+            pick(s, quota[s]) if quota[s] else asyncio.sleep(0, None) for s in order))))
+        got = {s: len((sel_by[s] or {}).get("picks", [])) for s in order}
+        exhausted = {s for s in order if quota[s] and got[s] < quota[s]}
+        short = item_count - sum(got.values())
+        for s in order:
+            if short <= 0:
+                break
+            if s in exhausted:
+                continue
+            sel = await pick(s, got[s] + short)
+            if sel is None:
+                continue
+            short -= len(sel["picks"]) - got[s]
+            sel_by[s], got[s] = sel, len(sel["picks"])
+        order = [s for s in order if got[s]]
+        if not order:
+            return None
+        quota = {s: got[s] for s in order}
+        lanes = [[{**p, "subject": s} for p in sel_by[s]["picks"]] for s in order]
+        picks = [lane[i] for i in range(max(map(len, lanes))) for lane in lanes if i < len(lane)]
+        return {
+            "picks": picks,
+            "observations": sum(sel_by[s].get("observations", 0) for s in order),
+            "student_grade": sel_by[order[0]].get("student_grade"),
+            "graph_version": {s: sel_by[s].get("graph_version") for s in order},
+            "pool_sizes": {s: sel_by[s].get("pool_sizes") for s in order},
+            "subject_quota": quota,
+        }
+
     # ------------------------------------------------------------------
     # Result processing
     # ------------------------------------------------------------------
+
+    # A review keeps the problem the student saw; past this size only its
+    # top-level keys are kept (Firestore docs cap at 1 MiB).
+    MAX_PROBLEM_CONTENT_CHARS = 200_000
+
+    async def _write_l0(self, student_id, subject, skill_id, subskill_id, result, item_spec,
+                        session_id, attempt_id, eval_source, band, now) -> None:
+        """Attempt + review for one Pulse answer. Best-effort: the IRT, gate and
+        learner-state updates above already ran, so a failed write is logged and
+        repaired by replay, never raised into the student's session."""
+        import json as _json
+        score = float(result.score)
+        first_try = [bool(x) for x in result.first_try] if result.first_try else None
+        success = (all(first_try) if first_try else score >= 9.0)
+        extra = {
+            "source": "pulse", "eval_source": eval_source,
+            "primitive_type": result.primitive_type, "eval_mode": result.eval_mode,
+            "success": success, "duration_ms": result.duration_ms,
+            "pulse_session_id": session_id, "pulse_item_id": result.item_id, "band": band,
+            "selection_kind": item_spec.get("kind") or item_spec.get("selection_kind"),
+            "target_beta": item_spec.get("target_beta"),
+            # the selector's prediction, to set against the outcome
+            "p_right_predicted": item_spec.get("p_right"),
+            "subskill_grade": item_spec.get("grade") or item_spec.get("subskill_grade"),
+            # the attempt's own clock (the pulse-agent store runs a virtual one)
+            "answered_at": now.isoformat(),
+        }
+        if first_try:
+            extra["first_try"] = first_try
+            extra["evidence_parts"] = len(first_try)
+        extra = {k: v for k, v in extra.items() if v is not None}
+        try:
+            await self.firestore.save_attempt(
+                student_id=student_id, subject=subject, skill_id=skill_id, subskill_id=subskill_id,
+                score=score, analysis="", feedback="", additional_data=extra, attempt_id=attempt_id,
+            )
+        except Exception as e:
+            logger.warning(f"[PULSE_L0] attempt write failed for {attempt_id}: {e}")
+            return
+        save_review = getattr(self.firestore, "save_problem_review", None)
+        if save_review is None:
+            return
+        problem = result.problem_content
+        if problem is not None:
+            try:
+                if len(_json.dumps(problem, default=str)) > self.MAX_PROBLEM_CONTENT_CHARS:
+                    problem = {"truncated": True, "keys": sorted(problem.keys())}
+            except Exception:
+                problem = {"unserializable": True}
+        review = {
+            "score": score, "correct": success, "accuracy_percentage": score * 10,
+            "skill_description": item_spec.get("description", ""),
+            "metadata": {
+                "source": "pulse", "eval_source": eval_source,
+                "primitive_type": result.primitive_type, "eval_mode": result.eval_mode,
+                "metrics": result.metrics, "duration_ms": result.duration_ms,
+                "first_try": first_try, "pulse_session_id": session_id, "band": band,
+                "target_beta": item_spec.get("target_beta"),
+            },
+        }
+        try:
+            await save_review(
+                student_id=student_id, subject=subject, skill_id=skill_id, subskill_id=subskill_id,
+                problem_id=attempt_id, review_data=review,
+                problem_content={"primitive_type": result.primitive_type, "problem": problem,
+                                 "metrics": result.metrics, "student_work": result.student_work},
+                attempt_id=attempt_id,
+            )
+        except Exception as e:
+            logger.warning(f"[PULSE_L0] review write failed for {attempt_id}: {e}")
 
     async def process_result(
         self,
@@ -262,7 +403,8 @@ class PulseEngine:
             # Standard pattern: "SKILL-XX-Y" → "SKILL-XX"
             parts = subskill_id.rsplit("-", 1)
             skill_id = parts[0] if len(parts) > 1 else subskill_id
-        subject = session["subject"]
+        # A daily-mix session spans subjects; each item carries its own.
+        subject = item_spec.get("subject") or session["subject"]
 
         # 2. Pre-fetch ability + lifecycle in parallel (saves a sequential round-trip)
         old_ability, old_lifecycle = await asyncio.gather(
@@ -288,6 +430,7 @@ class PulseEngine:
             eval_mode=result.eval_mode,
             score=result.score,
             source="practice",
+            first_try=result.first_try,
             prefetched_ability=old_ability,
             prefetched_item_calibration=cached_item_cal,
         )
@@ -356,14 +499,21 @@ class PulseEngine:
         # 4b. Learner state: the model that chooses the next items (never raises).
         # Leapfrog is retired: the graph infers ancestors of a shown subskill
         # itself, and confirm picks check what it infers.
+        attempt_id = f"{session_id}:{result.item_id}"
         if self.learner_state is not None:
             await self.learner_state.submit(
                 student_id=student_id, subject=subject, subskill_id=subskill_id, score=result.score,
                 primitive_type=result.primitive_type, eval_mode=result.eval_mode,
-                first_try=result.first_try, source="pulse", attempt_id=f"{session_id}:{result.item_id}",
+                first_try=result.first_try, source="pulse", attempt_id=attempt_id,
                 timestamp=now.isoformat(),
             )
         leapfrog = None
+
+        # 4c. L0 (user ruling R2): one attempt + one review per item under the
+        # learner event's id, so rollups, the profile, the activity history and
+        # the learner-state rebuild see Pulse like any lesson answer.
+        await self._write_l0(student_id, subject, skill_id, subskill_id, result, item_spec,
+                             session_id, attempt_id, eval_source, band, now)
 
         # 6. Update session doc (always mutate in-memory)
         items[item_index]["score"] = result.score
@@ -514,14 +664,15 @@ class PulseEngine:
 
         # Load DAG for skill descriptions
         node_map: Dict[str, Dict] = {}
-        try:
-            graph_data = await self.learning_paths._student_graph(student_id, subject)
-            if graph_data and "graph" in graph_data:
-                all_nodes = graph_data["graph"].get("nodes", [])
-                node_map = {n["id"]: n for n in all_nodes
-                            if n.get("type", n.get("entity_type", "")) == "subskill"}
-        except Exception as e:
-            logger.warning(f"[PULSE] Could not load DAG for summary enrichment: {e}")
+        for subj in sorted({it.get("subject") or subject for it in items}):
+            try:
+                graph_data = await self.learning_paths._student_graph(student_id, subj)
+                if graph_data and "graph" in graph_data:
+                    all_nodes = graph_data["graph"].get("nodes", [])
+                    node_map.update({n["id"]: n for n in all_nodes
+                                     if n.get("type", n.get("entity_type", "")) == "subskill"})
+            except Exception as e:
+                logger.warning(f"[PULSE] Could not load DAG for {subj} summary enrichment: {e}")
 
         def _skill_detail(subskill_id: str) -> SkillDetail:
             node = node_map.get(subskill_id, {})

@@ -19,6 +19,18 @@ export const BAND_LABELS: Record<PulseBand, string> = {
   review: 'Quick review',
 };
 
+/**
+ * What the child is told an item is. The selector's own kind decides: a confirm
+ * pick checks something the model already believes is known, so it is never
+ * "new territory" even when the child has not been shown it yet (band is
+ * seen/unseen only). Items from before the learner model fall back to the band.
+ */
+export function itemLabel(spec: Pick<PulseItemSpec, 'band' | 'selection_kind'>): string {
+  if (spec.selection_kind === 'confirm') return 'Quick check';
+  if (spec.selection_kind === 'learn') return spec.band === 'frontier' ? 'Something new' : 'Building skills';
+  return BAND_LABELS[spec.band];
+}
+
 export const BAND_COLORS: Record<PulseBand, string> = {
   frontier: 'text-violet-400',
   current: 'text-blue-400',
@@ -76,6 +88,12 @@ export interface PulseItemSpec {
   primitive_affinity?: string;
   eval_mode_hint?: string;  // curriculum-assigned eval mode (e.g. 'subitize', 'plot')
   frontier_context?: ItemFrontierContext;
+  /** Learner-model selection: learn (teach) | confirm (check believed mastery). */
+  selection_kind?: 'learn' | 'confirm' | null;
+  selection_reason?: string | null;
+  p_right?: number | null;
+  /** The subskill's own grade ("Kindergarten", "1", ...). */
+  grade?: string | null;
 }
 
 export interface RecentPrimitive {
@@ -108,6 +126,10 @@ export interface PulseResultRequest {
   duration_ms: number;
   /** Per-challenge first-try results when the primitive reports them (learner state reads these, not the final score). */
   first_try?: boolean[];
+  /** L0: stored on the item's review (what the child did, what was asked). */
+  student_work?: Record<string, unknown>;
+  metrics?: Record<string, unknown>;
+  problem_content?: Record<string, unknown>;
 }
 
 export interface ThetaUpdate {

@@ -16,13 +16,13 @@ import type {
 const BASE = '/api/pulse';
 
 export const pulseApi = {
-  /** POST /api/pulse/sessions — Create a new Pulse session */
+  /** POST /api/pulse/sessions — Create a new Pulse session (no subject: today's mix) */
   createSession: (
-    subject: string,
+    subject: string | null,
     itemCount?: number,
   ): Promise<PulseSessionResponse> =>
     authApi.post<PulseSessionResponse>(`${BASE}/sessions`, {
-      subject,
+      subject: subject || null,
       item_count: itemCount ?? 6,
     }),
 

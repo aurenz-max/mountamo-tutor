@@ -2226,6 +2226,14 @@ export interface PracticeManifestItem {
   teachingNote: string;
   visualPrimitive: VisualPrimitiveSpec | null;
   standardProblem: StandardProblemSpec | null;
+  /**
+   * The subskill this item serves, stamped in code from the Pulse item (never
+   * by the manifest LLM). The hydrator hands it to the generator as the
+   * objective (config.objectiveText / objectiveGrade / objectiveId), the same
+   * contract lesson objectives use, so the problem is built for the subskill
+   * rather than for the manifest's paraphrase of it.
+   */
+  objective?: { id: string; text: string; grade?: string };
 }
 
 /** Bloom's cognitive tiers used across the practice pipeline (matches IRT beta→tier mapping). */

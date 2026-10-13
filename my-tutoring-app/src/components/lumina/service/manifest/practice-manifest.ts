@@ -318,6 +318,8 @@ export interface PulseManifestItemInput {
   skill_id: string;
   subskill_id: string;
   subject: string;
+  /** The subskill's own grade ("Kindergarten", "1", ...); may sit above the student's. */
+  grade?: string | null;
   // No primitive or eval mode: the manifest picks the primitive from the live
   // catalog, and resolvePulseEvalModes maps target_beta onto its fitting modes.
 }
@@ -353,7 +355,8 @@ export const generatePulseManifest = async (
       : 'CURRENT LEARNING (actively learning — balance challenge with support)';
 
     return `### Item ${i + 1}: "${item.item_id}"
-- Skill: ${item.description}
+- Skill: ${item.description}${item.grade ? `
+- Skill grade: ${item.grade}` : ''}
 - Band: ${bandLabel}
 - Scaffolding: Mode ${tier}/6 — "${scaffolding.label}" (difficulty: ${scaffolding.difficulty})
 - ${scaffolding.instruction}`;
@@ -461,8 +464,15 @@ Return ONLY valid JSON matching the schema.`;
 
   // Fix instanceIds: Gemini might use "problem-1" instead of the pulse item_id.
   // Re-stamp to ensure the identity chain is intact.
+  // Stamp the subskill each item serves: the generator builds from it, not
+  // from the manifest's paraphrase (problemText / intent).
   for (let i = 0; i < manifest.items.length && i < items.length; i++) {
     manifest.items[i].instanceId = items[i].item_id;
+    manifest.items[i].objective = {
+      id: items[i].subskill_id,
+      text: items[i].description,
+      ...(items[i].grade ? { grade: items[i].grade as string } : {}),
+    };
   }
 
   // The engine's difficulty is set in code, never left to the manifest's own pick:
@@ -520,7 +530,22 @@ Return ONLY valid JSON matching the schema.`;
   // Map the engine's target_beta onto the chosen primitive's fitting modes (pins
   // visualPrimitive.targetEvalMode). Runs last so it sees the final visuals.
   callbacks?.onProgress?.('Matching difficulty to each activity...');
-  await resolvePulseEvalModes(manifest, items, gradeLevel);
+  const modePicks = await resolvePulseEvalModes(manifest, items, gradeLevel);
+
+  // No mode of the chosen component fits the subskill: a text problem built
+  // from the subskill beats a visual that teaches something else.
+  for (const pick of modePicks.filter((p) => p.source === 'no-fit')) {
+    const i = manifest.items.findIndex((mi) => mi.instanceId === pick.instanceId);
+    if (i < 0) continue;
+    const item = manifest.items[i];
+    console.log(`[Pulse] No fitting mode on ${pick.componentId} for ${item.instanceId} → standard multiple_choice`);
+    item.visualPrimitive = null;
+    item.standardProblem = {
+      problemType: 'multiple_choice',
+      generationIntent: items[i].description,
+      evalMode: betaToBloomsTier(items[i].target_beta),
+    };
+  }
 
   const visualCount = manifest.items.filter(i => i.visualPrimitive).length;
   const standardCount = manifest.items.filter(i => i.standardProblem).length;

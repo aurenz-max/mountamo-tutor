@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LIVE_ADAPTERS, type LiveActivityAdapter } from './activityContract';
 import { lessonPrimitiveContext, lessonWorkspaceItems } from './lessonWorkspacePlan';
+import { buildPulseCheckManifest } from '../../service/manifest/pulse-check-manifest';
 const section = { componentId: 'counting-board', instanceId: 'one', title: 'Count', objectiveIds: ['objective'], data: {
   title: 'Count', gradeBand: 'K', objects: { type: 'blocks' }, challenges: [
     { id: 'c', type: 'count_all', count: 3, targetAnswer: 3, arrangement: 'scattered', instruction: 'Count.', hint: '', narration: '' }] } };
@@ -88,12 +89,24 @@ describe('ordinary lesson workspace eligibility', () => {
   it('every family that binds the workspace admits every one of its modes; no mode is withheld from lessons', () => {
     const bound = Object.entries(LIVE_ADAPTERS).filter(([, adapter]) => (adapter as LiveActivityAdapter).bindsTeachingWorkspace);
     expect(bound.map(([id]) => id).sort()).toEqual(['3d-shape-explorer', 'adaptation-investigator', 'addition-fact-strategies', 'addition-subtraction-scene', 'analog-clock', 'angle-workshop', 'area-model', 'array-grid', 'balance-scale', 'bar-model', 'base-ten-blocks', 'calendar-explorer', 'cause-effect-chain', 'circle-explorer', 'classification-sorter', 'coin-counter', 'compare-objects',
-      'comparison-builder', 'context-clues-detective', 'coordinate-graph', 'counting-board', 'cvc-speller', 'decodable-reader', 'di-deduction', 'di-dice-roll', 'di-letter-sounds', 'di-math-facts', 'di-sentence-reading', 'di-shapes', 'di-spoken-practice',
+      'comparison-builder', 'context-clues-detective', 'coordinate-graph', 'counting-board', 'curator-brief', 'cvc-speller', 'decodable-reader', 'di-deduction', 'di-dice-roll', 'di-letter-sounds', 'di-math-facts', 'di-sentence-reading', 'di-shapes', 'di-spoken-practice',
       'di-word-problem-setup', 'di-word-reading', 'di-worked-procedure', 'distribution-explorer', 'double-number-line', 'equation-builder', 'equation-workspace', 'era-explorer', 'evidence-finder', 'factor-tree', 'fast-fact', 'figurative-language-finder', 'food-web-builder', 'formula-lab', 'fraction-bar', 'fraction-circles', 'function-machine', 'function-sketch','gear-train-builder', 'genre-explorer', 'habitat-diorama', 'histogram', 'hundreds-chart', 'interactive-book', 'knowledge-check', 'length-lab', 'letter-sound-link', 'letter-spotter', 'letter-workshop', 'life-cycle-sequencer', 'light-shadow-lab', 'math-fact-fluency', 'matrix-display', 'matter-explorer', 'measure-lab', 'measurement-tools','molecule-constructor', 'multiplication-explorer', 'net-folder', 'number-bond', 'number-line', 'number-sequencer', 'number-tracer', 'open-builder', 'opinion-builder', 'oral-sentence-studio', 'ordinal-line', 'paragraph-architect', 'parameter-explorer', 'pattern-builder', 'percent-bar', 'periodic-table', 'phoneme-explorer',
       'phonics-blender', 'picture-vocabulary', 'place-value-chart', 'poetry-lab', 'polygon-area-builder', 'practice-problem', 'push-pull-arena', 'ramp-lab', 'ratio-table', 'read-aloud-studio', 'regrouping-workbench','revision-workshop', 'rhyme-studio', 'sentence-analyzer', 'sentence-builder', 'shape-builder', 'shape-composer', 'shape-sorter', 'shape-tracer', 'skip-counting-runner', 'slope-triangle','solar-system-explorer', 'sorting-station', 'sound-swap', 'spatial-path', 'spatial-scene', 'spelling-pattern-explorer', 'states-of-matter', 'story-bridge', 'story-map', 'story-planner', 'story-ribbon', 'strategy-picker', 'syllable-clapper', 'systems-equations-visualizer', 'ten-frame', 'text-structure-analyzer', 'time-sequencer', 'timeline-builder', 'tower-stacker', 'train-yard', 'transformation-lab', 'two-way-table', 'word-builder', 'word-flip', 'word-sorter', 'word-workout',
       'you-and-me']);
     // A component with no workspace binding keeps its lesson path and its catalog tutoring.
     const chart = { componentId: 'concept-card-grid', instanceId: 'one', title: 'Cards', objectiveIds: ['objective'], data: {} };
     expect(lessonWorkspaceItems(exhibit('count', chart)).size).toBe(0);
+  });
+  it('binds the Daily Pulse check, which has no objective blocks, under its first objective', () => {
+    const manifest = buildPulseCheckManifest('Daily Pulse', 'kindergarten', [
+      { id: 'SCI-E', text: 'Light', verb: 'identify', icon: '', subskillId: 'SCI-E' },
+      { id: 'SCI-F', text: 'Matter', verb: 'identify', icon: '', subskillId: 'SCI-F' }]);
+    const layout = manifest.layout![0];
+    expect(layout.objectiveIds).toEqual(['SCI-E', 'SCI-F']);
+    const check = { componentId: 'knowledge-check', instanceId: layout.instanceId, title: 'Daily Pulse', objectiveIds: layout.objectiveIds,
+      data: { problems: [{ type: 'true_false', id: 'tf', statement: 'The sun gives light', correct: true, difficulty: 'easy',
+        gradeLevel: 'K', rationale: '', teachingNote: '', successCriteria: [] }] } };
+    expect(lessonWorkspaceItems({ orderedComponents: [check], manifest } as any).get(layout.instanceId))
+      .toMatchObject({ objectiveId: 'SCI-E', evalMode: 'mixed' });
   });
 });

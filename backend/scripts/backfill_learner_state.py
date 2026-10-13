@@ -1,17 +1,16 @@
 """
-One-time replay of a student's reviews into the two-layer learner state
-(app/services/learner_model). After this the submission paths keep the state
-current, so nothing replays history on read.
-
-Runs the SAME `LearnerStateService.observe` the submission paths call, against
-an in-memory store, then writes the final summary, the grids and one event per
-answer. Dry-run by default (prints what it would write).
+Rebuild a student's two-layer learner state (app/services/learner_model) from
+L0. The submission paths keep the state current; this is the rebuild contract
+(roadmap P1.3): the same answers, replayed in order through the SAME
+`LearnerStateService.observe`, give the same state. Dry-run by default.
 
     venv/Scripts/python -m scripts.backfill_learner_state --student 1004
     venv/Scripts/python -m scripts.backfill_learner_state --student 1004 --subjects MATHEMATICS --apply
 
-A review contributes its per-challenge first-try results when it has them
-(the same rule as the submission hook), else its final score.
+Source: attempts (lesson + Pulse; Pulse attempts exist since R2, 10-12). An
+attempt contributes its `first_try` when it carries one (R3, 10-12), else the
+first-try results found on its joined review (older lesson attempts), else its
+final score. Diagnostic attempts never fed the learner state and are skipped.
 """
 
 from __future__ import annotations
@@ -22,7 +21,7 @@ import json
 import time
 from collections import Counter, defaultdict
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from app.db.firestore_service import FirestoreService
 from app.services.curriculum_scope import subject_key
@@ -68,32 +67,63 @@ def _ts(v) -> str:
     return str(v or "")
 
 
-def review_to_observation(r: dict) -> Optional[dict]:
-    """A review doc -> observe() kwargs (the fields the submission hook passes)."""
-    sid, subject = r.get("subskill_id"), r.get("subject")
-    if not sid or not subject:
-        return None
+def review_first_try(r: dict) -> Optional[List[bool]]:
+    """Per-challenge first-try results recorded on a review's student work."""
     md = _as_dict(_as_dict(r.get("full_review")).get("metadata"))
     pc = _as_dict(r.get("problem_content"))
-    first = first_try_from_response({"student_work": _as_dict(pc.get("student_work")), "metrics": _as_dict(md.get("metrics"))})
+    return first_try_from_response({"student_work": _as_dict(pc.get("student_work")), "metrics": _as_dict(md.get("metrics"))})
+
+
+def attempt_to_observation(a: dict, review_ft: Optional[List[bool]] = None) -> Optional[dict]:
+    """An attempt doc -> observe() kwargs, the ones its submission path passed."""
+    sid, subject = a.get("subskill_id"), a.get("subject")
+    source = a.get("source") or "practice"
+    if not sid or not subject or source == "diagnostic":
+        return None
     try:
-        score = float(r.get("score"))
+        score = float(a.get("score"))
     except (TypeError, ValueError):
         return None
+    first = a.get("first_try") or review_ft
     return {"subject": subject, "subskill_id": sid, "score": score,
-            "primitive_type": md.get("primitive_type"), "eval_mode": md.get("eval_mode"),
-            "first_try": first, "source": md.get("eval_source") or md.get("source") or "practice",
-            "attempt_id": r.get("attempt_id") or r.get("id"), "timestamp": _ts(r.get("timestamp"))}
+            "primitive_type": a.get("primitive_type"), "eval_mode": a.get("eval_mode"),
+            "first_try": [bool(x) for x in first] if first else None,
+            "evidence_parts": int(a.get("evidence_parts") or 1),
+            "grade": a.get("lesson_grade"), "source": source,
+            "attempt_id": a.get("id"),
+            "timestamp": _ts(a.get("answered_at") or a.get("timestamp"))}
+
+
+def observations(attempts: Iterable[dict], reviews: Iterable[dict], subjects: Optional[List[str]] = None) -> List[dict]:
+    """Attempts in answer order as observe() kwargs; reviews only supply
+    first-try results the attempt itself lacks."""
+    ft = {r["attempt_id"]: review_first_try(r) for r in reviews if r.get("attempt_id")}
+    obs = [o for o in (attempt_to_observation(a, ft.get(a.get("id"))) for a in attempts)
+           if o and (subjects is None or subject_key(o["subject"]) in subjects)]
+    obs.sort(key=lambda o: o["timestamp"])
+    return obs
+
+
+async def replay(student, obs: List[dict], graph_source, grade: Optional[str]) -> "_MemStore":
+    """observe() every answer into a fresh in-memory store."""
+    mem = _MemStore(grade)
+    svc = LearnerStateService(mem, graph_source=graph_source, background=False)
+    for o in obs:
+        await svc.observe(student_id=student, **o)
+    return mem
 
 
 async def run(student: int, subjects: List[str], apply: bool) -> None:
     fs = FirestoreService()
     grade = (await fs.get_student_planning_fields(student) or {}).get("grade_level")
     t0 = time.time()
-    reviews = [d.to_dict() for d in fs._student_doc(student).collection("reviews").stream()]
-    obs = [o for o in (review_to_observation(r) for r in reviews) if o and subject_key(o["subject"]) in subjects]
-    obs.sort(key=lambda o: o["timestamp"])
-    print(f"student {student} (grade {grade}): {len(reviews)} reviews, {len(obs)} in {subjects} ({time.time() - t0:.0f}s read)")
+    root = fs._student_doc(student)
+    attempts = [{"id": d.id, **d.to_dict()} for d in root.collection("attempts").stream()]
+    reviews = [d.to_dict() for d in root.collection("reviews").stream()]
+    obs = observations(attempts, reviews, subjects)
+    by_src = Counter(o["source"] for o in obs)
+    print(f"student {student} (grade {grade}): {len(attempts)} attempts ({dict(by_src)} in {subjects}), "
+          f"{sum(1 for o in obs if o['first_try'])} with first-try ({time.time() - t0:.0f}s read)")
 
     mem = _MemStore(grade)
     svc = LearnerStateService(mem, graph_source=lambda s: get_learner_graph(fs, s), background=False)

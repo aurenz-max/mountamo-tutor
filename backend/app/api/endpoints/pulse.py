@@ -9,11 +9,12 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ...core.middleware import get_user_context
-from ...dependencies import get_pulse_engine
+from ...dependencies import get_planning_service, get_pulse_engine
 from ...models.pulse import (
     CreatePulseSessionRequest,
     PulseResultRequest,
 )
+from ...services.planning_service import PlanningService
 from ...services.pulse_engine import PulseEngine
 
 logger = logging.getLogger(__name__)
@@ -30,19 +31,22 @@ async def create_pulse_session(
     body: CreatePulseSessionRequest,
     user_context: dict = Depends(get_user_context),
     engine: PulseEngine = Depends(get_pulse_engine),
+    planning: PlanningService = Depends(get_planning_service),
 ):
-    """Assemble and return a new Pulse session."""
+    """Assemble and return a new Pulse session (no subject: the daily mix)."""
     student_id = user_context["student_id"]
 
     try:
         logger.info(
             f"POST /pulse/sessions — student {student_id}, "
-            f"subject={body.subject}, items={body.item_count}"
+            f"subject={body.subject or 'daily mix'}, items={body.item_count}"
         )
+        weights = None if body.subject else await planning.daily_subject_weights(student_id)
         result = await engine.assemble_session(
             student_id=student_id,
             subject=body.subject,
             item_count=body.item_count,
+            subject_weights=weights,
         )
         return result
     except ValueError as e:

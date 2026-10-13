@@ -54,6 +54,9 @@ MAX_CURRENT_ITEMS_PER_SKILL = 3
 # Share of a Pulse session the learner model spends confirming what it believes
 # is mastered but the lifecycle has not recorded (the rest teaches).
 PULSE_CONFIRM_SHARE = 0.34
+# Session subject of a Pulse with no subject picked: the daily mix, whose items
+# each carry their own subject.
+DAILY_MIX_SUBJECT = "DAILY_MIX"
 
 # θ → mode mapping thresholds (PRD §3.1)
 THETA_TO_MODE = [
@@ -133,11 +136,14 @@ class PulseItemSpec(BaseModel):
     selection_kind: Optional[str] = None
     selection_reason: Optional[str] = None
     p_right: Optional[float] = None
+    # The subskill's own grade ("Kindergarten", "1", ...): the generator's scope,
+    # which can sit above the student's grade of record (session_meta.student_grade)
+    grade: Optional[str] = None
 
 
 class CreatePulseSessionRequest(BaseModel):
-    """Request body for POST /api/pulse/sessions."""
-    subject: str
+    """Request body for POST /api/pulse/sessions. No subject = the daily mix."""
+    subject: Optional[str] = None
     item_count: int = Field(default=DEFAULT_PULSE_ITEM_COUNT, ge=5, le=30)
 
 
@@ -176,6 +182,11 @@ class PulseResultRequest(BaseModel):
     # learner state reads these instead of the final score (retry-until-correct
     # primitives finish at 10).
     first_try: Optional[List[bool]] = None
+    # L0 (R2): what the student saw and did, stored on the item's review so a
+    # Pulse answer can be analysed like a lesson answer. Optional for old clients.
+    student_work: Optional[Dict[str, Any]] = None
+    metrics: Optional[Dict[str, Any]] = None
+    problem_content: Optional[Dict[str, Any]] = None
 
 
 class ThetaUpdate(BaseModel):

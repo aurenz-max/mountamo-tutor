@@ -11,6 +11,9 @@ import { AIHelper } from '../components/AIHelper';
 import { EvaluationProvider } from '../evaluation';
 import { pulseApi } from './pulseApi';
 import { firstTryResults } from './firstTry';
+import { captureMisconception } from '../evaluation/diagnosis/captureMisconception';
+import { captureLearningObservation } from '../evaluation/diagnosis/captureLearningObservation';
+import { useStudent } from '../contexts/StudentContext';
 import type { ComponentId, HydratedPracticeItem, SessionBrief } from '../types';
 import type { PrimitiveEvaluationResult } from '../evaluation/types';
 import type { GradeLevel } from '../components/GradeLevelSelector';
@@ -24,7 +27,7 @@ import type {
   RecentPrimitive,
   SessionFrontierContext,
 } from './types';
-import { BAND_LABELS, BAND_COLORS, BAND_BG_COLORS } from './types';
+import { BAND_COLORS, BAND_BG_COLORS, itemLabel } from './types';
 import { FrontierContextCard } from './FrontierContextCard';
 import { PulseWorkspace } from './PulseWorkspace';
 import { workspaceBinding } from '../components/live-activity/lessonWorkspacePlan';
@@ -215,6 +218,13 @@ function reducer(state: RendererState, action: RendererAction): RendererState {
 // Props
 // ---------------------------------------------------------------------------
 
+/** A JSON object to send, or undefined (arrays and primitives are dropped). */
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
 export interface PulseActivityRendererProps {
   sessionId: string;
   items: PulseItemSpec[];
@@ -241,6 +251,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
 }) => {
   const [state, dispatch] = useReducer(reducer, itemSpecs, initState);
   const startTimeRef = useRef(Date.now());
+  const { studentId } = useStudent();
   const didHydrateRef = useRef(false);
 
   const currentItem = state.items[state.currentIndex];
@@ -285,6 +296,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
         skill_id: spec.skill_id,
         subskill_id: spec.subskill_id,
         subject: spec.subject,
+        grade: spec.grade ?? undefined,
       })),
       gradeLevel,
       recentPrimitives: recentPrimitives?.length ? recentPrimitives : undefined,
@@ -417,7 +429,21 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
         eval_mode: evalMode,
         duration_ms: durationMs,
         first_try: firstTryResults(evalResult),
+        // L0 (R2): the review keeps what was asked and what the child did
+        student_work: asRecord(evalResult.studentWork),
+        metrics: asRecord(evalResult.metrics),
+        problem_content: asRecord(
+          currentItem.hydrated?.visualData
+            ?? currentItem.hydrated?.problemData
+            ?? currentItem.hydrated?.manifestItem,
+        ),
       });
+
+      // Same diagnosis the lesson path runs after its submit: a Pulse miss can
+      // open a misconception, a supported success can record an observation.
+      const subskillId = evalResult.subskillId || currentSpec.subskill_id;
+      void captureMisconception(evalResult, { sessionId, subskillId, gradeLevel });
+      void captureLearningObservation(evalResult, { studentId, subskillId, gradeLevel });
 
       console.log(`${LOG} Backend response for item ${state.currentIndex + 1}: theta=${response.theta_update.new_theta.toFixed(2)} gate=${response.gate_update?.new_gate ?? '-'} complete=${response.session_progress.is_complete}`);
 
@@ -457,7 +483,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
       console.error(`${LOG} Submit failed for item ${state.currentIndex + 1}:`, err);
       dispatch({ type: 'SUBMIT_FAILED', error: err instanceof Error ? err.message : 'Failed to submit result' });
     }
-  }, [state, currentSpec, currentItem, sessionId, onSessionComplete]);
+  }, [state, currentSpec, currentItem, sessionId, onSessionComplete, studentId, gradeLevel]);
 
   // -------------------------------------------------------------------------
   // Initial hydration on mount
@@ -516,7 +542,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
               <TooltipContent className="backdrop-blur-xl bg-slate-900/90 border-white/10 text-slate-200 text-xs max-w-[220px] px-3 py-2">
                 <p className="font-semibold text-slate-100">{formatSkillLabel(item.spec.subskill_id)}</p>
                 <p className="text-slate-500 text-[10px] font-mono mt-0.5">
-                  {BAND_LABELS[item.spec.band]} &middot; Mode {item.spec.target_mode}
+                  {itemLabel(item.spec)} &middot; Mode {item.spec.target_mode}
                 </p>
                 {isDone && item.score != null && (
                   <p className="text-emerald-400 text-[10px] mt-0.5">Score: {item.score}%</p>
@@ -623,7 +649,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
           </p>
           {currentSpec && (
             <span className={`text-[10px] font-mono uppercase tracking-wider ${BAND_COLORS[currentSpec.band]}`}>
-              {BAND_LABELS[currentSpec.band]}
+              {itemLabel(currentSpec)}
             </span>
           )}
         </div>
@@ -657,7 +683,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
               <div className="flex items-center gap-3">
                 <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono uppercase tracking-wider ${BAND_BG_COLORS[currentSpec.band]} ${BAND_COLORS[currentSpec.band]}`}>
                   <BandIcon band={currentSpec.band} />
-                  {BAND_LABELS[currentSpec.band]}
+                  {itemLabel(currentSpec)}
                 </span>
                 <ChallengeDots mode={currentSpec.target_mode} />
               </div>
@@ -946,7 +972,7 @@ function PulseHydrationView({ items, hydratedCount, manifestItems, streamingMess
                   {/* Band + component badges */}
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${BAND_BG_COLORS[spec.band]} ${BAND_COLORS[spec.band]}`}>
-                      {BAND_LABELS[spec.band]}
+                      {itemLabel(spec)}
                     </span>
                     {hasManifest && manifestInfo && (
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-500">

@@ -815,6 +815,20 @@ class InMemoryFirestoreService:
 
         return copy.deepcopy(attempt_data)
 
+    async def save_problem_review(
+        self, student_id: int, subject: str, skill_id: str, subskill_id: str,
+        problem_id: str, review_data: Dict[str, Any], problem_content: Dict[str, Any] = None,
+        firebase_uid: Optional[str] = None, attempt_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        self._write_count += 1
+        import uuid as _uuid
+        doc = {"id": str(_uuid.uuid4()), "attempt_id": attempt_id, "student_id": student_id,
+               "subject": subject, "skill_id": skill_id, "subskill_id": subskill_id,
+               "problem_id": problem_id, "timestamp": self._now_iso(),
+               "problem_content": copy.deepcopy(problem_content), "full_review": copy.deepcopy(review_data)}
+        self.__dict__.setdefault("_reviews", {}).setdefault(student_id, []).append(doc)
+        return copy.deepcopy(doc)
+
     async def get_student_attempts(
         self,
         student_id: int,
