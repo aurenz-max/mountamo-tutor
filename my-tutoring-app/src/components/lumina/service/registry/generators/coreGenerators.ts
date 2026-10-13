@@ -13,6 +13,7 @@
  */
 
 import { registerContextGenerator } from '../contentRegistry';
+import type { ComponentId } from '../../../types';
 
 // ============================================================================
 // Core Narrative Component Imports (from dedicated service files)
@@ -22,6 +23,7 @@ import { generateConceptCards } from '../../concept-cards/gemini-concept-cards';
 import { generateFeatureExhibit } from '../../feature-exhibit/gemini-feature-exhibit';
 import { generateComparisonPanel } from '../../comparison-panel/gemini-comparison-panel';
 import { generateGenerativeTable } from '../../generative-table/gemini-generative-table';
+import { DRAWER_GENERATORS } from '../../drawers';
 
 
 // ============================================================================
@@ -231,6 +233,14 @@ registerContextGenerator('annotated-example', async (ctx) => {
     data
   };
 });
+
+// Drawers: ungraded displays checked in code (drawerSpecs.ts and siblings)
+for (const [id, generate] of Object.entries(DRAWER_GENERATORS)) {
+  registerContextGenerator(id as ComponentId, async (ctx) => ({
+    type: id as ComponentId, instanceId: ctx.instanceId,
+    data: await generate({ topic: ctx.topic, gradeContext: ctx.gradeContext, intent: ctx.intent, title: ctx.title }),
+  }));
+}
 
 // Formula Card (LaTeX/Math display)
 registerContextGenerator('formula-card', async (ctx) => {

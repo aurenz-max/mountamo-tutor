@@ -5,6 +5,7 @@ import { GenerativeTable } from '../primitives/GenerativeTable';
 import { KnowledgeCheck } from '../primitives/KnowledgeCheck';
 import { FeatureExhibit } from '../primitives/FeatureExhibit';
 import { ComparisonPanel } from '../primitives/ComparisonPanel';
+import { DRAWER_REGISTRY } from '../primitives/visual-primitives/drawers/drawerRegistry';
 import { FormulaCard } from '../primitives/FormulaCard';
 import { MathVisuals } from '../primitives/MathVisuals';
 import SentenceAnalyzer from '../primitives/visual-primitives/literacy/SentenceAnalyzer';
@@ -457,6 +458,9 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     containerClassName: 'max-w-5xl mx-auto mb-20',
     supportsEvaluation: true,
   },
+
+  // Drawers: ungraded displays, one per idea (drawerRegistry.ts)
+  ...DRAWER_REGISTRY,
 
   'formula-card': {
     component: FormulaCard,

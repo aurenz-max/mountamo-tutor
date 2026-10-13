@@ -169,6 +169,13 @@ export type { YouAndMeData, YouAndMeChallenge } from './primitives/visual-primit
 export type { StoryBridgeData, StoryBridgeChallenge, StoryBridgeStory, StoryBridgeCharacter } from './primitives/visual-primitives/literacy/StoryBridge';
 export type { StoryRibbonData, StoryRibbonChallenge, StoryRibbonEvent } from './primitives/visual-primitives/literacy/StoryRibbon';
 export type { StoryTalkData } from './primitives/visual-primitives/literacy/StoryTalk';
+export type { DrawerModelSliderData, DrawerPartWholeData, DrawerCauseChainData } from './primitives/visual-primitives/drawers/drawerSpecs';
+export type { DrawerMagnitudeLadderData, DrawerBandScaleData, DrawerRangeBarsData, DrawerMetricSwitchData } from './primitives/visual-primitives/drawers/scaleSpecs';
+export type { DrawerUnitChainData, DrawerRatioScalerData, DrawerGrowthRaceData, DrawerChanceRunData } from './primitives/visual-primitives/drawers/growthSpecs';
+export type {
+  DrawerCycleWheelData, DrawerStoryArcData, DrawerThenAndNowData, DrawerPerspectiveLensData,
+  DrawerWordAnatomyData, DrawerShadesOfMeaningData, DrawerRhythmGridData,
+} from './primitives/visual-primitives/drawers/textSpecs';
 export type { WordFlipData, WordFlipChallenge } from './primitives/visual-primitives/literacy/WordFlip';
 export type { DiDiceRollData, DiDiceRollChallenge, DiceComparison, DieValue } from './primitives/visual-primitives/direct-instruction/DiDiceRoll';
 export type { DiLetterSoundsData } from './primitives/visual-primitives/direct-instruction/DiLetterSounds';
@@ -1462,6 +1469,26 @@ export type ComponentId =
   | 'formula-card'       // LaTeX/Math display
   | 'formula-lab'        // Interactive formula exploration and prediction lab
   | 'custom-visual'      // The SVG/HTML wildcard
+
+  // Drawers: ungraded, spec-driven displays (drawerSpecs.ts)
+  | 'drawer-model-slider' // Inputs on sliders, outputs from checked formulas
+  | 'drawer-part-whole'   // A whole as 100 squares, split into parts
+  | 'drawer-cause-chain'  // A chain of effects revealed one link at a time
+  | 'drawer-magnitude-ladder' // Sizes across powers of ten, ordinary vs x10 scale
+  | 'drawer-band-scale'   // One variable in named zones with landmarks
+  | 'drawer-range-bars'   // Ranges on a shared scale, swept by a slider
+  | 'drawer-metric-switch' // The same things ranked by different measures
+  | 'drawer-unit-chain'   // A rate multiplied step by step into a total
+  | 'drawer-ratio-scaler' // A recipe scaled by one factor
+  | 'drawer-growth-race'  // Adding against multiplying over time
+  | 'drawer-chance-run'   // A chance experiment repeated until it settles
+  | 'drawer-cycle-wheel'  // Stages on a loop
+  | 'drawer-story-arc'    // A story on the five-stage plot mountain
+  | 'drawer-then-and-now' // One place or activity at two times
+  | 'drawer-perspective-lens' // One event, several viewpoints, the same questions
+  | 'drawer-word-anatomy' // Prefix, root and suffix switched on and off
+  | 'drawer-shades-of-meaning' // Words for one idea, weakest to strongest
+  | 'drawer-rhythm-grid'  // A beat on a step grid, played and edited
 
   // Math Visualization Primitives (Elementary Math)
   | '3d-shape-explorer'   // Interactive 3D shape explorer
