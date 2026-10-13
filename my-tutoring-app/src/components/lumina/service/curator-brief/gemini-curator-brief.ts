@@ -5,6 +5,7 @@ import { HOOK_VISUAL_THEMES, emojiForHookTheme } from "../../utils/hookVisual";
 // Type-only — keeps the client-side auth stack out of this server module.
 import type { StudentPersona } from "../studentContext/types";
 import { capObjectivesForGrade, maxObjectivesForGrade } from "./objectiveBudget";
+import { finishOpeningFields } from "./briefOpening";
 
 /**
  * Build the personal-framing block for the brief prompt — WORDS ONLY.
@@ -130,9 +131,35 @@ export const generateIntroBriefing = async (
             type: Type.STRING,
             enum: [...HOOK_VISUAL_THEMES],
             description: 'The menu theme that best matches the hook. Code attaches the emoji — never write a glyph or a free-form word here.'
+          },
+          question: {
+            type: Type.STRING,
+            description: 'The hook as ONE short question a child would want answered, at most 12 words.'
+          },
+          imagePrompt: {
+            type: Type.STRING,
+            description: 'The PLACE where the hook happens, for an illustration, one sentence. Leave out the things the hook asks about when they are lined up, counted or patterned. Never a count, a row or line of things, a sequence, a pattern, written words, or the answer to any question.'
           }
         },
-        required: ['type', 'content', 'visualTheme']
+        required: ['type', 'content', 'visualTheme', 'question', 'imagePrompt']
+      },
+
+      today: {
+        type: Type.STRING,
+        description: 'What the student will DO in this lesson, one short sentence in plain student words, at most 14 words.'
+      },
+
+      wonders: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            text: { type: Type.STRING, description: 'A short "I wonder..." question about the topic, at most 10 words.' },
+            theme: { type: Type.STRING, enum: [...HOOK_VISUAL_THEMES], description: 'Menu theme for its picture. Code attaches the emoji.' }
+          },
+          required: ['text', 'theme']
+        },
+        description: 'Exactly 3 different "I wonder" questions this lesson will help answer.'
       },
 
       bigIdea: {
@@ -271,7 +298,7 @@ export const generateIntroBriefing = async (
     },
     required: [
       'primitive', 'topic', 'subject', 'gradeLevel', 'estimatedTime',
-      'hook', 'bigIdea', 'objectives', 'prerequisites', 'roadmap', 'connections', 'mindset'
+      'hook', 'bigIdea', 'objectives', 'prerequisites', 'roadmap', 'connections', 'mindset', 'today', 'wonders'
     ]
   };
 
@@ -379,6 +406,14 @@ have not yet been given a meaning for, you have ordered it wrong — apply rule 
 - Provide actionable strategies, not just "try hard"
 - Match tone to grade level (warmer for younger, more mature for older)
 
+### The Opening Screen (hook.question, hook.imagePrompt, today, wonders)
+The student meets the lesson on one screen: a picture, three short captions spoken aloud, and a few "I wonder" choices.
+- **hook.question**: the hook boiled down to one short question.
+- **hook.imagePrompt**: sets the SCENE only: the place, not the puzzle. An image model gets exact counts, orders and rows wrong, so NEVER ask for a number of things, a row or line of things, a sequence, a repeating pattern, a labelled diagram, letters, or anything that shows an answer. When the hook is about things in a line, a pattern or a count, describe the place without them: for a hook about children lining up in red and blue shoes, write "a sunny school playground with a slide and swings", not "children standing in a line".
+- **today**: what the student will do, in plain words ("We will copy and make color patterns").
+- **wonders**: three different curiosity questions, each starting "I wonder". They are not a quiz and have no right answer on screen. NEVER use the quick-check answer in a wonder, the question, or the image prompt.
+- For K-2 keep all four very short and concrete.
+
 ## Grade-Level Calibration
 
 **K-2:**
@@ -437,6 +472,10 @@ Create an engaging, age-appropriate Intro Briefing that will excite students abo
       result.hook.visual = emojiForHookTheme(result.hook.visualTheme, result.hook.type);
       delete result.hook.visualTheme;
     }
+
+    // The opening screen's fields: code attaches the wonders' pictures and drops anything that
+    // carries the quick-check answer, so the screen, the tutor's facts and the picture never show it.
+    finishOpeningFields(result);
 
     // Stamp the name deterministically (code-side) for the "Prepared for X"
     // header chip — never trust the LLM to emit a reliable UI label.

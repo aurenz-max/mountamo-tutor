@@ -28,6 +28,7 @@ import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { useLessonWorkspace } from './live-activity/LessonWorkspace';
 import { lessonPrimitiveContext } from './live-activity/lessonWorkspacePlan';
 import { SoundManager } from '../utils/SoundManager';
+import { BRIEF_START_EVENT } from '../primitives/curatorBriefWorkspace';
 
 /** Dwell before a display-only section unlocks its arrow (mirrors DeepDive's
  * reveal_progressive DWELL_MS) — prevents machine-gunning through frames. */
@@ -143,6 +144,16 @@ export const KindergartenStage: React.FC<KindergartenStageProps> = ({
     }
     goTo(activeIndex + 1);
   }, [activeIndex, sections.length, goTo, onFinished]);
+
+  // The lesson opening's own Start button moves the rails on, so a pre-reader's one press is enough.
+  const activeInstanceId = active?.instanceId;
+  useEffect(() => {
+    const onStart = (e: Event) => {
+      if ((e as CustomEvent<{ instanceId?: string }>).detail?.instanceId === activeInstanceId) advance();
+    };
+    window.addEventListener(BRIEF_START_EVENT, onStart);
+    return () => window.removeEventListener(BRIEF_START_EVENT, onStart);
+  }, [activeInstanceId, advance]);
 
   if (!sections.length || !active || finished) return null;
 

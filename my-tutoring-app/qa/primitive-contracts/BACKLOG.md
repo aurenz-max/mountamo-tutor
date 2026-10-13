@@ -27,6 +27,7 @@ non-K consumers.
 
 ## Done
 
+- **curator-brief: derived 2026-10-11** (static, before the one-screen opening rebuild) → `docs/contracts/curator-brief.md`. 9 requirements, 0 open conflicts. Rebuild checked **COMPATIBLE** (changelog).
 - **di-dice-roll: derived 2026-10-03** (static, with DI levers family 2) → `docs/contracts/di-dice-roll.md`. 12 requirements, 0 conflicts. `--check` **COMPATIBLE** after one fix (a model sharing a face named it; `di-dice-roll-check-2026-10-03.md`).
 
 - **di-math-facts — derived 2026-10-02** (static, with the DI lever pilot) → `docs/contracts/di-math-facts.md`. 13 requirements, 0 conflicts; R8-R13 are the levers (parallel-item model, printed-only help, simplify, starting position, J9, opt-in stage). Catalog projection APPLIED (description + answer_fact mode text described modelling the learner's own fact). `--check` **COMPATIBLE** (`di-math-facts-check-2026-10-02.md`).

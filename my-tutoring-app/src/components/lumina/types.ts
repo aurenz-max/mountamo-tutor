@@ -993,6 +993,16 @@ export interface HookData {
   type: 'scenario' | 'question' | 'surprising_fact' | 'story';
   content: string;
   visual: string; // emoji
+  /** The hook as one short question, the opening's first caption. Absent on briefs before 2026-10-11. */
+  question?: string;
+  /** The SETTING of the hook for a generated picture: place and things, never a count, sequence, pattern or answer. */
+  imagePrompt?: string;
+}
+
+/** One "I wonder" choice on the opening screen. Ungraded; `emoji` is attached by code from a theme. */
+export interface BriefWonder {
+  text: string;
+  emoji: string;
 }
 
 export interface BigIdeaData {
@@ -1062,6 +1072,10 @@ export interface IntroBriefingData {
    * Absent when the lesson is unpersonalized.
    */
   preparedFor?: string;
+  /** What the learner will do today, one short sentence (the opening's third caption). */
+  today?: string;
+  /** 2-3 "I wonder" choices the learner may tap. Never the quick-check answer. */
+  wonders?: BriefWonder[];
 }
 
 export interface GraphBoardData {

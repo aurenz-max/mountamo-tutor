@@ -64,6 +64,7 @@ import { letterSoundLinkLiveDomain } from './adapters/letterSoundLinkLive';
 import { barModelLiveDomain } from './adapters/barModelLive';
 import { phonicsBlenderLiveDomain } from './adapters/phonicsBlenderLive';
 import { adaptationInvestigatorLiveDomain } from './adapters/adaptationInvestigatorLive';
+import { curatorBriefLiveDomain } from './adapters/curatorBriefLive';
 import { wordFlipLiveDomain } from './adapters/wordFlipLive';
 import { soundSwapLiveDomain } from './adapters/soundSwapLive';
 import { spellingPatternExplorerLiveDomain } from './adapters/spellingPatternExplorerLive';
@@ -208,6 +209,7 @@ export const LIVE_ADAPTERS = {
   'bar-model': workspaceAdapter('bar-model', barModelLiveDomain),
   'phonics-blender': workspaceAdapter('phonics-blender', phonicsBlenderLiveDomain),
   'adaptation-investigator': workspaceAdapter('adaptation-investigator', adaptationInvestigatorLiveDomain),
+  'curator-brief': workspaceAdapter('curator-brief', curatorBriefLiveDomain),
   'word-flip': workspaceAdapter('word-flip', wordFlipLiveDomain),
   'sound-swap': workspaceAdapter('sound-swap', soundSwapLiveDomain),
   'cvc-speller': workspaceAdapter('cvc-speller', cvcSpellerLiveDomain),

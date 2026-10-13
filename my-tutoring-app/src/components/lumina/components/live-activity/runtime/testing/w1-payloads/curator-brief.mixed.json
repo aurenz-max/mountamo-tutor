@@ -1,0 +1,117 @@
+{
+  "source": "eval-test route, curator-brief, topic AB patterns, kindergarten, 2026-10-11",
+  "primitiveId": "curator-brief",
+  "evalMode": "mixed",
+  "data": {
+    "primitive": "intro_briefing",
+    "topic": "Recognizing and Creating Patterns: extend AB patterns with colors, shapes, or sounds",
+    "subject": "General",
+    "gradeLevel": "Kindergarten",
+    "estimatedTime": "15-20 minutes",
+    "hook": {
+      "type": "scenario",
+      "content": "Imagine you are stringing colorful beads to make a special necklace, putting on a red bead, then a blue bead, then a red bead, and then a blue bead!",
+      "question": "What bead color comes next on your necklace?",
+      "imagePrompt": "A wooden table with colorful craft beads scattered on it under bright sunlight.",
+      "visual": "🔁"
+    },
+    "bigIdea": {
+      "statement": "Patterns are things that repeat in a special order, like red, blue, red, blue.",
+      "whyItMatters": "Seeing patterns helps us guess what comes next in games, music, stories, and everyday life!"
+    },
+    "objectives": [
+      {
+        "id": "obj1",
+        "text": "Copy and extend a simple AB pattern using colors or shapes",
+        "verb": "apply",
+        "icon": "puzzle"
+      },
+      {
+        "id": "obj2",
+        "text": "Identify what comes next in a sound or movement pattern",
+        "verb": "identify",
+        "icon": "search"
+      }
+    ],
+    "prerequisites": {
+      "shouldKnow": [
+        "Name basic colors like red, blue, yellow, and green",
+        "Recognize simple shapes like circles and squares",
+        "Sort objects by color or shape into groups"
+      ],
+      "quickCheck": {
+        "question": "What color is this apple? Can you find another object with that same color?",
+        "answer": "Red, and another red object like a block or crayon.",
+        "hint": "Look at things around the room that match the color of a ripe apple!"
+      }
+    },
+    "roadmap": [
+      {
+        "phase": "Explore",
+        "description": "Discover repeating patterns hiding all around us.",
+        "activities": [
+          "Spot patterns in clothing and pictures",
+          "Listen to a clapping rhythm"
+        ]
+      },
+      {
+        "phase": "Learn",
+        "description": "See how AB patterns work with colors and shapes.",
+        "activities": [
+          "Build a red-blue block train",
+          "Name the repeating parts"
+        ]
+      },
+      {
+        "phase": "Practice",
+        "description": "Figure out what comes next in fun pattern lines.",
+        "activities": [
+          "Complete missing shapes in a row",
+          "Clap and stomp along with sound patterns"
+        ]
+      },
+      {
+        "phase": "Apply",
+        "description": "Create your very own pattern to show a friend.",
+        "activities": [
+          "Design a custom sticker pattern",
+          "Share the pattern rule"
+        ]
+      }
+    ],
+    "connections": {
+      "buildingFrom": [
+        "Sorting and matching objects by attributes",
+        "Observing similarities and differences in everyday items"
+      ],
+      "leadingTo": [
+        "Number patterns and skip counting",
+        "Predicting story events and daily schedules"
+      ],
+      "realWorld": [
+        "Stripes on clothing and socks",
+        "Clapping along to favorite songs",
+        "Floor tiles and fence posts repeating in a row"
+      ]
+    },
+    "mindset": {
+      "encouragement": "Patterns can sometimes trick our brains at first, but with a little practice, you will spot them everywhere!",
+      "growthTip": "Say the pattern out loud to yourself—hearing the rhythm makes it much easier to know what comes next."
+    },
+    "today": "We will copy and make fun AB patterns using colors and shapes.",
+    "wonders": [
+      {
+        "text": "I wonder why zebras have stripe patterns?",
+        "emoji": "🐾"
+      },
+      {
+        "text": "I wonder how music makes patterns with sounds?",
+        "emoji": "🎵"
+      },
+      {
+        "text": "I wonder what pattern I can build with my toys?",
+        "emoji": "🏗️"
+      }
+    ]
+  }
+}

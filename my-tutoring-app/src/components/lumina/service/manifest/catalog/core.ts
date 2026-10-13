@@ -15,63 +15,19 @@ export const CORE_CATALOG: ComponentDefinition[] = [
     description: 'Introduction, learning objectives, and hook. REQUIRED: Always include this first.',
     constraints: 'Must be first component',
     affordances: { representation: 'symbolic', reader: 'none', role: 'introduce', minutes: 2, maxPerLesson: 1 },
-    tutoring: {
-      taskDescription:
-        'The student is on the opening briefing for "{{topic}}" — a tabbed overview (the hook, the big idea, '
-        + 'what they will learn, what to know first, the journey, and connections). They are currently on the '
-        + '"{{currentSectionLabel}}" section. This is orientation, NOT a graded task: your job is to warm them up '
-        + 'and make the section make sense — especially for young or pre-reading students who cannot read the text '
-        + 'on screen themselves.',
-      contextKeys: ['topic', 'gradeLevel', 'currentSection', 'currentSectionLabel', 'isPreReader'],
-      scaffoldingLevels: {
-        level1:
-          '"Point to the picture or the big word on this part and ask what they think it is about."',
-        level2:
-          '"Say the big idea of this section in one short, everyday sentence, then ask a quick wondering question."',
-        level3:
-          '"Read the section aloud slowly in simple words, connect it to something the student already knows, '
-          + 'and tell them what the next part is."',
-      },
-      commonStruggles: [
-        {
-          pattern: 'The student is silent and not moving between sections',
-          response: 'Offer to read it out loud and invite them to tap the arrow to see the next part.',
-        },
-        {
-          pattern: 'The student cannot read the tabs or text (pre-reader)',
-          response:
-            'Never ask them to read. Say each part aloud warmly and guide them by what they can see — '
-            + 'the picture, the colors, the number of steps.',
-        },
-        {
-          pattern: 'The student rushes past the hook and big idea',
-          response: 'Slow them down on the big idea with one short question about it before they move on.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'READ THE BRIEFING ALOUD',
-          instruction:
-            'When you receive [READ_SECTION], read the provided section text aloud for the student in a warm, '
-            + 'natural voice, rephrased into short, simple, age-appropriate sentences — do NOT read it word-for-word '
-            + 'like a robot. Keep it brief (1-3 sentences for young students). End by naming what the next section '
-            + 'is, if one is given. Say nothing about "sections", "tabs", or the interface itself.',
-        },
-        {
-          title: 'PRE-READER MODE',
-          instruction:
-            'When isPreReader is true, assume the student CANNOT read the text on screen. Never tell them to '
-            + '"read" anything or ask them to find a written word. Voice every part for them, keep sentences very '
-            + 'short, and guide by what they can see and hear (pictures, colors, counting, sounds).',
-        },
-        {
-          title: 'NEVER REVEAL THE QUICK-CHECK ANSWER',
-          instruction:
-            'The "Before We Start" section has a quick-check question with a hidden answer. If you read that '
-            + 'section, read ONLY the question and what the student should already know. NEVER say or hint at the '
-            + 'answer — let the student think of it themselves.',
-        },
-      ],
+    // The lesson's opening screen, an ungraded teaching surface (2026-10-11). It replaces the tabbed
+    // brief and its [READ_SECTION] scaffold: a bound brief owns the lesson opening, so the greeting
+    // and the hook are one turn. Contract: docs/contracts/curator-brief.md.
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8',
+        'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      ungraded: true,
+      guidance: 'This is the first screen of the lesson and your first words to the learner, so it is also your greeting. '
+        + 'A picture of where the hook happens (it arrives a few seconds in) sits above three short captions: the hook, '
+        + 'the big idea, and what the learner will do today. Below them are the lesson steps, two or three "I wonder" '
+        + 'choices and a Start button, which works as Done on this screen. The captions are three beats of about one sentence each; '
+        + 'the learner may not read yet, so the captions reach them through you, in your own words. A tapped "I wonder" '
+        + 'choice is curiosity with no right answer. The picture sets the scene only. You cannot change a caption or the picture.',
     },
   },
   {

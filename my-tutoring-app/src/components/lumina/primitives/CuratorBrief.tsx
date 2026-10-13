@@ -1,665 +1,292 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Target, Lightbulb, Clock, ChevronRight, CheckCircle2, Sparkles, Brain, Compass, Map, ChevronLeft } from 'lucide-react';
-import { IntroBriefingData, IntroData } from '../types';
+/**
+ * The lesson's opening screen (rebuilt 2026-10-11; contract docs/contracts/curator-brief.md).
+ *
+ * One screen, picture first: a generated picture of where the hook happens, three short captions
+ * (the hook, the big idea, what the learner will do), a strip of the lesson steps, two or three
+ * "I wonder" choices and a Start button. Nothing is graded.
+ *
+ * Inside a live lesson the catalog's ungraded `teachingWorkspace` binds it: the tutor receives the
+ * captions as scene facts and, because a bound surface owns the lesson opening, the greeting and the
+ * hook are one turn. Outside a runtime the same screen renders with a read-aloud button that sends
+ * the same facts through the legacy channel.
+ *
+ * The picture sets the scene only. Image models get counts, orders and aligned rows wrong, so the
+ * prompt forbids them (`hookPicturePrompt`), and the screen never waits on it.
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { CheckCircle2, ChevronRight, Lightbulb, Play, Sparkles, Target } from 'lucide-react';
+import type { IntroBriefingData, IntroData } from '../types';
 import { SoundManager } from '../utils/SoundManager';
 import { resolveHookVisual } from '../utils/hookVisual';
 import { useLuminaAI } from '../hooks/useLuminaAI';
-import { LuminaBadge, LuminaCallout, LuminaPanel, LuminaButton, LuminaReadAloud, type LuminaAccent } from '../ui';
+import { generateConceptImage } from '../service/geminiClient-api';
+import { hookPicturePrompt } from '../service/curator-brief/briefOpening';
+import { useWorkspacePipSurface } from '../pip/useWorkspacePipSurface';
+import { withWorkspaceController } from '../components/live-activity/runtime/withTeachingWorkspace';
+import { useNoTeachingSurface, useTeachingSurface, type TeachingSurface, type TeachingSurfaceOptions }
+  from '../components/live-activity/runtime/useTeachingSurface';
+import { BRIEF_START_EVENT, briefCaptions, briefSteps, briefWonders, isPreReaderGrade, teachingScene, WONDER_ACCENTS, type PictureState }
+  from './curatorBriefWorkspace';
+import {
+  LuminaBadge, LuminaButton, LuminaCard, LuminaPanel, LuminaReadAloud,
+  accentSoftBg, accentSoftBorder, accentText, type LuminaAccent,
+} from '../ui';
 
 interface CuratorBriefProps {
   data: IntroBriefingData | IntroData;
   className?: string;
+  runtimeEvalMode?: string;
+  runtimePlanItemId?: string;
 }
 
-// Map an objective verb to a kit accent (kit palette: no green/red).
-const verbAccent: Record<string, LuminaAccent> = {
-  identify: 'blue',
-  explain: 'purple',
-  create: 'amber',
-  analyze: 'rose',
-  compare: 'cyan',
-  apply: 'emerald',
+type SurfaceProps = CuratorBriefProps & {
+  tutorOwned: boolean;
+  useController: (options: TeachingSurfaceOptions) => TeachingSurface | null;
 };
 
-// Helper function to convert old IntroData to new IntroBriefingData format
-const convertToIntroBriefing = (data: IntroData, topic: string = 'Learning Topic'): IntroBriefingData => {
-  return {
-    primitive: 'intro_briefing',
-    topic: topic,
-    subject: 'General',
-    gradeLevel: 'Elementary',
-    estimatedTime: '15-20 minutes',
-    hook: {
-      type: 'scenario',
-      content: data.hook,
-      visual: '📚'
-    },
-    bigIdea: {
-      statement: 'Understanding this concept will help you grow as a learner.',
-      whyItMatters: 'This topic connects to many areas of learning and helps build important skills.'
-    },
-    objectives: data.objectives.map((obj, idx) => ({
-      id: `obj${idx + 1}`,
-      text: obj,
-      verb: 'explain',
-      icon: 'message'
-    })),
-    prerequisites: {
-      shouldKnow: ['Basic concepts from previous lessons'],
-      quickCheck: {
-        question: 'Are you ready to learn something new?',
-        answer: 'Yes!',
-        hint: 'Think about what you already know.'
-      }
-    },
-    roadmap: [
-      {
-        phase: 'Explore',
-        description: 'Discover the basics',
-        activities: ['Introduction', 'Key concepts']
-      },
-      {
-        phase: 'Learn',
-        description: 'Understand the details',
-        activities: ['Examples', 'Practice']
-      },
-      {
-        phase: 'Apply',
-        description: 'Use what you learned',
-        activities: ['Activities', 'Quiz']
-      }
-    ],
-    connections: {
-      buildingFrom: ['Prior knowledge'],
-      leadingTo: ['Future topics'],
-      realWorld: ['Everyday applications']
-    },
-    mindset: {
-      encouragement: 'You can learn this! Take your time and enjoy the journey.',
-      growthTip: 'Ask questions and explore at your own pace.'
-    }
+// Older payloads carry only a hook string and objective strings (contract R9).
+const convertToIntroBriefing = (data: IntroData, topic: string = 'Learning Topic'): IntroBriefingData => ({
+  primitive: 'intro_briefing',
+  topic,
+  subject: 'General',
+  gradeLevel: 'Elementary',
+  estimatedTime: '15-20 minutes',
+  hook: { type: 'scenario', content: data.hook, visual: '📚' },
+  bigIdea: {
+    statement: 'Understanding this concept will help you grow as a learner.',
+    whyItMatters: 'This topic connects to many areas of learning and helps build important skills.',
+  },
+  objectives: data.objectives.map((obj, idx) => ({ id: `obj${idx + 1}`, text: obj, verb: 'explain', icon: 'message' })),
+  prerequisites: {
+    shouldKnow: ['Basic concepts from previous lessons'],
+    quickCheck: { question: 'Are you ready to learn something new?', answer: 'Yes!', hint: 'Think about what you already know.' },
+  },
+  roadmap: [
+    { phase: 'Explore', description: 'Discover the basics', activities: ['Introduction'] },
+    { phase: 'Learn', description: 'Understand the details', activities: ['Examples'] },
+    { phase: 'Apply', description: 'Use what you learned', activities: ['Practice'] },
+  ],
+  connections: { buildingFrom: [], leadingTo: [], realWorld: [] },
+  mindset: { encouragement: 'You can learn this!', growthTip: 'Ask questions as you go.' },
+});
+
+const isIntroBriefingData = (data: IntroBriefingData | IntroData): data is IntroBriefingData => 'mindset' in data;
+
+const CAPTION_ROWS = [
+  { id: 'hook', accent: 'amber', Icon: Sparkles },
+  { id: 'bigIdea', accent: 'purple', Icon: Lightbulb },
+  { id: 'today', accent: 'cyan', Icon: Target },
+] as const;
+
+/** The legacy (unbound) channel: the same facts the workspace sends, on the learner's request. */
+const LegacyReadAloud: React.FC<{ brief: IntroBriefingData; instanceId: string; preReader: boolean }> = ({ brief, instanceId, preReader }) => {
+  const { sendText } = useLuminaAI({
+    primitiveType: 'curator-brief', instanceId, exhibitId: brief.topic, gradeLevel: brief.gradeLevel,
+    primitiveData: { topic: brief.topic, gradeLevel: brief.gradeLevel, isPreReader: preReader },
+  });
+  const speak = () => {
+    const c = briefCaptions(brief);
+    const wonders = briefWonders(brief);
+    SoundManager.pop();
+    sendText(`[BRIEF_OPENING] The learner asked to hear the lesson opening for "${brief.topic}". `
+      + `The hook: ${brief.hook.content} The big idea: ${c.bigIdea} Today: ${c.today}`
+      + (wonders.length ? ` The "I wonder" choices: ${wonders.map((w, i) => `${i + 1}, ${w.text}`).join('; ')}.` : '')
+      + (preReader ? ' The learner is a pre-reader and cannot read the screen.' : ''), { silent: true });
   };
+  return <LuminaReadAloud onClick={speak} size={preReader ? 'lg' : 'md'} />;
 };
 
-// Type guard to check if data is IntroBriefingData
-const isIntroBriefingData = (data: IntroBriefingData | IntroData): data is IntroBriefingData => {
-  return 'mindset' in data;
-};
+const CuratorBriefSurface: React.FC<SurfaceProps> = ({ data, className = '', runtimePlanItemId, tutorOwned, useController }) => {
+  const brief = useMemo(() => (isIntroBriefingData(data) ? data : convertToIntroBriefing(data)), [data]);
+  const raw = data as unknown as Record<string, unknown>;
+  const instanceId = String(raw.instanceId || raw.__instanceId || 'curator-brief');
+  const objectiveId = typeof raw.objectiveId === 'string' ? raw.objectiveId : undefined;
+  const preReader = isPreReaderGrade(brief.gradeLevel);
+  const captions = briefCaptions(brief);
+  const wonders = briefWonders(brief);
+  const steps = briefSteps(brief);
+  const realWorld = brief.connections?.realWorld?.[0];
 
-// Grade strings that indicate a pre-reading student. The brief's tabbed prose
-// assumes a reading fluency a Kindergarten/pre-literacy student doesn't have yet,
-// so for these grades the tutor voices every section instead of leaving it to text.
-const isPreReaderGrade = (grade?: string): boolean => {
-  if (!grade) return false;
-  return /(kinder|preschool|pre-?k\b|prek|toddler|pre-?reader|^\s*gk\s*$|grade\s*k\b)/i.test(grade);
-};
+  const [image, setImage] = useState<string | null>(null);
+  const [drawing, setDrawing] = useState(false);
+  const [picked, setPicked] = useState<number | null>(null);
+  const [started, setStarted] = useState(false);
+  const [marked, setMarked] = useState<string[]>([]);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-// Build the spoken text for one briefing section. Content is assembled HERE (not
-// pulled through the tutoring scaffold's contextKeys) so we can GUARANTEE the
-// quick-check answer is never voiced — "Before We Start" reads only the question
-// and prior-knowledge, never the hidden answer or hint.
-const buildSectionSpeech = (sectionId: string, b: IntroBriefingData): string => {
-  switch (sectionId) {
-    case 'hook':
-      return b.hook?.content ?? '';
-    case 'bigIdea':
-      return `The big idea: ${b.bigIdea?.statement ?? ''} Why it matters: ${b.bigIdea?.whyItMatters ?? ''}`;
-    case 'objectives':
-      return `Today you will learn to: ${(b.objectives ?? []).map(o => o.text).join('; ')}.`;
-    case 'prerequisites':
-      return `Before we start. You already know: ${(b.prerequisites?.shouldKnow ?? []).join('; ')}. `
-        + `Here is a quick thinking question: ${b.prerequisites?.quickCheck?.question ?? ''}`;
-    case 'roadmap':
-      return `Here is our plan. `
-        + (b.roadmap ?? []).map((p, i) => `Step ${i + 1}, ${p.phase}: ${p.description}`).join(' ');
-    case 'connections':
-      return `This builds on ${(b.connections?.buildingFrom ?? []).join(', ')}. `
-        + `It leads to ${(b.connections?.leadingTo ?? []).join(', ')}. `
-        + `In real life you see it when ${(b.connections?.realWorld ?? []).join(', ')}.`;
-    default:
-      return '';
-  }
-};
+  // What the runtime reads: refs, so a tutor action or a tap is in the packet as soon as it commits.
+  const picture: PictureState = image ? 'drawn' : drawing ? 'drawing' : 'none';
+  const pictureRef = useRef(picture); pictureRef.current = picture;
+  const pickedRef = useRef(picked); pickedRef.current = picked;
+  const startedRef = useRef(started); startedRef.current = started;
+  const markedRef = useRef(marked); markedRef.current = marked;
 
-export const CuratorBrief: React.FC<CuratorBriefProps> = ({ data, className }) => {
-  // Debug logging
-  console.log('[CuratorBrief] Received data:', data);
-  console.log('[CuratorBrief] Is IntroBriefingData?', isIntroBriefingData(data));
+  const surface = useController({
+    instanceId, primitiveId: 'curator-brief', objectiveId, planItemId: runtimePlanItemId,
+    scene: () => ({ ...teachingScene(brief, { picture: pictureRef.current, picked: pickedRef.current, started: startedRef.current }),
+      marked: markedRef.current, finished: startedRef.current }),
+    show: ids => { markedRef.current = ids; setMarked(ids); },
+  });
+  useLayoutEffect(() => { surface?.publish(); });
 
-  // Convert old format to new format if needed
-  const briefingData: IntroBriefingData = isIntroBriefingData(data)
-    ? data
-    : convertToIntroBriefing(data);
-  const [expandedSection, setExpandedSection] = useState('hook');
-  const [quickCheckRevealed, setQuickCheckRevealed] = useState(false);
-  const [objectivesChecked, setObjectivesChecked] = useState<Record<string, boolean>>({});
-  const [currentRoadmapPhase, setCurrentRoadmapPhase] = useState(0);
+  // The picture draws itself in the background; the screen never waits on it.
+  useEffect(() => {
+    const prompt = hookPicturePrompt(brief);
+    if (!prompt) return;
+    let alive = true;
+    setDrawing(true);
+    generateConceptImage(prompt, '16:9')
+      .then(url => { if (alive && url) setImage(url); })
+      .catch(() => {})
+      .finally(() => { if (alive) setDrawing(false); });
+    return () => { alive = false; };
+  }, [brief]);
 
-  const sections = [
-    { id: 'hook', label: 'The Hook', icon: Sparkles },
-    { id: 'bigIdea', label: 'Big Idea', icon: Lightbulb },
-    { id: 'objectives', label: 'What You\'ll Learn', icon: Target },
-    { id: 'prerequisites', label: 'Before We Start', icon: Brain },
-    { id: 'roadmap', label: 'The Journey', icon: Map },
-    { id: 'connections', label: 'Connections', icon: Compass },
-  ];
+  const ringed = (id: string) => marked.includes(id)
+    ? { 'data-tutor-ring': id, className: 'ring-2 ring-amber-300/70 ring-offset-2 ring-offset-slate-950' } : { className: '' };
 
-  // --- AI read-aloud (pre-reader support) ---
-  // The brief is the first thing a student meets and, unlike every other primitive,
-  // it assumes reading fluency. For pre-readers the live tutor voices each section.
-  const gradeLevel = briefingData.gradeLevel;
-  const isPreReader = isPreReaderGrade(gradeLevel);
-  // curator-brief isn't an evaluable primitive, so the renderer injects no
-  // instanceId/exhibitId — derive stable ones (singleton per exhibit).
-  const instanceId = (data as any).instanceId || (data as any).__instanceId || 'curator-brief';
-  const exhibitId = (data as any).exhibitId || briefingData.topic;
-  const currentSectionLabel = sections.find(s => s.id === expandedSection)?.label ?? expandedSection;
-
-  const aiPrimitiveData = {
-    topic: briefingData.topic,
-    gradeLevel,
-    currentSection: expandedSection,
-    currentSectionLabel,
-    isPreReader,
+  const pick = (i: number) => {
+    if (startedRef.current || pickedRef.current === i) return;
+    SoundManager.select();
+    pickedRef.current = i;
+    setPicked(i);
+    // A pre-reader cannot read what they tapped: the tutor hears it as host facts.
+    surface?.learnerOpened(`"I wonder" choice ${i + 1}, which says: ${wonders[i].text}`);
   };
 
-  const { sendText, isConnected } = useLuminaAI({
-    primitiveType: 'curator-brief',
-    instanceId,
-    primitiveData: aiPrimitiveData,
-    exhibitId,
-    gradeLevel,
+  const start = () => {
+    if (startedRef.current) return;
+    SoundManager.pop();
+    startedRef.current = true;
+    setStarted(true);
+    surface?.finish();
+    window.dispatchEvent(new CustomEvent(BRIEF_START_EVENT, { detail: { instanceId } }));
+    // Scroll layout: bring the first activity into view. The K stage advances on the event instead.
+    const section = rootRef.current?.closest('[data-primitive-instance-id]');
+    let next = section?.nextElementSibling ?? null;
+    while (next && !next.matches('[data-primitive-instance-id]')) next = next.nextElementSibling;
+    next?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  };
+
+  const pip = useWorkspacePipSurface({
+    instanceId, scopeId: started ? null : 'brief', label: 'The lesson opening', solved: started, tutorSpeaking: false,
   });
 
-  // Voice one section through the live tutor. The section content travels in the
-  // sendText payload (not contextKeys) so the quick-check answer can never leak.
-  const speakSection = useCallback((sectionId: string, opts?: { auto?: boolean }) => {
-    const idx = sections.findIndex(s => s.id === sectionId);
-    if (idx < 0) return;
-    const label = sections[idx].label;
-    const nextLabel = idx < sections.length - 1 ? sections[idx + 1].label : null;
-    const body = buildSectionSpeech(sectionId, briefingData);
-    if (!body) return;
-    if (!opts?.auto) SoundManager.pop();
-    sendText(
-      `[READ_SECTION] Section: "${label}". ${body} `
-      + (nextLabel ? `After this comes "${nextLabel}". ` : `This is the last part. `)
-      + `Read it aloud for the student in a warm voice using short, simple sentences`
-      + (isPreReader
-        ? ` — they are a young pre-reader who cannot read the screen, so say everything for them.`
-        : `.`),
-      { silent: true },
-    );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sendText, briefingData, isPreReader]);
+  const pictureRing = ringed('picture');
 
-  // Auto-narrate on section CHANGE for pre-readers. The opening section (the hook)
-  // is deliberately left to the lesson's greeting: auto-firing on mount races that
-  // greeting and makes Gemini hallucinate (ADDING_TUTORING_SCAFFOLD → "Avoiding
-  // Gemini Turn Races"). Navigating a tab is a deliberate student action, so
-  // narrating on change is race-safe. Readers get the manual "Read this to me" button.
-  const hasNavigatedRef = useRef(false);
-  const initialSectionRef = useRef(expandedSection);
-  const lastNarratedSectionRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!hasNavigatedRef.current) {
-      if (expandedSection === initialSectionRef.current) return; // still on the opening section
-      hasNavigatedRef.current = true;
-    }
-    if (!isConnected || !isPreReader) return;
-    // Narrate a section at most once per entry. speakSection's identity churns
-    // every render (briefingData is a fresh object via the renderer's data spread),
-    // so it is intentionally NOT a dependency — listing it re-runs this effect on
-    // every AI transcription chunk and re-fires [READ_SECTION] in an infinite loop.
-    if (lastNarratedSectionRef.current === expandedSection) return;
-    lastNarratedSectionRef.current = expandedSection;
-    speakSection(expandedSection, { auto: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandedSection, isConnected, isPreReader]);
-
-  const toggleObjective = (id: string) => {
-    SoundManager.toggle(!objectivesChecked[id]);
-    setObjectivesChecked(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  // Navigation helpers
-  const currentSectionIndex = sections.findIndex(s => s.id === expandedSection);
-  const canGoPrevious = currentSectionIndex > 0;
-  const canGoNext = currentSectionIndex < sections.length - 1;
-
-  const goToPreviousSection = () => {
-    if (canGoPrevious) {
-      SoundManager.navigate();
-      setExpandedSection(sections[currentSectionIndex - 1].id);
-    }
-  };
-
-  const goToNextSection = () => {
-    if (canGoNext) {
-      SoundManager.navigate();
-      setExpandedSection(sections[currentSectionIndex + 1].id);
-    }
-  };
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        goToPreviousSection();
-      } else if (e.key === 'ArrowRight') {
-        goToNextSection();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentSectionIndex]);
-
-  const renderHook = () => (
-    <div className="space-y-4">
-      <div className="glass-panel rounded-2xl border border-white/10 p-6 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-xl">
-        {/* Ambient glow */}
-        <div className="absolute top-0 left-0 w-48 h-48 rounded-full blur-[80px] opacity-20 bg-amber-500" />
-
-        <div className="flex items-start gap-4 relative z-10">
-          {/* Guarded: this slot is a glyph badge, so a word that leaked into
-              hook.visual degrades to the hook-type emoji instead of rendering
-              as 48px body copy. */}
-          <span className="text-5xl leading-none">
-            {resolveHookVisual(briefingData.hook.visual, briefingData.hook.type)}
-          </span>
-          <div className="flex-1">
-            <span className="text-[10px] uppercase tracking-widest text-amber-400 font-mono border border-amber-500/30 px-2 py-1 rounded bg-amber-500/10">
-              {briefingData.hook.type === 'scenario' && 'Imagine this...'}
-              {briefingData.hook.type === 'question' && 'Think about...'}
-              {briefingData.hook.type === 'surprising_fact' && 'Did you know?'}
-              {briefingData.hook.type === 'story' && 'Story time...'}
-            </span>
-            <p className="text-white mt-3 text-lg leading-relaxed font-light">
-              {briefingData.hook.content}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderBigIdea = () => (
-    <div className="space-y-4">
-      <div className="glass-panel rounded-2xl border border-white/10 p-8 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-xl">
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-transparent" />
-        <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-[100px] opacity-20 bg-purple-500" />
-
-        <div className="relative z-10">
-          <Lightbulb className="w-8 h-8 text-purple-400 mb-4" />
-          <p className="text-2xl text-white font-light leading-relaxed italic">
-            "{briefingData.bigIdea.statement}"
-          </p>
-        </div>
-      </div>
-
-      <LuminaCallout accent="emerald" label="Why This Matters">
-        <p className="leading-relaxed font-light">
-          {briefingData.bigIdea.whyItMatters}
-        </p>
-      </LuminaCallout>
-    </div>
-  );
-
-  const renderObjectives = () => (
-    <div className="space-y-3">
-      <p className="text-slate-400 text-sm mb-4 font-light">
-        By the end of this lesson, you'll be able to:
-      </p>
-      {briefingData.objectives.map((obj, idx) => (
-        <button
-          key={obj.id}
-          onClick={() => toggleObjective(obj.id)}
-          className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all duration-300 text-left ${
-            objectivesChecked[obj.id]
-              ? 'glass-panel border-emerald-500/50 shadow-lg shadow-emerald-500/20'
-              : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10'
-          }`}
-        >
-          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-            objectivesChecked[obj.id]
-              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/50'
-              : 'bg-white/10 text-slate-300 border border-white/20'
-          }`}>
-            {objectivesChecked[obj.id] ? <CheckCircle2 size={18} /> : idx + 1}
-          </div>
-          <span className={`flex-1 font-light ${objectivesChecked[obj.id] ? 'text-white' : 'text-slate-200'}`}>
-            {obj.text}
-          </span>
-          <LuminaBadge accent={verbAccent[obj.verb] ?? 'pink'} className="uppercase tracking-widest font-mono">
-            {obj.verb}
-          </LuminaBadge>
-        </button>
-      ))}
-      <p className="text-slate-500 text-xs mt-2 italic font-light">
-        Click objectives to track your progress as you learn
-      </p>
-    </div>
-  );
-
-  const renderPrerequisites = () => (
-    <div className="space-y-4">
-      <LuminaPanel className="p-6">
-        <h4 className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-4 flex items-center gap-2">
-          <span className="w-1 h-4 bg-slate-600 rounded-full"></span>
-          You should already know:
-        </h4>
-        <ul className="space-y-3">
-          {briefingData.prerequisites.shouldKnow.map((item: string, idx: number) => (
-            <li key={idx} className="flex items-center gap-3 text-slate-200 font-light">
-              <ChevronRight size={16} className="text-slate-500 flex-shrink-0" />
-              {item}
-            </li>
-          ))}
-        </ul>
-      </LuminaPanel>
-
-      <div className="glass-panel rounded-2xl border border-white/10 p-6 relative overflow-hidden hover:border-white/20 transition-all duration-300 shadow-xl">
-        <div className="absolute top-0 left-0 w-48 h-48 rounded-full blur-[80px] opacity-20 bg-cyan-500" />
-
-        <div className="relative z-10">
-          <h4 className="text-[10px] uppercase tracking-widest text-cyan-400 font-mono mb-3 flex items-center gap-2">
-            <Brain size={14} />
-            Quick Check
-          </h4>
-          <p className="text-white mb-4 font-light leading-relaxed">{briefingData.prerequisites.quickCheck.question}</p>
-
-          {!quickCheckRevealed ? (
-            <button
-              onClick={() => { SoundManager.pop(); setQuickCheckRevealed(true); }}
-              className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors font-medium flex items-center gap-2 group"
-            >
-              Show answer
-              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+  return (
+    <div ref={rootRef} className={`w-full text-slate-100 ${className}`} data-brief-reader={preReader ? 'pre' : 'reader'}>
+      <LuminaCard className="mx-auto max-w-4xl overflow-hidden p-0">
+        {/* Picture first. A placeholder (the hook's glyph) holds the space until it arrives. */}
+        <div data-pip-object="picture" data-picture={picture} {...pictureRing}
+          className={`relative aspect-video w-full overflow-hidden bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 ${pictureRing.className}`}>
+          {image ? (
+            <img src={image} alt="" className="h-full w-full object-cover animate-fade-in" />
           ) : (
-            <div className="space-y-3 animate-fadeIn">
-              <p className="text-emerald-300 font-light flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-emerald-500" />
-                {briefingData.prerequisites.quickCheck.answer}
-              </p>
-              <p className="text-slate-400 text-sm font-light border-l-2 border-amber-500/50 pl-4">
-                💡 {briefingData.prerequisites.quickCheck.hint}
-              </p>
+            <div className="flex h-full w-full flex-col items-center justify-center gap-3">
+              <span className="text-7xl leading-none" aria-hidden="true">{resolveHookVisual(brief.hook.visual, brief.hook.type)}</span>
+              {drawing && <span className="h-1 w-24 animate-pulse rounded-full bg-white/20" aria-label="Drawing the picture" />}
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
 
-  const renderRoadmap = () => (
-    <div className="space-y-6">
-      <div className="glass-panel rounded-xl border border-white/10 p-4 inline-flex items-center gap-2">
-        <Clock size={16} className="text-slate-400" />
-        <span className="text-slate-300 text-sm font-mono">
-          Estimated time: {briefingData.estimatedTime}
-        </span>
-      </div>
-
-      <div className="glass-panel rounded-2xl border border-white/10 p-6 relative overflow-hidden shadow-xl">
-        <div className="relative">
-          {/* Progress line */}
-          <div className="absolute left-4 top-8 bottom-8 w-0.5 bg-white/10" />
-          <div
-            className="absolute left-4 top-8 w-0.5 bg-gradient-to-b from-emerald-500 to-indigo-500 transition-all duration-500 shadow-lg shadow-emerald-500/50"
-            style={{ height: `${(currentRoadmapPhase / (briefingData.roadmap.length - 1)) * 100}%`, maxHeight: 'calc(100% - 4rem)' }}
-          />
-
-          <div className="space-y-4">
-            {briefingData.roadmap.map((phase: any, idx: number) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (idx !== currentRoadmapPhase) SoundManager.select();
-                  setCurrentRoadmapPhase(idx);
-                }}
-                className={`w-full flex items-start gap-4 p-4 rounded-xl transition-all duration-300 text-left ${
-                  idx === currentRoadmapPhase
-                    ? 'bg-white/10 border border-white/20 shadow-lg'
-                    : 'hover:bg-white/5 border border-transparent'
-                }`}
-              >
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold z-10 transition-all duration-300 ${
-                  idx < currentRoadmapPhase
-                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/50'
-                    : idx === currentRoadmapPhase
-                    ? 'bg-indigo-500 text-white ring-2 ring-indigo-400 shadow-lg shadow-indigo-500/50'
-                    : 'bg-white/10 text-slate-400 border border-white/20'
-                }`}>
-                  {idx + 1}
-                </div>
-                <div className="flex-1">
-                  <h4 className={`font-medium transition-colors ${
-                    idx === currentRoadmapPhase ? 'text-indigo-300' : 'text-slate-200'
-                  }`}>
-                    {phase.phase}
-                  </h4>
-                  <p className="text-slate-400 text-sm font-light mt-1">{phase.description}</p>
-                  {idx === currentRoadmapPhase && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {phase.activities.map((activity: string, aIdx: number) => (
-                        <span
-                          key={aIdx}
-                          className="text-[10px] px-2 py-1 bg-white/10 text-slate-300 rounded-full border border-white/20 font-mono uppercase tracking-wider"
-                        >
-                          {activity}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderConnections = () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="glass-panel rounded-xl border border-white/10 p-6 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-lg">
-        <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] opacity-20 bg-blue-500" />
-        <div className="relative z-10">
-          <h4 className="text-[10px] uppercase tracking-widest text-blue-400 font-mono mb-4 flex items-center gap-2">
-            <span className="text-lg">←</span> Building From
-          </h4>
-          <ul className="space-y-3">
-            {briefingData.connections.buildingFrom.map((item: string, idx: number) => (
-              <li key={idx} className="text-slate-200 text-sm font-light border-l-2 border-blue-500/30 pl-3">{item}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <div className="glass-panel rounded-xl border border-white/10 p-6 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-lg">
-        <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] opacity-20 bg-emerald-500" />
-        <div className="relative z-10">
-          <h4 className="text-[10px] uppercase tracking-widest text-emerald-400 font-mono mb-4 flex items-center gap-2">
-            <span className="text-lg">→</span> Leading To
-          </h4>
-          <ul className="space-y-3">
-            {briefingData.connections.leadingTo.map((item: string, idx: number) => (
-              <li key={idx} className="text-slate-200 text-sm font-light border-l-2 border-emerald-500/30 pl-3">{item}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      <div className="glass-panel rounded-xl border border-white/10 p-6 relative overflow-hidden group hover:border-white/20 transition-all duration-300 shadow-lg">
-        <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-[60px] opacity-20 bg-amber-500" />
-        <div className="relative z-10">
-          <h4 className="text-[10px] uppercase tracking-widest text-amber-400 font-mono mb-4 flex items-center gap-2">
-            <span className="text-lg">🌍</span> Real World
-          </h4>
-          <ul className="space-y-3">
-            {briefingData.connections.realWorld.map((item: string, idx: number) => (
-              <li key={idx} className="text-slate-200 text-sm font-light border-l-2 border-amber-500/30 pl-3">{item}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
-
-  const sectionContent: Record<string, () => JSX.Element> = {
-    hook: renderHook,
-    bigIdea: renderBigIdea,
-    objectives: renderObjectives,
-    prerequisites: renderPrerequisites,
-    roadmap: renderRoadmap,
-    connections: renderConnections,
-  };
-
-  return (
-    <div className={`w-full text-slate-100 ${className || ''}`}>
-      <div className="max-w-5xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
-        {/* Ambient background glow for entire card */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-[150px] opacity-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" />
-
-        <div className="relative z-10">
-          {/* Header */}
-          <div className="mb-8 glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden group hover:border-white/30 transition-colors shadow-xl">
-            {/* Ambient Background Glow */}
-            <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-[120px] opacity-20 bg-indigo-500" />
-
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs font-mono text-slate-400 uppercase tracking-widest border border-white/10 px-2 py-1 rounded">
-                  {briefingData.subject}
-                </span>
-                <span className="text-xs font-mono text-slate-400">•</span>
-                <span className="text-xs font-mono text-slate-400 uppercase tracking-widest">
-                  {briefingData.gradeLevel}
-                </span>
-                {briefingData.preparedFor && (
-                  <span className="text-xs font-mono text-indigo-300 uppercase tracking-widest border border-indigo-500/30 bg-indigo-500/10 px-2 py-1 rounded flex items-center gap-1.5">
-                    <Sparkles size={11} className="text-indigo-400" />
-                    Prepared for {briefingData.preparedFor}
-                  </span>
-                )}
-                <div className="ml-auto w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              </div>
-              <h1 className="text-4xl font-light text-white mb-4 tracking-tight">
-                {briefingData.topic}
-              </h1>
-              <p className="text-sm text-slate-400 flex items-center gap-2 font-mono">
-                <Clock size={14} />
-                {briefingData.estimatedTime}
-              </p>
+        <div className="space-y-5 p-5 sm:p-6">
+          {!preReader && (
+            <div className="flex flex-wrap items-center gap-2">
+              <LuminaBadge accent="indigo">{brief.subject}</LuminaBadge>
+              <LuminaBadge accent="blue">{brief.gradeLevel}</LuminaBadge>
+              {brief.estimatedTime && <LuminaBadge accent="teal">{brief.estimatedTime}</LuminaBadge>}
+              {brief.preparedFor && <LuminaBadge accent="purple">Prepared for {brief.preparedFor}</LuminaBadge>}
             </div>
-          </div>
+          )}
 
-          {/* Navigation tabs */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {sections.map((section) => {
-              const Icon = section.icon;
+          {pip.store && !started && <div {...pip.dock} />}
+
+          <div {...pip.workspace} className="space-y-5">
+            {/* Three captions, the tutor's three beats. A pre-reader hears them; the text stays small. */}
+            <div className="space-y-2">
+              {CAPTION_ROWS.map(({ id, accent, Icon }) => {
+                const ring = ringed(id);
+                return (
+                  <LuminaPanel key={id} accent={accent} data-pip-object={id} {...ring}
+                    className={`flex items-start gap-3 ${ring.className}`}>
+                    <Icon size={preReader ? 18 : 20} className={`mt-0.5 flex-shrink-0 ${accentText[accent]}`} aria-hidden="true" />
+                    <p className={preReader ? 'text-sm text-slate-300' : 'text-base leading-relaxed text-slate-100'}>
+                      {captions[id]}
+                    </p>
+                  </LuminaPanel>
+                );
+              })}
+            </div>
+
+            {steps.length > 0 && (() => {
+              const ring = ringed('steps');
               return (
-                <button
-                  key={section.id}
-                  onClick={() => {
-                    if (section.id !== expandedSection) SoundManager.navigate();
-                    setExpandedSection(section.id);
-                  }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                    expandedSection === section.id
-                      ? 'glass-panel border border-white/30 text-white shadow-lg scale-105'
-                      : 'bg-white/5 border border-white/5 text-slate-400 hover:text-slate-200 hover:bg-white/10 hover:border-white/20'
-                  }`}
-                >
-                  <Icon size={16} />
-                  {section.label}
-                </button>
+                <div data-pip-object="steps" {...ring} className={`flex flex-wrap items-center gap-1.5 rounded-lg ${ring.className}`}>
+                  {steps.map((s, i) => (
+                    <React.Fragment key={`${s.phase}-${i}`}>
+                      {i > 0 && <ChevronRight size={14} className="text-slate-600" aria-hidden="true" />}
+                      <LuminaBadge accent="cyan">{i + 1} {preReader ? '' : s.phase}</LuminaBadge>
+                    </React.Fragment>
+                  ))}
+                </div>
               );
-            })}
-          </div>
+            })()}
 
-          {/* Content with navigation arrows */}
-          <div className="mb-8 relative">
-            {/* Navigation Arrows */}
-            <button
-              onClick={goToPreviousSection}
-              disabled={!canGoPrevious}
-              className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-16 z-20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
-                canGoPrevious
-                  ? 'glass-panel border border-white/20 text-white hover:border-white/40 hover:scale-110 shadow-xl'
-                  : 'bg-white/5 border border-white/5 text-slate-600 cursor-not-allowed opacity-50'
-              }`}
-              aria-label="Previous section"
-            >
-              <ChevronLeft size={24} />
-            </button>
-
-            <button
-              onClick={goToNextSection}
-              disabled={!canGoNext}
-              className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-16 z-20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
-                canGoNext
-                  ? 'glass-panel border border-white/20 text-white hover:border-white/40 hover:scale-110 shadow-xl'
-                  : 'bg-white/5 border border-white/5 text-slate-600 cursor-not-allowed opacity-50'
-              }`}
-              aria-label="Next section"
-            >
-              <ChevronRight size={24} />
-            </button>
-
-            {/* Content area */}
-            <div className="transition-opacity duration-300">
-              {sectionContent[expandedSection]()}
-            </div>
-
-            {/* Read-aloud + keyboard hint. "Read this to me" voices the current
-                section through the live tutor — essential for pre-readers, offered
-                to everyone. Emphasized for pre-reading grades. */}
-            <div className="mt-4 flex flex-col items-center gap-2">
-              <LuminaReadAloud
-                onClick={() => speakSection(expandedSection)}
-                size={isPreReader ? 'lg' : 'md'}
-              />
-              <p className="text-xs text-slate-500 font-mono">
-                Use ← → arrow keys or buttons to navigate
-              </p>
-            </div>
-          </div>
-
-          {/* Mindset footer */}
-          <div className="glass-panel rounded-2xl border border-white/10 p-6 relative overflow-hidden group hover:border-white/20 transition-colors shadow-xl mb-8">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-emerald-500 to-indigo-500" />
-            <div className="flex items-start gap-4 relative z-10">
-              <span className="text-3xl">💪</span>
-              <div className="flex-1">
-                <p className="text-white font-light leading-relaxed mb-3">{briefingData.mindset.encouragement}</p>
-                <p className="text-slate-400 text-sm">
-                  <span className="text-amber-400 font-medium">Pro tip:</span> {briefingData.mindset.growthTip}
-                </p>
+            {wonders.length > 0 && (
+              <div className="space-y-2">
+                {!preReader && <p className="text-xs uppercase tracking-widest text-slate-400">I wonder...</p>}
+                <div className={`grid gap-3 ${wonders.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+                  {wonders.map((w, i) => {
+                    const accent: LuminaAccent = WONDER_ACCENTS[i];
+                    const ring = ringed(`wonder-${i}`);
+                    const selected = picked === i;
+                    return (
+                      <button key={i} type="button" data-pip-object={`wonder-${i}`} {...ring}
+                        aria-pressed={selected} aria-label={w.text} disabled={started} onClick={() => pick(i)}
+                        className={`flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-all ${
+                          selected ? `${accentSoftBg[accent]} ${accentSoftBorder[accent]} scale-[1.02]`
+                            : `bg-white/5 ${accentSoftBorder[accent]} hover:bg-white/10`} disabled:opacity-60 ${ring.className}`}>
+                        <span className={preReader ? 'text-5xl leading-none' : 'text-3xl leading-none'} aria-hidden="true">{w.emoji}</span>
+                        <span className={preReader ? 'text-xs text-slate-400' : `text-sm ${selected ? accentText[accent] : 'text-slate-200'}`}>{w.text}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Ready button */}
-          <div className="text-center">
-            <LuminaButton
-              tone="primary"
-              onClick={canGoNext ? goToNextSection : undefined}
-              className="px-10 py-4 rounded-xl inline-flex items-center gap-3 hover:scale-105"
-            >
-              {canGoNext ? 'Next Step' : "I'm Ready to Start!"}
-              <ChevronRight size={20} />
-            </LuminaButton>
+          {/* At most one line of the connections; the rest stays in the data. */}
+          {!preReader && realWorld && (
+            <p className="text-sm text-slate-400">In real life: {realWorld}</p>
+          )}
+
+          <div className="flex flex-col items-center gap-3 pt-1">
+            {started ? (
+              <LuminaBadge accent="emerald" className="gap-1.5 px-3 py-1.5 text-sm">
+                <CheckCircle2 size={16} aria-hidden="true" /> Lesson started
+              </LuminaBadge>
+            ) : (
+              <LuminaButton tone="primary" onClick={start} aria-label="Start"
+                className={preReader ? 'h-20 w-20 rounded-full p-0' : 'gap-2 rounded-xl px-10 py-3 text-base'}>
+                <Play size={preReader ? 34 : 18} aria-hidden="true" />
+                {!preReader && 'Start'}
+              </LuminaButton>
+            )}
+            {!tutorOwned && !started && <LegacyReadAloud brief={brief} instanceId={instanceId} preReader={preReader} />}
           </div>
         </div>
-      </div>
+      </LuminaCard>
     </div>
   );
 };
+
+// Inside a live lesson the catalog's ungraded `teachingWorkspace` mounts the teaching surface;
+// everywhere else the same screen with the legacy read-aloud.
+export const CuratorBrief = withWorkspaceController<CuratorBriefProps, TeachingSurfaceOptions, TeachingSurface | null>(
+  'curator-brief', CuratorBriefSurface, useNoTeachingSurface, useTeachingSurface);
 
 export default CuratorBrief;
