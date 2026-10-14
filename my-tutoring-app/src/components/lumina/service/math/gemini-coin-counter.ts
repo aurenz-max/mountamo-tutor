@@ -9,6 +9,11 @@ import {
 } from "../evalMode";
 import { buildScopePromptSection, type PedagogicalScope } from "../scopeContext";
 import { showAmountAsk } from "../../primitives/visual-primitives/math/coinCounterLevers";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import {
+  amountChallenges, changeChallenges, coinSetScope, compareChallenges, countChallenges, type CoinSpaceMode,
+} from "./coinCounterItemSpace";
+import { paidWithOrNull } from "../itemSpace/money";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -742,11 +747,20 @@ Generate 5-6 challenges progressing in difficulty. Use warm, encouraging instruc
       if (paid == null || cost == null) return null;
       // Reject nonsensical: paid must exceed cost
       if (paid <= cost) return null;
+      // Paid with something that exists (contract G7): a quarter, 50¢, three quarters, a dollar. A "75-cent coin"
+      // or "a 95 cents coin" in the model's words is rewritten in code; an amount no payment makes is dropped.
+      const payment = paidWithOrNull(paid, gradeCoinPool(gradeBand).includes("half-dollar"));
+      if (!payment) return null;
+      const text = String(flat.instruction ?? "");
+      const fakeCoin = (text.match(/(\d+)[- ]?(?:cents?|¢)[- ](?:coin|piece)/gi) ?? [])
+        .some((m) => ![1, 5, 10, 25, 50, 100].includes(parseInt(m, 10)));
 
       return {
         id: flat.id as string,
         type: "make-change",
-        instruction: flat.instruction as string,
+        instruction: fakeCoin || !text.includes(String(cost)) || !text.includes(String(paid))
+          ? `Something costs ${cost}¢. You pay with ${payment} (${paid}¢). How much change do you get back?`
+          : text,
         hint: (flat.hint as string) || "Subtract the cost from what you paid!",
         paidAmount: paid,
         itemCost: cost,
@@ -787,6 +801,30 @@ function showAmountCeiling(gradeBand: string, scope: PedagogicalScope): number {
   return Math.max(2, Math.min(band, ...bounds));
 }
 
+/** 5-6 small things a child could buy, for asks that code writes around them; the fallback list fills a short reply. */
+async function thingsToBuy(topic: string, gradeLevel: string, scopeSection: string, count: number): Promise<string[]> {
+  let things: string[] = [];
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: `Lesson topic: "${topic}" (${gradeLevel} students). Theme: ${randomTheme()}.
+${scopeSection}
+List 5-6 different small things a child could buy or save for that fit the topic, each 2-4 words starting with "a" or "an"
+(e.g. "a sticker", "an apple"). No numbers, prices or coin names.`,
+      config: { responseMimeType: "application/json", responseSchema: showAmountSchema },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    things = ((data?.challenges ?? []) as FlatChallenge[])
+      .map((f) => String(f.thing ?? "").trim().replace(/[.!]+$/, ""))
+      .filter((t) => /^(a|an) [a-z][a-z' -]{1,30}$/i.test(t) && !/\d|cent|¢|penn|nickel|dime|quarter|dollar/i.test(t));
+  } catch (err) {
+    console.warn("[CoinCounter] things to buy failed; using the fallback list", err);
+  }
+  things = Array.from(new Set(things.map((t) => t.toLowerCase())));
+  if (things.length < count) things = [...things, ...FALLBACK_THINGS.filter((t) => !things.includes(t))];
+  return things;
+}
+
 /**
  * show-amount: the amounts, the bins and the ask are code's (distinct per session, within the ceiling, never a single
  * coin's value so the ask is a mix). The model only names what each amount is for; a name with a number is dropped.
@@ -807,25 +845,7 @@ async function generateShowAmountChallenges(
     .map((n) => ({ n, k: Math.random() })).sort((a, b) => a.k - b.k)
     .slice(0, SHOW_AMOUNT_COUNT).map(({ n }) => n).sort((a, b) => a - b);
 
-  let things: string[] = [];
-  try {
-    const result = await ai.models.generateContent({
-      model: "gemini-flash-lite-latest",
-      contents: `Lesson topic: "${topic}" (${gradeLevel} students). Theme: ${randomTheme()}.
-${scopeSection}
-List 5-6 different small things a child could buy or save for that fit the topic, each 2-4 words starting with "a" or "an"
-(e.g. "a sticker", "an apple"). No numbers, prices or coin names.`,
-      config: { responseMimeType: "application/json", responseSchema: showAmountSchema },
-    });
-    const data = result.text ? JSON.parse(result.text) : null;
-    things = ((data?.challenges ?? []) as FlatChallenge[])
-      .map((f) => String(f.thing ?? "").trim().replace(/[.!]+$/, ""))
-      .filter((t) => /^(a|an) [a-z][a-z' -]{1,30}$/i.test(t) && !/\d|cent|¢|penn|nickel|dime|quarter|dollar/i.test(t));
-  } catch (err) {
-    console.warn("[CoinCounter] show-amount things failed; using the fallback list", err);
-  }
-  things = Array.from(new Set(things.map((t) => t.toLowerCase())));
-  if (things.length < amounts.length) things = [...things, ...FALLBACK_THINGS.filter((t) => !things.includes(t))];
+  const things = await thingsToBuy(topic, gradeLevel, scopeSection, amounts.length);
 
   return amounts.map((amount, i) => ({
     id: `s${i + 1}`,
@@ -902,6 +922,58 @@ const FALLBACKS: Record<string, CoinCounterChallenge> = {
   },
 };
 
+const SPACE_COUNT = 5;
+
+/**
+ * A count, compare, make-amount, show-amount or make-change session picked by code from the money item
+ * spaces at the requested tier (coinCounterItemSpace.ts), or null: no tier, identify, K count-like (its
+ * enacted count keeps its own sets, R9), no space fits the lesson, or the band cannot fill a session.
+ */
+async function coinsFromItemSpace(opts: {
+  mode?: string; difficulty?: string; topic: string; intent?: string; grade?: string; gradeLevel: string;
+  gradeBand: string; scope: PedagogicalScope; scopeSection: string;
+}): Promise<CoinCounterChallenge[] | null> {
+  const band = difficultyBand(opts.difficulty);
+  const modes: CoinSpaceMode[] = ['count-like', 'count-mixed', 'compare', 'make-amount', 'show-amount', 'make-change'];
+  const mode = modes.find((m) => m === opts.mode);
+  if (!band || !mode || (mode === 'count-like' && opts.gradeBand === 'K')) return null;
+  const change = mode === 'make-change';
+  const spaceId = change ? 'make-change' : 'coin-sets';
+  const task: Record<CoinSpaceMode, string> = {
+    'count-like': 'counts a set of one kind of coin to find its value in cents.',
+    'count-mixed': 'counts a set of mixed coins to find its value in cents.',
+    compare: 'finds which of two groups of coins is worth more by counting the value of each.',
+    'make-amount': 'makes an amount of money in cents with coins.',
+    'show-amount': 'shows an amount of money in cents with coins.',
+    'make-change': 'finds how much change a buyer gets back after paying.',
+  };
+  const space = await resolveItemSpace(`Lesson: ${opts.intent || opts.topic}. In this activity the learner ${task[mode]}`, opts.grade, [spaceId]);
+  if (space !== spaceId) return null;
+  const log = (m: string) => console.log(`[CoinCounter] Item space ${space}: ${m}`);
+  const pool = gradeCoinPool(opts.gradeBand);
+  const tier = opts.difficulty!.toLowerCase().trim() as "easy" | "medium" | "hard";
+  let challenges: CoinCounterChallenge[];
+  if (change) {
+    const things = await thingsToBuy(opts.topic, opts.gradeLevel, opts.scopeSection, SPACE_COUNT);
+    challenges = changeChallenges({ pick: tierPick(getItemSpace(space), log), band, count: SPACE_COUNT, pool, things });
+  } else {
+    const scope = coinSetScope(mode, pool, showAmountCeiling(opts.gradeBand, opts.scope));
+    const pick = tierPick(getItemSpace(space), log, scope);
+    if (mode === 'count-like' || mode === 'count-mixed') {
+      challenges = countChallenges({ pick, band, count: SPACE_COUNT, scope, like: mode === 'count-like' });
+    } else if (mode === 'compare') {
+      challenges = compareChallenges({ pick, band, count: SPACE_COUNT, scope, tier });
+    } else {
+      const things = await thingsToBuy(opts.topic, opts.gradeLevel, opts.scopeSection, SPACE_COUNT);
+      const bins = mode === 'show-amount' ? pool.filter((c) => COIN_VALUES[c] <= showAmountCeiling(opts.gradeBand, opts.scope)) : pool;
+      challenges = amountChallenges({ pick, band, count: SPACE_COUNT, scope, mode, pool: bins, things });
+    }
+  }
+  log(`${mode} band [${band.join(', ')}]: `
+    + (challenges.length ? challenges.map((c) => `${c.itemSpace!.structure}@${c.itemSpace!.beta}`).join(' ') : 'no session fits; own path kept'));
+  return challenges.length ? challenges : null;
+}
+
 // ===========================================================================
 // Main generator — dispatches to per-type sub-generators
 // ===========================================================================
@@ -939,11 +1011,17 @@ export const generateCoinCounter = async (
   // ── Resolve support tier (drives application for single OR blended sessions) ──
   const supportTier = normalizeSupportTier(config?.difficulty);
 
+  // ── Item-space path: with a tier, code picks the coins and prices (the tier keeps its scaffolds). ──
+  const spaced = await coinsFromItemSpace({
+    mode: config?.targetEvalMode, difficulty: config?.difficulty, topic, intent: (config as { intent?: string })?.intent,
+    grade: ctx.grade, gradeLevel, gradeBand, scope: ctx.scope, scopeSection,
+  });
+
   // ── Dispatch sub-generators in parallel ──
   const generators: Promise<CoinCounterChallenge[]>[] = [];
   const typeOrder: string[] = [];
 
-  for (const type of allowedTypes) {
+  for (const type of spaced ? [] : allowedTypes) {
     typeOrder.push(type);
     switch (type) {
       case "identify":
@@ -977,7 +1055,7 @@ export const generateCoinCounter = async (
     }
   }
 
-  const results = await Promise.all(generators);
+  const results = spaced ? [spaced] : await Promise.all(generators);
 
   // ── Combine results ──
   let challenges: CoinCounterChallenge[] = results.flat();

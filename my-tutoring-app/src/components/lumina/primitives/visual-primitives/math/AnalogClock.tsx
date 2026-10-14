@@ -78,6 +78,8 @@ export interface ClockChallenge {
   /** The student's support tier — surfaced to the live tutor so its reveal level
    *  matches the on-screen scaffold. */
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** The item space the time came from (calibration only; never rendered or sent to the tutor). */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface AnalogClockData {

@@ -170,6 +170,18 @@ treat "how many real attempts exist" as unknown, not zero.
 - **Evidence:** `CoinCounter.spoken.workspace.test.tsx`; journey sweep (J14 cleared for count-mixed and make-change);
   `qa/tutor-reports/coin-counter-tutor-verdict-2026-10-13.json` (30/30, 0 false credit).
 
+### R15 — with a tier, code picks the coins and prices; the tier still sets the scaffolds · OBSERVED (NEW 2026-10-13)
+- `count-like`, `count-mixed`, `make-amount`, `show-amount` from the `coin-sets` item space, `compare` from pairs of its
+  sets, `make-change` from `make-change` (`service/itemSpace/money.ts`, adapter `service/math/coinCounterItemSpace.ts`).
+- Drawable: the grade's coin pool (R10) and the lesson's ceiling (`showAmountCeiling`); count-like one kind, count-mixed
+  two or more; make-amount and show-amount ask for the total of a fewest-coin set, never a single coin's value (R12).
+  compare easy: 10¢+ apart and the richer group has more coins; hard: at most 10¢ apart and the richer group has FEWER
+  coins; the answer side alternates. make-change pays with a quarter, two quarters or a half-dollar, or a dollar.
+- R5 holds (count instructions name no coins), R6 (distinct totals), R7 (amounts from real sets). **R8 amended:** the
+  ¢ range (scope) is still the grade's and never moves with the tier; the tier picks the structure inside it (kinds of
+  coin, a quarter, a borrow in the change).
+- K `count-like` (R9's enacted count), `identify`, no tier, or no space fits: the generated path, unchanged.
+
 ## Conflicts
 
 ### C1 — R9 (K count-like enacted) vs R3 (count-mixed typed) — **RESOLVED 2026-07-25 via fork rung 1 (eval-mode split) + rung 2 (band gate)**
@@ -255,10 +267,12 @@ the record.
 - **Path:** either a catalog projection that says so honestly, or K money curriculum authoring —
   a `/curriculum-author` call, not a primitive change.
 
-### G7 — make-change can pay with a coin that does not exist · OPEN
+### G7 — make-change can pay with a coin that does not exist · ~~OPEN~~ **CLOSED 2026-10-13**
 - **Shortfall:** the 2026-09-27 Grade 3 payload asks "You pay with a 75 cent coin". The paid amount is not
   constrained to one real coin or a stated set of coins.
 - **Path:** generator → `/eval-fix`, oracle rule (paid amount is a real coin or a named coin set).
+- **Closed:** the space pays with real coins only; the generated path drops a paid amount no coin, bill or handful of
+  quarters makes and rewrites an instruction that names a coin that does not exist (`paidWithOrNull`).
 
 ### G8 — `fewest-coins` is checked as `make-amount` · OPEN
 - **Shortfall:** both modes render as challenge type `make-amount` and the check reads only the placed sum, so
@@ -322,3 +336,4 @@ total teaches the interval by demonstration). **Kept default-true.** Sole except
 - 2026-10-13 — voice beside the tap (R14, ROLLOUT.md VB-1). Nothing removed: R3's typed total and Check, R9/R11's enacted
   counts, R4's unnamed identify coins and every build path are unchanged; a spoken total, group or change is one more way
   to answer. Existing coin-counter suites green; the gesture-only "no key" assertions re-based to the kept modes.
+- 2026-10-13 — R15 item-space path (`/add-item-space`; qa/difficulty-demo/2026-10-13/time-money/); R8 amended; G7 closed.

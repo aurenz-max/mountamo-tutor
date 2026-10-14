@@ -85,6 +85,8 @@ export interface CoinCounterChallenge {
   correctChange?: number;
 
   hint?: string;
+  /** The item space the coins or prices came from (calibration only; never rendered or sent to the tutor). */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface CoinCounterData {

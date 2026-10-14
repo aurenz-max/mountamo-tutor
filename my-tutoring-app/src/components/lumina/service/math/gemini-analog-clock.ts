@@ -1,5 +1,5 @@
 import { Type, Schema } from "@google/genai";
-import { AnalogClockData } from "../../primitives/visual-primitives/math/AnalogClock";
+import type { AnalogClockData, ClockChallenge } from "../../primitives/visual-primitives/math/AnalogClock";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import {
@@ -10,6 +10,64 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import { bandFittingTargets, bandForGrid, clockChallenges, clockGrid, elapsedChallenges } from "./analogClockItemSpace";
+
+const SPACE_COUNT = 5;
+
+/**
+ * read, set_time, match and elapsed sessions picked by code from the time item spaces at the requested
+ * tier (analogClockItemSpace.ts), or null: no tier, another mode, no space fits the lesson, or the band
+ * cannot fill a session on the lesson's minute grid. The LLM only names the elapsed activities.
+ */
+async function clockFromItemSpace(opts: {
+  mode?: string; difficulty?: string; topic: string; intent?: string; grade?: string;
+}): Promise<{ challenges: ClockChallenge[]; gradeBand: 'K' | '1-2' | '3-5' } | null> {
+  const band = difficultyBand(opts.difficulty);
+  const mode = opts.mode;
+  if (!band || (mode !== 'read' && mode !== 'set_time' && mode !== 'match' && mode !== 'elapsed')) return null;
+  const lesson = opts.intent || opts.topic;
+  const elapsed = mode === 'elapsed';
+  const spaceId = elapsed ? 'elapsed-time' : 'clock-time';
+  const space = await resolveItemSpace(
+    `Lesson: ${lesson}. In this activity the learner `
+      + (elapsed ? 'finds how much time passes from a start time on a clock to an end time.'
+        : mode === 'set_time' ? 'sets the hands of an analog clock to a time.' : 'reads the time an analog clock shows.'),
+    opts.grade,
+    [spaceId],
+  );
+  if (space !== spaceId) return null;
+  const grid = clockGrid(opts.grade, `${opts.topic} ${opts.intent ?? ''}`);
+  const log = (m: string) => console.log(`[AnalogClock] Item space ${space}: ${m}`);
+  const pick = tierPick(getItemSpace(space), log);
+  let challenges: ClockChallenge[];
+  if (elapsed) {
+    let activities: string[] = [];
+    try {
+      const result = await ai.models.generateContent({
+        model: "gemini-flash-lite-latest",
+        contents: `Lesson: "${lesson}". List ${SPACE_COUNT + 1} different everyday activities a child does that start and end `
+          + `at a time (e.g. "Soccer practice", "The school play"), each 1-4 words, capitalized. No times or numbers.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: { type: Type.OBJECT, properties: { activities: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["activities"] },
+        },
+      });
+      activities = ((result.text ? JSON.parse(result.text).activities : []) as string[])
+        .map((a) => String(a).trim().replace(/[.!]+$/, ""))
+        .filter((a) => /^[A-Z][A-Za-z' -]{1,30}$/.test(a));
+    } catch (err) {
+      console.warn("[AnalogClock] activity names failed; using the fallback list", err);
+    }
+    challenges = elapsedChallenges({ pick, band, count: SPACE_COUNT, grid, activities: Array.from(new Set(activities)) });
+  } else {
+    challenges = clockChallenges({ pick, band, count: SPACE_COUNT, grid, mode });
+  }
+  log(`${mode} band [${band.join(', ')}] grid ${grid}: `
+    + (challenges.length ? challenges.map((c) => `${c.itemSpace!.structure}@${c.itemSpace!.beta}`).join(' ') : 'no session fits; own path kept'));
+  if (!challenges.length) return null;
+  return { challenges, gradeBand: bandFittingTargets(bandForGrid(grid, opts.grade), challenges) };
+}
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -173,6 +231,32 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
       break;
   }
   return { showMinuteNumbers, showHandLegend, showDigitalEcho, promptLines };
+}
+
+/**
+ * Apply the within-mode support tier deterministically (reading aids only; code owns the SUPPORT
+ * structure). Runs PER CHALLENGE, gated only on a tier being present (a blended session must get it too):
+ * each challenge resolves its scaffold from its OWN mode. NEVER touches the time values or the options,
+ * and the digital echo can only appear where it is not the answer (resolveSupportStructure).
+ */
+function applySupportTier(data: { challenges: unknown[] }, supportTier: SupportTier | null, pinnedType?: ChallengeType): void {
+  if (!supportTier) return;
+  for (const ch of data.challenges as Array<{
+    type: ChallengeType;
+    showMinuteNumbers?: boolean;
+    showHandLegend?: boolean;
+    showDigitalEcho?: boolean;
+    supportTier?: SupportTier;
+  }>) {
+    const sc = resolveSupportStructure(ch.type, supportTier);
+    ch.showMinuteNumbers = sc.showMinuteNumbers;
+    ch.showHandLegend = sc.showHandLegend;
+    ch.showDigitalEcho = sc.showDigitalEcho;
+    ch.supportTier = supportTier;
+  }
+  console.log(
+    `[AnalogClock] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -463,6 +547,21 @@ export const generateAnalogClock = async (
     ? `\n## WITHIN-MODE SUPPORT TIER (reading-aid level — NOT time value)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
+  // ── Item-space path: with a tier, code picks the times (the tier also keeps its reading aids). ──
+  const spaced = await clockFromItemSpace({
+    mode: pinnedType, difficulty: config?.difficulty, topic, intent: (config as { intent?: string })?.intent, grade: ctx.grade,
+  });
+  if (spaced) {
+    const spacedData: AnalogClockData = {
+      title: pinnedType === 'elapsed' ? 'How Much Time Passes?' : pinnedType === 'set_time' ? 'Set the Clock' : 'What Time Is It?',
+      description: pinnedType === 'elapsed' ? 'Find how much time passes from the start to the end.' : 'Read the hands of the clock.',
+      gradeBand: spaced.gradeBand,
+      challenges: spaced.challenges,
+    };
+    applySupportTier(spacedData, supportTier, pinnedType);
+    return spacedData;
+  }
+
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
     ? constrainChallengeTypeEnum(analogClockSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
@@ -672,6 +771,22 @@ Return the complete analog clock configuration.
     }
   }
 
+  // The hands snap to the band's grid: a set_time target off it (2:25 on a quarter-hour snap) could not be set.
+  data.gradeBand = bandFittingTargets(data.gradeBand, data.challenges);
+
+  // elapsed: the dial shows only the start, so the instruction must name the end time ("finished at the target
+  // time shown" has no answer). One that does not, or that names the duration, is rewritten in code.
+  for (const ch of data.challenges as Array<{ type: string; instruction?: string; startHour?: number; startMinute?: number; targetHour: number; targetMinute: number }>) {
+    if (ch.type !== 'elapsed') continue;
+    const end = formatClockTime(ch.targetHour, ch.targetMinute);
+    let mins = ((ch.targetHour % 12) * 60 + ch.targetMinute) - (((ch.startHour ?? ch.targetHour) % 12) * 60 + (ch.startMinute ?? 0));
+    if (mins <= 0) mins += 720;
+    const text = ch.instruction ?? '';
+    if (!text.includes(end) || text.includes(formatDuration(mins)) || new RegExp(`\\b${mins}\\s*min`).test(text)) {
+      ch.instruction = `It starts at the time on the clock and ends at ${end}. How much time passes?`;
+    }
+  }
+
   // ── Synthesize MC options + correctOptionIndex for every read/match/elapsed
   // challenge (real or fallback). System owns the options — see synthesizeMCOptions. ──
   for (const ch of data.challenges as Array<{
@@ -691,34 +806,7 @@ Return the complete analog clock configuration.
     }
   }
 
-  // ── Apply the within-mode support tier deterministically (reading-aids only;
-  // code owns the SUPPORT structure, the LLM only chose the time values). Runs
-  // PER CHALLENGE, gated only on a tier being present (a blended session must get
-  // it too) — each challenge resolves its scaffold from its OWN mode (ch.type).
-  // NEVER touches targetHour/targetMinute/options/correctOptionIndex, so the
-  // checker (which compares the student's answer to the time value) is untouched
-  // and the digital echo can only appear where it is not the answer. ──
-  if (supportTier) {
-    for (const ch of data.challenges as Array<{
-      type: ChallengeType;
-      showMinuteNumbers?: boolean;
-      showHandLegend?: boolean;
-      showDigitalEcho?: boolean;
-      supportTier?: SupportTier;
-    }>) {
-      const sc = resolveSupportStructure(ch.type, supportTier); // per-challenge, mode-correct
-      ch.showMinuteNumbers = sc.showMinuteNumbers;
-      ch.showHandLegend = sc.showHandLegend;
-      // ANSWER-LEAK guard lives inside resolveSupportStructure: showDigitalEcho is
-      // already false for every mode except set_time, so this never leaks the
-      // read/match/elapsed answer regardless of tier.
-      ch.showDigitalEcho = sc.showDigitalEcho;
-      ch.supportTier = supportTier;
-    }
-    console.log(
-      `[AnalogClock] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`,
-    );
-  }
+  applySupportTier(data, supportTier, pinnedType);
 
   // Final summary log
   const typeBreakdown = (data.challenges as Array<{ type: string }>).map(c => c.type).join(', ');

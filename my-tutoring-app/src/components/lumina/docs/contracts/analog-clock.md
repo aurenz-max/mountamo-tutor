@@ -54,6 +54,21 @@
   is never recorded twice. set_time, count_face and hear_time stay gesture (hands moved, numbers touched, a face with
   no name). **Probe:** `AnalogClock.spoken.workspace.test.tsx`; `scripts/tutor-verdict-probe.mjs --clock`.
 
+### R6 — with a tier, code picks the times; the tier still sets the reading aids · OBSERVED (NEW 2026-10-13)
+- `read`, `set_time`, `match`: times from the `clock-time` item space, `elapsed`: intervals from `elapsed-time`
+  (`service/itemSpace/time.ts`, adapter `service/math/analogClockItemSpace.ts`). Easy = o'clock and half past, medium =
+  quarters and five-minute marks before :40, hard = :40-:55 (the short hand near the next number) and, on a one-minute
+  grid, minutes between the marks. Elapsed hard = crossing an hour mark with hours and minutes.
+- Drawable: times on the lesson's minute grid (`clockGrid`: what the objective says, else 1.MD.3 halves, 2.MD.7 fives,
+  3.MD.1 minutes); `set_time` on a grid of five or coarser (the hands snap); elapsed start, duration and end on the grid.
+- The gradeBand is the one whose snap reaches every set_time target (`bandFittingTargets`, also on the untiered path,
+  which drew 2:25 on a quarter-hour snap). Code writes every instruction, hint and option; an elapsed instruction names
+  the end time (the dial shows only the start) and never the duration (`elapsedTextFits`; the untiered path rewrites
+  one that misses, as "finished at the target time shown" had no answer).
+- No tier, K modes (`hand_name`, `count_face`, `hear_time`), or no space fits: the generated path, unchanged.
+- **Supersedes** the generator docblock's "the tier NEVER changes the time value": the grid (scope) is still the
+  grade's; the tier picks the structure inside it. R1 holds: options and the echo rule are unchanged.
+
 ## Gaps
 
 ### G1 — generated read/match hints name the hand positions · OPEN
@@ -70,3 +85,5 @@
 - 2026-10-09 — created with the W1 workspace binding (R3).
 - 2026-10-09 — R4 levers on every mode (`/add-support-tiers`; qa/eval-reports/analog-clock-levers-2026-10-09.md).
 - 2026-10-13 — R5 spoken answers on read, match, elapsed and hand_name (VB-1); R3 re-based (the key reaches the observer only).
+- 2026-10-13 — R6 item-space path (`/add-item-space`; qa/difficulty-demo/2026-10-13/time-money/). Untiered path: set_time
+  band fits its targets, elapsed instruction names the end time.
