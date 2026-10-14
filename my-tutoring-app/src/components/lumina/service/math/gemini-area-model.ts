@@ -36,6 +36,42 @@ import {
   type AreaModelRemediationMove,
   type OperandPair as RemediationOperandPair,
 } from "./areaModelRemediation";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import type { MultDigitItem } from "../itemSpace/multiDigitMult";
+import { AREA_GRID_MODES, AREA_TASKS, areaPartsOf, perimeterSides, type AreaGridMode } from "./areaModelItemSpace";
+
+/**
+ * Factor pairs picked by code at the tier (areaModelItemSpace.ts), or null: no tier, the lesson is not
+ * multi-digit multiplication, or the scope cannot fill the session (the builders' own path runs whole).
+ */
+async function pairsFromItemSpace(opts: {
+  mode: ChallengeType; tier: SupportTier; count: number; topic: string; intent?: string; grade?: string;
+}): Promise<{ factor1Parts: number[]; factor2Parts: number[]; itemSpace?: AreaModelChallenge['itemSpace'] }[] | null> {
+  if (opts.mode === 'perimeter') {
+    const sides = perimeterSides(opts.tier, opts.count);
+    console.log(`[AreaModel] perimeter ${opts.tier} sides: ${sides.map(([l, w]) => `${l}x${w}`).join(' ')}`);
+    return sides.map(([l, w]) => ({ factor1Parts: [l], factor2Parts: [w] }));
+  }
+  if (!AREA_GRID_MODES.includes(opts.mode)) return null;
+  const mode = opts.mode as AreaGridMode;
+  const band = difficultyBand(opts.tier)!;
+  // A 3 × 2 grid is grade-5 work; the other grids fit either scope.
+  const only = mode === 'multiply' ? ['mult-multi-digit-5'] as const : ['mult-multi-digit', 'mult-multi-digit-5'] as const;
+  const space = await resolveItemSpace(`Lesson: ${opts.intent || opts.topic}. In this activity the learner ${AREA_TASKS[mode]}.`,
+    opts.grade, only);
+  if (!space || !(only as readonly string[]).includes(space)) {
+    console.log(`[AreaModel] Item space: ${mode} lesson does not fit ${only.join(' or ')}; own path kept`);
+    return null;
+  }
+  const scope = (it: MultDigitItem) => areaPartsOf(mode, it) !== null;
+  const picks = (tierPick(getItemSpace(space), (m) => console.log(`[AreaModel] Item space ${space}: ${m}`), scope)(
+    opts.count, band[0], band[1], undefined, scope,
+  ) as MultDigitItem[]).sort((x, y) => x.beta - y.beta);
+  console.log(`[AreaModel] Item space ${space} ${mode} band [${band.join(', ')}]: `
+    + (picks.length >= opts.count ? picks.map((p) => `${p.a}x${p.b}:${p.structure}@${p.beta}`).join(' ') : 'no session fits; own path kept'));
+  if (picks.length < opts.count) return null;
+  return picks.map((p) => ({ ...areaPartsOf(mode, p)!, itemSpace: { space, structure: p.structure, beta: p.beta } }));
+}
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -534,6 +570,15 @@ Return ONLY the wrapper metadata in the response schema.
     'find_area';
 
   let challenges = buildChallenges(challengeType, instanceCount);
+
+  // ── With a tier, code picks the numbers at the tier's difficulty; the display flags stay the mode's.
+  // A session that cannot fill keeps the builders' pairs whole.
+  const spacePairs = supportTier
+    ? await pairsFromItemSpace({ mode: challengeType, tier: supportTier, count: challenges.length, topic, intent: ctx.intent, grade: ctx.grade })
+    : null;
+  if (spacePairs && spacePairs.length >= challenges.length) {
+    challenges = challenges.map((ch, i) => ({ ...ch, ...spacePairs[i] }));
+  }
 
   // ── Validated teaching move: code selects the operands, the component derives every answer.
   let learningAdaptation: AreaModelData['learningAdaptation'];

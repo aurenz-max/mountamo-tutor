@@ -106,6 +106,8 @@ export interface NumberBondChallenge {
   allPairs?: [number, number][] | null;
   factFamily?: string[] | null;
   targetEquation?: string | null;
+  /** Item-space calibration stamp (bonds-10): never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface NumberBondData {

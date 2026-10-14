@@ -10,6 +10,41 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { resolveObjectiveNumberWindow } from "../objectiveNumberWindow";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import {
+  answerOf, codeAsk, fluencyOptions, fluencySpaceSupported, itemAsFluencyFact, matchEquations, pickFluencyFacts,
+  type SpaceFluencyFact,
+} from "./mathFactFluencyItemSpace";
+
+const SPACE_FACT_COUNT = 8;
+
+/**
+ * Facts picked by code from an item space at the requested difficulty (mathFactFluencyItemSpace.ts),
+ * or empty: no tier, a blended session, no strand fits, or the band cannot fill a session in scope.
+ */
+async function factsFromItemSpace(opts: {
+  difficulty?: string; mode?: ChallengeType; topic: string; intent?: string; grade?: string;
+  maxNumber: number; subtraction: boolean;
+}): Promise<SpaceFluencyFact[]> {
+  const band = difficultyBand(opts.difficulty);
+  if (!band || !opts.mode) return [];
+  // Lesson first: task-first, "Count objects to 10" resolved to the add/subtract strand.
+  const task = opts.mode === 'missing-number' ? 'finds the missing number in an addition or subtraction fact'
+    : 'recalls an addition or subtraction fact';
+  const space = await resolveItemSpace(
+    `Lesson: ${opts.intent || opts.topic}. In this activity the learner ${task} with numbers up to ${opts.maxNumber}.`, opts.grade, ['add-sub-20']);
+  if (!space || !fluencySpaceSupported(space)) return [];
+  const mode = opts.mode;
+  const scope = (it: unknown) => itemAsFluencyFact(space, it, mode, opts.maxNumber, opts.subtraction) !== null;
+  const facts = pickFluencyFacts({
+    space, pick: tierPick(getItemSpace(space), (m) => console.log(`[MathFactFluency] Item space ${space}: ${m}`), scope),
+    band, count: SPACE_FACT_COUNT, mode, maxNumber: opts.maxNumber, subtraction: opts.subtraction,
+  });
+  console.log(`[MathFactFluency] Item space ${space} ${mode} band [${band.join(', ')}] within ${opts.maxNumber}: `
+    + (facts.length ? facts.map((f) => `${f.itemSpace.structure}@${f.itemSpace.beta}`).join(' ') : 'no session fits; own path kept'));
+  return facts;
+}
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -393,6 +428,33 @@ export const generateMathFactFluency = async (
     ? buildTierPromptSection(pinnedType, supportTier)
     : '';
 
+  // ── Item space: with a tier, code picks every fact at the tier's difficulty ──
+  // The scope comes first: the explicit config, else the objective's own number window (shared
+  // resolver), else the grade's default; subtraction unless the lesson names addition only.
+  const intentText = `${topic} ${config?.intent ?? ''}`.toLowerCase();
+  const spaceMax = config?.maxNumber
+    ?? (difficultyBand(config?.difficulty) && pinnedType
+      ? await resolveObjectiveNumberWindow({
+        topic, intent: config?.intent, gradeLevel,
+        bandDefault: gradeLevel.toLowerCase().includes('kinder') ? 5 : 10, ceiling: 20, logPrefix: 'MathFactFluency',
+      })
+      : null)
+    ?? (gradeLevel.toLowerCase().includes('kinder') ? 5 : 10);
+  const spaceSubtraction = config?.includeSubtraction
+    ?? (/subtract|minus|take away|difference/.test(intentText) || !/\badd|sum|plus/.test(intentText));
+  const spaceFacts = await factsFromItemSpace({
+    difficulty: config?.difficulty, mode: pinnedType, topic, intent: config?.intent, grade: ctx.grade,
+    maxNumber: spaceMax, subtraction: spaceSubtraction,
+  });
+  const factSign = (f: SpaceFluencyFact['fact'], slot: 'operand1' | 'operand2' | 'result', v: number) =>
+    (f.unknownPosition === slot ? '?' : String(v));
+  const spaceSection = spaceFacts.length ? `
+## THE FACTS (fixed by code — write exactly ${spaceFacts.length} ${pinnedType} challenges, in this order)
+${spaceFacts.map(({ fact: f }, i) => `- c${i + 1}: ${factSign(f, 'operand1', f.operand1)} ${f.operation === 'addition' ? '+' : '-'} `
+    + `${factSign(f, 'operand2', f.operand2)} = ${factSign(f, 'result', f.result)}`).join('\n')}
+Write each challenge's instruction about its own fact. Never state the "?" value.
+` : '';
+
   // ── Build prompt ──
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
   // Pedagogical scope is resolved once at the registry boundary (ctx.scope). Injected
@@ -409,7 +471,7 @@ CONTEXT:
 - The goal is automaticity — recalling facts without counting. There is NO timer and no time pressure; never reference speed deadlines or countdowns in instruction text.
 
 ${challengeTypeSection}
-${tierSection}
+${tierSection}${spaceSection}
 ${!evalConstraint ? `
 PRIMITIVE RANGE (intent-driven, not grade-capped):
 - This primitive supports addition & subtraction facts through 20.
@@ -451,16 +513,26 @@ Return the complete math fact fluency configuration.
 
   logEvalModeResolution('MathFactFluency', config?.targetEvalMode, evalConstraint);
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
+  // On the item-space path code owns every number, so a failed wording call (an empty reply, a
+  // runaway string, a dropped request: 3 of 30 match runs on 10-13) ships code-written asks instead.
+  let data: any = null;
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: activeSchema,
+      },
+    });
+    data = result.text ? JSON.parse(result.text) : null;
+  } catch (err) {
+    if (!spaceFacts.length) throw err;
+    console.warn('[MathFactFluency] wording call failed on the item-space path; code asks used:', err);
+  }
+  if (!data && spaceFacts.length) {
+    data = { title: 'Fact Practice', challenges: spaceFacts.map(({ fact }) => ({ instruction: codeAsk(pinnedType!, fact) })) };
+  }
 
   if (!data) {
     throw new Error('No valid math fact fluency data returned from Gemini API');
@@ -507,6 +579,30 @@ Return the complete math fact fluency configuration.
     (c: { type: string }) => validChallengeTypes.includes(c.type)
   );
 
+  // Item-space path: each challenge takes its fact; the LLM's numbers are discarded.
+  if (spaceFacts.length) {
+    const written = data.challenges as MathFactFluencyChallenge[];
+    data.maxNumber = spaceMax;
+    data.includeSubtraction = spaceSubtraction;
+    data.challenges = spaceFacts.map(({ fact, itemSpace }, i) => ({
+      ...(written[i] ?? { instruction: '', visualType: pinnedType === 'visual-fact' || pinnedType === 'match' ? 'ten-frame' : undefined }),
+      id: `c${i + 1}`,
+      type: pinnedType,
+      ...fact,
+      visualCount: undefined,
+      itemSpace,
+    }));
+  } else {
+    // Own path: one fact once per session (the LLM repeated 4 + 3 and 12 + 5 within a session).
+    const seenFacts = new Set<string>();
+    data.challenges = (data.challenges as MathFactFluencyChallenge[]).filter((c) => {
+      const key = `${c.operand1}${c.operation}${c.operand2}`;
+      if (seenFacts.has(key)) return false;
+      seenFacts.add(key);
+      return true;
+    });
+  }
+
   // The tier's declared unknown-position preference, applied in code below. No tier ⇒
   // the count-on preference, which still alternates, so a missing-number session never
   // ships eight items of one form.
@@ -549,7 +645,7 @@ Return the complete math fact fluency configuration.
     // missingNumberPosition). Runs AFTER the operand/result reconciliation above — the
     // subtraction swap can exchange operand1 and operand2, so an earlier assignment
     // would name the wrong side — and BEFORE correctAnswer is derived from it.
-    if (challenge.type === 'missing-number') {
+    if (challenge.type === 'missing-number' && !challenge.itemSpace) {
       challenge.unknownPosition = missingNumberPosition(missingNumberPref, missingNumberOrdinal++);
     }
 
@@ -624,20 +720,21 @@ Return the complete math fact fluency configuration.
           }
         }
 
-        // Filter out distractors whose result equals the correct answer
+        // Filter out distractors whose result equals the correct answer, or sits outside the lesson's
+        // range (11 + 11 = 22 in a within-20 lesson is never tempting).
         const correctResult = challenge.result;
         challenge.equationOptions = challenge.equationOptions.filter((eq: string) => {
           if (eq === challenge.equation) return true; // keep the correct one
-          const eqParts = eq.split('=');
-          const eqResult = parseInt(eqParts[eqParts.length - 1]?.trim() ?? '', 10);
-          return isNaN(eqResult) || eqResult !== correctResult;
+          const nums = (eq.match(/\d+/g) ?? []).map(Number);
+          const eqResult = nums[nums.length - 1];
+          return eqResult !== undefined && eqResult !== correctResult && nums.every((v) => v <= data.maxNumber);
         });
 
         // If filtering removed too many, regenerate simple distractors with different results
         while (challenge.equationOptions.length < 4) {
           const offset = challenge.equationOptions.length; // 1, 2, 3
           const distResult = correctResult + offset;
-          if (distResult >= 0 && distResult <= data.maxNumber + 2) {
+          if (distResult >= 1 && distResult <= data.maxNumber) {
             // A varied split, so the distractors are not all "n + 1" beside a correct equation that stands out.
             const a = distResult > 1 ? 1 + Math.floor(Math.random() * (distResult - 1)) : Math.max(1, distResult);
             const b = distResult - a;
@@ -776,7 +873,7 @@ Return the complete math fact fluency configuration.
         const seen = new Set<number>([correct]);
         const targets: number[] = [];
         for (const t of [correct + gap, correct - gap, correct + 2 * gap, correct - 2 * gap, correct + gap + 1, correct + 1, correct - 1]) {
-          if (t >= 0 && t <= data.maxNumber + 2 && !seen.has(t)) {
+          if (t >= 1 && t <= data.maxNumber && !seen.has(t)) {
             seen.add(t);
             targets.push(t);
           }
@@ -786,6 +883,27 @@ Return the complete math fact fluency configuration.
       }
     }
     console.log(`[MathFactFluency] Support tier "${supportTier}" applied per-challenge (${pinnedType ? `single-mode ${pinnedType}` : 'blended'})`);
+  }
+
+  // ── Item-space path: options and match equations come from code, inside the lesson's range ──
+  // Wrong options are the space's mistakes at the tier's spread; speed-round and missing-number are typed.
+  if (spaceFacts.length && supportTier) {
+    const space = getItemSpace(spaceFacts[0].itemSpace.space as Parameters<typeof getItemSpace>[0]);
+    (data.challenges as MathFactFluencyChallenge[]).forEach((ch, i) => {
+      const { fact, item } = spaceFacts[i];
+      ch.correctAnswer = answerOf(fact);
+      if (ch.visualType) ch.visualCount = ch.result;
+      if (ch.type === 'visual-fact' || ch.type === 'equation-solve') {
+        const spread = resolveProblemShape(ch.type, supportTier).distractorSpread ?? 'near';
+        ch.options = fluencyOptions(space, item, fact, data.maxNumber, spread);
+      } else if (ch.type === 'match') {
+        ch.matchDirection = 'visual-to-equation';
+        ch.equationOptions = matchEquations(fact, data.maxNumber, resolveProblemShape('match', supportTier).matchResultGap ?? 1);
+        delete ch.options;
+      } else {
+        delete ch.options;
+      }
+    });
   }
 
   return data;

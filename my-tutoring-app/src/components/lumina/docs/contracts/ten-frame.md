@@ -70,7 +70,7 @@
 - **Probe:** `__tests__/TenFrame.reader-fit.test.tsx` — taps change the enacted K answer and it commits only when the frame is full; no stepper and no Check control at any band; a completed make-ten → add transition starts with zero counters; a Grade 1–2 make-ten item classifies as `answerKind: 'voice'` and its taps commit nothing.
 - **Judged-loop addition (does not weaken the above):** a hands-only turn also closes on STILLNESS (`PLACEMENT_SETTLE_MS`), the gesture analogue of the mic's silence bracket. This is what makes a hand item JUDGEABLE — stopping before the frame is full is now a wrong answer the tutor corrects, where previously the only reachable state was correct. R6's frame-full auto-judge is untouched.
 
-### R7 — support tiers alter scaffolding, not magnitude or task identity · OBSERVED
+### R7 — support tiers alter scaffolding, not magnitude or task identity · OBSERVED · amended 2026-10-13 (with a tier, operate problems and split/build_pair totals follow it; see changelog)
 
 - **Property:** `easy`/`medium`/`hard` withdraw count/equation aids or shorten/rearrange subitize flashes while pedagogical scope continues to own numeric bounds. `showEmptyCount` never exposes a make-ten complement.
 - **Demanded by:** support-tier and structural-difficulty axes.
@@ -152,6 +152,29 @@ Item 12 is **COMPATIBLE / fork-by-band+mode**. It changes only R6's K `make_ten`
 - **evalModes:** faithful. `make_ten` remains “find the complement to 10”; K enacts the complement while Grades 1–2 report it numerically.
 
 ## Changelog
+
+- 2026-10-13 — `/add-item-space`, all eight modes measured (`qa/difficulty-demo/2026-10-13/tf/`). Before: operate
+  gave 8 + 3, 7 + 6, 9 + 6, 12 − 6, 14 − 8 at every tier and nearly every run; decompose (split) easy = medium
+  (3,3,4,4,5,5); build_pair totals ignored the tier. Now:
+  - operate: with a tier and a lesson the resolver fits to add-sub-20, code picks each problem at the tier's band
+    (`tenFrameItemSpace.ts`): one step, result unknown, every number within the lesson's window (10 at K or on a
+    single-frame override, else the objective's window, else 20), additions or subtractions as the lesson names
+    them. Hint and narration are code-written and never state the result. A saved-observation adaptation keeps
+    the own path (R11 unchanged). A failed content call ships the picked problems. Easy: no bridge and count-by-one;
+    medium: crossing ten both ways; hard: subtraction across ten.
+  - split and build_pair: with a tier, the totals come from the tier's window of 3..ceiling (`pairTotals` +
+    `tierWindow`): G1/K-to-10 easy 3-6, medium 5-8, hard 7-10, each total twice (R9 holds: every total is asked at
+    most as often as it has ways). split's hint and narration are code-written (they named the model's totals).
+  - **R7 amended:** with a tier, operate's problems and split/build_pair's totals change with the tier; aids are
+    withdrawn as before, and with no tier the output is unchanged.
+  - Dead prompt lines removed: build_teen and decompose_teen asked the model to favour small or large teen numbers
+    at easy or hard, but the teen numbers are code-owned (`teenSweep`), so the tier never moved them. `teenSweep`
+    now samples a wide window evenly (an 11-19 lesson reaches 16-19).
+  - Left alone: build and subitize (a session sweeps the lesson's window by design; the tier withdraws the count or
+    shortens the flash), make_ten (nine complements, seven per session: a tier cannot pick a different set),
+    the teen modes (same reason, nine teen numbers).
+  Pins `tenFrameItemSpace.test.ts`, `teenWindow.test.ts`. Each operate challenge carries `itemSpace`, never
+  rendered or sent to the tutor.
 
 - 2026-07-16 — derived (initial). 8 requirements, 0 open conflicts.
 - 2026-07-16 — item 12 implemented as a compatible K `make_ten` band+mode fork: seed → tap empty cells → auto-judge the enacted complement; all other modes/bands preserved.

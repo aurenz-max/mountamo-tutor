@@ -145,7 +145,7 @@ Calibration channel [4] not read (403, needs auth).
 - **Evidence:** component `usePipSurface` block; `numberBondPipPose`.
 - **Probe:** `pip/NumberBond.surface.test.tsx` (both tests).
 
-### R21 — support tier changes scaffolding and the unknown side, never magnitude · INFERRED
+### R21 — support tier changes scaffolding and the unknown side, never magnitude · INFERRED · amended 2026-10-13 (item-space path: the tier also chooses the bond; see changelog)
 - **Property:** counters stay on in every model mode at every tier. `showEquation` is off for the model modes. The fact-family helper is open at easy, collapsed at medium, hidden at hard. On missing-part the tier moves only which part is unknown. With no tier, the output is the same as before tiers existed.
 - **Demanded by:** the structural-difficulty doctrine; future lever starting positions.
 - **Evidence:** generator `resolveSupportStructure`. `qa/eval-reports/number-bond-2026-06-14.md` observed magnitude invariance and the unknown-side lever, but it predates the port (it recorded `showCounters: false` at hard, which the code now overrides). There is no current probe, so this stays INFERRED until an eval-test run at easy and hard re-observes it.
@@ -185,6 +185,27 @@ _None open._ Notes for the four M1 fixes and the lever slice:
 - **tutoring:** the `aiDirectives` and `taskDescription` describe the scripted DI cue protocol (`[NS_ITEM]`, `[NB_*]`, "your own affirmation advances"). That path is still live for non-workspace hosts (`useScriptedController`), so the block is not stale yet. If the scripted path is retired, it goes stale the same way cvc-speller's and letter-sound-link's did. Not applied.
 
 ## Changelog
+
+- 2026-10-13 — `/add-item-space`, all six modes measured. Before: every tier gave nearly the same bonds
+  (missing_part 4/1 6/2 7/3 8/4 10/4 in 9 of 12 runs; decompose 4,5,6 / 4,6,8 / 4,7,10 at every tier;
+  ten_and_ones 11-15 in 12 of 12). Now:
+  - missing_part, related_fact, fact_family, build_equation (Grade 1, window 10): with a tier and a lesson
+    the resolver fits to the new `bonds-10` space, code picks each bond at the tier's band
+    (`numberBondItemSpace.ts`); the known part is `part1`. The missing-part unknown-side lever does not run on
+    this path (the space chose the side). An instruction that misses the whole or known part, or states a part
+    to be found, is replaced by a code line. A failed wording call ships code instructions. **R21 amended:** on
+    this path the tier also chooses the bond (by structure: anchors, whole size, which part is missing); the
+    scaffold rules of R21 still hold, and with no tier the output is unchanged. R2 holds (wholes 2..10, K 5).
+    R4 is met on this path (no bond twice per session). R8 holds (related_fact takes unequal parts only).
+  - K (window 5): six missing-part bonds, four unequal, cannot give three tiers a session each, so K keeps the
+    own path at every tier (`scopeBondCount`). fact_family and build_equation never take the space at K (R1).
+  - decompose: with a tier, code sets the wholes (`decomposeWholes`) from the band's window, not the LLM's
+    maxNumber: Grade 1 easy 3-6, medium 5-8, hard 7-10 (more splits to find). K's 2-5 is shared by every tier.
+  - ten_and_ones: no tier change (one task, nine wholes). `teenSweep` now samples a wide window evenly from a
+    random offset instead of taking its first values, so an 11-19 lesson reaches 16-19 (shared with ten-frame).
+  Probes `qa/difficulty-demo/2026-10-13/nb/{before,after}-<mode>.txt`; pins `bonds10.test.ts`,
+  `numberBondItemSpace.test.ts`, `teenWindow.test.ts`. Each challenge carries `itemSpace`, never rendered or
+  sent to the tutor.
 
 - 2026-09-29 — R24 added (spoken-turn levers). Compatible: `SplitAndSayBoard`'s `frame` takes 'whole' as well as true.
 - 2026-09-28 — R23 added (levers slice 2, the equation steps). Additive: nothing is drawn until a pull, except the easy tier's empty frame. `commitEquation` now checks the shown item, which equals the session item whenever no practice step is open, so every existing probe holds (number-bond suites green).

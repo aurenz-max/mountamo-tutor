@@ -51,6 +51,8 @@ export interface BaseTenBlocksChallenge {
   // read_blocks ignores these — its readouts are contractually off (BT-2).
   showColumnCounts?: boolean; // digit readout above each place column
   showBlocksTotal?: boolean;  // live "Blocks Total" self-check panel
+  /** Item-space calibration stamp (add-sub-100 / add-sub-1000): never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';

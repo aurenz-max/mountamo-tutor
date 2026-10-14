@@ -64,6 +64,8 @@ export interface MathFactFluencyChallenge {
   // Within-mode support tier ('easy' | 'medium' | 'hard'), set by the generator when
   // the manifest emits config.difficulty. Read by the live tutor to calibrate reveal.
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** Item-space calibration stamp (a tier on a fitting strand): never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface MathFactFluencyData {

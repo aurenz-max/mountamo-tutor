@@ -46,4 +46,14 @@
   connects blocks to the written digits), but at the hard tier the count under each column could be withdrawn. Ruling owed.
 
 ## Changelog
+
+- 2026-10-13 — `/add-item-space`, all four modes wired (`qa/difficulty-demo/2026-10-13/rw/`). Before: add_regroup gave
+  27 + 45, 38 + 24, 19 + 36 in 12 of 12 runs at every tier; the code lever capped a 2-digit problem at one regroup
+  (hard = easy), and a Grade-3 "within 1000" lesson drew 2-digit problems because the LLM set maxPlace. Now, with a
+  tier and a lesson the resolver fits to add-sub-100 or add-sub-1000, code picks each problem at the tier's band
+  (`regroupingWorkbenchItemSpace.ts`): the mode fixes the operation and whether a column regroups; the tier moves
+  regroup count, chains, borrows across a zero, a one-digit or two-digit second number. maxPlace follows the strand.
+  Hints, narration and the word-problem story are code-written or dropped on this path (they named the LLM's numbers).
+  The structural operand lever does not run on this path; with no tier, output is unchanged. Weak: within 100 the
+  only two-carry sums land on 100, so add_regroup hard is all make-100. Pins `regroupingWorkbenchItemSpace.test.ts`.
 - 2026-10-09 — derived; W1 binding, R1 restored, R2 fixed on both paths, levers (R4).

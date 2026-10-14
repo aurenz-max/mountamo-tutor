@@ -21,6 +21,8 @@ import {
 } from './numberLineRemediation';
 import { buildHopsInstruction, maxDistance, minDistance, waysFor, type HopsTask }
   from '../../primitives/visual-primitives/math/numberLineBuildHops';
+import { difficultyBand, getItemSpace, resolveItemSpace } from '../itemSpace';
+import { jumpSpaceSupported, pickSpaceJumps, type SpaceJump } from './numberLineItemSpace';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -822,6 +824,23 @@ Return the integer range the student actually works with in THIS lesson.
 // regardless of temperature. To avoid getting the same target/start/etc on
 // every parallel call, pre-select the numerics in code.
 
+/**
+ * An order set as its chips are shown: never smallest-to-largest (that is the answer) and, with three or
+ * more values, never largest-to-smallest. The reshapers return sets sorted, so every easy and hard set
+ * had shown its own answer.
+ */
+export function displayOrder(values: number[]): number[] {
+  const monotone = (xs: number[]) => xs.every((v, i) => i === 0 || v > xs[i - 1])
+    || (xs.length > 2 && xs.every((v, i) => i === 0 || v < xs[i - 1]));
+  if (new Set(values).size < 2) return [...values];
+  for (let guard = 0; guard < 50; guard++) {
+    const out = shuffleInPlace([...values]);
+    if (!monotone(out)) return out;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  return [sorted[1], sorted[0], ...sorted.slice(2)];
+}
+
 function shuffleInPlace<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -851,6 +870,9 @@ interface NumberLineSubConfig {
   focusRange?: { min: number; max: number };
   exactMissingNumber?: boolean;
   difficulty?: string;
+  /** Canonical objective grade and the lesson objective, for the item-space resolver. */
+  grade?: string;
+  objective?: string;
   canonicalGradeBand?: 'K-2' | '3-5';
   /** Validated planner move; show_jump single-step challenges execute it. */
   remediationMove?: NumberLineRemediationMove | null;
@@ -864,6 +886,18 @@ function resolvedPoolNumbers(
   if (pool?.numbers && pool.numbers.length > 0) return [...pool.numbers];
   return uniqueIntegerPool(fallback.min, fallback.max);
 }
+
+/**
+ * Identify targets per tier on the fully labelled 0-10 line (R3). A learner who cannot yet read the
+ * numeral finds it by counting ticks up from 0, so the first few numbers are easy (and 10, the end of
+ * the line), and 5-9 (more ticks to count, numerals learned later) are hard. Before, the tier reshaped
+ * targets against a label grid that identify does not have, so medium and hard drew the same numbers.
+ */
+export const IDENTIFY_TARGETS: Record<'easy' | 'medium' | 'hard', number[]> = {
+  easy: [0, 1, 2, 3, 4, 10],
+  medium: [3, 4, 5, 6, 7],
+  hard: [5, 6, 7, 8, 9],
+};
 
 function selectPlotPointTargets(pool: number[], count: number): number[] {
   const filtered = pool.filter(v => Number.isFinite(v));
@@ -910,6 +944,19 @@ function selectShowJumpTuples(
     if (tuples.length >= count) break;
   }
   return tuples;
+}
+
+/**
+ * True when the text names every hop's size. The line shows only the first start, so an instruction
+ * that leaves out a hop ("then jump again to your final spot") cannot be solved.
+ */
+export function jumpTextNamesEveryHop(text: string, ops: readonly NumberLineOperation[]): boolean {
+  const lower = text.toLowerCase();
+  const named = new Set([
+    ...(lower.match(/\d+/g) ?? []).map(Number),
+    ...NUMBER_WORDS.flatMap((word, value) => (new RegExp(`\\b${word}\\b`).test(lower) ? [value] : [])),
+  ]);
+  return ops.every(op => named.has(op.changeValue));
 }
 
 const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
@@ -1075,18 +1122,19 @@ async function generatePlotPointChallenges(
     ? { min: 0, max: 10 }
     : (config?.numberRange ?? { min: 0, max: 20 });
 
+  const tier = normalizeSupportTier(config?.difficulty);
   const poolNumbers = isIdentify
-    ? uniqueIntegerPool(0, 10)
+    ? (tier ? IDENTIFY_TARGETS[tier] : uniqueIntegerPool(0, 10))
     : resolvedPoolNumbers(config, range);
   let targets = selectPlotPointTargets(poolNumbers, resolveCount('plot_point'));
   if (targets.length === 0) return emptySubResult('plot');
 
-  const tier = normalizeSupportTier(config?.difficulty);
-
   // STRUCTURAL difficulty: reshape each target relative to the LABEL grid (on a
   // labeled tick → on a minor tick → midway between labels). Magnitude stays in
   // `range`; numberType unchanged. The reshaped values ARE the recomputed answer.
-  if (tier) {
+  // Identify labels every tick (R3), so there is no minor tick or midpoint to move a target to; its tier
+  // picks the targets instead (IDENTIFY_TARGETS).
+  if (tier && !isIdentify) {
     const placement = resolveProblemShape('plot_point', tier).labelPlacement;
     if (placement) {
       const span = Math.max(1, range.max - range.min);
@@ -1098,12 +1146,14 @@ async function generatePlotPointChallenges(
       const seen = new Set<number>();
       for (const t of targets) {
         let v = reshapePlotTarget(t, placement, geom);
-        // Keep targets DISTINCT (a plot session shows variety); on collision try
-        // the next pool member, else accept the dup-free original.
+        // Keep targets DISTINCT (R9). On collision, the next on-profile pool value; a narrow window
+        // holds few (11-19 has three midpoints), so then an unused value from the same window,
+        // off-profile, rather than a repeat.
         if (seen.has(v)) {
           const alt = poolNumbers
             .map((p) => reshapePlotTarget(p, placement, geom))
-            .find((c) => !seen.has(c));
+            .find((c) => !seen.has(c))
+            ?? shuffleInPlace([...poolNumbers]).find((p) => !seen.has(p));
           if (alt != null) v = alt;
         }
         seen.add(v);
@@ -1164,6 +1214,37 @@ Return ONLY:
   };
 }
 
+/**
+ * Jumps picked by code from an item space at the requested difficulty (numberLineItemSpace.ts), or
+ * empty: no tier, not K-2, a planned observation move (R13 rewrites the baseline
+ * tuples and keeps its own path), no strand fits, or the band cannot fill a session on this line.
+ */
+async function jumpsFromItemSpace(
+  config: NumberLineSubConfig | undefined,
+  range: { min: number; max: number },
+  gradeBand: 'K-2' | '3-5',
+  count: number,
+): Promise<SpaceJump[]> {
+  const band = difficultyBand(config?.difficulty);
+  if (!band || gradeBand !== 'K-2' || config?.remediationMove || !config?.objective) return [];
+  // The jump task is adding or subtracting on this line; the lesson objective sets its scope.
+  const space = await resolveItemSpace(
+    `Jump forward or back on a number line from ${range.min} to ${range.max} to add or subtract (lesson: ${config.objective})`,
+    config.grade,
+    ['add-sub-20'],
+  );
+  if (!space || !jumpSpaceSupported(space)) return [];
+  // The absolute band, not tierPick: jump already falls back from the focus window to the whole line,
+  // and thirds of a narrow window made every easy jump a hop of 1.
+  const jumps = pickSpaceJumps({
+    space, pick: getItemSpace(space).pick, band, count, range,
+    focusRange: config.focusRange, operation: config.jumpOperation,
+  });
+  console.log(`[NumberLine] Item space ${space} band [${band.map((b) => b.toFixed(1)).join(', ')}]: `
+    + (jumps.length ? jumps.map((j) => `${j.itemSpace.structure}@${j.itemSpace.beta}`).join(' ') : 'no session fits; own path kept'));
+  return jumps;
+}
+
 async function generateShowJumpChallenges(
   topic: string,
   gradeLevel: string,
@@ -1173,18 +1254,25 @@ async function generateShowJumpChallenges(
   const range = config?.numberRange ?? { min: 0, max: gradeBand === 'K-2' ? 20 : 30 };
   const tier = normalizeSupportTier(config?.difficulty);
   const scaffold = tier ? resolveSupportStructure('show_jump', tier) : null;
-  const tierSection = tier
+  const jumpCount = resolveCount('show_jump');
+  // Item-space path: code picked each problem at the requested difficulty, steps included, so the
+  // tier's shape lines (one jump / two chained jumps) would contradict it; the prompt states the hops.
+  const spaceJumps = await jumpsFromItemSpace(config, range, gradeBand, jumpCount);
+  const tierSection = tier && !spaceJumps.length
     ? buildTierPromptSection('show_jump', tier, 'scaffolding + jump-step depth')
     : '';
 
   // Starts and landings stay in the lesson's focus window ("numbers 11-20" on a
   // 0-20 line), as plot and between already do; the full line only when the
   // window cannot hold a session of distinct jumps.
-  const jumpCount = resolveCount('show_jump');
-  const focusTuples = config?.focusRange
+  const focusTuples = config?.focusRange && !spaceJumps.length
     ? selectShowJumpTuples(config.focusRange, gradeBand, jumpCount, config?.jumpOperation) : [];
-  const baselineTuples = focusTuples.length >= jumpCount
-    ? focusTuples : selectShowJumpTuples(range, gradeBand, jumpCount, config?.jumpOperation);
+  const baselineTuples: ShowJumpTuple[] = spaceJumps.length
+    ? spaceJumps.map(({ ops: [first], landings }) => ({
+      startValue: first.startValue, opType: first.type, change: first.changeValue, targetValue: landings[0],
+    }))
+    : focusTuples.length >= jumpCount
+      ? focusTuples : selectShowJumpTuples(range, gradeBand, jumpCount, config?.jumpOperation);
   if (baselineTuples.length === 0) return emptySubResult('jump');
 
   // STRUCTURAL lever: at the hard tier each challenge is TWO chained jumps — the
@@ -1216,7 +1304,8 @@ async function generateShowJumpChallenges(
     return opts[Math.floor(Math.random() * opts.length)];
   }
 
-  const promptFor = (t: ShowJumpTuple, index: number, steps: number, secondLanding: number | null) =>
+  const say = (op: NumberLineOperation) => `jump ${op.type === 'add' ? 'forward' : 'back'} ${op.changeValue}`;
+  const promptFor = (t: ShowJumpTuple, index: number, steps: number, secondLanding: number | null, chain: NumberLineOperation[]) =>
     `Create text for ONE Number Line JUMP challenge for "${topic}" (Grade ${gradeLevel}).
 
 GRADE BAND: ${gradeBand}. ${gradeBand === 'K-2' ? 'Use counting language, warm tone.' : 'Concise, neutral tone.'}
@@ -1226,7 +1315,7 @@ This is challenge ${index + 1} of ${tuples.length} in a session on a number line
 For THIS challenge:
 - Start position: ${t.startValue}
 - ${steps === 2
-        ? `TWO chained jumps: first ${t.opType === 'add' ? `add ${t.change}` : `subtract ${t.change}`}, then from where you land jump again to reach ${secondLanding}. The student places BOTH landings.`
+        ? `TWO chained jumps: first ${say(chain[0])}, then from where you land ${say(chain[1])}, reaching ${secondLanding}. The student places BOTH landings.`
         : `Operation: ${t.opType === 'add' ? `add ${t.change} (jump right)` : `subtract ${t.change} (jump left)`}`}
 - Final landing value: ${steps === 2 ? secondLanding : t.targetValue}
 
@@ -1234,12 +1323,15 @@ Return ONLY:
 - title: an engaging session title (shared across all challenges)
 - description: a brief session-level learning goal
 - instruction: a warm, grade-appropriate instruction telling the student to ${steps === 2
-        ? `start at ${t.startValue}, make the first jump, then jump again from where they landed`
-        : `start at ${t.startValue} and ${t.opType === 'add' ? 'jump forward' : 'jump back'} ${t.change}`} (vary phrasing — do NOT state the final landing number)
+        ? `start at ${t.startValue}, ${say(chain[0])}, then ${say(chain[1])} from where they landed. Name BOTH jumps with their size and direction: the screen shows only the start, so the words are the only place the learner learns the second jump`
+        : `start at ${t.startValue} and ${t.opType === 'add' ? 'jump forward' : 'jump back'} ${t.change}`} (vary phrasing — do NOT state either landing number)
 - hint: a hint that guides counting the hops WITHOUT giving any landing number directly${tierSection}`;
 
   // Pre-resolve the (possibly chained) operations per tuple so prompt + data agree.
-  const ops: NumberLineOperation[][] = tuples.map((t) => {
+  const ops: NumberLineOperation[][] = tuples.map((t, i) => {
+    if (spaceJumps.length) {
+      return spaceJumps[i].ops.map((op, j) => ({ ...op, showJumpArc: j === 0 ? scaffold?.showJumpArc ?? false : false }));
+    }
     const first: NumberLineOperation = {
       type: t.opType,
       startValue: t.startValue,
@@ -1261,7 +1353,7 @@ Return ONLY:
     const chainLanding = ops[i].length === 2
       ? (ops[i][1].type === 'add' ? ops[i][1].startValue + ops[i][1].changeValue : ops[i][1].startValue - ops[i][1].changeValue)
       : null;
-    return generateChallengeText(promptFor(t, i, ops[i].length, chainLanding));
+    return generateChallengeText(promptFor(t, i, ops[i].length, chainLanding, ops[i]));
   }));
 
   const wrapperSource = texts.find(t => t && t.title) ?? texts.find(t => !!t) ?? null;
@@ -1271,9 +1363,10 @@ Return ONLY:
     const last = challengeOps[challengeOps.length - 1];
     const finalLanding = last.type === 'add' ? last.startValue + last.changeValue : last.startValue - last.changeValue;
     // Text that names a position the hops reach falls back to the code template (NL-3).
-    const instruction = (text?.instruction && !jumpTextNamesPosition(text.instruction, challengeOps) ? text.instruction : null)
+    const instruction = (text?.instruction && !jumpTextNamesPosition(text.instruction, challengeOps)
+      && jumpTextNamesEveryHop(text.instruction, challengeOps) ? text.instruction : null)
       ?? (challengeOps.length === 2
-        ? `Start at ${t.startValue}. Make the first jump, then jump again. Where do you land?`
+        ? `Start at ${t.startValue}. ${say(challengeOps[0]).replace(/^j/, 'J')}, then ${say(challengeOps[1])}. Where do you land?`
         : `Start at ${t.startValue} and jump ${t.opType === 'add' ? 'forward' : 'back'} ${t.change}. Where do you land?`);
     const hint = (text?.hint && !jumpTextNamesPosition(text.hint, challengeOps) ? text.hint : null)
       ?? `Count the hops one jump at a time, starting from ${t.startValue}.`;
@@ -1287,6 +1380,7 @@ Return ONLY:
       hint,
       startValue: t.startValue,
       operations: challengeOps,
+      ...(spaceJumps.length ? { itemSpace: spaceJumps[i].itemSpace } : {}),
     };
   });
 
@@ -1370,6 +1464,8 @@ Return ONLY:
 - instruction: a warm, grade-appropriate instruction asking the student to put the values in order from smallest to largest
 - hint: a hint that guides comparison WITHOUT giving the answer (e.g. "Find each number on the line first" or "Compare two at a time")${tierSection}`;
 
+  // The chips show in this order, so a sorted set would show the answer.
+  sets = sets.map(displayOrder);
   const texts = await Promise.all(sets.map((s, i) => generateChallengeText(promptFor(s, i))));
 
   const wrapperSource = texts.find(t => t && t.title) ?? texts.find(t => !!t) ?? null;
@@ -1511,14 +1607,18 @@ Return ONLY:
  * holds it, else the line's first number. Each target is reached from the start by at least two different sets of
  * hops (`minDistance`) and by the hop buttons (`maxDistance`), inside the scope's line; distinct per session.
  */
-export function selectBuildHopsTasks(range: { min: number; max: number } | undefined, hopCount: number, count: number):
+export function selectBuildHopsTasks(range: { min: number; max: number } | undefined, hopCount: number, count: number,
+  reach?: 'within-ten' | 'past-ten'):
   { line: { min: number; max: number }; tasks: HopsTask[] } | null {
   const start = !range || (range.min <= 0 && range.max >= 0) ? 0 : Math.round(range.min);
   const lineMax = Math.min(range ? Math.round(range.max) : start + 20, start + 20);
   const hops = hopCount > 2 && lineMax - start < minDistance(hopCount) + count - 1 ? 2 : hopCount;
   const lo = minDistance(hops), hi = Math.min(maxDistance(hops), lineMax - start);
   // Two hops of at most 10 reach 19 or 20 only one way (10+9, 10+10), so those are never asked.
-  const open = Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => lo + i).filter(d => waysFor(d, hops).length >= 2);
+  const all = Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => lo + i).filter(d => waysFor(d, hops).length >= 2);
+  // A tier's reach applies only when it leaves a full session; a short line keeps every distance.
+  const reached = reach ? all.filter(d => (reach === 'within-ten' ? d <= 10 : d > 10)) : all;
+  const open = reached.length >= count ? reached : all;
   if (!open.length) return null;
   const distances = shuffleInPlace(open).slice(0, count);
   return { line: { min: start, max: lineMax },
@@ -1540,9 +1640,13 @@ async function generateBuildHopsChallenges(
   config?: NumberLineSubConfig,
 ): Promise<SubResult> {
   const gradeBand = config?.canonicalGradeBand ?? resolveGradeBand(gradeLevel);
-  // The hard tier asks for three hops; the scaffolds stay bare at every tier (they are levers).
-  const hopCount = normalizeSupportTier(config?.difficulty) === 'hard' ? 3 : 2;
-  const picked = selectBuildHopsTasks(config?.numberRange, hopCount, resolveCount('build_hops'));
+  // The tier sets the build: easy makes a number within ten in two hops, medium a number past ten in two
+  // hops (one hop has to carry it over ten), hard any number in three hops. The scaffolds stay bare at
+  // every tier (they are levers). Before, easy and medium were the same task.
+  const tier = normalizeSupportTier(config?.difficulty);
+  const hopCount = tier === 'hard' ? 3 : 2;
+  const picked = selectBuildHopsTasks(config?.numberRange, hopCount, resolveCount('build_hops'),
+    tier === 'easy' ? 'within-ten' : tier === 'medium' ? 'past-ten' : undefined);
   if (!picked) return emptySubResult('jump');
   return {
     title: 'Hop to the Number',
@@ -1621,7 +1725,8 @@ type NumberLineConfig = Partial<{
    * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
    * Second axis of the two-field contract: targetEvalMode = which skill,
    * difficulty = how much on-screen scaffolding within it. NEVER changes the
-   * target numbers, the scope range, or the snap precision/answer tolerance.
+   * target numbers, the scope range, or the snap precision/answer tolerance — except on the jump
+   * item-space path, where it picks the problems (jumpsFromItemSpace).
    */
   difficulty: string;
 }>;
@@ -1702,6 +1807,8 @@ export const generateNumberLine = async (ctx: GenerationContext): Promise<Number
     exactMissingNumber: ctx.grade === '1'
       && resolvedScope?.requiresExactMissingNumber === true,
     difficulty: config?.difficulty,
+    grade: ctx.grade,
+    objective: config?.intent || topic,
     canonicalGradeBand: canonicalBand ?? undefined,
     remediationMove: await remediationMovePromise,
   };

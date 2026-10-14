@@ -62,6 +62,19 @@ None open.
 
 ## Changelog
 
+- 2026-10-13 — `/add-item-space`, all five modes measured and wired. Before: every tier and run opened with
+  the same facts (7 + 8, 14 − 6, 9 + 9, 17 − 9); the tier moved only distractors and the blank. Now, with a
+  tier and a lesson the resolver fits to add-sub-20, code picks each fact at the tier's band
+  (`mathFactFluencyItemSpace.ts`): result unknown for visual-fact, equation-solve, speed-round and match; the
+  change or start unknown for missing-number (the tier's blank preference does not run on this path).
+  Options for visual-fact and equation-solve come from the space's mistakes at the tier's spread, inside
+  0..maxNumber; speed-round and missing-number are typed; match equations are built in code with distinct
+  results inside the range. A failed wording call on this path ships code asks instead of failing the lesson.
+  Own-path fixes: match distractors outside the lesson's range are dropped (11 + 11 = 22 in a within-20
+  lesson), the gap re-synthesis no longer reaches maxNumber + 2, and a fact repeated in one session is
+  dropped. Probes `qa/difficulty-demo/2026-10-13/mff-<mode>.txt`; pins `mathFactFluencyItemSpace.test.ts`.
+  Each challenge carries `itemSpace`, never rendered or sent to the tutor. Compatible.
+
 - 2026-10-02: derived (initial, static). 8 requirements, 0 conflicts. R6-R8 added with the M3 lever slice.
 - 2026-10-08: R6 speed_round misses listed as unanswered; R7 fingers pictures get `two_parts` / `count_marks` (dots under the hands), and per-item miss coverage is probed on every saved payload.
 - 2026-10-13: R2 re-based. "One checked gesture per item" protected no unearned credit and no key leak; a spoken "18" to 9 + 9 was praised and never credited (session 750ca99a). Number answers are now spoken items that also take the tap/Submit (`TeachingItem.acceptsGesture`); JEV verdict probe 33/33, false credit 0.

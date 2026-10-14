@@ -5,10 +5,18 @@ import type { GenerationContext } from '../generation/generationContext';
 vi.mock('server-only', () => ({}));
 vi.mock('../geminiClient', () => ({ ai: { models: { generateContent: vi.fn() } } }));
 import { ai } from '../geminiClient';
-import { generateNumberLine, jumpTextNamesPosition } from './gemini-number-line';
+import { generateNumberLine, jumpTextNamesEveryHop, jumpTextNamesPosition } from './gemini-number-line';
 
 const add = (startValue: number, changeValue: number) => ({ type: 'add' as const, startValue, changeValue, showJumpArc: false });
 const sub = (startValue: number, changeValue: number) => ({ type: 'subtract' as const, startValue, changeValue, showJumpArc: false });
+
+describe('jumpTextNamesEveryHop', () => {
+  it('requires every hop size, since the line shows only the start (seen in real two-step draws)', () => {
+    expect(jumpTextNamesEveryHop('Start at 18. Hop back 5, then from where you land take another hop to your final spot!', [sub(18, 5), add(13, 4)])).toBe(false);
+    expect(jumpTextNamesEveryHop('Start at 18. Hop back 5, then hop forward four.', [sub(18, 5), add(13, 4)])).toBe(true);
+    expect(jumpTextNamesEveryHop('Put your finger on 19. Take one big hop to the right!', [add(19, 1)])).toBe(true);
+  });
+});
 
 describe('jumpTextNamesPosition', () => {
   it('flags counted sequences and landings seen in real draws, in digits or words', () => {

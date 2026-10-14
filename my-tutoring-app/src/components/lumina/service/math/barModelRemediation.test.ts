@@ -118,6 +118,8 @@ it('a validated move changes the compiled content against the same baseline; pri
 });
 
 it('abstention, no observations and ineligible tasks leave generation byte-identical', async () => {
+  // The session pass rotates answer positions from a random start; pin it so two runs compare.
+  const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
   const base = await generate();
   const abstained = await generate({ remediationFocus: 'The learner reverses numerator and denominator.' }, 'abstain');
   expect(abstained.planner).toHaveLength(1);
@@ -128,4 +130,5 @@ it('abstention, no observations and ineligible tasks leave generation byte-ident
     expect(run.planner).toHaveLength(0);
     expect(run.data.learningAdaptation).toBeUndefined();
   }
+  random.mockRestore();
 });

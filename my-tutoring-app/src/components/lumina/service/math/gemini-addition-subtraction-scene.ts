@@ -19,6 +19,11 @@ import {
   type AddSubBand,
 } from "../../primitives/visual-primitives/math/additionSubtractionSceneScript";
 import { resolveObjectiveNumberWindow } from "../objectiveNumberWindow";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import {
+  applySpaceStory, givenCounts, itemAsStory, pickSpaceStories, sceneSpaceSupported,
+  type SceneMode, type SceneStory, type SceneStoryType, type SpaceStory,
+} from "./addSubSceneItemSpace";
 
 // ---------------------------------------------------------------------------
 // Valid object types — must match OBJECT_EMOJI in AdditionSubtractionScene.tsx
@@ -606,6 +611,42 @@ export const fallbackFor = (type: string): AddSubChallenge => {
   return fallbacks[type] ?? fallbacks['act-out'];
 };
 
+/**
+ * Problems picked by code from an item space (addSubSceneItemSpace.ts), or empty: no strand fits, or
+ * the space cannot fill a session within this lesson's maxNumber. Solve-story, act-out and
+ * build-equation pick at the tier's difficulty and need a tier; create-story has no tier and takes
+ * varied equations from the whole space.
+ */
+async function storiesFromItemSpace(
+  config: AdditionSubtractionSceneConfig | undefined,
+  grade: string | undefined,
+  topic: string,
+  maxNumber: number,
+  mode: SceneMode,
+  storyTypes?: readonly SceneStoryType[],
+): Promise<SpaceStory[]> {
+  const band: [number, number] | null = mode === 'create-story' ? [-10, 10] : difficultyBand(config?.difficulty);
+  if (!band) return [];
+  // The mode fixes the task; the lesson sets its scope.
+  const task = mode === 'solve-story' ? 'Solve one-step add or subtract story problems'
+    : mode === 'act-out' ? 'Act out one-step add or subtract stories and say how many there are at the end'
+      : mode === 'build-equation' ? 'Write the addition or subtraction equation for a one-step story'
+        : 'Build a scene for an addition or subtraction equation';
+  const space = await resolveItemSpace(`${task} with numbers up to ${maxNumber} (lesson: ${config?.intent || topic})`, grade, ['add-sub-20']);
+  if (!space || !sceneSpaceSupported(space)) return [];
+  const log = (msg: string) => console.log(`[AdditionSubtractionScene] Item space ${space}: ${msg}`);
+  // The scope (mode + maxNumber, not the tier's story situation) decides whether tiers use their bands.
+  const scope = (it: unknown) => itemAsStory(space, it, maxNumber, mode) !== null;
+  const stories = pickSpaceStories({
+    space, pick: tierPick(getItemSpace(space), log, scope), band, count: SPACE_STORY_COUNT, maxNumber, mode, storyTypes,
+  });
+  console.log(`[AdditionSubtractionScene] Item space ${space} ${mode} band [${band.map((b) => b.toFixed(1)).join(', ')}] within ${maxNumber}: `
+    + (stories.length ? `${stories.length} stories` : 'no session fits; own path kept'));
+  return stories;
+}
+
+const SPACE_STORY_COUNT = 6;
+
 export const generateAdditionSubtractionScene = async (ctx: GenerationContext): Promise<AdditionSubtractionSceneData> => {
   const { topic } = ctx;
   const gradeLevel = ctx.gradeContext;
@@ -630,12 +671,7 @@ export const generateAdditionSubtractionScene = async (ctx: GenerationContext): 
     : null;
   // AXIS 2: the structural problem shape for this pinned mode + tier (null for
   // act-out/create-story or no tier). Enforced via the schema enum below.
-  const problemShape = pinnedType && supportTier
-    ? resolveProblemShape(pinnedType, supportTier)
-    : null;
-  const tierSection = pinnedType && supportTier
-    ? buildTierPromptSection(pinnedType, supportTier)
-    : '';
+  // (problemShape / tierSection are resolved below, once the item-space path is known.)
 
   // ── Resolve the topic/intent number window onto the maxNumber config axis ──
   // The manifest never pins an arithmetic scope (config.maxNumber is the explicit
@@ -662,6 +698,35 @@ export const generateAdditionSubtractionScene = async (ctx: GenerationContext): 
    *  objective's own scope, else the grade band's default. */
   const effectiveMaxNumber = config?.maxNumber ?? resolvedMaxNumber ?? gradeMaxNumber(gradeLevel);
 
+  // ── Item space: code picks every challenge's numbers (solve-story: and the hidden slot) ──
+  // On solve-story the space owns the problem's shape at every tier, so the unknownPosition ladder
+  // (resolveProblemShape) does not run. Build-equation keeps its story-situation ladder (the space does
+  // not model story-to-symbol translation) and picks items whose operation fits it. Act-out keeps its
+  // scaffolding tier. Create-story has no tier; it takes varied equations.
+  const baseShape = pinnedType && supportTier ? resolveProblemShape(pinnedType, supportTier) : null;
+  const spaceStories = pinnedType
+    ? await storiesFromItemSpace(config, ctx.grade, topic, effectiveMaxNumber, pinnedType,
+      pinnedType === 'build-equation' ? baseShape?.allowedStoryTypes : undefined)
+    : [];
+  const spaceOwnsShape = spaceStories.length > 0 && pinnedType === 'solve-story';
+  const problemShape = spaceOwnsShape ? null : baseShape;
+  const tierSection = pinnedType && supportTier && !spaceOwnsShape
+    ? buildTierPromptSection(pinnedType, supportTier)
+    : '';
+  const describeStory = (st: SceneStory): string => {
+    if (st.storyType === 'part-whole') return `PART-WHOLE: a group of ${st.startCount} and a group of ${st.changeCount}`;
+    if (st.storyType === 'compare') return `COMPARE: a group of ${st.startCount} and a group of ${st.changeCount} (how many more)`;
+    return `${st.operation === 'addition' ? 'objects JOIN' : 'objects GO AWAY'}; `
+      + `startCount ${st.unknownPosition === 'start' ? '(hidden)' : st.startCount}, changeCount ${st.unknownPosition === 'change' ? '(hidden)' : st.changeCount}, `
+      + `resultCount ${st.unknownPosition === 'result' ? '(hidden)' : st.resultCount}`;
+  };
+  const spaceSection = spaceStories.length ? `
+## THE PROBLEMS (fixed by code — write exactly ${spaceStories.length} ${pinnedType} challenges, in this order)
+${spaceStories.map(({ story: st }, i) => `- ch${i + 1}: ${describeStory(st)}. The story states ONLY ${givenCounts(st).join(' and ')}`
+    + `${st.unknownPosition === 'result' ? '' : ' (say "some" for the hidden number)'}.`).join('\n')}
+Use these counts exactly; vary the scene and objects.
+` : '';
+
   // ── Build mode-constrained schema (eval mode → then AXIS-2 structural enum) ──
   let activeSchema = evalConstraint
     ? constrainChallengeTypeEnum(additionSubtractionSceneSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS)
@@ -687,7 +752,7 @@ CONTEXT:
 - Each challenge has a themed scene (pond, farm, playground, space, kitchen, garden)
 
 ${challengeTypeSection}
-${tierSection}
+${tierSection}${spaceSection}
 ${!evalConstraint ? `
 THIS ACTIVITY'S NUMBER SCOPE: maxNumber = ${effectiveMaxNumber}. Every startCount,
 changeCount and resultCount stays within it. This is the lesson's OWN scope — where
@@ -929,6 +994,21 @@ Return the complete addition/subtraction scene configuration.
   // result is what the child discovers by enacting and counting.
   applyCodeOwnedInstructions(data.challenges as AddSubChallenge[], data.gradeBand);
 
+  // ── Item-space path: each challenge takes its item's numbers; a story off its item is replaced ──
+  if (spaceStories.length) {
+    const written = data.challenges as AddSubChallenge[];
+    data.challenges = spaceStories.map((s, i) => applySpaceStory(
+      { ...(written[i] ?? fallbackFor(pinnedType!)), id: `ch${i + 1}` }, s, pinnedType as SceneMode,
+    ));
+    // Act-out instructions name the change count, so they are rebuilt from the item's numbers.
+    applyCodeOwnedInstructions(data.challenges as AddSubChallenge[], data.gradeBand);
+    const templated = (data.challenges as AddSubChallenge[]).filter((c, i) => c.storyText !== written[i]?.storyText).length;
+    console.log(
+      `[AdditionSubtractionScene] Item space: ${spaceStories.map((s) => `${s.itemSpace.structure}@${s.itemSpace.beta}`).join(' ')}`
+      + ` (${templated} stor${templated === 1 ? 'y' : 'ies'} from the code template)`,
+    );
+  }
+
   // ── Apply the within-mode difficulty deterministically (both axes) ──
   // Runs LAST, after all structural fixups. AXIS 1 (scaffolding) is code-owned;
   // AXIS 2 (problem structure) was enforced upstream by the schema enum, so here
@@ -975,7 +1055,7 @@ Return the complete addition/subtraction scene configuration.
         + `tilePalette=${tierScaffold.tilePalette}, storyTypes=[${allowed?.join(', ') ?? 'n/a'}] `
         + `(schema-enforced) → ${(data.challenges as AddSubChallenge[]).map((c) => `${c.storyType}:${c.equation}`).join(' | ')}`,
       );
-    } else if (pinnedType === 'solve-story') {
+    } else if (pinnedType === 'solve-story' && !spaceStories.length) {
       // AXIS 2: unknownPosition is the structural lever, enforced by the schema enum
       // so the LLM-authored story already targets the right hidden slot. Validate &
       // clamp the rare stray to the tier floor; the component recomputes the answer

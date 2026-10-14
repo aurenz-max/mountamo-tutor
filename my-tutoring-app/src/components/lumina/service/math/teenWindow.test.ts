@@ -53,4 +53,16 @@ describe('teenSweep', () => {
     expect(teenSweep({ start: 11, end: 15 }, 7))
       .toEqual([11, 12, 13, 14, 15, 11, 12]);
   });
+
+  it('samples a wide window across its whole span, not its first values', () => {
+    const seen = new Set<number>();
+    for (let r = 0; r < 40; r++) {
+      const sweep = teenSweep({ start: 11, end: 19 }, 5);
+      expect(new Set(sweep).size).toBe(5);
+      expect(sweep.every((v) => v >= 11 && v <= 19)).toBe(true);
+      expect(Math.max(...sweep)).toBeGreaterThanOrEqual(18);
+      sweep.forEach((v) => seen.add(v));
+    }
+    expect(seen.size).toBe(9);
+  });
 });

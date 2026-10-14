@@ -68,6 +68,8 @@ export interface ArrayGridChallenge {
   ways?: 1 | 2;
   /** make_array: the ask, written by code ("Make an array with 12 squares."). */
   instruction?: string;
+  /** Item-space calibration stamp (mult-div-facts): never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface ArrayGridData {

@@ -114,6 +114,12 @@ describe('number-line session distinctness (R9) under structural difficulty', ()
         }
         // R9 — the sets differ from each other. This is what 12,15,17 ×4 broke.
         expect(new Set(sets.map(keyOf)).size).toBe(sets.length);
+        // The chips show in targetValues order: never sorted either way (2026-10-13: every easy and
+        // hard set had shown its own answer, [4,8,12], [14,15,16]).
+        for (const set of sets) {
+          expect(set).not.toEqual([...set].sort((x, y) => x - y));
+          expect(set).not.toEqual([...set].sort((x, y) => y - x));
+        }
       }
     },
   );
@@ -135,6 +141,20 @@ describe('number-line session distinctness (R9) under structural difficulty', ()
         }
         // R9 — the pairs differ from each other.
         expect(new Set(pairs.map(([a, b]) => `${a}|${b}`)).size).toBe(pairs.length);
+      }
+    },
+  );
+
+  it.each(['easy', 'medium', 'hard'])(
+    'plot @ %s gives a DIFFERENT target per challenge',
+    async (difficulty) => {
+      // 2026-10-13: hard on "Numbers 0 to 20" placed 19 three times in one session; the midpoint
+      // reshaper maps a narrow window onto few values and kept the repeat when no on-profile value was left.
+      for (let run = 0; run < RUNS; run++) {
+        const data = await generateNumberLine(contextFor({ targetEvalMode: 'plot', difficulty }));
+        const targets = challengesOf(data).map((c) => c.targetValues[0]);
+        expect(targets.length).toBe(5);
+        expect(new Set(targets).size).toBe(targets.length);
       }
     },
   );

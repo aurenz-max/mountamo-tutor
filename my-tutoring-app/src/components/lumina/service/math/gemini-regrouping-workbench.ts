@@ -3,6 +3,9 @@ import { RegroupingWorkbenchData } from "../../primitives/visual-primitives/math
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from '../itemSpace';
+import type { MultiDigitItem } from '../itemSpace/multiDigit';
+import { RW_SPACE_MODES, itemFitsMode, rwChallenge, type RwMode } from './regroupingWorkbenchItemSpace';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -792,6 +795,41 @@ Return the complete regrouping workbench configuration.
   }
 
   // -------------------------------------------------------------------------
+  // Item space: with a tier and a pinned mode, code picks every problem from add-sub-100 or
+  // add-sub-1000 (the resolver reads the lesson's range) at the tier's band. The LLM's problems,
+  // hints, narration and story are discarded; the structural lever below does not run on this path.
+  // -------------------------------------------------------------------------
+  let onSpace = false;
+  if (supportTier && pinnedType && RW_SPACE_MODES.includes(pinnedType) && difficultyBand(config?.difficulty)) {
+    const band = difficultyBand(config?.difficulty)!;
+    const mode = pinnedType as RwMode;
+    const regroup = mode.includes('no_regroup') ? 'with no regrouping' : 'with regrouping';
+    const space = await resolveItemSpace(
+      `Lesson: ${ctx.intent || topic}. In this activity the learner ${mode.startsWith('add') ? 'adds' : 'subtracts'} `
+        + `two numbers in columns ${regroup}.`,
+      ctx.grade,
+      ['add-sub-100', 'add-sub-1000'],
+    );
+    if (space === 'add-sub-100' || space === 'add-sub-1000') {
+      const count = Math.max(3, Math.min(5, data.challenges.length));
+      const scope = (it: MultiDigitItem) => itemFitsMode(it, mode);
+      const log = (m: string) => console.log(`[RegroupingWorkbench] Item space ${space}: ${m}`);
+      const picks = tierPick(getItemSpace(space), log, scope)(count, band[0], band[1], undefined, scope) as MultiDigitItem[];
+      log(`${mode} band [${band.join(', ')}]: ${picks.length >= count ? picks.map((p) => `${p.a}${p.op}${p.b}@${p.beta}`).join(' ') : 'no session fits; own path kept'}`);
+      if (picks.length >= count) {
+        onSpace = true;
+        data.challenges = picks.map((it, i) => rwChallenge(it, mode, space, `c${i + 1}`));
+        data.operation = mode.startsWith('add') ? 'addition' : 'subtraction';
+        data.maxPlace = space === 'add-sub-1000' ? 'hundreds' : 'tens';
+        data.operand1 = picks[0].a;
+        data.operand2 = picks[0].b;
+        data.regroupingSteps = [];
+        data.wordProblemContext = { enabled: false };
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Apply the support tier (scaffolding withdrawal only — magnitudes untouched).
   // Gated ONLY on supportTier so blended sessions get it too. Resolved per
   // challenge from its OWN type. showOptions is a single object, so we derive the
@@ -819,7 +857,7 @@ Return the complete regrouping workbench configuration.
     // recomputes correctAnswer from the rewritten `problem`, so nothing is leaked.
     const places = placeCount(data.maxPlace);
     let rewroteAny = false;
-    for (const ch of data.challenges as Array<{ type?: string; problem?: string; requiresRegrouping?: boolean; regroupCount?: number }>) {
+    for (const ch of onSpace ? [] : data.challenges as Array<{ type?: string; problem?: string; requiresRegrouping?: boolean; regroupCount?: number }>) {
       const t = (ch.type as RWChallengeType) ?? (pinnedType ?? 'add_regroup');
       const shape = resolveProblemShape(t, supportTier, places);
       const isAdd = t.startsWith('add');

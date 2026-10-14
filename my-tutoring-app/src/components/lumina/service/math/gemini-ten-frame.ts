@@ -17,6 +17,39 @@ import {
 } from "../evalMode";
 import { resolvePedagogicalScope, buildScopePromptSection } from "../scopeContext";
 import { resolveTeenWindow, teenSweep, TEEN_MIN, TEEN_MAX } from "./teenWindow";
+import { resolveObjectiveNumberWindow } from "../objectiveNumberWindow";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import type { AddSub20Item } from "../itemSpace/addSub20";
+import { itemAsOperate, operateChallenge, pairTotals, pickOperate, type SpaceOperate } from "./tenFrameItemSpace";
+
+export { pairTotals };
+
+/**
+ * Operate problems picked by code from add-sub-20 at the requested difficulty (tenFrameItemSpace.ts),
+ * or empty: no tier, not the operate mode, no strand fits, or the band cannot fill a session in scope.
+ */
+async function operateFromItemSpace(opts: {
+  difficulty?: string; topic: string; intent?: string; grade?: string; maxNumber: number; count: number;
+  ops: { add: boolean; subtract: boolean };
+}): Promise<SpaceOperate[]> {
+  const band = difficultyBand(opts.difficulty);
+  if (!band) return [];
+  const space = await resolveItemSpace(
+    `Lesson: ${opts.intent || opts.topic}. In this activity the learner adds or subtracts on a ten frame `
+      + `with numbers up to ${opts.maxNumber}.`,
+    opts.grade,
+    ['add-sub-20'],
+  );
+  if (space !== 'add-sub-20') return [];
+  const scope = (it: AddSub20Item) => itemAsOperate(it, opts.maxNumber, opts.ops) !== null;
+  const ops = pickOperate({
+    pick: tierPick(getItemSpace(space), (m) => console.log(`[TenFrame] Item space ${space}: ${m}`), scope),
+    band, count: opts.count, maxNumber: opts.maxNumber, ops: opts.ops,
+  });
+  console.log(`[TenFrame] Item space ${space} operate band [${band.join(', ')}] within ${opts.maxNumber}: `
+    + (ops.length ? ops.map((o) => `${o.itemSpace.structure}@${o.itemSpace.beta}`).join(' ') : 'no session fits; own path kept'));
+  return ops;
+}
 
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
@@ -236,37 +269,24 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
       // total of three has one way and asks for recognition, five has four and
       // asks the child to search. Numbers stay inside pedagogical scope either
       // way — a harder tier picks a richer total, never a bigger one.
-      promptLines.push(
-        tier === 'easy'
-          ? 'Favour the smallest totals in scope (2-3): few ways to find, so the student meets the idea that a group has parts before they have to search for them.'
-          : tier === 'hard'
-            ? 'Favour the largest totals in scope and repeat each of them the full number of times it has ways, so the student must search for a way they have not shown yet rather than finding any one.'
-            : 'Mix totals across the middle of the scope; repeat each total twice so a second way is always asked for.',
-      );
+      // Code sets the totals from the tier's window (pairTotals, after the content call); the prompt
+      // line only tells the model its hints must not depend on them.
+      promptLines.push('Totals are set by the app. Hints point to the two colours and a different way, never to a pair of numbers.');
       break;
     case 'build_teen':
-      // The tier lever is the ONES, not the teen number: eleven and twelve ask
-      // the child to count on one or two, nineteen asks for nine. The teen
-      // range itself never narrows — the objective names 11-19 and the scope
-      // owns it.
+      // The teen numbers themselves are code-owned (teenSweep covers the lesson's window, and a session
+      // holds most of the nine), so the tier withdraws the running count only.
       promptLines.push(
         tier === 'easy'
-          ? 'Favour teen numbers with FEW ones (11, 12, 13) so counting on from ten is short, and keep the running count visible so the student can self-check.'
+          ? 'Keep the running count visible so the student can self-check.'
           : tier === 'hard'
-            ? 'Favour teen numbers with MANY ones (16, 17, 18, 19); hide the running count so the student must count on from ten unaided.'
-            : 'Mix teen numbers across the range; hide the running count so the student tracks the ones themselves.',
+            ? 'Hide the running count so the student must count on from ten unaided.'
+            : 'Hide the running count; the student tracks the ones themselves.',
       );
       break;
     case 'decompose_teen':
-      // Counting ten out of a scattered group is the same work at every teen
-      // number, so the lever is how much is left over to distract from it.
-      promptLines.push(
-        tier === 'easy'
-          ? 'Favour the smallest teen numbers (11, 12) so few counters remain outside the ten and the group is easy to hold in view.'
-          : tier === 'hard'
-            ? 'Favour the largest teen numbers (17, 18, 19) so the ten must be counted out of a much bigger scattered group.'
-            : 'Mix teen numbers across the middle of the range (13-16).',
-      );
+      // The teen numbers are code-owned (teenSweep), and the hint and narration too, so no tier line
+      // reaches the model: "favour 11, 12 at easy" was never applied (10-13 probe, same sweep at every tier).
       break;
     case 'build_pair':
       // The levers are bare at every tier (open build); the tier states only how much the hints may say.
@@ -476,20 +496,7 @@ function namedCeiling(...texts: Array<string | undefined>): number | undefined {
   return bounds.length ? Math.min(...bounds) : undefined;
 }
 
-/**
- * The totals of a build_pair session: up to three distinct totals inside the bound (3..ceiling, at most 10, the
- * frame), each asked TWICE in a row so the second ask is "a different way". Three is the floor: a total of two has
- * one pair, so its second ask could not ask for a different one.
- */
-export function pairTotals(count: number, ceiling: number, rand: () => number = Math.random): number[] {
-  const top = Math.max(3, Math.min(10, ceiling));
-  const pool = Array.from({ length: top - 2 }, (_, i) => i + 3);
-  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-  const distinct = pool.slice(0, Math.max(1, Math.ceil(count / 2))).sort((a, b) => a - b);
-  const out: number[] = [];
-  for (let i = 0; out.length < count; i++) out.push(distinct[Math.floor(i / 2) % distinct.length]);
-  return out;
-}
+// pairTotals (the build_pair and split totals) lives in tenFrameItemSpace.ts, with the tier windows.
 
 // ---------------------------------------------------------------------------
 // Generator
@@ -675,6 +682,31 @@ Return the complete ten frame configuration.
   // No observations or an ineligible task → no planner call.
   const adaptationMode = plannedMode(resolution);
   const adaptationTask = adaptationTaskFor(ctx, topic, { mode: adaptationMode, tier: supportTier ?? undefined });
+  // ── Item space (operate only): with a tier, code picks every problem at the tier's difficulty. The
+  // scope is a single frame (K, or a manifest override) at 10, else the objective's own number window,
+  // else 20; additions unless the lesson names subtraction only, subtractions unless it names addition only.
+  const isOperate = !!allowedTypes?.length && allowedTypes.every((t) => t === 'add' || t === 'subtract');
+  const isKinder = ctx.grade === 'K' || gradeLevel.toLowerCase().includes('kinder');
+  const opText = `${topic} ${config?.intent ?? ''} ${config?.objectiveText ?? ''}`.toLowerCase();
+  const namesAdd = /\badd|\bsum|plus|join/.test(opText);
+  const namesSub = /subtract|minus|take away|difference/.test(opText);
+  const spaceMax = isOperate && difficultyBand(config?.difficulty)
+    ? (config?.mode === 'single' || isKinder ? 10 : (await resolveObjectiveNumberWindow({
+      topic, intent: config?.intent, gradeLevel, bandDefault: 20, ceiling: 20, logPrefix: 'TenFrame',
+    }) ?? 20))
+    : 0;
+  const spaceOps = spaceMax
+    ? await operateFromItemSpace({
+      difficulty: config?.difficulty, topic, intent: config?.intent, grade: ctx.grade, maxNumber: spaceMax, count,
+      ops: {
+        add: allowedTypes!.includes('add') && (namesAdd || !namesSub),
+        subtract: allowedTypes!.includes('subtract') && (namesSub || !namesAdd),
+      },
+    })
+    : [];
+
+  // On the item-space path code owns every number and string, so a failed content call ships the
+  // space's problems instead of failing the lesson.
   const [result, move] = await Promise.all([
     ai.models.generateContent({
       model: "gemini-flash-lite-latest",
@@ -683,11 +715,17 @@ Return the complete ten frame configuration.
         responseMimeType: "application/json",
         responseSchema: activeSchema,
       },
+    }).catch((err) => {
+      if (!spaceOps.length) throw err;
+      console.warn('[TenFrame] content call failed on the item-space path; code content used:', err);
+      return null;
     }),
     planAdaptation<TenFrameOperateMove>(ctx, { task: adaptationTask, capability: tenFrameTeachingFor(adaptationMode), eligible: eligibleTenFrameTeaching }),
   ]);
 
-  const data = result.text ? JSON.parse(result.text) : null;
+  const data = result?.text ? JSON.parse(result.text)
+    : spaceOps.length ? { title: 'Ten Frame Math', description: 'Add and subtract on the ten frame.', mode: 'double', challenges: [] }
+      : null;
 
   if (!data) {
     throw new Error('No valid ten frame data returned from Gemini API');
@@ -744,6 +782,28 @@ Return the complete ten frame configuration.
     data.challenges = data.challenges.slice(0, count);
   }
 
+  // ── Item-space path: each operate challenge is a picked problem; the LLM's numbers are discarded.
+  // A saved-observation adaptation rewrites operate items itself, so it keeps the own path. ──
+  if (spaceOps.length && !move) {
+    data.challenges = spaceOps.map((o, i) => operateChallenge(o, `c${i + 1}`));
+    data.mode = spaceMax > 10 ? 'double' : 'single';
+  }
+
+  // ── split with a tier: the totals are code-owned (pairTotals over the tier's window), and so are the
+  // hint and narration, which were written for the model's totals. The LLM gave 3,3,4,4,5,5 at easy
+  // and medium alike (10-13 probe). ──
+  if (pinnedType === 'split' && supportTier) {
+    const splits = (data.challenges as TenFrameChallenge[]).filter((ch) => ch.type === 'split');
+    const ceiling = namedCeiling(topic, config?.objectiveText, config?.intent) ?? 10;
+    const totals = pairTotals(splits.length, ceiling, Math.random, supportTier);
+    splits.forEach((ch, i) => {
+      ch.targetCount = totals[i];
+      ch.hint = 'Turn some yellow, but leave some red!';
+      ch.narration = `Here is a group of ${totals[i]}. Let's break it into two groups.`;
+    });
+    console.log(`[TenFrame] split ${supportTier} totals (bound ${ceiling}): [${totals.join(', ')}]`);
+  }
+
   // ── Domain-specific validation ──
 
   // Validate subtract challenges: ensure startCount is present and sensible
@@ -788,7 +848,7 @@ Return the complete ten frame configuration.
     const pairChallenges = (data.challenges as TenFrameChallenge[]).filter((ch) => ch.type === 'build_pair');
     if (pairChallenges.length > 0) {
       const ceiling = namedCeiling(topic, config?.objectiveText, config?.intent) ?? 10;
-      const totals = pairTotals(pairChallenges.length, ceiling);
+      const totals = pairTotals(pairChallenges.length, ceiling, Math.random, supportTier ?? undefined);
       pairChallenges.forEach((ch, i) => {
         ch.targetCount = totals[i];
         ch.hint = 'Use red and yellow. Count all the counters on the frame.';

@@ -117,6 +117,14 @@ None open. The B2 levers (R12, R13) were built under R5 and R7: no lever prints 
 
 ## Changelog
 
+- 2026-10-13 — `/add-item-space`, five modes measured (`qa/difficulty-demo/2026-10-13/fr/`). equivalent wired to the new
+  `fraction-equivalence` space: with a tier, code picks each a/b = ?/d at the tier's band within the band's
+  denominators (K-2 to 4, else 12); instruction and hint stay code-written from the numbers. Before: 1/2 -> /4,
+  1/3 -> /6 opened nearly every run at every tier. Now easy scales up a unit fraction (1/4 -> /8), medium merges or
+  goes across (6/8 -> /4, 3/12 -> /8), hard is two-step or merges by 3+ (8/12 -> /3, 6/9 -> /6). Left alone: identify,
+  build (vary already), compare (the tier already separates: 1/2 v 1/6 at easy, 5/8 v 7/8 at hard), build_equal
+  (open build). Each equivalent challenge carries `itemSpace`, never rendered or sent to the tutor.
+
 - 2026-09-27 — derived (initial). 11 requirements, 0 conflicts. Channels: census, QA registers, git log; calibration not read.
 - 2026-09-27 — R12, R13 added with the support levers (handoff 18 B2). `--check`: R1-R11 probes re-run after the edit (vitest), COMPATIBLE.
 - 2026-09-27 — a wrong Check or touch names its miss (`fractionMiss`, `touchMiss`, handoff 20 A1) on all five modes; every lever lists the misses it answers. Compatible: R1-R13 unchanged; a miss names a pattern of the learner's work and carries no key to the tutor.

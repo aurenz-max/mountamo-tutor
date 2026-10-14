@@ -73,6 +73,39 @@ None.
 
 ## Changelog
 
+- 2026-10-13 (later) — `/add-item-space`, balance-both-sides wired to the new `equivalence-20` space
+  (`service/itemSpace/equivalence20.ts`). Before: every tier gave the same kind of item (a two-number sum on each side,
+  15 − 5 recurring); the tier changed only the instruction. Now, with a tier and a lesson the resolver fits to
+  equivalence-20, code picks each equation: the reversed form (12 = 5 + ?) and an operation on both sides
+  (8 + 4 = ? + 5, 13 − 5 = 6 + ?, 6 + 4 = ? − 8); never the standard a ± b = ? (missing-result's task). Every printed
+  number, the known side's total and the box stay within the lesson's maxNumber; no minus unless the lesson subtracts.
+  The key is still solved by `validateBalance` and must equal the space's answer (R1). The instruction names no number;
+  the tier's hint tone still applies. `itemSpace` is stamped, never rendered or sent to the tutor (R4). The balance
+  practice lever (R6) handles every form the space draws with `+` on the box side, and returns no practice item for a
+  `? − k` box, as before. Pins `equationBuilderItemSpace.test.ts` (balance block); probe
+  `qa/difficulty-demo/2026-10-13/eb/after-balance-both-sides.txt`.
+
+- 2026-10-13 — `/add-item-space`, all seven modes measured (`qa/difficulty-demo/2026-10-13/eb/`). Before: every tier
+  and most runs gave the same equations (5 + 3, 12 − 5, 6 + ? = 10, 14 − ? = 8); the tier moved only the option
+  count and spread. Now:
+  - missing-result, missing-operand, true-false: with a tier and a lesson the resolver fits to add-sub-20, code
+    picks each fact at the tier's band (`equationBuilderItemSpace.ts`): one step, every number within the lesson's
+    window (explicit maxNumber, else the objective's window, else K 5 / Grade 1 10 / Grade 2 20), addition only at
+    K or when the lesson names it. missing-operand takes the change or start unknown as the space chose it. Options
+    are the space's mistakes at the tier's count and spread (R1 holds: the key is computed). true-false alternates
+    true and false from a random start; a false claim is a far wrong answer at easy, a near one (a known mistake)
+    otherwise. The LLM's instruction is kept only when it names no number. A failed wording call ships code
+    instructions. Each challenge carries `itemSpace`, never rendered or sent to the tutor (R4 holds).
+  - When a scope holds too few items for three tiers (addition within 5), no tier uses the space (`tierPick`).
+  - Own-path fix: a missing-value equation or answer outside 0..maxNumber is rejected ("8 + ? = 23" shipped in a
+    within-20 lesson).
+  - Not a fit: build-simple (copying an equation; its tier lever, the distractor tile count, already changes the
+    task; its numbers still converge across runs, a variety defect for `/add-number-pool-service`), rewrite (the
+    demand is the transformation, not the fact), balance-both-sides (a + b = c + ? is not in add-sub-20; it
+    converges too, 15 − 5 in most runs: a candidate equivalence space, built later the same day), make-n (totals are code-owned; the tier
+    sets the second way).
+  Pins `equationBuilderItemSpace.test.ts`.
+
 - 2026-09-29 — derived (static, initial) for handoff 28 row 5. 4 requirements, 0 conflicts. Same day, RP-4: ingest normalizes
   the minus sign (R1) and the checker judges a `−` row by value (R3). `--check` **COMPATIBLE**: equation-builder vitest 36/36,
   eval-test all six modes at G1 (30 challenges, every key recomputes, no Unicode minus left), journey sweep green.

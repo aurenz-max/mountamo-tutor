@@ -9,11 +9,21 @@
 
 ## Requirements
 
-### R1 — numbers are code-owned; the tier changes scaffolding only · OBSERVED
-- **Property:** the generator picks every factor pair locally; `config.difficulty` sets only `showCellEquations`,
-  `showPerimeterExpansion` and `highlightCell`. Forward modes always print the column and row parts; factor mode
-  always prints every cell product and leaves the parts blank.
-- **Probe:** `gemini-area-model.adaptation.test.ts`, oracle `area-model`.
+### R1 — numbers are code-owned; the tier picks them by structure and sets the scaffolding · OBSERVED (amended 2026-10-13)
+- **Property:** the generator picks every factor pair locally; the LLM writes only the title and description.
+  `config.difficulty` sets `showCellEquations`, `showPerimeterExpansion` and `highlightCell` as before, and, on the
+  item-space path, also which pairs: grid modes take pairs from `mult-multi-digit` / `mult-multi-digit-5` at the tier's
+  band (`areaModelItemSpace.ts`), perimeter takes the tier's window of length + width. Each mode keeps its grid shape
+  (build_model 1×2, find_area and factor 2×2, multiply 3×2, every part a non-zero place part); the two-digit ceilings
+  rise to 99 (multiply 999 × 99). No tier, a lesson that is not multi-digit multiplication, or a session that cannot
+  fill keeps the builders' pairs whole. The remediation contrast still replaces the session's pairs after the pick.
+  Forward modes always print the column and row parts; factor mode always prints every cell product and leaves the
+  parts blank.
+- **Amendment note:** the earlier wording ("the tier changes scaffolding only") protected code ownership of the
+  numbers, which holds; no consumer relied on the tier leaving the numbers alone. R4's starting position (the tier's
+  aids count as pulled) is unchanged.
+- **Probe:** `gemini-area-model.adaptation.test.ts`, `areaModelItemSpace.test.ts`, oracle `area-model` (intrinsic
+  ceilings raised to the new windows: 900, 10,000, 100,000); `qa/difficulty-demo/2026-10-13/am/`.
 
 ### R2 — every checked entry is evidence for the misconception loop · OBSERVED
 - **Property:** each checked entry (cell, sum, perimeter, parts), right or wrong, is recorded as it happened
@@ -46,3 +56,10 @@
   it asks or prints is one of the item's answers (`practiceLeaks`); it records nothing and is not evidence (R2).
 - **Probe:** `areaModelLevers.test.ts` (leak rules per mode, builder over generated and saved items, miss → lever,
   J12 coverage); `AreaModel.levers.workspace.test.tsx`; journey sweep J9/J12/J13 on the saved payloads.
+
+## Changelog
+
+- 2026-10-13 — `/add-item-space`: all five modes measured. Before, every tier drew from one random window (multiply:
+  311 × 45 at easy, 112 × 48 at medium). Grid modes now pick from the new multi-digit multiplication strand at the
+  tier (R1 amended); perimeter takes tier windows of length + width. `itemSpace` is stamped on grid challenges, never
+  rendered or sent to the tutor (the workspace reads the parts, not the challenge object).

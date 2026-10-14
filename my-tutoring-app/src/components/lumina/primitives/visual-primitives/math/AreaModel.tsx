@@ -89,6 +89,8 @@ export interface AreaModelChallenge {
    */
   showCellEquations?: boolean;
   showPerimeterExpansion?: boolean;
+  /** Item-space calibration stamp (service/math/areaModelItemSpace.ts). Never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
   labels?: {
     factor1?: string[];
     factor2?: string[];

@@ -57,6 +57,8 @@ export interface BalanceScaleChallenge {
   rightSide: BalanceScaleObject[];
   variableValue: number;
   hint: string;
+  /** Item-space calibration stamp (service/math/balanceScaleItemSpace.ts). Never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface BalanceScaleData {

@@ -69,6 +69,8 @@ export interface FractionCirclesChallenge {
   supportTier?: 'easy' | 'medium' | 'hard';
   /** Help levers the tier starts pulled (`fractionCirclesLevers.ts`); a starting position is not a pull. */
   startLevers?: string[];
+  /** Item-space calibration stamp (fraction-equivalence): never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';

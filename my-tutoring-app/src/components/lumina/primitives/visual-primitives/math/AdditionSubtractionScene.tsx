@@ -141,6 +141,8 @@ export interface AddSubChallenge {
    * Never changes the target equation — only how many candidate numbers are offered.
    */
   allowedTiles?: string[];
+  /** Item-space calibration stamp (solve-story with a tier): never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface AdditionSubtractionSceneData {

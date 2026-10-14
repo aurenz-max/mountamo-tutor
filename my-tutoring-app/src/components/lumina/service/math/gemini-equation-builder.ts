@@ -9,6 +9,69 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { resolveObjectiveNumberWindow } from "../objectiveNumberWindow";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import type { AddSub20Item } from "../itemSpace/addSub20";
+import type { Equivalence20Item } from "../itemSpace/equivalence20";
+import {
+  BALANCE_INSTRUCTION, EB_SPACE_MODES, balanceSidesOf, claimFor, codeInstruction, equationOf, equivalenceFitsLesson, itemFitsMode,
+  optionsFor, type EbSpaceMode,
+} from "./equationBuilderItemSpace";
+
+/**
+ * balance-both-sides equations picked by code from equivalence-20 at the requested difficulty, or empty:
+ * no tier, no strand fits, or the scope cannot fill a session (the mode's own path is kept whole).
+ */
+async function balanceFromItemSpace(opts: {
+  difficulty?: string; topic: string; intent?: string; grade?: string; maxNumber: number; subtraction: boolean; count: number;
+}): Promise<Equivalence20Item[]> {
+  const band = difficultyBand(opts.difficulty);
+  if (!band) return [];
+  const space = await resolveItemSpace(
+    `Lesson: ${opts.intent || opts.topic}. In this activity the learner finds the missing number that makes both sides `
+      + `of an equation the same amount (8 + 4 = ? + 5, 12 = 5 + ?) with numbers up to ${opts.maxNumber}.`,
+    opts.grade,
+    ['equivalence-20'],
+  );
+  if (space !== 'equivalence-20') return [];
+  const scope = (it: Equivalence20Item) => equivalenceFitsLesson(it, opts.maxNumber, opts.subtraction);
+  const picks = tierPick(getItemSpace(space), (m) => console.log(`[EquationBuilder] Item space ${space}: ${m}`), scope)(
+    opts.count, band[0], band[1], undefined, scope,
+  ) as Equivalence20Item[];
+  const ok = picks.length >= opts.count;
+  console.log(`[EquationBuilder] Item space ${space} balance-both-sides band [${band.join(', ')}] within ${opts.maxNumber}: `
+    + (ok ? picks.map((p) => `${p.structure}@${p.beta}`).join(' ') : 'no session fits; own path kept'));
+  return ok ? picks : [];
+}
+
+/**
+ * Facts picked by code from add-sub-20 at the requested difficulty (equationBuilderItemSpace.ts), or
+ * empty: no tier, a mode the space does not serve, no strand fits, or the band cannot fill a session.
+ */
+async function factsFromItemSpace(opts: {
+  difficulty?: string; mode: EbSpaceMode; topic: string; intent?: string; grade?: string;
+  maxNumber: number; subtraction: boolean; count: number;
+}): Promise<AddSub20Item[]> {
+  const band = difficultyBand(opts.difficulty);
+  if (!band) return [];
+  const task = opts.mode === 'missing-operand' ? 'finds the missing number in an addition or subtraction equation'
+    : opts.mode === 'true-false' ? 'decides whether an addition or subtraction equation is true'
+      : 'finds the result of an addition or subtraction equation';
+  const space = await resolveItemSpace(
+    `Lesson: ${opts.intent || opts.topic}. In this activity the learner ${task} with numbers up to ${opts.maxNumber}.`,
+    opts.grade,
+    ['add-sub-20'],
+  );
+  if (space !== 'add-sub-20') return [];
+  const scope = (it: AddSub20Item) => itemFitsMode(it, opts.mode, opts.maxNumber, opts.subtraction);
+  const picks = tierPick(getItemSpace(space), (m) => console.log(`[EquationBuilder] Item space ${space}: ${m}`), scope)(
+    opts.count, band[0], band[1], undefined, scope,
+  ) as AddSub20Item[];
+  const ok = picks.length >= opts.count;
+  console.log(`[EquationBuilder] Item space ${space} ${opts.mode} band [${band.join(', ')}] within ${opts.maxNumber}: `
+    + (ok ? picks.map((p) => `${p.structure}@${p.beta}`).join(' ') : 'no session fits; own path kept'));
+  return ok ? picks : [];
+}
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -844,6 +907,13 @@ function validateMissingValue(raw: RawChallenge, maxNumber: number, evalMode?: s
     }
   }
 
+  // Scope: every number and the answer inside 0..maxNumber ("8 + ? = 23" shipped in a within-20 lesson).
+  const shownNumbers = (equation.match(/\d+/g) ?? []).map(Number);
+  if ([...shownNumbers, correctValue].some((n) => n < 0 || n > maxNumber)) {
+    console.log(`[EquationBuilder] REJECT missing-value — "${equation}" (answer ${correctValue}) leaves 0..${maxNumber}`);
+    return null;
+  }
+
   // Use computed missingPosition (0-based token index of ?)
   const missingPosition = qIndex;
 
@@ -1368,16 +1438,81 @@ Return the complete equation builder configuration.
 
   logEvalModeResolution('EquationBuilder', config?.targetEvalMode, evalConstraint);
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
+  // ── Item space: with a tier, code picks every fact at the tier's difficulty (missing-result,
+  // missing-operand, true-false). The scope is the explicit maxNumber, else the objective's own number
+  // window, else the band's (K 5, Grade 1 10, Grade 2 20); addition only at K or when the lesson names it.
+  const spaceMode = pinnedEvalMode && EB_SPACE_MODES.includes(pinnedEvalMode) && difficultyBand(config?.difficulty)
+    ? pinnedEvalMode as EbSpaceMode : null;
+  const balanceMode = pinnedEvalMode === 'balance-both-sides' && !!difficultyBand(config?.difficulty);
+  const bandKey = ctx.grade === 'K' || gradeLevel.toLowerCase().includes('kinder') ? 'K' : ctx.grade === '1' ? '1' : ctx.grade === '2' ? '2'
+    : /grade\s*2|second/i.test(gradeLevel) ? '2' : '1';
+  const bandMax = ({ K: 5, '1': 10, '2': 20 } as const)[bandKey];
+  const opText = `${topic} ${ctx.intent ?? ''}`.toLowerCase();
+  const spaceSubtraction = bandKey !== 'K'
+    && (/subtract|minus|take away|difference/.test(opText) || !/\badd|\bsum|plus/.test(opText));
+  const spaceMax = spaceMode || balanceMode
+    ? config?.maxNumber ?? (await resolveObjectiveNumberWindow({
+      topic, intent: ctx.intent, gradeLevel, bandDefault: bandMax, ceiling: 20, logPrefix: 'EquationBuilder',
+    })) ?? bandMax
+    : 0;
+  const spaceFacts = spaceMode
+    ? await factsFromItemSpace({
+      difficulty: config?.difficulty, mode: spaceMode, topic, intent: ctx.intent, grade: ctx.grade,
+      maxNumber: spaceMax, subtraction: spaceSubtraction, count: instanceCount,
+    })
+    : [];
+  const spaceBalances = balanceMode
+    ? await balanceFromItemSpace({
+      difficulty: config?.difficulty, topic, intent: ctx.intent, grade: ctx.grade,
+      maxNumber: spaceMax, subtraction: spaceSubtraction, count: instanceCount,
+    })
+    : [];
 
-  const data = result.text ? JSON.parse(result.text) : null;
+  // On the item-space path code owns every number, so a failed wording call ships code instructions.
+  let data: any = null;
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: activeSchema,
+      },
+    });
+    data = result.text ? JSON.parse(result.text) : null;
+  } catch (err) {
+    if (!spaceFacts.length && !spaceBalances.length) throw err;
+    console.warn('[EquationBuilder] wording call failed on the item-space path; code instructions used:', err);
+  }
+  if (!data && (spaceFacts.length || spaceBalances.length)) data = { title: 'Equation Builder', description: 'Find the numbers that make each equation true.', challenges: [] };
+
+  // ── Item-space path: each challenge is a picked fact; the LLM's equations are discarded and its
+  // instruction kept only when it names no number (a number would belong to its own equation). ──
+  if (spaceFacts.length && spaceMode) {
+    const written = (data.challenges ?? []) as Array<{ instruction?: string }>;
+    const isTrue = (() => { const first = Math.random() < 0.5; return (i: number) => (i % 2 === 0) === first; })();
+    data.gradeBand = bandKey;
+    data.maxNumber = spaceMax;
+    data.challenges = spaceFacts.map((it, i) => {
+      const instruction = written[i]?.instruction && !/\d/.test(written[i].instruction!) ? written[i].instruction : codeInstruction(spaceMode);
+      return spaceMode === 'true-false'
+        ? { id: `c${i + 1}`, type: 'true-false', instruction,
+          displayEquation: equationOf(it, claimFor(getItemSpace('add-sub-20'), it, spaceMax, isTrue(i), supportTier === 'easy')), _item: it }
+        : { id: `c${i + 1}`, type: 'missing-value', instruction, equation: equationOf(it), _item: it };
+    });
+  }
+
+  // balance-both-sides: each challenge is a picked equation; the box's answer is solved again in validateBalance.
+  if (spaceBalances.length) {
+    const written = (data.challenges ?? []) as Array<{ instruction?: string }>;
+    data.gradeBand = bandKey;
+    data.maxNumber = spaceMax;
+    data.challenges = spaceBalances.map((it, i) => {
+      const { left, right } = balanceSidesOf(it);
+      const instruction = written[i]?.instruction && !/\d/.test(written[i].instruction!) ? written[i].instruction : BALANCE_INSTRUCTION;
+      return { id: `c${i + 1}`, type: 'balance', instruction, leftSide: left, rightSide: right, _eq: it };
+    });
+  }
 
   if (!data) {
     throw new Error('No valid equation builder data returned from Gemini API');
@@ -1398,7 +1533,8 @@ Return the complete equation builder configuration.
   if (!data.maxNumber || data.maxNumber < 2) {
     data.maxNumber = gradeMax;
   }
-  if (data.maxNumber > gradeMax) {
+  // The item-space path set its scope from the objective (a Grade-1 "within 20" lesson is 20).
+  if (data.maxNumber > gradeMax && !spaceFacts.length && !spaceBalances.length) {
     data.maxNumber = gradeMax;
   }
 
@@ -1415,6 +1551,23 @@ Return the complete equation builder configuration.
     }
 
     const validated = validateChallenge(raw, data.maxNumber, config?.targetEvalMode, supportTier);
+    // Item-space path: options are the space's wrong answers at the tier's count and spread.
+    const item = (raw as { _item?: AddSub20Item })._item;
+    if (validated && item) {
+      if (validated.type === 'missing-value' && supportTier && pinnedEvalMode) {
+        const shape = resolveProblemShape(pinnedEvalMode, supportTier);
+        validated.options = optionsFor(getItemSpace('add-sub-20'), item, data.maxNumber, shape.optionCount ?? 4, shape.optionSpread);
+      }
+      validated.itemSpace = { space: 'add-sub-20', structure: item.structure, beta: item.beta };
+    }
+    const eq = (raw as { _eq?: Equivalence20Item })._eq;
+    if (validated && eq) {
+      if (validated.correctAnswer !== eq.answer) {
+        console.log(`[EquationBuilder] REJECT balance — solved ${validated.correctAnswer}, space says ${eq.answer}`);
+        continue;
+      }
+      validated.itemSpace = { space: 'equivalence-20', structure: eq.structure, beta: eq.beta };
+    }
     if (validated) {
       validatedChallenges.push(validated);
     }

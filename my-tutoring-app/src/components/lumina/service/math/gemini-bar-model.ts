@@ -750,6 +750,58 @@ function spreadKAnswerPositions(challenges: BarModelChallenge[]): void {
   });
 }
 
+/** Modes whose answer is one named bar: its position on screen must not predict it. */
+const READ_TARGET_MODES = new Set<BarModelEvalMode>(['read_one_to_one', 'compare_bars', 'read_scale', 'picture_graph', 'scaled_bar_graph']);
+
+/**
+ * Session pass for the read modes (10-13 probe: compare_bars' answer was the right-hand bar in 28 of
+ * 30 items, read_one_to_one asked about the first row in 16 of 20, and read_scale shipped one graph
+ * four times in a session):
+ *   1. an exact repeat (same bars, same target) is retargeted to another bar when the prompt names
+ *      the target's label once, so the label can be swapped in; the key follows the new bar.
+ *   2. compare_bars' two heights are redrawn in code at the same gap (the tier's lever), so [4, 8] is
+ *      not every easy item.
+ *   3. whole bars (label, value, colour) are swapped so the target sits at a position that rotates
+ *      through the session from a random start. The prompt names a label, never a position.
+ */
+export function spreadReadTargets(challenges: BarModelChallenge[], rand: () => number = Math.random): void {
+  const reads = challenges.filter((ch) => READ_TARGET_MODES.has(ch.evalMode) && ch.values.length >= 2 && ch.targetBarIndex != null);
+  const seen = new Set<string>();
+  const keyOf = (ch: BarModelChallenge) => `${ch.evalMode}|${ch.values.map((v) => `${v.label}:${v.value}`).sort().join(',')}|${ch.values[ch.targetBarIndex!].label}`;
+  for (const ch of reads) {
+    if (ch.evalMode !== 'compare_bars' && seen.has(keyOf(ch))) {
+      const old = ch.values[ch.targetBarIndex!].label;
+      const once = (s: string, w: string) => s.split(w).length === 2;
+      const j = ch.values.findIndex((v, i) => i !== ch.targetBarIndex && once(ch.prompt, old) && !seen.has(keyOf({ ...ch, targetBarIndex: i })));
+      if (j >= 0) {
+        ch.prompt = ch.prompt.replace(old, ch.values[j].label);
+        ch.targetBarIndex = j;
+        ch.expectedValue = ch.values[j].value;
+        ch.options = ch.evalMode === 'read_one_to_one' ? deriveKOptions(ch.expectedValue)
+          : ch.evalMode === 'picture_graph' ? pictureGraphOptions(ch.expectedValue, ch.scale?.iconValue ?? 2)
+            : deriveOptions(ch.expectedValue, ch.scale?.step ?? 1);
+      }
+    }
+    seen.add(keyOf(ch));
+    if (ch.evalMode === 'compare_bars') {
+      const gap = Math.abs(ch.values[0].value - ch.values[1].value);
+      const low = 1 + Math.floor(rand() * Math.max(1, 10 - gap));
+      const t = ch.targetBarIndex!;
+      ch.values = ch.values.map((v, i) => ({ ...v, value: i === t ? low + gap : low }));
+    }
+  }
+  const start = Math.floor(rand() * 4);
+  reads.forEach((ch, i) => {
+    const want = (start + i) % ch.values.length;
+    const t = ch.targetBarIndex!;
+    if (want === t) return;
+    const values = [...ch.values];
+    [values[want], values[t]] = [values[t], values[want]];
+    ch.values = values;
+    ch.targetBarIndex = want;
+  });
+}
+
 /**
  * Move every count one row along, repairing each derived field. The multiset of
  * counts is unchanged — so the tier's row gap and the K band still hold — but
@@ -1889,6 +1941,7 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   // is rotated into a different problem rather than re-drawn from the model.
   {
     spreadKAnswerPositions(challenges);
+    spreadReadTargets(challenges);
     assignGraphRules(challenges, gradeContext);
     const seen = new Set<string>();
     for (const ch of challenges.filter((c) => K_MODES.has(c.evalMode))) {

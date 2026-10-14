@@ -73,6 +73,9 @@ export interface MultiplicationExplorerChallenge {
    * holding one fact across representations IS the lesson.
    */
   representation?: MultiplicationRepresentation;
+
+  /** Item-space calibration stamp (a tier on a fitting strand): never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface MultiplicationExplorerData {

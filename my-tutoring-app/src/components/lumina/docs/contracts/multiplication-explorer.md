@@ -43,6 +43,18 @@
   code (`leverNumbers`, `practiceLeaks`), tested over every fact in the 3-4 band. Probe: `multiplicationExplorerLevers.test.ts`,
   `MultiplicationExplorer.levers.workspace.test.tsx`, sweep J12/J13.
 
+### R6 — a tier on a fitting strand picks the facts; grade 3 reaches 10 × 10 · OBSERVED (2026-10-13)
+- With `config.difficulty`, one pinned mode, and a lesson the resolver fits to `mult-div-facts`, each challenge's fact
+  comes from the item space at the tier's beta band (`multiplicationExplorerItemSpace.ts`): easy = a factor of 2, 5 or
+  10 or a small tie, hard = both factors 6-9. Product modes take product-unknown items; `missing_factor` takes the
+  item's hidden slot, never a square (R3). A pinned factor stays in its slot; two pins keep `selectFacts`. Each
+  challenge carries `itemSpace` {space, structure, beta}, never rendered or sent to the tutor. The tier still sets the
+  scaffolding. No tier, a mixed session, or no fitting strand → `selectFacts`, uniform over the band.
+- Grade 3 draws factors 2-10 with products to 100 (`GRADE_3_FACTS`); the `2-3` band's cap of 50 is grade 2's and had
+  kept 7 × 8 out of every grade-3 session. `config.gradeBand` still overrides.
+- Probe: `scripts/difficulty-lab/mx-tier-wiring-probe.mjs --mode fluency|missing_factor|build`
+  (`qa/difficulty-demo/2026-10-13/mx-*-probe.txt`); pins `multiplicationExplorerItemSpace.test.ts`.
+
 ## Gaps (open)
 
 - **G1 — `build` builds nothing.** The ask says "Build 5 groups of 2", but the groups are pre-drawn; the learner types
@@ -50,3 +62,15 @@
 - **G2 — the break-apart split can disagree with the ask.** The display splits factor1 as `min(5, a-1) + rest`; the
   generated distributive ask names its own split ("2 × 7 and 2 × 7" for 4 × 7 while the display shows 3 × 7 + 1 × 7).
   Path: stamp the split in the generator and render it → `/eval-fix`.
+
+## Changelog
+
+- 2026-10-13 — `/add-item-space`: R6 added. The tier never changed the fact (uniform `selectFacts`), so easy and hard
+  drew from one pool; with a tier the facts now come from `mult-div-facts`. Grade-3 fact band lifted to 10 × 10 (a cap
+  below the objective). R1-R5 hold: facts are still stamped per challenge by code, `hiddenValue` is the item's slot,
+  missing-factor squares excluded, leak guards unchanged. Compatible.
+- 2026-10-13 — all six modes probed per tier (`mx-<mode>-probe.txt`): build, connect, commutative, distributive and
+  fluency share the product path, missing_factor the hidden-factor path; every mode separates (easy 3×2, 5×5, 10×4;
+  hard 7×9, 8×7, 9×8). Commutative asks written as "if 7 × 8 is 56, what is 8 × 7?" state the product; `askFor`
+  replaces them with code wording (R3). A grade band that cannot fill every tier (the 2-3 band, products to 50)
+  now uses thirds of its facts (`tierPick`).

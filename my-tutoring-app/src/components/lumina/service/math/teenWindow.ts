@@ -51,10 +51,17 @@ export const resolveTeenWindow = async (
 /**
  * Build `count` code-owned targets that cover the resolved window in order.
  * Wrapping repeats the whole window rather than collapsing onto one number.
+ * A window wider than the session is sampled evenly from a random offset: taking
+ * its first `count` values gave 11-15 in every 11-19 session, so 16-19 were never
+ * practised (10-13 probe, 12 of 12 runs).
  */
-export const teenSweep = (window: TeenWindow, count: number): number[] => {
+export const teenSweep = (window: TeenWindow, count: number, rand: () => number = Math.random): number[] => {
   const start = Math.max(TEEN_MIN, Math.min(TEEN_MAX, window.start));
   const end = Math.max(start, Math.min(TEEN_MAX, window.end));
   const size = end - start + 1;
-  return Array.from({ length: Math.max(0, count) }, (_, i) => start + (i % size));
+  const n = Math.max(0, count);
+  if (n >= size || n === 0) return Array.from({ length: n }, (_, i) => start + (i % size));
+  const step = size / n;
+  const offset = rand() * step;
+  return Array.from({ length: n }, (_, i) => start + Math.min(size - 1, Math.floor(offset + i * step)));
 };

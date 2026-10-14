@@ -15,6 +15,48 @@ import {
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
 import { resolveTeenWindow, teenSweep, TEEN_MIN as TEEN_WHOLE_MIN, TEEN_MAX as TEEN_WHOLE_MAX } from "./teenWindow";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import type { Bond10Item } from "../itemSpace/bonds10";
+import {
+  SPACE_BOND_TYPES, bondInstructionFits, decomposeWholes, itemAsBond, pickBonds, scopeBondCount, type BondType, type SpaceBond,
+} from "./numberBondItemSpace";
+
+/**
+ * Bonds picked by code from the bonds-10 item space at the requested difficulty
+ * (numberBondItemSpace.ts), or empty: no tier, a blended session, a mode the space does not serve,
+ * no strand fits, or the band cannot fill a session in scope.
+ */
+async function bondsFromItemSpace(opts: {
+  difficulty?: string; type?: string; topic: string; intent?: string; grade?: string; maxNumber: number; count: number;
+}): Promise<SpaceBond[]> {
+  const band = difficultyBand(opts.difficulty);
+  if (!band || !opts.type || !SPACE_BOND_TYPES.includes(opts.type)) return [];
+  const type = opts.type as BondType;
+  const space = await resolveItemSpace(
+    `Lesson: ${opts.intent || opts.topic}. In this activity the learner finds the missing part of a number bond `
+      + `(a whole and its two parts) with wholes up to ${opts.maxNumber}.`,
+    opts.grade,
+    ['bonds-10'],
+  );
+  if (space !== 'bonds-10') return [];
+  const scope = (it: Bond10Item) => itemAsBond(it, type, opts.maxNumber) !== null;
+  // Every tier needs its own session: within 5 there are six missing-part bonds (four unequal), so a
+  // 5-item session is nearly all of them at any tier. Then no tier takes the space, so easy and hard
+  // never come from two different paths.
+  const distinct = scopeBondCount(type, opts.maxNumber);
+  if (distinct < 3 * opts.count) {
+    console.log(`[NumberBond] Item space ${space}: ${distinct} ${type} bonds within ${opts.maxNumber} cannot give `
+      + `three tiers ${opts.count} each; own path kept`);
+    return [];
+  }
+  const bonds = pickBonds({
+    pick: tierPick(getItemSpace(space), (m) => console.log(`[NumberBond] Item space ${space}: ${m}`), scope),
+    band, count: opts.count, type, maxNumber: opts.maxNumber,
+  });
+  console.log(`[NumberBond] Item space ${space} ${type} band [${band.join(', ')}] within ${opts.maxNumber}: `
+    + (bonds.length ? bonds.map((b) => `${b.whole}=${b.part1}+${b.part2}@${b.itemSpace.beta}`).join(' ') : 'no session fits; own path kept'));
+  return bonds;
+}
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -504,6 +546,23 @@ export const generateNumberBond = async (
     ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
+  // ── Item space: with a tier, code picks every bond at the tier's difficulty ──
+  // The bond window is the band's (K 5, Grade 1 10), narrowed by an explicit config.maxNumber.
+  const isK = ctx.grade === 'K' || gradeLevel.toLowerCase().includes('kinder');
+  const spaceMax = Math.min(config?.maxNumber ?? 10, isK ? 5 : 10);
+  const spaceBonds = await bondsFromItemSpace({
+    // The symbolic modes stay Grade 1 (R1): at K they keep their own path, which strips them.
+    difficulty: config?.difficulty, type: isK && (pinnedType === 'fact-family' || pinnedType === 'build-equation') ? undefined : pinnedType,
+    topic, intent: ctx.intent, grade: ctx.grade,
+    maxNumber: spaceMax, count: instanceCount,
+  });
+  const spaceSection = spaceBonds.length ? `
+## THE BONDS (fixed by code — write exactly ${spaceBonds.length} '${pinnedType}' challenges, in this order)
+${spaceBonds.map((b, i) => `- c${i + 1}: whole ${b.whole}, ${pinnedType === 'missing-part' ? `known part ${b.part1} (the other part is hidden)` : `parts ${b.part1} and ${b.part2}`}`).join('\n')}
+Write each challenge's instruction about its own bond, naming its whole${pinnedType === 'missing-part' ? ' and its known part' : ''}. `
+    + `Never state a part the learner must find.
+` : '';
+
   // ── Build mode-constrained schema (strips irrelevant fields per type) ──
   const activeSchema = buildNumberBondSchema(evalConstraint?.allowedTypes ?? effectiveChallengeTypes);
 
@@ -519,7 +578,7 @@ CONTEXT:
 - This builds addition/subtraction fluency through visual part-part-whole reasoning
 
 ${challengeTypeSection}
-${tierSection}
+${tierSection}${spaceSection}
 ${!evalConstraint ? `
 GUIDELINES FOR GRADE LEVELS:
 - Kindergarten (gradeBand "K"):
@@ -568,16 +627,26 @@ Return the complete number bond configuration.
 
   logEvalModeResolution('NumberBond', config?.targetEvalMode, evalConstraint);
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-lite-latest",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema,
-    },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
+  // On the item-space path code owns every number, so a failed wording call ships code-written
+  // instructions instead of failing the lesson.
+  let data: any = null;
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-lite-latest",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: activeSchema,
+      },
+    });
+    data = result.text ? JSON.parse(result.text) : null;
+  } catch (err) {
+    if (!spaceBonds.length) throw err;
+    console.warn('[NumberBond] wording call failed on the item-space path; code instructions used:', err);
+  }
+  if (!data && spaceBonds.length) {
+    data = { title: 'Number Bonds', description: 'Find the parts and the whole.', gradeBand: isK ? 'K' : '1', challenges: [] };
+  }
 
   if (!data) {
     throw new Error('No valid number bond data returned from Gemini API');
@@ -658,6 +727,39 @@ Return the complete number bond configuration.
         + `→ ${teenChallenges.length} item(s): [${sweep.join(', ')}]`,
       );
     }
+  }
+
+  // ── Item-space path: each challenge takes its bond; the LLM's numbers are discarded ──
+  if (spaceBonds.length) {
+    const written = data.challenges as Array<{ instruction?: string }>;
+    data.maxNumber = spaceMax;
+    data.gradeBand = isK ? 'K' : '1';
+    data.challenges = spaceBonds.map((b, i) => {
+      const instruction = written[i]?.instruction;
+      return {
+        ...(written[i] ?? {}),
+        id: `c${i + 1}`,
+        type: pinnedType,
+        whole: b.whole,
+        part1: b.part1,
+        part2: pinnedType === 'missing-part' ? null : b.part2,
+        instruction: bondInstructionFits(instruction, pinnedType!, b) ? instruction
+          : pinnedType === 'missing-part' ? `The whole is ${b.whole}. One part is ${b.part1}. What is the other part?`
+            : generateInstruction(pinnedType!, b.whole),
+        itemSpace: b.itemSpace,
+      };
+    });
+  }
+
+  // ── decompose with a tier: the wholes come from code (decomposeWholes), the load being how many
+  // splits a whole has. The LLM gave 4,5,6 / 4,6,8 / 4,7,10 at every tier (10-13 probe). ──
+  if (pinnedType === 'decompose' && supportTier) {
+    // The window is the band's (K 5, Grade 1 10), not the LLM's maxNumber (it chose 5, 6 or 10).
+    data.maxNumber = spaceMax;
+    const decompose = (data.challenges as Array<{ type: string; whole: number }>).filter((ch) => ch.type === 'decompose');
+    const wholes = decomposeWholes(supportTier, data.maxNumber, decompose.length);
+    decompose.forEach((ch, i) => { ch.whole = wholes[i]; });
+    console.log(`[NumberBond] decompose ${supportTier} wholes within ${data.maxNumber}: [${wholes.join(', ')}]`);
   }
 
   // Per-challenge validation
@@ -924,7 +1026,8 @@ Return the complete number bond configuration.
       // the UNKNOWN is the larger/smaller side. part1 = the KNOWN part; the
       // component computes the answer as whole - part1. We never touch `whole`
       // or `maxNumber` — only which of the two complementary parts is revealed.
-      if (ch.type === 'missing-part' && sc.unknownSide) {
+      // On the item-space path the space chose the known part; the side lever does not run.
+      if (ch.type === 'missing-part' && sc.unknownSide && !spaceBonds.length) {
         // Current known part (validated upstream to be 1.. whole-1).
         const known = ch.part1 ?? Math.max(1, Math.floor(ch.whole / 2));
         const other = ch.whole - known;

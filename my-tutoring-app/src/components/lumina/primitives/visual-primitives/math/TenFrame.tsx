@@ -166,6 +166,8 @@ export interface TenFrameChallenge {
   flashDuration?: number | null; // ms, for subitize mode
   hint: string;
   narration: string;
+  /** Item-space calibration stamp (add-sub-20): never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';

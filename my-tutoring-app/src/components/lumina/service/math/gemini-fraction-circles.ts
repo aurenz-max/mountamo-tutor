@@ -22,6 +22,8 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from '../itemSpace';
+import type { EquivalenceItem } from '../itemSpace/fractionEquivalence';
 import {
   eligibleFractionCompareTeaching,
   fractionCompareTeaching,
@@ -566,6 +568,34 @@ Return the complete fraction circles configuration.
   const equalPool = equalTargets(data.gradeBand).map(f => ({ f, k: Math.random() })).sort((x, y) => x.k - y.k).map(({ f }) => f);
   const valueKey = (n: number, d: number) => { const g = gcd(n, d); return `${n / g}/${d / g}`; };
   const equalValues = new Set<string>();
+
+  // ── Item space (equivalent): with a tier, code picks each a/b = ?/d from fraction-equivalence at the
+  // tier's band, inside the band's denominators. The LLM opened with 1/2 -> /4, 1/3 -> /6 at every tier
+  // (10-13 probe). Instruction and hint are already code-written from the numbers below. ──
+  const eqBand = difficultyBand(config?.difficulty);
+  const eqItems = (data.challenges as FractionCirclesChallenge[]).filter((c) => c.type === 'equivalent');
+  if (eqBand && pinnedType === 'equivalent' && eqItems.length) {
+    const space = await resolveItemSpace(
+      `Lesson: ${ctx.intent || topic}. In this activity the learner builds a fraction equal to a given one with a different number of slices.`,
+      ctx.grade,
+      ['fraction-equivalence'],
+    );
+    if (space === 'fraction-equivalence') {
+      const scope = (it: EquivalenceItem) => it.b <= maxDenominator && it.d <= maxDenominator;
+      const log = (m: string) => console.log(`[FractionCircles] Item space ${space}: ${m}`);
+      const picks = tierPick(getItemSpace(space), log, scope)(eqItems.length, eqBand[0], eqBand[1], undefined, scope) as EquivalenceItem[];
+      log(`equivalent band [${eqBand.join(', ')}]: ${picks.length >= eqItems.length ? picks.map((p) => `${p.a}/${p.b}->/${p.d}@${p.beta}`).join(' ') : 'no session fits; own path kept'}`);
+      if (picks.length >= eqItems.length) {
+        eqItems.forEach((c, i) => {
+          c.numerator = picks[i].a;
+          c.denominator = picks[i].b;
+          c.equivalentDenominator = picks[i].d;
+          c.itemSpace = { space, structure: picks[i].structure, beta: picks[i].beta };
+        });
+      }
+    }
+  }
+
   // Per-challenge validation
   for (let i = 0; i < data.challenges.length; i++) {
     const challenge = data.challenges[i] as FractionCirclesChallenge;

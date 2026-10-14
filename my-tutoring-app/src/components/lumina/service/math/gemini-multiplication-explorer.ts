@@ -10,6 +10,8 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import { explorerSpaceSupported, pickSpaceFacts, type SpaceFact } from "./multiplicationExplorerItemSpace";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -132,6 +134,8 @@ export const FACT_BAND: Record<'2-3' | '3-4', { min: number; max: number; maxPro
   '2-3': { min: 2, max: 10, maxProduct: 50 },
   '3-4': { min: 2, max: 12, maxProduct: 144 },
 };
+/** Grade 3 inside the 2-3 band: every fact through 10 × 10. */
+export const GRADE_3_FACTS = { min: 2, max: 10, maxProduct: 100 };
 
 /** Fisher-Yates — the only source of between-session fact variance. */
 function shuffleFacts<T>(items: T[]): T[] {
@@ -553,11 +557,45 @@ type MultiplicationExplorerConfig = {
     /**
      * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
      * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen scaffolding within it. NEVER changes the
+     * difficulty = how much on-screen scaffolding within it. With a strand the item-space
+     * resolver fits, it also picks the facts (factsFromItemSpace); otherwise it NEVER changes the
      * factors or the product — only readouts, representations, and hint depth.
      */
     difficulty?: string;
 };
+
+/**
+ * Facts picked by code from an item space at the requested difficulty, or empty: no tier, a mixed
+ * session (one pinned mode decides what is asked), no strand fits, or the band cannot fill it.
+ */
+async function factsFromItemSpace(
+  config: MultiplicationExplorerConfig | undefined,
+  grade: string | undefined,
+  topic: string,
+  pinnedType: MultiplicationExplorerChallengeType | undefined,
+  factBand: { min: number; max: number; maxProduct: number },
+  count: number,
+): Promise<SpaceFact[]> {
+  const band = difficultyBand(config?.difficulty);
+  if (!band || !pinnedType) return [];
+  const missingFactor = pinnedType === 'missing_factor';
+  // The mode fixes the task; the lesson objective sets its scope. Lesson first: with the task first,
+  // "Multiply a two-digit number by a one-digit number" resolved to the facts strand.
+  const space = await resolveItemSpace(
+    `Lesson: ${config?.intent || topic}. In this activity the learner finds `
+      + (missingFactor ? 'the missing factor in a multiplication fact.' : 'the product of a multiplication fact using equal groups and arrays.'),
+    grade,
+    ['mult-div-facts'],
+  );
+  if (!space || !explorerSpaceSupported(space)) return [];
+  const facts = pickSpaceFacts({
+    space, pick: tierPick(getItemSpace(space), (msg) => console.log(`[MultiplicationExplorer] Item space ${space}: ${msg}`)), band, count, factBand, missingFactor,
+    pinnedFactor1: config?.factor1, pinnedFactor2: config?.factor2,
+  });
+  console.log(`[MultiplicationExplorer] Item space ${space} band [${band.map((b) => b.toFixed(1)).join(', ')}]: `
+    + (facts.length ? facts.map((f) => `${f.itemSpace.structure}@${f.itemSpace.beta}`).join(' ') : 'no session fits; own path kept'));
+  return facts;
+}
 
 export const generateMultiplicationExplorer = async (
   ctx: GenerationContext,
@@ -598,15 +636,24 @@ export const generateMultiplicationExplorer = async (
   const factBandKey: '2-3' | '3-4' =
     config?.gradeBand ??
     (ctx.grade && /^\d+$/.test(ctx.grade) && parseInt(ctx.grade, 10) >= 4 ? '3-4' : '2-3');
-  const sessionFacts = selectFacts(FACT_BAND[factBandKey], instanceCount, {
-    pinnedFactor1: config?.factor1,
-    pinnedFactor2: config?.factor2,
-    distinctFactors: pinnedType === 'missing_factor',
-  });
+  // Grade 3 learns every fact through 10 × 10 (the prompt's own guideline, 3.OA.C.7); the 2-3 band's
+  // product cap of 50 is grade 2's, and held grade 3 below its objective (no 7 × 8, ever).
+  const factBand = !config?.gradeBand && ctx.grade === '3' ? GRADE_3_FACTS : FACT_BAND[factBandKey];
+  // With a tier and an objective the resolver fits to a strand, the item space picks each fact at
+  // the tier's difficulty (multiplicationExplorerItemSpace.ts); otherwise selectFacts draws uniformly.
+  const spaceFacts = await factsFromItemSpace(config, ctx.grade, topic, pinnedType, factBand, instanceCount);
+  const sessionFacts: ExplorerFact[] = spaceFacts.length
+    ? spaceFacts.map(({ factor1, factor2 }) => ({ factor1, factor2 }))
+    : selectFacts(factBand, instanceCount, {
+      pinnedFactor1: config?.factor1,
+      pinnedFactor2: config?.factor2,
+      distinctFactors: pinnedType === 'missing_factor',
+    });
   const factsSection = sessionFacts.length
     ? `\n## THE FACTS FOR THIS SESSION (assigned — do not choose your own)\n`
       + sessionFacts
-          .map((f, i) => `- Challenge ${i + 1}: ${f.factor1} × ${f.factor2} = ${f.factor1 * f.factor2}`)
+          .map((f, i) => `- Challenge ${i + 1}: ${f.factor1} × ${f.factor2} = ${f.factor1 * f.factor2}`
+            + (spaceFacts[i] && spaceFacts[i].hiddenValue !== 'product' ? ` (hiddenValue "${spaceFacts[i].hiddenValue}")` : ''))
           .join('\n')
       + `\nWrite each challenge's instruction, hint and narration ABOUT ITS OWN FACT above, in order.\n`
       + `Challenge N's targetFact MUST be exactly the fact listed for challenge N.\n`
@@ -788,7 +835,9 @@ Return the complete multiplication explorer configuration.
       // else factor1, which the "? × b = p" wording asks); every other type asks the product. A null or mismatched
       // hiddenValue used to grade the product while the leak guards below read "nothing hidden".
       const hiddenValue = c.type === 'missing_factor'
-        ? (c.hiddenValue === 'factor2' ? 'factor2' : 'factor1')
+        ? (spaceFacts[i] && spaceFacts[i].hiddenValue !== 'product'
+          ? spaceFacts[i].hiddenValue
+          : c.hiddenValue === 'factor2' ? 'factor2' : 'factor1')
         : 'product';
       return {
         ...c,
@@ -796,6 +845,7 @@ Return the complete multiplication explorer configuration.
         hiddenValue,
         fact: { factor1: f.factor1, factor2: f.factor2 },
         targetFact: `${f.factor1} × ${f.factor2} = ${product}`,
+        ...(spaceFacts[i] ? { itemSpace: spaceFacts[i].itemSpace } : {}),
       };
     });
   }

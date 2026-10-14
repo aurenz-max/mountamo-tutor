@@ -32,6 +32,36 @@ import {
   ArrayGridIconType,
 } from "../../primitives/visual-primitives/math/ArrayGrid";
 import { arraysOf, makeArrayAsk } from "../../primitives/visual-primitives/math/arrayGridWorkspace";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import type { MultDivItem } from "../itemSpace/multDivFacts";
+
+/**
+ * With a tier and a lesson the resolver fits to mult-div-facts, the arrays come from the space at the
+ * tier's band (build_array, count_array, multiply_array): each array is the product fact rows x columns.
+ * Before, the dimensions were code-picked for variety but the tier never moved them (easy held 6 x 7
+ * and 5 x 8, hard 3 x 2; 10-13 probe). Returns a picker over the admissible arrays, or null.
+ */
+async function arrayPickerFromItemSpace(opts: {
+  difficulty?: string; type: ArrayGridChallengeType; topic: string; intent?: string; grade?: string;
+}): Promise<((candidates: DimensionPair[], count: number) => DimensionPair[] | null) | null> {
+  const band = difficultyBand(opts.difficulty);
+  if (!band || opts.type === 'make_array') return null;
+  const task = opts.type === 'build_array' ? 'builds an array of equal rows for a multiplication fact'
+    : opts.type === 'count_array' ? 'finds how many are in an array of equal rows (a multiplication fact)'
+      : 'writes the multiplication sentence for an array (rows times columns)';
+  const space = await resolveItemSpace(`Lesson: ${opts.intent || opts.topic}. In this activity the learner ${task}.`, opts.grade, ['mult-div-facts']);
+  if (space !== 'mult-div-facts') return null;
+  const log = (m: string) => console.log(`[ArrayGrid] Item space ${space}: ${m}`);
+  return (candidates, count) => {
+    const ok = new Set(candidates.map(cardKey));
+    const scope = (it: MultDivItem) => it.form === 'product' && ok.has(cardKey({ rows: it.a, columns: it.b }));
+    const picks = tierPick(getItemSpace(space), log, scope)(count, band[0], band[1], undefined, scope) as MultDivItem[];
+    log(`${opts.type} band [${band.join(', ')}]: ${picks.length >= count ? picks.map((p) => `${p.a}x${p.b}@${p.beta.toFixed(2)}`).join(' ') : 'no session fits; own picker kept'}`);
+    return picks.length >= count
+      ? picks.map((p) => ({ rows: p.a, columns: p.b, itemSpace: { space, structure: p.structure, beta: Math.round(p.beta * 100) / 100 } }))
+      : null;
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -221,6 +251,8 @@ const MIN_DISTINCT_CARDS = 3;
 interface DimensionPair {
   rows: number;
   columns: number;
+  /** Set when the pair came from an item space (calibration stamp). */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 function canonKey(a: number, b: number): string {
@@ -418,6 +450,8 @@ function selectDimensionPairs(
    *  past the objective); absent → no product bound. Narrows only, and is subject
    *  to the MIN-CARDS guard above. */
   productMax?: number,
+  /** The tier's picker from an item space; null when it cannot fill the session. */
+  spacePick?: ((candidates: DimensionPair[], count: number) => DimensionPair[] | null) | null,
 ): DimensionPair[] {
   const requested = narrowBand(type, cap);
 
@@ -446,6 +480,10 @@ function selectDimensionPairs(
   }
 
   const { nonSquare, squares } = enumerateAdmissible(band, effectiveMax);
+
+  // Item-space path: the same admissible arrays, picked at the tier's difficulty.
+  const fromSpace = spacePick?.([...nonSquare, ...squares], count);
+  if (fromSpace) return fromSpace;
 
   const picked: DimensionPair[] = [];
   const usedShapes = new Set<string>();
@@ -496,12 +534,14 @@ function buildChallenges(
   count: number,
   cap?: { min: number; max: number },
   productMax?: number,
+  spacePick?: ((candidates: DimensionPair[], count: number) => DimensionPair[] | null) | null,
 ): ArrayGridChallenge[] {
-  const pairs = selectDimensionPairs(type, count, cap, productMax);
+  const pairs = selectDimensionPairs(type, count, cap, productMax, spacePick);
   return pairs.map((pair, idx) => ({
     id: `array-grid-${idx + 1}`,
     targetRows: pair.rows,
     targetColumns: pair.columns,
+    ...(pair.itemSpace ? { itemSpace: pair.itemSpace } : {}),
   }));
 }
 
@@ -675,7 +715,9 @@ Return ONLY the wrapper metadata in the response schema.
 
   const challenges = challengeType === 'make_array'
     ? buildMakeChallenges(pickMakeTotals(gradeLevel, instanceCount, productCeiling), supportTier)
-    : buildChallenges(challengeType, instanceCount, scopeCap ?? undefined, productCeiling);
+    : buildChallenges(challengeType, instanceCount, scopeCap ?? undefined, productCeiling, await arrayPickerFromItemSpace({
+      difficulty: config?.difficulty, type: challengeType, topic, intent: ctx.intent, grade: ctx.grade,
+    }));
 
   const iconType: ArrayGridIconType = challengeType === 'make_array' ? 'square' :
     (config?.iconType as ArrayGridIconType) ||

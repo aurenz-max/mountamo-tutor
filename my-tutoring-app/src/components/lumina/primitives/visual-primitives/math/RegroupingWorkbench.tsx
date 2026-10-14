@@ -57,6 +57,8 @@ export interface RegroupingChallenge {
   narration: string;
   /** Per-challenge support tier (scaffolding level), stamped by the generator. */
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** Item-space calibration stamp (add-sub-100 / add-sub-1000): never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface RegroupingWorkbenchData {

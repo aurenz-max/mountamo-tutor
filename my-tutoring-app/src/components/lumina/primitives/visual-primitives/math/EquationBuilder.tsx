@@ -79,6 +79,9 @@ export interface EquationBuilderChallenge {
   // rewrite — "Write this another way: 5 = ? + 3"
   originalEquation?: string;
   acceptedForms?: string[];
+
+  /** Item-space calibration stamp (add-sub-20): never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface EquationBuilderData {

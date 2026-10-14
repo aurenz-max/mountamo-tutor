@@ -7,6 +7,8 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import type { MultiDigitItem } from "../itemSpace/multiDigit";
 import type { GenerationContext } from "../generation/generationContext";
 import { BaseTenBlocksData, BaseTenBlocksChallenge } from '../../primitives/visual-primitives/math/BaseTenBlocks';
 import {
@@ -823,6 +825,51 @@ Return the complete base-ten blocks data structure.`;
     data.challenges = [fallbacks[fallbackType] ?? fallbacks.build_number];
   }
 
+  // ── Item space (operate): with a tier, code picks every add/subtract problem from add-sub-100 or
+  // add-sub-1000 (the resolver reads the lesson's range) at the tier's band. The LLM had set maxPlace
+  // 'thousands' in a within-1000 lesson (9036 + 5008) and every tier held the same kind of problem
+  // (10-13 probe). The structural lever below skips operate items on this path. ──
+  let operateOnSpace = false;
+  const operateItems = (data.challenges as BaseTenBlocksChallenge[]).filter((c) => (BT_OPERATE_TYPES as readonly string[]).includes(c.type));
+  const band = difficultyBand(config?.difficulty);
+  if (band && operateItems.length && operateItems.length === data.challenges.length) {
+    const space = await resolveItemSpace(
+      `Lesson: ${ctx.intent || topic}. In this activity the learner adds or subtracts two numbers with base-ten blocks.`,
+      ctx.grade,
+      ['add-sub-100', 'add-sub-1000'],
+    );
+    if (space === 'add-sub-100' || space === 'add-sub-1000') {
+      const text = `${topic} ${ctx.intent ?? ''}`.toLowerCase();
+      const namesAdd = /\badd|\bsum|plus/.test(text);
+      const namesSub = /subtract|minus|take away|difference/.test(text);
+      const allowed = new Set(operateItems.map((c) => (c.type === 'add_with_blocks' ? '+' : '-')));
+      if (!namesSub || namesAdd) allowed.add('+');
+      if (!namesAdd || namesSub) allowed.add('-');
+      if (namesAdd && !namesSub) allowed.delete('-');
+      if (namesSub && !namesAdd) allowed.delete('+');
+      // A result of 1000 needs a thousands cube the mat does not show at this band.
+      const scope = (it: MultiDigitItem) => allowed.has(it.op) && (it.op === '-' || it.a + it.b < 1000);
+      const log = (m: string) => console.log(`[BaseTenBlocks] Item space ${space}: ${m}`);
+      const count = operateItems.length;
+      const picks = tierPick(getItemSpace(space), log, scope)(count, band[0], band[1], undefined, scope) as MultiDigitItem[];
+      log(`operate band [${band.join(', ')}]: ${picks.length >= count ? picks.map((p) => `${p.a}${p.op}${p.b}@${p.beta}`).join(' ') : 'no session fits; own path kept'}`);
+      if (picks.length >= count) {
+        operateOnSpace = true;
+        data.maxPlace = 'hundreds';
+        data.gradeBand = '2-3';
+        data.challenges = picks.map((it, i) => ({
+          ...operateItems[i],
+          type: it.op === '+' ? 'add_with_blocks' : 'subtract_with_blocks',
+          targetNumber: it.op === '+' ? it.a + it.b : it.a - it.b,
+          secondNumber: it.b,
+          instruction: it.op === '+' ? `Add ${it.a} + ${it.b} using blocks.` : `Subtract ${it.b} from ${it.a} using blocks.`,
+          hint: it.op === '+' ? 'Start with the ones column. Do you need to regroup?' : 'Start with the ones. Can you borrow from the next column?',
+          itemSpace: { space, structure: it.structure, beta: it.beta },
+        }));
+      }
+    }
+  }
+
   // ── Apply within-mode support tier per challenge (mode-correct, blends included) ──
   // Difficulty is a STUDENT property, so every challenge gets it — single-mode just
   // happens to give them all the same scaffold. Resolve from each challenge's OWN type
@@ -856,7 +903,7 @@ Return the complete base-ten blocks data structure.`;
           rewroteAny = true;
         }
         ch.secondNumber = undefined;
-      } else if ((BT_OPERATE_TYPES as readonly string[]).includes(ch.type)) {
+      } else if ((BT_OPERATE_TYPES as readonly string[]).includes(ch.type) && !operateOnSpace) {
         // add_with_blocks / subtract_with_blocks: force the exact regroup count.
         const isAdd = ch.type === 'add_with_blocks';
         // For operate the LLM sets targetNumber = sum/difference and secondNumber =
@@ -909,6 +956,18 @@ Return the complete base-ten blocks data structure.`;
           ? 'Start with the ones column. Do you need to regroup?'
           : 'Start with the ones. Can you borrow from the next column?';
       }
+    }
+    // N challenges are N problems: a zero-gap rebuild can draw the same number twice (409, 409 in one
+    // 10-13 session). Redraw a repeat at the same shape.
+    const seenTargets = new Set<number>();
+    for (const ch of data.challenges as BaseTenBlocksChallenge[]) {
+      if (!(BT_ZEROGAP_TYPES as readonly string[]).includes(ch.type)) continue;
+      const shape = resolveProblemShape(ch.type, supportTier, places);
+      for (let guard = 0; seenTargets.has(ch.targetNumber) && guard < 20; guard++) {
+        ch.targetNumber = buildZeroGapNumber(places, shape.zeroGapTarget, bandMax);
+        rewroteAny = true;
+      }
+      seenTargets.add(ch.targetNumber);
     }
     if (rewroteAny) {
       console.log(

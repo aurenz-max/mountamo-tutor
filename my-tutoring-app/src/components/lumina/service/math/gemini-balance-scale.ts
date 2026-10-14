@@ -10,6 +10,8 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import { BALANCE_SPACES, balanceSidesOf, equalitySides, equalityTargets } from "./balanceScaleItemSpace";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -372,6 +374,39 @@ export function selectBalanceScaleChallenges(
   });
 }
 
+/**
+ * A session's equations picked by code at the tier (balanceScaleItemSpace.ts), or null: no tier, no
+ * strand fits the lesson, or the scope cannot fill the session (the builders' own path runs whole).
+ */
+async function challengesFromItemSpace(opts: {
+  mode: ChallengeType; tier: SupportTier; count: number; topic: string; intent?: string; grade?: string;
+}): Promise<BalanceScaleChallenge[] | null> {
+  const asChallenge = (sides: ReturnType<typeof equalitySides>, itemSpace?: BalanceScaleChallenge['itemSpace']): BalanceScaleChallenge =>
+    ({ type: opts.mode, instruction: '', hint: '', ...sides, ...(itemSpace ? { itemSpace } : {}) });
+  if (opts.mode === 'equality' || opts.mode === 'equality_hard') {
+    const targets = equalityTargets(opts.mode, opts.tier, opts.count);
+    console.log(`[BalanceScale] ${opts.mode} ${opts.tier} targets: ${targets.join(', ')}`);
+    return targets.length >= opts.count ? targets.map((t) => asChallenge(equalitySides(t))) : null;
+  }
+  const entry = BALANCE_SPACES[opts.mode];
+  const band = difficultyBand(opts.tier);
+  if (!entry || !band) return null;
+  const space = await resolveItemSpace(`Lesson: ${opts.intent || opts.topic}. In this activity the learner ${entry.task}.`,
+    opts.grade, [entry.space]);
+  if (space !== entry.space) {
+    console.log(`[BalanceScale] Item space: ${opts.mode} lesson does not fit ${entry.space}; own path kept`);
+    return null;
+  }
+  const scope = (it: unknown) => balanceSidesOf(opts.mode, it) !== null;
+  const picks = tierPick(getItemSpace(space), (m) => console.log(`[BalanceScale] Item space ${space}: ${m}`), scope)(
+    opts.count, band[0], band[1], undefined, scope,
+  ).sort((x, y) => x.beta - y.beta);
+  console.log(`[BalanceScale] Item space ${space} ${opts.mode} band [${band.join(', ')}]: `
+    + (picks.length >= opts.count ? picks.map((p) => `${p.structure}@${p.beta}`).join(' ') : 'no session fits; own path kept'));
+  if (picks.length < opts.count) return null;
+  return picks.map((p) => asChallenge(balanceSidesOf(opts.mode, p)!, { space, structure: p.structure, beta: p.beta }));
+}
+
 // ---------------------------------------------------------------------------
 // Schema (wrapper metadata only — Gemini does NOT emit per-challenge equations)
 // ---------------------------------------------------------------------------
@@ -514,7 +549,12 @@ Return ONLY the wrapper fields described above.
   if (evalConstraint?.allowedTypes.length === 1) challengeType = evalConstraint.allowedTypes[0] as ChallengeType;
 
   // ── Build the per-challenge equation pool locally ──
-  const challenges = selectBalanceScaleChallenges(challengeType, config?.instanceCount);
+  // With a tier, code picks the numbers at the tier's difficulty; otherwise (or when no session fits)
+  // the builders run as before.
+  const sessionCount = Math.max(1, Math.min(MAX_INSTANCE_COUNT, config?.instanceCount ?? COUNT_BY_MODE[challengeType] ?? DEFAULT_INSTANCE_COUNT));
+  const challenges = (supportTier && await challengesFromItemSpace({
+    mode: challengeType, tier: supportTier, count: sessionCount, topic, intent: ctx.intent, grade: ctx.grade,
+  })) || selectBalanceScaleChallenges(challengeType, config?.instanceCount);
 
   const gradeBand = GRADE_BAND_BY_TYPE[challengeType];
   const allowOperations = ALLOW_OPS_BY_TYPE[challengeType];

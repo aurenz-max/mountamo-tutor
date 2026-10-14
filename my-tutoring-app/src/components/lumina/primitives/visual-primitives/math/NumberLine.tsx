@@ -77,6 +77,9 @@ export interface NumberLineChallenge {
   startValue?: number;
   /** Per-challenge operations for show_jump challenges */
   operations?: NumberLineOperation[];
+  /** show_jump picked from an item space (service/itemSpace): strand, structure, predicted beta. For
+   *  calibration only; never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
   /**
    * Per-challenge benchmark anchor marks (support-tier scaffold, set by the
    * generator at the 'easy' tier). Rendered + auto-zoomed for THIS challenge only,

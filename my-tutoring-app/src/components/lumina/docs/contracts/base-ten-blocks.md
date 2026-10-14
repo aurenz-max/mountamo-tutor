@@ -200,6 +200,14 @@ Proposed only; not applied.
 
 ## Changelog
 
+- 2026-10-13 — `/add-item-space`, three modes measured (`qa/difficulty-demo/2026-10-13/btb/`). operate wired: with a tier
+  and a lesson the resolver fits to add-sub-100 or add-sub-1000, code picks each add/subtract at the tier's band;
+  additions or subtractions as the lesson names them; no sum of 1000 (no thousands cube at this band); maxPlace
+  'hundreds'. Before: the LLM set maxPlace 'thousands' in a within-1000 lesson (9036 + 5008) and the tiers did not
+  separate. build_number: left alone (the zero-gap lever already moves the problem: 499 / 408 / 306); a session no
+  longer repeats a target (409, 409). build_two_ways: left alone (open build; any number has two ways). Open: the
+  no-tier operate path still ships 4-digit sums in a within-1000 lesson (560 + 855).
+
 - 2026-10-09 — R25 added (J12 per-item gaps). Compatible: additive levers; an unpulled mat renders as before. The operate lever list gains `trade_mark` before `single_regroup`, so a lost carry with no full column now gets the marks first.
 
 - 2026-10-07 — R24 added (build_two_ways, open build). Compatible: no existing mode's component path, generator path or lever changes; the guidance sentence on non-standard builds is now scoped to build; the W1 fixture list gains the mode; new payload `w1-payloads/base-ten-blocks.build_two_ways.json` and a journey branch.

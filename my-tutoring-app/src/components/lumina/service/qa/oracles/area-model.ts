@@ -53,8 +53,8 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *    ceiling — the PRODUCT (Σf1·Σf2) for grid/multiply/factor modes, the
  *    PERIMETER (2·(Σf1+Σf2)) for perimeter mode. "Area models to 100" emitting a
  *    25×47=1175 model is content past the objective. Ceiling = ctx.scopeMax ??
- *    topic ceiling ?? the mode's intrinsic max (build_model 250, find_area/factor
- *    2500, multiply 25000, perimeter 150 — from the generator's operand ranges).
+ *    topic ceiling ?? the mode's intrinsic max (build_model 900, find_area/factor
+ *    10000, multiply 100000, perimeter 150 — from the generator's operand ranges).
  *  - clustering        : within the (single-mode) session the produced quantity
  *    must spread (no "every model totals 1175"), and no exact-duplicate card —
  *    same ORDERED (Σf1, Σf2) pair twice. Transposes (25×47 vs 47×25) are DISTINCT
@@ -83,15 +83,15 @@ const KNOWN_MODES = new Set(['build_model', 'find_area', 'perimeter', 'multiply'
 // perimeter is excluded: its parts are single whole side lengths.
 const GRID_MODES = new Set(['build_model', 'find_area', 'multiply', 'factor']);
 
-// Intrinsic ceilings on the produced quantity, from the generator's operand
-// ranges (gemini-area-model.ts): build_model 9×25=225, find_area/factor
-// 49×49=2401, multiply 499×49=24451, perimeter 2·(30+29)=118 — rounded up so a
-// legitimate max-range generation never trips scope when no topic ceiling exists.
+// Intrinsic ceilings on the produced quantity, from the widest operand ranges the
+// generator draws (the item-space path, areaModelItemSpace.ts): build_model 9×99=891,
+// find_area/factor 99×99=9801, multiply 999×99=98901, perimeter 2·(30+29)=118 — rounded
+// up so a legitimate max-range generation never trips scope when no topic ceiling exists.
 const INTRINSIC_BY_MODE: Record<string, number> = {
-  build_model: 250,
-  find_area: 2500,
-  factor: 2500,
-  multiply: 25000,
+  build_model: 900,
+  find_area: 10000,
+  factor: 10000,
+  multiply: 100000,
   perimeter: 150,
 };
 const DEFAULT_INTRINSIC = 2500;
