@@ -124,6 +124,19 @@ The user's goal: a child meets a skill only when its parts are in place (32-8 ne
 | 7.9 | Measure easier-form transfer, the parameter that decides whether success-weighted selection beats today. 1004 replay inconclusive (170 challenges at 92%). Persona-play session: easy form, then hard form, on primitives that record per-challenge attempts | `/pulse-agent lab` (`replay transfer`) · user session | QUEUED 10-11, needs a user session |
 | 7.10 | **Learner graph PUBLISHED 10-12** to Firestore `learner_graphs/{SUBJECT}` (versioned, own collection, never touches curriculum_published/curriculum_graphs). Reader `backend/app/services/learner_graph.py` (prerequisites, unlocks, validation). Math 726 / literacy 490 / science 374 / social studies 463 subskills | `/curriculum-graph` (publish section) | DONE 10-12; verified via the reader. Not yet in production: a student's Bayesian state (lab only; port = 7.4d). Validation: literacy partial, math pending labels, science + social studies none |
 
+## Phase 8 — Difficulty is code-owned (CURRENT, user 10-13)
+
+`config.difficulty` changes the problem because code picks it from a space and computes its difficulty from structure; the LLM writes words only.
+
+| # | Item | Executor · queue | State |
+|---|---|---|---|
+| 8.1 | Math item spaces | `/add-item-space` · `my-tutoring-app/qa/difficulty-demo/2026-10-13/REPORT.md` | 16 spaces, 15 primitives wired 10-13 (last push: time and money, analog-clock + coin-counter every computable mode). Open: fraction-bar `add_subtract` ruling. Next strands: measurement (length-lab, measurement-tools), place value compare/decompose, division, fraction compare |
+| 8.2a | K literacy word library: lab | `my-tutoring-app/scripts/word-space-lab/` · `my-tutoring-app/qa/word-space-lab/2026-10-13/FINDINGS.md` | DONE 10-13: scope = taught letter-sound pairs; 58/99 K+G1 subskills served, all picks re-checked, 56 tiered. User approved implementation 10-13 |
+| 8.2b | Rating review (knownBy, kid-safe, teachable, picture fits, category) | user · review page https://claude.ai/artifact/HXUusXVu2zBxzBz2oSkawY (saves to its `review` store) | 10-14: first pass merged (99 reviewed, 39 changed, all toward later grades) via `scripts/word-space-lab/review-overrides.json`; more review welcome, re-run `build-lexicon.mjs` to merge. Licenses DONE 10-14: rank dropped from the lexicon (frequency data is CC-BY-SA), `service/wordSpace/NOTICE` carries CMU + Unicode notices |
+| 8.2c | Lexicon + `service/wordSpace/` (tiered picks, per-task spaces) + vitest; then the `/add-word-space` skill | build | BUILT 10-14, uncommitted: `lexicon.json` (4,656 words), `lexicon.ts`, `pick.ts`, `phonemeSpaces.ts` + tests. Skill `/add-word-space` WRITTEN 10-14 (`.claude/skills/add-word-space/SKILL.md`). Not yet: scope parser / `decodableWords` = WS-0 in the handoff |
+| 8.2d | Pilot phoneme-explorer, all 6 modes: tier probe before/after, Easy/Medium/Hard table | `qa/word-space-lab/2026-10-13/phoneme-explorer/REPORT.md` | BUILT 10-14, uncommitted: all 6 modes on the word space at K/1 with a tier; contract R7. Owed: browser check (tester has a difficulty selector now); user review of 3 decisions in the report |
+| 8.2e | Sweep K primitives one at a time, order and per-primitive notes in `my-tutoring-app/qa/HANDOFF-word-space-literacy-2026-10-14.md`: WS-0 scope parser, then phonics-blender, cvc-speller, sound-swap, rhyme-studio, syllable-clapper, letter-sound-link, word-workout, letter-spotter, picture-vocabulary + word-sorter (after WS-R relation table, needs user), word-flip | `/add-word-space` | QUEUED (handoff 10-14). Known gaps: letter keywords i/y/x (keep `LETTER_KEYWORDS`), non-compound syllable split, relation tables (opposites, goes-with) |
+
 ## Later (proposed, user to confirm) — misses reach the next lesson
 
 Store misses and lever pulls as observations (other session has started); a Lesson Builder

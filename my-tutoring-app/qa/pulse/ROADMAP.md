@@ -85,7 +85,7 @@ group has more"; G1 "43 + 5" as a place-value chart with tenths). Causes and fix
 
 | # | Item | Executor | Exit |
 |---|---|---|---|
-| C1 | Browser check: one Pulse session for 1004 shows K audience, "Quick check" labels, items on-subskill | user / HUMAN-CHECKS | checked |
+| C1 | DONE 10-13 (user checked in the app). Browser check: one Pulse session for 1004 shows K audience, "Quick check" labels, items on-subskill | user / HUMAN-CHECKS | checked |
 | C2 | ten-frame `build` ignores the objective's range ("numbers 11-20" built "put 5 counters") | `/topic-fidelity ten-frame` | build values inside 11-20 for that objective |
 | C3 | base-ten-blocks has no add-without-regrouping mode; `operate` forces >=1 regroup (contract) | `/add-eval-modes base-ten-blocks` (fork) | "43 + 5" subskill gets a fitting visual |
 | C4 | DONE 10-12, uncommitted. Teach picks with P(ready) 0.00 were selected (1004: top LA pick P(ready) 0.00 at P(right) 0.89; general ability predicted a right answer whose parts were not in place). Rule (user asked for a threshold; 0.40 chosen): `READY_MIN = 0.4` gates teach picks AND the card's ready list (one number); below it a subskill is served only as a last resort, most-ready first. 1004: 61-214 teach candidates per subject still clear it | `/pulse-fix` | rule decided, `/pulse-agent` loop passes |
@@ -157,8 +157,8 @@ Content read of the same runs (days 1, 2, 27, 28) changes T1/T3:
 
 | # | Item | Executor | Exit |
 |---|---|---|---|
-| P0.1 | Ship 7.4d, 7.5, 7.6, 7.13 in mechanism slices | `/ship` | typecheck:lumina 0; backend tests compared to the prior run; `/pulse-agent steady --loop` all assertions pass |
-| P0.2 | Browser checks: LearnerModelSection card, LessonSummary "Your progress", one real Pulse session submits the pinned eval_mode | user / HUMAN-CHECKS | 3 checks closed |
+| P0.1 | DONE 10-13 (7631c431..e2f4f58a, main fast-forwarded). Ship 7.4d, 7.5, 7.6, 7.13 in mechanism slices | `/ship` | typecheck:lumina 0; backend tests compared to the prior run; `/pulse-agent steady --loop` all assertions pass |
+| P0.2 | DONE 10-13 (user checked in the app). Browser checks: LearnerModelSection card, LessonSummary "Your progress", one real Pulse session submits the pinned eval_mode | user / HUMAN-CHECKS | 3 checks closed |
 | P0.3 | Backfill learner state for the other real students | `scripts/backfill_learner_state.py` | dry-run reviewed, applied |
 
 ## P1 — The data loop holds for the new doc (`/student-data-loop`)
