@@ -1,0 +1,62 @@
+
+Find the missing addend within 20 | one_step | difficulty=easy | run 1 | item space
+  [BalanceScale] Item space add-sub-20 one_step band [-2.5, -0.6]: +|change|b0|t1|one@-1.82 +|change|b0|t0|one@-1.52 +|change|b0|t0|dbl@-1.44 +|change|b0|t1|ten@-0.7799999999999998 +|change|b0|t1|two3@-
+  [β -1.82 +|change|b0|t1|one] x + 1 = 11         ans 10  "Add weights to complete the load. Say how much you added."
+  [β -1.52 +|change|b0|t0|one] x + 1 = 3          ans 2  "Add weights to complete the load. Say how much you added."
+  [β -1.44 +|change|b0|t0|dbl] x + 2 = 4          ans 2  "Add weights to complete the load. Say how much you added."
+  [β -0.7799999999999998 +|change|b0|t1|ten] x + 4 = 14         ans 10  "Add weights to complete the load. Say how much you added."
+  [β -0.64 +|change|b0|t1|two3] x + 14 = 16        ans 2  "Add weights to complete the load. Say how much you added."
+
+Find the missing addend within 20 | one_step | difficulty=easy | run 2 | item space
+  [BalanceScale] Item space add-sub-20 one_step band [-2.5, -0.6]: +|change|b0|t0|dbl@-1.36 +|change|b0|t1|ten@-1.1600000000000001 +|change|b0|t0|two3@-0.8600000000000001 +|change|b0|t1|dbl@-0.799999999
+  [β -1.36 +|change|b0|t0|dbl] x + 3 = 6          ans 3  "Add weights to complete the load. Say how much you added."
+  [β -1.1600000000000001 +|change|b0|t1|ten] x + 10 = 13        ans 3  "Add weights to complete the load. Say how much you added."
+  [β -0.8600000000000001 +|change|b0|t0|two3] x + 5 = 8          ans 3  "Add weights to complete the load. Say how much you added."
+  [β -0.7999999999999998 +|change|b0|t1|dbl] x + 10 = 20        ans 10  "Add weights to complete the load. Say how much you added."
+  [β -0.64 +|change|b0|t1|two3] x + 12 = 14        ans 2  "Add weights to complete the load. Say how much you added."
+
+Find the missing addend within 20 | one_step | difficulty=medium | run 1 | item space
+  [BalanceScale] Item space add-sub-20 one_step band [-0.6, 0.6]: +|change|b0|t1|two3@-0.56 +|change|b0|t0|none@-0.48 +|change|b1|t1|one@-0.22000000000000008 +|change|b0|t1|none@-0.17999999999999994 +|c
+  [β -0.56 +|change|b0|t1|two3] x + 15 = 18        ans 3  "Add weights to complete the load. Say how much you added."
+  [β -0.48 +|change|b0|t0|none] x + 4 = 10         ans 6  "Add weights to complete the load. Say how much you added."
+  [β -0.22000000000000008 +|change|b1|t1|one] x + 1 = 16         ans 15  "Add weights to complete the load. Say how much you added."
+  [β -0.17999999999999994 +|change|b0|t1|none] x + 14 = 18        ans 4  "Add weights to complete the load. Say how much you added."
+  [β 0.5599999999999998 +|change|b1|t1|dbl] x + 7 = 14         ans 7  "Add weights to complete the load. Say how much you added."
+
+Find the missing addend within 20 | one_step | difficulty=medium | run 2 | item space
+  [BalanceScale] Item space add-sub-20 one_step band [-0.6, 0.6]: +|change|b0|t1|two3@-0.56 +|change|b0|t0|none@-0.48 +|change|b1|t1|one@-0.22000000000000008 +|change|b0|t1|none@-0.09999999999999998 +|c
+  [β -0.56 +|change|b0|t1|two3] x + 13 = 16        ans 3  "Add weights to complete the load. Say how much you added."
+  [β -0.48 +|change|b0|t0|none] x + 4 = 9          ans 5  "Add weights to complete the load. Say how much you added."
+  [β -0.22000000000000008 +|change|b1|t1|one] x + 1 = 13         ans 12  "Add weights to complete the load. Say how much you added."
+  [β -0.09999999999999998 +|change|b0|t1|none] x + 11 = 16        ans 5  "Add weights to complete the load. Say how much you added."
+  [β 0.43999999999999995 +|change|b1|t1|two3] x + 3 = 18         ans 15  "Add weights to complete the load. Say how much you added."
+
+Find the missing addend within 20 | one_step | difficulty=hard | run 1 | item space
+  [BalanceScale] Item space add-sub-20 one_step band [0.6, 3.5]: +|change|b1|t1|dbl@0.6400000000000001 +|change|b1|t1|dbl@0.72 +|change|b1|t1|none@0.8200000000000001 +|change|b1|t1|none@1.14000000000000
+  [β 0.6400000000000001 +|change|b1|t1|dbl] x + 8 = 16         ans 8  "Add weights to complete the load. Say how much you added."
+  [β  0.72 +|change|b1|t1|dbl] x + 9 = 18         ans 9  "Add weights to complete the load. Say how much you added."
+  [β 0.8200000000000001 +|change|b1|t1|none] x + 4 = 11         ans 7  "Add weights to complete the load. Say how much you added."
+  [β 1.1400000000000001 +|change|b1|t1|none] x + 8 = 19         ans 11  "Add weights to complete the load. Say how much you added."
+  [β  1.22 +|change|b1|t1|none] x + 9 = 20         ans 11  "Add weights to complete the load. Say how much you added."
+
+Find the missing addend within 20 | one_step | difficulty=hard | run 2 | item space
+  [BalanceScale] Item space add-sub-20 one_step band [0.6, 3.5]: +|change|b1|t1|dbl@0.6400000000000001 +|change|b1|t1|dbl@0.72 +|change|b1|t1|none@0.8999999999999999 +|change|b1|t1|none@0.89999999999999
+  [β 0.6400000000000001 +|change|b1|t1|dbl] x + 8 = 16         ans 8  "Add weights to complete the load. Say how much you added."
+  [β  0.72 +|change|b1|t1|dbl] x + 9 = 18         ans 9  "Add weights to complete the load. Say how much you added."
+  [β 0.8999999999999999 +|change|b1|t1|none] x + 5 = 16         ans 11  "Add weights to complete the load. Say how much you added."
+  [β 0.8999999999999999 +|change|b1|t1|none] x + 5 = 14         ans 9  "Add weights to complete the load. Say how much you added."
+  [β  0.98 +|change|b1|t1|none] x + 6 = 15         ans 9  "Add weights to complete the load. Say how much you added."
+
+Find the missing addend within 20 | one_step | difficulty=(none) | run 1 | own path
+  [                      ] x + 1 = 19 + 1     ans 19  "Add weights to complete the load. Say how much you added."
+  [                      ] x + 13 = 9 + 13    ans 9  "Add weights to complete the load. Say how much you added."
+  [                      ] x + 19 = 3 + 19    ans 3  "Add weights to complete the load. Say how much you added."
+  [                      ] x + 14 = 18 + 14   ans 18  "Add weights to complete the load. Say how much you added."
+  [                      ] x + 7 = 25 + 7     ans 25  "Add weights to complete the load. Say how much you added."
+
+Find the missing addend within 20 | one_step | difficulty=(none) | run 2 | own path
+  [                      ] x + 8 = 10 + 8     ans 10  "Add weights to complete the load. Say how much you added."
+  [                      ] x + 7 = 13 + 7     ans 13  "Add weights to complete the load. Say how much you added."
+  [                      ] x + 1 = 19 + 1     ans 19  "Add weights to complete the load. Say how much you added."
+  [                      ] x + 20 = 14 + 20   ans 14  "Add weights to complete the load. Say how much you added."
+  [                      ] x + 20 = 25 + 20   ans 25  "Add weights to complete the load. Say how much you added."

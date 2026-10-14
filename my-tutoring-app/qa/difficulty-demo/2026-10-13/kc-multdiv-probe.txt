@@ -1,0 +1,70 @@
+
+Multiply and divide within 100 | difficulty=easy | run 1 | item space
+  [β  -1.4 factor1|a1|t1|h0] Emma puts 5 stickers on each notebook until she uses 25 stickers. How many notebooks does she use?  9(f) 6(n) 5* 1(f)
+  [β -0.61 factor1|a1|t0|h1] Liam arranges his toy cars with 6 cars in each row until he has 12 cars in all. How many rows does he make?  2* 5(f) 6(n) 7(f)
+  [β -0.79 factor1|a0|t1|h0] Maya places 3 buttons on each card until she uses 9 buttons. How many cards does she decorate?  3* 8(f) 2(n) 7(f)
+  [β -0.86 product|a0|t0|h0] Noah bakes 4 trays of cookies with 3 cookies on each tray. How many cookies does he bake in all?  12* 7(n) 32(f) 27(f)
+  [β -0.61 quotient|a0|t1|h0] Sophia shares 16 paintbrushes equally among 4 art bins. How many paintbrushes go into each bin?  9(f) 8(f) 5(n) 4*
+
+Multiply and divide within 100 | difficulty=easy | run 2 | item space
+  [β -0.61 factor2|a1|t0|h1] Maya places 12 crayons into boxes with 6 crayons in each box. How many boxes does she use?  3(n) 7(f) 2* 6(f)
+  [β -0.94 factor2|a1|t0|h0] Sam shares 30 toy cars equally among 3 friends. How many toy cars does each friend get?  5(f) 9(n) 10* 6(f)
+  [β  -1.4 factor1|a1|t1|h0] Emma arranges 25 stickers into rows with 5 stickers in each row. How many rows does she make?  9(f) 4(n) 5* 1(f)
+  [β -0.86 product|a0|t0|h0] Leo buys 4 packs of juice boxes, and each pack has 3 juice boxes. How many juice boxes does he buy in all?  32(f) 7(n) 12* 27(f)
+  [β -0.71 factor1|a0|t1|h0] Lily puts 16 flowers into vases with 4 flowers in each vase. How many vases does she use?  9(f) 4* 3(n) 8(f)
+
+Multiply and divide within 100 | difficulty=medium | run 1 | item space
+  [β  -0.5 factor1|a1|t1|h0] Sarah has 100 stickers and puts them into pages with 10 stickers each. How many pages does she use?  10* 9(n) 5(f) 6(f)
+  [β -0.16 product|a0|t0|h1] Tom has 4 bags of marbles, and each bag contains 6 marbles. How many marbles does Tom have in total?  24* 44(f) 20(n) 28(n)
+  [β  0.27 factor1|a0|t0|h1] Emma collected 18 rocks and arranged them into piles with 6 rocks in each pile. How many piles of rocks did she make?  3* 6(n) 2(n) 7(f)
+  [β  0.34 factor2|a0|t0|h1] Liam has 3 boxes of crayons, and there are 24 crayons shared equally among them. How many crayons are in each box?  8* 4(f) 9(n) 3(n)
+  [β -0.36 factor1|a0|t0|h0] Maya has 12 toy cars and organizes them into parking lots with 3 cars in each lot. How many parking lots does she use?  4* 8(f) 5(n) 3(n)
+
+Multiply and divide within 100 | difficulty=medium | run 2 | item space
+  [β -0.53 factor1|a1|t0|h1] Maya has 18 stickers and puts them in rows with 2 stickers in each row. How many rows does Maya make?  8(n) 5(f) 2(n) 9*
+  [β -0.29 product|a1|t0|h1] Leo bakes 10 trays of cookies, and each tray has 8 cookies on it. How many cookies does Leo bake in all?  90(n) 72(n) 100(f) 80*
+  [β  0.39 factor1|a0|t0|h1] Sam shares 28 crayons by putting them into boxes that hold 4 crayons each. How many boxes does Sam use?  7* 4(n) 6(n) 3(f)
+  [β -0.36 factor1|a0|t0|h0] Mia has 12 toy cars and places them in parking lots with 3 cars in each. How many parking lots does Mia fill?  3(n) 5(n) 4* 8(f)
+  [β  0.34 factor2|a0|t0|h1] Zack arranges 24 books onto 8 shelves so that every shelf has the same amount. How many books go on each shelf?  7(f) 2(n) 4(n) 3*
+
+Multiply and divide within 100 | difficulty=hard | run 1 | item space
+  [β  0.67 product|a0|t1|h2] Maya has 9 boxes of crayons with 9 crayons in each box. How many crayons does Maya have in total?  81* 18(n) 90(n) 61(f)
+  [β  0.97 factor1|a0|t1|h2] Leo organizes 64 toy cars into rows with 8 cars in each row. How many rows of toy cars does Leo have?  8* 7(n) 9(n) 4(f)
+  [β  0.75 product|a0|t0|h2] Sam bakes 6 trays of cookies with 9 cookies on each tray. How many cookies does Sam bake in all?  74(f) 54* 15(n) 45(n)
+  [β  1.36 factor2|a0|t0|h2] Nina has 63 stickers and places them equally onto 9 pages of her sticker book. How many stickers does Nina put on each page?  6(n) 3(f) 9(n) 7*
+  [β   1.1 factor1|a0|t0|h2] Ben has 42 marbles and puts them into bags with 6 marbles in each bag. How many bags of marbles does Ben have?  7* 8(n) 3(f) 6(n)
+
+Multiply and divide within 100 | difficulty=hard | run 2 | item space
+  [β  1.46 quotient|a0|t0|h2] Emma has 63 stickers and shares them equally among 9 friends. How many stickers does each friend get?  3(f) 8(n) 6(n) 7*
+  [β  0.89 quotient|a0|t1|h2] Leo puts 49 toy cars equally onto 7 shelves. How many toy cars are on each shelf?  8(n) 6(n) 3(f) 7*
+  [β  0.67 product|a0|t1|h2] Maya has 9 boxes of crayons, and each box has 9 crayons inside. How many crayons does Maya have in total?  72(n) 61(f) 81* 18(n)
+  [β  1.18 factor2|a0|t0|h2] Liam arranges 48 chairs into rows with 8 chairs in each row. How many rows of chairs are there?  6* 7(n) 5(n) 10(f)
+  [β   0.6 product|a0|t0|h2] Zoe bakes 7 trays of muffins, and each tray holds 6 muffins. How many muffins did Zoe bake in all?  62(f) 36(n) 13(n) 42*
+
+Multiply and divide within 100 | difficulty=(none) | run 1 | orchestrator
+  [multiple_choice easy] Look at the groups of apples: [🍎🍎🍎🍎] [🍎🍎🍎🍎] [🍎🍎🍎🍎]. There are 3 equal groups with 4 apples in each group. How many apples are there in all?  7(n) 10(f) 12* 14(n)
+  [fill_in_blanks easy]   
+  [matching_activity medium]   
+  [true_false easy] Dividing any number by itself gives an answer of one.  
+  [multiple_choice easy] Leo has 36 stickers. He shares them equally among 4 friends. How many stickers does each friend get?  8 stickers(n) 9 stickers* 12 stickers(n) 32 stickers(f)
+
+Multiply and divide within 100 | difficulty=(none) | run 2 | orchestrator
+  [multiple_choice easy] There are 3 plates with 4 apples on each plate. Which multiplication equation shows the total number of apples?  3 + 4 = 7(n) 3 × 4 = 12* 4 × 4 = 16(n) 12 - 4 = 8(f)
+  [fill_in_blanks easy]   
+  [multiple_choice medium] Which number correctly completes the multiplication equation shown below?  48(n) 54(n) 56* 15(f)
+  [true_false medium] If 6 multiplied by 4 equals 24, then 24 divided by 4 equals 5.  
+  [multiple_choice medium] Maya buys 4 packs of stickers. Each pack contains 6 stickers. She shares all of her stickers equally among herself and 2 friends. How many stickers does each person get?  6 stickers(n) 8 stickers* 12 stickers(n) 24 stickers(f)
+
+Multiply a two-digit number by a one-digit number | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] Look at the 3 boxes of apples below. Each box has 14 apples.  Box 1: 🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎 Box 2: 🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎 Box 3: 🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎🍎  How many apples are there in all? (Find 3 × 14)  17 apples(f) 32 apples(n) 42 apples* 48 apples(n)
+  [fill_in_blanks medium]   
+  [multiple_choice medium] Based on the table, what was the total cost of all the sticker sheets sold at the school fair?  27¢(n) 82¢(n) 92¢* 23¢(f)
+  [true_false medium] The vertical multiplication shown in the equation is solved correctly.  
+  [multiple_choice medium] Leo bought 3 packs of trading cards. Each pack had 15 cards inside. Then, he gave 5 cards to his best friend. How many trading cards does Leo have left now?  13 cards(f) 13 cards(f) 40 cards* 45 cards(n)
+
+Multiply a two-digit number by a one-digit number | difficulty=hard | run 2 | orchestrator
+  [multiple_choice easy] Look at the number line. It starts at 0 and makes 3 equal jumps of 12 to land on 36. Which multiplication equation does this number line show?  12 + 3 = 15(n) 12 + 3 = 15(n) 12 × 2 = 24(n) 12 × 3 = 36*
+  [fill_in_blanks easy]   
+  [multiple_choice medium] Mrs. Lopez buys 4 tickets for the Science Magic show. Using the table, what is the total cost of the tickets?  $44(n) $52* $42(n) $17(f)
+  [true_false medium] When using regrouping as defined in the inset to solve 34 x 3, if you multiply 4 x 3 to get 12, you write down the 2 and add the 1 ten to the product of 3 x 3 before getting 102.  
+  [multiple_choice hard] Maya buys 4 packs of stickers with 24 stickers in each pack. Leo buys 3 packs of stickers with 31 stickers in each pack. Which statement correctly compares their total number of stickers?  Leo has 3 more stickers than Maya.(n) Maya has 3 more stickers than Leo.* Maya has 13 more stickers than Leo.(n) Leo has 20 more stickers than Maya.(f)

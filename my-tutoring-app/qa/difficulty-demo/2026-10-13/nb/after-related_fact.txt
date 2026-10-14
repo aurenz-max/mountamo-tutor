@@ -1,0 +1,69 @@
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=easy | run 1 | item space | max 10
+  [NumberBond] Item space bonds-10 related-fact band [-2.5, -0.6] within 10: 5=1+4@-0.7 6=1+5@-0.9 7=6+1@-0.6
+  [β  -0.7 part|to5|one|up-long] {"type":"related-fact","whole":5,"part1":1,"part2":4,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-long","beta":-0.7},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the counters to make the whole 5, say the addition fact, then sep"
+  [β  -0.9 part|to10|one+five|up-long] {"type":"related-fact","whole":6,"part1":1,"part2":5,"itemSpace":{"space":"bonds-10","structure":"part|to10|one+five|up-long","beta":-0.9},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the counters to make the whole 6, say the addition fact, then sep"
+  [β  -0.6 part|to10|one|up-short] {"type":"related-fact","whole":7,"part1":6,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to10|one|up-short","beta":-0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the counters to make the whole 7, say the addition fact, then sep"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=easy | run 2 | item space | max 10
+  [NumberBond] Item space bonds-10 related-fact band [-2.5, -0.6] within 10: 3=2+1@-1.4 6=1+5@-0.9 7=6+1@-0.6
+  [β  -1.4 part|to5|one|up-short] {"type":"related-fact","whole":3,"part1":2,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-short","beta":-1.4},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts for the whole 3, then say the matching addition and sub"
+  [β  -0.9 part|to10|one+five|up-long] {"type":"related-fact","whole":6,"part1":1,"part2":5,"itemSpace":{"space":"bonds-10","structure":"part|to10|one+five|up-long","beta":-0.9},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts for the whole 6, then say the matching addition and sub"
+  [β  -0.6 part|to10|one|up-short] {"type":"related-fact","whole":7,"part1":6,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to10|one|up-short","beta":-0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts for the whole 7, then say the matching addition and sub"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=easy | run 3 | item space | max 10
+  [NumberBond] Item space bonds-10 related-fact band [-2.5, -0.6] within 10: 3=2+1@-1.4 6=5+1@-1.2 7=6+1@-0.6
+  [β  -1.4 part|to5|one|up-short] {"type":"related-fact","whole":3,"part1":2,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-short","beta":-1.4},"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number bond for 3. Join the parts to say the addition fact"
+  [β  -1.2 part|to10|one+five|up-short] {"type":"related-fact","whole":6,"part1":5,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to10|one+five|up-short","beta":-1.2},"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number bond for 6. Join the parts to say the addition fact"
+  [β  -0.6 part|to10|one|up-short] {"type":"related-fact","whole":7,"part1":6,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to10|one|up-short","beta":-0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number bond for 7. Join the parts to say the addition fact"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=medium | run 1 | item space | max 10
+  [NumberBond] Item space bonds-10 related-fact band [-0.6, 0.6] within 10: 8=5+3@0.1 10=1+9@0 10=6+4@0.6
+  [β   0.1 part|to10|five|up-short] {"type":"related-fact","whole":8,"part1":5,"part2":3,"itemSpace":{"space":"bonds-10","structure":"part|to10|five|up-short","beta":0.1},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 8. Say the two facts that go with this number bond."
+  [β     0 part|to10|one+ten|up-long] {"type":"related-fact","whole":10,"part1":1,"part2":9,"itemSpace":{"space":"bonds-10","structure":"part|to10|one+ten|up-long","beta":0},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. Say the two facts that go with this number bond."
+  [β   0.6 part|to10|ten|up-short] {"type":"related-fact","whole":10,"part1":6,"part2":4,"itemSpace":{"space":"bonds-10","structure":"part|to10|ten|up-short","beta":0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. Say the two facts that go with this number bond."
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=medium | run 2 | item space | max 10
+  [NumberBond] Item space bonds-10 related-fact band [-0.6, 0.6] within 10: 6=2+4@0.4 8=3+5@0.4 9=8+1@-0.2
+  [β   0.4 part|to10|none|up-long] {"type":"related-fact","whole":6,"part1":2,"part2":4,"itemSpace":{"space":"bonds-10","structure":"part|to10|none|up-long","beta":0.4},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters for the whole number 6, then say the addition fact "
+  [β   0.4 part|to10|five|up-long] {"type":"related-fact","whole":8,"part1":3,"part2":5,"itemSpace":{"space":"bonds-10","structure":"part|to10|five|up-long","beta":0.4},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters for the whole number 8, then say the addition fact "
+  [β  -0.2 part|to10|one|up-short] {"type":"related-fact","whole":9,"part1":8,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to10|one|up-short","beta":-0.2},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters for the whole number 9, then say the addition fact "
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=medium | run 3 | item space | max 10
+  [NumberBond] Item space bonds-10 related-fact band [-0.6, 0.6] within 10: 5=3+2@-0.1 8=3+5@0.4 10=1+9@0
+  [β  -0.1 part|to5|none|up-short] {"type":"related-fact","whole":5,"part1":3,"part2":2,"itemSpace":{"space":"bonds-10","structure":"part|to5|none|up-short","beta":-0.1},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your groups for 5, then say the addition and subtraction facts!"
+  [β   0.4 part|to10|five|up-long] {"type":"related-fact","whole":8,"part1":3,"part2":5,"itemSpace":{"space":"bonds-10","structure":"part|to10|five|up-long","beta":0.4},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your groups for 8, then say the addition and subtraction facts!"
+  [β     0 part|to10|one+ten|up-long] {"type":"related-fact","whole":10,"part1":1,"part2":9,"itemSpace":{"space":"bonds-10","structure":"part|to10|one+ten|up-long","beta":0},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your groups for 10, then say the addition and subtraction facts!"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=hard | run 1 | item space | max 10
+  [NumberBond] Item space bonds-10 related-fact band [0.6, 3.5] within 10: 9=4+5@0.6 9=7+2@0.7 10=7+3@0.6
+  [β   0.6 part|to10|five|up-long] {"type":"related-fact","whole":9,"part1":4,"part2":5,"itemSpace":{"space":"bonds-10","structure":"part|to10|five|up-long","beta":0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters for 9 and say the matching addition and subtraction"
+  [β   0.7 part|to10|none|up-short] {"type":"related-fact","whole":9,"part1":7,"part2":2,"itemSpace":{"space":"bonds-10","structure":"part|to10|none|up-short","beta":0.7},"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the 9 counters and say the two related facts!"
+  [β   0.6 part|to10|ten|up-short] {"type":"related-fact","whole":10,"part1":7,"part2":3,"itemSpace":{"space":"bonds-10","structure":"part|to10|ten|up-short","beta":0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "Explore the whole number 10 and say its related facts!"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=hard | run 2 | item space | max 10
+  [NumberBond] Item space bonds-10 related-fact band [0.6, 3.5] within 10: 9=4+5@0.6 9=7+2@0.7 10=7+3@0.6
+  [β   0.6 part|to10|five|up-long] {"type":"related-fact","whole":9,"part1":4,"part2":5,"itemSpace":{"space":"bonds-10","structure":"part|to10|five|up-long","beta":0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 9. Say the two facts that go with this number bond."
+  [β   0.7 part|to10|none|up-short] {"type":"related-fact","whole":9,"part1":7,"part2":2,"itemSpace":{"space":"bonds-10","structure":"part|to10|none|up-short","beta":0.7},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 9. Say the two facts that go with this number bond."
+  [β   0.6 part|to10|ten|up-short] {"type":"related-fact","whole":10,"part1":7,"part2":3,"itemSpace":{"space":"bonds-10","structure":"part|to10|ten|up-short","beta":0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. Say the two facts that go with this number bond."
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=hard | run 3 | item space | max 10
+  [NumberBond] Item space bonds-10 related-fact band [0.6, 3.5] within 10: 7=3+4@0.6 9=7+2@0.7 10=3+7@0.9
+  [β   0.6 part|to10|none|up-long] {"type":"related-fact","whole":7,"part1":3,"part2":4,"itemSpace":{"space":"bonds-10","structure":"part|to10|none|up-long","beta":0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counter groups for the whole number 7, say the addition fact"
+  [β   0.7 part|to10|none|up-short] {"type":"related-fact","whole":9,"part1":7,"part2":2,"itemSpace":{"space":"bonds-10","structure":"part|to10|none|up-short","beta":0.7},"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the whole number 9. Join the parts together to say the additio"
+  [β   0.9 part|to10|ten|up-long] {"type":"related-fact","whole":10,"part1":3,"part2":7,"itemSpace":{"space":"bonds-10","structure":"part|to10|ten|up-long","beta":0.9},"allPairs":null,"factFamily":null,"targetEquation":null}  "Practice your fact family for the whole number 10 by joining the parts"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=(none) | run 1 | own path | max 8
+  [                      ] {"type":"related-fact","whole":6,"part1":2,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join 2 and 4 to make 6, then undo 2 from 6!"
+  [                      ] {"type":"related-fact","whole":7,"part1":3,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join 3 and 4 to make 7, then undo 3 from 7!"
+  [                      ] {"type":"related-fact","whole":8,"part1":3,"part2":5,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join 3 and 5 to make 8, then undo 3 from 8!"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=(none) | run 2 | own path | max 10
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts to make 4, then say the addition and subtraction facts!"
+  [                      ] {"type":"related-fact","whole":7,"part1":2,"part2":5,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts to make 7, then say the addition and subtraction facts!"
+  [                      ] {"type":"related-fact","whole":9,"part1":4,"part2":5,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts to make 9, then say the addition and subtraction facts!"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=(none) | run 3 | own path | max 6
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join and undo for the number 4! Say the addition fact and the matching"
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number 5. Join the parts to add, then take a part away to "
+  [                      ] {"type":"related-fact","whole":6,"part1":2,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Practice related facts for the number 6! Say both the addition and sub"

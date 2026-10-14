@@ -1,0 +1,35 @@
+
+Fluently add and subtract within 1000 using strategies based on place value | difficulty=easy | run 1 | item space
+  [β  -1.1 +|3d|r0      ] Leo collected 872 blue shells at the beach and found 26 more in the sand. How many shells did Leo find in total?  898* 899(n) 998(f) 798(f)
+  [β  -0.7 -|3d|r0      ] Mia baked 684 cookies for the school bake sale and sold 220 of them. How many cookies does Mia have left?  364(f) 464* 564(f) 463(n)
+  [β  -0.7 -|3d|r0      ] Noah had 997 toy blocks and used 815 of them to build a tall tower. How many toy blocks are left unused?  282(f) 183(n) 182* 82(f)
+  [β  -1.1 +|3d|r0      ] Emma read 111 pages of her storybook yesterday and read 75 more pages today. How many pages did Emma read altogether?  186* 187(n) 286(f) 86(f)
+  [β  -1.1 +|3d|r0      ] Lucas has 160 colorful stickers in his scrapbook and bought 29 more at the store. How many stickers does Lucas have now?  289(f) 89(f) 190(n) 189*
+
+Fluently add and subtract within 1000 using strategies based on place value | difficulty=medium | run 1 | item space
+  [β   0.4 -|3d|r1      ] Emma had 638 stickers and gave 287 of them to her brother. How many stickers does Emma have left?  451(n) 251(f) 351* 361(n)
+  [β  -0.4 +|3d|r1      ] Liam collected 597 baseball cards and bought 50 more at the store. How many baseball cards does Liam have in total?  647* 648(n) 547(n) 747(f)
+  [β   0.6 +|3d|r2|chain] Sofia read 566 pages of her book last month and 346 pages this month. How many pages did Sofia read altogether?  911(n) 912* 802(n) 812(f)
+  [β   0.6 +|3d|r2|chain] Noah scored 327 points in his first video game and 78 points in his second game. How many points did Noah score combined?  395(n) 505(f) 404(n) 405*
+  [β   0.4 -|3d|r1      ] Chloe baked 817 cookies for the bake sale and sold 26 of them. How many cookies does Chloe have remaining?  811(n) 791* 792(n) 891(f)
+
+Fluently add and subtract within 1000 using strategies based on place value | difficulty=hard | run 1 | item space
+  [β   2.3 -|3d|r2|zero|chain] Maya has 703 stickers and gives 135 of them to her friend. How many stickers does Maya have left?  568* 632(n) 578(n) 668(f)
+  [β   0.6 +|3d|r2|chain] Leo bakes 394 chocolate cookies and 227 peanut butter cookies for the bake sale. How many total cookies does Leo bake?  721(f) 620(n) 511(n) 621*
+  [β   1.4 -|3d|r2|chain] Sam collected 916 baseball cards and traded away 338 of them. How many baseball cards does Sam have now?  678(f) 577(n) 579(n) 578*
+  [β   1.3 +|3d|r3|chain] Emma reads 371 pages of her book on Saturday and 629 pages on Sunday. How many pages does Emma read in total?  900(f) 990(n) 1000* 999(n)
+  [β   1.4 -|3d|r2|chain] Noah counts 884 green marbles in a jar and removes 285 marbles. How many green marbles are left in the jar?  699(f) 598(n) 609(n) 599*
+
+Fluently add and subtract within 1000 using strategies based on place value | difficulty=(none) | run 1 | orchestrator
+  [multiple_choice easy] Look at the jumps on the number line below. What is the final sum for 340 + 230 shown by the star?  540(n) 570* 670(n) 370(f)
+  [fill_in_blanks easy]   
+  [multiple_choice medium] What is the sum of the addition problem shown above?  813(n) 823* 723(n) 713(f)
+  [true_false medium] When solving 632 - 145, you can subtract by place value by first taking away 100 from 600, then subtracting the tens, and then subtracting the ones.  
+  [multiple_choice medium] The table shows the number of books checked out from the school library in September and October. How many more books did Grade 3 check out in September and October combined than Grade 4 checked out in September?  267(n) 331* 609(n) 887(f)
+
+Read and write numbers to 1000 in expanded form | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] Which number in standard form equals the expanded form shown above?  400,705(n) 475* 4,705(n) 16(f)
+  [multiple_choice medium] Look at the number line. Which expanded form correctly represents the value of the marked point?  600 + 80 + 2(n) 600 + 20 + 8* 200 + 60 + 8(n) 60 + 20 + 8(f)
+  [true_false medium] The expanded form of 509 is 500 + 9 because the tens place has a zero.  
+  [fill_in_blanks hard]   
+  [multiple_choice hard] Which standard form number matches the expanded form shown below?  487(n) 847* 874(n) 4,807(f)

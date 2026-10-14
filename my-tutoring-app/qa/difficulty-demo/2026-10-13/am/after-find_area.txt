@@ -1,0 +1,68 @@
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=easy | run 1 | item space
+  [AreaModel] Item space mult-multi-digit: this scope cannot fill every tier's band (0/2766/555 drawable); tier third [-0.40, -0.10] gave 5
+  [AreaModel] Item space mult-multi-digit find_area band [-2.5, -0.6]: 51x11:2x2|c4|h0|r0|z0@-0.4 56x53:2x2|c4|h0|r0|z0@-0.4 84x59:2x2|c4|h1|r0|z0@-0.1 75x34:2x2|c4|h0|r1|z0@-0.1 34x18:2x2|c4|h0|r1|z0@-
+  [β  -0.4 2x2|c4|h0|r0|z0] 51 × 11      parts [50,1]×[10,1] = 561  ""
+  [β  -0.4 2x2|c4|h0|r0|z0] 56 × 53      parts [50,6]×[50,3] = 2968  ""
+  [β  -0.1 2x2|c4|h1|r0|z0] 84 × 59      parts [80,4]×[50,9] = 4956  ""
+  [β  -0.1 2x2|c4|h0|r1|z0] 75 × 34      parts [70,5]×[30,4] = 2550  ""
+  [β  -0.1 2x2|c4|h0|r1|z0] 34 × 18      parts [30,4]×[10,8] = 612  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=easy | run 2 | item space
+  [AreaModel] Item space mult-multi-digit: this scope cannot fill every tier's band (0/2766/555 drawable); tier third [-0.40, -0.10] gave 5
+  [AreaModel] Item space mult-multi-digit find_area band [-2.5, -0.6]: 32x12:2x2|c4|h0|r0|z0@-0.4 82x24:2x2|c4|h0|r0|z0@-0.4 47x36:2x2|c4|h1|r0|z0@-0.1 58x55:2x2|c4|h0|r1|z0@-0.1 57x28:2x2|c4|h1|r0|z0@-
+  [β  -0.4 2x2|c4|h0|r0|z0] 32 × 12      parts [30,2]×[10,2] = 384  ""
+  [β  -0.4 2x2|c4|h0|r0|z0] 82 × 24      parts [80,2]×[20,4] = 1968  ""
+  [β  -0.1 2x2|c4|h1|r0|z0] 47 × 36      parts [40,7]×[30,6] = 1692  ""
+  [β  -0.1 2x2|c4|h0|r1|z0] 58 × 55      parts [50,8]×[50,5] = 3190  ""
+  [β  -0.1 2x2|c4|h1|r0|z0] 57 × 28      parts [50,7]×[20,8] = 1596  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=medium | run 1 | item space
+  [AreaModel] Item space mult-multi-digit: this scope cannot fill every tier's band (0/2766/555 drawable); tier third [-0.10, 0.20] gave 5
+  [AreaModel] Item space mult-multi-digit find_area band [-0.6, 0.6]: 63x47:2x2|c4|h1|r0|z0@-0.1 71x24:2x2|c4|h0|r1|z0@-0.1 86x58:2x2|c4|h2|r0|z0@0.2 45x27:2x2|c4|h0|r2|z0@0.2 61x58:2x2|c4|h1|r1|z0@0.2
+  [β  -0.1 2x2|c4|h1|r0|z0] 63 × 47      parts [60,3]×[40,7] = 2961  ""
+  [β  -0.1 2x2|c4|h0|r1|z0] 71 × 24      parts [70,1]×[20,4] = 1704  ""
+  [β   0.2 2x2|c4|h2|r0|z0] 86 × 58      parts [80,6]×[50,8] = 4988  ""
+  [β   0.2 2x2|c4|h0|r2|z0] 45 × 27      parts [40,5]×[20,7] = 1215  ""
+  [β   0.2 2x2|c4|h1|r1|z0] 61 × 58      parts [60,1]×[50,8] = 3538  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=medium | run 2 | item space
+  [AreaModel] Item space mult-multi-digit: this scope cannot fill every tier's band (0/2766/555 drawable); tier third [-0.10, 0.20] gave 5
+  [AreaModel] Item space mult-multi-digit find_area band [-0.6, 0.6]: 65x61:2x2|c4|h1|r0|z0@-0.1 54x28:2x2|c4|h0|r1|z0@-0.1 95x32:2x2|c4|h0|r2|z0@0.2 71x69:2x2|c4|h2|r0|z0@0.2 82x28:2x2|c4|h1|r1|z0@0.2
+  [β  -0.1 2x2|c4|h1|r0|z0] 65 × 61      parts [60,5]×[60,1] = 3965  ""
+  [β  -0.1 2x2|c4|h0|r1|z0] 54 × 28      parts [50,4]×[20,8] = 1512  ""
+  [β   0.2 2x2|c4|h0|r2|z0] 95 × 32      parts [90,5]×[30,2] = 3040  ""
+  [β   0.2 2x2|c4|h2|r0|z0] 71 × 69      parts [70,1]×[60,9] = 4899  ""
+  [β   0.2 2x2|c4|h1|r1|z0] 82 × 28      parts [80,2]×[20,8] = 2296  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=hard | run 1 | item space
+  [AreaModel] Item space mult-multi-digit: this scope cannot fill every tier's band (0/2766/555 drawable); tier third [0.20, 1.40] gave 5
+  [AreaModel] Item space mult-multi-digit find_area band [0.6, 3.5]: 77x43:2x2|c4|h0|r2|z0@0.2 85x16:2x2|c4|h1|r2|z0@0.5 96x39:2x2|c4|h2|r2|z0@0.8 67x67:2x2|c4|h4|r1|z0@1.1 88x79:2x2|c4|h4|r2|z0@1.4
+  [β   0.2 2x2|c4|h0|r2|z0] 77 × 43      parts [70,7]×[40,3] = 3311  ""
+  [β   0.5 2x2|c4|h1|r2|z0] 85 × 16      parts [80,5]×[10,6] = 1360  ""
+  [β   0.8 2x2|c4|h2|r2|z0] 96 × 39      parts [90,6]×[30,9] = 3744  ""
+  [β   1.1 2x2|c4|h4|r1|z0] 67 × 67      parts [60,7]×[60,7] = 4489  ""
+  [β   1.4 2x2|c4|h4|r2|z0] 88 × 79      parts [80,8]×[70,9] = 6952  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=hard | run 2 | item space
+  [AreaModel] Item space mult-multi-digit: this scope cannot fill every tier's band (0/2766/555 drawable); tier third [0.20, 1.40] gave 5
+  [AreaModel] Item space mult-multi-digit find_area band [0.6, 3.5]: 75x66:2x2|c4|h2|r0|z0@0.2 98x31:2x2|c4|h0|r2|z0@0.2 78x38:2x2|c4|h2|r1|z0@0.5 92x46:2x2|c4|h1|r2|z0@0.5 87x36:2x2|c4|h2|r2|z0@0.8
+  [β   0.2 2x2|c4|h2|r0|z0] 75 × 66      parts [70,5]×[60,6] = 4950  ""
+  [β   0.2 2x2|c4|h0|r2|z0] 98 × 31      parts [90,8]×[30,1] = 3038  ""
+  [β   0.5 2x2|c4|h2|r1|z0] 78 × 38      parts [70,8]×[30,8] = 2964  ""
+  [β   0.5 2x2|c4|h1|r2|z0] 92 × 46      parts [90,2]×[40,6] = 4232  ""
+  [β   0.8 2x2|c4|h2|r2|z0] 87 × 36      parts [80,7]×[30,6] = 3132  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=(none) | run 1 | own path
+  [                      ] 33 × 48      parts [30,3]×[40,8] = 1584  ""
+  [                      ] 38 × 39      parts [30,8]×[30,9] = 1482  ""
+  [                      ] 42 × 18      parts [40,2]×[10,8] = 756  ""
+  [                      ] 32 × 26      parts [30,2]×[20,6] = 832  ""
+  [                      ] 43 × 48      parts [40,3]×[40,8] = 2064  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=(none) | run 2 | own path
+  [                      ] 36 × 17      parts [30,6]×[10,7] = 612  ""
+  [                      ] 26 × 49      parts [20,6]×[40,9] = 1274  ""
+  [                      ] 15 × 45      parts [10,5]×[40,5] = 675  ""
+  [                      ] 49 × 24      parts [40,9]×[20,4] = 1176  ""
+  [                      ] 43 × 25      parts [40,3]×[20,5] = 1075  ""

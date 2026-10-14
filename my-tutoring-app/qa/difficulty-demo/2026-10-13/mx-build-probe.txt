@@ -1,0 +1,38 @@
+
+Multiply within 100 using multiplication facts | build | difficulty=easy | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: product|a0|t1|h0@-1.29 product|a1|t1|h0@-1.9 product|a1|t0|h1@-0.77 product|a1|t0|h0@-1.56 product|a0|t0|h0@-0.86
+  [β -1.29 product|a0|t1|h0 ] 3 × 3 = 9    hide product ans   9 NAMES ANSWER "Build 3 groups with 3 stickers in each group. How many stickers are there in total?"
+  [β  -1.9 product|a1|t1|h0 ] 5 × 5 = 25   hide product ans  25 NAMES ANSWER "Build 5 rows with 5 blocks in each row. How many blocks are there in total?"
+  [β -0.77 product|a1|t0|h1 ] 8 × 5 = 40   hide product ans  40 NAMES ANSWER "Build 8 rows with 5 seats in each row. How many seats are there in total?"
+  [β -1.56 product|a1|t0|h0 ] 10 × 2 = 20  hide product ans  20 NAMES ANSWER "Build 10 groups with 2 wheels in each group. How many wheels are there in total?"
+  [β -0.86 product|a0|t0|h0 ] 4 × 3 = 12   hide product ans  12 NAMES ANSWER "Build 4 rows with 3 items in each row. How many items are there in total?"
+
+Multiply within 100 using multiplication facts | build | difficulty=medium | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: product|a0|t1|h2@0.29 product|a0|t0|h1@-0.2 product|a1|t0|h1@-0.53 product|a1|t0|h1@-0.41 product|a0|t1|h2@0.47
+  [β  0.29 product|a0|t1|h2 ] 7 × 7 = 49   hide product ans  49 "Build 7 groups with 7 items in each group, then determine how many items there are in total."
+  [β  -0.2 product|a0|t0|h1 ] 3 × 7 = 21   hide product ans  21 "Build 3 groups with 7 items in each group, then determine how many items there are in total."
+  [β -0.53 product|a1|t0|h1 ] 6 × 10 = 60  hide product ans  60 "Build 6 groups with 10 items in each group, then determine how many items there are in total."
+  [β -0.41 product|a1|t0|h1 ] 10 × 7 = 70  hide product ans  70 "Build 10 groups with 7 items in each group, then determine how many items there are in total."
+  [β  0.47 product|a0|t1|h2 ] 8 × 8 = 64   hide product ans  64 "Build 8 groups with 8 items in each group, then determine how many items there are in total."
+
+Multiply within 100 using multiplication facts | build | difficulty=hard | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t1|h2@0.67 product|a0|t0|h2@0.6 product|a0|t0|h2@0.96 product|a0|t0|h2@0.68 product|a0|t0|h2@0.77
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 "Build 9 groups of 9 stickers each. How many stickers are there in total?"
+  [β   0.6 product|a0|t0|h2 ] 6 × 7 = 42   hide product ans  42 "Build 6 rows of 7 stickers each. How many stickers are there in total?"
+  [β  0.96 product|a0|t0|h2 ] 9 × 8 = 72   hide product ans  72 "Build 9 groups of 8 stickers each. How many stickers are there in total?"
+  [β  0.68 product|a0|t0|h2 ] 8 × 6 = 48   hide product ans  48 "Build 8 rows of 6 stickers each. How many stickers are there in total?"
+  [β  0.77 product|a0|t0|h2 ] 7 × 8 = 56   hide product ans  56 "Build 7 groups of 8 stickers each. How many stickers are there in total?"
+
+Multiply within 100 using multiplication facts | build | difficulty=(none) | run 1 | own path
+  [                         ] 9 × 4 = 36   hide product ans  36 NAMES ANSWER "Build 9 groups of 4 stickers and find how many in total."
+  [                         ] 7 × 3 = 21   hide product ans  21 NAMES ANSWER "Build 7 groups of 3 stickers and find how many in total."
+  [                         ] 3 × 2 = 6    hide product ans   6 NAMES ANSWER "Build 3 groups of 2 stickers and find how many in total."
+  [                         ] 8 × 7 = 56   hide product ans  56 "Build 8 groups of 7 stickers and find how many in total."
+  [                         ] 10 × 6 = 60  hide product ans  60 "Build 10 groups of 6 stickers and find how many in total."
+
+Multiply a two-digit number by a one-digit number | build | difficulty=hard | run 1 | own path
+  [                         ] 7 × 8 = 56   hide product ans  56 "Look at the 7 groups with 8 items in each group. Count carefully to find the total number of items."
+  [                         ] 9 × 4 = 36   hide product ans  36 "Look at the 9 groups with 4 items in each group. Count carefully to find the total number of items."
+  [                         ] 8 × 4 = 32   hide product ans  32 "Look at the 8 groups with 4 items in each group. Count carefully to find the total number of items."
+  [                         ] 3 × 7 = 21   hide product ans  21 "Look at the 3 groups with 7 items in each group. Count carefully to find the total number of items."
+  [                         ] 2 × 8 = 16   hide product ans  16 "Look at the 2 groups with 8 items in each group. Count carefully to find the total number of items."

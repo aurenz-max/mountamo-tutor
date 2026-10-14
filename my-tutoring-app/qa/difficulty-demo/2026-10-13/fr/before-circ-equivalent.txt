@@ -1,0 +1,56 @@
+
+Fractions | equivalent | difficulty=easy | run 1 | own path
+  [                      ] {"type":"equivalent","denominator":2,"numerator":1,"equivalentDenominator":4,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 1/2 using 4 equal slices."
+  [                      ] {"type":"equivalent","denominator":3,"numerator":1,"equivalentDenominator":6,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 1/3 using 6 equal slices."
+  [                      ] {"type":"equivalent","denominator":4,"numerator":2,"equivalentDenominator":8,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 2/4 using 8 equal slices."
+  [                      ] {"type":"equivalent","denominator":5,"numerator":2,"equivalentDenominator":10,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 2/5 using 10 equal slices."
+  [                      ] {"type":"equivalent","denominator":6,"numerator":1,"equivalentDenominator":12,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 1/6 using 12 equal slices."
+
+Fractions | equivalent | difficulty=easy | run 2 | own path
+  [                      ] {"type":"equivalent","denominator":2,"numerator":1,"equivalentDenominator":4,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 1/2 using 4 equal slices."
+  [                      ] {"type":"equivalent","denominator":4,"numerator":1,"equivalentDenominator":8,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 1/4 using 8 equal slices."
+  [                      ] {"type":"equivalent","denominator":3,"numerator":2,"equivalentDenominator":6,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 2/3 using 6 equal slices."
+  [                      ] {"type":"equivalent","denominator":3,"numerator":2,"equivalentDenominator":12,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 2/3 using 12 equal slices."
+  [                      ] {"type":"equivalent","denominator":5,"numerator":3,"equivalentDenominator":10,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 3/5 using 10 equal slices."
+
+Fractions | equivalent | difficulty=medium | run 1 | own path
+  [                      ] {"type":"equivalent","denominator":2,"numerator":1,"equivalentDenominator":4,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 1/2 using 4 equal slices."
+  [                      ] {"type":"equivalent","denominator":3,"numerator":2,"equivalentDenominator":6,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 2/3 using 6 equal slices."
+  [                      ] {"type":"equivalent","denominator":4,"numerator":1,"equivalentDenominator":12,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 1/4 using 12 equal slices."
+  [                      ] {"type":"equivalent","denominator":5,"numerator":2,"equivalentDenominator":10,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 2/5 using 10 equal slices."
+  [                      ] {"type":"equivalent","denominator":6,"numerator":5,"equivalentDenominator":12,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 5/6 using 12 equal slices."
+
+Fractions | equivalent | difficulty=medium | run 2 | own path
+  [                      ] {"type":"equivalent","denominator":2,"numerator":1,"equivalentDenominator":4,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 1/2 using 4 equal slices."
+  [                      ] {"type":"equivalent","denominator":3,"numerator":1,"equivalentDenominator":6,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 1/3 using 6 equal slices."
+  [                      ] {"type":"equivalent","denominator":4,"numerator":2,"equivalentDenominator":8,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 2/4 using 8 equal slices."
+  [                      ] {"type":"equivalent","denominator":6,"numerator":3,"equivalentDenominator":12,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 3/6 using 12 equal slices."
+  [                      ] {"type":"equivalent","denominator":5,"numerator":2,"equivalentDenominator":10,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":true}  "Build a fraction equivalent to 2/5 using 10 equal slices."
+
+Fractions | equivalent | difficulty=hard | run 1 | own path
+  [                      ] {"type":"equivalent","denominator":2,"numerator":1,"equivalentDenominator":4,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "Build a fraction equivalent to 1/2 using 4 equal slices."
+  [                      ] {"type":"equivalent","denominator":3,"numerator":1,"equivalentDenominator":6,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "Build a fraction equivalent to 1/3 using 6 equal slices."
+  [                      ] {"type":"equivalent","denominator":4,"numerator":1,"equivalentDenominator":8,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "Build a fraction equivalent to 1/4 using 8 equal slices."
+  [                      ] {"type":"equivalent","denominator":5,"numerator":4,"equivalentDenominator":10,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "Build a fraction equivalent to 4/5 using 10 equal slices."
+  [                      ] {"type":"equivalent","denominator":6,"numerator":2,"equivalentDenominator":3,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "Build a fraction equivalent to 2/6 using 3 equal slices."
+
+Fractions | equivalent | difficulty=hard | run 2 | own path
+  [                      ] {"type":"equivalent","denominator":2,"numerator":1,"equivalentDenominator":4,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "Build a fraction equivalent to 1/2 using 4 equal slices."
+  [                      ] {"type":"equivalent","denominator":3,"numerator":2,"equivalentDenominator":6,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "Build a fraction equivalent to 2/3 using 6 equal slices."
+  [                      ] {"type":"equivalent","denominator":4,"numerator":1,"equivalentDenominator":8,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "Build a fraction equivalent to 1/4 using 8 equal slices."
+  [                      ] {"type":"equivalent","denominator":5,"numerator":4,"equivalentDenominator":10,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "Build a fraction equivalent to 4/5 using 10 equal slices."
+  [                      ] {"type":"equivalent","denominator":6,"numerator":5,"equivalentDenominator":12,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "Build a fraction equivalent to 5/6 using 12 equal slices."
+
+Fractions | equivalent | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"equivalent","denominator":3,"numerator":1,"equivalentDenominator":6}  "Build a fraction equivalent to 1/3 using 6 equal slices."
+  [                      ] {"type":"equivalent","denominator":2,"numerator":1,"equivalentDenominator":4}  "Build a fraction equivalent to 1/2 using 4 equal slices."
+  [                      ] {"type":"equivalent","denominator":4,"numerator":1,"equivalentDenominator":12}  "Build a fraction equivalent to 1/4 using 12 equal slices."
+  [                      ] {"type":"equivalent","denominator":2,"numerator":1,"equivalentDenominator":6}  "Build a fraction equivalent to 1/2 using 6 equal slices."
+  [                      ] {"type":"equivalent","denominator":5,"numerator":1,"equivalentDenominator":10}  "Build a fraction equivalent to 1/5 using 10 equal slices."
+
+Fractions | equivalent | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"equivalent","denominator":2,"numerator":1,"equivalentDenominator":4}  "Build a fraction equivalent to 1/2 using 4 equal slices."
+  [                      ] {"type":"equivalent","denominator":3,"numerator":1,"equivalentDenominator":6}  "Build a fraction equivalent to 1/3 using 6 equal slices."
+  [                      ] {"type":"equivalent","denominator":4,"numerator":1,"equivalentDenominator":8}  "Build a fraction equivalent to 1/4 using 8 equal slices."
+  [                      ] {"type":"equivalent","denominator":3,"numerator":2,"equivalentDenominator":6}  "Build a fraction equivalent to 2/3 using 6 equal slices."
+  [                      ] {"type":"equivalent","denominator":2,"numerator":1,"equivalentDenominator":6}  "Build a fraction equivalent to 1/2 using 6 equal slices."

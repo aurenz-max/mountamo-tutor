@@ -15,6 +15,8 @@
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
+import { difficultyBand, resolveItemSpace } from '../itemSpace';
+import { buildItemSpaceMcProblems } from './itemSpaceProblems';
 import {
   ProblemType,
   ProblemData,
@@ -1714,6 +1716,26 @@ export const generateKnowledgeCheck = async (
   const context = config?.context || config?.objectiveText;
   const bloomsTier = normalizeBloomsTier(config?.bloomsTier);
   const gradeLevel = VALID_GRADE_KEYS.has(gradeContext) ? gradeContext : 'elementary';
+
+  // Item space: when difficulty is asked for and the objective is a strand code owns, code picks
+  // every problem at that difficulty and the LLM only words it. A check spanning several
+  // objectives, a pre-reader, or an objective no strand fits keeps the paths below.
+  const band = difficultyBand(config?.difficulty);
+  const objectiveList = config?.objectives ?? [];
+  // analyze / evaluate pins ask for an explanation or a judgment (contract R4), a different task from
+  // computing the problem, so they keep the generated path.
+  const computeTask = !bloomsTier || bloomsTier === 'recall' || bloomsTier === 'apply';
+  if (band && computeTask && objectiveList.length <= 1 && !isPreReaderGradeKey(gradeLevel)) {
+    const space = await resolveItemSpace(objectiveList[0]?.text || config?.objectiveText || topic, config?.preciseGrade);
+    if (space) {
+      const problems = await buildItemSpaceMcProblems({ space, count, band, gradeLevel });
+      if (problems.length) {
+        const only = objectiveList[0];
+        console.log(`[Knowledge Check] Item space ${space}: ${problems.length} problems in beta [${band.join(', ')}]`);
+        return problems.map((p) => (only ? { ...p, objectiveId: only.id, subskillId: only.subskillId, skillId: only.skillId } : p));
+      }
+    }
+  }
 
   // Orchestrated path: no explicit problemType, or caller opted in
   const useOrchestrator = config?.useOrchestrator || !config?.problemType;

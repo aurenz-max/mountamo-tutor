@@ -1,0 +1,55 @@
+
+Tell and write time to the nearest five minutes | set_time | difficulty=easy | run 1 | own path
+  [                      ] {"type":"set_time","targetHour":4,"targetMinute":0,"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to show 4 o'clock."
+  [                      ] {"type":"set_time","targetHour":2,"targetMinute":25,"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to show 2 past 5, which is twenty-five minutes past 2."
+  [                      ] {"type":"set_time","targetHour":10,"targetMinute":40,"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to show 10:40."
+  [                      ] {"type":"set_time","targetHour":7,"targetMinute":15,"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to show 7:15."
+  [                      ] {"type":"set_time","targetHour":12,"targetMinute":55,"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to show 12:55."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=easy | run 2 | own path
+  [                      ] {"type":"set_time","targetHour":4,"targetMinute":0,"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock hands to show 4 o'clock."
+  [                      ] {"type":"set_time","targetHour":8,"targetMinute":15,"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock hands to show 8:15."
+  [                      ] {"type":"set_time","targetHour":2,"targetMinute":30,"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock hands to show 2:30."
+  [                      ] {"type":"set_time","targetHour":10,"targetMinute":45,"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock hands to show 10:45."
+  [                      ] {"type":"set_time","targetHour":6,"targetMinute":0,"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock hands to show 6:00."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=medium | run 1 | own path
+  [                      ] {"type":"set_time","targetHour":4,"targetMinute":0,"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to show 4 o'clock."
+  [                      ] {"type":"set_time","targetHour":2,"targetMinute":10,"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to show 2 past 10... wait, set the clock to show 2:10."
+  [                      ] {"type":"set_time","targetHour":7,"targetMinute":25,"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the hands to show 7:25."
+  [                      ] {"type":"set_time","targetHour":10,"targetMinute":40,"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Show 10:40 on the clock."
+  [                      ] {"type":"set_time","targetHour":5,"targetMinute":55,"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 5:55."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=medium | run 2 | own path
+  [                      ] {"type":"set_time","targetHour":4,"targetMinute":0,"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to show four o'clock."
+  [                      ] {"type":"set_time","targetHour":7,"targetMinute":20,"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to show twenty minutes past seven."
+  [                      ] {"type":"set_time","targetHour":9,"targetMinute":50,"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to show ten minutes before ten."
+  [                      ] {"type":"set_time","targetHour":2,"targetMinute":25,"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to show twenty-five minutes past two."
+  [                      ] {"type":"set_time","targetHour":11,"targetMinute":5,"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to show five minutes past eleven."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=hard | run 1 | own path
+  [                      ] {"type":"set_time","targetHour":3,"targetMinute":0,"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to show 3 o'clock."
+  [                      ] {"type":"set_time","targetHour":4,"targetMinute":5,"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to show 5 past 4."
+  [                      ] {"type":"set_time","targetHour":7,"targetMinute":20,"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to show 7:20."
+  [                      ] {"type":"set_time","targetHour":10,"targetMinute":35,"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to show 10:35."
+  [                      ] {"type":"set_time","targetHour":12,"targetMinute":50,"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to show 12:50."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=hard | run 2 | own path
+  [                      ] {"type":"set_time","targetHour":4,"targetMinute":5,"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock hands to show 4:05."
+  [                      ] {"type":"set_time","targetHour":7,"targetMinute":20,"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock hands to show 7:20."
+  [                      ] {"type":"set_time","targetHour":10,"targetMinute":35,"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock hands to show 10:35."
+  [                      ] {"type":"set_time","targetHour":2,"targetMinute":50,"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock hands to show 2:50."
+  [                      ] {"type":"set_time","targetHour":11,"targetMinute":15,"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock hands to show 11:15."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"set_time","targetHour":4,"targetMinute":0}  "Set the clock to show 4 o'clock."
+  [                      ] {"type":"set_time","targetHour":7,"targetMinute":15}  "Set the clock to show 7:15."
+  [                      ] {"type":"set_time","targetHour":2,"targetMinute":30}  "Set the clock to show 2:30."
+  [                      ] {"type":"set_time","targetHour":9,"targetMinute":45}  "Set the clock to show 9:45."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"set_time","targetHour":4,"targetMinute":0}  "Set the clock to show 4 o'clock."
+  [                      ] {"type":"set_time","targetHour":2,"targetMinute":15}  "Set the clock to show 2 hours and 15 minutes."
+  [                      ] {"type":"set_time","targetHour":7,"targetMinute":30}  "Set the clock to show half-past 7."
+  [                      ] {"type":"set_time","targetHour":9,"targetMinute":50}  "Set the clock to show 10 minutes to 10."
+  [                      ] {"type":"set_time","targetHour":11,"targetMinute":25}  "Set the clock to show 25 minutes past 11."

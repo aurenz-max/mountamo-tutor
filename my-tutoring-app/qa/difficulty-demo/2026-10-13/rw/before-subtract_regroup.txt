@@ -1,0 +1,61 @@
+
+Add and subtract within 100 | subtract_regroup | difficulty=easy | run 1 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"43 - 18","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"61 - 25","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=easy | run 2 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"43 - 18","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"61 - 25","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=easy | run 3 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"43 - 18","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"61 - 25","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=medium | run 1 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"43 - 16","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"61 - 24","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=medium | run 2 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"43 - 18","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"61 - 25","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=medium | run 3 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"43 - 18","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"61 - 25","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=hard | run 1 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"41 - 15","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"63 - 28","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=hard | run 2 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"63 - 28","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"41 - 15","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=hard | run 3 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"61 - 24","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"43 - 28","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"43 - 26","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"61 - 38","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"84 - 49","requiresRegrouping":true,"regroupCount":1}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"41 - 25","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"63 - 28","requiresRegrouping":true,"regroupCount":1}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"63 - 28","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"41 - 15","requiresRegrouping":true,"regroupCount":1}  ""

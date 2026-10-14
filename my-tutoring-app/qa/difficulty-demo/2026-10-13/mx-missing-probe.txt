@@ -1,0 +1,78 @@
+
+Multiply within 100 using multiplication facts | missing_factor | difficulty=easy | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: factor2|a1|t0|h1@-0.61 factor1|a1|t0|h0@-1.12 factor2|a1|t0|h0@-0.82 factor2|a1|t0|h0@-1.18 factor1|a1|t0|h0@-1.2
+  [β -0.61 factor2|a1|t0|h1 ] 2 × 6 = 12   hide factor2 ans   6 "2 × ? = 12. Find the missing number of items per pack."
+  [β -1.12 factor1|a1|t0|h0 ] 5 × 3 = 15   hide factor1 ans   5 "? × 3 = 15. Find the missing number of groups."
+  [β -0.82 factor2|a1|t0|h0 ] 10 × 4 = 40  hide factor2 ans   4 "10 × ? = 40. Find the missing number of items per pack."
+  [β -1.18 factor2|a1|t0|h0 ] 5 × 2 = 10   hide factor2 ans   2 "5 × ? = 10. Find the missing number of items per pack."
+  [β  -1.2 factor1|a1|t0|h0 ] 2 × 4 = 8    hide factor1 ans   2 "? × 4 = 8. Find the missing number of groups."
+
+Multiply within 100 using multiplication facts | missing_factor | difficulty=easy | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: factor1|a1|t0|h1@-0.61 factor2|a1|t0|h0@-1.18 factor1|a1|t0|h0@-1.2 factor2|a1|t0|h0@-1.12 factor2|a1|t0|h0@-1.06
+  [β -0.61 factor1|a1|t0|h1 ] 2 × 6 = 12   hide factor1 ans   2 "Find the missing number: ? × 6 = 12"
+  [β -1.18 factor2|a1|t0|h0 ] 2 × 5 = 10   hide factor2 ans   5 "Find the missing number: 2 × ? = 10"
+  [β  -1.2 factor1|a1|t0|h0 ] 2 × 4 = 8    hide factor1 ans   2 "Find the missing number: ? × 4 = 8"
+  [β -1.12 factor2|a1|t0|h0 ] 5 × 3 = 15   hide factor2 ans   3 "Find the missing number: 5 × ? = 15"
+  [β -1.06 factor2|a1|t0|h0 ] 4 × 5 = 20   hide factor2 ans   5 "Find the missing number: 4 × ? = 20"
+
+Multiply within 100 using multiplication facts | missing_factor | difficulty=medium | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: factor2|a0|t0|h1@0.34 factor2|a0|t0|h0@-0.36 factor1|a1|t0|h1@-0.27 factor1|a0|t0|h1@0.34 factor2|a0|t0|h1@0.48
+  [β  0.34 factor2|a0|t0|h1 ] 3 × 8 = 24   hide factor2 ans   8 "Find the missing number of items in each group: 3 × ? = 24"
+  [β -0.36 factor2|a0|t0|h0 ] 3 × 4 = 12   hide factor2 ans   4 "Find the missing number of items in each group: 3 × ? = 12"
+  [β -0.27 factor1|a1|t0|h1 ] 5 × 8 = 40   hide factor1 ans   5 "Find the missing number of groups: ? × 8 = 40"
+  [β  0.34 factor1|a0|t0|h1 ] 4 × 6 = 24   hide factor1 ans   4 "Find the missing number of groups: ? × 6 = 24"
+  [β  0.48 factor2|a0|t0|h1 ] 9 × 4 = 36   hide factor2 ans   4 "Find the missing number of items in each group: 9 × ? = 36"
+
+Multiply within 100 using multiplication facts | missing_factor | difficulty=medium | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: factor2|a0|t0|h0@-0.36 factor1|a0|t0|h1@0.48 factor2|a0|t0|h1@0.27 factor1|a1|t0|h1@-0.27 factor2|a1|t0|h1@-0.56
+  [β -0.36 factor2|a0|t0|h0 ] 4 × 3 = 12   hide factor2 ans   3 NAMES ANSWER "Find the missing number: ? × 3 = 12"
+  [β  0.48 factor1|a0|t0|h1 ] 4 × 9 = 36   hide factor1 ans   4 "Find the missing number: ? × 9 = 36"
+  [β  0.27 factor2|a0|t0|h1 ] 3 × 6 = 18   hide factor2 ans   6 "Find the missing number: 3 × ? = 18"
+  [β -0.27 factor1|a1|t0|h1 ] 8 × 5 = 40   hide factor1 ans   8 "Find the missing number: ? × 5 = 40"
+  [β -0.56 factor2|a1|t0|h1 ] 2 × 8 = 16   hide factor2 ans   8 "Find the missing number: 2 × ? = 16"
+
+Multiply within 100 using multiplication facts | missing_factor | difficulty=hard | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: factor2|a0|t0|h2@1.18 factor1|a0|t0|h2@1.46 factor2|a0|t0|h2@1.25 factor2|a0|t0|h2@1.1 factor2|a0|t0|h2@1.27
+  [β  1.18 factor2|a0|t0|h2 ] 8 × 6 = 48   hide factor2 ans   6 "Find the missing factor: 8 x ? = 48"
+  [β  1.46 factor1|a0|t0|h2 ] 8 × 9 = 72   hide factor1 ans   8 "Find the missing factor: ? x 9 = 72"
+  [β  1.25 factor2|a0|t0|h2 ] 9 × 6 = 54   hide factor2 ans   6 "Find the missing factor: 9 x ? = 54"
+  [β   1.1 factor2|a0|t0|h2 ] 6 × 7 = 42   hide factor2 ans   7 "Find the missing factor: 6 x ? = 42"
+  [β  1.27 factor2|a0|t0|h2 ] 8 × 7 = 56   hide factor2 ans   7 "Find the missing factor: 8 x ? = 56"
+
+Multiply within 100 using multiplication facts | missing_factor | difficulty=hard | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: factor2|a0|t0|h2@1.46 factor1|a0|t0|h2@1.25 factor2|a0|t0|h2@1.18 factor2|a0|t0|h2@1.36 factor2|a0|t0|h2@1.1
+  [β  1.46 factor2|a0|t0|h2 ] 9 × 8 = 72   hide factor2 ans   8 "9 × ? = 72. What is the missing factor?"
+  [β  1.25 factor1|a0|t0|h2 ] 9 × 6 = 54   hide factor1 ans   9 "? × 6 = 54. What is the missing factor?"
+  [β  1.18 factor2|a0|t0|h2 ] 6 × 8 = 48   hide factor2 ans   8 "6 × ? = 48. What is the missing factor?"
+  [β  1.36 factor2|a0|t0|h2 ] 9 × 7 = 63   hide factor2 ans   7 "9 × ? = 63. What is the missing factor?"
+  [β   1.1 factor2|a0|t0|h2 ] 7 × 6 = 42   hide factor2 ans   6 "7 × ? = 42. What is the missing factor?"
+
+Multiply within 100 using multiplication facts | missing_factor | difficulty=(none) | run 1 | own path
+  [                         ] 7 × 5 = 35   hide factor1 ans   7 "Find the missing factor: ? × 5 = 35"
+  [                         ] 4 × 5 = 20   hide factor1 ans   4 "Find the missing factor: ? × 5 = 20"
+  [                         ] 9 × 2 = 18   hide factor1 ans   9 "Find the missing factor: ? × 2 = 18"
+  [                         ] 8 × 2 = 16   hide factor1 ans   8 "Find the missing factor: ? × 2 = 16"
+  [                         ] 4 × 9 = 36   hide factor1 ans   4 "Find the missing factor: ? × 9 = 36"
+
+Multiply within 100 using multiplication facts | missing_factor | difficulty=(none) | run 2 | own path
+  [                         ] 5 × 10 = 50  hide factor1 ans   5 "Find the missing factor: ? times 10 equals 50"
+  [                         ] 2 × 8 = 16   hide factor2 ans   8 "Find the missing factor: 2 times ? equals 16"
+  [                         ] 6 × 4 = 24   hide factor1 ans   6 "Find the missing factor: ? times 4 equals 24"
+  [                         ] 7 × 8 = 56   hide factor2 ans   8 "Find the missing factor: 7 times ? equals 56"
+  [                         ] 10 × 7 = 70  hide factor1 ans  10 "Find the missing factor: ? times 7 equals 70"
+
+Multiply a two-digit number by a one-digit number | missing_factor | difficulty=hard | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: factor2|a0|t0|h2@1.46 factor1|a0|t0|h2@1.25 factor1|a0|t0|h2@1.36 factor2|a0|t0|h2@1.27 factor2|a0|t0|h2@1.1
+  [β  1.46 factor2|a0|t0|h2 ] 8 × 9 = 72   hide factor2 ans   9 "Find the missing factor: 8 × ? = 72"
+  [β  1.25 factor1|a0|t0|h2 ] 6 × 9 = 54   hide factor1 ans   6 "Find the missing factor: ? × 9 = 54"
+  [β  1.36 factor1|a0|t0|h2 ] 7 × 9 = 63   hide factor1 ans   7 "Find the missing factor: ? × 9 = 63"
+  [β  1.27 factor2|a0|t0|h2 ] 8 × 7 = 56   hide factor2 ans   7 "Find the missing factor: 8 × ? = 56"
+  [β   1.1 factor2|a0|t0|h2 ] 6 × 7 = 42   hide factor2 ans   7 "Find the missing factor: 6 × ? = 42"
+
+Multiply a two-digit number by a one-digit number | missing_factor | difficulty=hard | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: factor1|a0|t0|h2@1.1 factor2|a0|t0|h2@1.46 factor1|a0|t0|h2@1.27 factor2|a0|t0|h2@1.25 factor2|a0|t0|h2@1.36
+  [β   1.1 factor1|a0|t0|h2 ] 6 × 7 = 42   hide factor1 ans   6 "Find the missing factor: ? × 7 = 42"
+  [β  1.46 factor2|a0|t0|h2 ] 8 × 9 = 72   hide factor2 ans   9 "Find the missing factor: 8 × ? = 72"
+  [β  1.27 factor1|a0|t0|h2 ] 7 × 8 = 56   hide factor1 ans   7 "Find the missing factor: ? × 8 = 56"
+  [β  1.25 factor2|a0|t0|h2 ] 6 × 9 = 54   hide factor2 ans   9 "Find the missing factor: 6 × ? = 54"
+  [β  1.36 factor2|a0|t0|h2 ] 9 × 7 = 63   hide factor2 ans   7 "Find the missing factor: 9 × ? = 63"

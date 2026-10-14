@@ -1,0 +1,84 @@
+
+Addition and subtraction equations within 20 | build-simple | difficulty=easy | run 1 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"5 + 3 = 8","availableTiles":["3","+","=","5","8"]}  "Use addition to make a true equation that equals the total of 8."
+  [                      ] {"type":"build","targetEquation":"9 - 5 = 4","availableTiles":["4","5","-","=","9"]}  "Use subtraction to make a true equation that results in 4."
+  [                      ] {"type":"build","targetEquation":"7 + 5 = 12","availableTiles":["7","12","5","=","+"]}  "Use addition to make a true equation that equals the total of 12."
+  [                      ] {"type":"build","targetEquation":"15 - 8 = 7","availableTiles":["-","15","=","8","7"]}  "Use subtraction to make a true equation that results in 7."
+  [                      ] {"type":"build","targetEquation":"12 + 8 = 20","availableTiles":["=","8","20","12","+"]}  "Use addition to make a true equation that equals the total of 20."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=easy | run 2 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"5 + 3 = 8","availableTiles":["3","8","=","5","+"]}  "Use addition to make a true equation that equals the total of 8."
+  [                      ] {"type":"build","targetEquation":"9 - 5 = 4","availableTiles":["9","5","=","4","-"]}  "Use subtraction to make a true equation that results in 4."
+  [                      ] {"type":"build","targetEquation":"7 + 5 = 12","availableTiles":["7","5","12","+","="]}  "Use addition to make a true equation that equals the total of 12."
+  [                      ] {"type":"build","targetEquation":"14 - 8 = 6","availableTiles":["-","6","14","8","="]}  "Use subtraction to make a true equation that results in 6."
+  [                      ] {"type":"build","targetEquation":"8 + 7 = 15","availableTiles":["8","15","+","=","7"]}  "Use addition to make a true equation that equals the total of 15."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=easy | run 3 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"8 + 4 = 12","availableTiles":["=","12","8","4","+"]}  "Use addition to make a true equation that equals the total."
+  [                      ] {"type":"build","targetEquation":"15 - 6 = 9","availableTiles":["15","6","-","9","="]}  "Use subtraction to make a true equation that results in the correct di"
+  [                      ] {"type":"build","targetEquation":"7 + 9 = 16","availableTiles":["16","+","7","9","="]}  "Build an addition equation using these tiles to reach the target sum."
+  [                      ] {"type":"build","targetEquation":"18 - 5 = 13","availableTiles":["-","=","13","5","18"]}  "Create a subtraction equation with these tiles to find the remaining a"
+  [                      ] {"type":"build","targetEquation":"11 + 8 = 19","availableTiles":["8","+","11","19","="]}  "Construct a final addition equation that matches the total sum."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=medium | run 1 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"7 + 5 = 12","availableTiles":["=","1","12","+","7","5","0"]}  "Use the tiles to build a true addition equation that equals 12."
+  [                      ] {"type":"build","targetEquation":"14 - 8 = 6","availableTiles":["0","-","1","8","6","14","="]}  "Use the tiles to build a true subtraction equation that equals 6."
+  [                      ] {"type":"build","targetEquation":"9 + 6 = 15","availableTiles":["0","=","6","15","1","9","+"]}  "Can you find the correct addition equation that totals 15?"
+  [                      ] {"type":"build","targetEquation":"17 - 8 = 9","availableTiles":["1","=","17","9","-","0","8"]}  "Use the tiles to build a true subtraction equation that leaves 9."
+  [                      ] {"type":"build","targetEquation":"11 + 9 = 20","availableTiles":["11","1","=","0","9","+","20"]}  "Put the tiles together to make a final equation that equals 20."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=medium | run 2 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"5 + 3 = 8","availableTiles":["0","3","=","1","+","8","5"]}  "Use the tiles to build a true addition equation that equals 8."
+  [                      ] {"type":"build","targetEquation":"9 - 5 = 4","availableTiles":["9","1","=","5","4","0","-"]}  "Can you use the tiles to make a true subtraction equation that equals "
+  [                      ] {"type":"build","targetEquation":"7 + 5 = 12","availableTiles":["7","12","1","=","0","+","5"]}  "Arrange the tiles to create an addition equation showing a sum of 12."
+  [                      ] {"type":"build","targetEquation":"15 - 8 = 7","availableTiles":["7","1","8","-","0","15","="]}  "Use the tiles to build a subtraction equation that results in 7."
+  [                      ] {"type":"build","targetEquation":"11 + 9 = 20","availableTiles":["20","0","11","+","=","9","1"]}  "Put the tiles together to form a true addition equation equal to 20."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=medium | run 3 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"7 + 3 = 10","availableTiles":["10","=","1","3","+","7","0"]}  "Use the tiles to build a true addition equation that equals 10."
+  [                      ] {"type":"build","targetEquation":"12 - 7 = 5","availableTiles":["0","12","-","1","=","7","5"]}  "Use the tiles to build a subtraction equation that equals 5."
+  [                      ] {"type":"build","targetEquation":"9 + 6 = 15","availableTiles":["1","0","9","=","6","+","15"]}  "Use the tiles to find an equation that results in 15."
+  [                      ] {"type":"build","targetEquation":"14 - 6 = 8","availableTiles":["0","=","-","14","6","1","8"]}  "Use the tiles to build a subtraction equation that equals 8."
+  [                      ] {"type":"build","targetEquation":"11 + 7 = 18","availableTiles":["18","1","7","+","=","11","0"]}  "Use the tiles to build an addition equation that equals 18."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=hard | run 1 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"8 + 7 = 15","availableTiles":["2","1","=","0","+","7","-","15","8"]}  "Build a true addition equation from the tiles."
+  [                      ] {"type":"build","targetEquation":"14 - 6 = 8","availableTiles":["=","+","8","14","-","1","2","0","6"]}  "Build a true subtraction equation from the tiles."
+  [                      ] {"type":"build","targetEquation":"9 + 9 = 18","availableTiles":["9","0","2","+","=","-","1","18","9"]}  "Use the tiles to make a true equation."
+  [                      ] {"type":"build","targetEquation":"16 - 7 = 9","availableTiles":["2","16","9","7","-","=","+","1","0"]}  "Can you find the right equation using the tiles?"
+  [                      ] {"type":"build","targetEquation":"12 + 8 = 20","availableTiles":["0","8","2","+","12","=","-","1","20"]}  "Build a true equation that balances both sides."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=hard | run 2 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"7 + 5 = 12","availableTiles":["2","-","+","7","=","1","12","0","5"]}  "Build a true addition equation from the tiles."
+  [                      ] {"type":"build","targetEquation":"14 - 6 = 8","availableTiles":["+","2","=","6","14","1","8","0","-"]}  "Build a true subtraction equation from the tiles."
+  [                      ] {"type":"build","targetEquation":"9 + 8 = 17","availableTiles":["=","8","2","17","1","9","-","0","+"]}  "Build a true addition equation from the tiles."
+  [                      ] {"type":"build","targetEquation":"15 - 7 = 8","availableTiles":["=","7","15","1","2","-","0","+","8"]}  "Build a true subtraction equation from the tiles."
+  [                      ] {"type":"build","targetEquation":"11 + 9 = 20","availableTiles":["=","11","0","1","-","9","+","2","20"]}  "Build a true addition equation from the tiles."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=hard | run 3 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"7 + 5 = 12","availableTiles":["5","7","1","2","12","=","0","+","-"]}  "Build a true addition equation from the tiles."
+  [                      ] {"type":"build","targetEquation":"14 - 6 = 8","availableTiles":["0","+","8","1","6","-","2","14","="]}  "Build a true subtraction equation from the tiles."
+  [                      ] {"type":"build","targetEquation":"9 + 8 = 17","availableTiles":["17","1","+","0","2","9","-","=","8"]}  "Build a true addition equation from the tiles."
+  [                      ] {"type":"build","targetEquation":"15 - 7 = 8","availableTiles":["1","+","7","8","0","2","15","=","-"]}  "Build a true subtraction equation from the tiles."
+  [                      ] {"type":"build","targetEquation":"11 + 9 = 20","availableTiles":["1","2","9","20","-","0","11","+","="]}  "Build a true addition equation from the tiles."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=(none) | run 1 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"5 + 3 = 8","availableTiles":["+","3","2","8","1","=","5"]}  "Use the tiles to build a true addition equation that equals 8."
+  [                      ] {"type":"build","targetEquation":"7 + 5 = 12","availableTiles":["7","=","5","2","4","+","12"]}  "Can you use the tiles to make an addition equation that adds up to 12?"
+  [                      ] {"type":"build","targetEquation":"15 - 6 = 9","availableTiles":["-","3","4","+","15","=","9","6"]}  "Find the correct subtraction equation that starts with 15."
+  [                      ] {"type":"build","targetEquation":"14 - 7 = 7","availableTiles":["14","2","=","5","+","-","7","7"]}  "Use the tiles to build a subtraction equation that leaves 7."
+  [                      ] {"type":"build","targetEquation":"12 + 8 = 20","availableTiles":["20","12","6","1","8","+","="]}  "Create a bigger addition equation using the tiles that equals 20."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=(none) | run 2 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"5 + 3 = 8","availableTiles":["4","3","2","=","5","+","8"]}  "Can you use the tiles to make a true addition equation that equals 8?"
+  [                      ] {"type":"build","targetEquation":"10 - 4 = 6","availableTiles":["7","6","10","2","=","-","4"]}  "Put the tiles together to create a subtraction equation that equals 6."
+  [                      ] {"type":"build","targetEquation":"7 + 5 = 12","availableTiles":["3","9","5","12","=","+","7"]}  "Can you build an equation where two numbers add up to 12?"
+  [                      ] {"type":"build","targetEquation":"15 - 6 = 9","availableTiles":["15","4","8","6","=","-","9"]}  "Use the tiles to form a subtraction sentence that leaves 9."
+  [                      ] {"type":"build","targetEquation":"14 + 6 = 20","availableTiles":["14","5","20","=","+","6","2"]}  "Construct a larger addition equation that equals 20."
+
+Addition and subtraction equations within 20 | build-simple | difficulty=(none) | run 3 | own path | max 20
+  [                      ] {"type":"build","targetEquation":"4 + 3 = 7","availableTiles":["+","2","1","3","=","_","4","7"]}  "Build an addition equation using these tiles that makes a total of 7."
+  [                      ] {"type":"build","targetEquation":"9 - 4 = 5","availableTiles":["4","_","5","=","3","-","9","8"]}  "Can you arrange the tiles to show a subtraction equation that results "
+  [                      ] {"type":"build","targetEquation":"8 + 4 = 12","availableTiles":["8","6","2","+","1","=","_","4","12"]}  "Use the tiles to create a true addition equation with a sum of 12."
+  [                      ] {"type":"build","targetEquation":"15 - 5 = 10","availableTiles":["1","10","15","-","_","0","5","="]}  "Put the tiles in order to make a subtraction equation that equals 10."
+  [                      ] {"type":"build","targetEquation":"11 + 7 = 18","availableTiles":["1","=","7","_","18","+","11","8"]}  "Challenge! Build a larger addition equation that equals 18."

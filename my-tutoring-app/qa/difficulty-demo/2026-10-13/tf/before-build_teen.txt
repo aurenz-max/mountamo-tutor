@@ -1,0 +1,108 @@
+
+Teen numbers as ten and some ones | build_teen | difficulty=easy | run 1 | own path
+  [                      ] {"type":"build_teen","targetCount":11}  "The top frame is full — that is 10. Make 11!"
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":14}  "The top frame is full — that is 10. Make 14!"
+  [                      ] {"type":"build_teen","targetCount":15}  "The top frame is full — that is 10. Make 15!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":18}  "The top frame is full — that is 10. Make 18!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=easy | run 2 | own path
+  [                      ] {"type":"build_teen","targetCount":11}  "The top frame is full — that is 10. Make 11!"
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":13}  "The top frame is full — that is 10. Make 13!"
+  [                      ] {"type":"build_teen","targetCount":15}  "The top frame is full — that is 10. Make 15!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":17}  "The top frame is full — that is 10. Make 17!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=easy | run 3 | own path
+  [                      ] {"type":"build_teen","targetCount":11}  "The top frame is full — that is 10. Make 11!"
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":14}  "The top frame is full — that is 10. Make 14!"
+  [                      ] {"type":"build_teen","targetCount":15}  "The top frame is full — that is 10. Make 15!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":18}  "The top frame is full — that is 10. Make 18!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=medium | run 1 | own path
+  [                      ] {"type":"build_teen","targetCount":11}  "The top frame is full — that is 10. Make 11!"
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":13}  "The top frame is full — that is 10. Make 13!"
+  [                      ] {"type":"build_teen","targetCount":14}  "The top frame is full — that is 10. Make 14!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":17}  "The top frame is full — that is 10. Make 17!"
+  [                      ] {"type":"build_teen","targetCount":18}  "The top frame is full — that is 10. Make 18!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=medium | run 2 | own path
+  [                      ] {"type":"build_teen","targetCount":11}  "The top frame is full — that is 10. Make 11!"
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":14}  "The top frame is full — that is 10. Make 14!"
+  [                      ] {"type":"build_teen","targetCount":15}  "The top frame is full — that is 10. Make 15!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":17}  "The top frame is full — that is 10. Make 17!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=medium | run 3 | own path
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":13}  "The top frame is full — that is 10. Make 13!"
+  [                      ] {"type":"build_teen","targetCount":14}  "The top frame is full — that is 10. Make 14!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":17}  "The top frame is full — that is 10. Make 17!"
+  [                      ] {"type":"build_teen","targetCount":18}  "The top frame is full — that is 10. Make 18!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=hard | run 1 | own path
+  [                      ] {"type":"build_teen","targetCount":11}  "The top frame is full — that is 10. Make 11!"
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":13}  "The top frame is full — that is 10. Make 13!"
+  [                      ] {"type":"build_teen","targetCount":15}  "The top frame is full — that is 10. Make 15!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":17}  "The top frame is full — that is 10. Make 17!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=hard | run 2 | own path
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":13}  "The top frame is full — that is 10. Make 13!"
+  [                      ] {"type":"build_teen","targetCount":14}  "The top frame is full — that is 10. Make 14!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":17}  "The top frame is full — that is 10. Make 17!"
+  [                      ] {"type":"build_teen","targetCount":18}  "The top frame is full — that is 10. Make 18!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=hard | run 3 | own path
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":13}  "The top frame is full — that is 10. Make 13!"
+  [                      ] {"type":"build_teen","targetCount":14}  "The top frame is full — that is 10. Make 14!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":17}  "The top frame is full — that is 10. Make 17!"
+  [                      ] {"type":"build_teen","targetCount":18}  "The top frame is full — that is 10. Make 18!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"build_teen","targetCount":11}  "The top frame is full — that is 10. Make 11!"
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":14}  "The top frame is full — that is 10. Make 14!"
+  [                      ] {"type":"build_teen","targetCount":15}  "The top frame is full — that is 10. Make 15!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":18}  "The top frame is full — that is 10. Make 18!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"build_teen","targetCount":12}  "The top frame is full — that is 10. Make 12!"
+  [                      ] {"type":"build_teen","targetCount":13}  "The top frame is full — that is 10. Make 13!"
+  [                      ] {"type":"build_teen","targetCount":14}  "The top frame is full — that is 10. Make 14!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":17}  "The top frame is full — that is 10. Make 17!"
+  [                      ] {"type":"build_teen","targetCount":18}  "The top frame is full — that is 10. Make 18!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"
+
+Teen numbers as ten and some ones | build_teen | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"build_teen","targetCount":11}  "The top frame is full — that is 10. Make 11!"
+  [                      ] {"type":"build_teen","targetCount":13}  "The top frame is full — that is 10. Make 13!"
+  [                      ] {"type":"build_teen","targetCount":14}  "The top frame is full — that is 10. Make 14!"
+  [                      ] {"type":"build_teen","targetCount":15}  "The top frame is full — that is 10. Make 15!"
+  [                      ] {"type":"build_teen","targetCount":16}  "The top frame is full — that is 10. Make 16!"
+  [                      ] {"type":"build_teen","targetCount":18}  "The top frame is full — that is 10. Make 18!"
+  [                      ] {"type":"build_teen","targetCount":19}  "The top frame is full — that is 10. Make 19!"

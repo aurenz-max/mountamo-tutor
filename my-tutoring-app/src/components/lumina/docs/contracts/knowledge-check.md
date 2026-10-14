@@ -233,6 +233,7 @@ problem needs a picture.
 
 ## Changelog
 
+- 2026-10-13 — second item space registered: `mult-div-facts` (products, missing factors, quotients within 100). No KC change; the item-space path picks it up. Probe `kc-tier-wiring-probe.mjs --objective "Multiply and divide within 100" --grade 3` (`qa/difficulty-demo/2026-10-13/kc-multdiv-probe.txt`): easy ×2/5/10 and small ties, hard both factors 6-9 and inverse forms, 0 plain-question fallbacks; the 2-digit × 1-digit control keeps the orchestrator. The demo's prompt path gave "7 × 8" 6 of 6 at recall.
 - 2026-08-02 — derived (initial) as reader-fit 14f's required contract-first step.
   9 requirements, 2 conflicts resolved by band/task gates, 3 gaps (G1/G2 queued in 14f;
   G3 remains the separate PRE true/false follow-up).
@@ -332,3 +333,12 @@ problem needs a picture.
   times and never credited (pulse check 2026-10-13, p7-screen). The scene fact and the ask ("Tell me, or show me on the
   screen.") say either answers it; a gesture-only `on_screen` item's fact says a spoken answer is not recorded. R7/R8
   hold (one `::pN` record per problem; `KnowledgeCheck.on-screen.test.tsx` adds the spoken case).
+- 2026-10-13 — **item-space problems at a requested difficulty (COMPATIBLE).** When `config.difficulty`
+  (easy/medium/hard) is set, the check spans at most one objective, the learner reads, the pin is
+  absent or `recall`/`apply`, and the objective is an item-space strand (`service/itemSpace`, today only
+  `add-sub-20`), code picks every problem in the tier's beta band, computes the answer and the near/far options, and
+  the LLM writes only the question and rationale (`itemSpaceProblems.ts`). R1 holds by construction (the key is one of
+  the built options); R2 holds (pre-readers keep the generated path); R4 holds (`analyze`/`evaluate` pins keep it);
+  R8 holds (the one objective's ids are stamped on every problem); R12 holds (`distance` on every option, at least one
+  `far`). Before this, the registry never passed `config.difficulty` to knowledge-check, so a lesson tier changed
+  nothing. Probe `scripts/difficulty-lab/kc-tier-wiring-probe.mjs`.

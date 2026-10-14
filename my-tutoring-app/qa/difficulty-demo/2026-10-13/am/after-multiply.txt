@@ -1,0 +1,60 @@
+
+Multiply multi-digit numbers with an area model | multiply | difficulty=easy | run 1 | item space
+  [AreaModel] Item space mult-multi-digit-5: this scope cannot fill every tier's band (0/0/59049 drawable); tier third [0.80, 1.40] gave 4
+  [AreaModel] Item space mult-multi-digit-5 multiply band [-2.5, -0.6]: 722x26:3x2|c6|h1|r0|z0@1.1 448x34:3x2|c6|h0|r2|z0@1.4 943x93:3x2|c6|h1|r1|z0@1.4 571x66:3x2|c6|h2|r0|z0@1.4
+  [β   1.1 3x2|c6|h1|r0|z0] 722 × 26     parts [700,20,2]×[20,6] = 18772  ""
+  [β   1.4 3x2|c6|h0|r2|z0] 448 × 34     parts [400,40,8]×[30,4] = 15232  ""
+  [β   1.4 3x2|c6|h1|r1|z0] 943 × 93     parts [900,40,3]×[90,3] = 87699  ""
+  [β   1.4 3x2|c6|h2|r0|z0] 571 × 66     parts [500,70,1]×[60,6] = 37686  ""
+
+Multiply multi-digit numbers with an area model | multiply | difficulty=easy | run 2 | item space
+  [AreaModel] Item space mult-multi-digit-5: this scope cannot fill every tier's band (0/0/59049 drawable); tier third [0.80, 1.40] gave 4
+  [AreaModel] Item space mult-multi-digit-5 multiply band [-2.5, -0.6]: 113x42:3x2|c6|h0|r0|z0@0.8 236x72:3x2|c6|h1|r0|z0@1.1 457x28:3x2|c6|h1|r1|z0@1.4 665x72:3x2|c6|h2|r0|z0@1.4
+  [β   0.8 3x2|c6|h0|r0|z0] 113 × 42     parts [100,10,3]×[40,2] = 4746  ""
+  [β   1.1 3x2|c6|h1|r0|z0] 236 × 72     parts [200,30,6]×[70,2] = 16992  ""
+  [β   1.4 3x2|c6|h1|r1|z0] 457 × 28     parts [400,50,7]×[20,8] = 12796  ""
+  [β   1.4 3x2|c6|h2|r0|z0] 665 × 72     parts [600,60,5]×[70,2] = 47880  ""
+
+Multiply multi-digit numbers with an area model | multiply | difficulty=medium | run 1 | item space
+  [AreaModel] Item space mult-multi-digit-5: this scope cannot fill every tier's band (0/0/59049 drawable); tier third [1.40, 2.00] gave 4
+  [AreaModel] Item space mult-multi-digit-5 multiply band [-0.6, 0.6]: 972x41:3x2|c6|h0|r2|z0@1.4 666x72:3x2|c6|h3|r0|z0@1.7 825x37:3x2|c6|h1|r3|z0@2 842x89:3x2|c6|h2|r2|z0@2
+  [β   1.4 3x2|c6|h0|r2|z0] 972 × 41     parts [900,70,2]×[40,1] = 39852  ""
+  [β   1.7 3x2|c6|h3|r0|z0] 666 × 72     parts [600,60,6]×[70,2] = 47952  ""
+  [β     2 3x2|c6|h1|r3|z0] 825 × 37     parts [800,20,5]×[30,7] = 30525  ""
+  [β     2 3x2|c6|h2|r2|z0] 842 × 89     parts [800,40,2]×[80,9] = 74938  ""
+
+Multiply multi-digit numbers with an area model | multiply | difficulty=medium | run 2 | item space
+  [AreaModel] Item space mult-multi-digit-5: this scope cannot fill every tier's band (0/0/59049 drawable); tier third [1.40, 2.00] gave 4
+  [AreaModel] Item space mult-multi-digit-5 multiply band [-0.6, 0.6]: 686x58:3x2|c6|h3|r1|z0@2 757x66:3x2|c6|h4|r0|z0@2 447x29:3x2|c6|h1|r3|z0@2 691x92:3x2|c6|h2|r2|z0@2
+  [β     2 3x2|c6|h3|r1|z0] 686 × 58     parts [600,80,6]×[50,8] = 39788  ""
+  [β     2 3x2|c6|h4|r0|z0] 757 × 66     parts [700,50,7]×[60,6] = 49962  ""
+  [β     2 3x2|c6|h1|r3|z0] 447 × 29     parts [400,40,7]×[20,9] = 12963  ""
+  [β     2 3x2|c6|h2|r2|z0] 691 × 92     parts [600,90,1]×[90,2] = 63572  ""
+
+Multiply multi-digit numbers with an area model | multiply | difficulty=hard | run 1 | item space
+  [AreaModel] Item space mult-multi-digit-5: this scope cannot fill every tier's band (0/0/59049 drawable); tier third [2.00, 3.50] gave 4
+  [AreaModel] Item space mult-multi-digit-5 multiply band [0.6, 3.5]: 756x66:3x2|c6|h4|r0|z0@2 678x29:3x2|c6|h3|r2|z0@2.3 792x88:3x2|c6|h4|r2|z0@2.6 976x97:3x2|c6|h6|r3|z0@3.5
+  [β     2 3x2|c6|h4|r0|z0] 756 × 66     parts [700,50,6]×[60,6] = 49896  ""
+  [β   2.3 3x2|c6|h3|r2|z0] 678 × 29     parts [600,70,8]×[20,9] = 19662  ""
+  [β   2.6 3x2|c6|h4|r2|z0] 792 × 88     parts [700,90,2]×[80,8] = 69696  ""
+  [β   3.5 3x2|c6|h6|r3|z0] 976 × 97     parts [900,70,6]×[90,7] = 94672  ""
+
+Multiply multi-digit numbers with an area model | multiply | difficulty=hard | run 2 | item space
+  [AreaModel] Item space mult-multi-digit-5: this scope cannot fill every tier's band (0/0/59049 drawable); tier third [2.00, 3.50] gave 4
+  [AreaModel] Item space mult-multi-digit-5 multiply band [0.6, 3.5]: 295x94:3x2|c6|h1|r3|z0@2 756x66:3x2|c6|h4|r0|z0@2 366x77:3x2|c6|h4|r1|z0@2.3 768x67:3x2|c6|h6|r3|z0@3.5
+  [β     2 3x2|c6|h1|r3|z0] 295 × 94     parts [200,90,5]×[90,4] = 27730  ""
+  [β     2 3x2|c6|h4|r0|z0] 756 × 66     parts [700,50,6]×[60,6] = 49896  ""
+  [β   2.3 3x2|c6|h4|r1|z0] 366 × 77     parts [300,60,6]×[70,7] = 28182  ""
+  [β   3.5 3x2|c6|h6|r3|z0] 768 × 67     parts [700,60,8]×[60,7] = 51456  ""
+
+Multiply multi-digit numbers with an area model | multiply | difficulty=(none) | run 1 | own path
+  [                      ] 371 × 22     parts [300,70,1]×[20,2] = 8162  ""
+  [                      ] 419 × 48     parts [400,10,9]×[40,8] = 20112  ""
+  [                      ] 145 × 49     parts [100,40,5]×[40,9] = 7105  ""
+  [                      ] 469 × 34     parts [400,60,9]×[30,4] = 15946  ""
+
+Multiply multi-digit numbers with an area model | multiply | difficulty=(none) | run 2 | own path
+  [                      ] 411 × 21     parts [400,10,1]×[20,1] = 8631  ""
+  [                      ] 131 × 14     parts [100,30,1]×[10,4] = 1834  ""
+  [                      ] 394 × 16     parts [300,90,4]×[10,6] = 6304  ""
+  [                      ] 354 × 29     parts [300,50,4]×[20,9] = 10266  ""

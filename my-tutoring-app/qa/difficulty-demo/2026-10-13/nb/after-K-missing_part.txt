@@ -1,0 +1,48 @@
+
+Decompose numbers up to 5 | missing_part | difficulty=easy | run 1 | item space | max 5
+  [NumberBond] Item space bonds-10 missing-part band [-2.5, -0.6] within 5: 2=1+1@-2.1 3=2+1@-1.4 4=2+2@-0.8 4=3+1@-1.2 5=1+4@-0.7
+  [β  -2.1 part|to5|one+double|up-short] {"type":"missing-part","whole":2,"part1":1,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|one+double|up-short","beta":-2.1},"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a total of 2. One part is 1. What is the missing part?"
+  [β  -1.4 part|to5|one|up-short] {"type":"missing-part","whole":3,"part1":2,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-short","beta":-1.4},"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a total of 3. One part is 2. What is the missing part?"
+  [β  -0.8 part|to5|double|up-short] {"type":"missing-part","whole":4,"part1":2,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|double|up-short","beta":-0.8},"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a total of 4. One part is 2. What is the missing part?"
+  [β  -1.2 part|to5|one|up-short] {"type":"missing-part","whole":4,"part1":3,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-short","beta":-1.2},"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a total of 4. One part is 3. What is the missing part?"
+  [β  -0.7 part|to5|one|up-long] {"type":"missing-part","whole":5,"part1":1,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-long","beta":-0.7},"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a total of 5. One part is 1. What is the missing part?"
+
+Decompose numbers up to 5 | missing_part | difficulty=easy | run 2 | item space | max 5
+  [NumberBond] Item space bonds-10 missing-part band [-2.5, -0.6] within 5: 2=1+1@-2.1 3=2+1@-1.4 4=1+3@-0.9 4=2+2@-0.8 5=1+4@-0.7
+  [β  -2.1 part|to5|one+double|up-short] {"type":"missing-part","whole":2,"part1":1,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|one+double|up-short","beta":-2.1},"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us break apart the number 2! If 1 part is known, what is the other"
+  [β  -1.4 part|to5|one|up-short] {"type":"missing-part","whole":3,"part1":2,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-short","beta":-1.4},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 3. One part is 2. What is the other part?"
+  [β  -0.9 part|to5|one|up-long] {"type":"missing-part","whole":4,"part1":1,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-long","beta":-0.9},"allPairs":null,"factFamily":null,"targetEquation":null}  "Can you find the missing part to make 4? We have 1 part ready, now fin"
+  [β  -0.8 part|to5|double|up-short] {"type":"missing-part","whole":4,"part1":2,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|double|up-short","beta":-0.8},"allPairs":null,"factFamily":null,"targetEquation":null}  "Explore the number 4! With 2 as a known part, what is the remaining hi"
+  [β  -0.7 part|to5|one|up-long] {"type":"missing-part","whole":5,"part1":1,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-long","beta":-0.7},"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us work with 5! If 1 part is already given, what is the final miss"
+
+Decompose numbers up to 5 | missing_part | difficulty=medium | run 1 | own path | max 5
+  [NumberBond] Item space bonds-10 missing-part band [-0.6, 0.6] within 5: no session fits; own path kept
+  [                      ] {"type":"missing-part","whole":3,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us break apart 3! We know one part is 1. Can you find the missing "
+  [                      ] {"type":"missing-part","whole":4,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us break apart 4! We have 2 as one of the parts. What is the missi"
+  [                      ] {"type":"missing-part","whole":5,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us break apart 5! One part is 2. What is the other part?"
+  [                      ] {"type":"missing-part","whole":4,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us break apart 4! With 3 as a known part, find the missing part."
+  [                      ] {"type":"missing-part","whole":5,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us break apart 5! If one part is 4, can you figure out the missing"
+
+Decompose numbers up to 5 | missing_part | difficulty=medium | run 2 | own path | max 5
+  [NumberBond] Item space bonds-10 missing-part band [-0.6, 0.6] within 5: no session fits; own path kept
+  [                      ] {"type":"missing-part","whole":3,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us break apart 3! If one part is 1, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":4,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Can you help me solve this? The whole is 4, and one part is 2. What is"
+  [                      ] {"type":"missing-part","whole":5,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Here is a whole of 5. If one part is 1, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":4,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a whole of 4. One part is 1. Can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":5,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us finish with a whole of 5! If one part is 3, what is the missing"
+
+Decompose numbers up to 5 | missing_part | difficulty=hard | run 1 | own path | max 5
+  [NumberBond] Item space bonds-10 missing-part band [0.6, 3.5] within 5: no session fits; own path kept
+  [                      ] {"type":"missing-part","whole":3,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us break apart the number 3! If one part is 1, what is the missing"
+  [                      ] {"type":"missing-part","whole":4,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Can you help me find the missing part for 4? We know one part is 2."
+  [                      ] {"type":"missing-part","whole":5,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us work with 5! If one part is 1, what is the other part?"
+  [                      ] {"type":"missing-part","whole":4,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "We have 4 overall. If one part is 3, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":5,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Time for our final challenge with 5! If one part is 2, what is the mis"
+
+Decompose numbers up to 5 | missing_part | difficulty=hard | run 2 | own path | max 5
+  [NumberBond] Item space bonds-10 missing-part band [0.6, 3.5] within 5: no session fits; own path kept
+  [                      ] {"type":"missing-part","whole":3,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us break apart 3! If one part is 1, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":4,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Can you find the missing part for 4? We know one part is 2."
+  [                      ] {"type":"missing-part","whole":5,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Time to work with 5! If one part is 1, what is the other part?"
+  [                      ] {"type":"missing-part","whole":4,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Here is another challenge with 4. If one part is 3, what is the missin"
+  [                      ] {"type":"missing-part","whole":5,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us solve one more for 5! If one part is 2, what is the missing par"

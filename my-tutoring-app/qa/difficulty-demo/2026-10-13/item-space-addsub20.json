@@ -1,0 +1,235 @@
+{
+  "itemSpace": 6326,
+  "weights": {
+    "base": -1.6,
+    "twoStep": 1.1,
+    "bridges": 1,
+    "subtraction": 0.4,
+    "unknownChange": 0.8,
+    "unknownStart": 1.5,
+    "zeroOrOne": -0.8,
+    "countOnTwoThree": -0.3,
+    "double": -0.5,
+    "tenPlus": -0.6,
+    "teen": 0.3,
+    "size": 0.8
+  },
+  "rho": 0.6546536707079771,
+  "rows": [
+    {
+      "target": -1.5,
+      "beta": -1.36,
+      "expr": "13 + 3 = ?",
+      "answer": 16,
+      "options": [
+        "21",
+        "24",
+        "12",
+        "16"
+      ],
+      "question": "Sarah has 13 stickers and gets 3 more. How many stickers does she have in the end?",
+      "judgeP": 85,
+      "why": "This is a simple single-digit addition word problem (13 + 3) within the number 20, which first graders who have been taught addition can typically solve easily.",
+      "shownOk": true,
+      "features": {
+        "countOnTwoThree": 1,
+        "teen": 1,
+        "size": 0.3
+      }
+    },
+    {
+      "target": -0.75,
+      "beta": -0.7,
+      "expr": "15 - 10 = ?",
+      "answer": 5,
+      "options": [
+        "1",
+        "5",
+        "10",
+        "13"
+      ],
+      "question": "Sam had 15 apples and gave 10 to his friend. How many apples does Sam have now?",
+      "judgeP": 85,
+      "why": "This is a standard single-digit subtraction problem within 20, which first graders who have been taught subtraction can readily solve by counting back or using basic facts.",
+      "shownOk": true,
+      "features": {
+        "subtraction": 1,
+        "tenPlus": 1,
+        "teen": 1,
+        "size": 1
+      }
+    },
+    {
+      "target": 0,
+      "beta": 0.06,
+      "expr": "8 - 2 + 1",
+      "answer": 7,
+      "options": [
+        "6",
+        "10",
+        "7",
+        "8"
+      ],
+      "question": "Max had 8 apples. He gave 2 apples to his friend and then found 1 more apple.",
+      "judgeP": 75,
+      "why": "First graders who are taught addition and subtraction within 20 can generally solve a two-step word problem involving numbers under 10, though the second step (8 - 2 + 1) occasionally causes minor errors in sequencing.",
+      "shownOk": true,
+      "features": {
+        "twoStep": 1,
+        "subtraction": 1,
+        "size": 0.2
+      }
+    },
+    {
+      "target": 0.75,
+      "beta": 0.52,
+      "expr": "7 - 4 + 12",
+      "answer": 15,
+      "options": [
+        "16",
+        "11",
+        "14",
+        "15"
+      ],
+      "question": "Sarah has 7 apples. She eats 4 apples, then she picks 12 more apples from the tree.",
+      "judgeP": 45,
+      "why": "First graders struggle with multi-step word problems involving both subtraction and addition, and keeping track of the running total (7 - 4 = 3, then 3 + 12 = 15) increases the cognitive load significantly.",
+      "shownOk": true,
+      "features": {
+        "twoStep": 1,
+        "subtraction": 1,
+        "teen": 1,
+        "size": 0.4
+      }
+    },
+    {
+      "target": 1.5,
+      "beta": 1.52,
+      "expr": "4 + 7 - 10",
+      "answer": 1,
+      "options": [
+        "2",
+        "1",
+        "3",
+        "0"
+      ],
+      "question": "Sam has 4 apples and gets 7 more apples. Then he gives 10 apples to his friend.",
+      "judgeP": 45,
+      "why": "First graders must perform a two-step word problem involving both addition (4 + 7 = 11) and subtraction (11 - 10 = 1). Multi-step problems are challenging for this age group, leading to higher error rates.",
+      "shownOk": true,
+      "features": {
+        "twoStep": 1,
+        "bridges": 1,
+        "subtraction": 1,
+        "teen": 1,
+        "size": 0.4
+      }
+    },
+    {
+      "target": 2.25,
+      "beta": 2.32,
+      "expr": "19 - 14 + 5",
+      "answer": 10,
+      "options": [
+        "10",
+        "15",
+        "11",
+        "9"
+      ],
+      "question": "Sam had 19 stickers. He gave 14 stickers to his sister, and then he found 5 more stickers.",
+      "judgeP": 55,
+      "why": "This is a two-step word problem involving subtraction (19 - 14 = 5) followed by addition (5 + 5 = 10). While first graders within this curriculum can perform the individual calculations, the multi-step nature of the problem makes it moderately challenging for typical first graders, leading to some calculation and comprehension errors.",
+      "shownOk": true,
+      "features": {
+        "twoStep": 1,
+        "bridges": 1,
+        "subtraction": 1,
+        "teen": 1,
+        "size": 1.4
+      }
+    },
+    {
+      "target": 3,
+      "beta": 2.76,
+      "expr": "15 - 7 + 6",
+      "answer": 14,
+      "options": [
+        "12",
+        "15",
+        "14",
+        "22"
+      ],
+      "question": "Sarah has 15 stickers. She gives 7 stickers to her friend. Then she finds 6 more stickers.",
+      "judgeP": 65,
+      "why": "First graders must perform a two-step word problem involving subtraction (15 - 7 = 8) and then addition (8 + 6 = 14) within 20, which is challenging due to the multiple steps but uses numbers within their taught range.",
+      "shownOk": true,
+      "features": {
+        "twoStep": 1,
+        "bridges": 2,
+        "subtraction": 1,
+        "teen": 1,
+        "size": 0.7
+      }
+    },
+    {
+      "target": "jitter",
+      "beta": -1.74,
+      "expr": "6 + 2 = ?",
+      "answer": 8,
+      "options": [
+        "16",
+        "13",
+        "4",
+        "8"
+      ],
+      "question": "Sam has 6 toy cars and finds 2 more toys. How many toys does Sam have now?",
+      "judgeP": 85,
+      "why": "First graders who have been taught addition and subtraction within 20 can easily recognize this as a simple addition problem (6 + 2 = 8), and the numbers are small.",
+      "shownOk": true,
+      "features": {
+        "countOnTwoThree": 1,
+        "size": 0.2
+      }
+    },
+    {
+      "target": "jitter",
+      "beta": -1.74,
+      "expr": "2 + 3 = ?",
+      "answer": 5,
+      "options": [
+        "1",
+        "5",
+        "13",
+        "10"
+      ],
+      "question": "Mia has 2 apples and gets 3 more apples. How many apples does she have in the end?",
+      "judgeP": 95,
+      "why": "This is a simple single-digit addition word problem (2 + 3) with numbers well within 20, which most first graders who have been taught addition can solve easily.",
+      "shownOk": true,
+      "features": {
+        "countOnTwoThree": 1,
+        "size": 0.2
+      }
+    },
+    {
+      "target": "jitter",
+      "beta": -1.66,
+      "expr": "3 + 5 = ?",
+      "answer": 8,
+      "options": [
+        "13",
+        "8",
+        "16",
+        "4"
+      ],
+      "question": "Max has 3 apples. He gets 5 more apples. How many apples does Max have now?",
+      "judgeP": 85,
+      "why": "This is a simple single-digit addition problem (3 + 5) well within the first-grade curriculum, and typical students who have learned basic addition can easily solve it.",
+      "shownOk": true,
+      "features": {
+        "countOnTwoThree": 1,
+        "size": 0.3
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+
+Fractions | compare | difficulty=easy | run 1 | own path
+  [                      ] {"numerator":3,"denominator":11,"numeratorChoices":[11,4,3,2],"denominatorChoices":[3,12,10,11]}  ""
+  [                      ] {"numerator":6,"denominator":8,"numeratorChoices":[7,5,6,8],"denominatorChoices":[8,7,9,6]}  ""
+  [                      ] {"numerator":1,"denominator":6,"numeratorChoices":[6,0,2,1],"denominatorChoices":[7,5,6,8]}  ""
+
+Fractions | compare | difficulty=easy | run 2 | own path
+  [                      ] {"numerator":4,"denominator":9,"numeratorChoices":[4,5,9,3],"denominatorChoices":[4,9,10,8]}  ""
+  [                      ] {"numerator":2,"denominator":5,"numeratorChoices":[3,5,1,2],"denominatorChoices":[4,6,5,2]}  ""
+  [                      ] {"numerator":9,"denominator":10,"numeratorChoices":[11,10,8,9],"denominatorChoices":[11,9,12,10]}  ""
+
+Fractions | compare | difficulty=medium | run 1 | own path
+  [                      ] {"numerator":5,"denominator":12,"numeratorChoices":[12,5,6,4],"denominatorChoices":[13,12,5,11]}  ""
+  [                      ] {"numerator":10,"denominator":11,"numeratorChoices":[11,10,9,12],"denominatorChoices":[12,11,13,10]}  ""
+  [                      ] {"numerator":4,"denominator":8,"numeratorChoices":[4,5,8,3],"denominatorChoices":[9,4,7,8]}  ""
+
+Fractions | compare | difficulty=medium | run 2 | own path
+  [                      ] {"numerator":5,"denominator":7,"numeratorChoices":[5,6,4,7],"denominatorChoices":[5,8,6,7]}  ""
+  [                      ] {"numerator":2,"denominator":9,"numeratorChoices":[9,3,2,1],"denominatorChoices":[9,8,10,2]}  ""
+  [                      ] {"numerator":3,"denominator":5,"numeratorChoices":[5,2,3,4],"denominatorChoices":[6,3,4,5]}  ""
+
+Fractions | compare | difficulty=hard | run 1 | own path
+  [                      ] {"numerator":8,"denominator":9,"numeratorChoices":[7,8,9,10],"denominatorChoices":[8,10,9,11]}  ""
+  [                      ] {"numerator":6,"denominator":8,"numeratorChoices":[6,7,8,5],"denominatorChoices":[9,8,6,7]}  ""
+  [                      ] {"numerator":6,"denominator":10,"numeratorChoices":[7,10,6,5],"denominatorChoices":[10,11,6,9]}  ""
+
+Fractions | compare | difficulty=hard | run 2 | own path
+  [                      ] {"numerator":5,"denominator":6,"numeratorChoices":[5,7,4,6],"denominatorChoices":[5,6,8,7]}  ""
+  [                      ] {"numerator":1,"denominator":7,"numeratorChoices":[7,0,1,2],"denominatorChoices":[8,6,9,7]}  ""
+  [                      ] {"numerator":5,"denominator":11,"numeratorChoices":[4,11,5,6],"denominatorChoices":[11,5,12,10]}  ""
+
+Fractions | compare | difficulty=(none) | run 1 | own path
+  [                      ] {"numerator":2,"denominator":9,"numeratorChoices":[9,2,1,3],"denominatorChoices":[9,8,2,10]}  ""
+  [                      ] {"numerator":2,"denominator":7,"numeratorChoices":[2,1,7,3],"denominatorChoices":[7,8,2,6]}  ""
+  [                      ] {"numerator":5,"denominator":7,"numeratorChoices":[4,6,5,7],"denominatorChoices":[7,5,6,8]}  ""
+
+Fractions | compare | difficulty=(none) | run 2 | own path
+  [                      ] {"numerator":5,"denominator":9,"numeratorChoices":[5,4,6,9],"denominatorChoices":[8,5,9,10]}  ""
+  [                      ] {"numerator":5,"denominator":12,"numeratorChoices":[12,6,5,4],"denominatorChoices":[11,5,13,12]}  ""
+  [                      ] {"numerator":1,"denominator":7,"numeratorChoices":[1,2,7,0],"denominatorChoices":[8,6,9,7]}  ""

@@ -1,0 +1,36 @@
+
+Decompose numbers up to 5 | related_fact | difficulty=easy | run 1 | item space | max 5
+  [NumberBond] Item space bonds-10 related-fact band [-2.5, -0.6] within 5: 3=1+2@-1.1 4=3+1@-1.2 5=4+1@-1
+  [β  -1.1 part|to5|one|up-long] {"type":"related-fact","whole":3,"part1":1,"part2":2,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-long","beta":-1.1},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the groups to make 3, say the addition fact, then take away a gro"
+  [β  -1.2 part|to5|one|up-short] {"type":"related-fact","whole":4,"part1":3,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-short","beta":-1.2},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the groups to make 4, say the addition fact, then take away a gro"
+  [β    -1 part|to5|one|up-short] {"type":"related-fact","whole":5,"part1":4,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-short","beta":-1},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the groups to make 5, say the addition fact, then take away a gro"
+
+Decompose numbers up to 5 | related_fact | difficulty=easy | run 2 | item space | max 5
+  [NumberBond] Item space bonds-10 related-fact band [-2.5, -0.6] within 5: 3=1+2@-1.1 4=3+1@-1.2 5=4+1@-1
+  [β  -1.1 part|to5|one|up-long] {"type":"related-fact","whole":3,"part1":1,"part2":2,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-long","beta":-1.1},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters to make 3! Say the addition fact, then take one gro"
+  [β  -1.2 part|to5|one|up-short] {"type":"related-fact","whole":4,"part1":3,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-short","beta":-1.2},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters to make 4! Say the addition fact, then take one gro"
+  [β    -1 part|to5|one|up-short] {"type":"related-fact","whole":5,"part1":4,"part2":1,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-short","beta":-1},"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters to make 5! Say the addition fact, then take one gro"
+
+Decompose numbers up to 5 | related_fact | difficulty=medium | run 1 | own path | max 5
+  [NumberBond] Item space bonds-10 related-fact band [-0.6, 0.6] within 5: no session fits; own path kept
+  [                      ] {"type":"related-fact","whole":3,"part1":1,"part2":2,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number bond for 3. Join the groups to say the addition fac"
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Explore the number 4! Join the parts to say how many in all, then sepa"
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "You are doing great! Let us practice with 5. Join the groups for addit"
+
+Decompose numbers up to 5 | related_fact | difficulty=medium | run 2 | own path | max 5
+  [NumberBond] Item space bonds-10 related-fact band [-0.6, 0.6] within 5: no session fits; own path kept
+  [                      ] {"type":"related-fact","whole":3,"part1":1,"part2":2,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters for 3, say the addition fact, then take away one gr"
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the parts of 4. First say the join-together addition fact, and"
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Explore the number 5! Say the two connected addition and subtraction f"
+
+Decompose numbers up to 5 | related_fact | difficulty=hard | run 1 | own path | max 5
+  [NumberBond] Item space bonds-10 related-fact band [0.6, 3.5] within 5: no session fits; own path kept
+  [                      ] {"type":"related-fact","whole":3,"part1":1,"part2":2,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters and say the addition and subtraction facts for the "
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters and say the addition and subtraction facts for the "
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters and say the addition and subtraction facts for the "
+
+Decompose numbers up to 5 | related_fact | difficulty=hard | run 2 | own path | max 5
+  [NumberBond] Item space bonds-10 related-fact band [0.6, 3.5] within 5: no session fits; own path kept
+  [                      ] {"type":"related-fact","whole":3,"part1":1,"part2":2,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join and undo for the number 3. Say the addition fact and then the sub"
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join and undo for the number 4. Say the addition fact and then the sub"
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join and undo for the number 5. Say the addition fact and then the sub"

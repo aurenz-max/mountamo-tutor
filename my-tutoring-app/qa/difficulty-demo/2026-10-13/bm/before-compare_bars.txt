@@ -1,0 +1,63 @@
+
+Compare two bars | compare_bars | difficulty=easy | run 1 | own path
+  [                      ] [4,8] tgt 1  Q: Which puppy ate MORE treats?  ""
+  [                      ] [4,8] tgt 1  Q: Which puppy is taller?  ""
+  [                      ] [3,7] tgt 1  Q: Which toy car group has more?  ""
+  [                      ] [4,8] tgt 1  Q: Which puppy has more toy bones?  ""
+  [                      ] [4,8] tgt 1  Q: Which puppy has more toy bones?  ""
+
+Compare two bars | compare_bars | difficulty=easy | run 2 | own path
+  [                      ] [4,8] tgt 1  Q: Which train is longer?  ""
+  [                      ] [4,8] tgt 1  Q: Which tower is taller?  ""
+  [                      ] [4,8] tgt 1  Q: Which toy train has more blocks?  ""
+  [                      ] [4,8] tgt 1  Q: Which toy train is longer?  ""
+  [                      ] [4,8] tgt 1  Q: Which toy train has more cars?  ""
+
+Compare two bars | compare_bars | difficulty=easy | run 3 | own path
+  [                      ] [4,8] tgt 1  Q: Which box has more toy train cars?  ""
+  [                      ] [4,8] tgt 1  Q: Which toy train has more blocks?  ""
+  [                      ] [4,8] tgt 1  Q: Which toy train is longer?  ""
+  [                      ] [4,8] tgt 1  Q: Which group has MORE puppies?  ""
+  [                      ] [3,7] tgt 1  Q: Which toy tower is taller?  ""
+
+Compare two bars | compare_bars | difficulty=medium | run 1 | own path
+  [                      ] [4,6] tgt 1  Q: Which toy train has more blocks?  ""
+  [                      ] [5,7] tgt 1  Q: Which toy group has MORE?  ""
+  [                      ] [5,7] tgt 1  Q: Which toy group has MORE?  ""
+  [                      ] [4,6] tgt 1  Q: Which box has more toy cars?  ""
+  [                      ] [5,7] tgt 1  Q: Which group has MORE toy cars?  ""
+
+Compare two bars | compare_bars | difficulty=medium | run 2 | own path
+  [                      ] [4,6] tgt 1  Q: Which toy group is taller?  ""
+  [                      ] [5,7] tgt 1  Q: Which toy group has MORE?  ""
+  [                      ] [4,6] tgt 1  Q: Which bush has more berries?  ""
+  [                      ] [4,6] tgt 1  Q: Which basket has more strawberries?  ""
+  [                      ] [4,6] tgt 1  Q: Which puppy group has MORE prints?  ""
+
+Compare two bars | compare_bars | difficulty=medium | run 3 | own path
+  [                      ] [5,7] tgt 1  Q: Which toy group is taller?  ""
+  [                      ] [5,7] tgt 1  Q: Which toy box has more cars?  ""
+  [                      ] [5,7] tgt 1  Q: Which toy train has more cars?  ""
+  [                      ] [4,6] tgt 1  Q: Which group of toy cars has more?  ""
+  [                      ] [5,7] tgt 1  Q: Which box has more toy cars?  ""
+
+Compare two bars | compare_bars | difficulty=hard | run 1 | own path
+  [                      ] [6,7] tgt 1  Q: Which berry stack is taller?  ""
+  [                      ] [5,4] tgt 0  Q: Which tower is taller?  ""
+  [                      ] [5,6] tgt 1  Q: Which tower is taller?  ""
+  [                      ] [4,5] tgt 1  Q: Which toy car is taller?  ""
+  [                      ] [6,7] tgt 1  Q: Which tower is taller?  ""
+
+Compare two bars | compare_bars | difficulty=hard | run 2 | own path
+  [                      ] [5,6] tgt 1  Q: Which train track is longer?  ""
+  [                      ] [6,7] tgt 1  Q: Which tower is taller?  ""
+  [                      ] [5,6] tgt 1  Q: Which toy train is longer?  ""
+  [                      ] [4,5] tgt 1  Q: Which tower is taller?  ""
+  [                      ] [6,7] tgt 1  Q: Which toy tower is taller?  ""
+
+Compare two bars | compare_bars | difficulty=hard | run 3 | own path
+  [                      ] [5,6] tgt 1  Q: Which tower is taller?  ""
+  [                      ] [6,7] tgt 1  Q: Which tower is taller?  ""
+  [                      ] [5,6] tgt 1  Q: Which tower is taller?  ""
+  [                      ] [5,4] tgt 0  Q: Which tower is taller?  ""
+  [                      ] [6,7] tgt 1  Q: Which pencil is longer?  ""

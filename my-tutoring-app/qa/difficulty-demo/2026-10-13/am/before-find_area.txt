@@ -1,0 +1,42 @@
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=easy | run 1 | own path
+  [                      ] 32 × 23      parts [30,2]×[20,3] = 736  ""
+  [                      ] 39 × 31      parts [30,9]×[30,1] = 1209  ""
+  [                      ] 36 × 29      parts [30,6]×[20,9] = 1044  ""
+  [                      ] 41 × 26      parts [40,1]×[20,6] = 1066  ""
+  [                      ] 37 × 46      parts [30,7]×[40,6] = 1702  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=easy | run 2 | own path
+  [                      ] 25 × 16      parts [20,5]×[10,6] = 400  ""
+  [                      ] 31 × 39      parts [30,1]×[30,9] = 1209  ""
+  [                      ] 33 × 35      parts [30,3]×[30,5] = 1155  ""
+  [                      ] 11 × 14      parts [10,1]×[10,4] = 154  ""
+  [                      ] 36 × 48      parts [30,6]×[40,8] = 1728  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=medium | run 1 | own path
+  [                      ] 34 × 37      parts [30,4]×[30,7] = 1258  ""
+  [                      ] 14 × 43      parts [10,4]×[40,3] = 602  ""
+  [                      ] 18 × 19      parts [10,8]×[10,9] = 342  ""
+  [                      ] 27 × 23      parts [20,7]×[20,3] = 621  ""
+  [                      ] 41 × 38      parts [40,1]×[30,8] = 1558  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=medium | run 2 | own path
+  [                      ] 25 × 46      parts [20,5]×[40,6] = 1150  ""
+  [                      ] 12 × 37      parts [10,2]×[30,7] = 444  ""
+  [                      ] 35 × 16      parts [30,5]×[10,6] = 560  ""
+  [                      ] 12 × 16      parts [10,2]×[10,6] = 192  ""
+  [                      ] 49 × 31      parts [40,9]×[30,1] = 1519  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=hard | run 1 | own path
+  [                      ] 26 × 17      parts [20,6]×[10,7] = 442  ""
+  [                      ] 45 × 36      parts [40,5]×[30,6] = 1620  ""
+  [                      ] 11 × 35      parts [10,1]×[30,5] = 385  ""
+  [                      ] 13 × 12      parts [10,3]×[10,2] = 156  ""
+  [                      ] 19 × 32      parts [10,9]×[30,2] = 608  ""
+
+Multiply multi-digit numbers with an area model | find_area | difficulty=hard | run 2 | own path
+  [                      ] 22 × 22      parts [20,2]×[20,2] = 484  ""
+  [                      ] 42 × 48      parts [40,2]×[40,8] = 2016  ""
+  [                      ] 35 × 25      parts [30,5]×[20,5] = 875  ""
+  [                      ] 48 × 38      parts [40,8]×[30,8] = 1824  ""
+  [                      ] 36 × 27      parts [30,6]×[20,7] = 972  ""

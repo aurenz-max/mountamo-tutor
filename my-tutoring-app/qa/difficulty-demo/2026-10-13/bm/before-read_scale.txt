@@ -1,0 +1,54 @@
+
+Bar graphs and picture graphs | read_scale | difficulty=easy | run 1 | own path
+  [                      ] [4,7,3,5] step 1 ans 7 tgt 1  Q: How many students picked Banana?  ""
+  [                      ] [4,7,3,5] step 1 ans 7 tgt 1  Q: How many students picked Banana?  ""
+  [                      ] [3,7,4,9] step 1 ans 7 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [4,7,2,5] step 1 ans 7 tgt 1  Q: How many stickers did Leo collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=easy | run 2 | own path
+  [                      ] [3,7,5,9] step 1 ans 7 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [3,7,4,9] step 1 ans 7 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [4,7,3,5] step 1 ans 7 tgt 1  Q: How many students picked Banana?  ""
+  [                      ] [3,7,5,2] step 1 ans 7 tgt 1  Q: How many stickers did Leo collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=easy | run 3 | own path
+  [                      ] [3,7,4,9] step 1 ans 7 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [3,7,5,2] step 1 ans 7 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [3,7,5,2] step 1 ans 7 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [3,7,4,9] step 1 ans 7 tgt 1  Q: How many stickers did Leo collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=medium | run 1 | own path
+  [                      ] [4,10,6,14] step 2 ans 10 tgt 1  Q: How many students picked Banana as their favorite fruit?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many star stickers did Leo collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=medium | run 2 | own path
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many star stickers did Leo collect?  ""
+  [                      ] [6,12,8,16] step 2 ans 6 tgt 0  Q: How many students chose Apples?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=medium | run 3 | own path
+  [                      ] [6,12,8,16] step 2 ans 12 tgt 1  Q: How many apples did Leo pick?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many star stickers did Leo collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [6,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=hard | run 1 | own path
+  [                      ] [6,14,8,18] step 2 ans 14 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [6,14,10,18] step 2 ans 14 tgt 1  Q: How many star stickers did Leo collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=hard | run 2 | own path
+  [                      ] [12,8,16,6] step 2 ans 12 tgt 0  Q: How many students chose Apple?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=hard | run 3 | own path
+  [                      ] [12,8,16,6] step 2 ans 12 tgt 0  Q: How many students chose Apple?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [6,14,8,12] step 2 ans 14 tgt 1  Q: How many star stickers did Leo collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""

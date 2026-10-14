@@ -1,0 +1,32 @@
+analog-clock  read         easy   space validate ok; oracle pass
+analog-clock  read         medium space validate ok; oracle pass
+analog-clock  read         hard   space validate ok; oracle pass
+analog-clock  set_time     easy   space validate ok; oracle pass
+analog-clock  set_time     medium space validate ok; oracle pass
+analog-clock  set_time     hard   space validate ok; oracle pass
+analog-clock  match        easy   space validate ok; oracle pass
+analog-clock  match        medium space validate ok; oracle pass
+analog-clock  match        hard   space validate ok; oracle pass
+analog-clock  elapsed      easy   space validate ok; oracle pass
+analog-clock  elapsed      medium space validate ok; oracle pass
+analog-clock  elapsed      hard   space validate ok; oracle pass
+coin-counter  count-like   easy   space validate ok; oracle pass
+coin-counter  count-like   medium space validate ok; oracle pass
+coin-counter  count-like   hard   space validate ok; oracle pass
+coin-counter  count-mixed  easy   space validate ok; oracle pass
+coin-counter  count-mixed  medium space validate ok; oracle pass
+coin-counter  count-mixed  hard   space validate ok; oracle pass
+coin-counter  compare      easy   space validate ok; oracle pass
+coin-counter  compare      medium space validate ok; oracle pass
+coin-counter  compare      hard   space validate ok; oracle pass
+coin-counter  make-amount  easy   space validate ok; oracle pass
+coin-counter  make-amount  medium space validate ok; oracle pass
+coin-counter  make-amount  hard   space validate ok; oracle pass
+coin-counter  show-amount  easy   space validate ok; oracle pass
+coin-counter  show-amount  medium space validate ok; oracle pass
+coin-counter  show-amount  hard   space validate ok; oracle pass
+coin-counter  make-change  easy   space validate ok; oracle pass
+coin-counter  make-change  medium space validate ok; oracle pass
+coin-counter  make-change  hard   space validate ok; oracle pass
+
+0 failing session(s)

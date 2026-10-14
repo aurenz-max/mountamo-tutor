@@ -1,0 +1,36 @@
+
+Bar graphs and picture graphs | read_scale | difficulty=easy | run 1 | own path
+  [                      ] [7,3,4,9] step 1 ans 7 tgt 0  Q: How many stickers did Leo collect?  ""
+  [                      ] [7,3,4,9] step 1 ans 3 tgt 1  Q: How many stickers did Mia collect?  ""
+  [                      ] [3,7,4,9] step 1 ans 4 tgt 2  Q: How many stickers did Sam collect?  ""
+  [                      ] [3,2,5,7] step 1 ans 7 tgt 3  Q: How many stickers did Leo collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=easy | run 2 | own path
+  [                      ] [4,3,7,5] step 1 ans 7 tgt 2  Q: How many students picked Banana?  ""
+  [                      ] [4,9,3,7] step 1 ans 7 tgt 3  Q: How many students picked Banana as their favorite fruit?  ""
+  [                      ] [7,3,5,2] step 1 ans 7 tgt 0  Q: How many stickers did Leo collect?  ""
+  [                      ] [4,7,3,6] step 1 ans 7 tgt 1  Q: How many students picked Banana?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=medium | run 1 | own path
+  [                      ] [12,4,8,16] step 2 ans 12 tgt 0  Q: How many stickers did Leo collect?  ""
+  [                      ] [12,4,8,16] step 2 ans 4 tgt 1  Q: How many stickers did Mia collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 8 tgt 2  Q: How many stickers did Sam collect?  ""
+  [                      ] [4,12,8,16] step 2 ans 16 tgt 3  Q: How many star stickers did Zoe collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=medium | run 2 | own path
+  [                      ] [4,16,8,12] step 2 ans 12 tgt 3  Q: How many stickers did Leo have?  ""
+  [                      ] [12,4,8,16] step 2 ans 12 tgt 0  Q: How many stickers did Leo have?  ""
+  [                      ] [6,12,16,8] step 2 ans 12 tgt 1  Q: How many star stickers did Leo collect?  ""
+  [                      ] [4,8,12,16] step 2 ans 12 tgt 2  Q: How many star stickers did Leo collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=hard | run 1 | own path
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [8,12,4,16] step 2 ans 4 tgt 2  Q: How many stickers did Mia collect?  ""
+  [                      ] [4,16,8,12] step 2 ans 12 tgt 3  Q: How many stickers did Leo collect?  ""
+  [                      ] [8,12,4,16] step 2 ans 8 tgt 0  Q: How many stickers did Sam collect?  ""
+
+Bar graphs and picture graphs | read_scale | difficulty=hard | run 2 | own path
+  [                      ] [4,12,8,16] step 2 ans 12 tgt 1  Q: How many stickers did Leo collect?  ""
+  [                      ] [8,12,4,16] step 2 ans 4 tgt 2  Q: How many stickers did Mia collect?  ""
+  [                      ] [4,12,16,8] step 2 ans 8 tgt 3  Q: How many stickers did Sam collect?  ""
+  [                      ] [16,12,8,4] step 2 ans 16 tgt 0  Q: How many stickers did Zoe collect?  ""

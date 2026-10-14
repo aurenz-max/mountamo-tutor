@@ -1,0 +1,36 @@
+
+Round whole numbers to the nearest 10 or 100 | difficulty=easy | run 1 | item space
+  [β  -1.3 to10|2d      ] What is 93 rounded to the nearest 10?  70(f) 110(f) 100(n) 90*
+  [β  -1.5 to10|3d|exact] What is 390 rounded to the nearest 10?  370(f) 410(f) 380(n) 390*
+  [β  -0.6 to10|2d|carry] What is 99 rounded to the nearest 10?  80(f) 90(n) 100* 120(f)
+  [β  -1.9 to10|2d|exact] What is 30 rounded to the nearest 10?  10(f) 30* 20(n) 50(f)
+  [β  -1.1 to10|3d|zero|exact] What is 600 rounded to the nearest 10?  580(f) 600* 590(n) 620(f)
+  (5 written question(s) missed the spec; plain question used)
+
+Round whole numbers to the nearest 10 or 100 | difficulty=medium | run 1 | item space
+  [β   0.6 to10|3d|five|carry] Sarah counted 795 shells on the beach and needs to round that number to the nearest 10 using 10. What does she get?  790(n) 780(f) 800* 820(f)
+  [β  -0.6 to10|2d|carry] Leo collected 96 stickers in his book and wants to round it to the nearest 10 using 10. What is the rounded number?  80(f) 120(f) 90(n) 100*
+  [β  -0.2 to10|3d|carry] Maya has 199 beads for a craft project and needs to round the count to the nearest 10 using 10. What number does she find?  200* 190(n) 220(f) 180(f)
+  [β   0.3 to10|3d|five|zero] Tom read 505 pages of his favorite book and has to round it to the nearest 10 using 10 for his report. What does he write down?  490(f) 530(f) 500(n) 510*
+  [β  -0.1 to10|3d|five ] Emma baked 515 cookies for the bake sale and must round the total to the nearest 10 using 10. What is the new number?  500(n) 540(f) 510(n) 520*
+
+Round whole numbers to the nearest 10 or 100 | difficulty=hard | run 1 | item space
+  [β   1.4 to100|3d|five|carry] Sarah has 950 stickers to sort into boxes of 100 stickers. What is 950 rounded to the nearest 100?  800(f) 950(n) 900(n) 1000*
+  [β   0.6 to10|3d|five|carry] Leo collected 795 marbles and wants to pack them into bags of 10. What is 795 rounded to the nearest 10?  790(n) 820(f) 800* 780(f)
+  [β   0.6 to100|3d|carry] Mia baked 980 cookies for the school fair using trays that hold 100 cookies. What is 980 rounded to the nearest 100?  800(f) 980(n) 900(n) 1000*
+  [β   0.7 to100|3d|five] Tom has 850 trading cards and sorts them into piles of 100 cards. What is 850 rounded to the nearest 100?  850(n) 900* 700(f) 800(n)
+  [β   1.4 to100|3d|five|carry] Emma reads 956 pages of her book and measures her progress in groups of 100 pages. What is 956 rounded to the nearest 100?  800(f) 960(n) 900(n) 1000*
+
+Round whole numbers to the nearest 10 or 100 | difficulty=(none) | run 1 | orchestrator
+  [multiple_choice easy] Look at the number line showing 43 and the halfway mark 45. What does 43 round to when rounded to the nearest 10?  40* 45(n) 50(n) 30(f)
+  [fill_in_blanks easy]   
+  [multiple_choice easy] Point P is plotted at 324 on the number line. Based on its position on the number line, what is 324 rounded to the nearest 100?  300* 350(f) 400(n) 320(n)
+  [multiple_choice easy] Sam has 167 marbles. He wants to tell his friend about how many he has by rounding to the nearest 100. What is 167 rounded to the nearest 100?  100(n) 160(f) 170(n) 200*
+  [true_false medium] When rounding the number 55 to the nearest 10, it rounds down to 50 because 5 is in the ones place.  
+
+Compare two three-digit numbers | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] Look at the two points marked on the number line. Which number is greater?  480 is greater because it is farther to the right.* 450 is greater because it comes first on the line.(n) 450 is greater because 5 tens is more than 8 tens.(f) They are equal because they both have 4 hundreds.(f)
+  [true_false medium] The number 412 is smaller than 382 because the digit 1 is smaller than the digit 8.  
+  [fill_in_blanks easy]   
+  [categorization_activity medium]   
+  [multiple_choice hard] The table shows the points scored by three runners in a track meet. Which runner scored the second-highest number of points?  Maya(n) Noah* Liam(n) Maya and Noah tied(f)

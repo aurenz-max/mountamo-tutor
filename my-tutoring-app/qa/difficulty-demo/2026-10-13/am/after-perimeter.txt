@@ -1,0 +1,56 @@
+
+Multiply multi-digit numbers with an area model | perimeter | difficulty=easy | run 1 | own path
+  [                      ] 9 × 5        parts [9]×[5] = 45  ""
+  [                      ] 10 × 8       parts [10]×[8] = 80  ""
+  [                      ] 15 × 6       parts [15]×[6] = 90  ""
+  [                      ] 12 × 10      parts [12]×[10] = 120  ""
+  [                      ] 18 × 9       parts [18]×[9] = 162  ""
+
+Multiply multi-digit numbers with an area model | perimeter | difficulty=easy | run 2 | own path
+  [                      ] 7 × 5        parts [7]×[5] = 35  ""
+  [                      ] 8 × 5        parts [8]×[5] = 40  ""
+  [                      ] 9 × 7        parts [9]×[7] = 63  ""
+  [                      ] 14 × 5       parts [14]×[5] = 70  ""
+  [                      ] 28 × 6       parts [28]×[6] = 168  ""
+
+Multiply multi-digit numbers with an area model | perimeter | difficulty=medium | run 1 | own path
+  [                      ] 19 × 6       parts [19]×[6] = 114  ""
+  [                      ] 17 × 14      parts [17]×[14] = 238  ""
+  [                      ] 22 × 10      parts [22]×[10] = 220  ""
+  [                      ] 26 × 12      parts [26]×[12] = 312  ""
+  [                      ] 22 × 18      parts [22]×[18] = 396  ""
+
+Multiply multi-digit numbers with an area model | perimeter | difficulty=medium | run 2 | own path
+  [                      ] 15 × 10      parts [15]×[10] = 150  ""
+  [                      ] 16 × 10      parts [16]×[10] = 160  ""
+  [                      ] 21 × 7       parts [21]×[7] = 147  ""
+  [                      ] 20 × 11      parts [20]×[11] = 220  ""
+  [                      ] 20 × 17      parts [20]×[17] = 340  ""
+
+Multiply multi-digit numbers with an area model | perimeter | difficulty=hard | run 1 | own path
+  [                      ] 20 × 16      parts [20]×[16] = 320  ""
+  [                      ] 29 × 17      parts [29]×[17] = 493  ""
+  [                      ] 30 × 27      parts [30]×[27] = 810  ""
+  [                      ] 30 × 28      parts [30]×[28] = 840  ""
+  [                      ] 30 × 29      parts [30]×[29] = 870  ""
+
+Multiply multi-digit numbers with an area model | perimeter | difficulty=hard | run 2 | own path
+  [                      ] 30 × 7       parts [30]×[7] = 210  ""
+  [                      ] 28 × 13      parts [28]×[13] = 364  ""
+  [                      ] 29 × 20      parts [29]×[20] = 580  ""
+  [                      ] 27 × 25      parts [27]×[25] = 675  ""
+  [                      ] 29 × 26      parts [29]×[26] = 754  ""
+
+Multiply multi-digit numbers with an area model | perimeter | difficulty=(none) | run 1 | own path
+  [                      ] 14 × 6       parts [14]×[6] = 84  ""
+  [                      ] 12 × 7       parts [12]×[7] = 84  ""
+  [                      ] 20 × 12      parts [20]×[12] = 240  ""
+  [                      ] 28 × 11      parts [28]×[11] = 308  ""
+  [                      ] 25 × 28      parts [25]×[28] = 700  ""
+
+Multiply multi-digit numbers with an area model | perimeter | difficulty=(none) | run 2 | own path
+  [                      ] 30 × 9       parts [30]×[9] = 270  ""
+  [                      ] 19 × 16      parts [19]×[16] = 304  ""
+  [                      ] 24 × 25      parts [24]×[25] = 600  ""
+  [                      ] 5 × 18       parts [5]×[18] = 90  ""
+  [                      ] 16 × 8       parts [16]×[8] = 128  ""

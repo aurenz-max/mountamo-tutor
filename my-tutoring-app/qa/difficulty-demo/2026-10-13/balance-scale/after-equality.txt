@@ -1,0 +1,56 @@
+
+The equal sign means the same weight | equality | difficulty=easy | run 1 | own path
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":4,"label":"4"}],"variableValue":4}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":5,"label":"5"}],"variableValue":5}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":6,"label":"6"}],"variableValue":6}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":10,"label":"10"}],"variableValue":10}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":11,"label":"11"}],"variableValue":11}  "Place weights on the right until balanced, then add their weights alou"
+
+The equal sign means the same weight | equality | difficulty=easy | run 2 | own path
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":6,"label":"6"}],"variableValue":6}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":7,"label":"7"}],"variableValue":7}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":8,"label":"8"}],"variableValue":8}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":9,"label":"9"}],"variableValue":9}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":11,"label":"11"}],"variableValue":11}  "Place weights on the right until balanced, then add their weights alou"
+
+The equal sign means the same weight | equality | difficulty=medium | run 1 | own path
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":6,"label":"6"}],"variableValue":6}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":7,"label":"7"}],"variableValue":7}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":11,"label":"11"}],"variableValue":11}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":12,"label":"12"}],"variableValue":12}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":15,"label":"15"}],"variableValue":15}  "Place weights on the right until balanced, then add their weights alou"
+
+The equal sign means the same weight | equality | difficulty=medium | run 2 | own path
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":8,"label":"8"}],"variableValue":8}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":9,"label":"9"}],"variableValue":9}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":10,"label":"10"}],"variableValue":10}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":11,"label":"11"}],"variableValue":11}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":12,"label":"12"}],"variableValue":12}  "Place weights on the right until balanced, then add their weights alou"
+
+The equal sign means the same weight | equality | difficulty=hard | run 1 | own path
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":11,"label":"11"}],"variableValue":11}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":14,"label":"14"}],"variableValue":14}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":16,"label":"16"}],"variableValue":16}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":17,"label":"17"}],"variableValue":17}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":20,"label":"20"}],"variableValue":20}  "Place weights on the right until balanced, then add their weights alou"
+
+The equal sign means the same weight | equality | difficulty=hard | run 2 | own path
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":11,"label":"11"}],"variableValue":11}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":15,"label":"15"}],"variableValue":15}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":16,"label":"16"}],"variableValue":16}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":18,"label":"18"}],"variableValue":18}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":19,"label":"19"}],"variableValue":19}  "Place weights on the right until balanced, then add their weights alou"
+
+The equal sign means the same weight | equality | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true},{"value":2,"label":"2"}],"rightSide":[{"value":8,"label":"8"},{"value":2,"label":"2"}],"variableValue":8}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true},{"value":12,"label":"12"}],"rightSide":[{"value":2,"label":"2"},{"value":12,"label":"12"}],"variableValue":2}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true},{"value":4,"label":"4"}],"rightSide":[{"value":12,"label":"12"},{"value":4,"label":"4"}],"variableValue":12}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":10,"label":"10"},{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":6,"label":"6"},{"value":10,"label":"10"}],"variableValue":6}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true},{"value":11,"label":"11"}],"rightSide":[{"value":7,"label":"7"},{"value":11,"label":"11"}],"variableValue":7}  "Place weights on the right until balanced, then add their weights alou"
+
+The equal sign means the same weight | equality | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true},{"value":3,"label":"3"}],"rightSide":[{"value":2,"label":"2"},{"value":3,"label":"3"}],"variableValue":2}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":3,"label":"3"},{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":7,"label":"7"},{"value":3,"label":"3"}],"variableValue":7}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":9,"label":"9"},{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":4,"label":"4"},{"value":9,"label":"9"}],"variableValue":4}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":10,"label":"10"},{"value":1,"label":"?","isVariable":true}],"rightSide":[{"value":5,"label":"5"},{"value":10,"label":"10"}],"variableValue":5}  "Place weights on the right until balanced, then add their weights alou"
+  [                      ] {"type":"equality","leftSide":[{"value":1,"label":"?","isVariable":true},{"value":9,"label":"9"}],"rightSide":[{"value":6,"label":"6"},{"value":9,"label":"9"}],"variableValue":6}  "Place weights on the right until balanced, then add their weights alou"

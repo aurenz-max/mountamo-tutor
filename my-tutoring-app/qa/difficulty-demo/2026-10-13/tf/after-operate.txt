@@ -1,0 +1,93 @@
+
+Add and subtract within 20 using ten frames | operate | difficulty=easy | run 1 | item space
+  [TenFrame] Item space add-sub-20 operate band [-2.5, -0.6] within 20: -|result|b0|t1@-1.6199999999999999 -|result|b0|t0@-1.92 +|result|b0|t1@-1.36 +|result|b0|t0@-2.3200000000000003 -|result|b1|t1@-0.
+  [β -1.6199999999999999 -|result|b0|t1] {"type":"subtract","targetCount":1,"startCount":14,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1","beta":-1.6199999999999999}}  "The frame starts with 14 counters. Take away 13. How many are left?"
+  [β -1.92 -|result|b0|t0] {"type":"subtract","targetCount":5,"startCount":6,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t0","beta":-1.92}}  "The frame starts with 6 counters. Take away 1. How many are left?"
+  [β -1.36 +|result|b0|t1] {"type":"add","targetCount":18,"addend1":15,"addend2":3,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1","beta":-1.36}}  "Show 15 + 3 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0] {"type":"add","targetCount":6,"addend1":1,"addend2":5,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0","beta":-2.3200000000000003}}  "Show 1 + 5 on the frame!"
+  [β -0.64 -|result|b1|t1] {"type":"subtract","targetCount":2,"startCount":12,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":-0.64}}  "The frame starts with 12 counters. Take away 10. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=easy | run 2 | item space
+  [TenFrame] Item space add-sub-20 operate band [-2.5, -0.6] within 20: -|result|b0|t1@-1.6199999999999999 +|result|b0|t1@-1.36 -|result|b1|t1@-0.64 +|result|b0|t0@-1.28 -|result|b0|t0@-1.34000000000000
+  [β -1.6199999999999999 -|result|b0|t1] {"type":"subtract","targetCount":12,"startCount":13,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1","beta":-1.6199999999999999}}  "The frame starts with 13 counters. Take away 1. How many are left?"
+  [β -1.36 +|result|b0|t1] {"type":"add","targetCount":17,"addend1":14,"addend2":3,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1","beta":-1.36}}  "Show 14 + 3 on the frame!"
+  [β -0.64 -|result|b1|t1] {"type":"subtract","targetCount":2,"startCount":12,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":-0.64}}  "The frame starts with 12 counters. Take away 10. How many are left?"
+  [β -1.28 +|result|b0|t0] {"type":"add","targetCount":10,"addend1":6,"addend2":4,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0","beta":-1.28}}  "Show 6 + 4 on the frame!"
+  [β -1.3400000000000003 -|result|b0|t0] {"type":"subtract","targetCount":2,"startCount":7,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t0","beta":-1.3400000000000003}}  "The frame starts with 7 counters. Take away 5. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=easy | run 3 | item space
+  [TenFrame] Item space add-sub-20 operate band [-2.5, -0.6] within 20: +|result|b0|t0@-1.6600000000000001 +|result|b0|t1@-2.0200000000000005 -|result|b1|t1@-0.64 -|result|b0|t1@-1.6199999999999999 -|re
+  [β -1.6600000000000001 +|result|b0|t0] {"type":"add","targetCount":9,"addend1":3,"addend2":6,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0","beta":-1.6600000000000001}}  "Show 3 + 6 on the frame!"
+  [β -2.0200000000000005 +|result|b0|t1] {"type":"add","targetCount":20,"addend1":1,"addend2":19,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1","beta":-2.0200000000000005}}  "Show 1 + 19 on the frame!"
+  [β -0.64 -|result|b1|t1] {"type":"subtract","targetCount":2,"startCount":12,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":-0.64}}  "The frame starts with 12 counters. Take away 10. How many are left?"
+  [β -1.6199999999999999 -|result|b0|t1] {"type":"subtract","targetCount":1,"startCount":12,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1","beta":-1.6199999999999999}}  "The frame starts with 12 counters. Take away 11. How many are left?"
+  [β -1.92 -|result|b0|t0] {"type":"subtract","targetCount":5,"startCount":6,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t0","beta":-1.92}}  "The frame starts with 6 counters. Take away 1. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=medium | run 1 | item space
+  [TenFrame] Item space add-sub-20 operate band [-0.6, 0.6] within 20: -|result|b1|t1@0.14000000000000012 -|result|b0|t1@-0.3400000000000002 +|result|b0|t1@-0.58 +|result|b1|t1@0.34 -|result|b1|t1@-0.03
+  [β 0.14000000000000012 -|result|b1|t1] {"type":"subtract","targetCount":8,"startCount":18,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.14000000000000012}}  "The frame starts with 18 counters. Take away 10. How many are left?"
+  [β -0.3400000000000002 -|result|b0|t1] {"type":"subtract","targetCount":13,"startCount":20,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1","beta":-0.3400000000000002}}  "The frame starts with 20 counters. Take away 7. How many are left?"
+  [β -0.58 +|result|b0|t1] {"type":"add","targetCount":20,"addend1":9,"addend2":11,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1","beta":-0.58}}  "Show 9 + 11 on the frame!"
+  [β  0.34 +|result|b1|t1] {"type":"add","targetCount":17,"addend1":8,"addend2":9,"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1","beta":0.34}}  "Show 8 + 9 on the frame!"
+  [β -0.03999999999999998 -|result|b1|t1] {"type":"subtract","targetCount":2,"startCount":20,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":-0.03999999999999998}}  "The frame starts with 20 counters. Take away 18. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=medium | run 2 | item space
+  [TenFrame] Item space add-sub-20 operate band [-0.6, 0.6] within 20: -|result|b1|t1@0.42 -|result|b0|t1@-0.18000000000000005 +|result|b1|t1@0.019999999999999962 +|result|b0|t1@-0.58 +|result|b1|t1@-0.
+  [β  0.42 -|result|b1|t1] {"type":"subtract","targetCount":4,"startCount":17,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.42}}  "The frame starts with 17 counters. Take away 13. How many are left?"
+  [β -0.18000000000000005 -|result|b0|t1] {"type":"subtract","targetCount":10,"startCount":19,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1","beta":-0.18000000000000005}}  "The frame starts with 19 counters. Take away 9. How many are left?"
+  [β 0.019999999999999962 +|result|b1|t1] {"type":"add","targetCount":12,"addend1":4,"addend2":8,"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1","beta":0.019999999999999962}}  "Show 4 + 8 on the frame!"
+  [β -0.58 +|result|b0|t1] {"type":"add","targetCount":20,"addend1":9,"addend2":11,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1","beta":-0.58}}  "Show 9 + 11 on the frame!"
+  [β -0.44000000000000006 +|result|b1|t1] {"type":"add","targetCount":11,"addend1":9,"addend2":2,"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1","beta":-0.44000000000000006}}  "Show 9 + 2 on the frame!"
+
+Add and subtract within 20 using ten frames | operate | difficulty=medium | run 3 | item space
+  [TenFrame] Item space add-sub-20 operate band [-0.6, 0.6] within 20: -|result|b0|t1@-0.42000000000000015 +|result|b1|t1@0.09999999999999992 -|result|b1|t1@0.42 +|result|b0|t1@-0.58 +|result|b1|t1@0.01
+  [β -0.42000000000000015 -|result|b0|t1] {"type":"subtract","targetCount":12,"startCount":18,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1","beta":-0.42000000000000015}}  "The frame starts with 18 counters. Take away 6. How many are left?"
+  [β 0.09999999999999992 +|result|b1|t1] {"type":"add","targetCount":13,"addend1":5,"addend2":8,"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1","beta":0.09999999999999992}}  "Show 5 + 8 on the frame!"
+  [β  0.42 -|result|b1|t1] {"type":"subtract","targetCount":4,"startCount":15,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.42}}  "The frame starts with 15 counters. Take away 11. How many are left?"
+  [β -0.58 +|result|b0|t1] {"type":"add","targetCount":20,"addend1":11,"addend2":9,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1","beta":-0.58}}  "Show 11 + 9 on the frame!"
+  [β 0.019999999999999962 +|result|b1|t1] {"type":"add","targetCount":13,"addend1":4,"addend2":9,"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1","beta":0.019999999999999962}}  "Show 4 + 9 on the frame!"
+
+Add and subtract within 20 using ten frames | operate | difficulty=hard | run 1 | item space
+  [TenFrame] Item space add-sub-20 operate band [0.6, 3.5] within 20: -|result|b1|t1@0.6599999999999999 -|result|b1|t1@0.8200000000000001 -|result|b1|t1@0.6599999999999999 -|result|b1|t1@0.74 -|result|b
+  [β 0.6599999999999999 -|result|b1|t1] {"type":"subtract","targetCount":8,"startCount":15,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.6599999999999999}}  "The frame starts with 15 counters. Take away 7. How many are left?"
+  [β 0.8200000000000001 -|result|b1|t1] {"type":"subtract","targetCount":9,"startCount":20,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.8200000000000001}}  "The frame starts with 20 counters. Take away 11. How many are left?"
+  [β 0.6599999999999999 -|result|b1|t1] {"type":"subtract","targetCount":7,"startCount":16,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.6599999999999999}}  "The frame starts with 16 counters. Take away 9. How many are left?"
+  [β  0.74 -|result|b1|t1] {"type":"subtract","targetCount":8,"startCount":19,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.74}}  "The frame starts with 19 counters. Take away 11. How many are left?"
+  [β 0.8200000000000001 -|result|b1|t1] {"type":"subtract","targetCount":9,"startCount":18,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.8200000000000001}}  "The frame starts with 18 counters. Take away 9. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=hard | run 2 | item space
+  [TenFrame] Item space add-sub-20 operate band [0.6, 3.5] within 20: -|result|b1|t1@0.74 -|result|b1|t1@0.6599999999999999 -|result|b1|t1@0.8200000000000001 -|result|b1|t1@0.6599999999999999 -|result|b
+  [β  0.74 -|result|b1|t1] {"type":"subtract","targetCount":8,"startCount":20,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.74}}  "The frame starts with 20 counters. Take away 12. How many are left?"
+  [β 0.6599999999999999 -|result|b1|t1] {"type":"subtract","targetCount":7,"startCount":16,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.6599999999999999}}  "The frame starts with 16 counters. Take away 9. How many are left?"
+  [β 0.8200000000000001 -|result|b1|t1] {"type":"subtract","targetCount":9,"startCount":20,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.8200000000000001}}  "The frame starts with 20 counters. Take away 11. How many are left?"
+  [β 0.6599999999999999 -|result|b1|t1] {"type":"subtract","targetCount":7,"startCount":19,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.6599999999999999}}  "The frame starts with 19 counters. Take away 12. How many are left?"
+  [β 0.6599999999999999 -|result|b1|t1] {"type":"subtract","targetCount":8,"startCount":15,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.6599999999999999}}  "The frame starts with 15 counters. Take away 7. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=hard | run 3 | item space
+  [TenFrame] Item space add-sub-20 operate band [0.6, 3.5] within 20: -|result|b1|t1@0.74 -|result|b1|t1@0.74 -|result|b1|t1@0.6599999999999999 -|result|b1|t1@0.6599999999999999 -|result|b1|t1@0.8200000
+  [β  0.74 -|result|b1|t1] {"type":"subtract","targetCount":8,"startCount":16,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.74}}  "The frame starts with 16 counters. Take away 8. How many are left?"
+  [β  0.74 -|result|b1|t1] {"type":"subtract","targetCount":9,"startCount":17,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.74}}  "The frame starts with 17 counters. Take away 8. How many are left?"
+  [β 0.6599999999999999 -|result|b1|t1] {"type":"subtract","targetCount":8,"startCount":15,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.6599999999999999}}  "The frame starts with 15 counters. Take away 7. How many are left?"
+  [β 0.6599999999999999 -|result|b1|t1] {"type":"subtract","targetCount":7,"startCount":14,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.6599999999999999}}  "The frame starts with 14 counters. Take away 7. How many are left?"
+  [β 0.8200000000000001 -|result|b1|t1] {"type":"subtract","targetCount":9,"startCount":20,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1","beta":0.8200000000000001}}  "The frame starts with 20 counters. Take away 11. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"add","targetCount":15,"addend1":9,"addend2":6}  "Show 9 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":12}  "The frame starts with 12 counters. Take away 6. How many are left?"
+  [                      ] {"type":"subtract","targetCount":7,"startCount":14}  "The frame starts with 14 counters. Take away 7. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"add","targetCount":15,"addend1":9,"addend2":6}  "Show 9 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":14}  "The frame starts with 14 counters. Take away 8. How many are left?"
+  [                      ] {"type":"subtract","targetCount":5,"startCount":12}  "The frame starts with 12 counters. Take away 7. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":9,"addend2":4}  "Show 9 + 4 on the frame!"
+  [                      ] {"type":"add","targetCount":14,"addend1":7,"addend2":7}  "Show 7 + 7 on the frame!"
+  [                      ] {"type":"subtract","targetCount":5,"startCount":12}  "The frame starts with 12 counters. Take away 7. How many are left?"
+  [                      ] {"type":"subtract","targetCount":8,"startCount":15}  "The frame starts with 15 counters. Take away 7. How many are left?"

@@ -1,0 +1,48 @@
+
+Fractions | build_equal | difficulty=easy | run 1 | own path
+  [                      ] {"numerator":6,"denominator":12,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 6/12 your own way: split the bar into equal p"
+  [                      ] {"numerator":5,"denominator":6,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 5/6 your own way: split the bar into equal pa"
+  [                      ] {"numerator":2,"denominator":8,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 2/8 your own way: split the bar into equal pa"
+  [                      ] {"numerator":2,"denominator":6,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 2/6 your own way: split the bar into equal pa"
+
+Fractions | build_equal | difficulty=easy | run 2 | own path
+  [                      ] {"numerator":4,"denominator":10,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 4/10 your own way: split the bar into equal p"
+  [                      ] {"numerator":6,"denominator":10,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 6/10 your own way: split the bar into equal p"
+  [                      ] {"numerator":10,"denominator":12,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 10/12 your own way: split the bar into equal "
+  [                      ] {"numerator":2,"denominator":8,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 2/8 your own way: split the bar into equal pa"
+
+Fractions | build_equal | difficulty=medium | run 1 | own path
+  [                      ] {"numerator":4,"denominator":8,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 4/8 your own way: split the bar into equal pa"
+  [                      ] {"numerator":2,"denominator":3,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 2/3 your own way: split the bar into equal pa"
+  [                      ] {"numerator":5,"denominator":6,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 5/6 your own way: split the bar into equal pa"
+  [                      ] {"numerator":1,"denominator":4,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 1/4 your own way: split the bar into equal pa"
+
+Fractions | build_equal | difficulty=medium | run 2 | own path
+  [                      ] {"numerator":2,"denominator":3,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 2/3 your own way: split the bar into equal pa"
+  [                      ] {"numerator":5,"denominator":6,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 5/6 your own way: split the bar into equal pa"
+  [                      ] {"numerator":1,"denominator":3,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 1/3 your own way: split the bar into equal pa"
+  [                      ] {"numerator":8,"denominator":10,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 8/10 your own way: split the bar into equal p"
+
+Fractions | build_equal | difficulty=hard | run 1 | own path
+  [                      ] {"numerator":6,"denominator":12,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 6/12 your own way: split the bar into equal p"
+  [                      ] {"numerator":2,"denominator":6,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 2/6 your own way: split the bar into equal pa"
+  [                      ] {"numerator":6,"denominator":8,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 6/8 your own way: split the bar into equal pa"
+  [                      ] {"numerator":10,"denominator":12,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 10/12 your own way: split the bar into equal "
+
+Fractions | build_equal | difficulty=hard | run 2 | own path
+  [                      ] {"numerator":3,"denominator":5,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 3/5 your own way: split the bar into equal pa"
+  [                      ] {"numerator":6,"denominator":12,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 6/12 your own way: split the bar into equal p"
+  [                      ] {"numerator":8,"denominator":10,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 8/10 your own way: split the bar into equal p"
+  [                      ] {"numerator":4,"denominator":12,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 4/12 your own way: split the bar into equal p"
+
+Fractions | build_equal | difficulty=(none) | run 1 | own path
+  [                      ] {"numerator":10,"denominator":12,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 10/12 your own way: split the bar into equal "
+  [                      ] {"numerator":5,"denominator":10,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 5/10 your own way: split the bar into equal p"
+  [                      ] {"numerator":9,"denominator":12,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 9/12 your own way: split the bar into equal p"
+  [                      ] {"numerator":8,"denominator":12,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 8/12 your own way: split the bar into equal p"
+
+Fractions | build_equal | difficulty=(none) | run 2 | own path
+  [                      ] {"numerator":2,"denominator":12,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 2/12 your own way: split the bar into equal p"
+  [                      ] {"numerator":2,"denominator":5,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 2/5 your own way: split the bar into equal pa"
+  [                      ] {"numerator":2,"denominator":4,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 2/4 your own way: split the bar into equal pa"
+  [                      ] {"numerator":2,"denominator":3,"numeratorChoices":[],"denominatorChoices":[]}  "Make a fraction equal to 2/3 your own way: split the bar into equal pa"

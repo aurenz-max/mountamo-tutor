@@ -1,0 +1,84 @@
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=easy | run 1 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. One part is 1. Can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":6,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "We have 6 in all. If 2 is one part, what is the other part?"
+  [                      ] {"type":"missing-part","whole":7,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number bond for 7. With 3 as a known part, find the missin"
+  [                      ] {"type":"missing-part","whole":8,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole number is 8. One part is 4. What is the missing part?"
+  [                      ] {"type":"missing-part","whole":10,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us complete the bond for 10! If 6 is one part, find the missing pa"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=easy | run 2 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. One part is 1. Can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":6,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 6. One part is 2. Can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":7,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 7. One part is 3. Can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":9,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 9. One part is 4. Can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":10,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. One part is 6. Can you find the missing part?"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=easy | run 3 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. One part is 1. Can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":6,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a whole of 6. If one part is 2, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":7,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number bond with a whole of 7. One part is 3. What number "
+  [                      ] {"type":"missing-part","whole":8,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 8. One part is 4. Say the missing part out loud!"
+  [                      ] {"type":"missing-part","whole":10,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Our final challenge has a whole of 10. One part is 3. Find the missing"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=medium | run 1 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. If one part is 1, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":6,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 6. If one part is 2, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":7,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 7. If one part is 3, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":9,"part1":5,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 9. If one part is 4, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":10,"part1":5,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. If one part is 5, what is the missing part?"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=medium | run 2 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. One part is 1. Can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":6,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 6. One part is 2. What is the missing part?"
+  [                      ] {"type":"missing-part","whole":7,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 7. One part is 3. Find the missing part!"
+  [                      ] {"type":"missing-part","whole":8,"part1":5,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 8. One part is 5. What number goes with 5 to make 8?"
+  [                      ] {"type":"missing-part","whole":10,"part1":6,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. One part is 4. Can you figure out the missing part?"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=medium | run 3 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. If one part is 1, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":6,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 6. If one part is 2, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":7,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 7. If one part is 3, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":9,"part1":5,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 9. If one part is 4, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":10,"part1":5,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. If one part is 5, what is the missing part?"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=hard | run 1 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us look at the whole number 4. One part is 1. Can you find the mis"
+  [                      ] {"type":"missing-part","whole":6,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Here is the whole number 6. If one part is 2, what is the other missin"
+  [                      ] {"type":"missing-part","whole":7,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a whole of 7. One part shown is 3. What number makes up the re"
+  [                      ] {"type":"missing-part","whole":8,"part1":5,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the whole number 8. One part is 5. Can you figure out the miss"
+  [                      ] {"type":"missing-part","whole":10,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "This is our final challenge with the whole number 10. If one part is 4"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=hard | run 2 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us explore the number 4! If one part is 1, what is the missing par"
+  [                      ] {"type":"missing-part","whole":6,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Time for the number 6! We know one part is 2. What is the missing part"
+  [                      ] {"type":"missing-part","whole":7,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number 7! If one part is 3, what is the missing part to ma"
+  [                      ] {"type":"missing-part","whole":8,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us check out 8! With 4 as one part, what is the missing part to ma"
+  [                      ] {"type":"missing-part","whole":10,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "You are doing great with 10! If one part is 3, what is the missing par"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=hard | run 3 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. One part is 1. What is the missing part?"
+  [                      ] {"type":"missing-part","whole":6,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 6. One part is 2. What is the missing part?"
+  [                      ] {"type":"missing-part","whole":7,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 7. One part is 3. What is the missing part?"
+  [                      ] {"type":"missing-part","whole":9,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 9. One part is 4. What is the missing part?"
+  [                      ] {"type":"missing-part","whole":10,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. One part is 3. What is the missing part?"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=(none) | run 1 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. If one part is 1, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":6,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 6. If one part is 2, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":7,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 7. If one part is 4, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":9,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 9. If one part is 3, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":10,"part1":6,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. If one part is 6, what is the missing part?"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=(none) | run 2 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. One part is 1. What is the missing part?"
+  [                      ] {"type":"missing-part","whole":6,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a whole of 6. If one part is 2, what is the other part?"
+  [                      ] {"type":"missing-part","whole":7,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number bond for 7. One part is 3. Can you find the missing"
+  [                      ] {"type":"missing-part","whole":8,"part1":5,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 8. One part is 5. What is the missing part?"
+  [                      ] {"type":"missing-part","whole":10,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Can you solve this final bond where the whole is 10 and one part is 4?"
+
+Number bonds: parts and wholes within 10 | missing_part | difficulty=(none) | run 3 | own path | max 10
+  [                      ] {"type":"missing-part","whole":4,"part1":1,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. One part is 1. Can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":6,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a whole of 6. If one part is 2, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":7,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number bond for 7. One part is 3. What goes in the missing"
+  [                      ] {"type":"missing-part","whole":8,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 8! One part is 4. Tell me the missing part."
+  [                      ] {"type":"missing-part","whole":10,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let's reach the top! The whole is 10 and one part is 3. What is the fi"

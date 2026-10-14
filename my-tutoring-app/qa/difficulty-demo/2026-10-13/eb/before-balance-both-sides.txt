@@ -1,0 +1,84 @@
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=easy | run 1 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"5 + 3","rightSide":"? + 3","correctAnswer":5}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"9 + 2","rightSide":"7 + ?","correctAnswer":4}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"12 - 4","rightSide":"? + 2","correctAnswer":6}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"8 + 7","rightSide":"10 + ?","correctAnswer":5}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"15 - 3","rightSide":"? + 4","correctAnswer":8}  "First work out the left side, then make the right side match that amou"
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=easy | run 2 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"4 + 3","rightSide":"2 + ?","correctAnswer":5}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"9 - 3","rightSide":"5 + ?","correctAnswer":1}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"8 + 4","rightSide":"10 + ?","correctAnswer":2}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"15 - 5","rightSide":"3 + ?","correctAnswer":7}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"7 + 8","rightSide":"6 + ?","correctAnswer":9}  "First work out the left side, then make the right side match that amou"
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=easy | run 3 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"4 + 3","rightSide":"? + 2","correctAnswer":5}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"9 - 2","rightSide":"1 + ?","correctAnswer":6}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"5 + 6","rightSide":"3 + ?","correctAnswer":8}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"15 - 5","rightSide":"? + 6","correctAnswer":4}  "First work out the left side, then make the right side match that amou"
+  [                      ] {"type":"balance","leftSide":"8 + 7","rightSide":"8 + ?","correctAnswer":7}  "First work out the left side, then make the right side match that amou"
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=medium | run 1 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"5 + 2","rightSide":"? + 4","correctAnswer":3}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"9 - 2","rightSide":"2 + ?","correctAnswer":5}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"8 + 4","rightSide":"? + 6","correctAnswer":6}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"15 - 5","rightSide":"3 + ?","correctAnswer":7}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"7 + 9","rightSide":"8 + ?","correctAnswer":8}  "Make both sides equal."
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=medium | run 2 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"5 + 3","rightSide":"? + 4","correctAnswer":4}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"10 - 2","rightSide":"? + 2","correctAnswer":6}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"7 + 6","rightSide":"8 + ?","correctAnswer":5}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"15 - 5","rightSide":"12 - ?","correctAnswer":2}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"9 + 8","rightSide":"? + 8","correctAnswer":9}  "Make both sides equal."
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=medium | run 3 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"5 + 3","rightSide":"? + 4","correctAnswer":4}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"10 - 2","rightSide":"? + 2","correctAnswer":6}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"7 + 6","rightSide":"8 + ?","correctAnswer":5}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"15 - 4","rightSide":"4 + ?","correctAnswer":7}  "Make both sides equal."
+  [                      ] {"type":"balance","leftSide":"9 + 8","rightSide":"? + 8","correctAnswer":9}  "Make both sides equal."
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=hard | run 1 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"6 + 3","rightSide":"4 + ?","correctAnswer":5}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"10 - 2","rightSide":"? + 1","correctAnswer":7}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"5 + 7","rightSide":"4 + ?","correctAnswer":8}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"15 - 5","rightSide":"14 - ?","correctAnswer":4}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"8 + 8","rightSide":"7 + ?","correctAnswer":9}  "What number balances both sides?"
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=hard | run 2 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"5 + 3","rightSide":"? + 4","correctAnswer":4}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"10 - 2","rightSide":"2 + ?","correctAnswer":6}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"6 + 5","rightSide":"4 + ?","correctAnswer":7}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"15 - 4","rightSide":"? + 3","correctAnswer":8}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"7 + 8","rightSide":"6 + ?","correctAnswer":9}  "What number balances both sides?"
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=hard | run 3 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"4 + 3","rightSide":"2 + ?","correctAnswer":5}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"10 - 2","rightSide":"6 + ?","correctAnswer":2}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"5 + 8","rightSide":"6 + ?","correctAnswer":7}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"15 - 4","rightSide":"2 + ?","correctAnswer":9}  "What number balances both sides?"
+  [                      ] {"type":"balance","leftSide":"9 + 9","rightSide":"10 + ?","correctAnswer":8}  "What number balances both sides?"
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=(none) | run 1 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"4 + 3","rightSide":"2 + ?","correctAnswer":5}  "Can you find the missing number to make both sides equal?"
+  [                      ] {"type":"balance","leftSide":"10 - 2","rightSide":"? + 2","correctAnswer":6}  "Find the missing number so the scale stays balanced."
+  [                      ] {"type":"balance","leftSide":"5 + 7","rightSide":"4 + ?","correctAnswer":8}  "Make sure the left side and the right side match completely!"
+  [                      ] {"type":"balance","leftSide":"15 - 4","rightSide":"? + 2","correctAnswer":9}  "What number do we need to add to make this equation balanced?"
+  [                      ] {"type":"balance","leftSide":"9 + 8","rightSide":"10 + ?","correctAnswer":7}  "Challenge time! Find the final missing number to keep the scale even."
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=(none) | run 2 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"5 + 2","rightSide":"? + 4","correctAnswer":3}  "Find the missing number to make both sides equal!"
+  [                      ] {"type":"balance","leftSide":"8 + 2","rightSide":"5 + ?","correctAnswer":5}  "What number do we need here to balance the scale?"
+  [                      ] {"type":"balance","leftSide":"12 - 3","rightSide":"? + 5","correctAnswer":4}  "Keep both sides balanced! Fill in the missing number."
+  [                      ] {"type":"balance","leftSide":"7 + 7","rightSide":"8 + ?","correctAnswer":6}  "Find the missing piece so both sides equal the same amount."
+  [                      ] {"type":"balance","leftSide":"15 - 4","rightSide":"? + 4","correctAnswer":7}  "Final challenge! Make sure both sides match perfectly."
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=(none) | run 3 | own path | max 20
+  [                      ] {"type":"balance","leftSide":"5 + 4","rightSide":"6 + ?","correctAnswer":3}  "Find the missing number to make the right side equal to the left side!"
+  [                      ] {"type":"balance","leftSide":"10 - 2","rightSide":"3 + ?","correctAnswer":5}  "Can you balance the scale? Find the missing number that makes both sid"
+  [                      ] {"type":"balance","leftSide":"6 + 6","rightSide":"5 + ?","correctAnswer":7}  "Make both sides equal by finding the correct number for the question m"
+  [                      ] {"type":"balance","leftSide":"15 - 5","rightSide":"11 - ?","correctAnswer":1}  "Keep the equation balanced! What number goes in place of the question "
+  [                      ] {"type":"balance","leftSide":"9 + 8","rightSide":"9 + ?","correctAnswer":8}  "Solve for the final challenge and make sure both sides match perfectly"

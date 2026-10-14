@@ -1,0 +1,62 @@
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=easy | run 1 | code space
+  [CoinCounter] Item space make-change: make-change band [-2.5, -0.6]: 50|no-borrow|fives@-1.3 100|no-borrow|fives@-0.8 100|no-borrow|fives|small@-1.1 25|no-borrow|pennies|small@-1.2 25|no-borrow|pennies@-0.9
+  [β  -1.3 50|no-borrow|fives] {"type":"make-change","paidAmount":50,"itemCost":30,"correctChange":20,"itemSpace":{"space":"make-change","structure":"50|no-borrow|fives","beta":-1.3}}  "You buy a shiny pencil for 30¢ and pay with a half-dollar (50¢). How m"
+  [β  -0.8 100|no-borrow|fives] {"type":"make-change","paidAmount":100,"itemCost":80,"correctChange":20,"itemSpace":{"space":"make-change","structure":"100|no-borrow|fives","beta":-0.8}}  "You buy an eraser cap for 80¢ and pay with a dollar (100¢). How much c"
+  [β  -1.1 100|no-borrow|fives|small] {"type":"make-change","paidAmount":100,"itemCost":90,"correctChange":10,"itemSpace":{"space":"make-change","structure":"100|no-borrow|fives|small","beta":-1.1}}  "You buy a lined notebook for 90¢ and pay with a dollar (100¢). How muc"
+  [β  -1.2 25|no-borrow|pennies|small] {"type":"make-change","paidAmount":25,"itemCost":24,"correctChange":1,"itemSpace":{"space":"make-change","structure":"25|no-borrow|pennies|small","beta":-1.2}}  "You buy a colored marker for 24¢ and pay with a quarter (25¢). How muc"
+  [β  -0.9 25|no-borrow|pennies] {"type":"make-change","paidAmount":25,"itemCost":13,"correctChange":12,"itemSpace":{"space":"make-change","structure":"25|no-borrow|pennies","beta":-0.9}}  "You buy a paper folder for 13¢ and pay with a quarter (25¢). How much "
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=easy | run 2 | code space
+  [CoinCounter] Item space make-change: make-change band [-2.5, -0.6]: 50|no-borrow|fives@-1.3 50|borrow|fives|small@-0.8 100|no-borrow|fives@-0.8 25|no-borrow|pennies@-0.9 25|no-borrow|fives@-1.3
+  [β  -1.3 50|no-borrow|fives] {"type":"make-change","paidAmount":50,"itemCost":30,"correctChange":20,"itemSpace":{"space":"make-change","structure":"50|no-borrow|fives","beta":-1.3}}  "You buy a sticker for 30¢ and pay with a half-dollar (50¢). How much c"
+  [β  -0.8 50|borrow|fives|small] {"type":"make-change","paidAmount":50,"itemCost":45,"correctChange":5,"itemSpace":{"space":"make-change","structure":"50|borrow|fives|small","beta":-0.8}}  "You buy an apple for 45¢ and pay with a half-dollar (50¢). How much ch"
+  [β  -0.8 100|no-borrow|fives] {"type":"make-change","paidAmount":100,"itemCost":80,"correctChange":20,"itemSpace":{"space":"make-change","structure":"100|no-borrow|fives","beta":-0.8}}  "You buy a red marble for 80¢ and pay with a dollar (100¢). How much ch"
+  [β  -0.9 25|no-borrow|pennies] {"type":"make-change","paidAmount":25,"itemCost":12,"correctChange":13,"itemSpace":{"space":"make-change","structure":"25|no-borrow|pennies","beta":-0.9}}  "You buy a small eraser for 12¢ and pay with a quarter (25¢). How much "
+  [β  -1.3 25|no-borrow|fives] {"type":"make-change","paidAmount":25,"itemCost":5,"correctChange":20,"itemSpace":{"space":"make-change","structure":"25|no-borrow|fives","beta":-1.3}}  "You buy a toy car for 5¢ and pay with a quarter (25¢). How much change"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=medium | run 1 | code space
+  [CoinCounter] Item space make-change: make-change band [-0.6, 0.6]: 50|borrow|fives@-0.5 100|across-zero|pennies|small@0.6 25|borrow|pennies@-0.1 50|borrow|pennies@-0.1 100|across-zero|fives|small@0.2
+  [β  -0.5 50|borrow|fives] {"type":"make-change","paidAmount":50,"itemCost":15,"correctChange":35,"itemSpace":{"space":"make-change","structure":"50|borrow|fives","beta":-0.5}}  "You buy a pencil sharpener for 15¢ and pay with a half-dollar (50¢). H"
+  [β   0.6 100|across-zero|pennies|small] {"type":"make-change","paidAmount":100,"itemCost":94,"correctChange":6,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies|small","beta":0.6}}  "You buy an eraser for 94¢ and pay with a dollar (100¢). How much chang"
+  [β  -0.1 25|borrow|pennies] {"type":"make-change","paidAmount":25,"itemCost":7,"correctChange":18,"itemSpace":{"space":"make-change","structure":"25|borrow|pennies","beta":-0.1}}  "You buy a colored marker for 7¢ and pay with a quarter (25¢). How much"
+  [β  -0.1 50|borrow|pennies] {"type":"make-change","paidAmount":50,"itemCost":14,"correctChange":36,"itemSpace":{"space":"make-change","structure":"50|borrow|pennies","beta":-0.1}}  "You buy a notebook for 14¢ and pay with a half-dollar (50¢). How much "
+  [β   0.2 100|across-zero|fives|small] {"type":"make-change","paidAmount":100,"itemCost":95,"correctChange":5,"itemSpace":{"space":"make-change","structure":"100|across-zero|fives|small","beta":0.2}}  "You buy a paper clip for 95¢ and pay with a dollar (100¢). How much ch"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=medium | run 2 | code space
+  [CoinCounter] Item space make-change: make-change band [-0.6, 0.6]: 50|borrow|pennies@-0.1 50|borrow|fives@-0.5 25|borrow|pennies|small@-0.4 25|borrow|pennies@-0.1 100|across-zero|pennies|small@0.6
+  [β  -0.1 50|borrow|pennies] {"type":"make-change","paidAmount":50,"itemCost":31,"correctChange":19,"itemSpace":{"space":"make-change","structure":"50|borrow|pennies","beta":-0.1}}  "You buy a red apple for 31¢ and pay with a half-dollar (50¢). How much"
+  [β  -0.5 50|borrow|fives] {"type":"make-change","paidAmount":50,"itemCost":25,"correctChange":25,"itemSpace":{"space":"make-change","structure":"50|borrow|fives","beta":-0.5}}  "You buy a shiny sticker for 25¢ and pay with a half-dollar (50¢). How "
+  [β  -0.4 25|borrow|pennies|small] {"type":"make-change","paidAmount":25,"itemCost":19,"correctChange":6,"itemSpace":{"space":"make-change","structure":"25|borrow|pennies|small","beta":-0.4}}  "You buy an orange carrot for 19¢ and pay with a quarter (25¢). How muc"
+  [β  -0.1 25|borrow|pennies] {"type":"make-change","paidAmount":25,"itemCost":8,"correctChange":17,"itemSpace":{"space":"make-change","structure":"25|borrow|pennies","beta":-0.1}}  "You buy a fresh plum for 8¢ and pay with a quarter (25¢). How much cha"
+  [β   0.6 100|across-zero|pennies|small] {"type":"make-change","paidAmount":100,"itemCost":96,"correctChange":4,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies|small","beta":0.6}}  "You buy a small pear for 96¢ and pay with a dollar (100¢). How much ch"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=hard | run 1 | code space
+  [CoinCounter] Item space make-change: make-change band [0.6, 3.5]: 100|across-zero|pennies@0.9 100|across-zero|pennies|small@0.6 100|across-zero|pennies|small@0.6 100|across-zero|pennies@0.9 100|across-zero|pennies@0.9
+  [β   0.9 100|across-zero|pennies] {"type":"make-change","paidAmount":100,"itemCost":21,"correctChange":79,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies","beta":0.9}}  "You buy a sour gummy worm for 21¢ and pay with a dollar (100¢). How mu"
+  [β   0.6 100|across-zero|pennies|small] {"type":"make-change","paidAmount":100,"itemCost":92,"correctChange":8,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies|small","beta":0.6}}  "You buy a chocolate drop for 92¢ and pay with a dollar (100¢). How muc"
+  [β   0.6 100|across-zero|pennies|small] {"type":"make-change","paidAmount":100,"itemCost":97,"correctChange":3,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies|small","beta":0.6}}  "You buy an orange lollipop for 97¢ and pay with a dollar (100¢). How m"
+  [β   0.9 100|across-zero|pennies] {"type":"make-change","paidAmount":100,"itemCost":49,"correctChange":51,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies","beta":0.9}}  "You buy a licorice string for 49¢ and pay with a dollar (100¢). How mu"
+  [β   0.9 100|across-zero|pennies] {"type":"make-change","paidAmount":100,"itemCost":86,"correctChange":14,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies","beta":0.9}}  "You buy a strawberry drop for 86¢ and pay with a dollar (100¢). How mu"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=hard | run 2 | code space
+  [CoinCounter] Item space make-change: make-change band [0.6, 3.5]: 100|across-zero|pennies|small@0.6 100|across-zero|pennies@0.9 100|across-zero|pennies@0.9 100|across-zero|pennies|small@0.6 100|across-zero|pennies|small@0.6
+  [β   0.6 100|across-zero|pennies|small] {"type":"make-change","paidAmount":100,"itemCost":93,"correctChange":7,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies|small","beta":0.6}}  "You buy a sour gummy for 93¢ and pay with a dollar (100¢). How much ch"
+  [β   0.9 100|across-zero|pennies] {"type":"make-change","paidAmount":100,"itemCost":81,"correctChange":19,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies","beta":0.9}}  "You buy an orange slice for 81¢ and pay with a dollar (100¢). How much"
+  [β   0.9 100|across-zero|pennies] {"type":"make-change","paidAmount":100,"itemCost":52,"correctChange":48,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies","beta":0.9}}  "You buy a chocolate drop for 52¢ and pay with a dollar (100¢). How muc"
+  [β   0.6 100|across-zero|pennies|small] {"type":"make-change","paidAmount":100,"itemCost":99,"correctChange":1,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies|small","beta":0.6}}  "You buy a licorice string for 99¢ and pay with a dollar (100¢). How mu"
+  [β   0.6 100|across-zero|pennies|small] {"type":"make-change","paidAmount":100,"itemCost":92,"correctChange":8,"itemSpace":{"space":"make-change","structure":"100|across-zero|pennies|small","beta":0.6}}  "You buy an apple pop for 92¢ and pay with a dollar (100¢). How much ch"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"make-change","paidAmount":25,"itemCost":20,"correctChange":5}  "You buy a crisp red apple for 20 cents. You hand the farmer a quarter "
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":35,"correctChange":15}  "You pick a bunch of fresh carrots that cost 35 cents. You pay with a 5"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":45,"correctChange":55}  "A sweet peach costs 45 cents. You give the farmer a one-dollar coin wo"
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":60,"correctChange":15}  "You buy a mini pumpkin for 60 cents. You hand the vendor 75 cents (thr"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":55,"correctChange":45}  "A basket of fresh berries costs 55 cents. You pay with a one-dollar co"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"make-change","paidAmount":25,"itemCost":15,"correctChange":10}  "You buy a crunchy apple for 15 cents. You pay with a 25-cent quarter. "
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":20,"correctChange":30}  "You buy a sweet carrot for 20 cents. You pay with a 50-cent half-dolla"
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":35,"correctChange":15}  "You buy a basket of fresh berries for 35 cents. You hand the farmer a "
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":42,"correctChange":33}  "You buy a bunch of radishes for 42 cents. You pay with a 75-cent amoun"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":60,"correctChange":40}  "You buy a heavy pumpkin for 60 cents. You pay with a 100-cent dollar c"

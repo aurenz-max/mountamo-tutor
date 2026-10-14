@@ -1,0 +1,76 @@
+
+Multiply within 100 using multiplication facts | connect | difficulty=easy | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: product|a1|t0|h0@-1.73 product|a0|t1|h0@-1.29 product|a0|t0|h0@-0.86 product|a1|t0|h1@-0.77 product|a1|t1|h0@-1
+  [β -1.73 product|a1|t0|h0 ] 3 × 2 = 6    hide product ans   6 "Look at all the representations showing 3 groups of 2. What is the total product?"
+  [β -1.29 product|a0|t1|h0 ] 3 × 3 = 9    hide product ans   9 "Examine the representations showing 3 groups of 3. What is the total product?"
+  [β -0.86 product|a0|t0|h0 ] 3 × 4 = 12   hide product ans  12 "Inspect all the views showing 3 groups of 4. What is the total product?"
+  [β -0.77 product|a1|t0|h1 ] 8 × 5 = 40   hide product ans  40 "Study the representations for 8 groups of 5. What is the total product?"
+  [β    -1 product|a1|t1|h0 ] 10 × 10 = 100 hide product ans 100 "Look at all the models showing 10 groups of 10. What is the total product?"
+
+Multiply within 100 using multiplication facts | connect | difficulty=easy | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: product|a1|t0|h0@-1.56 product|a1|t0|h1@-1.11 product|a1|t1|h0@-1.9 product|a0|t0|h0@-0.86 product|a0|t1|h0@-1.29
+  [β -1.56 product|a1|t0|h0 ] 5 × 4 = 20   hide product ans  20 "All five models show 5 groups of 4. What is the total number of stickers?"
+  [β -1.11 product|a1|t0|h1 ] 6 × 2 = 12   hide product ans  12 "All five models show 6 groups of 2. What is the total number of items?"
+  [β  -1.9 product|a1|t1|h0 ] 5 × 5 = 25   hide product ans  25 "All five models show 5 groups of 5. What is the total product?"
+  [β -0.86 product|a0|t0|h0 ] 3 × 4 = 12   hide product ans  12 "All five models show 3 groups of 4. What is the total?"
+  [β -1.29 product|a0|t1|h0 ] 3 × 3 = 9    hide product ans   9 "All five models show 3 groups of 3. What is the total?"
+
+Multiply within 100 using multiplication facts | connect | difficulty=medium | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: product|a0|t0|h1@-0.13 product|a0|t1|h2@0.29 product|a1|t0|h1@-0.53 product|a0|t0|h1@-0.16 product|a1|t0|h1@-0.17
+  [β -0.13 product|a0|t0|h1 ] 9 × 3 = 27   hide product ans  27 "Look at all the ways to show 9 packs of 3 stickers. How many stickers are there in total?"
+  [β  0.29 product|a0|t1|h2 ] 7 × 7 = 49   hide product ans  49 "Examine the 7 rows of 7 items across all models. What is the total amount?"
+  [β -0.53 product|a1|t0|h1 ] 6 × 10 = 60  hide product ans  60 "Compare the 6 groups of 10 items in all representations. What is the grand total?"
+  [β -0.16 product|a0|t0|h1 ] 6 × 4 = 24   hide product ans  24 "Look at the 6 groups of 4 shown in every model. What is the total product?"
+  [β -0.17 product|a1|t0|h1 ] 10 × 9 = 90  hide product ans  90 "Examine all five models for 10 groups of 9. What is the final total?"
+
+Multiply within 100 using multiplication facts | connect | difficulty=medium | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: product|a0|t0|h1@-0.16 product|a1|t0|h1@-0.29 product|a0|t1|h2@0.47 product|a0|t1|h2@0.13 product|a1|t0|h1@-0.53
+  [β -0.16 product|a0|t0|h1 ] 4 × 6 = 24   hide product ans  24 "Look at all the models for 4 groups of 6. What is the total product?"
+  [β -0.29 product|a1|t0|h1 ] 8 × 10 = 80  hide product ans  80 "Look at all the models for 8 groups of 10. What is the total product?"
+  [β  0.47 product|a0|t1|h2 ] 8 × 8 = 64   hide product ans  64 "Look at all the models for 8 groups of 8. What is the total product?"
+  [β  0.13 product|a0|t1|h2 ] 6 × 6 = 36   hide product ans  36 "Look at all the models for 6 groups of 6. What is the total product?"
+  [β -0.53 product|a1|t0|h1 ] 10 × 6 = 60  hide product ans  60 "Look at all the models for 10 groups of 6. What is the total product?"
+
+Multiply within 100 using multiplication facts | connect | difficulty=hard | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t1|h2@0.67 product|a0|t0|h2@0.86 product|a0|t0|h2@0.77 product|a0|t0|h2@0.6 product|a0|t0|h2@0.75
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 "Examine all the representations of 9 groups of 9. What is the total product?"
+  [β  0.86 product|a0|t0|h2 ] 7 × 9 = 63   hide product ans  63 "Look at the models for 7 groups of 9. What is the total product?"
+  [β  0.77 product|a0|t0|h2 ] 7 × 8 = 56   hide product ans  56 "Examine the visual models for 7 groups of 8. What is the total product?"
+  [β   0.6 product|a0|t0|h2 ] 7 × 6 = 42   hide product ans  42 "Study the representations for 7 groups of 6. What is the total product?"
+  [β  0.75 product|a0|t0|h2 ] 9 × 6 = 54   hide product ans  54 "Review the final set of models for 9 groups of 6. What is the total product?"
+
+Multiply within 100 using multiplication facts | connect | difficulty=hard | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t0|h2@0.86 product|a0|t1|h2@0.67 product|a0|t0|h2@0.77 product|a0|t0|h2@0.68 product|a0|t0|h2@0.96
+  [β  0.86 product|a0|t0|h2 ] 7 × 9 = 63   hide product ans  63 "Look across all the representations. If there are 7 groups of 9, how many in total?"
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 "Look at the models showing 9 groups of 9. What is the total product?"
+  [β  0.77 product|a0|t0|h2 ] 8 × 7 = 56   hide product ans  56 "Examine the representations for 8 groups of 7. What is the total?"
+  [β  0.68 product|a0|t0|h2 ] 8 × 6 = 48   hide product ans  48 "Using all the models shown for 8 groups of 6, what is the final product?"
+  [β  0.96 product|a0|t0|h2 ] 9 × 8 = 72   hide product ans  72 "Study the representations for 9 groups of 8. How many in all?"
+
+Multiply within 100 using multiplication facts | connect | difficulty=(none) | run 1 | own path
+  [                         ] 10 × 7 = 70  hide product ans  70 "Look at all 10 groups of 7 stickers. Counting them all up, what is the total product?"
+  [                         ] 5 × 5 = 25   hide product ans  25 "Examine the 5 rows of 5 stickers. How many stickers are there in total?"
+  [                         ] 9 × 6 = 54   hide product ans  54 "Study the 9 rows with 6 stickers in each row. What is the total number of stickers?"
+  [                         ] 9 × 9 = 81   hide product ans  81 "Look at the 9 groups of 9 stickers shown across all models. What is the grand total?"
+  [                         ] 8 × 2 = 16   hide product ans  16 "Inspect the final model showing 8 groups of 2 stickers. What is the final total product?"
+
+Multiply within 100 using multiplication facts | connect | difficulty=(none) | run 2 | own path
+  [                         ] 7 × 3 = 21   hide product ans  21 "Look at the 7 groups of 3 stickers. How many stickers are there in total?"
+  [                         ] 4 × 8 = 32   hide product ans  32 "Examine the 4 rows of 8 objects. How many objects are there in total?"
+  [                         ] 2 × 7 = 14   hide product ans  14 "Study the repeated addition of 7 two times. What is the sum?"
+  [                         ] 4 × 10 = 40  hide product ans  40 "Follow the 4 jumps of 10 on the number line. What number do you land on?"
+  [                         ] 5 × 7 = 35   hide product ans  35 "Calculate the total area for 5 rows of 7 square units."
+
+Multiply a two-digit number by a one-digit number | connect | difficulty=hard | run 1 | own path
+  [                         ] 8 × 10 = 80  hide product ans  80 "Look at all the representations for 8 groups of 10. How many stickers are there in total?"
+  [                         ] 2 × 10 = 20  hide product ans  20 "Examine the representations for 2 groups of 10. What is the total product?"
+  [                         ] 10 × 6 = 60  hide product ans  60 "Study the models showing 10 groups of 6. What is the overall total?"
+  [                         ] 10 × 9 = 90  hide product ans  90 "Review the representations for 10 groups of 9. How many total items are there?"
+  [                         ] 7 × 7 = 49   hide product ans  49 "Analyze the visual representations for 7 groups of 7. What is the final total product?"
+
+Multiply a two-digit number by a one-digit number | connect | difficulty=hard | run 2 | own path
+  [                         ] 9 × 3 = 27   hide product ans  27 "Look at all the representations for 9 groups of 3. What is the total product?"
+  [                         ] 8 × 8 = 64   hide product ans  64 "Examine the representations showing 8 rows of 8. How many total items are shown?"
+  [                         ] 9 × 5 = 45   hide product ans  45 "Study the models showing 9 groups of 5. What is the final product?"
+  [                         ] 8 × 9 = 72   hide product ans  72 "Connect the views for 8 groups of 9. What is the combined total?"
+  [                         ] 10 × 5 = 50  hide product ans  50 "Look across all representations of 10 groups of 5. What is the final total?"

@@ -1,0 +1,45 @@
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=easy | run 1 | own path | max 10
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let's explore the number 4! Split the counters into two parts to find "
+  [                      ] {"type":"decompose","whole":5,"allPairs":[[0,5],[1,4],[2,3]],"part1":null,"part2":null}  "Find all the ways to break apart 5. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "Find all the ways to break apart 6. How many pairs can you find?"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=easy | run 2 | own path | max 10
+  [                      ] {"type":"decompose","whole":3,"allPairs":[[0,3],[1,2]],"part1":null,"part2":null}  "Find all the ways to break apart 3. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Find all the ways to break apart 4. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":5,"allPairs":[[0,5],[1,4],[2,3]],"part1":null,"part2":null}  "Find all the ways to break apart 5. How many pairs can you find?"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=easy | run 3 | own path | max 10
+  [                      ] {"type":"decompose","whole":3,"allPairs":[[0,3],[1,2]],"part1":null,"part2":null}  "Find all the ways to break apart 3. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Find all the ways to break apart 4. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "Find all the ways to break apart 6. How many pairs can you find?"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=medium | run 1 | own path | max 10
+  [                      ] {"type":"decompose","whole":5,"allPairs":[[0,5],[1,4],[2,3]],"part1":null,"part2":null}  "Find all the ways to break apart 5. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "Find all the ways to break apart 6. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":7,"allPairs":[[0,7],[1,6],[2,5],[3,4]],"part1":null,"part2":null}  "Find all the ways to break apart 7. How many pairs can you find?"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=medium | run 2 | own path | max 10
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "Find all the ways to break apart 6. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":7,"allPairs":[[0,7],[1,6],[2,5],[3,4]],"part1":null,"part2":null}  "Find all the ways to break apart 7. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":8,"allPairs":[[0,8],[1,7],[2,6],[3,5],[4,4]],"part1":null,"part2":null}  "You are doing great! Can you find all the different ways to split 8 in"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=medium | run 3 | own path | max 10
+  [                      ] {"type":"decompose","whole":5,"allPairs":[[0,5],[1,4],[2,3]],"part1":null,"part2":null}  "Find all the ways to break apart 5. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "Find all the ways to break apart 6. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":7,"allPairs":[[0,7],[1,6],[2,5],[3,4]],"part1":null,"part2":null}  "Find all the ways to break apart 7. How many pairs can you find?"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=hard | run 1 | own path | max 10
+  [                      ] {"type":"decompose","whole":8,"allPairs":[[0,8],[1,7],[2,6],[3,5],[4,4]],"part1":null,"part2":null}  "Find all the ways to break apart 8. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":9,"allPairs":[[0,9],[1,8],[2,7],[3,6],[4,5]],"part1":null,"part2":null}  "Find all the ways to break apart 9. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":10,"allPairs":[[0,10],[1,9],[2,8],[3,7],[4,6],[5,5]],"part1":null,"part2":null}  "Time for our biggest challenge! Find every single way to break apart t"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=hard | run 2 | own path | max 10
+  [                      ] {"type":"decompose","whole":7,"allPairs":[[0,7],[1,6],[2,5],[3,4]],"part1":null,"part2":null}  "Find all the ways to break apart 7. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":9,"allPairs":[[0,9],[1,8],[2,7],[3,6],[4,5]],"part1":null,"part2":null}  "Find all the ways to break apart 9. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":10,"allPairs":[[0,10],[1,9],[2,8],[3,7],[4,6],[5,5]],"part1":null,"part2":null}  "Find all the ways to break apart 10. How many pairs can you find?"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=hard | run 3 | own path | max 10
+  [                      ] {"type":"decompose","whole":7,"allPairs":[[0,7],[1,6],[2,5],[3,4]],"part1":null,"part2":null}  "Find all the ways to break apart 7. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":8,"allPairs":[[0,8],[1,7],[2,6],[3,5],[4,4]],"part1":null,"part2":null}  "Find all the ways to break apart 8. How many pairs can you find?"
+  [                      ] {"type":"decompose","whole":9,"allPairs":[[0,9],[1,8],[2,7],[3,6],[4,5]],"part1":null,"part2":null}  "Find all the ways to break apart 9. How many pairs can you find?"

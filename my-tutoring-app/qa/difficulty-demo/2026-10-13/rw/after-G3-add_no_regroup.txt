@@ -1,0 +1,53 @@
+
+Add and subtract within 1000 | add_no_regroup | difficulty=easy | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-1000: this scope cannot fill every tier's band (629/0/0 drawable); tier third [-1.40, -1.40] gave 3
+  [RegroupingWorkbench] Item space add-sub-1000: add_no_regroup band [-2.5, -0.6]: 431+20@-1.4 916+23@-1.4 430+17@-1.4
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_no_regroup","problem":"431 + 20","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"supportTier":"easy"}  ""
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_no_regroup","problem":"916 + 23","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"supportTier":"easy"}  ""
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_no_regroup","problem":"430 + 17","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"supportTier":"easy"}  ""
+
+Add and subtract within 1000 | add_no_regroup | difficulty=easy | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-1000: this scope cannot fill every tier's band (629/0/0 drawable); tier third [-1.40, -1.40] gave 3
+  [RegroupingWorkbench] Item space add-sub-1000: add_no_regroup band [-2.5, -0.6]: 240+24@-1.4 635+10@-1.4 411+52@-1.4
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_no_regroup","problem":"240 + 24","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"supportTier":"easy"}  ""
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_no_regroup","problem":"635 + 10","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"supportTier":"easy"}  ""
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_no_regroup","problem":"411 + 52","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"supportTier":"easy"}  ""
+
+Add and subtract within 1000 | add_no_regroup | difficulty=medium | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-1000: this scope cannot fill every tier's band (629/0/0 drawable); tier third [-1.40, -1.10] gave 3
+  [RegroupingWorkbench] Item space add-sub-1000: add_no_regroup band [-0.6, 0.6]: 254+11@-1.4 345+234@-1.1 911+18@-1.4
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_no_regroup","problem":"254 + 11","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"supportTier":"medium"}  ""
+  [β  -1.1 +|3d|r0       ] {"type":"add_no_regroup","problem":"345 + 234","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"supportTier":"medium"}  ""
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_no_regroup","problem":"911 + 18","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"supportTier":"medium"}  ""
+
+Add and subtract within 1000 | add_no_regroup | difficulty=medium | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-1000: this scope cannot fill every tier's band (629/0/0 drawable); tier third [-1.40, -1.10] gave 3
+  [RegroupingWorkbench] Item space add-sub-1000: add_no_regroup band [-0.6, 0.6]: 323+546@-1.1 206+62@-1.4 838+41@-1.4
+  [β  -1.1 +|3d|r0       ] {"type":"add_no_regroup","problem":"323 + 546","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"supportTier":"medium"}  ""
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_no_regroup","problem":"206 + 62","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"supportTier":"medium"}  ""
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_no_regroup","problem":"838 + 41","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"supportTier":"medium"}  ""
+
+Add and subtract within 1000 | add_no_regroup | difficulty=hard | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-1000: this scope cannot fill every tier's band (629/0/0 drawable); tier third [-1.10, -1.10] gave 3
+  [RegroupingWorkbench] Item space add-sub-1000: add_no_regroup band [0.6, 3.5]: 526+140@-1.1 100+151@-1.1 541+402@-1.1
+  [β  -1.1 +|3d|r0       ] {"type":"add_no_regroup","problem":"526 + 140","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"supportTier":"hard"}  ""
+  [β  -1.1 +|3d|r0       ] {"type":"add_no_regroup","problem":"100 + 151","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"supportTier":"hard"}  ""
+  [β  -1.1 +|3d|r0       ] {"type":"add_no_regroup","problem":"541 + 402","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"supportTier":"hard"}  ""
+
+Add and subtract within 1000 | add_no_regroup | difficulty=hard | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-1000: this scope cannot fill every tier's band (629/0/0 drawable); tier third [-1.10, -1.10] gave 3
+  [RegroupingWorkbench] Item space add-sub-1000: add_no_regroup band [0.6, 3.5]: 324+470@-1.1 123+640@-1.1 766+100@-1.1
+  [β  -1.1 +|3d|r0       ] {"type":"add_no_regroup","problem":"324 + 470","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"supportTier":"hard"}  ""
+  [β  -1.1 +|3d|r0       ] {"type":"add_no_regroup","problem":"123 + 640","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"supportTier":"hard"}  ""
+  [β  -1.1 +|3d|r0       ] {"type":"add_no_regroup","problem":"766 + 100","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"supportTier":"hard"}  ""
+
+Add and subtract within 1000 | add_no_regroup | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"add_no_regroup","problem":"23 + 14","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"52 + 31","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"43 + 25","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"61 + 27","requiresRegrouping":false,"regroupCount":0}  ""
+
+Add and subtract within 1000 | add_no_regroup | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"add_no_regroup","problem":"23 + 14","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"43 + 25","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"52 + 36","requiresRegrouping":false,"regroupCount":0}  ""

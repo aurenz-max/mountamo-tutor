@@ -1,0 +1,36 @@
+
+Picture graphs: one picture for one thing | build_one_to_one | difficulty=easy | run 1 | own path
+  [                      ] [0,0] step 1 icon 1 counts 7,4  Q: Put one sticker in a row for each toy you see.  ""
+  [                      ] [0,0] step 1 icon 1 counts 7,5  Q: Put one sticker in a row for each snack you see.  ""
+  [                      ] [0,0] step 1 icon 1 counts 7,4  Q: Put one sticker in a row for each toy you see.  ""
+  [                      ] [0,0] step 1 icon 1 counts 3,4  Q: Put one sticker in a row for each veggie you see.  ""
+
+Picture graphs: one picture for one thing | build_one_to_one | difficulty=easy | run 2 | own path
+  [                      ] [0,0] step 1 icon 1 counts 6,2  Q: Put one sticker in a row for each toy you see  ""
+  [                      ] [0,0] step 1 icon 1 counts 3,6  Q: Put one sticker in a row for each snack you see  ""
+  [                      ] [0,0] step 1 icon 1 counts 3,6  Q: Put one sticker in a row for each playground thing you see  ""
+  [                      ] [0,0] step 1 icon 1 counts 6,7  Q: Put one sticker in a row for each vegetable you see.  ""
+
+Picture graphs: one picture for one thing | build_one_to_one | difficulty=medium | run 1 | own path
+  [                      ] [0,0,0] step 1 icon 1 counts 2,7,4  Q: Put one sticker in a row for each toy you see.  ""
+  [                      ] [0,0,0] step 1 icon 1 counts 2,4,6  Q: Put one sticker in a row for each snack you see in the pile.  ""
+  [                      ] [0,0,0] step 1 icon 1 counts 3,5,2  Q: Put one sticker in a row for each item you find  ""
+  [                      ] [0,0,0] step 1 icon 1 counts 7,6,5  Q: Put one sticker in a row for each vegetable you see.  ""
+
+Picture graphs: one picture for one thing | build_one_to_one | difficulty=medium | run 2 | own path
+  [                      ] [0,0,0] step 1 icon 1 counts 6,4,5  Q: Put one sticker in a row for each toy you see.  ""
+  [                      ] [0,0,0] step 1 icon 1 counts 6,5,7  Q: Put one sticker in a row for each snack you see in the pile.  ""
+  [                      ] [0,0,0] step 1 icon 1 counts 4,2,3  Q: Put one sticker in a row for each toy you see.  ""
+  [                      ] [0,0,0] step 1 icon 1 counts 7,4,5  Q: Put one sticker in a row for each vegetable you find.  ""
+
+Picture graphs: one picture for one thing | build_one_to_one | difficulty=hard | run 1 | own path
+  [                      ] [0,0,0,0] step 1 icon 1 counts 8,6,4,7  Q: Put one sticker in a row for each toy you find.  ""
+  [                      ] [0,0,0,0] step 1 icon 1 counts 3,9,7,6  Q: Put one sticker in a row for each snack you see.  ""
+  [                      ] [0,0,0,0] step 1 icon 1 counts 2,4,6,5  Q: Put one sticker in a row for each playground thing you see.  ""
+  [                      ] [0,0,0,0] step 1 icon 1 counts 8,5,6,3  Q: Put one sticker in a row for each vegetable you see.  ""
+
+Picture graphs: one picture for one thing | build_one_to_one | difficulty=hard | run 2 | own path
+  [                      ] [0,0,0,0] step 1 icon 1 counts 9,2,5,3  Q: Put one sticker in a row for each toy you see.  ""
+  [                      ] [0,0,0,0] step 1 icon 1 counts 3,6,2,8  Q: Put one sticker in a row for each snack you see.  ""
+  [                      ] [0,0,0,0] step 1 icon 1 counts 6,9,7,5  Q: Put one sticker in a row for each item you see.  ""
+  [                      ] [0,0,0,0] step 1 icon 1 counts 4,2,5,6  Q: Put one sticker in a row for each garden surprise you see.  ""

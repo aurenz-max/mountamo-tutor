@@ -1,0 +1,58 @@
+
+Fractions | identify | difficulty=easy | run 1 | own path
+  [                      ] {"type":"identify","denominator":2,"numerator":1,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":false,"startLevers":["mark_pieces"]}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":4,"numerator":1,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":false,"startLevers":["mark_pieces"]}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":3,"numerator":2,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":false,"startLevers":["mark_pieces"]}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":5,"numerator":4,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":false,"startLevers":["mark_pieces"]}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":10,"numerator":3,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":false,"startLevers":["mark_pieces"]}  "What fraction of the circle is shaded?"
+
+Fractions | identify | difficulty=easy | run 2 | own path
+  [                      ] {"type":"identify","denominator":3,"numerator":1,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":false,"startLevers":["mark_pieces"]}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":8,"numerator":1,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":false,"startLevers":["mark_pieces"]}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":12,"numerator":1,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":false,"startLevers":["mark_pieces"]}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":10,"numerator":2,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":false,"startLevers":["mark_pieces"]}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":6,"numerator":1,"supportTier":"easy","showTotalPieces":true,"showWorkingCount":false,"startLevers":["mark_pieces"]}  "What fraction of the circle is shaded?"
+
+Fractions | identify | difficulty=medium | run 1 | own path
+  [                      ] {"type":"identify","denominator":2,"numerator":1,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":3,"numerator":1,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":4,"numerator":2,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":6,"numerator":2,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":12,"numerator":11,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+
+Fractions | identify | difficulty=medium | run 2 | own path
+  [                      ] {"type":"identify","denominator":2,"numerator":1,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":3,"numerator":1,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":4,"numerator":2,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":5,"numerator":3,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":6,"numerator":5,"supportTier":"medium","showTotalPieces":true,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+
+Fractions | identify | difficulty=hard | run 1 | own path
+  [                      ] {"type":"identify","denominator":3,"numerator":1,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":6,"numerator":3,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":5,"numerator":3,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":10,"numerator":8,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":12,"numerator":6,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+
+Fractions | identify | difficulty=hard | run 2 | own path
+  [                      ] {"type":"identify","denominator":2,"numerator":1,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":3,"numerator":2,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":4,"numerator":3,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":6,"numerator":4,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":8,"numerator":1,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":12,"numerator":9,"supportTier":"hard","showTotalPieces":false,"showWorkingCount":false}  "What fraction of the circle is shaded?"
+
+Fractions | identify | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"identify","denominator":2,"numerator":1}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":3,"numerator":1}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":4,"numerator":2}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":5,"numerator":4}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":8,"numerator":5}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":10,"numerator":9}  "What fraction of the circle is shaded?"
+
+Fractions | identify | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"identify","denominator":2,"numerator":1}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":3,"numerator":1}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":4,"numerator":3}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":5,"numerator":3}  "What fraction of the circle is shaded?"
+  [                      ] {"type":"identify","denominator":6,"numerator":2}  "What fraction of the circle is shaded?"

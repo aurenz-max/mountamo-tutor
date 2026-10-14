@@ -1,0 +1,126 @@
+
+Multiplication with arrays | count_array | difficulty=easy | run 1 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (19/9/2 drawable); tier third [-2.20, -1.11] gave 7
+  [ArrayGrid] Item space mult-div-facts: count_array band [-2.5, -0.6]: 4x4@-1.51 2x6@-1.11 5x5@-2.20 2x5@-1.68 3x3@-1.59 2x4@-1.70 4x5@-1.56
+  [β -1.51 product|a0|t1|h0] {"targetRows":4,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h0","beta":-1.51}}  ""
+  [β -1.11 product|a1|t0|h1] {"targetRows":2,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-1.11}}  ""
+  [β  -2.2 product|a1|t1|h0] {"targetRows":5,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t1|h0","beta":-2.2}}  ""
+  [β -1.68 product|a1|t0|h0] {"targetRows":2,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.68}}  ""
+  [β -1.59 product|a0|t1|h0] {"targetRows":3,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h0","beta":-1.59}}  ""
+  [β  -1.7 product|a1|t0|h0] {"targetRows":2,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.7}}  ""
+  [β -1.56 product|a1|t0|h0] {"targetRows":4,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.56}}  ""
+
+Multiplication with arrays | count_array | difficulty=easy | run 2 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (19/9/2 drawable); tier third [-2.20, -1.11] gave 7
+  [ArrayGrid] Item space mult-div-facts: count_array band [-2.5, -0.6]: 2x4@-1.70 3x3@-1.59 2x6@-1.11 5x5@-2.20 2x3@-1.73 4x4@-1.51 3x5@-1.62
+  [β  -1.7 product|a1|t0|h0] {"targetRows":2,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.7}}  ""
+  [β -1.59 product|a0|t1|h0] {"targetRows":3,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h0","beta":-1.59}}  ""
+  [β -1.11 product|a1|t0|h1] {"targetRows":2,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-1.11}}  ""
+  [β  -2.2 product|a1|t1|h0] {"targetRows":5,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t1|h0","beta":-2.2}}  ""
+  [β -1.73 product|a1|t0|h0] {"targetRows":2,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.73}}  ""
+  [β -1.51 product|a0|t1|h0] {"targetRows":4,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h0","beta":-1.51}}  ""
+  [β -1.62 product|a1|t0|h0] {"targetRows":3,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.62}}  ""
+
+Multiplication with arrays | count_array | difficulty=easy | run 3 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (19/9/2 drawable); tier third [-2.20, -1.11] gave 7
+  [ArrayGrid] Item space mult-div-facts: count_array band [-2.5, -0.6]: 4x4@-1.51 2x6@-1.11 5x5@-2.20 2x4@-1.70 4x5@-1.56 2x5@-1.68 3x3@-1.59
+  [β -1.51 product|a0|t1|h0] {"targetRows":4,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h0","beta":-1.51}}  ""
+  [β -1.11 product|a1|t0|h1] {"targetRows":2,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-1.11}}  ""
+  [β  -2.2 product|a1|t1|h0] {"targetRows":5,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t1|h0","beta":-2.2}}  ""
+  [β  -1.7 product|a1|t0|h0] {"targetRows":2,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.7}}  ""
+  [β -1.56 product|a1|t0|h0] {"targetRows":4,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.56}}  ""
+  [β -1.68 product|a1|t0|h0] {"targetRows":2,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.68}}  ""
+  [β -1.59 product|a0|t1|h0] {"targetRows":3,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h0","beta":-1.59}}  ""
+
+Multiplication with arrays | count_array | difficulty=medium | run 1 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (19/9/2 drawable); tier third [-1.11, -0.23] gave 7
+  [ArrayGrid] Item space mult-div-facts: count_array band [-0.6, 0.6]: 2x7@-1.08 3x4@-0.86 3x6@-0.23 5x6@-0.89 5x7@-0.83 2x6@-1.11 5x8@-0.77
+  [β -1.08 product|a1|t0|h1] {"targetRows":2,"targetColumns":7,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-1.08}}  ""
+  [β -0.86 product|a0|t0|h0] {"targetRows":3,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h0","beta":-0.86}}  ""
+  [β -0.23 product|a0|t0|h1] {"targetRows":3,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.23}}  ""
+  [β -0.89 product|a1|t0|h1] {"targetRows":5,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-0.89}}  ""
+  [β -0.83 product|a1|t0|h1] {"targetRows":5,"targetColumns":7,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-0.83}}  ""
+  [β -1.11 product|a1|t0|h1] {"targetRows":2,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-1.11}}  ""
+  [β -0.77 product|a1|t0|h1] {"targetRows":5,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-0.77}}  ""
+
+Multiplication with arrays | count_array | difficulty=medium | run 2 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (19/9/2 drawable); tier third [-1.11, -0.23] gave 7
+  [ArrayGrid] Item space mult-div-facts: count_array band [-0.6, 0.6]: 2x8@-1.06 4x3@-0.86 6x3@-0.23 6x5@-0.89 2x6@-1.11 5x8@-0.77 2x7@-1.08
+  [β -1.06 product|a1|t0|h1] {"targetRows":2,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-1.06}}  ""
+  [β -0.86 product|a0|t0|h0] {"targetRows":4,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h0","beta":-0.86}}  ""
+  [β -0.23 product|a0|t0|h1] {"targetRows":6,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.23}}  ""
+  [β -0.89 product|a1|t0|h1] {"targetRows":6,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-0.89}}  ""
+  [β -1.11 product|a1|t0|h1] {"targetRows":2,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-1.11}}  ""
+  [β -0.77 product|a1|t0|h1] {"targetRows":5,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-0.77}}  ""
+  [β -1.08 product|a1|t0|h1] {"targetRows":2,"targetColumns":7,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-1.08}}  ""
+
+Multiplication with arrays | count_array | difficulty=medium | run 3 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (19/9/2 drawable); tier third [-1.11, -0.23] gave 7
+  [ArrayGrid] Item space mult-div-facts: count_array band [-0.6, 0.6]: 2x8@-1.06 3x4@-0.86 3x6@-0.23 5x7@-0.83 2x7@-1.08 6x5@-0.89 5x8@-0.77
+  [β -1.06 product|a1|t0|h1] {"targetRows":2,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-1.06}}  ""
+  [β -0.86 product|a0|t0|h0] {"targetRows":3,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h0","beta":-0.86}}  ""
+  [β -0.23 product|a0|t0|h1] {"targetRows":3,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.23}}  ""
+  [β -0.83 product|a1|t0|h1] {"targetRows":5,"targetColumns":7,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-0.83}}  ""
+  [β -1.08 product|a1|t0|h1] {"targetRows":2,"targetColumns":7,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-1.08}}  ""
+  [β -0.89 product|a1|t0|h1] {"targetRows":6,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-0.89}}  ""
+  [β -0.77 product|a1|t0|h1] {"targetRows":5,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h1","beta":-0.77}}  ""
+
+Multiplication with arrays | count_array | difficulty=hard | run 1 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (19/9/2 drawable); tier third [-0.23, 0.68] gave 7
+  [ArrayGrid] Item space mult-div-facts: count_array band [0.6, 3.5]: 6x4@-0.16 6x8@0.68 6x6@-0.17 6x7@0.60 4x8@-0.07 3x7@-0.20 3x6@-0.23
+  [β -0.16 product|a0|t0|h1] {"targetRows":6,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.16}}  ""
+  [β  0.68 product|a0|t0|h2] {"targetRows":6,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h2","beta":0.68}}  ""
+  [β -0.17 product|a0|t1|h2] {"targetRows":6,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h2","beta":-0.17}}  ""
+  [β   0.6 product|a0|t0|h2] {"targetRows":6,"targetColumns":7,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h2","beta":0.6}}  ""
+  [β -0.07 product|a0|t0|h1] {"targetRows":4,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.07}}  ""
+  [β  -0.2 product|a0|t0|h1] {"targetRows":3,"targetColumns":7,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.2}}  ""
+  [β -0.23 product|a0|t0|h1] {"targetRows":3,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.23}}  ""
+
+Multiplication with arrays | count_array | difficulty=hard | run 2 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (19/9/2 drawable); tier third [-0.23, 0.68] gave 7
+  [ArrayGrid] Item space mult-div-facts: count_array band [0.6, 3.5]: 6x6@-0.17 6x8@0.68 6x4@-0.16 6x7@0.60 4x7@-0.11 6x3@-0.23 4x8@-0.07
+  [β -0.17 product|a0|t1|h2] {"targetRows":6,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h2","beta":-0.17}}  ""
+  [β  0.68 product|a0|t0|h2] {"targetRows":6,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h2","beta":0.68}}  ""
+  [β -0.16 product|a0|t0|h1] {"targetRows":6,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.16}}  ""
+  [β   0.6 product|a0|t0|h2] {"targetRows":6,"targetColumns":7,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h2","beta":0.6}}  ""
+  [β -0.11 product|a0|t0|h1] {"targetRows":4,"targetColumns":7,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.11}}  ""
+  [β -0.23 product|a0|t0|h1] {"targetRows":6,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.23}}  ""
+  [β -0.07 product|a0|t0|h1] {"targetRows":4,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.07}}  ""
+
+Multiplication with arrays | count_array | difficulty=hard | run 3 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (19/9/2 drawable); tier third [-0.23, 0.68] gave 7
+  [ArrayGrid] Item space mult-div-facts: count_array band [0.6, 3.5]: 6x8@0.68 4x8@-0.07 6x6@-0.17 6x3@-0.23 6x7@0.60 6x4@-0.16 3x8@-0.16
+  [β  0.68 product|a0|t0|h2] {"targetRows":6,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h2","beta":0.68}}  ""
+  [β -0.07 product|a0|t0|h1] {"targetRows":4,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.07}}  ""
+  [β -0.17 product|a0|t1|h2] {"targetRows":6,"targetColumns":6,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h2","beta":-0.17}}  ""
+  [β -0.23 product|a0|t0|h1] {"targetRows":6,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.23}}  ""
+  [β   0.6 product|a0|t0|h2] {"targetRows":6,"targetColumns":7,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h2","beta":0.6}}  ""
+  [β -0.16 product|a0|t0|h1] {"targetRows":6,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.16}}  ""
+  [β -0.16 product|a0|t0|h1] {"targetRows":3,"targetColumns":8,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h1","beta":-0.16}}  ""
+
+Multiplication with arrays | count_array | difficulty=(none) | run 1 | own path
+  [                      ] {"targetRows":5,"targetColumns":6}  ""
+  [                      ] {"targetRows":4,"targetColumns":6}  ""
+  [                      ] {"targetRows":6,"targetColumns":8}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":4,"targetColumns":5}  ""
+  [                      ] {"targetRows":5,"targetColumns":7}  ""
+  [                      ] {"targetRows":5,"targetColumns":8}  ""
+
+Multiplication with arrays | count_array | difficulty=(none) | run 2 | own path
+  [                      ] {"targetRows":6,"targetColumns":7}  ""
+  [                      ] {"targetRows":4,"targetColumns":8}  ""
+  [                      ] {"targetRows":2,"targetColumns":7}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":8}  ""
+  [                      ] {"targetRows":5,"targetColumns":6}  ""
+  [                      ] {"targetRows":6,"targetColumns":4}  ""
+
+Multiplication with arrays | count_array | difficulty=(none) | run 3 | own path
+  [                      ] {"targetRows":4,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":6}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":5,"targetColumns":8}  ""
+  [                      ] {"targetRows":4,"targetColumns":7}  ""

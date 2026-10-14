@@ -1,0 +1,43 @@
+
+Add and subtract within 100 | subtract_regroup | difficulty=easy | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (0/278/703 drawable); tier third [0.00, 0.70] gave 4
+  [RegroupingWorkbench] Item space add-sub-100: subtract_regroup band [-2.5, -0.6]: 93-24@0.7 41-2@0 60-21@0.7 15-7@0
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"93 - 24","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"easy"}  ""
+  [β     0 -|2d+1d|r1    ] {"type":"subtract_regroup","problem":"41 - 2","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d+1d|r1","beta":0},"supportTier":"easy"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"60 - 21","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"easy"}  ""
+  [β     0 -|2d+1d|r1    ] {"type":"subtract_regroup","problem":"15 - 7","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d+1d|r1","beta":0},"supportTier":"easy"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=easy | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (0/278/703 drawable); tier third [0.00, 0.70] gave 3
+  [RegroupingWorkbench] Item space add-sub-100: subtract_regroup band [-2.5, -0.6]: 23-4@0 51-22@0.7 93-89@0.7
+  [β     0 -|2d+1d|r1    ] {"type":"subtract_regroup","problem":"23 - 4","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d+1d|r1","beta":0},"supportTier":"easy"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"51 - 22","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"easy"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"93 - 89","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"easy"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=medium | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (0/278/703 drawable); tier third [0.70, 0.70] gave 3
+  [RegroupingWorkbench] Item space add-sub-100: subtract_regroup band [-0.6, 0.6]: 81-42@0.7 91-74@0.7 40-26@0.7
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"81 - 42","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"medium"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"91 - 74","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"medium"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"40 - 26","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"medium"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=medium | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (0/278/703 drawable); tier third [0.70, 0.70] gave 3
+  [RegroupingWorkbench] Item space add-sub-100: subtract_regroup band [-0.6, 0.6]: 91-67@0.7 76-27@0.7 33-14@0.7
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"91 - 67","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"medium"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"76 - 27","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"medium"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"33 - 14","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"medium"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=hard | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (0/278/703 drawable); tier third [0.70, 0.70] gave 3
+  [RegroupingWorkbench] Item space add-sub-100: subtract_regroup band [0.6, 3.5]: 53-17@0.7 52-37@0.7 81-75@0.7
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"53 - 17","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"hard"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"52 - 37","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"hard"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"81 - 75","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"hard"}  ""
+
+Add and subtract within 100 | subtract_regroup | difficulty=hard | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (0/278/703 drawable); tier third [0.70, 0.70] gave 3
+  [RegroupingWorkbench] Item space add-sub-100: subtract_regroup band [0.6, 3.5]: 63-18@0.7 50-31@0.7 80-69@0.7
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"63 - 18","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"hard"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"50 - 31","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"hard"}  ""
+  [β   0.7 -|2d|r1       ] {"type":"subtract_regroup","problem":"80 - 69","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r1","beta":0.7},"supportTier":"hard"}  ""

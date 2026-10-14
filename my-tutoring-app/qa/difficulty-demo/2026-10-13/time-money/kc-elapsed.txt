@@ -1,0 +1,35 @@
+
+Solve word problems involving elapsed time | difficulty=easy | run 1 | item space
+  [β  -0.8 within|hours|on|quarters|past12] Emma started reading her book at 10:00 and finished at 1:00. How much time passed between 10:00 and 1:00?  3 hours* 3 hours 15 minutes(n) 4 hours(f) 2 hours(f)
+  [β  -0.7 within|minutes|off|fives] Leo brushed his teeth starting at 5:45 and finished at 5:55. How much time passed between 5:45 and 5:55?  1 hour 10 minutes(f) 10 minutes* 15 minutes(n) 2 hours 10 minutes(f)
+  [β  -1.2 within|minutes|off|quarters] Maya ate a snack starting at 12:15 and finished at 12:30. How much time passed between 12:15 and 12:30?  15 minutes* 30 minutes(n) 2 hours 15 minutes(f) 1 hour 15 minutes(f)
+  [β  -1.1 within|minutes|on|fives] Sam played outside starting at 6:00 and finished at 6:35. How much time passed between 6:00 and 6:35?  1 hour 35 minutes(f) 40 minutes(n) 2 hours 35 minutes(f) 35 minutes*
+  [β  -0.7 within|hours|off|quarters] Lily practiced the piano starting at 10:15 and finished at 11:15. How much time passed between 10:15 and 11:15?  1 hour 15 minutes(n) 1 hour* 3 hours(f) 2 hours(f)
+
+Solve word problems involving elapsed time | difficulty=medium | run 1 | item space
+  [β   0.2 cross|minutes|off|quarters|past12] Emma started reading her book at 12:45 and finished at 1:15. How much time passed?  1 hour 10 minutes(n) 30 minutes* 1 hour 30 minutes(f) 45 minutes(n)
+  [β   0.4 within|h+m|off|fives] Liam baked cookies starting at 2:20 and finished baking them at 4:55. How much time passed?  2 hours 35 minutes* 35 minutes(n) 3 hours 35 minutes(f) 2 hours(n)
+  [β  -0.1 cross|minutes|off|quarters] Maya practiced the piano starting at 3:45 and finished at 4:30. How much time passed?  1 hour 45 minutes(f) 1 hour(n) 1 hour 25 minutes(n) 45 minutes*
+  [β   0.1 within|hours|off|fives|past12] Noah cleaned his room starting at 10:55 and finished at 1:55. How much time passed?  2 hours(f) 3 hours* 4 hours(f) 3 hours 5 minutes(n)
+  [β  -0.2 within|h+m|on|quarters|past12] Zoe painted a picture starting at 12:00 and finished at 2:15. How much time passed?  2 hours(n) 2 hours 30 minutes(n) 3 hours 15 minutes(f) 2 hours 15 minutes*
+
+Solve word problems involving elapsed time | difficulty=hard | run 1 | item space
+  [β     1 cross|h+m|off|quarters] Emma started reading her favorite book at 9:30 and finished reading it at 12:15. How much time passed?  3 hours 45 minutes(f) 15 minutes(n) 3 hours 25 minutes(n) 2 hours 45 minutes*
+  [β   1.8 cross|h+m|off|fives|past12] Leo worked on his science project from 12:40 until 2:20. How much time passed?  1 hour 45 minutes(n) 2 hours 40 minutes(f) 2 hours 20 minutes(n) 1 hour 40 minutes*
+  [β   0.7 cross|minutes|off|fives|past12] Maya baked cookies starting at 12:35 and took them out of the oven at 1:05. How much time passed?  1 hour 30 minutes(f) 35 minutes(n) 1 hour 10 minutes(n) 30 minutes*
+  [β   0.7 within|h+m|off|fives|past12] Sam cleaned his room starting at 11:50 and finished at 1:00. How much time passed?  50 minutes(n) 1 hour 50 minutes(n) 2 hours 10 minutes(f) 1 hour 10 minutes*
+  [β   1.3 cross|h+m|off|quarters|past12] Zoe painted a picture from 11:45 to 2:15. How much time passed?  30 minutes(n) 3 hours 10 minutes(n) 2 hours 30 minutes* 3 hours 30 minutes(f)
+
+Solve word problems involving elapsed time | difficulty=(none) | run 1 | orchestrator
+  [multiple_choice easy] Leo starts playing a video game at the time marked by Point A on the number line. He plays for 1 hour and 30 minutes. At what time does Leo finish playing?  3:15 PM(n) 3:45 PM* 4:00 PM(n) 4:45 PM(f)
+  [multiple_choice medium] The schedule below shows the morning activities for Room 3B. How much longer was art class than reading?  25 minutes(n) 15 minutes* 35 minutes(n) 5 minutes(f)
+  [true_false medium] If a movie starts at 4:15 PM and lasts for 50 minutes, it will end at 5:05 PM.  
+  [sequencing_activity medium]   
+  [multiple_choice hard] Maya's baking class started at 11:15 AM and ended at 1:05 PM. How long was the baking class?  1 hour 10 minutes(n) 1 hour 50 minutes* 2 hours 10 minutes(n) 3 hours 20 minutes(f)
+
+Measure lengths to the nearest inch | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] Maya wants to find the length of her pencil in inches. Which tool should she use?  A ruler* A scale(n) A thermometer(f) A clock(f)
+  [fill_in_blanks easy]   
+  [multiple_choice easy] Look at the ruler shown on the number line. What is the length to the nearest inch at point P?  1 inch(f) 2 inches(n) 3 inches* 4 inches(f)
+  [true_false easy] When measuring an object with a ruler, you should always start measuring from the 1-inch mark instead of the 0-inch mark.  
+  [multiple_choice medium] A visual shows a pencil lined up against an inch ruler. The eraser is set at the 0-inch mark, and the pencil tip reaches the 4 3/4-inch mark between 4 and 5 inches. What is the length of the pencil to the nearest inch?  4 inches(n) 5 inches* 4 3/4 inches(n) 7 inches(f)

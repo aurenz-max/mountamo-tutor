@@ -1,0 +1,124 @@
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=easy | run 1 | item space | max 20
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [-2.5, -0.6] within 20: both|++|last|b0|s1@-0.62 both|++|first|b0|s1@-0.61 reversed|n+|first|b0|s0@-0.61 reversed|n+|last|b0|s0@-0.6
+  [β -0.62 both|++|last|b0|s1] 2 + 4 = 2 + ?      ans 4  "First work out the left side, then make the right side match that amou"
+  [β -0.61 both|++|first|b0|s1] 10 + 3 = ? + 3     ans 10  "First work out the left side, then make the right side match that amou"
+  [β -0.61 reversed|n+|first|b0|s0] 13 = ? + 3         ans 10  "First work out the left side, then make the right side match that amou"
+  [β -0.62 reversed|n+|last|b0|s0] 6 = 1 + ?          ans 5  "First work out the left side, then make the right side match that amou"
+  [β -0.65 reversed|n+|last|b0|s0] 5 = 1 + ?          ans 4  "First work out the left side, then make the right side match that amou"
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=easy | run 2 | item space | max 20
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [-2.5, -0.6] within 20: both|++|first|b0|s1@-0.82 both|++|last|b0|s1@-0.71 reversed|n+|first|b0|s0@-0.7 reversed|n+|last|b0|s0@-0.71
+  [β -0.82 both|++|first|b0|s1] 3 + 3 = ? + 3      ans 3  "First work out the left side, then make the right side match that amou"
+  [β -0.71 both|++|last|b0|s1] 1 + 2 = 1 + ?      ans 2  "First work out the left side, then make the right side match that amou"
+  [β  -0.7 reversed|n+|first|b0|s0] 10 = ? + 1         ans 9  "First work out the left side, then make the right side match that amou"
+  [β -0.71 reversed|n+|last|b0|s0] 3 = 2 + ?          ans 1  "First work out the left side, then make the right side match that amou"
+  [β -0.64 both|++|first|b0|s1] 11 + 1 = ? + 1     ans 11  "First work out the left side, then make the right side match that amou"
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=medium | run 1 | item space | max 20
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [-0.6, 0.6] within 20: both|++|first|b1|s1@-0.11 both|++|first|b0|s1@-0.58 reversed|n+|first|b0|s0@-0.52 reversed|n-|first|b1|s0@0.2
+  [β -0.11 both|++|first|b1|s1] 8 + 5 = ? + 5      ans 8  "Make both sides equal."
+  [β -0.58 both|++|first|b0|s1] 3 + 11 = ? + 11    ans 3  "Make both sides equal."
+  [β -0.52 reversed|n+|first|b0|s0] 16 = ? + 15        ans 1  "Make both sides equal."
+  [β  0.26 reversed|n-|first|b1|s0] 9 = ? - 3          ans 12  "Make both sides equal."
+  [β  0.27 reversed|n+|last|b1|s0] 19 = 15 + ?        ans 4  "Make both sides equal."
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=medium | run 2 | item space | max 20
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [-0.6, 0.6] within 20: reversed|n-|first|b1|s0@0.29 reversed|n+|first|b0|s0@-0.49 reversed|n-|first|b0|s0@-0.42 reversed|n+|last|b0|
+  [β  0.29 reversed|n-|first|b1|s0] 7 = ? - 6          ans 13  "Make both sides equal."
+  [β -0.49 reversed|n+|first|b0|s0] 17 = ? + 6         ans 11  "Make both sides equal."
+  [β -0.42 reversed|n-|first|b0|s0] 5 = ? - 1          ans 6  "Make both sides equal."
+  [β -0.35 reversed|n+|last|b0|s0] 15 = 4 + ?         ans 11  "Make both sides equal."
+  [β  0.55 both|-+|last|b0|s0] 6 - 1 = 1 + ?      ans 4  "Make both sides equal."
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=hard | run 1 | item space | max 20
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [0.6, 3.5] within 20: both|++|last|b1|s0@1.07 both|++|first|b2|s0@1.28 both|--|first|b2|s0@1.93 both|--|first|b0|s0@1.2 both|-+|last
+  [β  1.07 both|++|last|b1|s0] 1 + 18 = 13 + ?    ans 6  "What number balances both sides?"
+  [β  1.28 both|++|first|b2|s0] 8 + 8 = ? + 9      ans 7  "What number balances both sides?"
+  [β  1.93 both|--|first|b2|s0] 19 - 12 = ? - 4    ans 11  "What number balances both sides?"
+  [β   1.2 both|--|first|b0|s0] 9 - 6 = ? - 17     ans 20  "What number balances both sides?"
+  [β  1.02 both|-+|last|b1|s0] 18 - 14 = 3 + ?    ans 1  "What number balances both sides?"
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=hard | run 2 | item space | max 20
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [0.6, 3.5] within 20: both|+-|first|b0|s0@0.68 both|++|last|b0|s0@0.6 both|--|first|b0|s0@1.2 both|--|first|b1|s1@0.63 both|-+|last|
+  [β  0.68 both|+-|first|b0|s0] 1 + 14 = ? - 1     ans 16  "What number makes both sides equal?"
+  [β   0.6 both|++|last|b0|s0] 1 + 19 = 6 + ?     ans 14  "Find the missing number to keep the scale balanced."
+  [β   1.2 both|--|first|b0|s0] 18 - 7 = ? - 9     ans 20  "What number makes both sides equal?"
+  [β  0.63 both|--|first|b1|s1] 11 - 8 = ? - 8     ans 11  "Find the missing number to keep the scale balanced."
+  [β  1.14 both|-+|last|b1|s0] 13 - 5 = 6 + ?     ans 2  "What number makes both sides equal?"
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=(none) | run 1 | own path | max 20
+  [                      ] 5 + 3 = 4 + ?      ans 4  "Can you find the missing number to make both sides equal?"
+  [                      ] 10 - 2 = 2 + ?     ans 6  "Keep the scale balanced! What number goes in the question mark?"
+  [                      ] 7 + 6 = 8 + ?      ans 5  "Both sides need to have the exact same total. Find the missing piece!"
+  [                      ] 15 - 4 = 4 + ?     ans 7  "Great job so far! Now let's try a subtraction balance. What number mak"
+  [                      ] 12 + 4 = 7 + ?     ans 9  "Final challenge! Make sure both sides equal the same total."
+
+Addition and subtraction equations within 20 | balance-both-sides | difficulty=(none) | run 2 | own path | max 20
+  [                      ] 4 + 3 = 2 + ?      ans 5  "Can you find the missing number to make both sides equal?"
+  [                      ] 9 - 2 = 5 + ?      ans 2  "Keep the scale balanced by finding the right number for the question m"
+  [                      ] 8 + 4 = 6 + ?      ans 6  "Both sides must have the same total. What number goes in the blank?"
+  [                      ] 15 - 5 = 3 + ?     ans 7  "Solve for the missing piece to keep the equation balanced."
+  [                      ] 11 + 6 = 9 + ?     ans 8  "Final challenge! Make sure both sides equal the exact same amount."
+
+The equal sign means the same as | balance-both-sides | difficulty=easy | run 1 | item space | max 10
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [-2.5, -0.6] within 10: reversed|n+|first|b0|s0@-0.76 both|++|last|b0|s1@-0.62 reversed|n+|last|b0|s0@-0.71 both|++|first|b0|s1@-0.9
+  [β -0.76 reversed|n+|first|b0|s0] 8 = ? + 5          ans 3  "What number makes both sides the same amount?"
+  [β -0.62 both|++|last|b0|s1] 3 + 3 = 3 + ?      ans 3  "What number makes both sides the same amount?"
+  [β -0.71 reversed|n+|last|b0|s0] 3 = 2 + ?          ans 1  "First work out the left side, then make the right side match that amou"
+  [β -0.91 both|++|first|b0|s1] 1 + 2 = ? + 2      ans 1  "First work out the left side, then make the right side match that amou"
+  [β -0.65 both|++|last|b0|s1] 3 + 2 = 3 + ?      ans 2  "First work out the left side, then make the right side match that amou"
+
+The equal sign means the same as | balance-both-sides | difficulty=easy | run 2 | item space | max 10
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [-2.5, -0.6] within 10: both|++|first|b0|s1@-0.91 both|++|last|b0|s1@-0.68 reversed|n+|first|b0|s0@-0.79 reversed|n+|last|b0|s0@-0.7
+  [β -0.91 both|++|first|b0|s1] 2 + 1 = ? + 1      ans 2  "First work out the left side, then make the right side match that amou"
+  [β -0.68 both|++|last|b0|s1] 2 + 2 = 2 + ?      ans 2  "First work out the left side, then make the right side match that amou"
+  [β -0.79 reversed|n+|first|b0|s0] 7 = ? + 3          ans 4  "First work out the left side, then make the right side match that amou"
+  [β -0.71 reversed|n+|last|b0|s0] 3 = 2 + ?          ans 1  "First work out the left side, then make the right side match that amou"
+  [β -0.62 both|++|last|b0|s1] 4 + 2 = 2 + ?      ans 4  "First work out the left side, then make the right side match that amou"
+
+The equal sign means the same as | balance-both-sides | difficulty=medium | run 1 | item space | max 10
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [-0.6, 0.6] within 10: both|-+|first|b0|s0@0.32 both|--|first|b0|s1@0.04 reversed|n-|first|b0|s0@-0.39 both|++|last|b0|s1@-0.59 both
+  [β  0.32 both|-+|first|b0|s0] 7 - 3 = ? + 2      ans 2  "Make both sides equal. Find the missing number!"
+  [β  0.04 both|--|first|b0|s1] 8 - 3 = ? - 3      ans 8  "Make both sides equal. Find the missing number!"
+  [β -0.39 reversed|n-|first|b0|s0] 4 = ? - 3          ans 7  "Make both sides equal. Find the missing number!"
+  [β -0.59 both|++|last|b0|s1] 6 + 1 = 6 + ?      ans 1  "Make both sides equal. Find the missing number!"
+  [β  0.21 both|++|last|b0|s0] 4 + 3 = 5 + ?      ans 2  "Make both sides equal. Find the missing number!"
+
+The equal sign means the same as | balance-both-sides | difficulty=medium | run 2 | item space | max 10
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [-0.6, 0.6] within 10: both|-+|last|b0|s0@0.52 both|++|last|b0|s1@-0.5 reversed|n+|last|b0|s0@-0.53 both|++|last|b0|s0@0.3 both|--|f
+  [β  0.52 both|-+|last|b0|s0] 10 - 6 = 1 + ?     ans 3  "Make both sides equal."
+  [β  -0.5 both|++|last|b0|s1] 5 + 5 = 5 + ?      ans 5  "Make both sides equal."
+  [β -0.53 reversed|n+|last|b0|s0] 9 = 6 + ?          ans 3  "Make both sides equal."
+  [β   0.3 both|++|last|b0|s0] 4 + 6 = 1 + ?      ans 9  "Make both sides equal."
+  [β -0.05 both|--|first|b0|s1] 5 - 1 = ? - 1      ans 5  "Make both sides equal."
+
+The equal sign means the same as | balance-both-sides | difficulty=hard | run 1 | item space | max 10
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [0.6, 3.5] within 10: both|-+|last|b0|s0@0.64 both|--|first|b0|s0@0.9 both|--|first|b0|s0@0.87 both|-+|last|b0|s0@0.64 both|--|first
+  [β  0.64 both|-+|last|b0|s0] 9 - 1 = 4 + ?      ans 4  "What number balances both sides?"
+  [β   0.9 both|--|first|b0|s0] 7 - 3 = ? - 6      ans 10  "What number balances both sides?"
+  [β  0.87 both|--|first|b0|s0] 6 - 1 = ? - 4      ans 9  "What number balances both sides?"
+  [β  0.64 both|-+|last|b0|s0] 9 - 1 = 3 + ?      ans 5  "What number balances both sides?"
+  [β  0.81 both|--|first|b0|s0] 5 - 1 = ? - 3      ans 7  "What number balances both sides?"
+
+The equal sign means the same as | balance-both-sides | difficulty=hard | run 2 | item space | max 10
+  [EquationBuilder] Item space equivalence-20 balance-both-sides band [0.6, 3.5] within 10: both|--|first|b0|s0@0.78 both|-+|last|b0|s0@0.61 both|--|first|b0|s0@0.87 both|-+|last|b0|s0@0.61 both|--|firs
+  [β  0.78 both|--|first|b0|s0] 9 - 4 = ? - 1      ans 6  "What number balances both sides?"
+  [β  0.61 both|-+|last|b0|s0] 10 - 3 = 1 + ?     ans 6  "What number balances both sides?"
+  [β  0.87 both|--|first|b0|s0] 7 - 2 = ? - 4      ans 9  "What number balances both sides?"
+  [β  0.61 both|-+|last|b0|s0] 9 - 2 = 1 + ?      ans 6  "What number balances both sides?"
+  [β  0.81 both|--|first|b0|s0] 4 - 1 = ? - 4      ans 7  "What number balances both sides?"
+
+The equal sign means the same as | balance-both-sides | difficulty=(none) | run 1 | own path | max 10
+  [                      ] 2 + 2 = ? + 1      ans 3  "Can you find the missing number to make both sides balance out?"
+  [                      ] 3 + 2 = 1 + ?      ans 4  "Make sure the right side equals the left side!"
+  [                      ] 4 + 3 = 2 + ?      ans 5  "Find the secret number that keeps our scale balanced."
+  [                      ] 6 + 2 = 6 + ?      ans 2  "Both sides need to have the same total amount. What number goes here?"
+  [                      ] 5 + 4 = 5 + ?      ans 4  "Last challenge! Make the right side match the left side perfectly."
+
+The equal sign means the same as | balance-both-sides | difficulty=(none) | run 2 | own path | max 10
+  [                      ] 2 + 2 = ? + 1      ans 3  "Can you find the missing number to make both sides equal?"
+  [                      ] 5 + 1 = 2 + ?      ans 4  "Make the scale balance by filling in the missing number."
+  [                      ] 4 + 3 = ? + 3      ans 4  "Both sides must be the same! What number goes with 3 to match 7?"
+  [                      ] 4 + 4 = 3 + ?      ans 5  "Find the secret number that makes the right side equal to the left sid"
+  [                      ] 5 + 4 = ? + 3      ans 6  "Challenge time! Keep the scale balanced by finding the missing number."

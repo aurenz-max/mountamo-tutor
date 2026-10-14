@@ -1,0 +1,24 @@
+
+Find the area of a rectangle by counting unit squares | find_area | difficulty=easy | run 1 | own path
+  [AreaModel] Item space: find_area lesson does not fit mult-multi-digit or mult-multi-digit-5; own path kept
+  [                      ] 18 × 35      parts [10,8]×[30,5] = 630  ""
+  [                      ] 28 × 48      parts [20,8]×[40,8] = 1344  ""
+  [                      ] 27 × 49      parts [20,7]×[40,9] = 1323  ""
+  [                      ] 17 × 41      parts [10,7]×[40,1] = 697  ""
+  [                      ] 11 × 45      parts [10,1]×[40,5] = 495  ""
+
+Find the area of a rectangle by counting unit squares | find_area | difficulty=medium | run 1 | own path
+  [AreaModel] Item space: find_area lesson does not fit mult-multi-digit or mult-multi-digit-5; own path kept
+  [                      ] 28 × 49      parts [20,8]×[40,9] = 1372  ""
+  [                      ] 22 × 39      parts [20,2]×[30,9] = 858  ""
+  [                      ] 23 × 14      parts [20,3]×[10,4] = 322  ""
+  [                      ] 22 × 34      parts [20,2]×[30,4] = 748  ""
+  [                      ] 47 × 45      parts [40,7]×[40,5] = 2115  ""
+
+Find the area of a rectangle by counting unit squares | find_area | difficulty=hard | run 1 | own path
+  [AreaModel] Item space: find_area lesson does not fit mult-multi-digit or mult-multi-digit-5; own path kept
+  [                      ] 12 × 25      parts [10,2]×[20,5] = 300  ""
+  [                      ] 49 × 43      parts [40,9]×[40,3] = 2107  ""
+  [                      ] 11 × 24      parts [10,1]×[20,4] = 264  ""
+  [                      ] 48 × 44      parts [40,8]×[40,4] = 2112  ""
+  [                      ] 19 × 46      parts [10,9]×[40,6] = 874  ""

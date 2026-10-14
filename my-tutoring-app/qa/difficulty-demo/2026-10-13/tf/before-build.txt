@@ -1,0 +1,108 @@
+
+Numbers to 10 on a ten frame | build | difficulty=easy | run 1 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":9}  "Put 9 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=easy | run 2 | own path
+  [                      ] {"type":"build","targetCount":2}  "Put 2 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":4}  "Put 4 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":9}  "Put 9 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=easy | run 3 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":9}  "Put 9 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=medium | run 1 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":4}  "Put 4 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=medium | run 2 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":9}  "Put 9 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=medium | run 3 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":9}  "Put 9 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=hard | run 1 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":9}  "Put 9 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=hard | run 2 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":9}  "Put 9 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=hard | run 3 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":9}  "Put 9 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":9}  "Put 9 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":9}  "Put 9 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"
+
+Numbers to 10 on a ten frame | build | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"build","targetCount":3}  "Put 3 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":5}  "Put 5 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":6}  "Put 6 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":4}  "Put 4 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":8}  "Put 8 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":7}  "Put 7 counters on the ten frame!"
+  [                      ] {"type":"build","targetCount":10}  "Put 10 counters on the ten frame!"

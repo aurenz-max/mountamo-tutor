@@ -1,0 +1,63 @@
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=easy | run 1 | code space
+  [CoinCounter] Item space coin-sets: count-mixed band [-2.5, -0.6]: np|few@-0.6 dp|few@-0.9 dp|5+@-0.75 np|few@-0.6 dp|5+@-0.75
+  [β  -0.6 np|few        ] {"type":"count","displayedCoins":[{"type":"nickel","count":2},{"type":"penny","count":2}],"correctTotal":12,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "How much money is shown?"
+  [β  -0.9 dp|few        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":3}],"correctTotal":13,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|few","beta":-0.9}}  "Count the coins. How many cents is that?"
+  [β -0.75 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":3},{"type":"penny","count":2}],"correctTotal":32,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.75}}  "What is the total value of these coins?"
+  [β  -0.6 np|few        ] {"type":"count","displayedCoins":[{"type":"nickel","count":1},{"type":"penny","count":2}],"correctTotal":7,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "How much money is shown?"
+  [β -0.75 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":4},{"type":"penny","count":1}],"correctTotal":41,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.75}}  "Count the coins. How many cents is that?"
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=easy | run 2 | code space
+  [CoinCounter] Item space coin-sets: count-mixed band [-2.5, -0.6]: dp|few@-0.9 np|few@-0.6 dp|5+@-0.75 dp|5+@-0.6 np|few@-0.6
+  [β  -0.9 dp|few        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":2}],"correctTotal":12,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|few","beta":-0.9}}  "How much money is shown?"
+  [β  -0.6 np|few        ] {"type":"count","displayedCoins":[{"type":"nickel","count":1},{"type":"penny","count":2}],"correctTotal":7,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "Count the coins. How many cents is that?"
+  [β -0.75 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":4},{"type":"penny","count":1}],"correctTotal":41,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.75}}  "What is the total value of these coins?"
+  [β  -0.6 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":5},{"type":"penny","count":1}],"correctTotal":51,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.6}}  "How much money is shown?"
+  [β  -0.6 np|few        ] {"type":"count","displayedCoins":[{"type":"nickel","count":3},{"type":"penny","count":1}],"correctTotal":16,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "Count the coins. How many cents is that?"
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=medium | run 1 | code space
+  [CoinCounter] Item space coin-sets: count-mixed band [-0.6, 0.6]: dn|few@-0.3 qn|5+@0.35 dp|5+@-0.3 qn|few@0.2 qd|5+@0.5
+  [β  -0.3 dn|few        ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"nickel","count":2}],"correctTotal":30,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dn|few","beta":-0.3}}  "How much money is shown?"
+  [β  0.35 qn|5+         ] {"type":"count","displayedCoins":[{"type":"quarter","count":3},{"type":"nickel","count":2}],"correctTotal":85,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qn|5+","beta":0.35}}  "Count the coins. How many cents is that?"
+  [β  -0.3 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":5},{"type":"penny","count":3}],"correctTotal":53,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.3}}  "What is the total value of these coins?"
+  [β   0.2 qn|few        ] {"type":"count","displayedCoins":[{"type":"quarter","count":2},{"type":"nickel","count":1}],"correctTotal":55,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qn|few","beta":0.2}}  "How much money is shown?"
+  [β   0.5 qd|5+         ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":7}],"correctTotal":95,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qd|5+","beta":0.5}}  "Count the coins. How many cents is that?"
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=medium | run 2 | code space
+  [CoinCounter] Item space coin-sets: count-mixed band [-0.6, 0.6]: qp|5+@0.5 dnp|5+@0.6 dn|5+@0 qd|few@-0.1 qn|few@0.2
+  [β   0.5 qp|5+         ] {"type":"count","displayedCoins":[{"type":"quarter","count":3},{"type":"penny","count":5}],"correctTotal":80,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qp|5+","beta":0.5}}  "How much money is shown?"
+  [β   0.6 dnp|5+        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":4},{"type":"penny","count":1}],"correctTotal":31,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dnp|5+","beta":0.6}}  "Count the coins. How many cents is that?"
+  [β     0 dn|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":5},{"type":"nickel","count":1}],"correctTotal":55,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dn|5+","beta":0}}  "What is the total value of these coins?"
+  [β  -0.1 qd|few        ] {"type":"count","displayedCoins":[{"type":"quarter","count":2},{"type":"dime","count":2}],"correctTotal":70,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qd|few","beta":-0.1}}  "How much money is shown?"
+  [β   0.2 qn|few        ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"nickel","count":1}],"correctTotal":30,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qn|few","beta":0.2}}  "Count the coins. How many cents is that?"
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=hard | run 1 | code space
+  [CoinCounter] Item space coin-sets: count-mixed band [0.6, 3.5]: qnp|5+@1.7 qp|5+@0.8 qdn|5+@1.85 qdn|few@1.1 qdnp|few@1.7
+  [β   1.7 qnp|5+        ] {"type":"count","displayedCoins":[{"type":"quarter","count":2},{"type":"nickel","count":3},{"type":"penny","count":5}],"correctTotal":70,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qnp|5+","beta":1.7}}  "How much money is shown?"
+  [β   0.8 qp|5+         ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"penny","count":9}],"correctTotal":34,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qp|5+","beta":0.8}}  "Count the coins. How many cents is that?"
+  [β  1.85 qdn|5+        ] {"type":"count","displayedCoins":[{"type":"quarter","count":2},{"type":"dime","count":1},{"type":"nickel","count":6}],"correctTotal":90,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qdn|5+","beta":1.85}}  "What is the total value of these coins?"
+  [β   1.1 qdn|few       ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":2},{"type":"nickel","count":1}],"correctTotal":50,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qdn|few","beta":1.1}}  "How much money is shown?"
+  [β   1.7 qdnp|few      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1},{"type":"nickel","count":1},{"type":"penny","count":1}],"correctTotal":41,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qdnp|few","beta":1.7}}  "Count the coins. How many cents is that?"
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=hard | run 2 | code space
+  [CoinCounter] Item space coin-sets: count-mixed band [0.6, 3.5]: dn|5+@0.6 qn|5+@0.65 qdnp|5+@2.3 qnp|5+@0.95 qdn|few@1.1
+  [β   0.6 dn|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"nickel","count":8}],"correctTotal":60,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dn|5+","beta":0.6}}  "How much money is shown?"
+  [β  0.65 qn|5+         ] {"type":"count","displayedCoins":[{"type":"quarter","count":3},{"type":"nickel","count":4}],"correctTotal":95,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qn|5+","beta":0.65}}  "Count the coins. How many cents is that?"
+  [β   2.3 qdnp|5+       ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":3},{"type":"nickel","count":3},{"type":"penny","count":1}],"correctTotal":71,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qdnp|5+","beta":2.3}}  "What is the total value of these coins?"
+  [β  0.95 qnp|5+        ] {"type":"count","displayedCoins":[{"type":"quarter","count":2},{"type":"nickel","count":2},{"type":"penny","count":1}],"correctTotal":61,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qnp|5+","beta":0.95}}  "How much money is shown?"
+  [β   1.1 qdn|few       ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1},{"type":"nickel","count":1}],"correctTotal":40,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"qdn|few","beta":1.1}}  "Count the coins. How many cents is that?"
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"penny","count":3}],"correctTotal":23,"countMode":"mixed"}  "Count the coins in your book fund jar."
+  [                      ] {"type":"count","displayedCoins":[{"type":"nickel","count":3},{"type":"penny","count":4}],"correctTotal":19,"countMode":"mixed"}  "Add up these coins to see your savings."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":2}],"correctTotal":45,"countMode":"mixed"}  "How much money is shown here for your book?"
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"nickel","count":1}],"correctTotal":25,"countMode":"mixed"}  "Count the coins you earned doing chores."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1}],"correctTotal":35,"countMode":"mixed"}  "Add these coins to check your book savings total."
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":4}],"correctTotal":14,"countMode":"mixed"}  "Count the coins in your book fund jar."
+  [                      ] {"type":"count","displayedCoins":[{"type":"nickel","count":1},{"type":"penny","count":3}],"correctTotal":8,"countMode":"mixed"}  "Add up these coins you found in your pocket."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"nickel","count":1}],"correctTotal":25,"countMode":"mixed"}  "Count the coins earned from helping out."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"penny","count":5}],"correctTotal":25,"countMode":"mixed"}  "Find the total value of these allowance coins."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1}],"correctTotal":35,"countMode":"mixed"}  "Count this mixed group of coins for your book purchase."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":2}],"correctTotal":45,"countMode":"mixed"}  "Calculate your final savings to buy the storybook!"

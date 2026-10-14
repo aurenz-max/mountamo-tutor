@@ -1,0 +1,148 @@
+
+Add and subtract within 20 | match | difficulty=easy | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 match band [-2.5, -0.6] within 20: +|result|b0|t0@-1.28 -|result|b0|t1@-0.96 -|result|b0|t0@-1.92 +|result|b0|t1@-2.02 -|result|b1|t1@-0.64 -|result|b0|t0@-1.92
+  [β -1.28 +|result|b0|t0] 6 + 4 = ?      ans 10 eqs 2 + 6 = 8 | 3 + 9 = 12 | 3 + 11 = 14 | 6 + 4 = 10 vis ten-frame:10  "Count the dots on the ten-frames to find which equation matches 6 plus"
+  [β -0.96 -|result|b0|t1] 13 − 3 = ?     ans 10 eqs 13 - 3 = 10 | 4 + 8 = 12 | 7 + 1 = 8 | 5 + 9 = 14 vis ten-frame:10  "Look at the ten-frame model and pick the subtraction equation that sho"
+  [β -1.92 -|result|b0|t0] 3 − 1 = ?      ans  2 eqs 3 - 1 = 2 | 3 + 1 = 4 | 3 + 3 = 6 | 2 + 3 = 5 vis ten-frame:2  "Use the visual aid to find the correct equation for 3 take away 1."
+  [β -2.02 +|result|b0|t1] 16 + 1 = ?     ans 17 eqs 1 + 12 = 13 | 5 + 10 = 15 | 6 + 13 = 19 | 16 + 1 = 17 vis ten-frame:17  "Match the ten-frame representation to the addition fact 16 plus 1."
+  [β -0.64 -|result|b1|t1] 12 − 10 = ?    ans  2 eqs 1 + 4 = 5 | 2 + 4 = 6 | 3 + 1 = 4 | 12 - 10 = 2 vis ten-frame:2  "Examine the dots to find the equation for 12 minus 10."
+  [β -1.92 -|result|b0|t0] 8 − 7 = ?      ans  1 eqs 2 + 2 = 4 | 8 - 7 = 1 | 1 + 4 = 5 | 1 + 2 = 3 vis ten-frame:1  "Count the remaining objects on the ten-frame to match 8 minus 7."
+  [β -2.32 +|result|b0|t0] 1 + 8 = ?      ans  9 eqs 3 + 4 = 7 | 4 + 9 = 13 | 3 + 8 = 11 | 1 + 8 = 9 vis ten-frame:9  "Use the ten-frame to connect the visual with 1 plus 8."
+  [β -0.66 +|result|b0|t1] 12 + 8 = ?     ans 20 eqs 11 + 5 = 16 | 16 + 1 = 17 | 12 + 8 = 20 | 4 + 14 = 18 vis ten-frame:20  "Find the correct addition equation for 12 plus 8 using the ten-frame h"
+
+Add and subtract within 20 | match | difficulty=easy | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 match band [-2.5, -0.6] within 20: -|result|b0|t1@-1.62 +|result|b0|t0@-1.74 -|result|b0|t0@-0.88 -|result|b1|t1@-0.64 +|result|b0|t1@-1.44 +|result|b0|t0@-2.32
+  [β -1.62 -|result|b0|t1] 16 − 15 = ?    ans  1 eqs 16 - 15 = 1 | 2 + 1 = 3 | 2 + 3 = 5 | 2 + 2 = 4 vis ten-frame:1  "Look at the ten-frame and count the objects. Find the matching equatio"
+  [β -1.74 +|result|b0|t0] 7 + 2 = ?      ans  9 eqs 5 + 6 = 11 | 7 + 2 = 9 | 5 + 2 = 7 | 9 + 4 = 13 vis ten-frame:9  "Count on from the bigger number on your ten-frame. Which equation show"
+  [β -0.88 -|result|b0|t0] 8 − 4 = ?      ans  4 eqs 8 - 4 = 4 | 2 + 4 = 6 | 2 + 6 = 8 | 1 + 1 = 2 vis ten-frame:4  "Use the ten-frame to count backwards. Find the equation for eight minu"
+  [β -0.64 -|result|b1|t1] 12 − 10 = ?    ans  2 eqs 3 + 3 = 6 | 12 - 10 = 2 | 2 + 2 = 4 | 1 + 4 = 5 vis ten-frame:2  "Count the remaining items on the ten-frame to match twelve minus ten."
+  [β -1.44 +|result|b0|t1] 14 + 2 = ?     ans 16 eqs 14 + 2 = 16 | 3 + 17 = 20 | 14 + 4 = 18 | 1 + 13 = 14 vis ten-frame:16  "Count the dots on the ten-frame to discover fourteen plus two."
+  [β -2.32 +|result|b0|t0] 1 + 8 = ?      ans  9 eqs 4 + 3 = 7 | 8 + 5 = 13 | 8 + 3 = 11 | 1 + 8 = 9 vis ten-frame:9  "Look at the ten-frame and count on to find one plus eight."
+  [β -2.22 -|result|b0|t1] 11 − 10 = ?    ans  1 eqs 1 + 3 = 4 | 3 + 2 = 5 | 2 + 1 = 3 | 11 - 10 = 1 vis ten-frame:1  "Use the ten-frame to think backwards and match eleven minus ten."
+  [β -0.98 +|result|b0|t1] 4 + 16 = ?     ans 20 eqs 2 + 15 = 17 | 9 + 7 = 16 | 5 + 13 = 18 | 4 + 16 = 20 vis ten-frame:20  "Count all the objects on your ten-frame to show four plus sixteen."
+
+Add and subtract within 20 | match | difficulty=medium | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 match band [-0.6, 0.6] within 20: +|result|b1|t1@0.1 +|result|b0|t1@-0.58 -|result|b0|t1@-0.26 -|result|b1|t1@-0.04 -|result|b1|t1@0.5 -|result|b0|t1@-0.58 +|re
+  [β   0.1 +|result|b1|t1] 5 + 8 = ?      ans 13 eqs 5 + 8 = 13 | 10 + 5 = 15 | 5 + 9 = 14 | 3 + 9 = 12 vis dot-array:13  "Match this dot array to the correct addition equation."
+  [β -0.58 +|result|b0|t1] 9 + 11 = ?     ans 20 eqs 2 + 16 = 18 | 4 + 15 = 19 | 3 + 14 = 17 | 9 + 11 = 20 vis dot-array:20  "Find the equation that matches the visual representation."
+  [β -0.26 -|result|b0|t1] 19 − 8 = ?     ans 11 eqs 8 + 5 = 13 | 1 + 9 = 10 | 7 + 5 = 12 | 19 - 8 = 11 vis dot-array:11  "Find the equation that matches this dot array."
+  [β -0.04 -|result|b1|t1] 18 − 16 = ?    ans  2 eqs 18 - 16 = 2 | 1 + 2 = 3 | 1 + 3 = 4 | 3 + 2 = 5 vis dot-array:2  "Match this dot array to its subtraction equation."
+  [β   0.5 -|result|b1|t1] 20 − 15 = ?    ans  5 eqs 20 - 15 = 5 | 4 + 2 = 6 | 1 + 3 = 4 | 5 + 2 = 7 vis dot-array:5  "Find the correct equation for this dot group."
+  [β -0.58 -|result|b0|t1] 18 − 4 = ?     ans 14 eqs 18 - 4 = 14 | 4 + 9 = 13 | 8 + 7 = 15 | 11 + 5 = 16 vis dot-array:14  "Match the dot array to the subtraction equation."
+  [β  0.02 +|result|b1|t1] 8 + 4 = ?      ans 12 eqs 8 + 4 = 12 | 2 + 11 = 13 | 2 + 12 = 14 | 3 + 8 = 11 vis dot-array:12  "Find the addition equation that matches this dot array."
+  [β -0.42 -|result|b0|t1] 20 − 6 = ?     ans 14 eqs 9 + 7 = 16 | 4 + 9 = 13 | 1 + 14 = 15 | 20 - 6 = 14 vis dot-array:14  "Match the dot array to its subtraction equation."
+
+Add and subtract within 20 | match | difficulty=medium | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 match band [-0.6, 0.6] within 20: -|result|b1|t1@0.42 -|result|b0|t1@-0.5 +|result|b0|t1@-0.58 +|result|b1|t1@-0.16 +|result|b1|t1@-0.08 -|result|b1|t1@0.58 -|r
+  [β  0.42 -|result|b1|t1] 16 − 12 = ?    ans  4 eqs 16 - 12 = 4 | 1 + 5 = 6 | 3 + 2 = 5 | 1 + 2 = 3 vis dot-array:4  "Find the equation that matches this dot array for sixteen minus twelve"
+  [β  -0.5 -|result|b0|t1] 17 − 5 = ?     ans 12 eqs 7 + 6 = 13 | 17 - 5 = 12 | 13 + 1 = 14 | 6 + 5 = 11 vis dot-array:12  "Match this dot array to the correct equation for seventeen minus five."
+  [β -0.58 +|result|b0|t1] 9 + 11 = ?     ans 20 eqs 9 + 11 = 20 | 2 + 17 = 19 | 11 + 6 = 17 | 17 + 1 = 18 vis dot-array:20  "Look at the dots and choose the matching addition equation for nine pl"
+  [β -0.16 +|result|b1|t1] 8 + 8 = ?      ans 16 eqs 17 + 1 = 18 | 2 + 15 = 17 | 8 + 8 = 16 | 3 + 12 = 15 vis dot-array:16  "Find the equation that shows eight plus eight with these dots."
+  [β -0.08 +|result|b1|t1] 9 + 9 = ?      ans 18 eqs 9 + 9 = 18 | 8 + 12 = 20 | 10 + 9 = 19 | 5 + 12 = 17 vis dot-array:18  "Match this visual dot array to the correct addition equation for nine "
+  [β  0.58 -|result|b1|t1] 13 − 7 = ?     ans  6 eqs 2 + 3 = 5 | 6 + 1 = 7 | 5 + 3 = 8 | 13 - 7 = 6 vis dot-array:6  "Can you find the equation that matches this dot array for thirteen min"
+  [β -0.58 -|result|b0|t1] 20 − 4 = ?     ans 16 eqs 14 + 4 = 18 | 2 + 13 = 15 | 14 + 3 = 17 | 20 - 4 = 16 vis dot-array:16  "Choose the correct subtraction equation for twenty minus four represen"
+  [β   0.1 +|result|b1|t1] 7 + 5 = ?      ans 12 eqs 5 + 8 = 13 | 7 + 5 = 12 | 2 + 9 = 11 | 11 + 3 = 14 vis dot-array:12  "Find the matching addition equation for seven plus five using the dot "
+
+Add and subtract within 20 | match | difficulty=hard | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 match band [0.6, 3.5] within 20: -|result|b1|t1@0.82 -|result|b1|t1@0.66 -|result|b1|t1@0.66 -|result|b1|t1@0.74 -|result|b1|t1@0.66 -|result|b1|t1@0.66 -|resul
+  [β  0.82 -|result|b1|t1] 20 − 11 = ?    ans  9 eqs 2 + 9 = 11 | 5 + 3 = 8 | 9 + 1 = 10 | 20 - 11 = 9 vis dot-array:9  "Match the dot array to the correct equation for 20 - 11."
+  [β  0.66 -|result|b1|t1] 15 − 8 = ?     ans  7 eqs 15 - 8 = 7 | 3 + 5 = 8 | 4 + 5 = 9 | 2 + 4 = 6 vis dot-array:7  "Match the dot array to the correct equation for 15 - 8."
+  [β  0.66 -|result|b1|t1] 16 − 7 = ?     ans  9 eqs 16 - 7 = 9 | 4 + 7 = 11 | 4 + 6 = 10 | 1 + 7 = 8 vis dot-array:9  "Match the dot array to the correct equation for 16 - 7."
+  [β  0.74 -|result|b1|t1] 19 − 11 = ?    ans  8 eqs 19 - 11 = 8 | 1 + 9 = 10 | 8 + 1 = 9 | 4 + 3 = 7 vis dot-array:8  "Match the dot array to the correct equation for 19 - 11."
+  [β  0.66 -|result|b1|t1] 19 − 12 = ?    ans  7 eqs 4 + 2 = 6 | 3 + 5 = 8 | 19 - 12 = 7 | 2 + 7 = 9 vis dot-array:7  "Match the dot array to the correct equation for 19 - 12."
+  [β  0.66 -|result|b1|t1] 16 − 9 = ?     ans  7 eqs 16 - 9 = 7 | 2 + 6 = 8 | 2 + 4 = 6 | 5 + 4 = 9 vis dot-array:7  "Match the dot array to the correct equation for 16 - 9."
+  [β  0.66 -|result|b1|t1] 14 − 7 = ?     ans  7 eqs 2 + 7 = 9 | 2 + 4 = 6 | 3 + 5 = 8 | 14 - 7 = 7 vis dot-array:7  "Match the dot array to the correct equation for 14 - 7."
+  [β  0.66 -|result|b1|t1] 20 − 13 = ?    ans  7 eqs 3 + 3 = 6 | 3 + 5 = 8 | 1 + 8 = 9 | 20 - 13 = 7 vis dot-array:7  "Match the dot array to the correct equation for 20 - 13."
+
+Add and subtract within 20 | match | difficulty=hard | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 match band [0.6, 3.5] within 20: -|result|b1|t1@0.74 -|result|b1|t1@0.82 -|result|b1|t1@0.66 -|result|b1|t1@0.66 -|result|b1|t1@0.66 -|result|b1|t1@0.74 -|resul
+  [β  0.74 -|result|b1|t1] 17 − 9 = ?     ans  8 eqs 5 + 5 = 10 | 17 - 9 = 8 | 8 + 1 = 9 | 2 + 5 = 7 vis dot-array:8  "Match this dot array to the correct equation."
+  [β  0.82 -|result|b1|t1] 20 − 11 = ?    ans  9 eqs 4 + 4 = 8 | 8 + 2 = 10 | 7 + 4 = 11 | 20 - 11 = 9 vis dot-array:9  ""
+  [β  0.66 -|result|b1|t1] 20 − 13 = ?    ans  7 eqs 20 - 13 = 7 | 4 + 4 = 8 | 5 + 1 = 6 | 3 + 6 = 9 vis dot-array:7  ""
+  [β  0.66 -|result|b1|t1] 16 − 9 = ?     ans  7 eqs 16 - 9 = 7 | 3 + 5 = 8 | 3 + 3 = 6 | 8 + 1 = 9 vis dot-array:7  ""
+  [β  0.66 -|result|b1|t1] 16 − 7 = ?     ans  9 eqs 16 - 7 = 9 | 5 + 6 = 11 | 2 + 6 = 8 | 8 + 2 = 10 vis dot-array:9  ""
+  [β  0.74 -|result|b1|t1] 17 − 8 = ?     ans  9 eqs 17 - 8 = 9 | 1 + 9 = 10 | 4 + 4 = 8 | 7 + 4 = 11 vis dot-array:9  ""
+  [β  0.74 -|result|b1|t1] 19 − 11 = ?    ans  8 eqs 19 - 11 = 8 | 6 + 3 = 9 | 4 + 3 = 7 | 4 + 6 = 10 vis dot-array:8  ""
+  [β  0.66 -|result|b1|t1] 18 − 11 = ?    ans  7 eqs 4 + 4 = 8 | 18 - 11 = 7 | 4 + 5 = 9 | 3 + 3 = 6 vis dot-array:7  ""
+
+Add and subtract within 20 | match | difficulty=(none) | run 1 | own path | max 20
+  [                      ] 10 + 5 = ?     ans 15 eqs 10 + 5 = 15 | 16 + 2 = 18 | 4 + 12 = 16 | 10 + 7 = 17 vis ten-frame:15  "Look at the ten-frame and find the matching addition equation."
+  [                      ] 8 + 7 = ?      ans 15 eqs 8 + 9 = 17 | 2 + 16 = 18 | 9 + 7 = 16 | 8 + 7 = 15 vis dot-array:15  "Match the dot array to the correct addition equation."
+  [                      ] 14 − 6 = ?     ans  8 eqs 2 + 8 = 10 | 1 + 10 = 11 | 5 + 4 = 9 | 14 - 6 = 8 vis objects:8  "Find the subtraction equation that matches these objects."
+  [                      ] 9 + 9 = ?      ans 18 eqs 15 + 5 = 20 | 11 + 8 = 19 | 15 + 0 = 15 | 9 + 9 = 18 vis ten-frame:18  "Look at the fingers and pick the matching addition equation."
+  [                      ] 16 − 7 = ?     ans  9 eqs 1 + 11 = 12 | 5 + 5 = 10 | 2 + 9 = 11 | 16 - 7 = 9 vis ten-frame:9  "Find the equation that matches this ten-frame subtraction model."
+  [                      ] 7 + 6 = ?      ans 13 eqs 8 + 6 = 14 | 7 + 6 = 13 | 12 + 3 = 15 | 2 + 14 = 16 vis dot-array:13  "Match this dot array to the correct addition equation."
+
+Add and subtract within 20 | match | difficulty=(none) | run 2 | own path | max 20
+  [                      ] 9 + 5 = ?      ans 14 eqs 3 + 14 = 17 | 9 + 5 = 14 | 9 + 6 = 15 | 2 + 14 = 16 vis dot-array:14  "Look at the visual representation and find the matching addition equat"
+  [                      ] 15 − 6 = ?     ans  9 eqs 3 + 8 = 11 | 9 + 3 = 12 | 15 - 6 = 9 | 7 + 3 = 10 vis dot-array:9  "Match this picture of items to the correct subtraction equation."
+  [                      ] 8 + 7 = ?      ans 15 eqs 11 + 5 = 16 | 12 + 5 = 17 | 8 + 7 = 15 | 17 + 1 = 18 vis dot-array:15  "Can you find the addition equation that matches this visual group?"
+  [                      ] 17 − 8 = ?     ans  9 eqs 8 + 3 = 11 | 6 + 6 = 12 | 17 - 8 = 9 | 6 + 4 = 10 vis dot-array:9  "Match the visual quantity with the correct subtraction fact."
+  [                      ] 6 + 8 = ?      ans 14 eqs 3 + 12 = 15 | 1 + 16 = 17 | 5 + 11 = 16 | 6 + 8 = 14 vis dot-array:14  "Look at the dots and choose the correct addition equation."
+  [                      ] 14 − 5 = ?     ans  9 eqs 7 + 3 = 10 | 6 + 6 = 12 | 14 - 5 = 9 | 6 + 5 = 11 vis dot-array:9  "Find the equation that represents this picture."
+  [                      ] 7 + 9 = ?      ans 16 eqs 7 + 12 = 19 | 2 + 16 = 18 | 3 + 14 = 17 | 7 + 9 = 16 vis dot-array:16  "Match this group of items to its addition equation."
+  [                      ] 16 − 7 = ?     ans  9 eqs 2 + 10 = 12 | 2 + 9 = 11 | 3 + 7 = 10 | 16 - 7 = 9 vis dot-array:9  "Choose the subtraction equation that goes with this visual model."
+
+Count objects to 10 | match | difficulty=easy | run 1 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 eqs 4 + 5 = 9 | 1 + 2 = 3 | 3 + 2 = 5 | 3 + 4 = 7 vis ten-frame:5  "Count the dots on the ten-frame carefully. Which equation matches this"
+  [                      ] 4 + 1 = ?      ans  5 eqs 1 + 2 = 3 | 4 + 5 = 9 | 3 + 4 = 7 | 4 + 1 = 5 vis ten-frame:5  "Count the dots on the ten-frame carefully. Which equation matches this"
+  [                      ] 5 + 2 = ?      ans  7 eqs 4 + 5 = 9 | 1 + 2 = 3 | 2 + 3 = 5 | 5 + 2 = 7 vis ten-frame:7  "Count the dots on the ten-frame carefully. Which equation matches this"
+  [                      ] 3 + 3 = ?      ans  6 eqs 3 + 3 = 6 | 5 + 5 = 10 | 2 + 2 = 4 | 4 + 4 = 8 vis ten-frame:6  "Count the dots on the ten-frame carefully. Which equation matches this"
+  [                      ] 4 + 4 = ?      ans  8 eqs 2 + 2 = 4 | 5 + 5 = 10 | 3 + 3 = 6 | 4 + 4 = 8 vis ten-frame:8  "Count the dots on the ten-frame carefully. Which equation matches this"
+  [                      ] 5 + 4 = ?      ans  9 eqs 5 + 4 = 9 | 2 + 3 = 5 | 3 + 4 = 7 | 5 + 5 = 10 vis ten-frame:9  "Count the dots on the ten-frame carefully. Which equation matches this"
+  [                      ] 5 + 5 = ?      ans 10 eqs 4 + 5 = 9 | 3 + 3 = 6 | 5 + 5 = 10 | 4 + 4 = 8 vis ten-frame:10  "Count the dots on the ten-frame carefully. Which equation matches this"
+
+Count objects to 10 | match | difficulty=easy | run 2 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 eqs 4 + 5 = 9 | 1 + 2 = 3 | 3 + 2 = 5 | 3 + 4 = 7 vis ten-frame:5  "Count the objects carefully on the ten-frame, then find the matching a"
+  [                      ] 4 + 1 = ?      ans  5 eqs 1 + 2 = 3 | 3 + 4 = 7 | 4 + 5 = 9 | 4 + 1 = 5 vis ten-frame:5  "Count all the dots on your ten-frame to find which addition sentence t"
+  [                      ] 3 + 3 = ?      ans  6 eqs 4 + 4 = 8 | 5 + 5 = 10 | 3 + 3 = 6 | 2 + 2 = 4 vis ten-frame:6  "Use the ten-frame dots to count and match the correct equation."
+  [                      ] 5 + 2 = ?      ans  7 eqs 1 + 2 = 3 | 2 + 3 = 5 | 5 + 2 = 7 | 4 + 5 = 9 vis ten-frame:7  "Count the dots on the ten-frame to discover the matching addition sent"
+  [                      ] 4 + 4 = ?      ans  8 eqs 2 + 2 = 4 | 4 + 4 = 8 | 5 + 5 = 10 | 3 + 3 = 6 vis ten-frame:8  "Count the filled spaces on the ten-frame and choose the equation that "
+  [                      ] 5 + 4 = ?      ans  9 eqs 3 + 4 = 7 | 5 + 4 = 9 | 5 + 5 = 10 | 2 + 3 = 5 vis ten-frame:9  "Look at the ten-frame, count the total dots, and match it to the corre"
+
+Count objects to 10 | match | difficulty=medium | run 1 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 eqs 3 + 3 = 6 | 3 + 4 = 7 | 3 + 2 = 5 | 2 + 2 = 4 vis dot-array:5  "Look at the dots and find the equation that matches."
+  [                      ] 4 + 3 = ?      ans  7 eqs 3 + 3 = 6 | 4 + 4 = 8 | 4 + 3 = 7 | 4 + 5 = 9 vis dot-array:7  "Match this picture of dots to the correct number sentence."
+  [                      ] 5 + 4 = ?      ans  9 eqs 3 + 4 = 7 | 5 + 4 = 9 | 4 + 4 = 8 | 5 + 5 = 10 vis dot-array:9  "Find the equation that goes with these dots."
+  [                      ] 2 + 4 = ?      ans  6 eqs 4 + 4 = 8 | 2 + 3 = 5 | 2 + 4 = 6 | 3 + 4 = 7 vis dot-array:6  "Which equation shows the dots you see here?"
+  [                      ] 3 + 5 = ?      ans  8 eqs 3 + 5 = 8 | 5 + 5 = 10 | 3 + 4 = 7 | 4 + 5 = 9 vis dot-array:8  "Look closely at the dots and choose the matching addition sentence."
+  [                      ] 5 + 5 = ?      ans 10 eqs 4 + 5 = 9 | 5 + 5 = 10 | 4 + 4 = 8 vis dot-array:10  "Match these dots to the correct total equation."
+  [                      ] 1 + 3 = ?      ans  4 eqs 2 + 3 = 5 | 1 + 3 = 4 | 3 + 3 = 6 | 1 + 2 = 3 vis dot-array:4  "Find the addition sentence that describes this group of dots."
+
+Count objects to 10 | match | difficulty=medium | run 2 | own path | max 10
+  [                      ] 2 + 3 = ?      ans  5 eqs 3 + 3 = 6 | 2 + 3 = 5 | 2 + 2 = 4 | 3 + 4 = 7 vis dot-array:5  "Look at the dots and find the matching addition equation."
+  [                      ] 4 + 2 = ?      ans  6 eqs 4 + 2 = 6 | 4 + 4 = 8 | 3 + 4 = 7 | 2 + 3 = 5 vis dot-array:6  "Count the dots and pick the equation that matches."
+  [                      ] 3 + 4 = ?      ans  7 eqs 4 + 4 = 8 | 4 + 5 = 9 | 3 + 3 = 6 | 3 + 4 = 7 vis dot-array:7  "Find the equation that shows these dots."
+  [                      ] 5 + 3 = ?      ans  8 eqs 5 + 3 = 8 | 5 + 5 = 10 | 4 + 5 = 9 | 3 + 4 = 7 vis dot-array:8  "Match the dot array to the right equation."
+  [                      ] 4 + 5 = ?      ans  9 eqs 4 + 4 = 8 | 5 + 5 = 10 | 4 + 5 = 9 | 3 + 4 = 7 vis dot-array:9  "Look closely at the dots and choose the correct equation."
+  [                      ] 5 + 5 = ?      ans 10 eqs 4 + 5 = 9 | 5 + 5 = 10 | 4 + 4 = 8 vis dot-array:10  "Can you find the matching equation for this group of dots?"
+
+Count objects to 10 | match | difficulty=hard | run 1 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 eqs 3 + 2 = 5 | 2 + 2 = 4 | 3 + 4 = 7 | 3 + 3 = 6 vis dot-array:5  "Match the dot-array to the correct equation."
+  [                      ] 4 + 1 = ?      ans  5 eqs 2 + 2 = 4 | 3 + 3 = 6 | 3 + 4 = 7 | 4 + 1 = 5 vis dot-array:5  "Match the dot-array to the correct equation."
+  [                      ] 3 + 3 = ?      ans  6 eqs 4 + 4 = 8 | 3 + 4 = 7 | 3 + 3 = 6 | 2 + 3 = 5 vis dot-array:6  "Match the dot-array to the correct equation."
+  [                      ] 4 + 3 = ?      ans  7 eqs 4 + 5 = 9 | 3 + 3 = 6 | 4 + 4 = 8 | 4 + 3 = 7 vis dot-array:7  "Match the dot-array to the correct equation."
+  [                      ] 5 + 3 = ?      ans  8 eqs 3 + 4 = 7 | 5 + 5 = 10 | 4 + 5 = 9 | 5 + 3 = 8 vis dot-array:8  "Match the dot-array to the correct equation."
+  [                      ] 4 + 5 = ?      ans  9 eqs 4 + 5 = 9 | 5 + 5 = 10 | 4 + 4 = 8 | 3 + 4 = 7 vis dot-array:9  "Match the dot-array to the correct equation."
+  [                      ] 5 + 5 = ?      ans 10 eqs 4 + 4 = 8 | 5 + 5 = 10 | 4 + 5 = 9 vis dot-array:10  "Match the dot-array to the correct equation."
+  ERROR Unterminated string in JSON at position 111231 (line 24 column 110565)
+
+Count objects to 10 | match | difficulty=hard | run 2 | own path
+
+Count objects to 10 | match | difficulty=(none) | run 1 | own path | max 10
+  [                      ] 3 + 1 = ?      ans  4 eqs 3 + 1 = 4 | 2 + 4 = 6 | 4 + 1 = 5 | 4 + 3 = 7 vis objects:4  "Look at the objects and find the equation that shows how many there ar"
+  [                      ] 2 + 3 = ?      ans  5 eqs 2 + 3 = 5 | 1 + 5 = 6 | 4 + 3 = 7 | 5 + 3 = 8 vis objects:5  "Count the items carefully and choose the matching equation."
+  [                      ] 4 + 2 = ?      ans  6 eqs 4 + 5 = 9 | 4 + 2 = 6 | 2 + 5 = 7 | 6 + 2 = 8 vis objects:6  "Find the equation that matches the picture of objects."
+  [                      ] 5 + 2 = ?      ans  7 eqs 5 + 3 = 8 | 5 + 2 = 7 | 8 + 1 = 9 | 1 + 9 = 10 vis dot-array:7  "Match this dot array with the correct addition equation."
+  [                      ] 4 + 4 = ?      ans  8 eqs 4 + 4 = 8 | 7 + 2 = 9 | 5 + 0 = 5 | 2 + 8 = 10 vis ten-frame:8  "Count the dots in the ten-frame and pick the equation that matches."
+  [                      ] 5 + 4 = ?      ans  9 eqs 6 + 0 = 6 | 7 + 0 = 7 | 7 + 3 = 10 | 5 + 4 = 9 vis ten-frame:9  "Look at the ten-frame dots and choose the correct equation."
+  [                      ] 5 + 5 = ?      ans 10 eqs 7 + 0 = 7 | 8 + 0 = 8 | 5 + 5 = 10 | 9 + 0 = 9 vis objects:10  "Count the objects and find the equation that equals this total."
+
+Count objects to 10 | match | difficulty=(none) | run 2 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 eqs 2 + 4 = 6 | 3 + 2 = 5 | 2 + 6 = 8 | 6 + 1 = 7 vis objects:5  "Count the objects and find the matching equation!"
+  [                      ] 4 + 1 = ?      ans  5 eqs 5 + 1 = 6 | 3 + 4 = 7 | 4 + 4 = 8 | 4 + 1 = 5 vis dot-array:5  "Look at the picture and select the equation that shows how many there "
+  [                      ] 3 + 3 = ?      ans  6 eqs 1 + 6 = 7 | 3 + 6 = 9 | 5 + 3 = 8 | 3 + 3 = 6 vis objects:6  "Can you match this picture to the right equation?"
+  [                      ] 5 + 2 = ?      ans  7 eqs 5 + 2 = 7 | 3 + 6 = 9 | 7 + 3 = 10 | 6 + 2 = 8 vis ten-frame:7  "Count the items carefully and find the matching number sentence."
+  [                      ] 4 + 4 = ?      ans  8 eqs 3 + 7 = 10 | 8 + 1 = 9 | 4 + 4 = 8 | 5 + 0 = 5 vis dot-array:8  "Match these objects to the correct addition equation."
+  [                      ] 5 + 4 = ?      ans  9 eqs 7 + 0 = 7 | 5 + 4 = 9 | 6 + 4 = 10 | 6 + 0 = 6 vis objects:9  "Find the equation that tells the story of these objects!"
+  [                      ] 5 + 5 = ?      ans 10 eqs 5 + 5 = 10 | 8 + 0 = 8 | 9 + 0 = 9 | 7 + 0 = 7 vis ten-frame:10  "Count the dots and choose the matching addition fact."

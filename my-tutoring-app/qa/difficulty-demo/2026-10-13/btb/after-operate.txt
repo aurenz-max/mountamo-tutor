@@ -1,0 +1,91 @@
+
+Place value and adding within 1000 | operate | difficulty=easy | run 1 | item space
+  [BaseTenBlocks] Item space add-sub-1000: operate band [-2.5, -0.6]: 419+51@-0.7 107+791@-1.1 822+73@-1.4 324+64@-1.4
+  [β  -0.7 +|3d+2d|r1    ] {"type":"add_with_blocks","targetNumber":470,"secondNumber":51,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r1","beta":-0.7},"showColumnCounts":true,"showBlocksTotal":true}  "Add 419 + 51 using blocks."
+  [β  -1.1 +|3d|r0       ] {"type":"add_with_blocks","targetNumber":898,"secondNumber":791,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"showColumnCounts":true,"showBlocksTotal":true}  "Add 107 + 791 using blocks."
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_with_blocks","targetNumber":895,"secondNumber":73,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"showColumnCounts":true,"showBlocksTotal":true}  "Add 822 + 73 using blocks."
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_with_blocks","targetNumber":388,"secondNumber":64,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"showColumnCounts":true,"showBlocksTotal":true}  "Add 324 + 64 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=easy | run 2 | item space
+  [BaseTenBlocks] Item space add-sub-1000: operate band [-2.5, -0.6]: 612+25@-1.4 321+231@-1.1 141+70@-0.7 110+547@-1.1 302+30@-1.4
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_with_blocks","targetNumber":637,"secondNumber":25,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"showColumnCounts":true,"showBlocksTotal":true}  "Add 612 + 25 using blocks."
+  [β  -1.1 +|3d|r0       ] {"type":"add_with_blocks","targetNumber":552,"secondNumber":231,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"showColumnCounts":true,"showBlocksTotal":true}  "Add 321 + 231 using blocks."
+  [β  -0.7 +|3d+2d|r1    ] {"type":"add_with_blocks","targetNumber":211,"secondNumber":70,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r1","beta":-0.7},"showColumnCounts":true,"showBlocksTotal":true}  "Add 141 + 70 using blocks."
+  [β  -1.1 +|3d|r0       ] {"type":"add_with_blocks","targetNumber":657,"secondNumber":547,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"showColumnCounts":true,"showBlocksTotal":true}  "Add 110 + 547 using blocks."
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_with_blocks","targetNumber":332,"secondNumber":30,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"showColumnCounts":true,"showBlocksTotal":true}  "Add 302 + 30 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=easy | run 3 | item space
+  [BaseTenBlocks] Item space add-sub-1000: operate band [-2.5, -0.6]: 121+523@-1.1 808+58@-0.7 705+84@-1.4 616+32@-1.4 205+343@-1.1
+  [β  -1.1 +|3d|r0       ] {"type":"add_with_blocks","targetNumber":644,"secondNumber":523,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"showColumnCounts":true,"showBlocksTotal":true}  "Add 121 + 523 using blocks."
+  [β  -0.7 +|3d+2d|r1    ] {"type":"add_with_blocks","targetNumber":866,"secondNumber":58,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r1","beta":-0.7},"showColumnCounts":true,"showBlocksTotal":true}  "Add 808 + 58 using blocks."
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_with_blocks","targetNumber":789,"secondNumber":84,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"showColumnCounts":true,"showBlocksTotal":true}  "Add 705 + 84 using blocks."
+  [β  -1.4 +|3d+2d|r0    ] {"type":"add_with_blocks","targetNumber":648,"secondNumber":32,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r0","beta":-1.4},"showColumnCounts":true,"showBlocksTotal":true}  "Add 616 + 32 using blocks."
+  [β  -1.1 +|3d|r0       ] {"type":"add_with_blocks","targetNumber":548,"secondNumber":343,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r0","beta":-1.1},"showColumnCounts":true,"showBlocksTotal":true}  "Add 205 + 343 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=medium | run 1 | item space
+  [BaseTenBlocks] Item space add-sub-1000: operate band [-0.6, 0.6]: 418+284@0.6 156+58@0.3 443+464@-0.4 664+98@0.3 296+558@0.6
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":702,"secondNumber":284,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":true}  "Add 418 + 284 using blocks."
+  [β   0.3 +|3d+2d|r2|chain] {"type":"add_with_blocks","targetNumber":214,"secondNumber":58,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r2|chain","beta":0.3},"showColumnCounts":false,"showBlocksTotal":true}  "Add 156 + 58 using blocks."
+  [β  -0.4 +|3d|r1       ] {"type":"add_with_blocks","targetNumber":907,"secondNumber":464,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r1","beta":-0.4},"showColumnCounts":false,"showBlocksTotal":true}  "Add 443 + 464 using blocks."
+  [β   0.3 +|3d+2d|r2|chain] {"type":"add_with_blocks","targetNumber":762,"secondNumber":98,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r2|chain","beta":0.3},"showColumnCounts":false,"showBlocksTotal":true}  "Add 664 + 98 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":854,"secondNumber":558,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":true}  "Add 296 + 558 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=medium | run 2 | item space
+  [BaseTenBlocks] Item space add-sub-1000: operate band [-0.6, 0.6]: 268+696@0.6 151+276@-0.4 456+68@0.3 193+197@0.6
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":964,"secondNumber":696,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":true}  "Add 268 + 696 using blocks."
+  [β  -0.4 +|3d|r1       ] {"type":"add_with_blocks","targetNumber":427,"secondNumber":276,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r1","beta":-0.4},"showColumnCounts":false,"showBlocksTotal":true}  "Add 151 + 276 using blocks."
+  [β   0.3 +|3d+2d|r2|chain] {"type":"add_with_blocks","targetNumber":524,"secondNumber":68,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r2|chain","beta":0.3},"showColumnCounts":false,"showBlocksTotal":true}  "Add 456 + 68 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":390,"secondNumber":197,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":true}  "Add 193 + 197 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=medium | run 3 | item space
+  [BaseTenBlocks] Item space add-sub-1000: operate band [-0.6, 0.6]: 825+78@0.3 637+117@-0.4 476+187@0.6 699+33@0.3 296+526@0.6
+  [β   0.3 +|3d+2d|r2|chain] {"type":"add_with_blocks","targetNumber":903,"secondNumber":78,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r2|chain","beta":0.3},"showColumnCounts":false,"showBlocksTotal":true}  "Add 825 + 78 using blocks."
+  [β  -0.4 +|3d|r1       ] {"type":"add_with_blocks","targetNumber":754,"secondNumber":117,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r1","beta":-0.4},"showColumnCounts":false,"showBlocksTotal":true}  "Add 637 + 117 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":663,"secondNumber":187,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":true}  "Add 476 + 187 using blocks."
+  [β   0.3 +|3d+2d|r2|chain] {"type":"add_with_blocks","targetNumber":732,"secondNumber":33,"itemSpace":{"space":"add-sub-1000","structure":"+|3d+2d|r2|chain","beta":0.3},"showColumnCounts":false,"showBlocksTotal":true}  "Add 699 + 33 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":822,"secondNumber":526,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":true}  "Add 296 + 526 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=hard | run 1 | item space
+  [BaseTenBlocks] Item space add-sub-1000: operate band [0.6, 3.5]: 273+558@0.6 375+555@0.6 459+255@0.6 118+683@0.6
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":831,"secondNumber":558,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 273 + 558 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":930,"secondNumber":555,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 375 + 555 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":714,"secondNumber":255,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 459 + 255 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":801,"secondNumber":683,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 118 + 683 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=hard | run 2 | item space
+  [BaseTenBlocks] Item space add-sub-1000: operate band [0.6, 3.5]: 379+227@0.6 297+498@0.6 469+471@0.6 156+778@0.6 566+249@0.6
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":606,"secondNumber":227,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 379 + 227 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":795,"secondNumber":498,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 297 + 498 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":940,"secondNumber":471,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 469 + 471 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":934,"secondNumber":778,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 156 + 778 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":815,"secondNumber":249,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 566 + 249 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=hard | run 3 | item space
+  [BaseTenBlocks] Item space add-sub-1000: operate band [0.6, 3.5]: 236+495@0.6 198+238@0.6 328+193@0.6 577+249@0.6 328+585@0.6 659+165@0.6
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":731,"secondNumber":495,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 236 + 495 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":436,"secondNumber":238,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 198 + 238 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":521,"secondNumber":193,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 328 + 193 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":826,"secondNumber":249,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 577 + 249 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":913,"secondNumber":585,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 328 + 585 using blocks."
+  [β   0.6 +|3d|r2|chain ] {"type":"add_with_blocks","targetNumber":824,"secondNumber":165,"itemSpace":{"space":"add-sub-1000","structure":"+|3d|r2|chain","beta":0.6},"showColumnCounts":false,"showBlocksTotal":false}  "Add 659 + 165 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":835,"secondNumber":275}  "Add 560 + 275 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":394,"secondNumber":166}  "Subtract 166 from 560 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":1415,"secondNumber":855}  "Add 560 + 855 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":494,"secondNumber":66}  "Subtract 66 from 560 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":1229,"secondNumber":669}  "Add 560 + 669 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":696,"secondNumber":271}  "Add 425 + 271 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":479,"secondNumber":54}  "Add 425 + 54 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":272,"secondNumber":153}  "Subtract 153 from 425 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":1363,"secondNumber":938}  "Add 425 + 938 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":403,"secondNumber":22}  "Subtract 22 from 425 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":690,"secondNumber":174}  "Add 516 + 174 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":1018,"secondNumber":472}  "Add 546 + 472 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":779,"secondNumber":18}  "Subtract 18 from 797 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":931,"secondNumber":67}  "Subtract 67 from 998 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":1550,"secondNumber":887}  "Add 663 + 887 using blocks."

@@ -1,0 +1,139 @@
+
+Add and subtract within 20, using numbers 11 to 20 | act_out | difficulty=easy | run 1 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 act-out band [-2.5, -0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b0|t0@-1.26 +|result|b0|t1@-1.34 -|result|b1|t1@-0.62 -|result|b1|t0@-0.94 +|result|b1|t1@-1.02 +|result|b1|t0@-0.7 (0 stories from the code template)
+  [β -1.26 -|result|b0|t0] act-out        separate 6 - 3 = 3   ?=result ans  3 "6 frogs are sitting by the pond. 3 frogs hop away."
+  [β -1.34 +|result|b0|t1] act-out        join 7 + 10 = 17 ?=result ans 17 "7 butterflies are fluttering in the garden. 10 more butterflies fly in."
+  [β -0.62 -|result|b1|t1] act-out        separate 20 - 1 = 19 ?=result ans 19 "20 stars are shining in the space sky. 1 star fades away."
+  [β -0.94 -|result|b1|t0] act-out        separate 10 - 2 = 8  ?=result ans  8 "10 cookies are cooling on the kitchen tray. 2 cookies are eaten."
+  [β -1.02 +|result|b1|t1] act-out        join 19 + 1 = 20 ?=result ans 20 "19 birds are resting on the farm fence. 1 more bird lands beside them."
+  [β  -0.7 +|result|b1|t0] act-out        join 5 + 5 = 10  ?=result ans 10 "5 fish are swimming in the pond. 5 more fish join them."
+
+Add and subtract within 20, using numbers 11 to 20 | act_out | difficulty=easy | run 2 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 act-out band [-2.5, -0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: +|result|b0|t1@-1.22 +|result|b0|t0@-2.32 +|result|b1|t0@-0.7 -|result|b1|t1@-0.62 +|result|b1|t1@-1.02 -|result|b1|t0@-0.86 (0 stories from the code template)
+  [β -1.22 +|result|b0|t1] act-out        join 1 + 12 = 13 ?=result ans 13 "1 duck is swimming in the pond. 12 more ducks join it."
+  [β -2.32 +|result|b0|t0] act-out        join 2 + 1 = 3   ?=result ans  3 "2 frogs are sitting on a log. 1 more frog hops over."
+  [β  -0.7 +|result|b1|t0] act-out        join 5 + 5 = 10  ?=result ans 10 "5 apples are sitting on the table. 5 more apples are placed beside them."
+  [β -0.62 -|result|b1|t1] act-out        separate 20 - 1 = 19 ?=result ans 19 "20 stars are shining in the night sky. 1 star fades away."
+  [β -1.02 +|result|b1|t1] act-out        join 19 + 1 = 20 ?=result ans 20 "19 flowers are blooming in the garden. 1 more flower sprouts up."
+  [β -0.86 -|result|b1|t0] act-out        separate 10 - 3 = 7  ?=result ans  7 "10 cookies are cooling on the tray. 3 cookies are eaten."
+
+Add and subtract within 20, using numbers 11 to 20 | act_out | difficulty=medium | run 1 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 act-out band [-0.6, 0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: +|result|b1|t0@-0.28 -|result|b0|t1@-0.02 -|result|b0|t0@-0.56 -|result|b1|t1@0.42 -|result|b1|t0@-0.08 +|result|b1|t1@0.18 (0 stories from the code template)
+  [β -0.28 +|result|b1|t0] act-out        join 6 + 4 = 10  ?=result ans 10 "6 butterflies are flying in the garden. 4 more butterflies join them."
+  [β -0.02 -|result|b0|t1] act-out        separate 15 - 11 = 4 ?=result ans  4 "15 ducks are swimming in the pond. 11 ducks waddle away."
+  [β -0.56 -|result|b0|t0] act-out        separate 9 - 8 = 1   ?=result ans  1 "9 frogs are sitting on the log. 8 frogs hop away."
+  [β  0.42 -|result|b1|t1] act-out        separate 13 - 4 = 9  ?=result ans  9 "13 cookies are on the tray. 4 cookies are eaten."
+  [β -0.08 -|result|b1|t0] act-out        separate 10 - 9 = 1  ?=result ans  1 "10 stars are shining in the sky. 9 stars fade away."
+  [β  0.18 +|result|b1|t1] act-out        join 6 + 7 = 13  ?=result ans 13 "6 birds are sitting in the tree. 7 more birds fly over and join them."
+
+Add and subtract within 20, using numbers 11 to 20 | act_out | difficulty=medium | run 2 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 act-out band [-0.6, 0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b1|t1@0.5 -|result|b1|t0@-0.4 -|result|b0|t1@-0.58 -|result|b0|t0@-0.56 +|result|b1|t1@0.42 +|result|b1|t0@-0.36 (0 stories from the code template)
+  [β   0.5 -|result|b1|t1] act-out        separate 13 - 5 = 8  ?=result ans  8 "13 ducks are swimming in the pond. 5 ducks waddle away."
+  [β  -0.4 -|result|b1|t0] act-out        separate 10 - 5 = 5  ?=result ans  5 "10 frogs are resting on the log. 5 frogs hop away."
+  [β -0.58 -|result|b0|t1] act-out        separate 14 - 4 = 10 ?=result ans 10 "14 bunnies are munching on grass. 4 bunnies hop into their burrow."
+  [β -0.56 -|result|b0|t0] act-out        separate 9 - 8 = 1   ?=result ans  1 "9 birds are perched on the fence. 8 birds fly up into the sky."
+  [β  0.42 +|result|b1|t1] act-out        join 11 + 9 = 20 ?=result ans 20 "11 red apples are sitting on the table. 9 more apples are placed on the table."
+  [β -0.36 +|result|b1|t0] act-out        join 3 + 7 = 10  ?=result ans 10 "3 cookies are cooling on the tray. 7 more cookies are added to the tray."
+
+Add and subtract within 20, using numbers 11 to 20 | act_out | difficulty=hard | run 1 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 act-out band [0.6, 3.5] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b1|t1@1.54 -|result|b1|t1@0.66 -|result|b1|t1@1.06 -|result|b1|t1@0.66 -|result|b1|t1@1.3 -|result|b1|t1@0.82 (0 stories from the code template)
+  [β  1.54 -|result|b1|t1] act-out        separate 20 - 18 = 2 ?=result ans  2 "20 ducks were swimming in the pond. 18 ducks waddled away."
+  [β  0.66 -|result|b1|t1] act-out        separate 14 - 7 = 7  ?=result ans  7 "14 frogs were resting on a log. 7 frogs hopped away into the water."
+  [β  1.06 -|result|b1|t1] act-out        separate 20 - 12 = 8 ?=result ans  8 "20 colorful fish were swimming near the rocks. 12 fish swam far away."
+  [β  0.66 -|result|b1|t1] act-out        separate 16 - 7 = 9  ?=result ans  9 "16 fluffy bunnies were playing in the grass. 7 bunnies hopped back to their burrow."
+  [β   1.3 -|result|b1|t1] act-out        separate 20 - 15 = 5 ?=result ans  5 "20 delicious apples were resting on the branches. 15 apples fell off the tree."
+  [β  0.82 -|result|b1|t1] act-out        separate 18 - 9 = 9  ?=result ans  9 "18 bright flowers were blooming in the yard. 9 flowers were picked for a bouquet."
+
+Add and subtract within 20, using numbers 11 to 20 | act_out | difficulty=hard | run 2 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 act-out band [0.6, 3.5] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b1|t1@0.74 -|result|b1|t1@0.82 -|result|b1|t1@1.62 -|result|b1|t1@1.3 -|result|b1|t1@0.74 -|result|b1|t1@1.06 (0 stories from the code template)
+  [β  0.74 -|result|b1|t1] act-out        separate 15 - 8 = 7  ?=result ans  7 "15 frogs were resting by the pond. 8 frogs hopped away into the tall grass."
+  [β  0.82 -|result|b1|t1] act-out        separate 16 - 9 = 7  ?=result ans  7 "16 butterflies fluttered above the garden. 9 butterflies flew up into the sky."
+  [β  1.62 -|result|b1|t1] act-out        separate 20 - 19 = 1 ?=result ans  1 "20 warm cookies cooled on the tray. 19 cookies were eaten by hungry friends."
+  [β   1.3 -|result|b1|t1] act-out        separate 20 - 15 = 5 ?=result ans  5 "20 ducks paddled across the sunny pond. 15 ducks waddled away to the shore."
+  [β  0.74 -|result|b1|t1] act-out        separate 20 - 8 = 12 ?=result ans 12 "20 colorful birds rested in the big tree. 8 birds flew away to find food."
+  [β  1.06 -|result|b1|t1] act-out        separate 20 - 12 = 8 ?=result ans  8 "20 little bunnies played in the green grass. 12 bunnies hopped back to their burrow."
+
+Add and subtract within 10 word problems | act_out | difficulty=easy | run 1 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20: this scope cannot fill every tier's band (77/12/0 drawable); tier third [-2.82, -1.52] gave 6
+  [AdditionSubtractionScene] Item space add-sub-20 act-out band [-2.5, -0.6] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b0|t0@-1.92 +|result|b0|t0@-1.52 -|result|b1|t0@-1.52 -|result|b0|t0@-1.92 +|result|b0|t0@-2.32 +|result|b0|t0@-2.82 (0 stories from the code template)
+  [β -1.92 -|result|b0|t0] act-out        separate 8 - 1 = 7   ?=result ans  7 "8 frogs are sitting on the log. 1 frog hops away."
+  [β -1.52 +|result|b0|t0] act-out        join 1 + 6 = 7   ?=result ans  7 "1 duck is swimming in the pond. 6 more ducks join."
+  [β -1.52 -|result|b1|t0] act-out        separate 10 - 1 = 9  ?=result ans  9 "10 stars shine in the night sky. 1 star fades away."
+  [β -1.92 -|result|b0|t0] act-out        separate 6 - 1 = 5   ?=result ans  5 "6 cookies are cooling on the tray. 1 cookie is eaten."
+  [β -2.32 +|result|b0|t0] act-out        join 2 + 1 = 3   ?=result ans  3 "2 bunnies are hopping on the grass. 1 more bunny joins them."
+  [β -2.82 +|result|b0|t0] act-out        join 1 + 1 = 2   ?=result ans  2 "1 flower is blooming in the garden. 1 more flower sprouts."
+
+Add and subtract within 10 word problems | act_out | difficulty=easy | run 2 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20: this scope cannot fill every tier's band (77/12/0 drawable); tier third [-2.82, -1.52] gave 6
+  [AdditionSubtractionScene] Item space add-sub-20 act-out band [-2.5, -0.6] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b1|t0@-1.52 +|result|b0|t0@-1.52 -|result|b0|t0@-1.92 +|result|b0|t0@-2.32 -|result|b0|t0@-1.92 -|result|b0|t0@-1.92 (0 stories from the code template)
+  [β -1.52 -|result|b1|t0] act-out        separate 10 - 1 = 9  ?=result ans  9 "10 birds are sitting in the tall tree. 1 bird flies away."
+  [β -1.52 +|result|b0|t0] act-out        join 1 + 5 = 6   ?=result ans  6 "1 fish is swimming in the pond. 5 more fish swim over to join it."
+  [β -1.92 -|result|b0|t0] act-out        separate 7 - 1 = 6   ?=result ans  6 "7 frogs are resting on the green lily pad. 1 frog hops away into the water."
+  [β -2.32 +|result|b0|t0] act-out        join 8 + 1 = 9   ?=result ans  9 "8 stars are shining brightly in the night sky. 1 more star twinkles into view."
+  [β -1.92 -|result|b0|t0] act-out        separate 6 - 1 = 5   ?=result ans  5 "6 warm cookies are cooling on the tray. 1 cookie is eaten up."
+  [β -1.92 -|result|b0|t0] act-out        separate 4 - 1 = 3   ?=result ans  3 "4 butterflies are fluttering around the garden. 1 butterfly flies up high away from the flowers."
+
+Add and subtract within 10 word problems | act_out | difficulty=hard | run 1 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20: this scope cannot fill every tier's band (77/12/0 drawable); tier third [-0.88, -0.08] gave 6
+  [AdditionSubtractionScene] Item space add-sub-20 act-out band [0.6, 3.5] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b0|t0@-0.72 -|result|b1|t0@-0.48 +|result|b1|t0@-0.28 -|result|b0|t0@-0.8 -|result|b1|t0@-0.08 +|result|b1|t0@-0.44 (0 stories from the code template)
+  [β -0.72 -|result|b0|t0] act-out        separate 9 - 6 = 3   ?=result ans  3 "9 ducks are swimming in the pond. 6 ducks waddle away."
+  [β -0.48 -|result|b1|t0] act-out        separate 10 - 4 = 6  ?=result ans  6 "10 frogs are sitting on a big log. 4 frogs hop away into the water."
+  [β -0.28 +|result|b1|t0] act-out        join 4 + 6 = 10  ?=result ans 10 "4 apples are hanging on the tree. 6 more apples grow on the branches."
+  [β  -0.8 -|result|b0|t0] act-out        separate 9 - 5 = 4   ?=result ans  4 "9 birds are resting in the branches. 5 birds fly away into the sky."
+  [β -0.08 -|result|b1|t0] act-out        separate 10 - 9 = 1  ?=result ans  1 "10 colorful fish are swimming around the coral reef. 9 fish swim away to hide."
+  [β -0.44 +|result|b1|t0] act-out        join 2 + 8 = 10  ?=result ans 10 "2 butterflies are fluttering over the flowers. 8 more butterflies flutter in."
+
+Add and subtract within 10 word problems | act_out | difficulty=hard | run 2 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20: this scope cannot fill every tier's band (77/12/0 drawable); tier third [-0.88, -0.08] gave 6
+  [AdditionSubtractionScene] Item space add-sub-20 act-out band [0.6, 3.5] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b0|t0@-0.88 -|result|b1|t0@-0.86 +|result|b1|t0@-0.74 -|result|b1|t0@-0.4 -|result|b0|t0@-0.88 -|result|b0|t0@-0.72 (0 stories from the code template)
+  [β -0.88 -|result|b0|t0] act-out        separate 8 - 4 = 4   ?=result ans  4 "8 frogs are resting on a lily pad. 4 frogs hop away."
+  [β -0.86 -|result|b1|t0] act-out        separate 10 - 3 = 7  ?=result ans  7 "10 ducks are swimming in the water. 3 ducks fly away."
+  [β -0.74 +|result|b1|t0] act-out        join 8 + 2 = 10  ?=result ans 10 "8 butterflies are fluttering near the flowers. 2 more butterflies fly over."
+  [β  -0.4 -|result|b1|t0] act-out        separate 10 - 5 = 5  ?=result ans  5 "10 colorful fish are swimming in the big tank. 5 fish swim behind the castle."
+  [β -0.88 -|result|b0|t0] act-out        separate 5 - 4 = 1   ?=result ans  1 "5 little birds are sitting in the tree. 4 birds fly up into the sky."
+  [β -0.72 -|result|b0|t0] act-out        separate 8 - 6 = 2   ?=result ans  2 "8 bunnies are playing in the green grass. 6 bunnies hop back into their burrow."
+
+Add and subtract within 20, using numbers 11 to 20 | act_out | difficulty=(none) | run 1 | max 20 | own path
+  [                    ] act-out        join 11 + 3 = 14 ?=result ans 14 "11 stars are shining brightly in the sky. 3 more stars appear."
+  [                    ] act-out        separate 15 - 4 = 11 ?=result ans 11 "15 rockets are waiting on the launchpad. 4 rockets lift off into space."
+  [                    ] act-out        join 12 + 5 = 17 ?=result ans 17 "12 stars are glowing in the nebula. 5 more stars shine into view."
+  [                    ] act-out        separate 18 - 6 = 12 ?=result ans 12 "18 rockets are parked at the space station. 6 rockets fly away on a mission."
+  [                    ] act-out        join 10 + 7 = 17 ?=result ans 17 "10 stars form a pretty constellation. 7 more stars join them in the sky."
+  [                    ] act-out        separate 20 - 5 = 15 ?=result ans 15 "20 rockets are lined up for the great launch. 5 rockets zoom away."
+  [                    ] act-out        join 11 + 8 = 19 ?=result ans 19 "11 stars are sparkling in the milky way. 8 more stars join the cluster."
+
+Add and subtract within 20, using numbers 11 to 20 | act_out | difficulty=(none) | run 2 | max 20 | own path
+  [                    ] act-out        join 10 + 5 = 15 ?=result ans 15 "10 stars are shining brightly in the night sky. 5 more stars appear."
+  [                    ] act-out        separate 14 - 4 = 10 ?=result ans 10 "14 stars are glowing in the night sky. 4 stars fade away."
+  [                    ] act-out        join 11 + 6 = 17 ?=result ans 17 "11 rockets are ready on the launchpad. 6 more rockets join them."
+  [                    ] act-out        separate 18 - 7 = 11 ?=result ans 11 "18 rockets are parked on the pad. 7 rockets blast off into space."
+  [                    ] act-out        join 12 + 8 = 20 ?=result ans 20 "12 stars twinkle in the cozy galaxy. 8 more stars join the cluster."
+  [                    ] act-out        separate 19 - 9 = 10 ?=result ans 10 "19 rockets sit on the station. 9 rockets fly away on a mission."
+  [                    ] act-out        join 13 + 4 = 17 ?=result ans 17 "13 rockets are parked. 4 more rockets arrive at the space station."
+
+Count objects to tell how many | act_out | difficulty=hard | run 1 | max 10 | own path
+  [                    ] act-out        join 3 + 2 = 5   ?=result ans  5 "3 ducks are swimming in the pond. 2 more ducks join them."
+  [                    ] act-out        separate 5 - 2 = 3   ?=result ans  3 "5 frogs are sitting on a log. 2 frogs hop away."
+  [                    ] act-out        join 4 + 3 = 7   ?=result ans  7 "4 butterflies are resting on the flowers. 3 more butterflies flutter over."
+  [                    ] act-out        separate 8 - 3 = 5   ?=result ans  5 "8 fish are swimming near the coral. 3 fish swim away."
+  [                    ] act-out        join 5 + 4 = 9   ?=result ans  9 "5 flowers are blooming in the garden. 4 more flowers sprout up."
+  [                    ] act-out        separate 9 - 4 = 5   ?=result ans  5 "9 birds are sitting in the tree branches. 4 birds fly away."
+
+Count objects to tell how many | act_out | difficulty=hard | run 2 | max 10 | own path
+  [                    ] act-out        join 3 + 2 = 5   ?=result ans  5 "3 ducks are swimming in the pond. 2 more ducks join them."
+  [                    ] act-out        separate 4 - 2 = 2   ?=result ans  2 "4 frogs are sitting on a log. 2 frogs hop away."
+  [                    ] act-out        join 3 + 3 = 6   ?=result ans  6 "3 butterflies flutter over the flowers. 3 more butterflies fly over."
+  [                    ] act-out        separate 7 - 3 = 4   ?=result ans  4 "7 fish are swimming near the rocks. 3 fish swim away."
+  [                    ] act-out        join 4 + 4 = 8   ?=result ans  8 "4 red apples are on the blanket. 4 more apples are placed on the blanket."
+  [                    ] act-out        separate 9 - 4 = 5   ?=result ans  5 "9 cookies are on the tray. 4 cookies are eaten."
+  [                    ] act-out        join 5 + 5 = 10  ?=result ans 10 "5 flowers are blooming in the sun. 5 more flowers sprout."

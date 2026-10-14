@@ -1,0 +1,163 @@
+
+Add and subtract within 20 | visual_fact | difficulty=easy | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 visual-fact band [-2.5, -0.6] within 20: -|result|b0|t0@-1.92 -|result|b1|t1@-0.64 -|result|b0|t1@-1.62 +|result|b0|t0@-2.32 +|result|b0|t1@-2.02 -|result|b0|t0
+  [β -1.92 -|result|b0|t0] 2 − 1 = ?      ans  1 opts 1,5,3,4 vis ten-frame:1  "Look at the ten-frame and count carefully to find the answer for 2 min"
+  [β -0.64 -|result|b1|t1] 12 − 10 = ?    ans  2 opts 0,2,4,5 vis ten-frame:2  "Count the dots on the ten-frame to solve 12 minus 10."
+  [β -1.62 -|result|b0|t1] 18 − 1 = ?     ans 17 opts 15,20,19,17 vis ten-frame:17  "Use the ten-frame to help you subtract 1 from 18."
+  [β -2.32 +|result|b0|t0] 8 + 1 = ?      ans  9 opts 12,9,11,7 vis ten-frame:9  "Count on from 8 to add 1 more using the visual aid."
+  [β -2.02 +|result|b0|t1] 19 + 1 = ?     ans 20 opts 17,18,16,20 vis ten-frame:20  "Add 1 to 19 by looking at the ten-frame dots."
+  [β -1.92 -|result|b0|t0] 3 − 2 = ?      ans  1 opts 3,4,5,1 vis ten-frame:1  "Count the remaining items in the ten-frame for 3 minus 2."
+  [β -2.02 +|result|b0|t1] 1 + 18 = ?     ans 19 opts 16,19,17,15 vis ten-frame:19  "Start with 1 and count on 18 more using the ten-frame."
+  [β -1.62 -|result|b0|t1] 19 − 1 = ?     ans 18 opts 18,15,16,20 vis ten-frame:18  "Take away 1 from 19 and use the ten-frame to check."
+
+Add and subtract within 20 | visual_fact | difficulty=easy | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 visual-fact band [-2.5, -0.6] within 20: -|result|b0|t1@-2.22 -|result|b1|t1@-0.64 +|result|b0|t1@-1.34 +|result|b0|t0@-2.32 -|result|b0|t0@-1.34 +|result|b0|t1
+  [β -2.22 -|result|b0|t1] 11 − 10 = ?    ans  1 opts 1,4,5,3 vis ten-frame:1  "Look at the ten-frame and count to solve 11 minus 10."
+  [β -0.64 -|result|b1|t1] 12 − 10 = ?    ans  2 opts 18,2,4,0 vis ten-frame:2  "Look at the ten-frame and count to solve 12 minus 10."
+  [β -1.34 +|result|b0|t1] 7 + 10 = ?     ans 17 opts 15,19,3,17 vis ten-frame:17  "Look at the ten-frame and count on to solve 7 plus 10."
+  [β -2.32 +|result|b0|t0] 9 + 1 = ?      ans 10 opts 8,13,10,12 vis ten-frame:10  "Look at the ten-frame and count on to solve 9 plus 1."
+  [β -1.34 -|result|b0|t0] 5 − 3 = ?      ans  2 opts 4,8,0,2 vis ten-frame:2  "Look at the ten-frame and count to solve 5 minus 3."
+  [β -1.44 +|result|b0|t1] 2 + 16 = ?     ans 18 opts 18,15,20,16 vis ten-frame:18  "Look at the ten-frame and count on to solve 2 plus 16."
+  [β  -0.7 -|result|b0|t1] 20 − 10 = ?    ans 10 opts 8,13,12,10 vis ten-frame:10  "Look at the ten-frame and count to solve 20 minus 10."
+  [β -1.92 -|result|b0|t0] 7 − 6 = ?      ans  1 opts 1,13,4,3 vis ten-frame:1  "Look at the ten-frame and count to solve 7 minus 6."
+
+Add and subtract within 20 | visual_fact | difficulty=medium | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 visual-fact band [-0.6, 0.6] within 20: +|result|b0|t1@-0.58 -|result|b0|t1@-0.42 -|result|b1|t1@0.04 +|result|b1|t1@0.1 -|result|b1|t1@0.04 +|result|b1|t1@0.02
+  [β -0.58 +|result|b0|t1] 9 + 11 = ?     ans 20 opts 18,19,20,17 vis dot-array:20  "Count the dot arrays and solve the addition equation."
+  [β -0.42 -|result|b0|t1] 18 − 6 = ?     ans 12 opts 14,13,11,12 vis dot-array:12  "Look at the dots to find the answer to the subtraction equation."
+  [β  0.04 -|result|b1|t1] 17 − 14 = ?    ans  3 opts 3,2,5,4 vis dot-array:3  "Use the visual array to solve this subtraction problem."
+  [β   0.1 +|result|b1|t1] 5 + 9 = ?      ans 14 opts 15,13,14,16 vis dot-array:14  "Count the total dots to find the sum."
+  [β  0.04 -|result|b1|t1] 12 − 3 = ?     ans  9 opts 11,9,10,8 vis dot-array:9  "Subtract using the visual aid to find the correct number."
+  [β  0.02 +|result|b1|t1] 4 + 7 = ?      ans 11 opts 12,13,11,10 vis dot-array:11  "Put the groups together to solve the addition equation."
+  [β -0.18 -|result|b0|t1] 20 − 9 = ?     ans 11 opts 12,13,11,10 vis dot-array:11  "Find the difference for this subtraction problem using the dots."
+  [β  0.18 +|result|b1|t1] 6 + 8 = ?      ans 14 opts 14,13,16,15 vis dot-array:14  "Count the dots to solve the addition equation."
+
+Add and subtract within 20 | visual_fact | difficulty=medium | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 visual-fact band [-0.6, 0.6] within 20: +|result|b0|t1@-0.58 +|result|b1|t1@0.34 -|result|b1|t1@0.5 -|result|b0|t1@-0.34 -|result|b0|t1@-0.58 +|result|b1|t1@0.0
+  [β -0.58 +|result|b0|t1] 9 + 11 = ?     ans 20 opts 20,18,19,17 vis dot-array:20  "Count the dots to find the sum of 9 and 11."
+  [β  0.34 +|result|b1|t1] 8 + 9 = ?      ans 17 opts 16,17,19,18 vis dot-array:17  "Look at the dots and add 8 and 9 together."
+  [β   0.5 -|result|b1|t1] 14 − 9 = ?     ans  5 opts 7,6,4,5 vis dot-array:5  "Use the visual array to subtract 9 from 14."
+  [β -0.34 -|result|b0|t1] 18 − 7 = ?     ans 11 opts 12,13,11,10 vis dot-array:11  "Take 7 away from 18 using the dots."
+  [β -0.58 -|result|b0|t1] 15 − 4 = ?     ans 11 opts 10,12,11,13 vis dot-array:11  "Subtract 4 from 15 by viewing the dots."
+  [β  0.02 +|result|b1|t1] 7 + 4 = ?      ans 11 opts 13,12,11,10 vis dot-array:11  "Find the total when you add 7 and 4."
+  [β   0.5 -|result|b1|t1] 12 − 7 = ?     ans  5 opts 5,7,4,6 vis dot-array:5  "Find the difference when you subtract 7 from 12."
+  [β   0.5 -|result|b1|t1] 20 − 15 = ?    ans  5 opts 7,4,6,5 vis dot-array:5  "Use the visual array to subtract 15 from 20."
+
+Add and subtract within 20 | visual_fact | difficulty=hard | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 visual-fact band [0.6, 3.5] within 20: -|result|b1|t1@0.74 -|result|b1|t1@0.66 -|result|b1|t1@0.66 -|result|b1|t1@0.74 -|result|b1|t1@0.66 -|result|b1|t1@0.66 -
+  [β  0.74 -|result|b1|t1] 17 − 9 = ?     ans  8 opts 10,8,9,7 vis dot-array:8  "What is 17 minus 9?"
+  [β  0.66 -|result|b1|t1] 16 − 7 = ?     ans  9 opts 11,10,8,9 vis dot-array:9  "What is 16 minus 7?"
+  [β  0.66 -|result|b1|t1] 16 − 9 = ?     ans  7 opts 8,6,9,7 vis dot-array:7  "What is 16 minus 9?"
+  [β  0.74 -|result|b1|t1] 19 − 11 = ?    ans  8 opts 8,7,9,10 vis dot-array:8  "What is 19 minus 11?"
+  [β  0.66 -|result|b1|t1] 18 − 11 = ?    ans  7 opts 7,8,6,9 vis dot-array:7  "What is 18 minus 11?"
+  [β  0.66 -|result|b1|t1] 15 − 7 = ?     ans  8 opts 8,10,7,9 vis dot-array:8  "What is 15 minus 7?"
+  [β  0.82 -|result|b1|t1] 20 − 11 = ?    ans  9 opts 9,10,8,11 vis dot-array:9  "What is 20 minus 11?"
+  [β  0.66 -|result|b1|t1] 19 − 12 = ?    ans  7 opts 7,6,9,8 vis dot-array:7  "What is 19 minus 12?"
+
+Add and subtract within 20 | visual_fact | difficulty=hard | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 visual-fact band [0.6, 3.5] within 20: -|result|b1|t1@0.66 -|result|b1|t1@0.82 -|result|b1|t1@0.66 -|result|b1|t1@0.82 -|result|b1|t1@0.66 -|result|b1|t1@0.66 -
+  [β  0.66 -|result|b1|t1] 18 − 11 = ?    ans  7 opts 6,7,9,8 vis dot-array:7  "Find the answer to 18 minus 11."
+  [β  0.82 -|result|b1|t1] 20 − 11 = ?    ans  9 opts 9,10,8,11 vis dot-array:9  "Find the answer to 20 minus 11."
+  [β  0.66 -|result|b1|t1] 20 − 13 = ?    ans  7 opts 7,8,6,9 vis dot-array:7  "Find the answer to 20 minus 13."
+  [β  0.82 -|result|b1|t1] 18 − 9 = ?     ans  9 opts 10,8,11,9 vis dot-array:9  "Find the answer to 18 minus 9."
+  [β  0.66 -|result|b1|t1] 15 − 7 = ?     ans  8 opts 10,7,9,8 vis dot-array:8  "Find the answer to 15 minus 7."
+  [β  0.66 -|result|b1|t1] 15 − 8 = ?     ans  7 opts 7,8,6,9 vis dot-array:7  "Find the answer to 15 minus 8."
+  [β  0.66 -|result|b1|t1] 16 − 9 = ?     ans  7 opts 7,6,8,9 vis dot-array:7  "Find the answer to 16 minus 9."
+  [β  0.74 -|result|b1|t1] 19 − 11 = ?    ans  8 opts 10,7,9,8 vis dot-array:8  "Find the answer to 19 minus 11."
+
+Add and subtract within 20 | visual_fact | difficulty=(none) | run 1 | own path | max 20
+  [                      ] 8 + 7 = ?      ans 15 opts 14,15,16,17 vis ten-frame:15  "Look at the ten-frame to find the sum of 8 and 7."
+  [                      ] 12 + 4 = ?     ans 16 opts 15,16,17,18 vis ten-frame:16  "Count the dots on the ten-frames to solve 12 plus 4."
+  [                      ] 14 − 5 = ?     ans  9 opts 8,9,10,11 vis dot-array:9  "Use the visual counters to find 14 minus 5."
+  [                      ] 11 + 8 = ?     ans 19 opts 17,18,19,20 vis ten-frame:19  "Look at the ten-frame to calculate 11 plus 8."
+  [                      ] 17 − 6 = ?     ans 11 opts 10,11,12,13 vis objects:11  "Count the objects to find the difference for 17 minus 6."
+  [                      ] 9 + 9 = ?      ans 18 opts 16,17,18,19 vis ten-frame:18  "Use the visual aid to solve 9 plus 9."
+  [                      ] 16 − 7 = ?     ans  9 opts 8,9,10,12 vis ten-frame:9  "Look at the ten-frame to solve 16 minus 7."
+  [                      ] 13 + 5 = ?     ans 18 opts 16,17,18,19 vis dot-array:18  "Count the dots to find the total for 13 plus 5."
+
+Add and subtract within 20 | visual_fact | difficulty=(none) | run 2 | own path | max 20
+  [                      ] 9 + 4 = ?      ans 13 opts 12,13,14,15 vis ten-frame:13  "Look at the ten-frame. Count the total and choose the correct answer f"
+  [                      ] 12 + 5 = ?     ans 17 opts 16,17,18,19 vis objects:17  "Use the visual objects to help you solve 12 + 5."
+  [                      ] 15 − 3 = ?     ans 12 opts 11,12,13,14 vis dot-array:12  "Look at the dots to find the answer for 15 - 3."
+  [                      ] 8 + 7 = ?      ans 15 opts 14,15,16,17 vis objects:15  "Count the items carefully to solve 8 + 7."
+  [                      ] 18 − 6 = ?     ans 12 opts 10,11,12,13 vis ten-frame:12  "Use the ten-frame helper to solve 18 - 6."
+  [                      ] 11 + 6 = ?     ans 17 opts 15,16,17,18 vis dot-array:17  "Examine the dot array to find the answer for 11 + 6."
+  [                      ] 16 − 5 = ?     ans 11 opts 10,11,12,13 vis objects:11  "Look at the visual representation to solve 16 - 5."
+  [                      ] 7 + 9 = ?      ans 16 opts 14,15,16,17 vis ten-frame:16  "Use the ten-frame to solve 7 + 9."
+
+Count objects to 10 | visual_fact | difficulty=easy | run 1 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 opts 3,5,7,9 vis ten-frame:5  "Look at the ten-frame and count the objects to find the total!"
+  [                      ] 4 + 1 = ?      ans  5 opts 3,5,6,8 vis ten-frame:5  "Count the items carefully on the ten-frame to find how many there are "
+  [                      ] 5 + 2 = ?      ans  7 opts 5,7,9,10 vis ten-frame:7  "Use the ten-frame to count the objects and choose the correct total."
+  [                      ] 4 + 3 = ?      ans  7 opts 5,6,7,9 vis ten-frame:7  "Count the dots in the ten-frame to see what number they make together."
+  [                      ] 6 + 3 = ?      ans  9 opts 7,8,9,10 vis ten-frame:9  "Count the objects in the ten-frame to find the total sum."
+  [                      ] 5 + 4 = ?      ans  9 opts 7,8,9,10 vis ten-frame:9  "Look at the ten-frame and count every object to find your answer."
+  [                      ] 5 + 5 = ?      ans 10 opts 8,9,10,6 vis ten-frame:10  "Count all the items shown in the ten-frame to complete the equation."
+  [                      ] 7 + 2 = ?      ans  9 opts 7,8,9,10 vis ten-frame:9  "Count the objects in the ten-frame carefully to find the final number."
+
+Count objects to 10 | visual_fact | difficulty=easy | run 2 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 opts 3,5,8 vis ten-frame:5  "Look at the ten-frame and count the objects to find the total!"
+  [                      ] 4 + 1 = ?      ans  5 opts 2,5,7 vis ten-frame:5  "Count the objects in the ten-frame to see how many there are in all."
+  [                      ] 5 + 2 = ?      ans  7 opts 4,7,9 vis ten-frame:7  "Use the ten-frame to count the objects and find the sum."
+  [                      ] 3 + 4 = ?      ans  7 opts 5,7,10 vis ten-frame:7  "Count the objects carefully on the ten-frame to find the total number."
+  [                      ] 6 + 3 = ?      ans  9 opts 7,9,6 vis ten-frame:9  "Count all the objects shown in the ten-frame to get your answer."
+  [                      ] 5 + 4 = ?      ans  9 opts 6,9,8 vis ten-frame:9  "Count the objects in the ten-frame to discover the final number."
+  [                      ] 8 + 2 = ?      ans 10 opts 7,10,8 vis ten-frame:10  "Count the filled spots on the ten-frame to find the total."
+  [                      ] 4 + 4 = ?      ans  8 opts 6,8,10 vis ten-frame:8  "Count every object in the ten-frame to complete the addition fact."
+
+Count objects to 10 | visual_fact | difficulty=medium | run 1 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 opts 4,5,6,7 vis dot-array:5  "Count the objects in the array. How many are there in total?"
+  [                      ] 4 + 3 = ?      ans  7 opts 6,7,8,9 vis dot-array:7  "Look at the dots and find the total amount."
+  [                      ] 2 + 4 = ?      ans  6 opts 5,6,7,8 vis dot-array:6  "Count the objects shown below to find the sum."
+  [                      ] 5 + 3 = ?      ans  8 opts 7,8,9,10 vis dot-array:8  "How many objects do you see in all?"
+  [                      ] 1 + 5 = ?      ans  6 opts 5,6,7,8 vis dot-array:6  "Count all the items in the visual group."
+  [                      ] 4 + 4 = ?      ans  8 opts 7,8,9,10 vis dot-array:8  "Determine the total count by looking at the dots."
+  [                      ] 3 + 6 = ?      ans  9 opts 8,9,10,7 vis dot-array:9  "Count the dots to find the final number."
+  [                      ] 5 + 4 = ?      ans  9 opts 8,9,10,7 vis dot-array:9  "Add up the items shown in the picture."
+
+Count objects to 10 | visual_fact | difficulty=medium | run 2 | own path | max 10
+  [                      ] 4 + 1 = ?      ans  5 opts 4,5,6 vis dot-array:5  "Count the objects in the array."
+  [                      ] 3 + 3 = ?      ans  6 opts 5,6,7 vis dot-array:6  "How many objects do you see altogether?"
+  [                      ] 5 + 2 = ?      ans  7 opts 6,7,8 vis dot-array:7  "Count all the items shown."
+  [                      ] 4 + 4 = ?      ans  8 opts 7,8,9 vis dot-array:8  "Find the total number of objects."
+  [                      ] 6 + 3 = ?      ans  9 opts 8,9,10 vis dot-array:9  "Count the objects in the group."
+  [                      ] 5 + 5 = ?      ans 10 opts 8,9,10 vis dot-array:10  "Count all the items carefully."
+
+Count objects to 10 | visual_fact | difficulty=hard | run 1 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 opts 4,5,6 vis dot-array:5  "Count the objects in the array."
+  [                      ] 4 + 2 = ?      ans  6 opts 5,6,7 vis dot-array:6  "Count the total number of items."
+  [                      ] 3 + 3 = ?      ans  6 opts 5,6,7 vis dot-array:6  "Find the total count."
+  [                      ] 5 + 3 = ?      ans  8 opts 7,8,9 vis dot-array:8  "Count the dots shown."
+  [                      ] 4 + 4 = ?      ans  8 opts 7,8,9 vis dot-array:8  "How many objects are there in total?"
+  [                      ] 5 + 4 = ?      ans  9 opts 8,9,10 vis dot-array:9  "Count the items in the set."
+  [                      ] 5 + 5 = ?      ans 10 opts 8,9,10 vis dot-array:10  "Determine the total amount."
+  [                      ] 6 + 3 = ?      ans  9 opts 8,9,10 vis dot-array:9  "Count the total number of objects."
+
+Count objects to 10 | visual_fact | difficulty=hard | run 2 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 opts 4,5,6 vis dot-array:5  "Count the objects in the array."
+  [                      ] 4 + 2 = ?      ans  6 opts 5,6,7 vis dot-array:6  "Count the total number of items."
+  [                      ] 5 + 3 = ?      ans  8 opts 7,8,9 vis dot-array:8  "Find the total count for this group."
+  [                      ] 4 + 3 = ?      ans  7 opts 6,7,8 vis dot-array:7  "Determine the sum by counting the visual objects."
+  [                      ] 6 + 3 = ?      ans  9 opts 8,9,10 vis dot-array:9  "Count the objects shown."
+  [                      ] 5 + 4 = ?      ans  9 opts 8,9,10 vis dot-array:9  "Find the total number of items."
+  [                      ] 7 + 2 = ?      ans  9 opts 8,9,10 vis dot-array:9  "Count all the objects in this display."
+  [                      ] 4 + 4 = ?      ans  8 opts 7,8,9 vis dot-array:8  "Determine the total count."
+
+Count objects to 10 | visual_fact | difficulty=(none) | run 1 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 opts 4,5,6,7 vis objects:5  "Count the items carefully and choose the correct total."
+  [                      ] 4 + 1 = ?      ans  5 opts 3,5,6,4 vis dot-array:5  "How many objects are shown in total? Count them and pick the number."
+  [                      ] 5 + 3 = ?      ans  8 opts 7,8,9,6 vis ten-frame:8  "Look at the ten-frame and count the total dots."
+  [                      ] 4 + 4 = ?      ans  8 opts 7,8,9,10 vis fingers:8  "Count the fingers shown and find the total."
+  [                      ] 6 + 2 = ?      ans  8 opts 7,8,9,10 vis objects:8  "Count all the objects in the picture."
+  [                      ] 5 + 5 = ?      ans 10 opts 8,9,10,7 vis ten-frame:10  "Count the dots on the ten-frame to find the sum."
+  [                      ] 7 + 2 = ?      ans  9 opts 8,9,10,7 vis objects:9  "Count the objects shown and choose the right answer."
+  [                      ] 6 + 4 = ?      ans 10 opts 8,9,10,7 vis dot-array:10  "Count all the items carefully."
+
+Count objects to 10 | visual_fact | difficulty=(none) | run 2 | own path | max 10
+  [                      ] 3 + 2 = ?      ans  5 opts 4,5,6,7 vis ten-frame:5  "Count the objects in the ten-frame and pick the total number."
+  [                      ] 4 + 1 = ?      ans  5 opts 4,5,6,3 vis objects:5  "How many stars do you see in total?"
+  [                      ] 3 + 3 = ?      ans  6 opts 5,6,7,8 vis dot-array:6  "Count the dots on the array to find the sum."
+  [                      ] 5 + 2 = ?      ans  7 opts 6,7,8,9 vis fingers:7  "Use the fingers shown to count and find the total."
+  [                      ] 4 + 4 = ?      ans  8 opts 7,8,9,6 vis ten-frame:8  "Count the items in this ten-frame carefully."
+  [                      ] 5 + 4 = ?      ans  9 opts 8,9,10,7 vis objects:9  "Count the total number of objects shown."
+  [                      ] 5 + 5 = ?      ans 10 opts 8,9,10,6 vis dot-array:10  "Count the dots to find the final number."

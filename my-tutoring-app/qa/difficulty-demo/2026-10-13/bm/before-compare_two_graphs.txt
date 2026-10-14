@@ -1,0 +1,36 @@
+
+Picture graphs: one picture for one thing | compare_two_graphs | difficulty=easy | run 1 | own path
+  [                      ] [3,2,8] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [6,4,7] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+  [                      ] [5,3,6] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [5,3,7] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+
+Picture graphs: one picture for one thing | compare_two_graphs | difficulty=easy | run 2 | own path
+  [                      ] [3,2,6] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [5,7,8] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+  [                      ] [4,5,7] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [4,5,3] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+
+Picture graphs: one picture for one thing | compare_two_graphs | difficulty=medium | run 1 | own path
+  [                      ] [7,3,4] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [7,6,2] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+  [                      ] [8,3,4] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [2,5,7] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+
+Picture graphs: one picture for one thing | compare_two_graphs | difficulty=medium | run 2 | own path
+  [                      ] [4,7,5] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [6,7,3] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+  [                      ] [7,6,3] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [5,8,2] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+
+Picture graphs: one picture for one thing | compare_two_graphs | difficulty=hard | run 1 | own path
+  [                      ] [3,6,2] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [4,2,3] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+  [                      ] [6,3,7] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [5,8,4] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+
+Picture graphs: one picture for one thing | compare_two_graphs | difficulty=hard | run 2 | own path
+  [                      ] [6,2,7] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [8,5,4] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""
+  [                      ] [6,5,7] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is same.  ""
+  [                      ] [6,2,5] step 1 icon 1  Q: Look at the morning and afternoon graphs. Tell me something that is different.  ""

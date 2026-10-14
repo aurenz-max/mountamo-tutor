@@ -1,0 +1,60 @@
+
+Add and subtract within 1000 | subtract_regroup | difficulty=easy | run 1 | own path
+  [                      ] {"type":"subtract_regroup","problem":"342 - 118","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"533 - 215","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"471 - 326","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=easy | run 2 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"84 - 29","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"33 - 15","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=easy | run 3 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"83 - 26","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"94 - 38","requiresRegrouping":true,"regroupCount":1,"supportTier":"easy"}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=medium | run 1 | own path
+  [                      ] {"type":"subtract_regroup","problem":"82 - 37","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"53 - 28","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"71 - 44","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"94 - 56","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=medium | run 2 | own path
+  [                      ] {"type":"subtract_regroup","problem":"72 - 37","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"84 - 28","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"91 - 45","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=medium | run 3 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"84 - 38","requiresRegrouping":true,"regroupCount":1,"supportTier":"medium"}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=hard | run 1 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"71 - 38","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"93 - 46","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=hard | run 2 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"63 - 28","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"81 - 45","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=hard | run 3 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"83 - 45","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_regroup","problem":"94 - 28","requiresRegrouping":true,"regroupCount":1,"supportTier":"hard"}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"73 - 38","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"44 - 26","requiresRegrouping":true,"regroupCount":1}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"341 - 156","requiresRegrouping":true,"regroupCount":2}  ""
+  [                      ] {"type":"subtract_regroup","problem":"603 - 248","requiresRegrouping":true,"regroupCount":2}  ""
+
+Add and subtract within 1000 | subtract_regroup | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"subtract_regroup","problem":"52 - 17","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"83 - 46","requiresRegrouping":true,"regroupCount":1}  ""
+  [                      ] {"type":"subtract_regroup","problem":"403 - 248","requiresRegrouping":true,"regroupCount":2}  ""

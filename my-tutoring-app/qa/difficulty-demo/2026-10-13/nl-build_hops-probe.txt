@@ -1,0 +1,48 @@
+
+Numbers 0 to 20 | difficulty=easy | run 1 | own path | line 0-20
+  {"type":"build_hops","startValue":0,"targetValues":[10],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 10 in two hops."
+  {"type":"build_hops","startValue":0,"targetValues":[5],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 5 in two hops."
+  {"type":"build_hops","startValue":0,"targetValues":[6],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 6 in two hops."
+
+Numbers 0 to 20 | difficulty=easy | run 2 | own path | line 0-20
+  {"type":"build_hops","startValue":0,"targetValues":[4],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 4 in two hops."
+  {"type":"build_hops","startValue":0,"targetValues":[10],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 10 in two hops."
+  {"type":"build_hops","startValue":0,"targetValues":[6],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 6 in two hops."
+
+Numbers 0 to 20 | difficulty=medium | run 1 | own path | line 0-20
+  {"type":"build_hops","startValue":0,"targetValues":[12],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 12 in two hops."
+  {"type":"build_hops","startValue":0,"targetValues":[13],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 13 in two hops."
+  {"type":"build_hops","startValue":0,"targetValues":[11],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 11 in two hops."
+
+Numbers 0 to 20 | difficulty=medium | run 2 | own path | line 0-20
+  {"type":"build_hops","startValue":0,"targetValues":[13],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 13 in two hops."
+  {"type":"build_hops","startValue":0,"targetValues":[12],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 12 in two hops."
+  {"type":"build_hops","startValue":0,"targetValues":[14],"hopCount":2,"highlights":[]}
+    "Start at 0 and land on 14 in two hops."
+
+Numbers 0 to 20 | difficulty=hard | run 1 | own path | line 0-20
+  {"type":"build_hops","startValue":0,"targetValues":[17],"hopCount":3,"highlights":[]}
+    "Start at 0 and land on 17 in three hops."
+  {"type":"build_hops","startValue":0,"targetValues":[16],"hopCount":3,"highlights":[]}
+    "Start at 0 and land on 16 in three hops."
+  {"type":"build_hops","startValue":0,"targetValues":[19],"hopCount":3,"highlights":[]}
+    "Start at 0 and land on 19 in three hops."
+
+Numbers 0 to 20 | difficulty=hard | run 2 | own path | line 0-20
+  {"type":"build_hops","startValue":0,"targetValues":[15],"hopCount":3,"highlights":[]}
+    "Start at 0 and land on 15 in three hops."
+  {"type":"build_hops","startValue":0,"targetValues":[9],"hopCount":3,"highlights":[]}
+    "Start at 0 and land on 9 in three hops."
+  {"type":"build_hops","startValue":0,"targetValues":[20],"hopCount":3,"highlights":[]}
+    "Start at 0 and land on 20 in three hops."

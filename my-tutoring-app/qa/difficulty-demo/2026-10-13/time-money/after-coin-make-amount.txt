@@ -1,0 +1,63 @@
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=easy | run 1 | code space
+  [CoinCounter] Item space coin-sets: make-amount band [-2.5, -0.6]: q|few@-0.7 np|few@-0.6 dp|few@-0.9 d|few@-1.5 dp|5+@-0.75
+  [β  -0.7 q|few         ] {"type":"make-amount","targetAmount":75,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"q|few","beta":-0.7}}  "A sour gummy worm costs 75¢. Make 75¢ with coins."
+  [β  -0.6 np|few        ] {"type":"make-amount","targetAmount":7,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "A chocolate square costs 7¢. Make 7¢ with coins."
+  [β  -0.9 dp|few        ] {"type":"make-amount","targetAmount":11,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|few","beta":-0.9}}  "An orange lollipop costs 11¢. Make 11¢ with coins."
+  [β  -1.5 d|few         ] {"type":"make-amount","targetAmount":20,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"d|few","beta":-1.5}}  "A red jellybean costs 20¢. Make 20¢ with coins."
+  [β -0.75 dp|5+         ] {"type":"make-amount","targetAmount":23,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.75}}  "A peppermint candy costs 23¢. Make 23¢ with coins."
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=easy | run 2 | code space
+  [CoinCounter] Item space coin-sets: make-amount band [-2.5, -0.6]: dp|few@-0.9 q|few@-0.7 np|few@-0.6 dp|5+@-0.75 d|few@-1.5
+  [β  -0.9 dp|few        ] {"type":"make-amount","targetAmount":12,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|few","beta":-0.9}}  "A shiny sticker costs 12¢. Make 12¢ with coins."
+  [β  -0.7 q|few         ] {"type":"make-amount","targetAmount":50,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"q|few","beta":-0.7}}  "An apple slice costs 50¢. Make 50¢ with coins."
+  [β  -0.6 np|few        ] {"type":"make-amount","targetAmount":6,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "A red pencil costs 6¢. Make 6¢ with coins."
+  [β -0.75 dp|5+         ] {"type":"make-amount","targetAmount":23,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.75}}  "A small eraser costs 23¢. Make 23¢ with coins."
+  [β  -1.5 d|few         ] {"type":"make-amount","targetAmount":20,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"d|few","beta":-1.5}}  "A comic book costs 20¢. Make 20¢ with coins."
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=medium | run 1 | code space
+  [CoinCounter] Item space coin-sets: make-amount band [-0.6, 0.6]: dnp|5+@0.45 qn|few@0.2 dp|5+@-0.6 dnp|few@0.3 dn|few@-0.3
+  [β  0.45 dnp|5+        ] {"type":"make-amount","targetAmount":18,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dnp|5+","beta":0.45}}  "A bubble gum costs 18¢. Make 18¢ with coins."
+  [β   0.2 qn|few        ] {"type":"make-amount","targetAmount":30,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qn|few","beta":0.2}}  "A sour straw costs 30¢. Make 30¢ with coins."
+  [β  -0.6 dp|5+         ] {"type":"make-amount","targetAmount":24,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.6}}  "An orange pop costs 24¢. Make 24¢ with coins."
+  [β   0.3 dnp|few       ] {"type":"make-amount","targetAmount":16,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dnp|few","beta":0.3}}  "A gummy worm costs 16¢. Make 16¢ with coins."
+  [β  -0.3 dn|few        ] {"type":"make-amount","targetAmount":15,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dn|few","beta":-0.3}}  "A chocolate coin costs 15¢. Make 15¢ with coins."
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=medium | run 2 | code space
+  [CoinCounter] Item space coin-sets: make-amount band [-0.6, 0.6]: np|few@-0.6 qd|5+@0.05 dp|5+@-0.6 qdp|few@0.5 dnp|few@0.3
+  [β  -0.6 np|few        ] {"type":"make-amount","targetAmount":7,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "A paper cup costs 7¢. Make 7¢ with coins."
+  [β  0.05 qd|5+         ] {"type":"make-amount","targetAmount":95,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qd|5+","beta":0.05}}  "A lemon wedge costs 95¢. Make 95¢ with coins."
+  [β  -0.6 dp|5+         ] {"type":"make-amount","targetAmount":24,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.6}}  "A paper napkin costs 24¢. Make 24¢ with coins."
+  [β   0.5 qdp|few       ] {"type":"make-amount","targetAmount":46,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qdp|few","beta":0.5}}  "A straw costs 46¢. Make 46¢ with coins."
+  [β   0.3 dnp|few       ] {"type":"make-amount","targetAmount":16,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dnp|few","beta":0.3}}  "An ice cube costs 16¢. Make 16¢ with coins."
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=hard | run 1 | code space
+  [CoinCounter] Item space coin-sets: make-amount band [0.6, 3.5]: dnp|5+@0.6 qdp|5+@0.95 qdnp|5+@2 qdnp|few@1.7 qdn|5+@1.25
+  [β   0.6 dnp|5+        ] {"type":"make-amount","targetAmount":19,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"dnp|5+","beta":0.6}}  "A sour gummy costs 19¢. Make 19¢ with coins."
+  [β  0.95 qdp|5+        ] {"type":"make-amount","targetAmount":64,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qdp|5+","beta":0.95}}  "An orange slice costs 64¢. Make 64¢ with coins."
+  [β     2 qdnp|5+       ] {"type":"make-amount","targetAmount":67,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qdnp|5+","beta":2}}  "A chocolate drop costs 67¢. Make 67¢ with coins."
+  [β   1.7 qdnp|few      ] {"type":"make-amount","targetAmount":41,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qdnp|few","beta":1.7}}  "A peppermint candy costs 41¢. Make 41¢ with coins."
+  [β  1.25 qdn|5+        ] {"type":"make-amount","targetAmount":90,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qdn|5+","beta":1.25}}  "An apple chew costs 90¢. Make 90¢ with coins."
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=hard | run 2 | code space
+  [CoinCounter] Item space coin-sets: make-amount band [0.6, 3.5]: qdn|few@1.1 qnp|5+@1.25 qdp|5+@1.1 qnp|few@0.8 qdnp|few@1.7
+  [β   1.1 qdn|few       ] {"type":"make-amount","targetAmount":65,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qdn|few","beta":1.1}}  "A sour gummy costs 65¢. Make 65¢ with coins."
+  [β  1.25 qnp|5+        ] {"type":"make-amount","targetAmount":59,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qnp|5+","beta":1.25}}  "An orange slice costs 59¢. Make 59¢ with coins."
+  [β   1.1 qdp|5+        ] {"type":"make-amount","targetAmount":98,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qdp|5+","beta":1.1}}  "A chocolate drop costs 98¢. Make 98¢ with coins."
+  [β   0.8 qnp|few       ] {"type":"make-amount","targetAmount":56,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qnp|few","beta":0.8}}  "A fruit chew costs 56¢. Make 56¢ with coins."
+  [β   1.7 qdnp|few      ] {"type":"make-amount","targetAmount":41,"availableCoins":["penny","nickel","dime","quarter","half-dollar","dollar"],"itemSpace":{"space":"coin-sets","structure":"qdnp|few","beta":1.7}}  "A licorice string costs 41¢. Make 41¢ with coins."
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"make-amount","targetAmount":12,"availableCoins":["dime","penny","nickel"]}  "You want to buy a new pencil for 12 cents. Show 12 cents using dimes a"
+  [                      ] {"type":"make-amount","targetAmount":25,"availableCoins":["dime","nickel","penny"]}  "You need an eraser that costs 25 cents. Show 25 cents using nickels an"
+  [                      ] {"type":"make-amount","targetAmount":37,"availableCoins":["quarter","dime","penny"]}  "A colorful folder costs 37 cents. Show 37 cents using quarters, dimes,"
+  [                      ] {"type":"make-amount","targetAmount":48,"availableCoins":["quarter","nickel","penny","dime"]}  "A glue stick costs 48 cents. Show 48 cents using quarters, nickels, an"
+  [                      ] {"type":"make-amount","targetAmount":65,"availableCoins":["quarter","dime","nickel"]}  "A pair of safety scissors costs 65 cents. Show 65 cents using quarters"
+  [                      ] {"type":"make-amount","targetAmount":88,"availableCoins":["quarter","dime","nickel","penny"]}  "A new notebook costs 88 cents. Show 88 cents using quarters, dimes, ni"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"make-amount","targetAmount":12,"availableCoins":["dime","penny","nickel"]}  "You want to buy a bouncy ball for 12 cents. Use dimes and pennies to s"
+  [                      ] {"type":"make-amount","targetAmount":23,"availableCoins":["dime","nickel","penny"]}  "A pack of stickers costs 23 cents. Use dimes, nickels, and pennies to "
+  [                      ] {"type":"make-amount","targetAmount":35,"availableCoins":["quarter","dime","nickel"]}  "A toy car costs 35 cents. Use quarters, dimes, and nickels to buy the "
+  [                      ] {"type":"make-amount","targetAmount":58,"availableCoins":["quarter","dime","nickel","penny"]}  "A mini puzzle costs 58 cents. Use quarters, dimes, nickels, and pennie"
+  [                      ] {"type":"make-amount","targetAmount":84,"availableCoins":["quarter","dime","nickel","penny"]}  "A fluffy teddy bear costs 84 cents. Show 84 cents using quarters, dime"

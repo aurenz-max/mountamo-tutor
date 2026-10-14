@@ -1,0 +1,78 @@
+
+Multiply within 100 using multiplication facts | fluency | difficulty=easy | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: product|a1|t0|h1@-0.71 product|a1|t1|h0@-2.15 product|a1|t0|h0@-1.62 product|a0|t1|h0@-1.29 product|a0|t0|h0@-0.86
+  [β -0.71 product|a1|t0|h1 ] 9 × 5 = 45   hide product ans  45 "Calculate the product quickly: What is 9 × 5?"
+  [β -2.15 product|a1|t1|h0 ] 2 × 2 = 4    hide product ans   4 "Calculate the product quickly: What is 2 × 2?"
+  [β -1.62 product|a1|t0|h0 ] 5 × 3 = 15   hide product ans  15 NAMES ANSWER "Calculate the product quickly: What is 5 × 3?"
+  [β -1.29 product|a0|t1|h0 ] 3 × 3 = 9    hide product ans   9 "Calculate the product quickly: What is 3 × 3?"
+  [β -0.86 product|a0|t0|h0 ] 4 × 3 = 12   hide product ans  12 "Calculate the product quickly: What is 4 × 3?"
+
+Multiply within 100 using multiplication facts | fluency | difficulty=easy | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: product|a1|t1|h0@-1.9 product|a0|t1|h0@-1.21 product|a1|t0|h1@-0.77 product|a0|t0|h0@-0.86 product|a1|t0|h0@-1.7
+  [β  -1.9 product|a1|t1|h0 ] 5 × 5 = 25   hide product ans  25 "What is the product of 5 and 5?"
+  [β -1.21 product|a0|t1|h0 ] 4 × 4 = 16   hide product ans  16 "What is the product of 4 and 4?"
+  [β -0.77 product|a1|t0|h1 ] 8 × 5 = 40   hide product ans  40 "What is the product of 8 and 5?"
+  [β -0.86 product|a0|t0|h0 ] 3 × 4 = 12   hide product ans  12 "What is the product of 3 and 4?"
+  [β  -1.7 product|a1|t0|h0 ] 2 × 4 = 8    hide product ans   8 "What is the product of 2 and 4?"
+
+Multiply within 100 using multiplication facts | fluency | difficulty=medium | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: product|a1|t0|h1@-0.41 product|a0|t0|h1@-0.16 product|a0|t1|h2@0.47 product|a0|t1|h2@0.13 product|a1|t0|h1@-0.17
+  [β -0.41 product|a1|t0|h1 ] 10 × 7 = 70  hide product ans  70 "Calculate the product quickly: 10 × 7 ="
+  [β -0.16 product|a0|t0|h1 ] 8 × 3 = 24   hide product ans  24 "Calculate the product quickly: 8 × 3 ="
+  [β  0.47 product|a0|t1|h2 ] 8 × 8 = 64   hide product ans  64 "Calculate the product quickly: 8 × 8 ="
+  [β  0.13 product|a0|t1|h2 ] 6 × 6 = 36   hide product ans  36 "Calculate the product quickly: 6 × 6 ="
+  [β -0.17 product|a1|t0|h1 ] 9 × 10 = 90  hide product ans  90 "Calculate the product quickly: 9 × 10 ="
+
+Multiply within 100 using multiplication facts | fluency | difficulty=medium | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: product|a0|t1|h2@0.29 product|a0|t0|h1@-0.11 product|a1|t0|h1@-0.29 product|a0|t0|h1@-0.23 product|a1|t0|h1@-0.53
+  [β  0.29 product|a0|t1|h2 ] 7 × 7 = 49   hide product ans  49 "What is 7 times 7?"
+  [β -0.11 product|a0|t0|h1 ] 4 × 7 = 28   hide product ans  28 "What is 4 times 7?"
+  [β -0.29 product|a1|t0|h1 ] 8 × 10 = 80  hide product ans  80 "What is 8 times 10?"
+  [β -0.23 product|a0|t0|h1 ] 6 × 3 = 18   hide product ans  18 "What is 6 times 3?"
+  [β -0.53 product|a1|t0|h1 ] 6 × 10 = 60  hide product ans  60 "What is 6 times 10?"
+
+Multiply within 100 using multiplication facts | fluency | difficulty=hard | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t1|h2@0.67 product|a0|t0|h2@0.77 product|a0|t0|h2@0.6 product|a0|t0|h2@0.96 product|a0|t0|h2@0.68
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 "What is the product of 9 and 9?"
+  [β  0.77 product|a0|t0|h2 ] 7 × 8 = 56   hide product ans  56 "What is the product of 7 and 8?"
+  [β   0.6 product|a0|t0|h2 ] 6 × 7 = 42   hide product ans  42 "What is the product of 6 and 7?"
+  [β  0.96 product|a0|t0|h2 ] 8 × 9 = 72   hide product ans  72 "What is the product of 8 and 9?"
+  [β  0.68 product|a0|t0|h2 ] 8 × 6 = 48   hide product ans  48 "What is the product of 8 and 6?"
+
+Multiply within 100 using multiplication facts | fluency | difficulty=hard | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t0|h2@0.75 product|a0|t1|h2@0.67 product|a0|t0|h2@0.68 product|a0|t0|h2@0.6 product|a0|t0|h2@0.96
+  [β  0.75 product|a0|t0|h2 ] 6 × 9 = 54   hide product ans  54 "What is the product of 6 and 9?"
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 "What is the product of 9 and 9?"
+  [β  0.68 product|a0|t0|h2 ] 8 × 6 = 48   hide product ans  48 "What is the product of 8 and 6?"
+  [β   0.6 product|a0|t0|h2 ] 7 × 6 = 42   hide product ans  42 "What is the product of 7 and 6?"
+  [β  0.96 product|a0|t0|h2 ] 8 × 9 = 72   hide product ans  72 "What is the product of 8 and 9?"
+
+Multiply within 100 using multiplication facts | fluency | difficulty=(none) | run 1 | own path
+  [                         ] 7 × 3 = 21   hide product ans  21 "What is 7 multiplied by 3?"
+  [                         ] 9 × 8 = 72   hide product ans  72 "What is 9 multiplied by 8?"
+  [                         ] 4 × 7 = 28   hide product ans  28 "What is 4 multiplied by 7?"
+  [                         ] 5 × 2 = 10   hide product ans  10 "What is 5 multiplied by 2?"
+  [                         ] 5 × 8 = 40   hide product ans  40 "What is 5 multiplied by 8?"
+
+Multiply within 100 using multiplication facts | fluency | difficulty=(none) | run 2 | own path
+  [                         ] 10 × 2 = 20  hide product ans  20 "Calculate the total product: 10 × 2 ="
+  [                         ] 7 × 4 = 28   hide product ans  28 "Calculate the total product: 7 × 4 ="
+  [                         ] 6 × 4 = 24   hide product ans  24 "Calculate the total product: 6 × 4 ="
+  [                         ] 6 × 3 = 18   hide product ans  18 "Calculate the total product: 6 × 3 ="
+  [                         ] 5 × 5 = 25   hide product ans  25 "Calculate the total product: 5 × 5 ="
+
+Multiply a two-digit number by a one-digit number | fluency | difficulty=hard | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t0|h2@0.6 product|a0|t1|h2@0.67 product|a0|t0|h2@0.86 product|a0|t0|h2@0.75 product|a0|t0|h2@0.68
+  [β   0.6 product|a0|t0|h2 ] 6 × 7 = 42   hide product ans  42 "What is the product of 6 and 7?"
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 "What is the product of 9 and 9?"
+  [β  0.86 product|a0|t0|h2 ] 9 × 7 = 63   hide product ans  63 "What is the product of 9 and 7?"
+  [β  0.75 product|a0|t0|h2 ] 9 × 6 = 54   hide product ans  54 "What is the product of 9 and 6?"
+  [β  0.68 product|a0|t0|h2 ] 8 × 6 = 48   hide product ans  48 "What is the product of 8 and 6?"
+
+Multiply a two-digit number by a one-digit number | fluency | difficulty=hard | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t1|h2@0.67 product|a0|t0|h2@0.77 product|a0|t0|h2@0.75 product|a0|t0|h2@0.68 product|a0|t0|h2@0.96
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 "Calculate the product of 9 and 9."
+  [β  0.77 product|a0|t0|h2 ] 7 × 8 = 56   hide product ans  56 "Calculate the product of 7 and 8."
+  [β  0.75 product|a0|t0|h2 ] 9 × 6 = 54   hide product ans  54 "Calculate the product of 9 and 6."
+  [β  0.68 product|a0|t0|h2 ] 8 × 6 = 48   hide product ans  48 "Calculate the product of 8 and 6."
+  [β  0.96 product|a0|t0|h2 ] 9 × 8 = 72   hide product ans  72 "Calculate the product of 9 and 8."

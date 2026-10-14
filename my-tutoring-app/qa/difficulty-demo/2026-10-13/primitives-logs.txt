@@ -1,0 +1,278 @@
+✅ Biology Generators Registered: species-profile, organism-card, classification-sorter, life-cycle-sequencer, body-system-explorer, habitat-diorama, bio-compare-contrast, bio-process-animator, microscope-viewer, food-web-builder, adaptation-investigator, cell-builder, inheritance-lab, dna-explorer, protein-folder, energy-cycle-engine, evolution-timeline
+📚 Literacy generators registered: 35 (Wave 1-4 + Rhyme Studio + Syllable Clapper + Phoneme Explorer + Sound Swap + Letter Spotter + Letter Sound Link + CVC Speller + Word Workout + Word Sorter + Picture Vocabulary + Interactive Book + Story Talk + Word Flip + You & Me + Story Bridge + Story Ribbon + Oral Sentence Studio)
+🔧 [generateComponentContent] Processing: number-line (number-line-easy-0)
+  📦 [Registry] Using registered generator for 'number-line'
+🔧 [generateComponentContent] Processing: number-line (number-line-easy-1)
+  📦 [Registry] Using registered generator for 'number-line'
+🔧 [generateComponentContent] Processing: number-line (number-line-easy-2)
+  📦 [Registry] Using registered generator for 'number-line'
+[NumberLine] evalMode: "jump" → schema enum: [show_jump] (β=2.5)
+[NumberLine] evalMode: "jump" → schema enum: [show_jump] (β=2.5)
+[NumberLine] evalMode: "jump" → schema enum: [show_jump] (β=2.5)
+[NumberLine] topic-resolved scope: {
+  range: { min: 0, max: 20 },
+  jumpOperation: 'both',
+  focusRange: { min: 11, max: 20 },
+  hasExplicitRange: true,
+  requiresExactMissingNumber: false
+} (topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[NumberLine] display: { min: 12, max: 18 } pool: [
+  12, 13, 14, 15,
+  16, 17, 18
+] difficulty: easy
+[NumberLine] topic-resolved scope: {
+  range: { min: 0, max: 20 },
+  jumpOperation: 'both',
+  focusRange: { min: 11, max: 20 },
+  hasExplicitRange: true,
+  requiresExactMissingNumber: false
+} (topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[NumberLine] display: { min: 4, max: 12 } pool: [
+  4,  5,  6,  8,
+  9, 10, 11, 12
+] difficulty: easy
+[NumberLine] topic-resolved scope: {
+  range: { min: 0, max: 20 },
+  jumpOperation: 'both',
+  focusRange: { min: 11, max: 20 },
+  hasExplicitRange: true,
+  requiresExactMissingNumber: false
+} (topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[NumberLine] display: { min: 9, max: 14 } pool: [ 9, 10, 11, 12, 13, 14 ] difficulty: easy
+[NumberLine] Support tier "easy" applied per-challenge (single-mode show_jump) → tickInterval=default, anchors=0, jumpArc=on
+[NumberLine] Final: 4 challenge(s) → [show_jump, show_jump, show_jump, show_jump]
+Number Line Generated: {
+  topic: 'Add and subtract within 20, using numbers 11 to 20',
+  gradeBand: 'K-2',
+  mode: 'jump',
+  numberType: 'integer',
+  range: '0-20',
+  challengeCount: 4,
+  operationCount: 1
+}
+[NumberLine] Support tier "easy" applied per-challenge (single-mode show_jump) → tickInterval=default, anchors=0, jumpArc=on
+[NumberLine] Final: 4 challenge(s) → [show_jump, show_jump, show_jump, show_jump]
+Number Line Generated: {
+  topic: 'Add and subtract within 20, using numbers 11 to 20',
+  gradeBand: 'K-2',
+  mode: 'jump',
+  numberType: 'integer',
+  range: '0-20',
+  challengeCount: 4,
+  operationCount: 1
+}
+[NumberLine] Support tier "easy" applied per-challenge (single-mode show_jump) → tickInterval=default, anchors=0, jumpArc=on
+[NumberLine] Final: 4 challenge(s) → [show_jump, show_jump, show_jump, show_jump]
+Number Line Generated: {
+  topic: 'Add and subtract within 20, using numbers 11 to 20',
+  gradeBand: 'K-2',
+  mode: 'jump',
+  numberType: 'integer',
+  range: '0-20',
+  challengeCount: 4,
+  operationCount: 1
+}
+🔧 [generateComponentContent] Processing: number-line (number-line-medium-0)
+  📦 [Registry] Using registered generator for 'number-line'
+🔧 [generateComponentContent] Processing: number-line (number-line-medium-1)
+  📦 [Registry] Using registered generator for 'number-line'
+🔧 [generateComponentContent] Processing: number-line (number-line-medium-2)
+  📦 [Registry] Using registered generator for 'number-line'
+[NumberLine] evalMode: "jump" → schema enum: [show_jump] (β=2.5)
+[NumberLine] evalMode: "jump" → schema enum: [show_jump] (β=2.5)
+[NumberLine] evalMode: "jump" → schema enum: [show_jump] (β=2.5)
+[NumberLine] topic-resolved scope: {
+  range: { min: 0, max: 20 },
+  jumpOperation: 'both',
+  focusRange: { min: 11, max: 20 },
+  hasExplicitRange: true,
+  requiresExactMissingNumber: false
+} (topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[NumberLine] display: { min: 11, max: 17 } pool: [
+  11, 12, 13, 14,
+  15, 16, 17
+] difficulty: medium
+[NumberLine] topic-resolved scope: {
+  range: { min: 0, max: 20 },
+  jumpOperation: 'both',
+  focusRange: { min: 11, max: 20 },
+  hasExplicitRange: true,
+  requiresExactMissingNumber: false
+} (topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[NumberLine] display: { min: 6, max: 13 } pool: [
+   6,  7,  8,  9,
+  10, 11, 12, 13
+] difficulty: medium
+[NumberLine] topic-resolved scope: {
+  range: { min: 0, max: 20 },
+  jumpOperation: 'both',
+  focusRange: { min: 11, max: 20 },
+  hasExplicitRange: true,
+  requiresExactMissingNumber: false
+} (topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[NumberLine] display: { min: 7, max: 13 } pool: [
+   7,  8,  9, 10,
+  11, 12, 13
+] difficulty: medium
+[NumberLine] Support tier "medium" applied per-challenge (single-mode show_jump) → tickInterval=default, anchors=0, jumpArc=off
+[NumberLine] Final: 4 challenge(s) → [show_jump, show_jump, show_jump, show_jump]
+Number Line Generated: {
+  topic: 'Add and subtract within 20, using numbers 11 to 20',
+  gradeBand: 'K-2',
+  mode: 'jump',
+  numberType: 'integer',
+  range: '0-20',
+  challengeCount: 4,
+  operationCount: 1
+}
+[NumberLine] Support tier "medium" applied per-challenge (single-mode show_jump) → tickInterval=default, anchors=0, jumpArc=off
+[NumberLine] Final: 4 challenge(s) → [show_jump, show_jump, show_jump, show_jump]
+Number Line Generated: {
+  topic: 'Add and subtract within 20, using numbers 11 to 20',
+  gradeBand: 'K-2',
+  mode: 'jump',
+  numberType: 'integer',
+  range: '0-20',
+  challengeCount: 4,
+  operationCount: 1
+}
+[NumberLine] Support tier "medium" applied per-challenge (single-mode show_jump) → tickInterval=default, anchors=0, jumpArc=off
+[NumberLine] Final: 4 challenge(s) → [show_jump, show_jump, show_jump, show_jump]
+Number Line Generated: {
+  topic: 'Add and subtract within 20, using numbers 11 to 20',
+  gradeBand: 'K-2',
+  mode: 'jump',
+  numberType: 'integer',
+  range: '0-20',
+  challengeCount: 4,
+  operationCount: 1
+}
+🔧 [generateComponentContent] Processing: number-line (number-line-hard-0)
+  📦 [Registry] Using registered generator for 'number-line'
+🔧 [generateComponentContent] Processing: number-line (number-line-hard-1)
+  📦 [Registry] Using registered generator for 'number-line'
+🔧 [generateComponentContent] Processing: number-line (number-line-hard-2)
+  📦 [Registry] Using registered generator for 'number-line'
+[NumberLine] evalMode: "jump" → schema enum: [show_jump] (β=2.5)
+[NumberLine] evalMode: "jump" → schema enum: [show_jump] (β=2.5)
+[NumberLine] evalMode: "jump" → schema enum: [show_jump] (β=2.5)
+[NumberLine] topic-resolved scope: {
+  range: { min: 0, max: 20 },
+  jumpOperation: 'both',
+  focusRange: { min: 11, max: 20 },
+  hasExplicitRange: true,
+  requiresExactMissingNumber: false
+} (topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[NumberLine] display: { min: 11, max: 17 } pool: [
+  11, 12, 13, 14,
+  15, 16, 17
+] difficulty: hard
+[NumberLine] topic-resolved scope: {
+  range: { min: 0, max: 20 },
+  jumpOperation: 'both',
+  focusRange: { min: 11, max: 20 },
+  hasExplicitRange: true,
+  requiresExactMissingNumber: false
+} (topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[NumberLine] display: { min: 9, max: 16 } pool: [
+   9, 10, 11, 12,
+  13, 14, 15, 16
+] difficulty: hard
+[NumberLine] topic-resolved scope: {
+  range: { min: 0, max: 20 },
+  jumpOperation: 'both',
+  focusRange: { min: 11, max: 20 },
+  hasExplicitRange: true,
+  requiresExactMissingNumber: false
+} (topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[NumberLine] display: { min: 6, max: 12 } pool: [
+   6,  7,  8, 9,
+  10, 11, 12
+] difficulty: hard
+[NumberLine] Support tier "hard" applied per-challenge (single-mode show_jump) → tickInterval=default, anchors=0, jumpArc=off
+[NumberLine] Final: 4 challenge(s) → [show_jump, show_jump, show_jump, show_jump]
+Number Line Generated: {
+  topic: 'Add and subtract within 20, using numbers 11 to 20',
+  gradeBand: 'K-2',
+  mode: 'jump',
+  numberType: 'integer',
+  range: '0-20',
+  challengeCount: 4,
+  operationCount: 2
+}
+[NumberLine] Support tier "hard" applied per-challenge (single-mode show_jump) → tickInterval=default, anchors=0, jumpArc=off
+[NumberLine] Final: 4 challenge(s) → [show_jump, show_jump, show_jump, show_jump]
+Number Line Generated: {
+  topic: 'Add and subtract within 20, using numbers 11 to 20',
+  gradeBand: 'K-2',
+  mode: 'jump',
+  numberType: 'integer',
+  range: '0-20',
+  challengeCount: 4,
+  operationCount: 2
+}
+[NumberLine] Support tier "hard" applied per-challenge (single-mode show_jump) → tickInterval=default, anchors=0, jumpArc=off
+[NumberLine] Final: 4 challenge(s) → [show_jump, show_jump, show_jump, show_jump]
+Number Line Generated: {
+  topic: 'Add and subtract within 20, using numbers 11 to 20',
+  gradeBand: 'K-2',
+  mode: 'jump',
+  numberType: 'integer',
+  range: '0-20',
+  challengeCount: 4,
+  operationCount: 2
+}
+🔧 [generateComponentContent] Processing: addition-subtraction-scene (addition-subtraction-scene-easy-0)
+  📦 [Registry] Using registered generator for 'addition-subtraction-scene'
+🔧 [generateComponentContent] Processing: addition-subtraction-scene (addition-subtraction-scene-easy-1)
+  📦 [Registry] Using registered generator for 'addition-subtraction-scene'
+🔧 [generateComponentContent] Processing: addition-subtraction-scene (addition-subtraction-scene-easy-2)
+  📦 [Registry] Using registered generator for 'addition-subtraction-scene'
+[AdditionSubtractionScene] topic-resolved number window: maxNumber=20 (band default 10; topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[AdditionSubtractionScene] evalMode: "solve_story" → schema enum: [solve-story] (β=3.5)
+[AdditionSubtractionScene] topic-resolved number window: maxNumber=20 (band default 10; topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[AdditionSubtractionScene] evalMode: "solve_story" → schema enum: [solve-story] (β=3.5)
+[AdditionSubtractionScene] topic-resolved number window: maxNumber=20 (band default 10; topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[AdditionSubtractionScene] evalMode: "solve_story" → schema enum: [solve-story] (β=3.5)
+[AdditionSubtractionScene] Final: 7 challenge(s) → [solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story]
+[AdditionSubtractionScene] Tier "easy" on mode "solve-story" → unknownPosition constrained to [result] (schema-enforced) → result, result, result, result, result, result, result
+[AdditionSubtractionScene] Final: 7 challenge(s) → [solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story]
+[AdditionSubtractionScene] Tier "easy" on mode "solve-story" → unknownPosition constrained to [result] (schema-enforced) → result, result, result, result, result, result, result
+[AdditionSubtractionScene] Final: 8 challenge(s) → [solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story]
+[AdditionSubtractionScene] Tier "easy" on mode "solve-story" → unknownPosition constrained to [result] (schema-enforced) → result, result, result, result, result, result, result, result
+🔧 [generateComponentContent] Processing: addition-subtraction-scene (addition-subtraction-scene-medium-0)
+  📦 [Registry] Using registered generator for 'addition-subtraction-scene'
+🔧 [generateComponentContent] Processing: addition-subtraction-scene (addition-subtraction-scene-medium-1)
+  📦 [Registry] Using registered generator for 'addition-subtraction-scene'
+🔧 [generateComponentContent] Processing: addition-subtraction-scene (addition-subtraction-scene-medium-2)
+  📦 [Registry] Using registered generator for 'addition-subtraction-scene'
+[AdditionSubtractionScene] topic-resolved number window: maxNumber=20 (band default 10; topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[AdditionSubtractionScene] evalMode: "solve_story" → schema enum: [solve-story] (β=3.5)
+[AdditionSubtractionScene] topic-resolved number window: maxNumber=20 (band default 10; topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[AdditionSubtractionScene] evalMode: "solve_story" → schema enum: [solve-story] (β=3.5)
+[AdditionSubtractionScene] topic-resolved number window: maxNumber=20 (band default 10; topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[AdditionSubtractionScene] evalMode: "solve_story" → schema enum: [solve-story] (β=3.5)
+[AdditionSubtractionScene] Final: 7 challenge(s) → [solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story]
+[AdditionSubtractionScene] Tier "medium" on mode "solve-story" → unknownPosition constrained to [change] (schema-enforced) → change, change, change, change, change, change, change
+[AdditionSubtractionScene] Final: 8 challenge(s) → [solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story]
+[AdditionSubtractionScene] Tier "medium" on mode "solve-story" → unknownPosition constrained to [change] (schema-enforced) → change, change, change, change, change, change, change, change
+[AdditionSubtractionScene] Final: 8 challenge(s) → [solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story]
+[AdditionSubtractionScene] Tier "medium" on mode "solve-story" → unknownPosition constrained to [change] (schema-enforced) → change, change, change, change, change, change, change, change
+🔧 [generateComponentContent] Processing: addition-subtraction-scene (addition-subtraction-scene-hard-0)
+  📦 [Registry] Using registered generator for 'addition-subtraction-scene'
+🔧 [generateComponentContent] Processing: addition-subtraction-scene (addition-subtraction-scene-hard-1)
+  📦 [Registry] Using registered generator for 'addition-subtraction-scene'
+🔧 [generateComponentContent] Processing: addition-subtraction-scene (addition-subtraction-scene-hard-2)
+  📦 [Registry] Using registered generator for 'addition-subtraction-scene'
+[AdditionSubtractionScene] topic-resolved number window: maxNumber=20 (band default 10; topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[AdditionSubtractionScene] evalMode: "solve_story" → schema enum: [solve-story] (β=3.5)
+[AdditionSubtractionScene] topic-resolved number window: maxNumber=20 (band default 10; topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[AdditionSubtractionScene] evalMode: "solve_story" → schema enum: [solve-story] (β=3.5)
+[AdditionSubtractionScene] topic-resolved number window: maxNumber=20 (band default 10; topic="Add and subtract within 20, using numbers 11 to 20", intent="Add and subtract within 20, using numbers 11 to 20")
+[AdditionSubtractionScene] evalMode: "solve_story" → schema enum: [solve-story] (β=3.5)
+[AdditionSubtractionScene] Final: 6 challenge(s) → [solve-story, solve-story, solve-story, solve-story, solve-story, solve-story]
+[AdditionSubtractionScene] Tier "hard" on mode "solve-story" → unknownPosition constrained to [start] (schema-enforced) → start, start, start, start, start, start
+[AdditionSubtractionScene] Final: 8 challenge(s) → [solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story]
+[AdditionSubtractionScene] Tier "hard" on mode "solve-story" → unknownPosition constrained to [start] (schema-enforced) → start, start, start, start, start, start, start, start
+[AdditionSubtractionScene] Final: 8 challenge(s) → [solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story, solve-story]
+[AdditionSubtractionScene] Tier "hard" on mode "solve-story" → unknownPosition constrained to [start] (schema-enforced) → start, start, start, start, start, start, start, start

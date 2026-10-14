@@ -1,0 +1,54 @@
+
+Bar graphs and picture graphs | graph_word_problem | difficulty=easy | run 1 | own path
+  [                      ] [17,8,3,9] step 5 ans 9  Q: How many more stickers does Leo have than Mia?  ""
+  [                      ] [28,11,15,8] step 5 ans 17  Q: How many more pencils than erasers are there?  ""
+  [                      ] [21,9,15,11] step 5 ans 12  Q: How many more stickers does Leo have than Mia?  ""
+  [                      ] [10,31,15,18] step 5 ans 21  Q: How many more books did Class B read than Class A?  ""
+
+Bar graphs and picture graphs | graph_word_problem | difficulty=easy | run 2 | own path
+  [                      ] [38,18,24,30] step 5 ans 20  Q: How many more stickers does Leo have than Mia?  ""
+  [                      ] [15,25,7,19] step 5 ans 10  Q: How many more notebooks than pencils are there?  ""
+  [                      ] [35,15,18,7] step 5 ans 20  Q: How many more stickers does Leo have than Mia?  ""
+  [                      ] [32,18,20,16] step 5 ans 14  Q: How many more apples than bananas did the students pick?  ""
+
+Bar graphs and picture graphs | graph_word_problem | difficulty=easy | run 3 | own path
+  [                      ] [33,21,6,18] step 5 ans 15  Q: How many more stickers does Ben have than Leo?  ""
+  [                      ] [27,12,20,16] step 5 ans 15  Q: How many more stars than hearts do we have?  ""
+  [                      ] [36,11,23,6] step 5 ans 25  Q: How many more books did Maya read than Leo?  ""
+  [                      ] [28,10,11,36] step 5 ans 18  Q: How many more stickers does Leo have than Mia?  ""
+
+Bar graphs and picture graphs | graph_word_problem | difficulty=medium | run 1 | own path
+  [                      ] [14,18,28,15] step 5 ans 32  Q: What is the total of Maple trees and Oak trees?  ""
+  [                      ] [25,4,8,30] step 5 ans 29  Q: What is the total of plastic bottles and aluminum cans collected?  ""
+  [                      ] [19,14,6,4] step 5 ans 33  Q: What's the total of Pencils and Erasers?  ""
+  [                      ] [21,10,16,13] step 5 ans 31  Q: What's the total of Folders and Markers?  ""
+
+Bar graphs and picture graphs | graph_word_problem | difficulty=medium | run 2 | own path
+  [                      ] [10,16,4,17] step 5 ans 26  Q: What is the total of Apples and Stars stickers?  ""
+  [                      ] [15,12,4,3] step 5 ans 27  Q: What is the total of Plastic Bottles and Paper Bags?  ""
+  [                      ] [26,15,9,38] step 5 ans 24  Q: What is the total of Markers and Crayons?  ""
+  [                      ] [10,8,12,34] step 5 ans 18  Q: What's the total of Red stickers and Blue stickers?  ""
+
+Bar graphs and picture graphs | graph_word_problem | difficulty=medium | run 3 | own path
+  [                      ] [9,18,24,16] step 5 ans 27  Q: What is the total of Carrots and Tomatoes?  ""
+  [                      ] [9,8,14,25] step 5 ans 17  Q: What is the total of Hamsters and Turtles?  ""
+  [                      ] [14,16,35,13] step 5 ans 30  Q: What is the total of Class A and Class B books?  ""
+  [                      ] [18,13,5,29] step 5 ans 31  Q: What is the total of Notebooks and Pencils?  ""
+
+Bar graphs and picture graphs | graph_word_problem | difficulty=hard | run 1 | own path
+  [                      ] [13,10,17,21] step 5 ans 6  Q: How many more is the total of Mia and Leo's stickers than Sam's stickers?  ""
+  [                      ] [15,25,35,11] step 5 ans 5  Q: What is the total of Star stickers and Heart stickers, and how many more is that total tha  ""
+  [                      ] [25,28,10,19] step 5 ans 7  Q: What is the total of Cookies and Muffins, and how many more is that total than Brownies?  ""
+  [                      ] [14,22,26,36] step 5 ans 34  Q: How many more pieces of trash did the Green Team and Blue Team pick up in total than the R  ""
+
+Bar graphs and picture graphs | graph_word_problem | difficulty=hard | run 2 | own path
+  [                      ] [10,25,22,34] step 5 ans 13  Q: What is the total number of ducks and frogs combined, and how many more is that total than  ""
+  [                      ] [18,22,23,3] step 5 ans 17  Q: What is the total of Park A and Park B, and how many more is that total than Park C?  ""
+  [                      ] [12,13,10,30] step 5 ans 15  Q: How many more is the total of Notebooks and Pencils than Erasers?  ""
+  [                      ] [25,17,10,36] step 5 ans 32  Q: What is the total of dogs and cats combined, and how many more is that than birds?  ""
+
+Bar graphs and picture graphs | graph_word_problem | difficulty=hard | run 3 | own path
+  [                      ] [13,23,8,31] step 5 ans 18  Q: How many more stickers do Leo and Mia have combined than Sam?  ""
+  [                      ] [11,24,27,4] step 5 ans 8  Q: How many more stickers are in the total of Art and Nature combined than in Science?  ""
+  [                      ] [13,8,17,33] step 5 ans 4  Q: What is the total of Carrots and Peas combined, and how many more is that total than Tomat  ""
+  [                      ] [18,22,16,9] step 5 ans 24  Q: How many more is the total of plastic bottles and cans than the wrappers?  ""

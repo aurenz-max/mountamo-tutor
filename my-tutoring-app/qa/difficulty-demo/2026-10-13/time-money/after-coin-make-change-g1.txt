@@ -1,0 +1,34 @@
+
+Count coins to make purchases | make-change | difficulty=easy | run 1 | code space
+  [CoinCounter] Item space make-change: this scope cannot fill every tier's band (17/48/0 drawable); tier third [-1.60, -0.40] gave 5
+  [CoinCounter] Item space make-change: make-change band [-2.5, -0.6]: 50|borrow|fives@-0.5 25|no-borrow|pennies|small@-1.2 25|no-borrow|fives@-1.3 50|no-borrow|fives|small@-1.6 50|borrow|fives|small@-0.8
+  [β  -0.5 50|borrow|fives] {"type":"make-change","paidAmount":50,"itemCost":25,"correctChange":25,"itemSpace":{"space":"make-change","structure":"50|borrow|fives","beta":-0.5}}  "You buy a pencil for 25¢ and pay with two quarters (50¢). How much cha"
+  [β  -1.2 25|no-borrow|pennies|small] {"type":"make-change","paidAmount":25,"itemCost":22,"correctChange":3,"itemSpace":{"space":"make-change","structure":"25|no-borrow|pennies|small","beta":-1.2}}  "You buy an eraser for 22¢ and pay with a quarter (25¢). How much chang"
+  [β  -1.3 25|no-borrow|fives] {"type":"make-change","paidAmount":25,"itemCost":5,"correctChange":20,"itemSpace":{"space":"make-change","structure":"25|no-borrow|fives","beta":-1.3}}  "You buy a sticker for 5¢ and pay with a quarter (25¢). How much change"
+  [β  -1.6 50|no-borrow|fives|small] {"type":"make-change","paidAmount":50,"itemCost":40,"correctChange":10,"itemSpace":{"space":"make-change","structure":"50|no-borrow|fives|small","beta":-1.6}}  "You buy a crayon for 40¢ and pay with two quarters (50¢). How much cha"
+  [β  -0.8 50|borrow|fives|small] {"type":"make-change","paidAmount":50,"itemCost":45,"correctChange":5,"itemSpace":{"space":"make-change","structure":"50|borrow|fives|small","beta":-0.8}}  "You buy an apple for 45¢ and pay with two quarters (50¢). How much cha"
+
+Count coins to make purchases | make-change | difficulty=medium | run 1 | code space
+  [CoinCounter] Item space make-change: this scope cannot fill every tier's band (17/48/0 drawable); tier third [-0.40, -0.10] gave 5
+  [CoinCounter] Item space make-change: make-change band [-0.6, 0.6]: 25|borrow|pennies@-0.1 50|borrow|pennies@-0.1 25|borrow|pennies|small@-0.4 50|borrow|pennies|small@-0.4 50|borrow|pennies|small@-0.4
+  [β  -0.1 25|borrow|pennies] {"type":"make-change","paidAmount":25,"itemCost":6,"correctChange":19,"itemSpace":{"space":"make-change","structure":"25|borrow|pennies","beta":-0.1}}  "You buy a blue eraser for 6¢ and pay with a quarter (25¢). How much ch"
+  [β  -0.1 50|borrow|pennies] {"type":"make-change","paidAmount":50,"itemCost":14,"correctChange":36,"itemSpace":{"space":"make-change","structure":"50|borrow|pennies","beta":-0.1}}  "You buy a red pencil for 14¢ and pay with two quarters (50¢). How much"
+  [β  -0.4 25|borrow|pennies|small] {"type":"make-change","paidAmount":25,"itemCost":16,"correctChange":9,"itemSpace":{"space":"make-change","structure":"25|borrow|pennies|small","beta":-0.4}}  "You buy a fresh apple for 16¢ and pay with a quarter (25¢). How much c"
+  [β  -0.4 50|borrow|pennies|small] {"type":"make-change","paidAmount":50,"itemCost":44,"correctChange":6,"itemSpace":{"space":"make-change","structure":"50|borrow|pennies|small","beta":-0.4}}  "You buy a shiny sticker for 44¢ and pay with two quarters (50¢). How m"
+  [β  -0.4 50|borrow|pennies|small] {"type":"make-change","paidAmount":50,"itemCost":41,"correctChange":9,"itemSpace":{"space":"make-change","structure":"50|borrow|pennies|small","beta":-0.4}}  "You buy a small marker for 41¢ and pay with two quarters (50¢). How mu"
+
+Count coins to make purchases | make-change | difficulty=hard | run 1 | code space
+  [CoinCounter] Item space make-change: this scope cannot fill every tier's band (17/48/0 drawable); tier third [-0.10, -0.10] gave 5
+  [CoinCounter] Item space make-change: make-change band [0.6, 3.5]: 25|borrow|pennies@-0.1 50|borrow|pennies@-0.1 25|borrow|pennies@-0.1 50|borrow|pennies@-0.1 50|borrow|pennies@-0.1
+  [β  -0.1 25|borrow|pennies] {"type":"make-change","paidAmount":25,"itemCost":9,"correctChange":16,"itemSpace":{"space":"make-change","structure":"25|borrow|pennies","beta":-0.1}}  "You buy a red apple for 9¢ and pay with a quarter (25¢). How much chan"
+  [β  -0.1 50|borrow|pennies] {"type":"make-change","paidAmount":50,"itemCost":39,"correctChange":11,"itemSpace":{"space":"make-change","structure":"50|borrow|pennies","beta":-0.1}}  "You buy a shiny sticker for 39¢ and pay with two quarters (50¢). How m"
+  [β  -0.1 25|borrow|pennies] {"type":"make-change","paidAmount":25,"itemCost":7,"correctChange":18,"itemSpace":{"space":"make-change","structure":"25|borrow|pennies","beta":-0.1}}  "You buy an orange carrot for 7¢ and pay with a quarter (25¢). How much"
+  [β  -0.1 50|borrow|pennies] {"type":"make-change","paidAmount":50,"itemCost":21,"correctChange":29,"itemSpace":{"space":"make-change","structure":"50|borrow|pennies","beta":-0.1}}  "You buy a small plum for 21¢ and pay with two quarters (50¢). How much"
+  [β  -0.1 50|borrow|pennies] {"type":"make-change","paidAmount":50,"itemCost":11,"correctChange":39,"itemSpace":{"space":"make-change","structure":"50|borrow|pennies","beta":-0.1}}  "You buy a green leaf for 11¢ and pay with two quarters (50¢). How much"
+
+Count coins to make purchases | make-change | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"make-change","paidAmount":25,"itemCost":15,"correctChange":10}  "You want to buy a shiny new pencil that costs 15 cents. You pay with a"
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":20,"correctChange":30}  "You are buying a colorful eraser that costs 20 cents. You give the cas"
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":35,"correctChange":15}  "You pick out a cool ruler that costs 35 cents. You hand over 50 cents "
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":45,"correctChange":30}  "You need a glue stick that costs 45 cents. You pay with 75 cents. How "
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":60,"correctChange":15}  "You want a cool notebook that costs 60 cents. You proudly hand the cas"

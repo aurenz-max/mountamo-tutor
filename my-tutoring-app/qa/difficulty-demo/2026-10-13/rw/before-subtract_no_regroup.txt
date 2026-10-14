@@ -1,0 +1,63 @@
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=easy | run 1 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"57 - 23","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"87 - 34","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"68 - 40","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"99 - 52","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=easy | run 2 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"48 - 21","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"65 - 33","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"85 - 32","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=easy | run 3 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"47 - 23","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"87 - 34","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"68 - 42","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=medium | run 1 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"87 - 34","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"65 - 21","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"96 - 42","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=medium | run 2 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"87 - 34","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"65 - 21","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"98 - 43","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=medium | run 3 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"85 - 32","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"67 - 41","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"98 - 54","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"76 - 25","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=hard | run 1 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"87 - 35","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"78 - 42","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"96 - 54","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=hard | run 2 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"87 - 35","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"69 - 42","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"98 - 54","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=hard | run 3 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"87 - 35","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"68 - 42","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"99 - 53","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"76 - 44","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"86 - 34","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"57 - 23","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"95 - 41","requiresRegrouping":false,"regroupCount":0}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"58 - 23","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"79 - 42","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"87 - 34","requiresRegrouping":false,"regroupCount":0}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"subtract_no_regroup","problem":"48 - 15","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"67 - 23","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"subtract_no_regroup","problem":"85 - 32","requiresRegrouping":false,"regroupCount":0}  ""

@@ -1,0 +1,80 @@
+
+Addition facts to 20 | turnaround | difficulty=easy | run 1 | own path
+  [                      ] {"type":"turnaround","a":6,"b":3,"sum":9,"knownFact":{"a":3,"b":6}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":6,"sum":14,"knownFact":{"a":6,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":4,"b":3,"sum":7,"knownFact":{"a":3,"b":4}}  ""
+  [                      ] {"type":"turnaround","a":4,"b":9,"sum":13,"knownFact":{"a":9,"b":4}}  ""
+  [                      ] {"type":"turnaround","a":6,"b":5,"sum":11,"knownFact":{"a":5,"b":6}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":9,"sum":17,"knownFact":{"a":9,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":2,"b":7,"sum":9,"knownFact":{"a":7,"b":2}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":3,"sum":11,"knownFact":{"a":3,"b":8}}  ""
+
+Addition facts to 20 | turnaround | difficulty=easy | run 2 | own path
+  [                      ] {"type":"turnaround","a":8,"b":9,"sum":17,"knownFact":{"a":9,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":5,"b":7,"sum":12,"knownFact":{"a":7,"b":5}}  ""
+  [                      ] {"type":"turnaround","a":4,"b":5,"sum":9,"knownFact":{"a":5,"b":4}}  ""
+  [                      ] {"type":"turnaround","a":3,"b":8,"sum":11,"knownFact":{"a":8,"b":3}}  ""
+  [                      ] {"type":"turnaround","a":1,"b":6,"sum":7,"knownFact":{"a":6,"b":1}}  ""
+  [                      ] {"type":"turnaround","a":6,"b":5,"sum":11,"knownFact":{"a":5,"b":6}}  ""
+  [                      ] {"type":"turnaround","a":7,"b":3,"sum":10,"knownFact":{"a":3,"b":7}}  ""
+  [                      ] {"type":"turnaround","a":7,"b":8,"sum":15,"knownFact":{"a":8,"b":7}}  ""
+
+Addition facts to 20 | turnaround | difficulty=medium | run 1 | own path
+  [                      ] {"type":"turnaround","a":4,"b":7,"sum":11,"knownFact":{"a":7,"b":4}}  ""
+  [                      ] {"type":"turnaround","a":5,"b":8,"sum":13,"knownFact":{"a":8,"b":5}}  ""
+  [                      ] {"type":"turnaround","a":9,"b":4,"sum":13,"knownFact":{"a":4,"b":9}}  ""
+  [                      ] {"type":"turnaround","a":9,"b":7,"sum":16,"knownFact":{"a":7,"b":9}}  ""
+  [                      ] {"type":"turnaround","a":5,"b":7,"sum":12,"knownFact":{"a":7,"b":5}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":4,"sum":12,"knownFact":{"a":4,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":6,"b":8,"sum":14,"knownFact":{"a":8,"b":6}}  ""
+  [                      ] {"type":"turnaround","a":9,"b":3,"sum":12,"knownFact":{"a":3,"b":9}}  ""
+
+Addition facts to 20 | turnaround | difficulty=medium | run 2 | own path
+  [                      ] {"type":"turnaround","a":6,"b":9,"sum":15,"knownFact":{"a":9,"b":6}}  ""
+  [                      ] {"type":"turnaround","a":4,"b":3,"sum":7,"knownFact":{"a":3,"b":4}}  ""
+  [                      ] {"type":"turnaround","a":9,"b":0,"sum":9,"knownFact":{"a":0,"b":9}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":9,"sum":17,"knownFact":{"a":9,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":9,"b":7,"sum":16,"knownFact":{"a":7,"b":9}}  ""
+  [                      ] {"type":"turnaround","a":7,"b":3,"sum":10,"knownFact":{"a":3,"b":7}}  ""
+  [                      ] {"type":"turnaround","a":4,"b":6,"sum":10,"knownFact":{"a":6,"b":4}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":1,"sum":9,"knownFact":{"a":1,"b":8}}  ""
+
+Addition facts to 20 | turnaround | difficulty=hard | run 1 | own path
+  [                      ] {"type":"turnaround","a":5,"b":2,"sum":7,"knownFact":{"a":2,"b":5}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":3,"sum":11,"knownFact":{"a":3,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":3,"b":4,"sum":7,"knownFact":{"a":4,"b":3}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":6,"sum":14,"knownFact":{"a":6,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":5,"b":4,"sum":9,"knownFact":{"a":4,"b":5}}  ""
+  [                      ] {"type":"turnaround","a":7,"b":3,"sum":10,"knownFact":{"a":3,"b":7}}  ""
+  [                      ] {"type":"turnaround","a":5,"b":9,"sum":14,"knownFact":{"a":9,"b":5}}  ""
+  [                      ] {"type":"turnaround","a":5,"b":6,"sum":11,"knownFact":{"a":6,"b":5}}  ""
+
+Addition facts to 20 | turnaround | difficulty=hard | run 2 | own path
+  [                      ] {"type":"turnaround","a":8,"b":7,"sum":15,"knownFact":{"a":7,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":1,"sum":9,"knownFact":{"a":1,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":4,"sum":12,"knownFact":{"a":4,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":7,"b":3,"sum":10,"knownFact":{"a":3,"b":7}}  ""
+  [                      ] {"type":"turnaround","a":6,"b":3,"sum":9,"knownFact":{"a":3,"b":6}}  ""
+  [                      ] {"type":"turnaround","a":4,"b":3,"sum":7,"knownFact":{"a":3,"b":4}}  ""
+  [                      ] {"type":"turnaround","a":9,"b":7,"sum":16,"knownFact":{"a":7,"b":9}}  ""
+  [                      ] {"type":"turnaround","a":5,"b":4,"sum":9,"knownFact":{"a":4,"b":5}}  ""
+
+Addition facts to 20 | turnaround | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"turnaround","a":1,"b":8,"sum":9,"knownFact":{"a":8,"b":1}}  ""
+  [                      ] {"type":"turnaround","a":4,"b":6,"sum":10,"knownFact":{"a":6,"b":4}}  ""
+  [                      ] {"type":"turnaround","a":9,"b":5,"sum":14,"knownFact":{"a":5,"b":9}}  ""
+  [                      ] {"type":"turnaround","a":7,"b":6,"sum":13,"knownFact":{"a":6,"b":7}}  ""
+  [                      ] {"type":"turnaround","a":3,"b":9,"sum":12,"knownFact":{"a":9,"b":3}}  ""
+  [                      ] {"type":"turnaround","a":5,"b":2,"sum":7,"knownFact":{"a":2,"b":5}}  ""
+  [                      ] {"type":"turnaround","a":6,"b":9,"sum":15,"knownFact":{"a":9,"b":6}}  ""
+  [                      ] {"type":"turnaround","a":6,"b":8,"sum":14,"knownFact":{"a":8,"b":6}}  ""
+
+Addition facts to 20 | turnaround | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"turnaround","a":1,"b":8,"sum":9,"knownFact":{"a":8,"b":1}}  ""
+  [                      ] {"type":"turnaround","a":8,"b":5,"sum":13,"knownFact":{"a":5,"b":8}}  ""
+  [                      ] {"type":"turnaround","a":6,"b":5,"sum":11,"knownFact":{"a":5,"b":6}}  ""
+  [                      ] {"type":"turnaround","a":5,"b":2,"sum":7,"knownFact":{"a":2,"b":5}}  ""
+  [                      ] {"type":"turnaround","a":6,"b":4,"sum":10,"knownFact":{"a":4,"b":6}}  ""
+  [                      ] {"type":"turnaround","a":5,"b":9,"sum":14,"knownFact":{"a":9,"b":5}}  ""
+  [                      ] {"type":"turnaround","a":3,"b":4,"sum":7,"knownFact":{"a":4,"b":3}}  ""
+  [                      ] {"type":"turnaround","a":9,"b":7,"sum":16,"knownFact":{"a":7,"b":9}}  ""

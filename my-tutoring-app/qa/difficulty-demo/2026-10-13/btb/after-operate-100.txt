@@ -1,0 +1,64 @@
+
+Add within 100 | operate | difficulty=easy | run 1 | item space
+  [BaseTenBlocks] Item space add-sub-100: operate band [-2.5, -0.6]: 71+8@-1.5 79+7@-0.8 14+52@-0.8 23+4@-1.5
+  [β  -1.5 +|2d+1d|r0    ] {"type":"add_with_blocks","targetNumber":79,"secondNumber":8,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r0","beta":-1.5},"showColumnCounts":true,"showBlocksTotal":true}  "Add 71 + 8 using blocks."
+  [β  -0.8 +|2d+1d|r1    ] {"type":"add_with_blocks","targetNumber":86,"secondNumber":7,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r1","beta":-0.8},"showColumnCounts":true,"showBlocksTotal":true}  "Add 79 + 7 using blocks."
+  [β  -0.8 +|2d|r0       ] {"type":"add_with_blocks","targetNumber":66,"secondNumber":52,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r0","beta":-0.8},"showColumnCounts":true,"showBlocksTotal":true}  "Add 14 + 52 using blocks."
+  [β  -1.5 +|2d+1d|r0    ] {"type":"add_with_blocks","targetNumber":27,"secondNumber":4,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r0","beta":-1.5},"showColumnCounts":true,"showBlocksTotal":true}  "Add 23 + 4 using blocks."
+
+Add within 100 | operate | difficulty=easy | run 2 | item space
+  [BaseTenBlocks] Item space add-sub-100: operate band [-2.5, -0.6]: 90+5@-1.5 27+4@-0.8 50+27@-0.8 20+58@-0.8
+  [β  -1.5 +|2d+1d|r0    ] {"type":"add_with_blocks","targetNumber":95,"secondNumber":5,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r0","beta":-1.5},"showColumnCounts":true,"showBlocksTotal":true}  "Add 90 + 5 using blocks."
+  [β  -0.8 +|2d+1d|r1    ] {"type":"add_with_blocks","targetNumber":31,"secondNumber":4,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r1","beta":-0.8},"showColumnCounts":true,"showBlocksTotal":true}  "Add 27 + 4 using blocks."
+  [β  -0.8 +|2d|r0       ] {"type":"add_with_blocks","targetNumber":77,"secondNumber":27,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r0","beta":-0.8},"showColumnCounts":true,"showBlocksTotal":true}  "Add 50 + 27 using blocks."
+  [β  -0.8 +|2d|r0       ] {"type":"add_with_blocks","targetNumber":78,"secondNumber":58,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r0","beta":-0.8},"showColumnCounts":true,"showBlocksTotal":true}  "Add 20 + 58 using blocks."
+
+Add within 100 | operate | difficulty=easy | run 3 | item space
+  [BaseTenBlocks] Item space add-sub-100: operate band [-2.5, -0.6]: 72+3@-1.5 77+4@-0.8 13+15@-0.8 17+5@-0.8 66+32@-0.8
+  [β  -1.5 +|2d+1d|r0    ] {"type":"add_with_blocks","targetNumber":75,"secondNumber":3,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r0","beta":-1.5},"showColumnCounts":true,"showBlocksTotal":true}  "Add 72 + 3 using blocks."
+  [β  -0.8 +|2d+1d|r1    ] {"type":"add_with_blocks","targetNumber":81,"secondNumber":4,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r1","beta":-0.8},"showColumnCounts":true,"showBlocksTotal":true}  "Add 77 + 4 using blocks."
+  [β  -0.8 +|2d|r0       ] {"type":"add_with_blocks","targetNumber":28,"secondNumber":15,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r0","beta":-0.8},"showColumnCounts":true,"showBlocksTotal":true}  "Add 13 + 15 using blocks."
+  [β  -0.8 +|2d+1d|r1    ] {"type":"add_with_blocks","targetNumber":22,"secondNumber":5,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r1","beta":-0.8},"showColumnCounts":true,"showBlocksTotal":true}  "Add 17 + 5 using blocks."
+  [β  -0.8 +|2d|r0       ] {"type":"add_with_blocks","targetNumber":98,"secondNumber":32,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r0","beta":-0.8},"showColumnCounts":true,"showBlocksTotal":true}  "Add 66 + 32 using blocks."
+
+Add within 100 | operate | difficulty=medium | run 1 | item space
+  [BaseTenBlocks] Item space add-sub-100: operate band [-0.6, 0.6]: 37+49@-0.1 95+5@0.2 94+6@0.2 13+59@-0.1
+  [β  -0.1 +|2d|r1       ] {"type":"add_with_blocks","targetNumber":86,"secondNumber":49,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r1","beta":-0.1},"showColumnCounts":false,"showBlocksTotal":true}  "Add 37 + 49 using blocks."
+  [β   0.2 +|2d+1d|r2|chain] {"type":"add_with_blocks","targetNumber":100,"secondNumber":5,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r2|chain","beta":0.2},"showColumnCounts":false,"showBlocksTotal":true}  "Add 95 + 5 using blocks."
+  [β   0.2 +|2d+1d|r2|chain] {"type":"add_with_blocks","targetNumber":100,"secondNumber":6,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r2|chain","beta":0.2},"showColumnCounts":false,"showBlocksTotal":true}  "Add 94 + 6 using blocks."
+  [β  -0.1 +|2d|r1       ] {"type":"add_with_blocks","targetNumber":72,"secondNumber":59,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r1","beta":-0.1},"showColumnCounts":false,"showBlocksTotal":true}  "Add 13 + 59 using blocks."
+
+Add within 100 | operate | difficulty=medium | run 2 | item space
+  [BaseTenBlocks] Item space add-sub-100: operate band [-0.6, 0.6]: 98+2@0.2 27+65@-0.1 94+6@0.2 28+65@-0.1
+  [β   0.2 +|2d+1d|r2|chain] {"type":"add_with_blocks","targetNumber":100,"secondNumber":2,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r2|chain","beta":0.2},"showColumnCounts":false,"showBlocksTotal":true}  "Add 98 + 2 using blocks."
+  [β  -0.1 +|2d|r1       ] {"type":"add_with_blocks","targetNumber":92,"secondNumber":65,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r1","beta":-0.1},"showColumnCounts":false,"showBlocksTotal":true}  "Add 27 + 65 using blocks."
+  [β   0.2 +|2d+1d|r2|chain] {"type":"add_with_blocks","targetNumber":100,"secondNumber":6,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r2|chain","beta":0.2},"showColumnCounts":false,"showBlocksTotal":true}  "Add 94 + 6 using blocks."
+  [β  -0.1 +|2d|r1       ] {"type":"add_with_blocks","targetNumber":93,"secondNumber":65,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r1","beta":-0.1},"showColumnCounts":false,"showBlocksTotal":true}  "Add 28 + 65 using blocks."
+
+Add within 100 | operate | difficulty=medium | run 3 | item space
+  [BaseTenBlocks] Item space add-sub-100: operate band [-0.6, 0.6]: 91+9@0.2 26+68@-0.1 95+5@0.2 94+6@0.2
+  [β   0.2 +|2d+1d|r2|chain] {"type":"add_with_blocks","targetNumber":100,"secondNumber":9,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r2|chain","beta":0.2},"showColumnCounts":false,"showBlocksTotal":true}  "Add 91 + 9 using blocks."
+  [β  -0.1 +|2d|r1       ] {"type":"add_with_blocks","targetNumber":94,"secondNumber":68,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r1","beta":-0.1},"showColumnCounts":false,"showBlocksTotal":true}  "Add 26 + 68 using blocks."
+  [β   0.2 +|2d+1d|r2|chain] {"type":"add_with_blocks","targetNumber":100,"secondNumber":5,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r2|chain","beta":0.2},"showColumnCounts":false,"showBlocksTotal":true}  "Add 95 + 5 using blocks."
+  [β   0.2 +|2d+1d|r2|chain] {"type":"add_with_blocks","targetNumber":100,"secondNumber":6,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r2|chain","beta":0.2},"showColumnCounts":false,"showBlocksTotal":true}  "Add 94 + 6 using blocks."
+
+Add within 100 | operate | difficulty=hard | run 1 | item space
+  [BaseTenBlocks] Item space add-sub-100: operate band [0.6, 3.5]: 11+89@0.9 85+15@0.9 26+74@0.9 75+25@0.9
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":89,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 11 + 89 using blocks."
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":15,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 85 + 15 using blocks."
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":74,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 26 + 74 using blocks."
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":25,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 75 + 25 using blocks."
+
+Add within 100 | operate | difficulty=hard | run 2 | item space
+  [BaseTenBlocks] Item space add-sub-100: operate band [0.6, 3.5]: 54+46@0.9 71+29@0.9 43+57@0.9 78+22@0.9
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":46,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 54 + 46 using blocks."
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":29,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 71 + 29 using blocks."
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":57,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 43 + 57 using blocks."
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":22,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 78 + 22 using blocks."
+
+Add within 100 | operate | difficulty=hard | run 3 | item space
+  [BaseTenBlocks] Item space add-sub-100: operate band [0.6, 3.5]: 63+37@0.9 15+85@0.9 49+51@0.9 58+42@0.9
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":37,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 63 + 37 using blocks."
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":85,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 15 + 85 using blocks."
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":51,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 49 + 51 using blocks."
+  [β   0.9 +|2d|r2|chain ] {"type":"add_with_blocks","targetNumber":100,"secondNumber":42,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"showColumnCounts":false,"showBlocksTotal":false}  "Add 58 + 42 using blocks."

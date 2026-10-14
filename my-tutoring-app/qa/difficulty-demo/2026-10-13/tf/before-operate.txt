@@ -1,0 +1,84 @@
+
+Add and subtract within 20 using ten frames | operate | difficulty=easy | run 1 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"add","targetCount":15,"addend1":9,"addend2":6}  "Show 9 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":12}  "The frame starts with 12 counters. Take away 6. How many are left?"
+  [                      ] {"type":"subtract","targetCount":8,"startCount":14}  "The frame starts with 14 counters. Take away 6. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=easy | run 2 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"add","targetCount":15,"addend1":9,"addend2":6}  "Show 9 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":14}  "The frame starts with 14 counters. Take away 8. How many are left?"
+  [                      ] {"type":"subtract","targetCount":7,"startCount":12}  "The frame starts with 12 counters. Take away 5. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=easy | run 3 | own path
+  [                      ] {"type":"add","targetCount":13,"addend1":8,"addend2":5}  "Show 8 + 5 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":5,"startCount":12}  "The frame starts with 12 counters. Take away 7. How many are left?"
+  [                      ] {"type":"subtract","targetCount":7,"startCount":14}  "The frame starts with 14 counters. Take away 7. How many are left?"
+  [                      ] {"type":"add","targetCount":15,"addend1":9,"addend2":6}  "Show 9 + 6 on the frame!"
+
+Add and subtract within 20 using ten frames | operate | difficulty=medium | run 1 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":9,"addend2":4}  "Show 9 + 4 on the frame!"
+  [                      ] {"type":"subtract","targetCount":8,"startCount":12}  "The frame starts with 12 counters. Take away 4. How many are left?"
+  [                      ] {"type":"add","targetCount":15,"addend1":7,"addend2":8}  "Show 7 + 8 on the frame!"
+  [                      ] {"type":"subtract","targetCount":9,"startCount":14}  "The frame starts with 14 counters. Take away 5. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=medium | run 2 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"add","targetCount":15,"addend1":9,"addend2":6}  "Show 9 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":14}  "The frame starts with 14 counters. Take away 8. How many are left?"
+  [                      ] {"type":"subtract","targetCount":9,"startCount":16}  "The frame starts with 16 counters. Take away 7. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=medium | run 3 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":12}  "The frame starts with 12 counters. Take away 6. How many are left?"
+  [                      ] {"type":"add","targetCount":15,"addend1":9,"addend2":6}  "Show 9 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":8,"startCount":15}  "The frame starts with 15 counters. Take away 7. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=hard | run 1 | own path
+  [                      ] {"type":"add","targetCount":13,"addend1":8,"addend2":5}  "Show 8 + 5 on the frame!"
+  [                      ] {"type":"add","targetCount":14,"addend1":7,"addend2":7}  "Show 7 + 7 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":15}  "The frame starts with 15 counters. Take away 9. How many are left?"
+  [                      ] {"type":"add","targetCount":15,"addend1":9,"addend2":6}  "Show 9 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":8,"startCount":17}  "The frame starts with 17 counters. Take away 9. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=hard | run 2 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"add","targetCount":14,"addend1":9,"addend2":5}  "Show 9 + 5 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":14}  "The frame starts with 14 counters. Take away 8. How many are left?"
+  [                      ] {"type":"subtract","targetCount":8,"startCount":15}  "The frame starts with 15 counters. Take away 7. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=hard | run 3 | own path
+  [                      ] {"type":"add","targetCount":12,"addend1":8,"addend2":4}  "Show 8 + 4 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"add","targetCount":14,"addend1":9,"addend2":5}  "Show 9 + 5 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":14}  "The frame starts with 14 counters. Take away 8. How many are left?"
+  [                      ] {"type":"subtract","targetCount":7,"startCount":15}  "The frame starts with 15 counters. Take away 8. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"add","targetCount":15,"addend1":9,"addend2":6}  "Show 9 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":12}  "The frame starts with 12 counters. Take away 6. How many are left?"
+  [                      ] {"type":"subtract","targetCount":8,"startCount":14}  "The frame starts with 14 counters. Take away 6. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":13,"addend1":7,"addend2":6}  "Show 7 + 6 on the frame!"
+  [                      ] {"type":"add","targetCount":15,"addend1":9,"addend2":6}  "Show 9 + 6 on the frame!"
+  [                      ] {"type":"subtract","targetCount":6,"startCount":12}  "The frame starts with 12 counters. Take away 6. How many are left?"
+  [                      ] {"type":"subtract","targetCount":8,"startCount":14}  "The frame starts with 14 counters. Take away 6. How many are left?"
+
+Add and subtract within 20 using ten frames | operate | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"add","targetCount":11,"addend1":8,"addend2":3}  "Show 8 + 3 on the frame!"
+  [                      ] {"type":"add","targetCount":12,"addend1":7,"addend2":5}  "Show 7 + 5 on the frame!"
+  [                      ] {"type":"add","targetCount":14,"addend1":9,"addend2":5}  "Show 9 + 5 on the frame!"
+  [                      ] {"type":"subtract","targetCount":8,"startCount":13}  "The frame starts with 13 counters. Take away 5. How many are left?"
+  [                      ] {"type":"subtract","targetCount":7,"startCount":15}  "The frame starts with 15 counters. Take away 8. How many are left?"

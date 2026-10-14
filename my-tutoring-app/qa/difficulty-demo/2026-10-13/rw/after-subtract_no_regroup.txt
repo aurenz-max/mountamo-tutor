@@ -1,0 +1,43 @@
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=easy | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (228/1099/0 drawable); tier third [-1.10, -0.40] gave 3
+  [RegroupingWorkbench] Item space add-sub-100: subtract_no_regroup band [-2.5, -0.6]: 92-80@-0.4 78-3@-1.1 68-8@-1.1
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"92 - 80","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"easy"}  ""
+  [β  -1.1 -|2d+1d|r0    ] {"type":"subtract_no_regroup","problem":"78 - 3","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d+1d|r0","beta":-1.1},"supportTier":"easy"}  ""
+  [β  -1.1 -|2d+1d|r0    ] {"type":"subtract_no_regroup","problem":"68 - 8","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d+1d|r0","beta":-1.1},"supportTier":"easy"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=easy | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (228/1099/0 drawable); tier third [-1.10, -0.40] gave 3
+  [RegroupingWorkbench] Item space add-sub-100: subtract_no_regroup band [-2.5, -0.6]: 86-56@-0.4 77-4@-1.1 89-2@-1.1
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"86 - 56","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"easy"}  ""
+  [β  -1.1 -|2d+1d|r0    ] {"type":"subtract_no_regroup","problem":"77 - 4","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d+1d|r0","beta":-1.1},"supportTier":"easy"}  ""
+  [β  -1.1 -|2d+1d|r0    ] {"type":"subtract_no_regroup","problem":"89 - 2","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d+1d|r0","beta":-1.1},"supportTier":"easy"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=medium | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (228/1099/0 drawable); tier third [-0.40, -0.40] gave 3
+  [RegroupingWorkbench] Item space add-sub-100: subtract_no_regroup band [-0.6, 0.6]: 93-72@-0.4 75-12@-0.4 35-10@-0.4
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"93 - 72","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"medium"}  ""
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"75 - 12","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"medium"}  ""
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"35 - 10","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"medium"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=medium | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (228/1099/0 drawable); tier third [-0.40, -0.40] gave 4
+  [RegroupingWorkbench] Item space add-sub-100: subtract_no_regroup band [-0.6, 0.6]: 97-75@-0.4 84-33@-0.4 53-10@-0.4 77-71@-0.4
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"97 - 75","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"medium"}  ""
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"84 - 33","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"medium"}  ""
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"53 - 10","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"medium"}  ""
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"77 - 71","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"medium"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=hard | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (228/1099/0 drawable); tier third [-0.40, -0.40] gave 3
+  [RegroupingWorkbench] Item space add-sub-100: subtract_no_regroup band [0.6, 3.5]: 76-53@-0.4 78-58@-0.4 84-71@-0.4
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"76 - 53","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"hard"}  ""
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"78 - 58","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"hard"}  ""
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"84 - 71","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"hard"}  ""
+
+Add and subtract within 100 | subtract_no_regroup | difficulty=hard | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-100: this scope cannot fill every tier's band (228/1099/0 drawable); tier third [-0.40, -0.40] gave 3
+  [RegroupingWorkbench] Item space add-sub-100: subtract_no_regroup band [0.6, 3.5]: 98-48@-0.4 14-11@-0.4 27-21@-0.4
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"98 - 48","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"hard"}  ""
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"14 - 11","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"hard"}  ""
+  [β  -0.4 -|2d|r0       ] {"type":"subtract_no_regroup","problem":"27 - 21","requiresRegrouping":false,"regroupCount":0,"itemSpace":{"space":"add-sub-100","structure":"-|2d|r0","beta":-0.4},"supportTier":"hard"}  ""

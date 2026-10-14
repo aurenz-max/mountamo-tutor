@@ -1,0 +1,72 @@
+
+Ways to make 10 | make-n | difficulty=easy | run 1 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":3,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 3."
+  [                      ] {"type":"make-n","target":9,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 9."
+  [                      ] {"type":"make-n","target":4,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 4."
+
+Ways to make 10 | make-n | difficulty=easy | run 2 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":8,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 8."
+  [                      ] {"type":"make-n","target":7,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 7."
+  [                      ] {"type":"make-n","target":9,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 9."
+
+Ways to make 10 | make-n | difficulty=easy | run 3 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":3,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 3."
+  [                      ] {"type":"make-n","target":5,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 5."
+  [                      ] {"type":"make-n","target":9,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 9."
+
+Ways to make 10 | make-n | difficulty=medium | run 1 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":6,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 6."
+  [                      ] {"type":"make-n","target":9,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 9."
+  [                      ] {"type":"make-n","target":4,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 4."
+
+Ways to make 10 | make-n | difficulty=medium | run 2 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":4,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 4."
+  [                      ] {"type":"make-n","target":9,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 9."
+  [                      ] {"type":"make-n","target":8,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 8."
+
+Ways to make 10 | make-n | difficulty=medium | run 3 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":8,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 8."
+  [                      ] {"type":"make-n","target":4,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 4."
+  [                      ] {"type":"make-n","target":5,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 5."
+
+Ways to make 10 | make-n | difficulty=hard | run 1 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":3,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 3."
+  [                      ] {"type":"make-n","target":6,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 6."
+  [                      ] {"type":"make-n","target":8,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 8."
+
+Ways to make 10 | make-n | difficulty=hard | run 2 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":8,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 8."
+  [                      ] {"type":"make-n","target":3,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 3."
+  [                      ] {"type":"make-n","target":7,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 7."
+
+Ways to make 10 | make-n | difficulty=hard | run 3 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":3,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 3."
+  [                      ] {"type":"make-n","target":4,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 4."
+  [                      ] {"type":"make-n","target":7,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 7."
+
+Ways to make 10 | make-n | difficulty=(none) | run 1 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":8,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 8."
+  [                      ] {"type":"make-n","target":7,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 7."
+  [                      ] {"type":"make-n","target":3,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 3."
+
+Ways to make 10 | make-n | difficulty=(none) | run 2 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":8,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 8."
+  [                      ] {"type":"make-n","target":3,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 3."
+  [                      ] {"type":"make-n","target":6,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 6."
+
+Ways to make 10 | make-n | difficulty=(none) | run 3 | own path | max 10
+  [                      ] {"type":"make-n","target":10,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 10."
+  [                      ] {"type":"make-n","target":6,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 6."
+  [                      ] {"type":"make-n","target":4,"ways":1,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make a number sentence that equals 4."
+  [                      ] {"type":"make-n","target":3,"ways":2,"availableTiles":["1","2","3","4","5","6","7","8","9","10","+","-"]}  "Make two different number sentences that equal 3."

@@ -1,0 +1,35 @@
+
+Solve two-step equations of the form px + q = r | difficulty=easy | run 1 | item space
+  [β -1.52 p<4|a1|h0|r0 ] What number goes in the box for the equation 3x + 13 = 19?  1(n) 9(f) 7(f) 2*
+  [β  -0.6 p4+|a0|h0|r0 ] What number goes in the box for the equation 4x + 3 = 15?  8(f) 4(n) 12(n) 3*
+  [β -0.92 p<4|a0|h0|r0 ] What number goes in the box for the equation 3x + 7 = 19?  4* 12(n) 9(f) 11(f)
+  [β -0.92 p4+|a1|h0|r0 ] What number goes in the box for the equation 4x + 9 = 29?  10(f) 5* 12(f) 20(n)
+  [β -0.82 p<4|a1|h1|r0 ] What number goes in the box for the equation 2x + 17 = 29?  13(f) 11(f) 6* 12(n)
+
+Solve two-step equations of the form px + q = r | difficulty=medium | run 1 | item space
+  [β  0.46 p<4|a0|h1|r1 ] What number goes in the box for 3x + 6 = 33?  10(n) 9* 14(f) 27(n)
+  [β -0.42 p<4|a0|h0|r1 ] What number goes in the box for 3x + 5 = 14?  3* 4(n) 2(n) 8(f)
+  [β -0.34 p4+|a0|h0|r0 ] What number goes in the box for 4x + 16 = 28?  3* 11(n) 12(n) 8(f)
+  [β -0.28 p4+|a1|h0|r1 ] What number goes in the box for 5x + 6 = 31?  5* 10(f) 25(n) 6(n)
+  [β  0.58 p4+|a0|h1|r0 ] What number goes in the box for 4x + 17 = 49?  13(f) 9(n) 32(n) 8*
+
+Solve two-step equations of the form px + q = r | difficulty=hard | run 1 | item space
+  [β  0.64 p4+|a0|h1|r0 ] What number goes in the box for 4x + 20 = 52?  8* 13(f) 32(n) 9(n)
+  [β     1 p4+|a0|h1|r1 ] What number goes in the box for 6x + 16 = 40?  4* 24(n) 5(n) 9(f)
+  [β  1.74 p4+|a0|h2|r1 ] What number goes in the box for 6x + 16 = 52?  11(f) 36(n) 7(n) 6*
+  [β  0.84 p4+|a1|h1|r1 ] What number goes in the box for 5x + 17 = 62?  9* 45(n) 8(n) 14(f)
+  [β  0.64 p<4|a0|h1|r1 ] What number goes in the box for 3x + 15 = 42?  14(f) 27(n) 10(n) 9*
+
+Solve two-step equations of the form px + q = r | difficulty=(none) | run 1 | orchestrator
+  [fill_in_blanks easy]   
+  [multiple_choice medium] Maya is solving the equation 3x + 2 = 11. She shows her first step on the number line by jumping back from 11 to 9. Which algebraic step does Maya's jump represent?  Subtract 2 from both sides* Divide both sides by 3(n) Add 2 to both sides(n) Multiply both sides by 11(f)
+  [multiple_choice medium] Look at the equation shown in the box. What value of x makes the equation true?  x = 20(n) x = 5* x = 16(n) x = 30(f)
+  [multiple_choice medium] Maya buys 3 notebooks that each cost d dollars, plus a sticker book for $4. Her total purchase is $16. Based on the rule for inverse operations in the vocabulary box, which equation models Maya's purchase, and what is the cost of each notebook?  Equation: 3d + 4 = 16; Notebook cost: $4* Equation: 3d + 4 = 16; Notebook cost: $12(n) Equation: 4d + 3 = 16; Notebook cost: $3.25(n) Equation: 3d - 4 = 16; Notebook cost: $20(f)
+  [sequencing_activity easy]   
+
+Tell and write time to the hour | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] When a clock shows exactly 3 o'clock, what number does the short hour hand point to?  The number 12(n) The number 3* The number 6(f) The number 1(f)
+  [fill_in_blanks easy]   
+  [true_false easy] When a clock shows 12 o'clock, both the long minute hand and the short hour hand point directly at the 12.  
+  [matching_activity easy]   
+  [multiple_choice easy] Maya's soccer practice begins at 2:00 and lasts for exactly 2 hours. What time does her practice end?  3:00(n) 4:00* 5:00(n) 12:00(f)

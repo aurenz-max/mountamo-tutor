@@ -1,0 +1,60 @@
+
+Division as equal sharing | one_step_hard | difficulty=easy | run 1 | item space
+  [BalanceScale] Item space mult-div-facts: this scope cannot fill every tier's band (14/23/3 drawable); tier third [-1.85, -0.91] gave 4
+  [BalanceScale] Item space mult-div-facts one_step_hard band [-2.5, -0.6]: quotient|a1|t1|h0@-1.8519999999999999 quotient|a1|t1|h0@-1.6 quotient|a1|t0|h0@-1.08 quotient|a0|t1|h0@-0.9919999999999999
+  [β -1.8519999999999999 quotient|a1|t1|h0] 2x = 4             ans 2  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β  -1.6 quotient|a1|t1|h0] 5x = 25            ans 5  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β -1.08 quotient|a1|t0|h0] 5x = 10            ans 2  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β -0.9919999999999999 quotient|a0|t1|h0] 3x = 9             ans 3  "Share the weight equally among identical parcels. Find one parcel weig"
+
+Division as equal sharing | one_step_hard | difficulty=easy | run 2 | item space
+  [BalanceScale] Item space mult-div-facts: this scope cannot fill every tier's band (14/23/3 drawable); tier third [-1.85, -0.91] gave 4
+  [BalanceScale] Item space mult-div-facts one_step_hard band [-2.5, -0.6]: quotient|a1|t1|h0@-1.8519999999999999 quotient|a1|t0|h0@-1.02 quotient|a0|t1|h0@-0.9919999999999999 quotient|a0|t1|h0@-0.908
+  [β -1.8519999999999999 quotient|a1|t1|h0] 2x = 4             ans 2  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β -1.02 quotient|a1|t0|h0] 3x = 15            ans 5  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β -0.9919999999999999 quotient|a0|t1|h0] 3x = 9             ans 3  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β -0.908 quotient|a0|t1|h0] 4x = 16            ans 4  "Share the weight equally among identical parcels. Find one parcel weig"
+
+Division as equal sharing | one_step_hard | difficulty=medium | run 1 | item space
+  [BalanceScale] Item space mult-div-facts: this scope cannot fill every tier's band (14/23/3 drawable); tier third [-0.91, 0.37] gave 4
+  [BalanceScale] Item space mult-div-facts one_step_hard band [-0.6, 0.6]: quotient|a0|t1|h0@-0.908 quotient|a1|t0|h1@-0.29000000000000004 quotient|a0|t0|h0@-0.256 quotient|a0|t0|h1@0.366
+  [β -0.908 quotient|a0|t1|h0] 4x = 16            ans 4  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β -0.29000000000000004 quotient|a1|t0|h1] 6x = 30            ans 5  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β -0.256 quotient|a0|t0|h0] 4x = 12            ans 3  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β 0.366 quotient|a0|t0|h1] 6x = 18            ans 3  "Share the weight equally among identical parcels. Find one parcel weig"
+
+Division as equal sharing | one_step_hard | difficulty=medium | run 2 | item space
+  [BalanceScale] Item space mult-div-facts: this scope cannot fill every tier's band (14/23/3 drawable); tier third [-0.91, 0.37] gave 4
+  [BalanceScale] Item space mult-div-facts one_step_hard band [-0.6, 0.6]: quotient|a0|t1|h0@-0.908 quotient|a0|t0|h0@-0.256 quotient|a1|t0|h1@-0.10999999999999999 quotient|a0|t0|h1@0.366
+  [β -0.908 quotient|a0|t1|h0] 4x = 16            ans 4  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β -0.256 quotient|a0|t0|h0] 4x = 12            ans 3  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β -0.10999999999999999 quotient|a1|t0|h1] 5x = 45            ans 9  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β 0.366 quotient|a0|t0|h1] 6x = 18            ans 3  "Share the weight equally among identical parcels. Find one parcel weig"
+
+Division as equal sharing | one_step_hard | difficulty=hard | run 1 | item space
+  [BalanceScale] Item space mult-div-facts: this scope cannot fill every tier's band (14/23/3 drawable); tier third [0.37, 1.35] gave 4
+  [BalanceScale] Item space mult-div-facts one_step_hard band [0.6, 3.5]: quotient|a0|t0|h1@0.402 quotient|a0|t1|h2@0.4320000000000001 quotient|a0|t0|h1@0.47400000000000003 quotient|a0|t0|h2@1.348
+  [β 0.402 quotient|a0|t0|h1] 3x = 21            ans 7  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β 0.4320000000000001 quotient|a0|t1|h2] 6x = 36            ans 6  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β 0.47400000000000003 quotient|a0|t0|h1] 3x = 27            ans 9  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β 1.348 quotient|a0|t0|h2] 6x = 54            ans 9  "Share the weight equally among identical parcels. Find one parcel weig"
+
+Division as equal sharing | one_step_hard | difficulty=hard | run 2 | item space
+  [BalanceScale] Item space mult-div-facts: this scope cannot fill every tier's band (14/23/3 drawable); tier third [0.37, 1.35] gave 4
+  [BalanceScale] Item space mult-div-facts one_step_hard band [0.6, 3.5]: quotient|a0|t1|h2@0.4320000000000001 quotient|a0|t0|h1@0.534 quotient|a0|t0|h2@1.276 quotient|a0|t0|h2@1.348
+  [β 0.4320000000000001 quotient|a0|t1|h2] 6x = 36            ans 6  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β 0.534 quotient|a0|t0|h1] 4x = 32            ans 8  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β 1.276 quotient|a0|t0|h2] 6x = 48            ans 8  "Share the weight equally among identical parcels. Find one parcel weig"
+  [β 1.348 quotient|a0|t0|h2] 6x = 54            ans 9  "Share the weight equally among identical parcels. Find one parcel weig"
+
+Division as equal sharing | one_step_hard | difficulty=(none) | run 1 | own path
+  [                      ] 2x = 4             ans 2  "Share the weight equally among identical parcels. Find one parcel weig"
+  [                      ] 2x = 14            ans 7  "Share the weight equally among identical parcels. Find one parcel weig"
+  [                      ] 5x = 15            ans 3  "Share the weight equally among identical parcels. Find one parcel weig"
+  [                      ] 3x = 18            ans 6  "Share the weight equally among identical parcels. Find one parcel weig"
+
+Division as equal sharing | one_step_hard | difficulty=(none) | run 2 | own path
+  [                      ] 2x = 10            ans 5  "Share the weight equally among identical parcels. Find one parcel weig"
+  [                      ] 2x = 18            ans 9  "Share the weight equally among identical parcels. Find one parcel weig"
+  [                      ] 5x = 35            ans 7  "Share the weight equally among identical parcels. Find one parcel weig"
+  [                      ] 5x = 40            ans 8  "Share the weight equally among identical parcels. Find one parcel weig"

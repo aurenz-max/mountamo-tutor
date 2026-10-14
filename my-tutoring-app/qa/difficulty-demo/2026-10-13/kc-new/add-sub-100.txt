@@ -1,0 +1,35 @@
+
+Fluently add and subtract within 100 | difficulty=easy | run 1 | item space
+  [β  -1.5 +|2d+1d|r0   ] Leo has 81 toy blocks. He gets 5 more toy blocks. How many toy blocks does Leo have now?  66(f) 85(n) 86* 56(f)
+  [β  -0.8 +|2d+1d|r1   ] Mia baked 38 cookies. Then she baked 8 more cookies. How many cookies did Mia bake in all?  26(f) 66(f) 36(n) 46*
+  [β  -1.1 -|2d+1d|r0   ] Zack has 46 colorful stickers. He gives 4 of them to his friend. How many stickers does Zack have left?  42* 43(n) 22(f) 62(f)
+  [β  -0.8 +|2d|r0      ] Emma picks 33 yellow flowers. Her brother picks 44 red flowers. How many flowers do they have together?  57(f) 77* 78(n) 97(f)
+  [β  -1.5 +|2d+1d|r0   ] Noah reads 13 pages of his book. He reads 3 more pages before bedtime. How many pages does Noah read altogether?  16* 36(f) 46(f) 17(n)
+
+Fluently add and subtract within 100 | difficulty=medium | run 1 | item space
+  [β   0.2 +|2d+1d|r2|chain] Sarah has 95 pencils and buys 5 more pencils. How many pencils does she have in all?  90(n) 100* 99(n) 80(f)
+  [β     0 -|2d+1d|r1   ] Leo has 75 stickers and gives 8 stickers away. How many stickers are left?  73(n) 67* 87(f) 77(n)
+  [β  -0.1 +|2d|r1      ] Mia reads 29 pages of her book on Monday and 15 pages on Tuesday. How many pages does she read altogether?  64(f) 44* 34(n) 45(n)
+  [β  -0.4 -|2d|r0      ] Tom has 94 marbles and loses 70 marbles in a game. How many marbles does he have now?  24* 23(n) 25(n) 44(f)
+  [β  -0.1 +|2d|r1      ] Emma picks 53 red apples and 37 green apples. How many apples does she pick in total?  90* 89(n) 91(n) 70(f)
+
+Fluently add and subtract within 100 | difficulty=hard | run 1 | item space
+  [β   0.7 -|2d|r1      ] Sarah had 30 stickers and she gave 27 stickers to her friend. How many stickers does Sarah have left if you calculate 30 - 27?  4(n) 23(f) 2(n) 3*
+  [β   0.9 +|2d|r2|chain] Leo collected 81 shiny rocks and found 19 more rocks in the garden. How many rocks does Leo have in total when you add 81 + 19?  80(f) 99(n) 90(n) 100*
+  [β   0.9 +|2d|r2|chain] Mia baked 54 apple muffins and 46 banana muffins for the school bake sale. How many muffins are there altogether when you add 54 + 46?  90(n) 100* 99(n) 80(f)
+  [β   0.7 -|2d|r1      ] Tom brought 70 toy blocks to the playroom and used 43 of them to build a tall tower. How many blocks are left over when you compute 70 - 43?  37(n) 28(n) 27* 47(f)
+  [β   0.9 +|2d|r2|chain] Emma read 17 pages of her storybook on Monday and 83 pages on Tuesday. How many pages did Emma read in all if you calculate 17 + 83?  80(f) 90(n) 99(n) 100*
+
+Fluently add and subtract within 100 | difficulty=(none) | run 1 | orchestrator
+  [multiple_choice easy] Look at the blocks: Group 1 has 3 tens and 4 ones (34). Group 2 has 2 tens and 2 ones (22). What is the total sum of the blocks?  56* 54(n) 46(n) 12(f)
+  [multiple_choice easy] Look at the number line. A jump starts at 65 and moves backward by 20. What number does the jump land on at the question mark (?)?  85(n) 45* 55(n) 25(f)
+  [fill_in_blanks easy]   
+  [multiple_choice medium] Sam had 74 stickers. He gave 28 stickers to a friend. How many stickers does Sam have left?  54(n) 46* 56(n) 102(f)
+  [true_false easy] If 45 + 23 = 68, then 68 - 23 must be 45.  
+
+Compare two two-digit numbers | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] Look at the number line. Which number is greater, 43 or 48?  48 is greater because it is farther to the right.* 43 is greater because it comes first on the line.(n) 43 is greater because 43 is closer to 40.(n) They are equal because they both have 4 tens.(f)
+  [multiple_choice medium] Look at the base-ten blocks on each side: Left side has 3 tens and 4 ones (34). Right side has 2 tens and 9 ones (29). Which statement is true?  34 is greater than 29* 29 is greater than 34(n) 34 is equal to 29(f) 29 is greater than 43(f)
+  [true_false easy] 72 is greater than 75 because 5 is bigger than 2.  
+  [fill_in_blanks easy]   
+  [multiple_choice easy] The table shows how many stickers Anna and Ben collected. Who collected fewer stickers?  Anna* Ben(n) Both collected the same amount(f) Neither student(f)

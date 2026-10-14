@@ -1,0 +1,36 @@
+
+Bar graphs and picture graphs | picture_graph | difficulty=easy | run 1 | own path
+  [                      ] [8,4,6,10] step 2 icon 2 ans 8 tgt 0  Q: Each 🍎 stands for 2. How many apples were collected in all?  ""
+  [                      ] [6,4,8,10] step 2 icon 2 ans 6 tgt 0  Q: How many Apples are there? Each 🍎 stands for 2.  ""
+  [                      ] [8,4,10,6] step 2 icon 2 ans 8 tgt 0  Q: How many books were read for Adventure? Each 📚 stands for 2.  ""
+  [                      ] [8,4,6,10] step 2 icon 2 ans 8 tgt 0  Q: How many apples were picked? Each 🍎 stands for 2.  ""
+
+Bar graphs and picture graphs | picture_graph | difficulty=easy | run 2 | own path
+  [                      ] [6,4,8,2] step 2 icon 2 ans 6 tgt 0  Q: How many apples were picked in all? Each 🍎 stands for 2.  ""
+  [                      ] [6,4,8,2] step 2 icon 2 ans 6 tgt 0  Q: Each 🍎 stands for 2. How many apples were collected?  ""
+  [                      ] [8,6,4,10] step 2 icon 2 ans 8 tgt 0  Q: How many dogs were there? Each 🐶 stands for 2.  ""
+  [                      ] [8,4,6,10] step 2 icon 2 ans 8 tgt 0  Q: How many blocks are there? Each 🧸 stands for 2.  ""
+
+Bar graphs and picture graphs | picture_graph | difficulty=medium | run 1 | own path
+  [                      ] [20,15,25,10] step 5 icon 5 ans 20 tgt 0  Q: How many apples were collected? Each 🍎 stands for 5.  ""
+  [                      ] [20,15,25,10] step 5 icon 5 ans 20 tgt 0  Q: How many apples were picked in the orchard? Each 🍎 stands for 5.  ""
+  [                      ] [10,20,15,25] step 5 icon 5 ans 20 tgt 1  Q: How many apples were collected from the Green tree? Each 🍎 stands for 5.  ""
+  [                      ] [10,15,20,5] step 5 icon 5 ans 15 tgt 1  Q: How many books did the Mystery category get? Each 📚 stands for 5.  ""
+
+Bar graphs and picture graphs | picture_graph | difficulty=medium | run 2 | own path
+  [                      ] [15,25,10,20] step 5 icon 5 ans 25 tgt 1  Q: How many books did the Mystery category have? Each 📚 stands for 5.  ""
+  [                      ] [20,15,25,10] step 5 icon 5 ans 20 tgt 0  Q: How many books were read for Adventure? Each 📚 stands for 5.  ""
+  [                      ] [10,20,15,5] step 5 icon 5 ans 20 tgt 1  Q: How many books did the class read in the Fantasy category? Each 📚 stands for 5.  ""
+  [                      ] [20,15,25,10] step 5 icon 5 ans 20 tgt 0  Q: How many books were read for Adventure? Each 📚 stands for 5.  ""
+
+Bar graphs and picture graphs | picture_graph | difficulty=hard | run 1 | own path
+  [                      ] [10,25,15,20] step 5 icon 5 ans 25 tgt 1  Q: Each 🍎 stands for 5. How many apples were picked in the Orchard?  ""
+  [                      ] [15,25,10,20] step 5 icon 5 ans 15 tgt 0  Q: How many stars are in the Orion constellation? Each ⭐ stands for 5.  ""
+  [                      ] [10,25,15,20] step 5 icon 5 ans 25 tgt 1  Q: How many books did the Fantasy row have? Each 📚 stands for 5.  ""
+  [                      ] [10,20,15,25] step 5 icon 5 ans 20 tgt 1  Q: How many books did the Mystery row have? Each 📚 stands for 5.  ""
+
+Bar graphs and picture graphs | picture_graph | difficulty=hard | run 2 | own path
+  [                      ] [15,25,10,20] step 5 icon 5 ans 25 tgt 1  Q: How many books were read for Mystery? Each 📚 stands for 5.  ""
+  [                      ] [10,25,15,20] step 5 icon 5 ans 25 tgt 1  Q: How many books were read in the Fantasy category? Each 📚 stands for 5.  ""
+  [                      ] [10,25,15,20] step 5 icon 5 ans 25 tgt 1  Q: Each 🍎 stands for 5. How many apples were picked in the Orchard category?  ""
+  [                      ] [10,25,15,20] step 5 icon 5 ans 25 tgt 1  Q: Look at the row for Fantasy. Each 📚 stands for 5 books. How many books are in the Fantasy  ""

@@ -1,0 +1,72 @@
+
+Numbers 0 to 20 | difficulty=easy | run 1 | own path | line 0-10
+  {"type":"plot_point","targetValues":[3],"highlights":[{"label":"helper","value":2},{"label":"helper","value":4}]}
+    "Can you place a point at 3? It lives right between the 2 and the 4!"
+  {"type":"plot_point","targetValues":[1],"highlights":[{"label":"helper","value":0},{"label":"helper","value":2}]}
+    "Can you place a point right on the number 1? It lives right between 0 and 2!"
+  {"type":"plot_point","targetValues":[2],"highlights":[{"label":"helper","value":1},{"label":"helper","value":3}]}
+    "Can you place a point right on the number 2, which lives between the 1 and the 3?"
+  {"type":"plot_point","targetValues":[4],"highlights":[{"label":"helper","value":3},{"label":"helper","value":5}]}
+    "Can you place a point at 4? It lives right between the tick marks for 3 and 5!"
+  {"type":"plot_point","targetValues":[10],"highlights":[{"label":"helper","value":9}]}
+    "Can you find the very last tick mark on our line and place a point right on the number 10?"
+
+Numbers 0 to 20 | difficulty=easy | run 2 | own path | line 0-10
+  {"type":"plot_point","targetValues":[3],"highlights":[{"label":"helper","value":2},{"label":"helper","value":4}]}
+    "Can you place a point at the number 3? It lives right between 2 and 4!"
+  {"type":"plot_point","targetValues":[10],"highlights":[{"label":"helper","value":9}]}
+    "Can you find the very last number on our line, right after 9, and place a point on 10?"
+  {"type":"plot_point","targetValues":[4],"highlights":[{"label":"helper","value":3},{"label":"helper","value":5}]}
+    "Can you place a point at 4? It sits right between the tick marks for 3 and 5!"
+  {"type":"plot_point","targetValues":[2],"highlights":[{"label":"helper","value":1},{"label":"helper","value":3}]}
+    "Can you place a point at the number 2, right between the 1 and the 3?"
+  {"type":"plot_point","targetValues":[1],"highlights":[{"label":"helper","value":0},{"label":"helper","value":2}]}
+    "Can you find where the number 1 lives? Place a point right on the tick mark between 0 and 2!"
+
+Numbers 0 to 20 | difficulty=medium | run 1 | own path | line 0-10
+  {"type":"plot_point","targetValues":[5],"highlights":[]}
+    "Can you find the number that comes right after 4 and place a point on it?"
+  {"type":"plot_point","targetValues":[6],"highlights":[]}
+    "Can you find the spot for the number 6 and place a point right there on the line?"
+  {"type":"plot_point","targetValues":[7],"highlights":[]}
+    "Can you find where 7 lives? Place a point on the number line at 7!"
+  {"type":"plot_point","targetValues":[3],"highlights":[]}
+    "Can you find the mark for 3 and place a point right there?"
+  {"type":"plot_point","targetValues":[4],"highlights":[]}
+    "Show me where the number 4 lives on our number line!"
+
+Numbers 0 to 20 | difficulty=medium | run 2 | own path | line 0-10
+  {"type":"plot_point","targetValues":[4],"highlights":[]}
+    "Can you find the number that comes right after 3 and place a point on it?"
+  {"type":"plot_point","targetValues":[5],"highlights":[]}
+    "Can you find the magic spot for 5 on the number line and place a point right there?"
+  {"type":"plot_point","targetValues":[7],"highlights":[]}
+    "Can you find the spot for 7 and place a point right there on the number line?"
+  {"type":"plot_point","targetValues":[3],"highlights":[]}
+    "Can you find the spot for the number 3 on the number line? Place your point right on it!"
+  {"type":"plot_point","targetValues":[6],"highlights":[]}
+    "Can you find where the number 6 lives on our number line? Place your point right on the correct tick mark!"
+
+Numbers 0 to 20 | difficulty=hard | run 1 | own path | line 0-10
+  {"type":"plot_point","targetValues":[5],"highlights":[]}
+    "Can you find where the number 5 belongs on this number line?"
+  {"type":"plot_point","targetValues":[9],"highlights":[]}
+    "Can you show me where the number 9 hides on this number line? Place your point carefully!"
+  {"type":"plot_point","targetValues":[6],"highlights":[]}
+    "Can you find where the number 6 lives on our number line? Place your point carefully!"
+  {"type":"plot_point","targetValues":[8],"highlights":[]}
+    "Place a point at 8 on the number line."
+  {"type":"plot_point","targetValues":[7],"highlights":[]}
+    "Can you show me where the number 7 lives on this number line?"
+
+Numbers 0 to 20 | difficulty=hard | run 2 | own path | line 0-10
+  {"type":"plot_point","targetValues":[9],"highlights":[]}
+    "Can you place a point at 9 on the number line?"
+  {"type":"plot_point","targetValues":[7],"highlights":[]}
+    "Can you find where the number 7 belongs and place a point right there on the line?"
+  {"type":"plot_point","targetValues":[5],"highlights":[]}
+    "Can you find where 5 lives on the number line? Place your point right where it belongs!"
+  {"type":"plot_point","targetValues":[6],"highlights":[]}
+    "Can you find where the number 6 lives on this number line and place your point right there?"
+  {"type":"plot_point","targetValues":[8],"highlights":[]}
+    "Can you find where the number 8 goes on our number line? Place your point carefully!"

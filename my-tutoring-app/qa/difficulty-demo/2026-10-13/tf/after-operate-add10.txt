@@ -1,0 +1,54 @@
+
+Add within 10 | operate | difficulty=easy | run 1 | item space
+  [TenFrame] Item space add-sub-20: this scope cannot fill every tier's band (44/0/0 drawable); tier third [-2.82, -2.32] gave 5
+  [TenFrame] Item space add-sub-20 operate band [-2.5, -0.6] within 10: +|result|b0|t0|one@-2.3200000000000003 +|result|b0|t0|one@-2.3200000000000003 +|result|b0|t0|one@-2.8200000000000003 +|result|b0|t
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":5,"addend1":1,"addend2":4,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 1 + 4 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":4,"addend1":1,"addend2":3,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 1 + 3 on the frame!"
+  [β -2.8200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":2,"addend1":1,"addend2":1,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.8200000000000003}}  "Show 1 + 1 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":9,"addend1":8,"addend2":1,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 8 + 1 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":10,"addend1":1,"addend2":9,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 1 + 9 on the frame!"
+
+Add within 10 | operate | difficulty=easy | run 2 | item space
+  [TenFrame] Item space add-sub-20: this scope cannot fill every tier's band (44/0/0 drawable); tier third [-2.82, -2.32] gave 5
+  [TenFrame] Item space add-sub-20 operate band [-2.5, -0.6] within 10: +|result|b0|t0|one@-2.3200000000000003 +|result|b0|t0|one@-2.3200000000000003 +|result|b0|t0|one@-2.3200000000000003 +|result|b0|t
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":7,"addend1":1,"addend2":6,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 1 + 6 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":6,"addend1":5,"addend2":1,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 5 + 1 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":8,"addend1":1,"addend2":7,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 1 + 7 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":9,"addend1":8,"addend2":1,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 8 + 1 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":10,"addend1":9,"addend2":1,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 9 + 1 on the frame!"
+
+Add within 10 | operate | difficulty=medium | run 1 | item space
+  [TenFrame] Item space add-sub-20: this scope cannot fill every tier's band (44/0/0 drawable); tier third [-2.32, -1.74] gave 5
+  [TenFrame] Item space add-sub-20 operate band [-0.6, 0.6] within 10: +|result|b0|t0|two3@-1.7400000000000002 +|result|b0|t0|dbl@-2.24 +|result|b0|t0|one@-2.3200000000000003 +|result|b0|t0|one@-2.32000
+  [β -1.7400000000000002 +|result|b0|t0|two3] {"type":"add","targetCount":5,"addend1":2,"addend2":3,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.7400000000000002}}  "Show 2 + 3 on the frame!"
+  [β -2.24 +|result|b0|t0|dbl] {"type":"add","targetCount":4,"addend1":2,"addend2":2,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-2.24}}  "Show 2 + 2 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":5,"addend1":4,"addend2":1,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 4 + 1 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":4,"addend1":1,"addend2":3,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 1 + 3 on the frame!"
+  [β -2.16 +|result|b0|t0|dbl] {"type":"add","targetCount":6,"addend1":3,"addend2":3,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-2.16}}  "Show 3 + 3 on the frame!"
+
+Add within 10 | operate | difficulty=medium | run 2 | item space
+  [TenFrame] Item space add-sub-20: this scope cannot fill every tier's band (44/0/0 drawable); tier third [-2.32, -1.74] gave 5
+  [TenFrame] Item space add-sub-20 operate band [-0.6, 0.6] within 10: +|result|b0|t0|one@-2.3200000000000003 +|result|b0|t0|two3@-1.7400000000000002 +|result|b0|t0|dbl@-2.16 +|result|b0|t0|dbl@-1.78 +|
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":9,"addend1":8,"addend2":1,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 8 + 1 on the frame!"
+  [β -1.7400000000000002 +|result|b0|t0|two3] {"type":"add","targetCount":9,"addend1":2,"addend2":7,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.7400000000000002}}  "Show 2 + 7 on the frame!"
+  [β -2.16 +|result|b0|t0|dbl] {"type":"add","targetCount":6,"addend1":3,"addend2":3,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-2.16}}  "Show 3 + 3 on the frame!"
+  [β -1.78 +|result|b0|t0|dbl] {"type":"add","targetCount":8,"addend1":4,"addend2":4,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-1.78}}  "Show 4 + 4 on the frame!"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"add","targetCount":4,"addend1":1,"addend2":3,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Show 1 + 3 on the frame!"
+
+Add within 10 | operate | difficulty=hard | run 1 | item space
+  [TenFrame] Item space add-sub-20: this scope cannot fill every tier's band (44/0/0 drawable); tier third [-1.74, -1.28] gave 5
+  [TenFrame] Item space add-sub-20 operate band [0.6, 3.5] within 10: +|result|b0|t0|none@-1.28 +|result|b0|t0|dbl@-1.7000000000000002 +|result|b0|t0|two3@-1.6600000000000001 +|result|b0|t0|two3@-1.6600
+  [β -1.28 +|result|b0|t0|none] {"type":"add","targetCount":9,"addend1":5,"addend2":4,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|none","beta":-1.28}}  "Show 5 + 4 on the frame!"
+  [β -1.7000000000000002 +|result|b0|t0|dbl] {"type":"add","targetCount":10,"addend1":5,"addend2":5,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-1.7000000000000002}}  "Show 5 + 5 on the frame!"
+  [β -1.6600000000000001 +|result|b0|t0|two3] {"type":"add","targetCount":9,"addend1":6,"addend2":3,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.6600000000000001}}  "Show 6 + 3 on the frame!"
+  [β -1.6600000000000001 +|result|b0|t0|two3] {"type":"add","targetCount":7,"addend1":3,"addend2":4,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.6600000000000001}}  "Show 3 + 4 on the frame!"
+  [β -1.28 +|result|b0|t0|none] {"type":"add","targetCount":10,"addend1":6,"addend2":4,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|none","beta":-1.28}}  "Show 6 + 4 on the frame!"
+
+Add within 10 | operate | difficulty=hard | run 2 | item space
+  [TenFrame] Item space add-sub-20: this scope cannot fill every tier's band (44/0/0 drawable); tier third [-1.74, -1.28] gave 5
+  [TenFrame] Item space add-sub-20 operate band [0.6, 3.5] within 10: +|result|b0|t0|none@-1.28 +|result|b0|t0|dbl@-1.7000000000000002 +|result|b0|t0|two3@-1.7400000000000002 +|result|b0|t0|none@-1.28 +
+  [β -1.28 +|result|b0|t0|none] {"type":"add","targetCount":9,"addend1":4,"addend2":5,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|none","beta":-1.28}}  "Show 4 + 5 on the frame!"
+  [β -1.7000000000000002 +|result|b0|t0|dbl] {"type":"add","targetCount":10,"addend1":5,"addend2":5,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-1.7000000000000002}}  "Show 5 + 5 on the frame!"
+  [β -1.7400000000000002 +|result|b0|t0|two3] {"type":"add","targetCount":6,"addend1":2,"addend2":4,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.7400000000000002}}  "Show 2 + 4 on the frame!"
+  [β -1.28 +|result|b0|t0|none] {"type":"add","targetCount":10,"addend1":4,"addend2":6,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|none","beta":-1.28}}  "Show 4 + 6 on the frame!"
+  [β -1.6600000000000001 +|result|b0|t0|two3] {"type":"add","targetCount":10,"addend1":7,"addend2":3,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.6600000000000001}}  "Show 7 + 3 on the frame!"

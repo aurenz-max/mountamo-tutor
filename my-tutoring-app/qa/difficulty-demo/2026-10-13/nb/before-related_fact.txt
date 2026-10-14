@@ -1,0 +1,60 @@
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=easy | run 1 | own path | max 10
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number 5. Join the parts to say the addition fact, then se"
+  [                      ] {"type":"related-fact","whole":7,"part1":4,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Explore the number 7. Say the addition fact for the joined parts, and "
+  [                      ] {"type":"related-fact","whole":8,"part1":5,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Work with the number 8. Practice both the addition and subtraction rel"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=easy | run 2 | own path | max 10
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters for 4, say the addition fact, then separate a group"
+  [                      ] {"type":"related-fact","whole":7,"part1":2,"part2":5,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters for 7, say the addition fact, then separate a group"
+  [                      ] {"type":"related-fact","whole":9,"part1":4,"part2":5,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters for 9, say the addition fact, then separate a group"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=easy | run 3 | own path | max 10
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts to make 4, then say the addition fact and the matching "
+  [                      ] {"type":"related-fact","whole":6,"part1":2,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts to make 6, then say the addition fact and the matching "
+  [                      ] {"type":"related-fact","whole":7,"part1":3,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts to make 7, then say the addition fact and the matching "
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=medium | run 1 | own path | max 10
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters to make 5, then tell the addition and subtraction s"
+  [                      ] {"type":"related-fact","whole":7,"part1":3,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at your groups of 7, say the addition fact, and then the takeaway"
+  [                      ] {"type":"related-fact","whole":9,"part1":4,"part2":5,"allPairs":null,"factFamily":null,"targetEquation":null}  "Explore the parts of 9 and share both the addition and subtraction fac"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=medium | run 2 | own path | max 10
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts to make 4, then take one part away!"
+  [                      ] {"type":"related-fact","whole":6,"part1":2,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts to make 6, then take one part away!"
+  [                      ] {"type":"related-fact","whole":7,"part1":3,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join the parts to make 7, then take one part away!"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=medium | run 3 | own path | max 5
+  [                      ] {"type":"related-fact","whole":3,"part1":1,"part2":2,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us join 1 and 2 to make 3, then take away 2 to see what is left!"
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join 1 and 3 to make 4, and then undo it by taking away 3!"
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Put together 2 and 3 to make 5, then separate the 3 to find your remai"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=hard | run 1 | own path | max 6
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the 4 counters. Join them to say the addition fact, then take "
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the 5 counters. Join them to say the addition fact, then take "
+  [                      ] {"type":"related-fact","whole":6,"part1":1,"part2":5,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the 6 counters. Join them to say the addition fact, then take "
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=hard | run 2 | own path | max 10
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number bond for 4. Say the addition fact and the matching "
+  [                      ] {"type":"related-fact","whole":6,"part1":2,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Explore the number bond for 6. Say the addition fact and its related s"
+  [                      ] {"type":"related-fact","whole":7,"part1":3,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Examine the number bond for 7. Practice speaking both the addition and"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=hard | run 3 | own path | max 10
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join your counters to make 4! Say the addition fact, then take away on"
+  [                      ] {"type":"related-fact","whole":7,"part1":2,"part2":5,"allPairs":null,"factFamily":null,"targetEquation":null}  "Look at the number bond for 7. Say the addition fact for these two par"
+  [                      ] {"type":"related-fact","whole":9,"part1":4,"part2":5,"allPairs":null,"factFamily":null,"targetEquation":null}  "Practice with whole 9! Join the parts to say the addend, then separate"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=(none) | run 1 | own path | max 6
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join and undo for the number 4! Say the addition fact and then the sub"
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let's explore the number 5! Join the parts to make 5, then move a part"
+  [                      ] {"type":"related-fact","whole":6,"part1":2,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Great job! Now work with the number 6. Say the addition fact and the m"
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=(none) | run 2 | own path | max 6
+  [                      ] {"type":"related-fact","whole":4,"part1":1,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join and undo for the whole 4. Say the addition fact and the matching "
+  [                      ] {"type":"related-fact","whole":5,"part1":2,"part2":3,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join and undo for the whole 5. Say the addition fact and the matching "
+  [                      ] {"type":"related-fact","whole":6,"part1":2,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join and undo for the whole 6. Say the addition fact and the matching "
+
+Number bonds: parts and wholes within 10 | related_fact | difficulty=(none) | run 3 | own path | max 10
+  [                      ] {"type":"related-fact","whole":5,"part1":1,"part2":4,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join 1 and 4 to make 5, then take 4 away to see what is left!"
+  [                      ] {"type":"related-fact","whole":7,"part1":2,"part2":5,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join 2 and 5 to make 7, then take 5 away to see what is left!"
+  [                      ] {"type":"related-fact","whole":9,"part1":3,"part2":6,"allPairs":null,"factFamily":null,"targetEquation":null}  "Join 3 and 6 to make 9, then take 6 away to see what is left!"

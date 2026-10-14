@@ -1,0 +1,72 @@
+
+Addition within 5 | missing-result | difficulty=easy | run 1 | item space | max 5
+  [EquationBuilder] Item space add-sub-20 missing-result band [-2.5, -0.6] within 5: +|result|b0|t0|dbl@-2.24 +|result|b0|t0|two3@-1.7400000000000002 +|result|b0|t0|one@-2.3200000000000003 +|result|b0|t
+  [β -2.24 +|result|b0|t0|dbl] {"type":"missing-value","equation":"2 + 2 = ?","missingPosition":4,"correctValue":4,"options":[4,3,1],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-2.24}}  "Add the two numbers together to find the total amount. What number com"
+  [β -1.7400000000000002 +|result|b0|t0|two3] {"type":"missing-value","equation":"2 + 3 = ?","missingPosition":4,"correctValue":5,"options":[4,0,5],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.7400000000000002}}  "Count up from two to see how much we have in total. Add the two number"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"missing-value","equation":"1 + 2 = ?","missingPosition":4,"correctValue":3,"options":[3,2,0],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Put these two groups together! Add the numbers to find the total."
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"missing-value","equation":"3 + 1 = ?","missingPosition":4,"correctValue":4,"options":[2,1,4],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Combine the parts to make a bigger number. Add the two numbers to find"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"missing-value","equation":"4 + 1 = ?","missingPosition":4,"correctValue":5,"options":[5,0,4],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "You are doing great! Add the two numbers to find the final result."
+
+Addition within 5 | missing-result | difficulty=easy | run 2 | item space | max 5
+  [EquationBuilder] Item space add-sub-20 missing-result band [-2.5, -0.6] within 5: +|result|b0|t0|two3@-1.7400000000000002 +|result|b0|t0|dbl@-2.24 +|result|b0|t0|one@-2.3200000000000003 +|result|b0|t
+  [β -1.7400000000000002 +|result|b0|t0|two3] {"type":"missing-value","equation":"3 + 2 = ?","missingPosition":4,"correctValue":5,"options":[4,5,0],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.7400000000000002}}  "Add the two numbers together to find the missing result."
+  [β -2.24 +|result|b0|t0|dbl] {"type":"missing-value","equation":"2 + 2 = ?","missingPosition":4,"correctValue":4,"options":[4,3,1],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-2.24}}  "Count up the objects to find what goes after the equal sign."
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"missing-value","equation":"1 + 3 = ?","missingPosition":4,"correctValue":4,"options":[4,2,1],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Combine the numbers to find the total amount."
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"missing-value","equation":"1 + 4 = ?","missingPosition":4,"correctValue":5,"options":[5,0,3],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Add them up to see what the total sum is."
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"missing-value","equation":"1 + 2 = ?","missingPosition":4,"correctValue":3,"options":[3,2,0],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "Find the final sum for this addition equation."
+
+Addition within 5 | missing-result | difficulty=easy | run 3 | item space | max 5
+  [EquationBuilder] Item space add-sub-20 missing-result band [-2.5, -0.6] within 5: +|result|b0|t0|one@-2.3200000000000003 +|result|b0|t0|dbl@-2.24 +|result|b0|t0|two3@-1.7400000000000002 +|result|b0|t
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"missing-value","equation":"4 + 1 = ?","missingPosition":4,"correctValue":5,"options":[5,0,3],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "What number makes this equation true?"
+  [β -2.24 +|result|b0|t0|dbl] {"type":"missing-value","equation":"2 + 2 = ?","missingPosition":4,"correctValue":4,"options":[4,0,1],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-2.24}}  "What number makes this equation true?"
+  [β -1.7400000000000002 +|result|b0|t0|two3] {"type":"missing-value","equation":"2 + 3 = ?","missingPosition":4,"correctValue":5,"options":[5,4,0],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.7400000000000002}}  "What number makes this equation true?"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"missing-value","equation":"1 + 2 = ?","missingPosition":4,"correctValue":3,"options":[0,1,3],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "What number makes this equation true?"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"missing-value","equation":"1 + 3 = ?","missingPosition":4,"correctValue":4,"options":[4,3,1],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "What number makes this equation true?"
+
+Addition within 5 | missing-result | difficulty=medium | run 1 | own path | max 5
+  [EquationBuilder] Item space add-sub-20 missing-result band [-0.6, 0.6] within 5: no session fits; own path kept
+  [                      ] {"type":"missing-value","equation":"1 + 1 = ?","missingPosition":4,"correctValue":2,"options":[1,4,3,2]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"2 + 1 = ?","missingPosition":4,"correctValue":3,"options":[4,5,2,3]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"2 + 2 = ?","missingPosition":4,"correctValue":4,"options":[5,4,2,3]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"1 + 3 = ?","missingPosition":4,"correctValue":4,"options":[2,5,3,4]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"3 + 2 = ?","missingPosition":4,"correctValue":5,"options":[5,3,4,1]}  "What number is missing?"
+
+Addition within 5 | missing-result | difficulty=medium | run 2 | own path | max 5
+  [EquationBuilder] Item space add-sub-20 missing-result band [-0.6, 0.6] within 5: no session fits; own path kept
+  [                      ] {"type":"missing-value","equation":"1 + 1 = ?","missingPosition":4,"correctValue":2,"options":[1,3,2,4]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"2 + 1 = ?","missingPosition":4,"correctValue":3,"options":[4,3,2,5]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"2 + 2 = ?","missingPosition":4,"correctValue":4,"options":[3,4,2,5]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"3 + 1 = ?","missingPosition":4,"correctValue":4,"options":[3,5,2,4]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"3 + 2 = ?","missingPosition":4,"correctValue":5,"options":[4,0,3,5]}  "What number is missing?"
+
+Addition within 5 | missing-result | difficulty=medium | run 3 | own path | max 5
+  [EquationBuilder] Item space add-sub-20 missing-result band [-0.6, 0.6] within 5: no session fits; own path kept
+  [                      ] {"type":"missing-value","equation":"1 + 1 = ?","missingPosition":4,"correctValue":2,"options":[2,4,3,1]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"2 + 1 = ?","missingPosition":4,"correctValue":3,"options":[4,3,5,2]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"2 + 2 = ?","missingPosition":4,"correctValue":4,"options":[2,4,5,3]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"3 + 1 = ?","missingPosition":4,"correctValue":4,"options":[5,2,3,4]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"3 + 2 = ?","missingPosition":4,"correctValue":5,"options":[0,5,4,3]}  "What number is missing?"
+
+Addition within 5 | missing-result | difficulty=hard | run 1 | own path | max 5
+  [EquationBuilder] Item space add-sub-20 missing-result band [0.6, 3.5] within 5: no session fits; own path kept
+  [                      ] {"type":"missing-value","equation":"1 + 1 = ?","missingPosition":4,"correctValue":2,"options":[4,2,3,1]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"2 + 1 = ?","missingPosition":4,"correctValue":3,"options":[5,2,3,4]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"2 + 2 = ?","missingPosition":4,"correctValue":4,"options":[5,2,4,3]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"3 + 1 = ?","missingPosition":4,"correctValue":4,"options":[3,4,5,2]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"3 + 2 = ?","missingPosition":4,"correctValue":5,"options":[5,3,1,4]}  "Find the missing number."
+
+Addition within 5 | missing-result | difficulty=hard | run 2 | own path | max 5
+  [EquationBuilder] Item space add-sub-20 missing-result band [0.6, 3.5] within 5: no session fits; own path kept
+  [                      ] {"type":"missing-value","equation":"1 + 1 = ?","missingPosition":4,"correctValue":2,"options":[3,2,1,4]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"2 + 1 = ?","missingPosition":4,"correctValue":3,"options":[2,5,4,3]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"2 + 2 = ?","missingPosition":4,"correctValue":4,"options":[2,4,3,5]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"3 + 1 = ?","missingPosition":4,"correctValue":4,"options":[5,2,3,4]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"3 + 2 = ?","missingPosition":4,"correctValue":5,"options":[5,4,1,3]}  "Find the missing number."
+
+Addition within 5 | missing-result | difficulty=hard | run 3 | own path | max 5
+  [EquationBuilder] Item space add-sub-20 missing-result band [0.6, 3.5] within 5: no session fits; own path kept
+  [                      ] {"type":"missing-value","equation":"1 + 1 = ?","missingPosition":4,"correctValue":2,"options":[1,3,4,2]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"2 + 1 = ?","missingPosition":4,"correctValue":3,"options":[3,5,2,4]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"2 + 2 = ?","missingPosition":4,"correctValue":4,"options":[3,2,5,4]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"3 + 1 = ?","missingPosition":4,"correctValue":4,"options":[3,4,2,5]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"3 + 2 = ?","missingPosition":4,"correctValue":5,"options":[4,5,3,0]}  "Find the missing number."

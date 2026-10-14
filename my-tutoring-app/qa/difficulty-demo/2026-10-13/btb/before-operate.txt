@@ -1,0 +1,81 @@
+
+Place value and adding within 1000 | operate | difficulty=easy | run 1 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":519,"secondNumber":178,"showColumnCounts":true,"showBlocksTotal":true}  "Add 341 + 178 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":9036,"secondNumber":5008,"showColumnCounts":true,"showBlocksTotal":true}  "Add 4028 + 5008 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":1415,"secondNumber":7467,"showColumnCounts":true,"showBlocksTotal":true}  "Subtract 7467 from 8882 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":4915,"secondNumber":1606,"showColumnCounts":true,"showBlocksTotal":true}  "Add 3309 + 1606 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=easy | run 2 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":932,"secondNumber":226,"showColumnCounts":true,"showBlocksTotal":true}  "Add 706 + 226 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":875,"secondNumber":193,"showColumnCounts":true,"showBlocksTotal":true}  "Add 682 + 193 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":450,"secondNumber":158,"showColumnCounts":true,"showBlocksTotal":true}  "Subtract 158 from 608 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":680,"secondNumber":158,"showColumnCounts":true,"showBlocksTotal":true}  "Add 522 + 158 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":396,"secondNumber":293,"showColumnCounts":true,"showBlocksTotal":true}  "Subtract 293 from 689 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=easy | run 3 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":8722,"secondNumber":2605,"showColumnCounts":true,"showBlocksTotal":true}  "Add 6117 + 2605 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":8650,"secondNumber":7508,"showColumnCounts":true,"showBlocksTotal":true}  "Add 1142 + 7508 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":803,"secondNumber":151,"showColumnCounts":true,"showBlocksTotal":true}  "Add 652 + 151 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":817,"secondNumber":308,"showColumnCounts":true,"showBlocksTotal":true}  "Add 509 + 308 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":5451,"secondNumber":2113,"showColumnCounts":true,"showBlocksTotal":true}  "Add 3338 + 2113 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=medium | run 1 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":815,"secondNumber":217,"showColumnCounts":false,"showBlocksTotal":true}  "Add 598 + 217 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":404,"secondNumber":187,"showColumnCounts":false,"showBlocksTotal":true}  "Add 217 + 187 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":665,"secondNumber":198,"showColumnCounts":false,"showBlocksTotal":true}  "Add 467 + 198 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":568,"secondNumber":399,"showColumnCounts":false,"showBlocksTotal":true}  "Subtract 399 from 967 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":289,"secondNumber":683,"showColumnCounts":false,"showBlocksTotal":true}  "Subtract 683 from 972 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=medium | run 2 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":5964,"secondNumber":4576,"showColumnCounts":false,"showBlocksTotal":true}  "Add 1388 + 4576 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":522,"secondNumber":184,"showColumnCounts":false,"showBlocksTotal":true}  "Add 338 + 184 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":2942,"secondNumber":1373,"showColumnCounts":false,"showBlocksTotal":true}  "Add 1569 + 1373 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":5942,"secondNumber":2348,"showColumnCounts":false,"showBlocksTotal":true}  "Add 3594 + 2348 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=medium | run 3 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":721,"secondNumber":338,"showColumnCounts":false,"showBlocksTotal":true}  "Add 383 + 338 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":356,"secondNumber":167,"showColumnCounts":false,"showBlocksTotal":true}  "Add 189 + 167 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":239,"secondNumber":483,"showColumnCounts":false,"showBlocksTotal":true}  "Subtract 483 from 722 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":625,"secondNumber":397,"showColumnCounts":false,"showBlocksTotal":true}  "Add 228 + 397 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":186,"secondNumber":156,"showColumnCounts":false,"showBlocksTotal":true}  "Subtract 156 from 342 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=hard | run 1 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":7000,"secondNumber":2155,"showColumnCounts":false,"showBlocksTotal":false}  "Add 4845 + 2155 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":7014,"secondNumber":4715,"showColumnCounts":false,"showBlocksTotal":false}  "Add 2299 + 4715 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":1509,"secondNumber":6999,"showColumnCounts":false,"showBlocksTotal":false}  "Subtract 6999 from 8508 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":4062,"secondNumber":2795,"showColumnCounts":false,"showBlocksTotal":false}  "Add 1267 + 2795 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":3749,"secondNumber":2757,"showColumnCounts":false,"showBlocksTotal":false}  "Subtract 2757 from 6506 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=hard | run 2 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":400,"secondNumber":155,"showColumnCounts":false,"showBlocksTotal":false}  "Add 245 + 155 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":302,"secondNumber":115,"showColumnCounts":false,"showBlocksTotal":false}  "Add 187 + 115 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":301,"secondNumber":134,"showColumnCounts":false,"showBlocksTotal":false}  "Add 167 + 134 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":903,"secondNumber":567,"showColumnCounts":false,"showBlocksTotal":false}  "Add 336 + 567 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=hard | run 3 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":4043,"secondNumber":2178,"showColumnCounts":false,"showBlocksTotal":false}  "Add 1865 + 2178 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":3647,"secondNumber":2557,"showColumnCounts":false,"showBlocksTotal":false}  "Subtract 2557 from 6204 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":8066,"secondNumber":4298,"showColumnCounts":false,"showBlocksTotal":false}  "Add 3768 + 4298 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":1978,"secondNumber":5725,"showColumnCounts":false,"showBlocksTotal":false}  "Subtract 5725 from 7703 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":7066,"secondNumber":1688,"showColumnCounts":false,"showBlocksTotal":false}  "Add 5378 + 1688 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":734,"secondNumber":270}  "Add 464 + 270 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":643,"secondNumber":129}  "Add 514 + 129 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":938,"secondNumber":456}  "Add 482 + 456 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":861,"secondNumber":270}  "Add 591 + 270 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":1216,"secondNumber":795}  "Add 421 + 795 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":484,"secondNumber":224}  "Add 260 + 224 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":888,"secondNumber":452}  "Add 436 + 452 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":699,"secondNumber":505}  "Add 194 + 505 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":588,"secondNumber":170}  "Subtract 170 from 758 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":413,"secondNumber":461}  "Subtract 461 from 874 using blocks."
+
+Place value and adding within 1000 | operate | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"add_with_blocks","targetNumber":413,"secondNumber":133}  "Add 280 + 133 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":1119,"secondNumber":839}  "Add 280 + 839 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":147,"secondNumber":133}  "Subtract 133 from 280 using blocks."
+  [                      ] {"type":"add_with_blocks","targetNumber":577,"secondNumber":297}  "Add 280 + 297 using blocks."
+  [                      ] {"type":"subtract_with_blocks","targetNumber":64,"secondNumber":216}  "Subtract 216 from 280 using blocks."

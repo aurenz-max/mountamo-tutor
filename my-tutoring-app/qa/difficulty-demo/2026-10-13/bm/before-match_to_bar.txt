@@ -1,0 +1,36 @@
+
+Picture graphs: one picture for one thing | match_to_bar | difficulty=easy | run 1 | own path
+  [                      ] [3,6,9] step 1 icon 1 tgt 0 stim 3  Q: Which row shows the same number of blocks?  ""
+  [                      ] [10,6,9] step 1 icon 1 tgt 1 stim 6  Q: Which row shows the same number of cookies?  ""
+  [                      ] [3,1,6] step 1 icon 1 tgt 2 stim 6  Q: Which row shows the same number of slides?  ""
+  [                      ] [5,10,8] step 1 icon 1 tgt 0 stim 5  Q: Which row shows the same number of carrots?  ""
+
+Picture graphs: one picture for one thing | match_to_bar | difficulty=easy | run 2 | own path
+  [                      ] [6,9,10] step 1 icon 1 tgt 0 stim 6  Q: Which row shows the same number of blocks?  ""
+  [                      ] [10,6,3] step 1 icon 1 tgt 1 stim 6  Q: Which row has the same number of crackers as our group?  ""
+  [                      ] [2,10,7] step 1 icon 1 tgt 2 stim 7  Q: Which row shows the same number of swings?  ""
+  [                      ] [8,3,5] step 1 icon 1 tgt 0 stim 8  Q: Which row shows the same number of carrots?  ""
+
+Picture graphs: one picture for one thing | match_to_bar | difficulty=medium | run 1 | own path
+  [                      ] [7,3,1,9] step 1 icon 1 tgt 0 stim 7  Q: Which row shows the same number of blocks?  ""
+  [                      ] [5,8,6,2] step 1 icon 1 tgt 1 stim 8  Q: Which row shows the same number of crackers?  ""
+  [                      ] [4,1,6,9] step 1 icon 1 tgt 2 stim 6  Q: Which row shows the same number of kites?  ""
+  [                      ] [10,2,9,4] step 1 icon 1 tgt 3 stim 4  Q: Which row shows the same number of carrots?  ""
+
+Picture graphs: one picture for one thing | match_to_bar | difficulty=medium | run 2 | own path
+  [                      ] [3,5,7,10] step 1 icon 1 tgt 0 stim 3  Q: Which row shows the same number of blocks?  ""
+  [                      ] [3,6,8,9] step 1 icon 1 tgt 1 stim 6  Q: Which row shows the same number of apples?  ""
+  [                      ] [1,2,8,6] step 1 icon 1 tgt 2 stim 8  Q: Which row shows the same number of swings?  ""
+  [                      ] [1,8,10,3] step 1 icon 1 tgt 3 stim 3  Q: Which row shows the same number of carrots?  ""
+
+Picture graphs: one picture for one thing | match_to_bar | difficulty=hard | run 1 | own path
+  [                      ] [3,2,10,6] step 1 icon 1 tgt 0 stim 3  Q: Which row shows the same number of blocks?  ""
+  [                      ] [8,3,10,4] step 1 icon 1 tgt 1 stim 3  Q: Which row shows the same number of apples?  ""
+  [                      ] [9,10,5,6] step 1 icon 1 tgt 2 stim 5  Q: Which row shows the same number of balls?  ""
+  [                      ] [2,8,7,3] step 1 icon 1 tgt 3 stim 3  Q: Which row shows the same number of carrots?  ""
+
+Picture graphs: one picture for one thing | match_to_bar | difficulty=hard | run 2 | own path
+  [                      ] [6,2,7,8] step 1 icon 1 tgt 0 stim 6  Q: Which row shows the same number of blocks?  ""
+  [                      ] [2,8,7,1] step 1 icon 1 tgt 1 stim 8  Q: Which row shows the same number of crackers?  ""
+  [                      ] [10,9,6,5] step 1 icon 1 tgt 2 stim 6  Q: Which row shows the same number of balls?  ""
+  [                      ] [8,1,4,7] step 1 icon 1 tgt 3 stim 7  Q: Which row shows the same number of carrots?  ""

@@ -1,0 +1,57 @@
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=easy | run 1 | own path
+  [                      ] {"type":"make-change","paidAmount":25,"itemCost":15,"correctChange":10}  "You buy a bouncy ball for 15 cents. You pay with a quarter (25 cents)."
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":20,"correctChange":30}  "You buy a toy car for 20 cents. You pay with a 50-cent half-dollar coi"
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":31,"correctChange":19}  "You buy a sticker for 31 cents. You pay with 50 cents. Subtract the co"
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":40,"correctChange":35}  "You buy a mini puzzle for 40 cents. You pay with 75 cents. Subtract th"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":60,"correctChange":40}  "You buy a spinning top for 60 cents. You pay with 100 cents (one dolla"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=easy | run 2 | own path
+  [                      ] {"type":"make-change","paidAmount":25,"itemCost":12,"correctChange":13}  "You buy a bookmark for 12 cents. You pay with a 25 cents coin. Subtrac"
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":20,"correctChange":30}  "You buy a sticker for 20 cents. You pay with a 50 cents coin. Subtract"
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":31,"correctChange":44}  "You buy a comic book for 31 cents. You pay with a 75 cents coin. Subtr"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":40,"correctChange":60}  "You buy a storybook for 40 cents. You pay with a 100 cents coin. Subtr"
+  [                      ] {"type":"make-change","paidAmount":95,"itemCost":52,"correctChange":43}  "You buy a notebook for 52 cents. You pay with a 95 cents coin. Subtrac"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=medium | run 1 | own path
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":25,"correctChange":25}  "A cup of lemonade costs 25 cents. A customer pays with a 50-cent coin."
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":30,"correctChange":20}  "A refreshing glass of lemonade costs 30 cents. The customer hands you "
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":45,"correctChange":55}  "Your special pink lemonade costs 45 cents. A customer pays with a 100-"
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":38,"correctChange":37}  "A quick cup of lemonade is 38 cents. The customer gives you 75 cents. "
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":60,"correctChange":40}  "A large pitcher serving of lemonade costs 60 cents. The customer pays "
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=medium | run 2 | own path
+  [                      ] {"type":"make-change","paidAmount":25,"itemCost":15,"correctChange":10}  "You buy a bookmark for 15 cents. You pay with a 25-cent quarter. How m"
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":24,"correctChange":26}  "You buy a comic book for 24 cents. You pay with a 50-cent coin. How mu"
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":38,"correctChange":12}  "You buy a colorful sticker for 38 cents. You pay with 50 cents. How mu"
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":45,"correctChange":30}  "You buy a small notebook for 45 cents. You pay with 75 cents. How much"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":62,"correctChange":38}  "You buy a storybook for 62 cents. You pay with a 100-cent dollar bill."
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":74,"correctChange":26}  "You buy a hardcover book for 74 cents. You pay with a 100-cent dollar "
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=hard | run 1 | own path
+  [                      ] {"type":"make-change","paidAmount":25,"itemCost":14,"correctChange":11}  "You buy a bouncy ball for 14 cents. You pay with a 25-cent quarter. Wh"
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":26,"correctChange":24}  "You buy a mini toy car for 26 cents. You pay with a 50-cent half-dolla"
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":38,"correctChange":37}  "You buy a sticker pack for 38 cents. You pay with a 75-cent amount (a "
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":49,"correctChange":51}  "You buy a spinning top for 49 cents. You pay with a 100-cent dollar co"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":57,"correctChange":43}  "You buy a toy dinosaur for 57 cents. You pay with a 100-cent dollar co"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=hard | run 2 | own path
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":27,"correctChange":23}  "You buy a fresh apple for 27 cents. You pay with a 50 cent piece. What"
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":38,"correctChange":37}  "You buy a bunch of carrots for 38 cents. You pay with 3 quarters (75 c"
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":19,"correctChange":31}  "You buy a sweet plum for 19 cents. You pay with a half-dollar (50 cent"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":46,"correctChange":54}  "You buy a basket of strawberries for 46 cents. You pay with a one-doll"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":54,"correctChange":46}  "You buy a ripe tomato for 54 cents. You pay with a one-dollar coin (10"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"make-change","paidAmount":25,"itemCost":15,"correctChange":10}  "You buy a lollipop for 15 cents and pay with a 25-cent quarter. How mu"
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":20,"correctChange":30}  "You buy sour gummies for 20 cents and pay with a 50-cent half-dollar. "
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":35,"correctChange":15}  "You buy chocolate drops for 35 cents and pay with a 50-cent half-dolla"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":45,"correctChange":55}  "You buy a candy bar for 45 cents and pay with a 100-cent dollar coin. "
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":60,"correctChange":40}  "You buy a pack of bubblegum for 60 cents and pay with a 100-cent dolla"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-change | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":25,"correctChange":25}  "You buy an apple for 25 cents. You pay with a 50-cent piece. How much "
+  [                      ] {"type":"make-change","paidAmount":50,"itemCost":30,"correctChange":20}  "You buy a bunch of carrots for 30 cents. You pay with 50 cents. How mu"
+  [                      ] {"type":"make-change","paidAmount":75,"itemCost":40,"correctChange":35}  "You buy a fresh tomato for 40 cents. You pay with 75 cents. How much c"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":60,"correctChange":40}  "You buy a small pumpkin for 60 cents. You pay with 100 cents (one doll"
+  [                      ] {"type":"make-change","paidAmount":100,"itemCost":65,"correctChange":35}  "You buy a jar of honey for 65 cents. You pay with 100 cents (one dolla"

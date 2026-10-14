@@ -1,0 +1,35 @@
+
+Make change from a dollar | difficulty=easy | run 1 | item space
+  [β  -0.8 100|no-borrow|fives] Emma buys a sticker that costs 10¢ and pays with 100¢. How much change does she get?  60¢(f) 65¢(f) 10¢(n) 90¢*
+  [β  -1.6 25|no-borrow|fives|small] Leo buys a rubber duck that costs 15¢ and pays with 25¢. How much change does he get?  23¢(f) 24¢(f) 15¢(n) 10¢*
+  [β  -1.6 50|no-borrow|fives|small] Mia buys a granola bar that costs 40¢ and pays with 50¢. How much change does she get?  20¢(n) 40¢(f) 10¢* 35¢(f)
+  [β  -0.8 50|borrow|fives|small] Noah buys a pencil that costs 45¢ and pays with 50¢. How much change does he get?  5¢* 15¢(n) 30¢(f) 35¢(f)
+  [β  -0.9 25|no-borrow|pennies] Lily buys a piece of chalk that costs 11¢ and pays with 25¢. How much change does she get?  2¢(f) 24¢(n) 14¢* 1¢(f)
+
+Make change from a dollar | difficulty=medium | run 1 | item space
+  [β   0.5 100|across-zero|fives] Leo buys a toy car for 55¢ and pays with a dollar worth 100¢. What is his change?  45¢* 55¢(n) 35¢(n) 70¢(f)
+  [β  -0.1 50|borrow|pennies] Mia buys an apple for 22¢ and pays with a half-dollar worth 50¢. What is her change?  28¢* 32¢(n) 3¢(f) 38¢(n)
+  [β  -0.1 25|borrow|pennies] Ben buys a sticker for 6¢ and pays with a quarter worth 25¢. What is his change?  6¢(n) 21¢(n) 19¢* 4¢(f)
+  [β   0.2 100|across-zero|fives|small] Sara buys a pencil for 95¢ and pays with a dollar worth 100¢. What is her change?  95¢(n) 30¢(f) 15¢(n) 5¢*
+  [β  -0.4 50|borrow|pennies|small] Tom buys a whistle for 41¢ and pays with a half-dollar worth 50¢. What is his change?  34¢(f) 19¢(n) 9¢* 11¢(n)
+
+Make change from a dollar | difficulty=hard | run 1 | item space
+  [β   0.9 100|across-zero|pennies] Leo buys a shiny toy car for 69¢ and pays with a dollar (100¢). How much change does Leo get?  31¢* 49¢(n) 41¢(n) 56¢(f)
+  [β   0.6 100|across-zero|pennies|small] Mia picks a fresh apple for 99¢ and pays with a dollar (100¢). How much change does Mia get?  19¢(n) 11¢(n) 1¢* 26¢(f)
+  [β   0.9 100|across-zero|pennies] Noah buys a tasty sticker for 17¢ and pays with a dollar (100¢). How much change does Noah get?  83¢* 58¢(f) 93¢(n) 97¢(n)
+  [β   0.6 100|across-zero|pennies|small] Zoe gets a colorful pencil for 92¢ and pays with a dollar (100¢). How much change does Zoe get?  33¢(f) 18¢(n) 8¢* 12¢(n)
+  [β   0.6 100|across-zero|pennies|small] Sam buys a small eraser for 96¢ and pays with a dollar (100¢). How much change does Sam get?  29¢(f) 16¢(n) 14¢(n) 4¢*
+
+Make change from a dollar | difficulty=(none) | run 1 | orchestrator
+  [multiple_choice easy] You have 1 dollar (100 cents) and spend 75 cents on a snack. Which group of coins shows the exact change you get back?  3 quarters (75 cents)(f) 1 quarter (25 cents)* 3 dimes and 1 nickel (35 cents)(n) 2 quarters (50 cents)(n)
+  [true_false easy] One dollar is the same as 100 cents, so when you make change from a dollar, you are taking away money from 100 cents.  
+  [fill_in_blanks easy]   
+  [multiple_choice easy] Look at the price list. If you buy the eraser with a 1-dollar bill (100¢), how much change should you get back?  75¢(n) 85¢* 95¢(n) 20¢(f)
+  [multiple_choice hard] Leo has one dollar. He buys a sticker for 30 cents and a toy car for 40 cents. How much change does Leo get back from his dollar?  70 cents(n) 30 cents* 60 cents(n) 10 cents(f)
+
+Compare two three-digit numbers | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] Look at the number line. Which statement correctly compares the two plotted numbers?  435 is greater than 412 because it is farther to the right.* 412 is greater than 435 because it comes first on the line.(n) 412 and 435 are equal because both start with the digit 4.(f) 412 is greater than 435 because it is closer to 400.(n)
+  [multiple_choice medium] Which symbol makes this comparison true? 348 ___ 384  >(n) <* =(f) adder or plus symbol (+)(f)
+  [true_false easy] The number 524 is less than 519 because 4 is less than 9.  
+  [categorization_activity easy]   
+  [fill_in_blanks easy]   

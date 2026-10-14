@@ -1,0 +1,136 @@
+
+Add and subtract within 20, using numbers 11 to 20 | solve_story | difficulty=easy | run 1 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 solve-story band [-2.5, -0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: +|change|b0|t1@-0.62 +|result|b1|t0@-0.66 -|result|b1|t1@-0.62 -|result|b0|t0@-1.92 -|result|b0|t1@-1.04 +|start|b0|t1@-1.12 (0 stories from the code template)
+  [β -0.62 +|change|b0|t1] solve-story    join 10 + 6 = 16 ?=change ans  6 "10 butterflies were fluttering around. Some more butterflies joined them, making 16 in total."
+  [β -0.66 +|result|b1|t0] solve-story    join 7 + 3 = 10  ?=result ans 10 "7 flowers were blooming in the yard. 3 more flowers sprouted up."
+  [β -0.62 -|result|b1|t1] solve-story    separate 20 - 1 = 19 ?=result ans 19 "20 bright stars shone in the night sky. 1 star shot away into the distance."
+  [β -1.92 -|result|b0|t0] solve-story    separate 5 - 1 = 4   ?=result ans  4 "5 rockets were parked on the launchpad. 1 rocket blasted off into space."
+  [β -1.04 -|result|b0|t1] solve-story    separate 18 - 2 = 16 ?=result ans 16 "18 warm cookies were cooling on the tray. 2 cookies were eaten."
+  [β -1.12 +|start|b0|t1] solve-story    join 10 + 1 = 11 ?=start  ans 10 "Some cupcakes were on the table. 1 more cupcake was added, bringing the total to 11."
+
+Add and subtract within 20, using numbers 11 to 20 | solve_story | difficulty=easy | run 2 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 solve-story band [-2.5, -0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b1|t0@-0.94 +|result|b0|t1@-1.22 -|result|b1|t1@-0.62 -|result|b0|t0@-1.26 +|result|b1|t0@-0.7 +|start|b0|t1@-1.12 (0 stories from the code template)
+  [β -0.94 -|result|b1|t0] solve-story    separate 10 - 2 = 8  ?=result ans  8 "10 birds were sitting in the tree. 2 birds flew away."
+  [β -1.22 +|result|b0|t1] solve-story    join 1 + 14 = 15 ?=result ans 15 "1 fish was swimming in the pond. 14 more fish joined them."
+  [β -0.62 -|result|b1|t1] solve-story    separate 20 - 1 = 19 ?=result ans 19 "20 stars shone brightly in the night sky. 1 star faded away."
+  [β -1.26 -|result|b0|t0] solve-story    separate 6 - 3 = 3   ?=result ans  3 "6 cookies were cooling on the tray. 3 cookies were eaten."
+  [β  -0.7 +|result|b1|t0] solve-story    join 5 + 5 = 10  ?=result ans 10 "5 frogs sat on a big log. 5 more frogs hopped onto the log."
+  [β -1.12 +|start|b0|t1] solve-story    join 10 + 1 = 11 ?=start  ans 10 "Some butterflies fluttered in the garden. 1 more butterfly flew over to join them, making 11 butterflies in total."
+
+Add and subtract within 20, using numbers 11 to 20 | solve_story | difficulty=medium | run 1 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 solve-story band [-0.6, 0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: +|result|b1|t1@-0.14 +|change|b1|t1@0.44 -|result|b0|t1@-0.58 -|start|b0|t0@-0.42 +|change|b1|t0@0.14 -|change|b0|t1@-0.16 (0 stories from the code template)
+  [β -0.14 +|result|b1|t1] solve-story    join 2 + 18 = 20 ?=result ans 20 "2 frogs are sitting on the lily pad. 18 more frogs hop onto it."
+  [β  0.44 +|change|b1|t1] solve-story    join 17 + 3 = 20 ?=change ans  3 "17 birds are sitting in the tall tree. Some more birds fly over and join them, making a total of 20 birds."
+  [β -0.58 -|result|b0|t1] solve-story    separate 18 - 4 = 14 ?=result ans 14 "18 apples are resting on the table. 4 apples roll away and fall off."
+  [β -0.42 -|start|b0|t0] solve-story    separate 4 - 1 = 3   ?=start  ans  4 "Some cookies were baking on the tray. 1 cookie was eaten, leaving 3 cookies behind."
+  [β  0.14 +|change|b1|t0] solve-story    join 7 + 3 = 10  ?=change ans  3 "7 stars shine brightly in the night sky. Some more stars appear, bringing the total count to 10 stars."
+  [β -0.16 -|change|b0|t1] solve-story    separate 18 - 3 = 15 ?=change ans  3 "18 butterflies are fluttering around the garden. Some butterflies fly away, leaving 15 butterflies behind."
+
+Add and subtract within 20, using numbers 11 to 20 | solve_story | difficulty=medium | run 2 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 solve-story band [-0.6, 0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: +|change|b1|t0@0.36 +|result|b1|t0@-0.36 -|change|b0|t0@-0.46 -|result|b1|t0@-0.32 +|start|b1|t1@0.48 -|change|b0|t1@-0.16 (0 stories from the code template)
+  [β  0.36 +|change|b1|t0] solve-story    join 2 + 8 = 10  ?=change ans  8 "2 frogs were sitting on the log. Some more frogs joined them to make 10 frogs in total."
+  [β -0.36 +|result|b1|t0] solve-story    join 3 + 7 = 10  ?=result ans 10 "3 birds were sitting in the tree. 7 more birds flew over and joined them."
+  [β -0.46 -|change|b0|t0] solve-story    separate 5 - 3 = 2   ?=change ans  3 "5 butterflies were fluttering in the garden. Some flew away, leaving only 2 butterflies behind."
+  [β -0.32 -|result|b1|t0] solve-story    separate 10 - 6 = 4  ?=result ans  4 "10 apples were growing on the tree. 6 apples fell off onto the grass."
+  [β  0.48 +|start|b1|t1] solve-story    join 19 + 1 = 20 ?=start  ans 19 "Some cookies were baking on the tray. 1 more cookie was placed on the tray, making 20 cookies in total."
+  [β -0.16 -|change|b0|t1] solve-story    separate 17 - 3 = 14 ?=change ans  3 "17 bunnies were playing in the meadow. Some bunnies hopped away into the woods, leaving 14 bunnies."
+
+Add and subtract within 20, using numbers 11 to 20 | solve_story | difficulty=hard | run 1 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 solve-story band [0.6, 3.5] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b1|t1@1.46 +|start|b0|t1@0.68 -|start|b1|t0@1.02 -|change|b0|t1@0.94 -|start|b0|t0@0.78 -|change|b1|t0@0.72 (0 stories from the code template)
+  [β  1.46 -|result|b1|t1] solve-story    separate 20 - 17 = 3 ?=result ans  3 "20 fish were swimming in the pond. 17 fish swam away."
+  [β  0.68 +|start|b0|t1] solve-story    join 6 + 11 = 17 ?=start  ans  6 "Some frogs were on the log. 11 more frogs hopped over, and now there are 17."
+  [β  1.02 -|start|b1|t0] solve-story    separate 10 - 4 = 6  ?=start  ans 10 "Some apples were sitting on the table. 4 apples were eaten, leaving 6 apples."
+  [β  0.94 -|change|b0|t1] solve-story    separate 18 - 13 = 5 ?=change ans 13 "18 birds sat in the tree. Some birds flew away, and now there are 5 birds left."
+  [β  0.78 -|start|b0|t0] solve-story    separate 8 - 6 = 2   ?=start  ans  8 "Some butterflies fluttered in the garden. 6 flew away, leaving only 2 butterflies."
+  [β  0.72 -|change|b1|t0] solve-story    separate 10 - 9 = 1  ?=change ans  9 "10 cookies were baked on the tray. Some cookies were eaten, and now there is 1 cookie left."
+
+Add and subtract within 20, using numbers 11 to 20 | solve_story | difficulty=hard | run 2 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 solve-story band [0.6, 3.5] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: +|start|b1|t0@1.06 -|start|b0|t1@1.48 -|change|b1|t1@1.46 -|start|b0|t0@0.78 +|start|b1|t1@1.68 -|change|b1|t0@0.72 (0 stories from the code template)
+  [β  1.06 +|start|b1|t0] solve-story    join 2 + 8 = 10  ?=start  ans  2 "Some frogs were sitting by the pond. 8 more frogs hopped over to join them, and now there are 10 frogs altogether."
+  [β  1.48 -|start|b0|t1] solve-story    separate 13 - 11 = 2 ?=start  ans 13 "Some bunnies were playing in the garden. 11 bunnies hopped away into the bushes, leaving 2 bunnies behind."
+  [β  1.46 -|change|b1|t1] solve-story    separate 13 - 7 = 6  ?=change ans  7 "There were 13 cookies cooling on the kitchen counter. Some cookies were eaten by a hungry puppy, and now there are 6 cookies left."
+  [β  0.78 -|start|b0|t0] solve-story    separate 9 - 6 = 3   ?=start  ans  9 "Some birds were resting in the tall tree. 6 birds flew away into the sky, leaving 3 birds still singing."
+  [β  1.68 +|start|b1|t1] solve-story    join 6 + 9 = 15  ?=start  ans  6 "Some bright stars were shining in the night sky. 9 more stars twinkled into view, making 15 stars in total."
+  [β  0.72 -|change|b1|t0] solve-story    separate 10 - 9 = 1  ?=change ans  9 "There were 10 colorful fish swimming in the big tank. Some fish swam behind a castle, and now there is only 1 fish visible."
+
+Add and subtract within 10 word problems | solve_story | difficulty=easy | run 1 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 solve-story band [-2.5, -0.6] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: +|change|b0|t0@-0.94 -|result|b0|t0@-0.72 +|result|b1|t0@-0.74 +|start|b0|t0@-0.82 +|result|b0|t0@-1.66 -|result|b1|t0@-0.94 (0 stories from the code template)
+  [β -0.94 +|change|b0|t0] solve-story    join 6 + 2 = 8   ?=change ans  2 "6 frogs were sitting by the pond. Some more frogs hopped over, and now there are 8 frogs."
+  [β -0.72 -|result|b0|t0] solve-story    separate 8 - 6 = 2   ?=result ans  2 "8 apples were sitting on the kitchen counter. 6 apples were eaten."
+  [β -0.74 +|result|b1|t0] solve-story    join 8 + 2 = 10  ?=result ans 10 "8 cute bunnies were playing in the garden. 2 more bunnies hopped in to play."
+  [β -0.82 +|start|b0|t0] solve-story    join 3 + 1 = 4   ?=start  ans  3 "Some bright stars twinkled in space. 1 more star joined them, making 4 stars in total."
+  [β -1.66 +|result|b0|t0] solve-story    join 5 + 3 = 8   ?=result ans  8 "5 yellow flowers bloomed in the garden. 3 more flowers opened up in the sunshine."
+  [β -0.94 -|result|b1|t0] solve-story    separate 10 - 2 = 8  ?=result ans  8 "10 playful puppies were running across the playground. 2 puppies ran off to find a toy."
+
+Add and subtract within 10 word problems | solve_story | difficulty=easy | run 2 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 solve-story band [-2.5, -0.6] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: +|start|b0|t0@-0.82 +|result|b1|t0@-0.7 +|change|b0|t0@-0.64 +|result|b0|t0@-1.74 -|result|b0|t0@-0.64 -|result|b1|t0@-0.86 (0 stories from the code template)
+  [β -0.82 +|start|b0|t0] solve-story    join 4 + 1 = 5   ?=start  ans  4 "Some ducks were swimming in the pond. 1 more duck joined them. Now there are 5 ducks."
+  [β  -0.7 +|result|b1|t0] solve-story    join 5 + 5 = 10  ?=result ans 10 "5 frogs were sitting on the log. 5 more frogs hopped over to join them."
+  [β -0.64 +|change|b0|t0] solve-story    join 2 + 5 = 7   ?=change ans  5 "2 birds were sitting in the tree. Some more birds flew over and joined them. Now there are 7 birds."
+  [β -1.74 +|result|b0|t0] solve-story    join 7 + 2 = 9   ?=result ans  9 "7 butterflies were resting on the flowers. 2 more butterflies fluttered over to join them."
+  [β -0.64 -|result|b0|t0] solve-story    separate 8 - 7 = 1   ?=result ans  1 "8 apples were sitting on the kitchen table. 7 apples were taken away to make a pie."
+  [β -0.86 -|result|b1|t0] solve-story    separate 10 - 3 = 7  ?=result ans  7 "10 cookies were cooling on the tray. 3 cookies were eaten by hungry puppies."
+
+Add and subtract within 10 word problems | solve_story | difficulty=hard | run 1 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 solve-story band [0.6, 3.5] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: -|start|b0|t0@0.86 -|start|b1|t0@1.42 -|change|b1|t0@0.64 +|start|b1|t0@0.8 +|start|b1|t0@1.06 -|start|b1|t0@1.18 (0 stories from the code template)
+  [β  0.86 -|start|b0|t0] solve-story    separate 8 - 7 = 1   ?=start  ans  8 "Some frogs were sitting by the pond. 7 frogs hopped away, and 1 frog stayed behind."
+  [β  1.42 -|start|b1|t0] solve-story    separate 10 - 9 = 1  ?=start  ans 10 "Some birds were resting in the tree. 9 birds flew away, and 1 bird stayed."
+  [β  0.64 -|change|b1|t0] solve-story    separate 10 - 8 = 2  ?=change ans  8 "10 fish were swimming in the pond. Some fish swam away, leaving 2 fish."
+  [β   0.8 +|start|b1|t0] solve-story    join 5 + 5 = 10  ?=start  ans  5 "Some apples were sitting on the kitchen table. 5 more apples were placed on the table, making a total of 10 apples."
+  [β  1.06 +|start|b1|t0] solve-story    join 2 + 8 = 10  ?=start  ans  2 "Some butterflies fluttered around the flowers. 8 more butterflies flew in, and now there are 10 butterflies."
+  [β  1.18 -|start|b1|t0] solve-story    separate 10 - 6 = 4  ?=start  ans 10 "Some dogs were playing on the playground. 6 dogs ran home, and 4 dogs stayed to play."
+
+Add and subtract within 10 word problems | solve_story | difficulty=hard | run 2 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 solve-story band [0.6, 3.5] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: -|start|b1|t0@0.64 -|change|b1|t0@0.72 +|start|b1|t0@1.22 -|start|b0|t0@0.78 -|start|b1|t0@1.18 +|start|b1|t0@1.22 (0 stories from the code template)
+  [β  0.64 -|start|b1|t0] solve-story    separate 10 - 3 = 7  ?=start  ans 10 "Some frogs were sitting by the pond. 3 frogs hopped away. Now there are 7 frogs left."
+  [β  0.72 -|change|b1|t0] solve-story    separate 10 - 9 = 1  ?=change ans  9 "There were 10 birds in the tree. Some birds flew away. Now there is 1 bird left."
+  [β  1.22 +|start|b1|t0] solve-story    join 4 + 6 = 10  ?=start  ans  4 "Some butterflies were in the garden. 6 more butterflies joined them. Now there are 10 butterflies."
+  [β  0.78 -|start|b0|t0] solve-story    separate 8 - 6 = 2   ?=start  ans  8 "Some apples were on the table. 6 apples rolled away. Now there are 2 apples left."
+  [β  1.18 -|start|b1|t0] solve-story    separate 10 - 6 = 4  ?=start  ans 10 "Some fish were in the tank. 6 fish swam away. Now there are 4 fish left."
+  [β  1.22 +|start|b1|t0] solve-story    join 6 + 4 = 10  ?=start  ans  6 "Some bunnies were playing on the grass. 4 more bunnies joined them. Now there are 10 bunnies."
+
+Add and subtract within 20, using numbers 11 to 20 | solve_story | difficulty=(none) | run 1 | max 20 | own path
+  [                    ] solve-story    join 10 + 3 = 13 ?=result ans 13 "10 apples are on the tree. 3 more apples fall from the branch."
+  [                    ] solve-story    separate 14 - 4 = 10 ?=result ans 10 "14 cookies are cooling on the tray. 4 cookies are eaten by a hungry puppy."
+  [                    ] solve-story    join 11 + 5 = 16 ?=result ans 16 "11 yellow flowers are blooming in the patch. 5 pink flowers join them."
+  [                    ] solve-story    separate 18 - 12 = 6 ?=change ans 12 "18 rockets are parked at the launchpad. Some rockets blast off into space. Now there are 6 rockets left."
+  [                    ] solve-story    separate 15 - 7 = 8  ?=start  ans 15 "Some frogs were sitting on the big green lily pad. 7 frogs hopped away. Now there are 8 frogs left."
+  [                    ] solve-story    join 9 + 8 = 17  ?=result ans 17 "9 bunnies are munching on carrots in the field. 8 more bunnies hop over to join them."
+  [                    ] solve-story    join 12 + 8 = 20 ?=change ans  8 "12 bright stars are twinkling in the northern sky. Some more stars appear. Now there are 20 stars shining."
+
+Add and subtract within 20, using numbers 11 to 20 | solve_story | difficulty=(none) | run 2 | max 20 | own path
+  [                    ] solve-story    join 10 + 3 = 13 ?=result ans 13 "10 red apples were sitting on the table. 3 green apples were added to the pile."
+  [                    ] solve-story    separate 15 - 4 = 11 ?=result ans 11 "15 warm cookies cooled on the tray. 4 cookies were eaten by the hungry puppy."
+  [                    ] solve-story    join 12 + 5 = 17 ?=result ans 17 "12 yellow flowers grew in the sunny garden. 5 pink flowers joined them in the flowerbed."
+  [                    ] solve-story    separate 18 - 6 = 12 ?=change ans  6 "18 ducks were splashing happily in the big pond. Later, some ducks waddled over to the grass. Now there are 12 ducks in the water."
+  [                    ] solve-story    join 12 + 7 = 19 ?=start  ans 12 "Some butterflies fluttered near the bushes. 7 more butterflies flew in from the meadow. Now there are 19 butterflies in total."
+  [                    ] solve-story    join 11 + 9 = 20 ?=result ans 20 "11 shining stars filled the dark night sky. 9 more stars twinkled brightly into view."
+  [                    ] solve-story    separate 20 - 12 = 8 ?=change ans 12 "20 fluffy bunnies munched on clover in the meadow. Some bunnies bounced off into the woods. Now there are 8 bunnies left."
+
+Count objects to tell how many | solve_story | difficulty=hard | run 1 | max 10 | own path
+  [                    ] solve-story    separate 5 - 2 = 3   ?=start  ans  5 "Some frogs were sitting on the lily pads. 2 frogs hopped away, leaving 3 frogs behind."
+  [                    ] solve-story    separate 7 - 3 = 4   ?=start  ans  7 "Some apples were in the basket. 3 apples rolled out, leaving 4 apples inside."
+  [                    ] solve-story    join 2 + 4 = 6   ?=start  ans  2 "Some ducks were swimming in the pond. 4 more ducks swam over to join them, making 6 ducks in total."
+  [                    ] solve-story    separate 8 - 5 = 3   ?=start  ans  8 "Some cookies were resting on the tray. 5 cookies were eaten, and now there are 3 cookies left."
+  [                    ] solve-story    join 5 + 3 = 8   ?=start  ans  5 "Some flowers were blooming in the garden. 3 more flowers sprouted up, bringing the total count to 8 flowers."
+  [                    ] solve-story    join 5 + 4 = 9   ?=start  ans  5 "Some rockets were parked on the launchpad. 4 more rockets landed beside them, resulting in 9 rockets altogether."
+  [                    ] solve-story    separate 10 - 4 = 6  ?=start  ans 10 "Some birds were resting in the tree branches. 4 birds flew away into the sky, and 6 birds remained behind."
+
+Count objects to tell how many | solve_story | difficulty=hard | run 2 | max 10 | own path
+  [                    ] solve-story    join 4 + 3 = 7   ?=start  ans  4 "Some frogs were on the log. 3 more frogs hopped over to join them. Now there are 7 frogs on the log."
+  [                    ] solve-story    separate 8 - 2 = 6   ?=start  ans  8 "Some apples were sitting in the basket. 2 apples fell out onto the floor. Now there are 6 apples left in the basket."
+  [                    ] solve-story    separate 7 - 4 = 3   ?=start  ans  7 "Some birds were resting in the tree. 4 birds flew away into the sky. Now there are 3 birds left in the tree."
+  [                    ] solve-story    join 4 + 5 = 9   ?=start  ans  4 "Some fish were swimming in the pond. 5 more fish swam over to join them. Now there are 9 fish swimming together."
+  [                    ] solve-story    separate 8 - 3 = 5   ?=start  ans  8 "Some cookies were on the plate. 3 cookies were eaten by hungry friends. Now there are 5 cookies left on the plate."
+  [                    ] solve-story    join 6 + 4 = 10  ?=start  ans  6 "Some flowers were growing in the garden bed. 4 more flowers sprouted up from the soil. Now there are 10 flowers blooming."
+  [                    ] solve-story    separate 6 - 2 = 4   ?=start  ans  6 "Some rockets were resting on the launchpad. 2 rockets blasted off into space. Now there are 4 rockets remaining on the pad."

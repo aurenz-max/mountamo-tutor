@@ -1,0 +1,93 @@
+
+Addition and subtraction equations within 20 | true-false | difficulty=easy | run 1 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 true-false band [-2.5, -0.6] within 20: +|result|b0|t1|dbl@-1.6000000000000003 +|result|b0|t1|one@-2.0200000000000005 +|result|b0|t1|two3@-1.44 +|result|b0|t0|d
+  [β -1.6000000000000003 +|result|b0|t1|dbl] {"type":"true-false","displayEquation":"10 + 10 = 20","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|dbl","beta":-1.6000000000000003}}  "Is this equation true or false?"
+  [β -2.0200000000000005 +|result|b0|t1|one] {"type":"true-false","displayEquation":"1 + 17 = 13","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|one","beta":-2.0200000000000005}}  "Is this equation true or false?"
+  [β -1.44 +|result|b0|t1|two3] {"type":"true-false","displayEquation":"2 + 14 = 16","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|two3","beta":-1.44}}  "Is this equation true or false?"
+  [β -2.16 +|result|b0|t0|dbl] {"type":"true-false","displayEquation":"3 + 3 = 11","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-2.16}}  "Is this equation true or false?"
+  [β -1.28 +|result|b0|t0|none] {"type":"true-false","displayEquation":"4 + 5 = 9","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|none","beta":-1.28}}  "Is this equation true or false?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=easy | run 2 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 true-false band [-2.5, -0.6] within 20: +|result|b0|t0|dbl@-1.7000000000000002 -|result|b0|t0|none@-0.8800000000000001 +|result|b0|t1|two3@-1.44 +|result|b0|t1|
+  [β -1.7000000000000002 +|result|b0|t0|dbl] {"type":"true-false","displayEquation":"5 + 5 = 15","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|dbl","beta":-1.7000000000000002}}  "Is this equation true or false?"
+  [β -0.8800000000000001 -|result|b0|t0|none] {"type":"true-false","displayEquation":"9 - 5 = 4","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t0|none","beta":-0.8800000000000001}}  "Is this equation true or false?"
+  [β -1.44 +|result|b0|t1|two3] {"type":"true-false","displayEquation":"17 + 2 = 14","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|two3","beta":-1.44}}  "Is this equation true or false?"
+  [β -0.98 +|result|b0|t1|none] {"type":"true-false","displayEquation":"13 + 4 = 17","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|none","beta":-0.98}}  "Is this equation true or false?"
+  [β -1.6600000000000001 +|result|b0|t0|two3] {"type":"true-false","displayEquation":"3 + 7 = 15","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.6600000000000001}}  "Is this equation true or false?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=easy | run 3 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 true-false band [-2.5, -0.6] within 20: -|result|b0|t1|one@-1.6199999999999999 -|result|b0|t0|none@-0.8800000000000001 -|result|b0|t1|two3@-1.04 +|result|b0|t1|
+  [β -1.6199999999999999 -|result|b0|t1|one] {"type":"true-false","displayEquation":"19 - 1 = 13","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1|one","beta":-1.6199999999999999}}  "Compute each side, then compare — are they the same amount?"
+  [β -0.8800000000000001 -|result|b0|t0|none] {"type":"true-false","displayEquation":"9 - 4 = 5","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t0|none","beta":-0.8800000000000001}}  "Compute each side, then compare — are they the same amount?"
+  [β -1.04 -|result|b0|t1|two3] {"type":"true-false","displayEquation":"14 - 2 = 17","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1|two3","beta":-1.04}}  "Compute each side, then compare — are they the same amount?"
+  [β -2.0200000000000005 +|result|b0|t1|one] {"type":"true-false","displayEquation":"1 + 11 = 12","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|one","beta":-2.0200000000000005}}  "Compute each side, then compare — are they the same amount?"
+  [β -0.98 +|result|b0|t1|none] {"type":"true-false","displayEquation":"4 + 13 = 12","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|none","beta":-0.98}}  "Compute each side, then compare — are they the same amount?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=medium | run 1 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 true-false band [-0.6, 0.6] within 20: +|result|b0|t1|none@-0.58 -|result|b1|t1|none@0.5799999999999998 -|result|b1|t1|two3@0.03999999999999998 +|result|b1|t1|n
+  [β -0.58 +|result|b0|t1|none] {"type":"true-false","displayEquation":"9 + 11 = 19","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|none","beta":-0.58}}  "Is this equation true or false? Check both sides."
+  [β 0.5799999999999998 -|result|b1|t1|none] {"type":"true-false","displayEquation":"19 - 13 = 6","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.5799999999999998}}  "Is this equation true or false? Check both sides."
+  [β 0.03999999999999998 -|result|b1|t1|two3] {"type":"true-false","displayEquation":"11 - 8 = 2","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|two3","beta":0.03999999999999998}}  "Is this equation true or false? Check both sides."
+  [β 0.25999999999999984 +|result|b1|t1|none] {"type":"true-false","displayEquation":"7 + 9 = 16","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1|none","beta":0.25999999999999984}}  "Is this equation true or false? Check both sides."
+  [β -0.2400000000000001 +|result|b1|t1|dbl] {"type":"true-false","displayEquation":"7 + 7 = 15","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1|dbl","beta":-0.2400000000000001}}  "Is this equation true or false? Check both sides."
+
+Addition and subtraction equations within 20 | true-false | difficulty=medium | run 2 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 true-false band [-0.6, 0.6] within 20: -|result|b1|t1|ten@0.05999999999999994 -|result|b0|t1|none@-0.3400000000000002 -|result|b1|t1|none@0.5799999999999998 -|r
+  [β 0.05999999999999994 -|result|b1|t1|ten] {"type":"true-false","displayEquation":"17 - 10 = 7","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|ten","beta":0.05999999999999994}}  "Is this equation true or false? Check both sides."
+  [β -0.3400000000000002 -|result|b0|t1|none] {"type":"true-false","displayEquation":"17 - 7 = 9","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1|none","beta":-0.3400000000000002}}  "Is this equation true or false? Check both sides."
+  [β 0.5799999999999998 -|result|b1|t1|none] {"type":"true-false","displayEquation":"12 - 6 = 6","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.5799999999999998}}  "Is this equation true or false? Check both sides."
+  [β 0.03999999999999998 -|result|b1|t1|two3] {"type":"true-false","displayEquation":"18 - 15 = 2","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|two3","beta":0.03999999999999998}}  "Is this equation true or false? Check both sides."
+  [β -0.58 +|result|b0|t1|none] {"type":"true-false","displayEquation":"9 + 11 = 20","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|none","beta":-0.58}}  "Is this equation true or false? Check both sides."
+
+Addition and subtraction equations within 20 | true-false | difficulty=medium | run 3 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 true-false band [-0.6, 0.6] within 20: -|result|b1|t1|ten@-0.020000000000000018 -|result|b1|t1|none@0.5799999999999998 -|result|b0|t1|none@-0.42000000000000015 
+  [β -0.020000000000000018 -|result|b1|t1|ten] {"type":"true-false","displayEquation":"16 - 10 = 6","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|ten","beta":-0.020000000000000018}}  "Is this equation true or false? Check both sides."
+  [β 0.5799999999999998 -|result|b1|t1|none] {"type":"true-false","displayEquation":"12 - 6 = 14","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.5799999999999998}}  "Is this equation true or false? Check both sides."
+  [β -0.42000000000000015 -|result|b0|t1|none] {"type":"true-false","displayEquation":"19 - 6 = 13","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1|none","beta":-0.42000000000000015}}  "Is this equation true or false? Check both sides."
+  [β -0.44000000000000006 +|result|b1|t1|two3] {"type":"true-false","displayEquation":"2 + 9 = 7","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1|two3","beta":-0.44000000000000006}}  "Is this equation true or false? Check both sides."
+  [β -0.58 +|result|b0|t1|none] {"type":"true-false","displayEquation":"9 + 11 = 20","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|none","beta":-0.58}}  "Is this equation true or false? Check both sides."
+
+Addition and subtraction equations within 20 | true-false | difficulty=hard | run 1 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 true-false band [0.6, 3.5] within 20: -|result|b1|t1|none@0.74 -|result|b1|t1|none@0.6599999999999999 -|result|b1|t1|none@0.8200000000000001 -|result|b1|t1|none
+  [β  0.74 -|result|b1|t1|none] {"type":"true-false","displayEquation":"17 - 8 = 11","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.74}}  "True or false?"
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"20 - 13 = 7","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+  [β 0.8200000000000001 -|result|b1|t1|none] {"type":"true-false","displayEquation":"20 - 11 = 8","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.8200000000000001}}  "True or false?"
+  [β  0.74 -|result|b1|t1|none] {"type":"true-false","displayEquation":"16 - 8 = 8","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.74}}  "True or false?"
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"15 - 8 = 13","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=hard | run 2 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 true-false band [0.6, 3.5] within 20: -|result|b1|t1|none@0.6599999999999999 -|result|b1|t1|none@0.6599999999999999 -|result|b1|t1|none@0.6599999999999999 -|res
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"14 - 7 = 7","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"19 - 12 = 13","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"16 - 9 = 7","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"15 - 7 = 12","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"18 - 11 = 7","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=hard | run 3 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 true-false band [0.6, 3.5] within 20: -|result|b1|t1|none@0.6599999999999999 -|result|b1|t1|none@0.6599999999999999 -|result|b1|t1|none@0.6599999999999999 -|res
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"19 - 12 = 6","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"16 - 7 = 9","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"15 - 7 = 7","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+  [β  0.74 -|result|b1|t1|none] {"type":"true-false","displayEquation":"16 - 8 = 8","isTrue":true,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.74}}  "True or false?"
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"true-false","displayEquation":"18 - 11 = 13","isTrue":false,"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "True or false?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=(none) | run 1 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"7 + 5 = 12","isTrue":true}  "Let us warm up! Look at this addition equation. Does it show the corre"
+  [                      ] {"type":"true-false","displayEquation":"14 - 6 = 9","isTrue":false}  "Check this subtraction equation carefully. Is it true or false?"
+  [                      ] {"type":"true-false","displayEquation":"8 + 8 = 16","isTrue":true}  "Put on your detective hat! Does this equation balance correctly?"
+  [                      ] {"type":"true-false","displayEquation":"15 - 7 = 7","isTrue":false}  "Take a close look at the numbers and the minus sign. Is this statement"
+  [                      ] {"type":"true-false","displayEquation":"9 + 9 = 18","isTrue":true}  "Here is our final challenge with larger numbers. Does the left side eq"
+
+Addition and subtraction equations within 20 | true-false | difficulty=(none) | run 2 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 3 = 8","isTrue":true}  "Let us warm up! Does 5 plus 3 equal 8? Look closely at both sides."
+  [                      ] {"type":"true-false","displayEquation":"9 - 4 = 6","isTrue":false}  "Check this equation. Does 9 minus 4 equal 6? Decide if this is true or"
+  [                      ] {"type":"true-false","displayEquation":"12 + 4 = 16","isTrue":true}  "Here is a bigger one! Does 12 plus 4 equal 16?"
+  [                      ] {"type":"true-false","displayEquation":"15 - 7 = 9","isTrue":false}  "Be a math detective: does 15 minus 7 equal 9?"
+  [                      ] {"type":"true-false","displayEquation":"10 + 10 = 20","isTrue":true}  "Final challenge! Does 10 plus 10 equal 20?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=(none) | run 3 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 3 = 8","isTrue":true}  "Let us warm up! Does 5 plus 3 equal 8? Look closely at both sides and "
+  [                      ] {"type":"true-false","displayEquation":"10 - 4 = 7","isTrue":false}  "Detective work time! Does 10 minus 4 equal 7? Check your math and tell"
+  [                      ] {"type":"true-false","displayEquation":"12 + 5 = 17","isTrue":true}  "Here is a bigger one! Does 12 plus 5 equal 17? Decide if this equation"
+  [                      ] {"type":"true-false","displayEquation":"15 - 6 = 8","isTrue":false}  "Keep going, you are doing great! Does 15 minus 6 equal 8? Is this equa"
+  [                      ] {"type":"true-false","displayEquation":"9 + 9 = 18","isTrue":true}  "Final challenge! Does 9 plus 9 equal 18? Decide if this equation is tr"

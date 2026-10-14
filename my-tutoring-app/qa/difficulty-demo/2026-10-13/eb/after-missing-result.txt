@@ -1,0 +1,93 @@
+
+Addition and subtraction equations within 20 | missing-result | difficulty=easy | run 1 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 missing-result band [-2.5, -0.6] within 20: -|result|b0|t0|one@-1.92 -|result|b0|t1|two3@-0.9600000000000002 -|result|b1|t1|ten@-0.64 -|result|b0|t0|ten@-1.94 +
+  [β -1.92 -|result|b0|t0|one] {"type":"missing-value","equation":"7 - 1 = ?","missingPosition":4,"correctValue":6,"options":[6,11,1],"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t0|one","beta":-1.92}}  "What number makes this equation true?"
+  [β -0.9600000000000002 -|result|b0|t1|two3] {"type":"missing-value","equation":"14 - 3 = ?","missingPosition":4,"correctValue":11,"options":[6,16,11],"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1|two3","beta":-0.9600000000000002}}  "What number makes this equation true?"
+  [β -0.64 -|result|b1|t1|ten] {"type":"missing-value","equation":"12 - 10 = ?","missingPosition":4,"correctValue":2,"options":[2,7,9],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|ten","beta":-0.64}}  "What number makes this equation true?"
+  [β -1.94 -|result|b0|t0|ten] {"type":"missing-value","equation":"10 - 8 = ?","missingPosition":4,"correctValue":2,"options":[7,9,2],"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t0|ten","beta":-1.94}}  "What number makes this equation true?"
+  [β -1.28 +|result|b0|t0|none] {"type":"missing-value","equation":"6 + 4 = ?","missingPosition":4,"correctValue":10,"options":[10,15,5],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|none","beta":-1.28}}  "What number makes this equation true?"
+
+Addition and subtraction equations within 20 | missing-result | difficulty=easy | run 2 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 missing-result band [-2.5, -0.6] within 20: -|result|b0|t0|two3@-1.2600000000000002 -|result|b0|t1|ten@-0.7000000000000002 +|result|b0|t0|two3@-1.66000000000000
+  [β -1.2600000000000002 -|result|b0|t0|two3] {"type":"missing-value","equation":"8 - 3 = ?","missingPosition":4,"correctValue":5,"options":[0,10,5],"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t0|two3","beta":-1.2600000000000002}}  "What number makes this equation true?"
+  [β -0.7000000000000002 -|result|b0|t1|ten] {"type":"missing-value","equation":"20 - 10 = ?","missingPosition":4,"correctValue":10,"options":[15,5,10],"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1|ten","beta":-0.7000000000000002}}  "What number makes this equation true?"
+  [β -1.6600000000000001 +|result|b0|t0|two3] {"type":"missing-value","equation":"3 + 7 = ?","missingPosition":4,"correctValue":10,"options":[10,15,5],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|two3","beta":-1.6600000000000001}}  "What number makes this equation true?"
+  [β -2.3200000000000003 +|result|b0|t0|one] {"type":"missing-value","equation":"1 + 9 = ?","missingPosition":4,"correctValue":10,"options":[5,15,10],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t0|one","beta":-2.3200000000000003}}  "What number makes this equation true?"
+  [β -1.94 -|result|b0|t0|ten] {"type":"missing-value","equation":"10 - 8 = ?","missingPosition":4,"correctValue":2,"options":[9,7,2],"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t0|ten","beta":-1.94}}  "What number makes this equation true?"
+
+Addition and subtraction equations within 20 | missing-result | difficulty=easy | run 3 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 missing-result band [-2.5, -0.6] within 20: +|result|b0|t1|two3@-1.36 -|result|b1|t1|ten@-0.64 +|result|b0|t1|one@-2.0200000000000005 -|result|b0|t1|two3@-1.04 
+  [β -1.36 +|result|b0|t1|two3] {"type":"missing-value","equation":"3 + 13 = ?","missingPosition":4,"correctValue":16,"options":[9,11,16],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|two3","beta":-1.36}}  "What number makes this equation true?"
+  [β -0.64 -|result|b1|t1|ten] {"type":"missing-value","equation":"12 - 10 = ?","missingPosition":4,"correctValue":2,"options":[9,2,7],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|ten","beta":-0.64}}  "What number makes this equation true?"
+  [β -2.0200000000000005 +|result|b0|t1|one] {"type":"missing-value","equation":"1 + 19 = ?","missingPosition":4,"correctValue":20,"options":[20,15,13],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|one","beta":-2.0200000000000005}}  "What number makes this equation true?"
+  [β -1.04 -|result|b0|t1|two3] {"type":"missing-value","equation":"18 - 2 = ?","missingPosition":4,"correctValue":16,"options":[16,11,9],"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1|two3","beta":-1.04}}  "What number makes this equation true?"
+  [β -1.6000000000000003 +|result|b0|t1|dbl] {"type":"missing-value","equation":"10 + 10 = ?","missingPosition":4,"correctValue":20,"options":[20,15,13],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|dbl","beta":-1.6000000000000003}}  "What number makes this equation true?"
+
+Addition and subtraction equations within 20 | missing-result | difficulty=medium | run 1 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 missing-result band [-0.6, 0.6] within 20: -|result|b1|t1|two3@0.03999999999999998 -|result|b1|t1|none@0.42 +|result|b1|t1|two3@-0.44000000000000006 -|result|b1
+  [β 0.03999999999999998 -|result|b1|t1|two3] {"type":"missing-value","equation":"14 - 11 = ?","missingPosition":4,"correctValue":3,"options":[4,17,3,8],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|two3","beta":0.03999999999999998}}  "What number is missing?"
+  [β  0.42 -|result|b1|t1|none] {"type":"missing-value","equation":"16 - 12 = ?","missingPosition":4,"correctValue":4,"options":[5,4,16,9],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.42}}  "What number is missing?"
+  [β -0.44000000000000006 +|result|b1|t1|two3] {"type":"missing-value","equation":"2 + 9 = ?","missingPosition":4,"correctValue":11,"options":[16,12,7,11],"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1|two3","beta":-0.44000000000000006}}  "What number is missing?"
+  [β 0.22000000000000008 -|result|b1|t1|ten] {"type":"missing-value","equation":"19 - 10 = ?","missingPosition":4,"correctValue":9,"options":[10,11,14,9],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|ten","beta":0.22000000000000008}}  "What number is missing?"
+  [β 0.25999999999999984 +|result|b1|t1|none] {"type":"missing-value","equation":"7 + 9 = ?","missingPosition":4,"correctValue":16,"options":[11,16,2,17],"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1|none","beta":0.25999999999999984}}  "What number is missing?"
+
+Addition and subtraction equations within 20 | missing-result | difficulty=medium | run 2 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 missing-result band [-0.6, 0.6] within 20: -|result|b0|t1|none@-0.5000000000000001 -|result|b1|t1|ten@-0.020000000000000018 +|result|b1|t1|none@0.25999999999999
+  [β -0.5000000000000001 -|result|b0|t1|none] {"type":"missing-value","equation":"18 - 5 = ?","missingPosition":4,"correctValue":13,"options":[13,12,14,18],"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1|none","beta":-0.5000000000000001}}  "What number is missing?"
+  [β -0.020000000000000018 -|result|b1|t1|ten] {"type":"missing-value","equation":"16 - 10 = ?","missingPosition":4,"correctValue":6,"options":[11,7,14,6],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|ten","beta":-0.020000000000000018}}  "What number is missing?"
+  [β 0.25999999999999984 +|result|b1|t1|none] {"type":"missing-value","equation":"9 + 7 = ?","missingPosition":4,"correctValue":16,"options":[16,2,17,11],"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1|none","beta":0.25999999999999984}}  "What number is missing?"
+  [β -0.44000000000000006 +|result|b1|t1|two3] {"type":"missing-value","equation":"2 + 9 = ?","missingPosition":4,"correctValue":11,"options":[16,12,10,11],"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1|two3","beta":-0.44000000000000006}}  "What number is missing?"
+  [β  0.42 -|result|b1|t1|none] {"type":"missing-value","equation":"13 - 4 = ?","missingPosition":4,"correctValue":9,"options":[10,17,9,14],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.42}}  "What number is missing?"
+
+Addition and subtraction equations within 20 | missing-result | difficulty=medium | run 3 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 missing-result band [-0.6, 0.6] within 20: -|result|b0|t1|none@-0.5800000000000001 +|result|b1|t1|none@0.25999999999999984 -|result|b1|t1|none@0.42 -|result|b1|
+  [β -0.5800000000000001 -|result|b0|t1|none] {"type":"missing-value","equation":"19 - 4 = ?","missingPosition":4,"correctValue":15,"options":[20,14,16,15],"itemSpace":{"space":"add-sub-20","structure":"-|result|b0|t1|none","beta":-0.5800000000000001}}  "What number is missing?"
+  [β 0.25999999999999984 +|result|b1|t1|none] {"type":"missing-value","equation":"8 + 7 = ?","missingPosition":4,"correctValue":15,"options":[15,20,16,1],"itemSpace":{"space":"add-sub-20","structure":"+|result|b1|t1|none","beta":0.25999999999999984}}  "What number is missing?"
+  [β  0.42 -|result|b1|t1|none] {"type":"missing-value","equation":"11 - 4 = ?","missingPosition":4,"correctValue":7,"options":[12,15,8,7],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.42}}  "What number is missing?"
+  [β 0.22000000000000008 -|result|b1|t1|ten] {"type":"missing-value","equation":"19 - 10 = ?","missingPosition":4,"correctValue":9,"options":[9,14,8,10],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|ten","beta":0.22000000000000008}}  "What number is missing?"
+  [β -0.58 +|result|b0|t1|none] {"type":"missing-value","equation":"11 + 9 = ?","missingPosition":4,"correctValue":20,"options":[15,20,19,2],"itemSpace":{"space":"add-sub-20","structure":"+|result|b0|t1|none","beta":-0.58}}  "What number is missing?"
+
+Addition and subtraction equations within 20 | missing-result | difficulty=hard | run 1 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 missing-result band [0.6, 3.5] within 20: -|result|b1|t1|none@0.6599999999999999 -|result|b1|t1|none@0.6599999999999999 -|result|b1|t1|none@0.6599999999999999 -
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"missing-value","equation":"16 - 9 = ?","missingPosition":4,"correctValue":7,"options":[7,13,6,12],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "Find the missing number."
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"missing-value","equation":"14 - 7 = ?","missingPosition":4,"correctValue":7,"options":[12,13,7,8],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "Find the missing number."
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"missing-value","equation":"18 - 11 = ?","missingPosition":4,"correctValue":7,"options":[8,12,6,7],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "Find the missing number."
+  [β  0.74 -|result|b1|t1|none] {"type":"missing-value","equation":"19 - 11 = ?","missingPosition":4,"correctValue":8,"options":[13,7,9,8],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.74}}  "Find the missing number."
+  [β 0.8200000000000001 -|result|b1|t1|none] {"type":"missing-value","equation":"20 - 11 = ?","missingPosition":4,"correctValue":9,"options":[8,10,14,9],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.8200000000000001}}  "Find the missing number."
+
+Addition and subtraction equations within 20 | missing-result | difficulty=hard | run 2 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 missing-result band [0.6, 3.5] within 20: -|result|b1|t1|none@0.8200000000000001 -|result|b1|t1|none@0.6599999999999999 -|result|b1|t1|none@0.6599999999999999 -
+  [β 0.8200000000000001 -|result|b1|t1|none] {"type":"missing-value","equation":"18 - 9 = ?","missingPosition":4,"correctValue":9,"options":[11,9,14,10],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.8200000000000001}}  "Find the missing number."
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"missing-value","equation":"15 - 8 = ?","missingPosition":4,"correctValue":7,"options":[12,8,13,7],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "Find the missing number."
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"missing-value","equation":"18 - 11 = ?","missingPosition":4,"correctValue":7,"options":[8,12,13,7],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "Find the missing number."
+  [β  0.74 -|result|b1|t1|none] {"type":"missing-value","equation":"17 - 9 = ?","missingPosition":4,"correctValue":8,"options":[9,12,13,8],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.74}}  "Find the missing number."
+  [β  0.74 -|result|b1|t1|none] {"type":"missing-value","equation":"17 - 8 = ?","missingPosition":4,"correctValue":9,"options":[10,11,9,14],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.74}}  "Find the missing number."
+
+Addition and subtraction equations within 20 | missing-result | difficulty=hard | run 3 | item space | max 20
+  [EquationBuilder] Item space add-sub-20 missing-result band [0.6, 3.5] within 20: -|result|b1|t1|none@0.74 -|result|b1|t1|none@0.8200000000000001 -|result|b1|t1|none@0.8200000000000001 -|result|b1|t1|
+  [β  0.74 -|result|b1|t1|none] {"type":"missing-value","equation":"16 - 8 = ?","missingPosition":4,"correctValue":8,"options":[9,8,13,12],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.74}}  "Find the missing number."
+  [β 0.8200000000000001 -|result|b1|t1|none] {"type":"missing-value","equation":"18 - 9 = ?","missingPosition":4,"correctValue":9,"options":[9,11,14,8],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.8200000000000001}}  "Find the missing number."
+  [β 0.8200000000000001 -|result|b1|t1|none] {"type":"missing-value","equation":"20 - 11 = ?","missingPosition":4,"correctValue":9,"options":[10,14,9,8],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.8200000000000001}}  "Find the missing number."
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"missing-value","equation":"16 - 7 = ?","missingPosition":4,"correctValue":9,"options":[9,11,8,14],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "Find the missing number."
+  [β 0.6599999999999999 -|result|b1|t1|none] {"type":"missing-value","equation":"16 - 9 = ?","missingPosition":4,"correctValue":7,"options":[12,13,7,8],"itemSpace":{"space":"add-sub-20","structure":"-|result|b1|t1|none","beta":0.6599999999999999}}  "Find the missing number."
+
+Addition and subtraction equations within 20 | missing-result | difficulty=(none) | run 1 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"5 + 3 = ?","missingPosition":4,"correctValue":8,"options":[10,8,7,9]}  "Find the sum to complete the addition equation!"
+  [                      ] {"type":"missing-value","equation":"12 - 6 = ?","missingPosition":4,"correctValue":6,"options":[7,8,5,6]}  "Subtract the numbers to find what comes after the equals sign."
+  [                      ] {"type":"missing-value","equation":"9 + 5 = ?","missingPosition":4,"correctValue":14,"options":[13,12,14,15]}  "Put these numbers together to find the total amount."
+  [                      ] {"type":"missing-value","equation":"15 - 8 = ?","missingPosition":4,"correctValue":7,"options":[6,7,8,9]}  "Take away the right amount to find the difference."
+  [                      ] {"type":"missing-value","equation":"11 + 7 = ?","missingPosition":4,"correctValue":18,"options":[18,19,17,16]}  "Solve this larger addition problem to balance the equation!"
+
+Addition and subtraction equations within 20 | missing-result | difficulty=(none) | run 2 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"5 + 3 = ?","missingPosition":4,"correctValue":8,"options":[9,10,8,7]}  "Find the sum to complete the addition equation!"
+  [                      ] {"type":"missing-value","equation":"12 - 6 = ?","missingPosition":4,"correctValue":6,"options":[4,6,5,7]}  "Solve the subtraction problem to find the missing value."
+  [                      ] {"type":"missing-value","equation":"8 + 6 = ?","missingPosition":4,"correctValue":14,"options":[15,13,14,12]}  "What is the total of this larger addition equation?"
+  [                      ] {"type":"missing-value","equation":"17 - 8 = ?","missingPosition":4,"correctValue":9,"options":[10,8,7,9]}  "Subtract carefully to find the correct number."
+  [                      ] {"type":"missing-value","equation":"11 + 8 = ?","missingPosition":4,"correctValue":19,"options":[18,19,17,20]}  "Solve this challenge equation using numbers up to 20!"
+
+Addition and subtraction equations within 20 | missing-result | difficulty=(none) | run 3 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"5 + 3 = ?","missingPosition":4,"correctValue":8,"options":[9,7,8,6]}  "Find the missing number after the equals sign to solve the addition pr"
+  [                      ] {"type":"missing-value","equation":"10 - 4 = ?","missingPosition":4,"correctValue":6,"options":[5,6,4,7]}  "Subtract the numbers to find what goes on the other side of the equals"
+  [                      ] {"type":"missing-value","equation":"9 + 5 = ?","missingPosition":4,"correctValue":14,"options":[12,15,14,13]}  "Add the numbers carefully to find the correct total."
+  [                      ] {"type":"missing-value","equation":"15 - 8 = ?","missingPosition":4,"correctValue":7,"options":[7,9,8,6]}  "Take away to find the answer that balances the equation."
+  [                      ] {"type":"missing-value","equation":"11 + 8 = ?","missingPosition":4,"correctValue":19,"options":[17,18,20,19]}  "Solve this larger addition equation to find the final number."

@@ -1,0 +1,35 @@
+
+Add and subtract fractions with unlike denominators | difficulty=easy | run 1 | item space
+  [β  -1.3 -|like       ] Leo had 3/5 of a pizza and ate 2/5 of a pizza. How much pizza did he have left?  1(n) 1/5* 7/10(f) 1 1/10(f)
+  [β  -1.6 +|like       ] Mia poured 5/8 of a jug of juice and then added 2/8 of a jug of juice. How much juice was there in total?  3/8(f) 1 3/8(f) 7/16(n) 7/8*
+  [β    -1 +|like|simplify|mixed|unit] Sam baked 1/2 of a pie and his sister baked 1/2 of a pie. How much pie did they bake altogether?  1* 2(f) 1/2(n) 1 1/2(f)
+  [β  -1.1 +|like|simplify] Ava used 1/12 of a spool of blue ribbon and 5/12 of a spool of red ribbon. What total fraction of a spool did she use?  1 1/4(f) 1/2* 1/4(n) 1(f)
+  [β  -0.7 -|unlike-one|unit] Ben had 1/4 of a gallon of paint and used 1/8 of a gallon. How much paint remained?  3/8(n) 1 1/16(f) 5/8(f) 1/8*
+
+Add and subtract fractions with unlike denominators | difficulty=medium | run 1 | item space
+  [β  -0.1 +|unlike-one|simplify] Sarah used 4/12 of a cup of milk for her first batch of pancakes and 1/3 of a cup of milk for her second batch. How many cups of milk did Sarah use in total?  1/6(f) 1 1/6(f) 5/12(n) 2/3*
+  [β  -0.2 +|unlike-both|unit] Leo ran 1/10 of a mile before breakfast and 1/4 of a mile after school. How many miles did Leo run altogether?  17/20(f) 1/5(n) 1 7/40(f) 7/20*
+  [β  -0.5 +|unlike-one|simplify|unit] Maya spent 1/12 of an hour painting a toy boat and 1/6 of an hour painting a toy car. How many hours did Maya spend painting in all?  1/4* 1/6(n) 3/4(f) 1 1/8(f)
+  [β  -0.2 -|unlike-one|simplify|unit] Tom had 1/2 of a yard of blue ribbon and cut off 1/6 of a yard for a craft. How many yards of blue ribbon did Tom have left?  5/6(f) 1 1/6(f) 2/3(n) 1/3*
+  [β   0.5 -|unlike-both] Emma had 11/12 of a pound of green grapes and used 1/8 of a pound for a fruit salad. How many pounds of green grapes did Emma have remaining?  19/24* 2 1/2(n) 1 1/24(n) 1 7/24(f)
+
+Add and subtract fractions with unlike denominators | difficulty=hard | run 1 | item space
+  [β     1 -|unlike-both|simplify] Maya had 2/4 of a yard of blue ribbon and used 1/5 of a yard for a craft. How much ribbon does she have left?  3/10* 7/10(n) 1/4(n) 4/5(f)
+  [β   0.7 +|unlike-both|simplify] Leo picked 2/8 of a basket of apples on Saturday and 3/6 of a basket on Sunday. What total fraction of a basket did he pick?  5/14(n) 3/4* 1 1/4(f) 5/8(n)
+  [β   1.2 +|unlike-both|simplify|mixed] Mia practiced the piano for 11/12 of an hour in the morning and 6/8 of an hour in the evening. How many total hours did she practice?  1 2/3* 17/20(n) 1 5/12(n) 2 1/6(f)
+  [β   0.7 +|unlike-both|mixed] Sam drank 3/4 of a bottle of juice at lunch and 2/3 of a bottle at dinner. What total fraction of a bottle did he drink?  1 5/12* 1/12(n) 1 1/4(n) 1 11/12(f)
+  [β   1.2 +|unlike-both|simplify|mixed] Chloe poured 2/4 of a gallon of milk into a pitcher that already contained 6/10 of a gallon. What is the total amount of milk in the pitcher?  1 1/10* 1 3/5(f) 4/7(n) 4/5(n)
+
+Add and subtract fractions with unlike denominators | difficulty=(none) | run 1 | orchestrator
+  [multiple_choice easy] On the number line, a jump of 1/2 begins at 0. Then, another jump of 1/4 is added, ending at Point P. Based on the number line, what is the value of Point P?  2/6(n) 3/4* 2/4(n) 1/8(f)
+  [fill_in_blanks easy]   
+  [multiple_choice medium] Evaluate the expression shown below. What is the sum in simplest form?  \frac{3}{8}(n) \frac{3}{15}(n) \frac{11}{15}* \frac{7}{8}(f)
+  [true_false medium] The mathematical equation shown below correctly demonstrates how to add two fractions with different denominators by simply adding their numerators and denominators straight across.  
+  [multiple_choice medium] Maya had 7/8 cup of flour in a bowl. She used 1/4 cup of the flour to bake muffins. How much flour is left in the bowl?  6/8 cup(n) 5/8 cup* 6/4 cups(n) 1 1/8 cups(f)
+
+Compare fractions with different denominators | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] Look at the number line. Which statement correctly compares the two fractions shown?  1/2 is greater than 3/4 because the denominator 2 is smaller than 4.(n) 3/4 is greater than 1/2 because it is farther to the right.* 1/2 is greater than 3/4 because it is closer to 0.(f) 1/2 and 3/4 are equal because they are on the same number line.(f)
+  [multiple_choice medium] Look at the two fractions shown in the box. Which symbol correctly compares them?  < (less than)(n) = (equal to)* > (greater than)(n) + (plus)(f)
+  [true_false medium] One-fourth (1/4) is greater than one-half (1/2) because the number four is greater than the number two.  
+  [sequencing_activity medium]   
+  [multiple_choice hard] Maya and Liam each ordered an identical large pizza. Maya cut hers into 8 equal slices and ate 5 slices. Liam cut his into 6 equal slices and ate 4 slices. Who ate more pizza, and why?  Maya ate more because 5/8 has a larger numerator and denominator than 4/6.(n) Liam ate more because 4/6 is equivalent to 16/24, which is greater than 15/24.* Maya ate more because eighths are larger slices than sixths.(f) They ate the same amount because both fractions simplify to 2/3 of a pizza.(f)

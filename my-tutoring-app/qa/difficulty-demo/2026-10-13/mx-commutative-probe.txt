@@ -1,0 +1,76 @@
+
+Multiply within 100 using multiplication facts | commutative | difficulty=easy | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: product|a1|t0|h1@-0.77 product|a0|t1|h0@-1.21 product|a1|t0|h0@-1.68 product|a0|t0|h0@-0.86 product|a1|t1|h0@-1.9
+  [β -0.77 product|a1|t0|h1 ] 5 × 8 = 40   hide product ans  40 NAMES ANSWER "If 5 groups of 8 equals 40, what is the product when you flip the factors to 8 groups of 5?"
+  [β -1.21 product|a0|t1|h0 ] 4 × 4 = 16   hide product ans  16 NAMES ANSWER "If 4 rows of 4 equals 16, what is the product when you flip the factors to 4 rows of 4?"
+  [β -1.68 product|a1|t0|h0 ] 2 × 5 = 10   hide product ans  10 NAMES ANSWER "If 2 groups of 5 equals 10, what is the product when you flip the factors to 5 groups of 2?"
+  [β -0.86 product|a0|t0|h0 ] 3 × 4 = 12   hide product ans  12 NAMES ANSWER "If 3 rows of 4 equals 12, what is the product when you flip the factors to 4 rows of 3?"
+  [β  -1.9 product|a1|t1|h0 ] 5 × 5 = 25   hide product ans  25 NAMES ANSWER "If 5 groups of 5 equals 25, what is the product when you flip the factors to 5 groups of 5?"
+
+Multiply within 100 using multiplication facts | commutative | difficulty=easy | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: product|a1|t0|h1@-1.08 product|a0|t1|h0@-1.29 product|a0|t0|h0@-0.86 product|a1|t1|h0@-1 product|a1|t0|h0@-1.56
+  [β -1.08 product|a1|t0|h1 ] 7 × 2 = 14   hide product ans  14 NAMES ANSWER "If 7 groups of 2 make 14, what is the total when you flip the factors to 2 groups of 7?"
+  [β -1.29 product|a0|t1|h0 ] 3 × 3 = 9    hide product ans   9 NAMES ANSWER "If 3 rows of 3 make 9, what is the total when you swap the rows and columns?"
+  [β -0.86 product|a0|t0|h0 ] 4 × 3 = 12   hide product ans  12 NAMES ANSWER "If 4 groups of 3 make 12, what do 3 groups of 4 make?"
+  [β    -1 product|a1|t1|h0 ] 10 × 10 = 100 hide product ans 100 NAMES ANSWER "If 10 rows of 10 make 100, what is the product when you swap the factors?"
+  [β -1.56 product|a1|t0|h0 ] 2 × 10 = 20  hide product ans  20 NAMES ANSWER "If 2 rows of 10 make 20, what is the total for 10 rows of 2?"
+
+Multiply within 100 using multiplication facts | commutative | difficulty=medium | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: product|a0|t0|h1@-0.16 product|a1|t0|h1@-0.17 product|a0|t1|h2@0.13 product|a0|t0|h1@-0.2 product|a0|t1|h2@0.47
+  [β -0.16 product|a0|t0|h1 ] 6 × 4 = 24   hide product ans  24 "Rotate the array to show 4 rows of 6. What is the total number of items?"
+  [β -0.17 product|a1|t0|h1 ] 10 × 9 = 90  hide product ans  90 "Rotate the array to show 9 rows of 10. What is the total number of items?"
+  [β  0.13 product|a0|t1|h2 ] 6 × 6 = 36   hide product ans  36 "Rotate the array to show 6 rows of 6. What is the total number of items?"
+  [β  -0.2 product|a0|t0|h1 ] 3 × 7 = 21   hide product ans  21 "Rotate the array to show 7 rows of 3. What is the total number of items?"
+  [β  0.47 product|a0|t1|h2 ] 8 × 8 = 64   hide product ans  64 "Rotate the array to show 8 rows of 8. What is the total number of items?"
+
+Multiply within 100 using multiplication facts | commutative | difficulty=medium | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: product|a0|t0|h1@-0.07 product|a1|t0|h1@-0.17 product|a0|t1|h2@0.29 product|a0|t0|h1@-0.02 product|a1|t0|h1@-0.29
+  [β -0.07 product|a0|t0|h1 ] 8 × 4 = 32   hide product ans  32 "If you have 8 rows of 4 stickers, how many in total?"
+  [β -0.17 product|a1|t0|h1 ] 9 × 10 = 90  hide product ans  90 "If you have 9 rows of 10 stickers, how many in total?"
+  [β  0.29 product|a0|t1|h2 ] 7 × 7 = 49   hide product ans  49 "If you have 7 rows of 7 stickers, how many in total?"
+  [β -0.02 product|a0|t0|h1 ] 4 × 9 = 36   hide product ans  36 "If you have 4 rows of 9 stickers, how many in total?"
+  [β -0.29 product|a1|t0|h1 ] 10 × 8 = 80  hide product ans  80 "If you have 10 rows of 8 stickers, how many in total?"
+
+Multiply within 100 using multiplication facts | commutative | difficulty=hard | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t0|h2@0.6 product|a0|t1|h2@0.67 product|a0|t0|h2@0.77 product|a0|t0|h2@0.75 product|a0|t0|h2@0.86
+  [β   0.6 product|a0|t0|h2 ] 7 × 6 = 42   hide product ans  42 NAMES ANSWER "If 7 packs with 6 stickers each equals 42, then what is the total when you have 6 packs with 7 stickers each?"
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 NAMES ANSWER "If 9 rows of 9 desks equals 81, what is the total if we rotate it to have 9 rows of 9 desks?"
+  [β  0.77 product|a0|t0|h2 ] 8 × 7 = 56   hide product ans  56 NAMES ANSWER "If 8 cartons with 7 eggs each equals 56, what is the total for 7 cartons with 8 eggs each?"
+  [β  0.75 product|a0|t0|h2 ] 6 × 9 = 54   hide product ans  54 NAMES ANSWER "If 6 rows with 9 items each equals 54, what is the product when you have 9 rows with 6 items each?"
+  [β  0.86 product|a0|t0|h2 ] 9 × 7 = 63   hide product ans  63 NAMES ANSWER "If 9 groups of 7 equals 63, what is the total for 7 groups of 9?"
+
+Multiply within 100 using multiplication facts | commutative | difficulty=hard | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t0|h2@0.77 product|a0|t1|h2@0.67 product|a0|t0|h2@0.6 product|a0|t0|h2@0.75 product|a0|t0|h2@0.86
+  [β  0.77 product|a0|t0|h2 ] 7 × 8 = 56   hide product ans  56 NAMES ANSWER "If 7 packs of 8 stickers is 56, how many stickers are in 8 packs of 7?"
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 NAMES ANSWER "If 9 groups of 9 is 81, what is the total when we swap to 9 groups of 9?"
+  [β   0.6 product|a0|t0|h2 ] 6 × 7 = 42   hide product ans  42 NAMES ANSWER "If 6 rows of 7 gives 42, what is the product for 7 rows of 6?"
+  [β  0.75 product|a0|t0|h2 ] 9 × 6 = 54   hide product ans  54 NAMES ANSWER "If 9 groups of 6 equals 54, find the total for 6 groups of 9."
+  [β  0.86 product|a0|t0|h2 ] 7 × 9 = 63   hide product ans  63 NAMES ANSWER "If 7 groups of 9 is 63, what is the product of 9 groups of 7?"
+
+Multiply within 100 using multiplication facts | commutative | difficulty=(none) | run 1 | own path
+  [                         ] 6 × 9 = 54   hide product ans  54 "Rotate the array to show 9 groups of 6 instead of 6 groups of 9. What is the total product?"
+  [                         ] 2 × 9 = 18   hide product ans  18 "Swap the rows and columns to show 9 rows of 2. What is the total product?"
+  [                         ] 4 × 3 = 12   hide product ans  12 "Flip the factors to show 3 rows of 4. What is the product?"
+  [                         ] 5 × 8 = 40   hide product ans  40 "Rotate the arrangement to show 8 rows of 5. What is the total product?"
+  [                         ] 2 × 10 = 20  hide product ans  20 "Flip the groups to show 10 groups of 2. What is the total product?"
+
+Multiply within 100 using multiplication facts | commutative | difficulty=(none) | run 2 | own path
+  [                         ] 4 × 7 = 28   hide product ans  28 NAMES ANSWER "If 4 groups of 7 equals 28, what does 7 groups of 4 equal?"
+  [                         ] 7 × 6 = 42   hide product ans  42 NAMES ANSWER "If 7 groups of 6 equals 42, what does 6 groups of 7 equal?"
+  [                         ] 4 × 2 = 8    hide product ans   8 NAMES ANSWER "If 4 groups of 2 equals 8, what does 2 groups of 4 equal?"
+  [                         ] 7 × 10 = 70  hide product ans  70 NAMES ANSWER "If 7 groups of 10 equals 70, what does 10 groups of 7 equal?"
+  [                         ] 3 × 7 = 21   hide product ans  21 NAMES ANSWER "If 3 groups of 7 equals 21, what does 7 groups of 3 equal?"
+
+Multiply a two-digit number by a one-digit number | commutative | difficulty=hard | run 1 | own path
+  [                         ] 7 × 3 = 21   hide product ans  21 NAMES ANSWER "If 7 groups of 3 equals 21, what is the total when you flip the factors to 3 groups of 7?"
+  [                         ] 3 × 9 = 27   hide product ans  27 NAMES ANSWER "If 3 rows of 9 equals 27, what is the total when you flip the factors to 9 rows of 3?"
+  [                         ] 9 × 8 = 72   hide product ans  72 NAMES ANSWER "If 9 groups of 8 equals 72, what is the total when you flip the factors to 8 groups of 9?"
+  [                         ] 5 × 10 = 50  hide product ans  50 NAMES ANSWER "If 5 rows of 10 equals 50, what is the total when you flip the factors to 10 rows of 5?"
+  [                         ] 10 × 3 = 30  hide product ans  30 NAMES ANSWER "If 10 groups of 3 equals 30, what is the total when you flip the factors to 3 groups of 10?"
+
+Multiply a two-digit number by a one-digit number | commutative | difficulty=hard | run 2 | own path
+  [                         ] 5 × 9 = 45   hide product ans  45 "If we have 5 packs with 9 stickers each, what is the total number of stickers?"
+  [                         ] 10 × 8 = 80  hide product ans  80 "If we flip the arrangement to 10 packs with 8 stickers each, how many stickers in total?"
+  [                         ] 5 × 6 = 30   hide product ans  30 "If we have 5 packs with 6 stickers each, what is the total number of stickers?"
+  [                         ] 10 × 9 = 90  hide product ans  90 "If we flip the arrangement to 10 packs with 9 stickers each, how many stickers in total?"
+  [                         ] 9 × 2 = 18   hide product ans  18 "If we arrange 9 packs with 2 stickers each, what is the total number of stickers?"

@@ -1,0 +1,42 @@
+
+Picture graphs: one picture for one thing | most_least | difficulty=easy | run 1 | own path
+  [                      ] [8,5,4] step 1 icon 1 tgt 0  Q: Which toy has the most pictures in the row?  ""
+  [                      ] [4,10,7] step 1 icon 1 tgt 1  Q: Which snack has the most pictures?  ""
+  [                      ] [2,5,8] step 1 icon 1 tgt 2  Q: Which playground toy has the most pictures?  ""
+  [                      ] [4,9,7] step 1 icon 1 tgt 0  Q: Which vegetable row has the least pictures?  ""
+  [                      ] [3,8,5] step 1 icon 1 tgt 1  Q: Which pet has the most?  ""
+
+Picture graphs: one picture for one thing | most_least | difficulty=easy | run 2 | own path
+  [                      ] [5,8,9] step 1 icon 1 tgt 0  Q: Which toy row has the fewest items?  ""
+  [                      ] [5,10,7] step 1 icon 1 tgt 1  Q: Which snack has the most fruit?  ""
+  [                      ] [5,7,2] step 1 icon 1 tgt 2  Q: Which toy has the least?  ""
+  [                      ] [10,3,7] step 1 icon 1 tgt 0  Q: Which vegetable row has the most?  ""
+  [                      ] [8,4,7] step 1 icon 1 tgt 1  Q: Which pet has the fewest?  ""
+
+Picture graphs: one picture for one thing | most_least | difficulty=medium | run 1 | own path
+  [                      ] [6,3,4] step 1 icon 1 tgt 0  Q: Which toy has the most votes?  ""
+  [                      ] [6,2,4] step 1 icon 1 tgt 1  Q: Which snack has the fewest votes?  ""
+  [                      ] [4,8,10] step 1 icon 1 tgt 2  Q: Which game has the most votes?  ""
+  [                      ] [9,5,7] step 1 icon 1 tgt 0  Q: Which vegetable has the most pictures in its row?  ""
+  [                      ] [7,3,5] step 1 icon 1 tgt 1  Q: Which animal group has the fewest friends looking out the window?  ""
+
+Picture graphs: one picture for one thing | most_least | difficulty=medium | run 2 | own path
+  [                      ] [4,7,6] step 1 icon 1 tgt 0  Q: Which toy has the fewest?  ""
+  [                      ] [6,4,8] step 1 icon 1 tgt 1  Q: Which snack has the least items on the graph?  ""
+  [                      ] [8,4,10] step 1 icon 1 tgt 2  Q: Which playground game has the most votes?  ""
+  [                      ] [6,8,9] step 1 icon 1 tgt 0  Q: Which vegetable row has the least?  ""
+  [                      ] [3,10,8] step 1 icon 1 tgt 1  Q: Which animal group has the most friends looking out?  ""
+
+Picture graphs: one picture for one thing | most_least | difficulty=hard | run 1 | own path
+  [                      ] [10,6,3,9] step 1 icon 1 tgt 0  Q: Which toy row has the most?  ""
+  [                      ] [4,3,7,5] step 1 icon 1 tgt 1  Q: Which snack has the fewest votes?  ""
+  [                      ] [6,3,2,9] step 1 icon 1 tgt 2  Q: Which playground fun has the least?  ""
+  [                      ] [4,6,8,9] step 1 icon 1 tgt 3  Q: Which vegetable has the most?  ""
+  [                      ] [9,7,8,2] step 1 icon 1 tgt 0  Q: Which pet has the most?  ""
+
+Picture graphs: one picture for one thing | most_least | difficulty=hard | run 2 | own path
+  [                      ] [3,4,9,6] step 1 icon 1 tgt 0  Q: Which toy has the fewest?  ""
+  [                      ] [4,2,3,6] step 1 icon 1 tgt 1  Q: Which snack has the fewest votes?  ""
+  [                      ] [7,5,3,4] step 1 icon 1 tgt 2  Q: Which playground toy has the least votes?  ""
+  [                      ] [6,3,7,8] step 1 icon 1 tgt 3  Q: Which vegetable row has the most?  ""
+  [                      ] [3,5,4,8] step 1 icon 1 tgt 0  Q: Which pet window has the fewest?  ""

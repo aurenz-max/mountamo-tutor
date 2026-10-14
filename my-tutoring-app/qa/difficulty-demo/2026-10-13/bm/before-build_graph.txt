@@ -1,0 +1,36 @@
+
+Bar graphs and picture graphs | build_graph | difficulty=easy | run 1 | own path
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale using this data: Apples=12, Bananas=16, Oranges=  ""
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale for our park cleanup data: Bottles=15, Cans=25,   ""
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale using this data: Squirrels=14, Ducks=8, Pigeons=  ""
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale for our school equipment count: Baseballs=12, Ba  ""
+
+Bar graphs and picture graphs | build_graph | difficulty=easy | run 2 | own path
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale for our sports survey: Soccer=14, Basketball=12,  ""
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale using this dataset: Baseballs=12, Basketballs=18  ""
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale for our book fair sales: Comics=12, Mystery=18,   ""
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale for the animals spotted at the park: Squirrels=1  ""
+
+Bar graphs and picture graphs | build_graph | difficulty=medium | run 1 | own path
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale for our park cleanup: Bottles=14, Cans=22, Bags=  ""
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale for our sports survey: Soccer=14, Basketball=18,  ""
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale using this data: Mystery=18, Fantasy=24, Adventu  ""
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale for our fruit survey: Apples=15, Bananas=25, Ora  ""
+
+Bar graphs and picture graphs | build_graph | difficulty=medium | run 2 | own path
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale for our park cleanup finds: Plastic Bottles=35,   ""
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale for our book fair sales: Comics=14, Mystery=22,   ""
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale for our fruit survey: Apples=15, Bananas=25, Ora  ""
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale using this survey data: Apples=16, Bananas=12, O  ""
+
+Bar graphs and picture graphs | build_graph | difficulty=hard | run 1 | own path
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale for our fruit survey: Apples=18, Bananas=14, Ora  ""
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale using this data: Soccer=24, Basketball=18, Baseb  ""
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale for our favorite sports survey: Soccer=26, Baske  ""
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale using this forest animal survey: Deer=38, Foxes=  ""
+
+Bar graphs and picture graphs | build_graph | difficulty=hard | run 2 | own path
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale for our book fair sales: Mystery=42, Fantasy=38,  ""
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale for our forest count: Deer=18, Squirrels=34, Rab  ""
+  [                      ] [0,0,0,0] step 2 scale 2  Q: Build the graph and choose the best scale for our fruit survey: Apples=18, Bananas=14, Ora  ""
+  [                      ] [0,0,0,0] step 5 scale 5  Q: Build the graph and choose the best scale for the survey results: Apples=38, Bananas=22, O  ""

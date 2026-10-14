@@ -1,0 +1,54 @@
+
+Count pennies, nickels and dimes | count-mixed | difficulty=easy | run 1 | code space
+  [CoinCounter] Item space coin-sets: this scope cannot fill every tier's band (11/33/2 drawable); tier third [-0.90, -0.45] gave 5
+  [CoinCounter] Item space coin-sets: count-mixed band [-2.5, -0.6]: np|5+@-0.45 dp|few@-0.9 np|few@-0.6 dp|5+@-0.45 np|few@-0.6
+  [β -0.45 np|5+         ] {"type":"count","displayedCoins":[{"type":"nickel","count":2},{"type":"penny","count":3}],"correctTotal":13,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|5+","beta":-0.45}}  "How much money is shown?"
+  [β  -0.9 dp|few        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":1}],"correctTotal":11,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|few","beta":-0.9}}  "Count the coins. How many cents is that?"
+  [β  -0.6 np|few        ] {"type":"count","displayedCoins":[{"type":"nickel","count":1},{"type":"penny","count":1}],"correctTotal":6,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "What is the total value of these coins?"
+  [β -0.45 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":6}],"correctTotal":16,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.45}}  "How much money is shown?"
+  [β  -0.6 np|few        ] {"type":"count","displayedCoins":[{"type":"nickel","count":2},{"type":"penny","count":2}],"correctTotal":12,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "Count the coins. How many cents is that?"
+
+Count pennies, nickels and dimes | count-mixed | difficulty=easy | run 2 | code space
+  [CoinCounter] Item space coin-sets: this scope cannot fill every tier's band (11/33/2 drawable); tier third [-0.90, -0.45] gave 5
+  [CoinCounter] Item space coin-sets: count-mixed band [-2.5, -0.6]: np|5+@-0.45 np|few@-0.6 dp|5+@-0.45 dp|few@-0.9 dp|5+@-0.75
+  [β -0.45 np|5+         ] {"type":"count","displayedCoins":[{"type":"nickel","count":2},{"type":"penny","count":3}],"correctTotal":13,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|5+","beta":-0.45}}  "How much money is shown?"
+  [β  -0.6 np|few        ] {"type":"count","displayedCoins":[{"type":"nickel","count":2},{"type":"penny","count":2}],"correctTotal":12,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "Count the coins. How many cents is that?"
+  [β -0.45 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":6}],"correctTotal":16,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.45}}  "What is the total value of these coins?"
+  [β  -0.9 dp|few        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":1}],"correctTotal":11,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|few","beta":-0.9}}  "How much money is shown?"
+  [β -0.75 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":4}],"correctTotal":14,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.75}}  "Count the coins. How many cents is that?"
+
+Count pennies, nickels and dimes | count-mixed | difficulty=medium | run 1 | code space
+  [CoinCounter] Item space coin-sets: this scope cannot fill every tier's band (11/33/2 drawable); tier third [-0.45, 0.00] gave 5
+  [CoinCounter] Item space coin-sets: count-mixed band [-0.6, 0.6]: dp|5+@-0.3 dn|few@-0.3 np|5+@-0.15 np|5+@0 dp|5+@-0.15
+  [β  -0.3 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":7}],"correctTotal":17,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.3}}  "How much money is shown?"
+  [β  -0.3 dn|few        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":1}],"correctTotal":15,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dn|few","beta":-0.3}}  "Count the coins. How many cents is that?"
+  [β -0.15 np|5+         ] {"type":"count","displayedCoins":[{"type":"nickel","count":1},{"type":"penny","count":6}],"correctTotal":11,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|5+","beta":-0.15}}  "What is the total value of these coins?"
+  [β     0 np|5+         ] {"type":"count","displayedCoins":[{"type":"nickel","count":1},{"type":"penny","count":7}],"correctTotal":12,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|5+","beta":0}}  "How much money is shown?"
+  [β -0.15 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":8}],"correctTotal":18,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.15}}  "Count the coins. How many cents is that?"
+
+Count pennies, nickels and dimes | count-mixed | difficulty=medium | run 2 | code space
+  [CoinCounter] Item space coin-sets: this scope cannot fill every tier's band (11/33/2 drawable); tier third [-0.45, 0.00] gave 5
+  [CoinCounter] Item space coin-sets: count-mixed band [-0.6, 0.6]: dp|5+@0 dn|few@-0.3 dn|few@-0.3 dp|5+@-0.15 np|5+@-0.3
+  [β     0 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":9}],"correctTotal":19,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":0}}  "How much money is shown?"
+  [β  -0.3 dn|few        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":2}],"correctTotal":20,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dn|few","beta":-0.3}}  "Count the coins. How many cents is that?"
+  [β  -0.3 dn|few        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":1}],"correctTotal":15,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dn|few","beta":-0.3}}  "What is the total value of these coins?"
+  [β -0.15 dp|5+         ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":8}],"correctTotal":18,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.15}}  "How much money is shown?"
+  [β  -0.3 np|5+         ] {"type":"count","displayedCoins":[{"type":"nickel","count":1},{"type":"penny","count":5}],"correctTotal":10,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|5+","beta":-0.3}}  "Count the coins. How many cents is that?"
+
+Count pennies, nickels and dimes | count-mixed | difficulty=hard | run 1 | code space
+  [CoinCounter] Item space coin-sets: this scope cannot fill every tier's band (11/33/2 drawable); tier third [0.00, 0.75] gave 5
+  [CoinCounter] Item space coin-sets: count-mixed band [0.6, 3.5]: dnp|5+@0.6 dnp|few@0.3 np|5+@0 np|5+@0.3 dnp|5+@0.45
+  [β   0.6 dnp|5+        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":1},{"type":"penny","count":4}],"correctTotal":19,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dnp|5+","beta":0.6}}  "How much money is shown?"
+  [β   0.3 dnp|few       ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":1},{"type":"penny","count":2}],"correctTotal":17,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dnp|few","beta":0.3}}  "Count the coins. How many cents is that?"
+  [β     0 np|5+         ] {"type":"count","displayedCoins":[{"type":"nickel","count":2},{"type":"penny","count":6}],"correctTotal":16,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|5+","beta":0}}  "What is the total value of these coins?"
+  [β   0.3 np|5+         ] {"type":"count","displayedCoins":[{"type":"nickel","count":1},{"type":"penny","count":9}],"correctTotal":14,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|5+","beta":0.3}}  "How much money is shown?"
+  [β  0.45 dnp|5+        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":1},{"type":"penny","count":3}],"correctTotal":18,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dnp|5+","beta":0.45}}  "Count the coins. How many cents is that?"
+
+Count pennies, nickels and dimes | count-mixed | difficulty=hard | run 2 | code space
+  [CoinCounter] Item space coin-sets: this scope cannot fill every tier's band (11/33/2 drawable); tier third [0.00, 0.75] gave 5
+  [CoinCounter] Item space coin-sets: count-mixed band [0.6, 3.5]: dnp|5+@0.6 dnp|few@0.3 np|5+@0.15 np|5+@0.3 dnp|5+@0.75
+  [β   0.6 dnp|5+        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":1},{"type":"penny","count":4}],"correctTotal":19,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dnp|5+","beta":0.6}}  "How much money is shown?"
+  [β   0.3 dnp|few       ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":1},{"type":"penny","count":2}],"correctTotal":17,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dnp|few","beta":0.3}}  "Count the coins. How many cents is that?"
+  [β  0.15 np|5+         ] {"type":"count","displayedCoins":[{"type":"nickel","count":1},{"type":"penny","count":8}],"correctTotal":13,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|5+","beta":0.15}}  "What is the total value of these coins?"
+  [β   0.3 np|5+         ] {"type":"count","displayedCoins":[{"type":"nickel","count":2},{"type":"penny","count":8}],"correctTotal":18,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"np|5+","beta":0.3}}  "How much money is shown?"
+  [β  0.75 dnp|5+        ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":1},{"type":"penny","count":5}],"correctTotal":20,"countMode":"mixed","itemSpace":{"space":"coin-sets","structure":"dnp|5+","beta":0.75}}  "Count the coins. How many cents is that?"

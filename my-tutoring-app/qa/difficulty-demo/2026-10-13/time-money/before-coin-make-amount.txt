@@ -1,0 +1,62 @@
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=easy | run 1 | own path
+  [                      ] {"type":"make-amount","targetAmount":12,"availableCoins":["dime","penny","nickel"]}  "Lollipop costs 12¢. Use dimes and pennies to pay for it!"
+  [                      ] {"type":"make-amount","targetAmount":26,"availableCoins":["quarter","penny","nickel"]}  "Gummy worms cost 26¢. Use quarters and pennies to pay for them!"
+  [                      ] {"type":"make-amount","targetAmount":35,"availableCoins":["quarter","dime","nickel"]}  "Chocolate bar costs 35¢. Use quarters and dimes to pay for it!"
+  [                      ] {"type":"make-amount","targetAmount":41,"availableCoins":["quarter","nickel","penny","dime"]}  "Sour candy strip costs 41¢. Use quarters, nickels, and pennies!"
+  [                      ] {"type":"make-amount","targetAmount":58,"availableCoins":["quarter","dime","nickel","penny"]}  "Bubble gum pack costs 58¢. Use quarters, dimes, nickels, and pennies t"
+  [                      ] {"type":"make-amount","targetAmount":77,"availableCoins":["quarter","dime","nickel","penny"]}  "Super jawbreaker costs 77¢. Make this amount using quarters, dimes, an"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=easy | run 2 | own path
+  [                      ] {"type":"make-amount","targetAmount":12,"availableCoins":["dime","penny","nickel"]}  "Leo needs 12 cents to buy a bookmark. Use dimes and pennies to make 12"
+  [                      ] {"type":"make-amount","targetAmount":25,"availableCoins":["dime","nickel","penny"]}  "Leo found a comic book for 25 cents! Use nickels and dimes to make 25¢"
+  [                      ] {"type":"make-amount","targetAmount":43,"availableCoins":["quarter","dime","penny","nickel"]}  "Leo wants to buy a storybook that costs 43 cents. Use quarters, dimes,"
+  [                      ] {"type":"make-amount","targetAmount":68,"availableCoins":["quarter","nickel","penny","dime"]}  "Leo's favorite adventure book costs 68 cents. Use quarters, nickels, a"
+  [                      ] {"type":"make-amount","targetAmount":87,"availableCoins":["quarter","dime","nickel","penny"]}  "The big coloring book costs 87 cents! Use quarters, dimes, nickels, an"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=medium | run 1 | own path
+  [                      ] {"type":"make-amount","targetAmount":12,"availableCoins":["dime","penny","nickel"]}  "Sam wants a sour gummy worm that costs 12¢. Show this amount using dim"
+  [                      ] {"type":"make-amount","targetAmount":23,"availableCoins":["dime","nickel","penny"]}  "Maya picks a strawberry lollipop worth 23¢. Use dimes and nickels to p"
+  [                      ] {"type":"make-amount","targetAmount":35,"availableCoins":["quarter","dime","nickel"]}  "Leo wants a chocolate square that costs 35¢. Show 35¢ using quarters a"
+  [                      ] {"type":"make-amount","targetAmount":41,"availableCoins":["quarter","dime","penny"]}  "Zoe buys a mini pack of bubble gum for 41¢. Use quarters, dimes, and p"
+  [                      ] {"type":"make-amount","targetAmount":68,"availableCoins":["quarter","dime","nickel","penny"]}  "Ben loves jawbreakers! His favorite costs 68¢. Pay for it using quarte"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=medium | run 2 | own path
+  [                      ] {"type":"make-amount","targetAmount":12,"availableCoins":["dime","penny","nickel"]}  "A thirsty customer bought a cup of lemonade for 12 cents. Show 12 cent"
+  [                      ] {"type":"make-amount","targetAmount":27,"availableCoins":["quarter","penny","nickel"]}  "A neighbor paid 27 cents for a refill. Show 27 cents using quarters an"
+  [                      ] {"type":"make-amount","targetAmount":35,"availableCoins":["dime","nickel","penny"]}  "Two friends shared a cup of lemonade, costing 35 cents total. Show 35 "
+  [                      ] {"type":"make-amount","targetAmount":60,"availableCoins":["quarter","dime","nickel"]}  "A special mega-lemonade costs 60 cents. Show 60 cents using quarters, "
+  [                      ] {"type":"make-amount","targetAmount":76,"availableCoins":["quarter","nickel","penny"]}  "At the end of the day, a loyal fan leaves a tip totaling 76 cents. Sho"
+  [                      ] {"type":"make-amount","targetAmount":90,"availableCoins":["quarter","dime","nickel"]}  "Our biggest sale yet! A group order of lemonade came to 90 cents. Show"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=hard | run 1 | own path
+  [                      ] {"type":"make-amount","targetAmount":16,"availableCoins":["nickel","penny","dime"]}  "A thirsty customer buys a cup of lemonade for 16 cents. Use nickels an"
+  [                      ] {"type":"make-amount","targetAmount":27,"availableCoins":["dime","nickel","penny"]}  "A regular customer hands you 27 cents for a small cup and a straw. Use"
+  [                      ] {"type":"make-amount","targetAmount":41,"availableCoins":["quarter","nickel","penny"]}  "A friendly neighbor buys a large lemonade and leaves a tip, totaling 4"
+  [                      ] {"type":"make-amount","targetAmount":58,"availableCoins":["quarter","dime","nickel","penny"]}  "Two kids share a cup of lemonade, costing 58 cents total. Use quarters"
+  [                      ] {"type":"make-amount","targetAmount":73,"availableCoins":["quarter","dime","nickel","penny"]}  "You sell a pitcher of lemonade to a birthday party for 73 cents. Use q"
+  [                      ] {"type":"make-amount","targetAmount":94,"availableCoins":["quarter","dime","nickel","penny"]}  "At the end of the busy day, a special VIP customer pays 94 cents for t"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=hard | run 2 | own path
+  [                      ] {"type":"make-amount","targetAmount":16,"availableCoins":["dime","nickel","penny"]}  "Maya wants to buy a bouncy ball for 16 cents. Can you make 16¢ using q"
+  [                      ] {"type":"make-amount","targetAmount":27,"availableCoins":["dime","nickel","penny"]}  "Leo is buying a small toy car that costs 27 cents. Make 27¢ using your"
+  [                      ] {"type":"make-amount","targetAmount":38,"availableCoins":["quarter","dime","penny","nickel"]}  "Sam wants a colorful sticker priced at 38 cents. Build 38¢ using your "
+  [                      ] {"type":"make-amount","targetAmount":53,"availableCoins":["quarter","penny","nickel"]}  "Chloe picks out a mini notepad that costs 53 cents. Make 53¢ to help h"
+  [                      ] {"type":"make-amount","targetAmount":67,"availableCoins":["quarter","dime","nickel","penny"]}  "Ben is buying a wooden top for 67 cents. Can you combine your coins to"
+  [                      ] {"type":"make-amount","targetAmount":84,"availableCoins":["quarter","nickel","penny","dime"]}  "Mia found her favorite puzzle piece toy priced at 84 cents. Build 84¢ "
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"make-amount","targetAmount":7,"availableCoins":["penny","nickel","dime"]}  "You want to buy a pencil for 7¢. Make this amount using pennies and ni"
+  [                      ] {"type":"make-amount","targetAmount":16,"availableCoins":["penny","nickel","dime"]}  "An eraser costs 16¢. Use dimes, nickels, and pennies to pay for the er"
+  [                      ] {"type":"make-amount","targetAmount":30,"availableCoins":["nickel","dime","quarter"]}  "A glue stick costs 30¢. Make this amount using dimes and nickels."
+  [                      ] {"type":"make-amount","targetAmount":45,"availableCoins":["nickel","dime","quarter"]}  "A colorful folder costs 45¢. Pay for the folder using quarters, dimes,"
+  [                      ] {"type":"make-amount","targetAmount":68,"availableCoins":["penny","nickel","dime","quarter"]}  "A mini notebook costs 68¢. Use quarters, dimes, nickels, and pennies t"
+  [                      ] {"type":"make-amount","targetAmount":89,"availableCoins":["penny","nickel","dime","quarter"]}  "A box of crayons costs 89¢. Show the exact amount using quarters, dime"
+
+Solve word problems involving dimes, nickels, pennies and quarters | make-amount | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"make-amount","targetAmount":12,"availableCoins":["dime","penny","nickel"]}  "You want to buy a bouncy ball for 12 cents. Show 12 cents using dimes "
+  [                      ] {"type":"make-amount","targetAmount":26,"availableCoins":["quarter","penny","nickel"]}  "You found a colorful sticker that costs 26 cents. Show 26 cents using "
+  [                      ] {"type":"make-amount","targetAmount":35,"availableCoins":["dime","nickel","penny"]}  "A shiny toy car costs 35 cents. Use dimes and nickels to make 35 cents"
+  [                      ] {"type":"make-amount","targetAmount":50,"availableCoins":["quarter","dime","nickel"]}  "You want to buy a mini puzzle for 50 cents. Use quarters to make 50 ce"
+  [                      ] {"type":"make-amount","targetAmount":68,"availableCoins":["quarter","dime","nickel","penny"]}  "A small teddy bear costs 68 cents. Use quarters, dimes, nickels, and p"
+  [                      ] {"type":"make-amount","targetAmount":84,"availableCoins":["quarter","nickel","penny","dime"]}  "The star item, a wind-up robot, costs 84 cents! Show 84 cents using th"

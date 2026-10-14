@@ -1,0 +1,60 @@
+
+Solve word problems involving dimes, nickels, pennies and quarters | show-amount | difficulty=easy | run 1 | code space
+  [CoinCounter] Item space coin-sets: show-amount band [-2.5, -0.6]: np|few@-0.6 d|few@-1.5 dp|5+@-0.75 dp|few@-0.9 p|few@-1.5
+  [β  -0.6 np|few        ] {"type":"show-amount","targetAmount":8,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "Show 8¢ for a paper cup, any way you like."
+  [β  -1.5 d|few         ] {"type":"show-amount","targetAmount":20,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"d|few","beta":-1.5}}  "Show 20¢ for a lemon slice, any way you like."
+  [β -0.75 dp|5+         ] {"type":"show-amount","targetAmount":23,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.75}}  "Show 23¢ for a paper straw, any way you like."
+  [β  -0.9 dp|few        ] {"type":"show-amount","targetAmount":21,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|few","beta":-0.9}}  "Show 21¢ for an ice cube, any way you like."
+  [β  -1.5 p|few         ] {"type":"show-amount","targetAmount":3,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"p|few","beta":-1.5}}  "Show 3¢ for a wooden spoon, any way you like."
+
+Solve word problems involving dimes, nickels, pennies and quarters | show-amount | difficulty=easy | run 2 | code space
+  [CoinCounter] Item space coin-sets: show-amount band [-2.5, -0.6]: dp|few@-0.9 p|few@-1.5 q|few@-0.7 np|few@-0.6 dp|5+@-0.6
+  [β  -0.9 dp|few        ] {"type":"show-amount","targetAmount":13,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|few","beta":-0.9}}  "Show 13¢ for a sour gummy, any way you like."
+  [β  -1.5 p|few         ] {"type":"show-amount","targetAmount":3,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"p|few","beta":-1.5}}  "Show 3¢ for an orange slice, any way you like."
+  [β  -0.7 q|few         ] {"type":"show-amount","targetAmount":50,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"q|few","beta":-0.7}}  "Show 50¢ for a chocolate drop, any way you like."
+  [β  -0.6 np|few        ] {"type":"show-amount","targetAmount":6,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"np|few","beta":-0.6}}  "Show 6¢ for a peppermint twist, any way you like."
+  [β  -0.6 dp|5+         ] {"type":"show-amount","targetAmount":24,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.6}}  "Show 24¢ for an all day sucker, any way you like."
+
+Solve word problems involving dimes, nickels, pennies and quarters | show-amount | difficulty=medium | run 1 | code space
+  [CoinCounter] Item space coin-sets: show-amount band [-0.6, 0.6]: qdp|few@0.5 dnp|5+@0.6 dp|5+@-0.6 dnp|few@0.3 qd|few@-0.1
+  [β   0.5 qdp|few       ] {"type":"show-amount","targetAmount":46,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qdp|few","beta":0.5}}  "Show 46¢ for a gummy bear, any way you like."
+  [β   0.6 dnp|5+        ] {"type":"show-amount","targetAmount":19,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"dnp|5+","beta":0.6}}  "Show 19¢ for a sour straw, any way you like."
+  [β  -0.6 dp|5+         ] {"type":"show-amount","targetAmount":24,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"dp|5+","beta":-0.6}}  "Show 24¢ for an orange slice, any way you like."
+  [β   0.3 dnp|few       ] {"type":"show-amount","targetAmount":16,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"dnp|few","beta":0.3}}  "Show 16¢ for a chocolate drop, any way you like."
+  [β  -0.1 qd|few        ] {"type":"show-amount","targetAmount":85,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qd|few","beta":-0.1}}  "Show 85¢ for a lollipop, any way you like."
+
+Solve word problems involving dimes, nickels, pennies and quarters | show-amount | difficulty=medium | run 2 | code space
+  [CoinCounter] Item space coin-sets: show-amount band [-0.6, 0.6]: qd|5+@0.05 dn|few@-0.3 qd|few@-0.1 qn|few@0.2 qp|5+@0.05
+  [β  0.05 qd|5+         ] {"type":"show-amount","targetAmount":95,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qd|5+","beta":0.05}}  "Show 95¢ for a sour gummy, any way you like."
+  [β  -0.3 dn|few        ] {"type":"show-amount","targetAmount":15,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"dn|few","beta":-0.3}}  "Show 15¢ for an orange slice, any way you like."
+  [β  -0.1 qd|few        ] {"type":"show-amount","targetAmount":85,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qd|few","beta":-0.1}}  "Show 85¢ for a chocolate drop, any way you like."
+  [β   0.2 qn|few        ] {"type":"show-amount","targetAmount":30,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qn|few","beta":0.2}}  "Show 30¢ for a candy button, any way you like."
+  [β  0.05 qp|5+         ] {"type":"show-amount","targetAmount":29,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qp|5+","beta":0.05}}  "Show 29¢ for an oval lollipop, any way you like."
+
+Solve word problems involving dimes, nickels, pennies and quarters | show-amount | difficulty=hard | run 1 | code space
+  [CoinCounter] Item space coin-sets: show-amount band [0.6, 3.5]: qnp|5+@1.1 dnp|5+@0.6 qdn|5+@1.25 qdn|few@1.1 qnp|few@0.8
+  [β   1.1 qnp|5+        ] {"type":"show-amount","targetAmount":58,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qnp|5+","beta":1.1}}  "Show 58¢ for a shiny sticker, any way you like."
+  [β   0.6 dnp|5+        ] {"type":"show-amount","targetAmount":19,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"dnp|5+","beta":0.6}}  "Show 19¢ for an apple slice, any way you like."
+  [β  1.25 qdn|5+        ] {"type":"show-amount","targetAmount":90,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qdn|5+","beta":1.25}}  "Show 90¢ for a red pencil, any way you like."
+  [β   1.1 qdn|few       ] {"type":"show-amount","targetAmount":65,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qdn|few","beta":1.1}}  "Show 65¢ for a small eraser, any way you like."
+  [β   0.8 qnp|few       ] {"type":"show-amount","targetAmount":31,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qnp|few","beta":0.8}}  "Show 31¢ for a paper bookmark, any way you like."
+
+Solve word problems involving dimes, nickels, pennies and quarters | show-amount | difficulty=hard | run 2 | code space
+  [CoinCounter] Item space coin-sets: show-amount band [0.6, 3.5]: qnp|5+@1.1 qdnp|few@1.7 qdnp|5+@2.45 dnp|5+@0.6 qdn|few@1.1
+  [β   1.1 qnp|5+        ] {"type":"show-amount","targetAmount":58,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qnp|5+","beta":1.1}}  "Show 58¢ for a yellow pencil, any way you like."
+  [β   1.7 qdnp|few      ] {"type":"show-amount","targetAmount":41,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qdnp|few","beta":1.7}}  "Show 41¢ for an eraser, any way you like."
+  [β  2.45 qdnp|5+       ] {"type":"show-amount","targetAmount":94,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qdnp|5+","beta":2.45}}  "Show 94¢ for a shiny sticker, any way you like."
+  [β   0.6 dnp|5+        ] {"type":"show-amount","targetAmount":19,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"dnp|5+","beta":0.6}}  "Show 19¢ for a blue marker, any way you like."
+  [β   1.1 qdn|few       ] {"type":"show-amount","targetAmount":65,"availableCoins":["penny","nickel","dime","quarter","half-dollar"],"itemSpace":{"space":"coin-sets","structure":"qdn|few","beta":1.1}}  "Show 65¢ for an index card, any way you like."
+
+Solve word problems involving dimes, nickels, pennies and quarters | show-amount | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"show-amount","targetAmount":11,"availableCoins":["penny","nickel","dime","quarter","half-dollar"]}  "Show 11¢ for a shiny sticker, any way you like."
+  [                      ] {"type":"show-amount","targetAmount":44,"availableCoins":["penny","nickel","dime","quarter","half-dollar"]}  "Show 44¢ for an apple slice, any way you like."
+  [                      ] {"type":"show-amount","targetAmount":82,"availableCoins":["penny","nickel","dime","quarter","half-dollar"]}  "Show 82¢ for a small marble, any way you like."
+  [                      ] {"type":"show-amount","targetAmount":89,"availableCoins":["penny","nickel","dime","quarter","half-dollar"]}  "Show 89¢ for a colorful pencil, any way you like."
+
+Solve word problems involving dimes, nickels, pennies and quarters | show-amount | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"show-amount","targetAmount":41,"availableCoins":["penny","nickel","dime","quarter","half-dollar"]}  "Show 41¢ for a shiny sticker, any way you like."
+  [                      ] {"type":"show-amount","targetAmount":52,"availableCoins":["penny","nickel","dime","quarter","half-dollar"]}  "Show 52¢ for an orange balloon, any way you like."
+  [                      ] {"type":"show-amount","targetAmount":58,"availableCoins":["penny","nickel","dime","quarter","half-dollar"]}  "Show 58¢ for a plastic ring, any way you like."
+  [                      ] {"type":"show-amount","targetAmount":66,"availableCoins":["penny","nickel","dime","quarter","half-dollar"]}  "Show 66¢ for a bouncy ball, any way you like."

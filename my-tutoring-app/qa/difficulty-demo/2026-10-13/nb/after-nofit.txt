@@ -1,0 +1,31 @@
+
+Count objects to 20 | missing_part | difficulty=easy | run 1 | item space | max 10
+  [NumberBond] Item space bonds-10 missing-part band [-2.5, -0.6] within 10: 2=1+1@-2.1 3=1+2@-1.1 4=2+2@-0.8 6=1+5@-0.9 7=6+1@-0.6
+  [β  -2.1 part|to5|one+double|up-short] {"type":"missing-part","whole":2,"part1":1,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|one+double|up-short","beta":-2.1},"allPairs":null,"factFamily":null,"targetEquation":null}  "There are 2 objects in total. If 1 object is in the visible part, say "
+  [β  -1.1 part|to5|one|up-long] {"type":"missing-part","whole":3,"part1":1,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|one|up-long","beta":-1.1},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 3. One part is 1. What is the other part?"
+  [β  -0.8 part|to5|double|up-short] {"type":"missing-part","whole":4,"part1":2,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to5|double|up-short","beta":-0.8},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 4. Since 2 objects are right here, find and say the missi"
+  [β  -0.9 part|to10|one+five|up-long] {"type":"missing-part","whole":6,"part1":1,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|one+five|up-long","beta":-0.9},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 6. One part is 1. What is the other part?"
+  [β  -0.6 part|to10|one|up-short] {"type":"missing-part","whole":7,"part1":6,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|one|up-short","beta":-0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "Here is a whole of 7. With 6 objects visible, can you say the missing "
+
+Count objects to 20 | missing_part | difficulty=medium | run 1 | item space | max 10
+  [NumberBond] Item space bonds-10 missing-part band [-0.6, 0.6] within 10: 7=3+4@0.6 8=1+7@-0.1 8=6+2@0.5 9=5+4@0.3 10=9+1@-0.3
+  [β   0.6 part|to10|none|up-long] {"type":"missing-part","whole":7,"part1":3,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|none|up-long","beta":0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a whole of 7, and one part is 3. What is the missing part?"
+  [β  -0.1 part|to10|one|up-long] {"type":"missing-part","whole":8,"part1":1,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|one|up-long","beta":-0.1},"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a whole of 8, and one part is 1. What is the missing part?"
+  [β   0.5 part|to10|none|up-short] {"type":"missing-part","whole":8,"part1":6,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|none|up-short","beta":0.5},"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a whole of 8, and one part is 6. What is the missing part?"
+  [β   0.3 part|to10|five|up-short] {"type":"missing-part","whole":9,"part1":5,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|five|up-short","beta":0.3},"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a whole of 9, and one part is 5. What is the missing part?"
+  [β  -0.3 part|to10|one+ten|up-short] {"type":"missing-part","whole":10,"part1":9,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|one+ten|up-short","beta":-0.3},"allPairs":null,"factFamily":null,"targetEquation":null}  "We have a whole of 10, and one part is 9. What is the missing part?"
+
+Count objects to 20 | missing_part | difficulty=hard | run 1 | item space | max 10
+  [NumberBond] Item space bonds-10 missing-part band [0.6, 3.5] within 10: 9=3+6@1 9=4+5@0.6 9=7+2@0.7 10=2+8@0.9 10=7+3@0.6
+  [β     1 part|to10|none|up-long] {"type":"missing-part","whole":9,"part1":3,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|none|up-long","beta":1},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 9 and one part is 3. Can you find the missing part?"
+  [β   0.6 part|to10|five|up-long] {"type":"missing-part","whole":9,"part1":4,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|five|up-long","beta":0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 9 and one part is 4. Can you find the missing part?"
+  [β   0.7 part|to10|none|up-short] {"type":"missing-part","whole":9,"part1":7,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|none|up-short","beta":0.7},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 9 and one part is 7. Can you find the missing part?"
+  [β   0.9 part|to10|ten|up-long] {"type":"missing-part","whole":10,"part1":2,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|ten|up-long","beta":0.9},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10 and one part is 2. Can you find the missing part?"
+  [β   0.6 part|to10|ten|up-short] {"type":"missing-part","whole":10,"part1":7,"part2":null,"itemSpace":{"space":"bonds-10","structure":"part|to10|ten|up-short","beta":0.6},"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10 and one part is 7. Can you find the missing part?"
+
+Count objects to 20 | missing_part | difficulty=(none) | run 1 | own path | max 10
+  [                      ] {"type":"missing-part","whole":5,"part1":2,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "If the whole is 5 and one part is 2, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":8,"part1":3,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "If the whole is 8 and one part is 3, what is the missing part?"
+  [                      ] {"type":"missing-part","whole":10,"part1":4,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. One part is shown — can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":10,"part1":6,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. One part is shown — can you find the missing part?"
+  [                      ] {"type":"missing-part","whole":10,"part1":9,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 10. One part is shown — can you find the missing part?"

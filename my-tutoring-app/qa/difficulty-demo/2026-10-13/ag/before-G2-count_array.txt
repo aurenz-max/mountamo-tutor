@@ -1,0 +1,108 @@
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=easy | run 1 | own path
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=easy | run 2 | own path
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=easy | run 3 | own path
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=medium | run 1 | own path
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=medium | run 2 | own path
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=medium | run 3 | own path
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=hard | run 1 | own path
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=hard | run 2 | own path
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=hard | run 3 | own path
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=(none) | run 1 | own path
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=(none) | run 2 | own path
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+
+Arrays up to 5 rows and 5 columns | count_array | difficulty=(none) | run 3 | own path
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":3,"targetColumns":3}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""

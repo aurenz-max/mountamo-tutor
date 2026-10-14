@@ -1,0 +1,165 @@
+
+Add and subtract within 20 | missing_number | difficulty=easy | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 missing-number band [-2.5, -0.6] within 20: +|change|b0|t0@-0.94 +|change|b1|t1@-0.82 -|change|b0|t1@-0.82 -|change|b0|t0@-1.12 -|start|b0|t1@-0.72 +|start|b0|t
+  [β -0.94 +|change|b0|t0] 2 + ? = 5      ans  3  "Think about what to add to 2 to make 5. Count on to find the missing p"
+  [β -0.82 +|change|b1|t1] 1 + ? = 11     ans 10  "Think about what to add to 1 to make 11. Count on to find the missing "
+  [β -0.82 -|change|b0|t1] 12 − ? = 1     ans 11  "Think about what to take away from 12 to leave 1. Think backwards to f"
+  [β -1.12 -|change|b0|t0] 6 − ? = 1      ans  5  "Think about what to take away from 6 to leave 1. Think backwards to fi"
+  [β -0.72 -|start|b0|t1 ] ? − 10 = 1     ans 11  "Think about what starting number you need so that taking away 10 leave"
+  [β -0.82 +|start|b0|t0 ] ? + 1 = 5      ans  4  "Think about what starting number plus 1 equals 5. Count on to find the"
+  [β -1.02 -|start|b0|t0 ] ? − 9 = 1      ans 10  "Think about what starting number you need so that taking away 9 leaves"
+  [β  -0.8 +|change|b0|t1] 10 + ? = 20    ans 10  "Think about what to add to 10 to make 20. Count on to find the missing"
+
+Add and subtract within 20 | missing_number | difficulty=easy | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 missing-number band [-2.5, -0.6] within 20: +|change|b1|t1@-0.82 -|change|b0|t1@-0.82 -|start|b0|t1@-0.72 -|change|b0|t0@-1.14 +|change|b0|t1@-0.64 -|start|b0|t
+  [β -0.82 +|change|b1|t1] 1 + ? = 11     ans 10  "Think about what number you need to add to 1 to make 11."
+  [β -0.82 -|change|b0|t1] 14 − ? = 1     ans 13  "Think backwards from 14 to find what you subtract to get 1."
+  [β -0.72 -|start|b0|t1 ] ? − 10 = 1     ans 11  "What number minus 10 leaves you with 1?"
+  [β -1.14 -|change|b0|t0] 10 − ? = 8     ans  2  "Count up or think back from 10 to find what you subtract to get 8."
+  [β -0.64 +|change|b0|t1] 18 + ? = 20    ans  2  "Figure out how much more you need to add to 18 to reach 20."
+  [β -1.02 -|start|b0|t0 ] ? − 1 = 9      ans 10  "What number minus 1 gives you 9?"
+  [β -0.86 +|change|b0|t0] 6 + ? = 9      ans  3  "Count on from 6 to find what to add to make 9."
+  [β -0.82 +|start|b0|t0 ] ? + 1 = 3      ans  2  "What number plus 1 gives you a sum of 3?"
+
+Add and subtract within 20 | missing_number | difficulty=medium | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 missing-number band [-0.6, 0.6] within 20: +|start|b0|t1@0.16 -|change|b1|t1@0.24 +|start|b1|t1@0.54 +|change|b1|t1@0.38 -|start|b0|t0@-0.42 +|change|b0|t1@-0.1
+  [β  0.16 +|start|b0|t1 ] ? + 7 = 17     ans 10  "Find the missing starting number: What plus 7 equals 17?"
+  [β  0.24 -|change|b1|t1] 13 − ? = 3     ans 10  "Find the missing number in this subtraction equation: 13 minus what eq"
+  [β  0.54 +|start|b1|t1 ] ? + 10 = 13    ans  3  "Solve for the missing addend: What plus 10 equals 13?"
+  [β  0.38 +|change|b1|t1] 6 + ? = 16     ans 10  "Complete the addition fact: 6 plus what equals 16?"
+  [β -0.42 -|start|b0|t0 ] ? − 1 = 2      ans  3  "What number minus 1 equals 2?"
+  [β -0.18 +|change|b0|t1] 14 + ? = 18    ans  4  "Figure out the missing addend: 14 plus what equals 18?"
+  [β  0.46 -|start|b0|t1 ] ? − 2 = 18     ans 20  "Find the starting number: What minus 2 equals 18?"
+  [β   0.3 -|change|b0|t1] 16 − ? = 11    ans  5  "Complete this subtraction equation: 16 minus what equals 11?"
+
+Add and subtract within 20 | missing_number | difficulty=medium | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 missing-number band [-0.6, 0.6] within 20: -|change|b0|t0@-0.46 +|start|b0|t0@-0.24 +|start|b0|t1@0.14 +|change|b1|t1@0.44 +|start|b1|t1@0.54 +|change|b0|t0@-0.
+  [β -0.46 -|change|b0|t0] 7 − ? = 3      ans  4  "Find the missing number in this subtraction equation."
+  [β -0.24 +|start|b0|t0 ] ? + 3 = 5      ans  2  "Figure out what number goes in the blank to make this addition true."
+  [β  0.14 +|start|b0|t1 ] ? + 3 = 20     ans 17  "Can you solve for the missing start number?"
+  [β  0.44 +|change|b1|t1] 3 + ? = 17     ans 14  "Find the missing addend to complete the equation."
+  [β  0.54 +|start|b1|t1 ] ? + 10 = 13    ans  3  "Discover the missing number in this addition sentence."
+  [β -0.48 +|change|b0|t0] 6 + ? = 10     ans  4  "What number needs to be added here?"
+  [β  0.46 -|start|b0|t1 ] ? − 2 = 13     ans 15  "Find the starting number for this subtraction fact."
+  [β  0.02 -|start|b0|t0 ] ? − 6 = 4      ans 10  "Solve for the missing start number in this equation."
+
+Add and subtract within 20 | missing_number | difficulty=hard | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 missing-number band [0.6, 3.5] within 20: +|start|b1|t1@1.06 -|change|b0|t1@0.62 +|change|b1|t1@0.98 -|start|b0|t1@1.08 +|start|b0|t1@0.92 -|change|b1|t1@0.76 -
+  [β  1.06 +|start|b1|t1 ] ? + 12 = 14    ans  2  "Find the missing number: what goes with 12 to make 14?"
+  [β  0.62 -|change|b0|t1] 19 − ? = 10    ans  9  "Find the missing number: 19 minus what number leaves 10?"
+  [β  0.98 +|change|b1|t1] 6 + ? = 20     ans 14  "Find the missing number: 6 plus what number equals 20?"
+  [β  1.08 -|start|b0|t1 ] ? − 6 = 12     ans 18  "Find the missing number: what number minus 6 leaves 12?"
+  [β  0.92 +|start|b0|t1 ] ? + 9 = 20     ans 11  "Find the missing number: what goes with 9 to make 20?"
+  [β  0.76 -|change|b1|t1] 13 − ? = 2     ans 11  "Find the missing number: 13 minus what number leaves 2?"
+  [β  1.46 -|start|b1|t1 ] ? − 12 = 2     ans 14  "Find the missing number: what number minus 12 leaves 2?"
+  [β  0.62 -|start|b0|t0 ] ? − 4 = 4      ans  8  "Find the missing number: what number minus 4 leaves 4?"
+
+Add and subtract within 20 | missing_number | difficulty=hard | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 missing-number band [0.6, 3.5] within 20: -|change|b0|t1@0.62 -|start|b0|t0@0.62 -|change|b1|t1@1.38 -|start|b0|t1@0.8 +|start|b0|t1@0.68 +|change|b1|t1@0.9 +|s
+  [β  0.62 -|change|b0|t1] 19 − ? = 10    ans  9  "Find the missing number in this subtraction sentence."
+  [β  0.62 -|start|b0|t0 ] ? − 4 = 4      ans  8  "Find the missing number in this subtraction sentence."
+  [β  1.38 -|change|b1|t1] 13 − ? = 7     ans  6  "Find the missing number in this subtraction sentence."
+  [β   0.8 -|start|b0|t1 ] ? − 10 = 10    ans 20  "Find the missing number in this subtraction sentence."
+  [β  0.68 +|start|b0|t1 ] ? + 6 = 17     ans 11  "Find the missing number in this addition sentence."
+  [β   0.9 +|change|b1|t1] 9 + ? = 14     ans  5  "Find the missing number in this addition sentence."
+  [β   1.6 +|start|b1|t1 ] ? + 11 = 16    ans  5  "Find the missing number in this addition sentence."
+  [β  1.92 -|start|b1|t1 ] ? − 14 = 4     ans 18  "Find the missing number in this subtraction sentence."
+
+Add and subtract within 20 | missing_number | difficulty=(none) | run 1 | own path | max 20
+  [                      ] 7 + ? = 15     ans  8  "Find the missing number to make the equation true."
+  [                      ] ? + 6 = 18     ans 12  "Figure out what number is missing here."
+  [                      ] 9 + ? = 14     ans  5  "What number belongs in the blank space?"
+  [                      ] ? + 7 = 18     ans 11  "Find the missing part in this addition equation."
+  [                      ] 16 − ? = 9     ans  7  "Determine the missing number for this subtraction problem."
+  [                      ] ? − 8 = 7      ans 15  "Find the missing number to complete the subtraction."
+  [                      ] 19 − ? = 10    ans  9  "What number is missing from this subtraction sentence?"
+  [                      ] ? − 6 = 7      ans 13  "Find the missing part to make the equation correct."
+
+Add and subtract within 20 | missing_number | difficulty=(none) | run 2 | own path | max 20
+  [                      ] 7 + ? = 12     ans  5  "Find the missing number to make the equation true."
+  [                      ] ? − 6 = 8      ans 14  "Figure out what number goes in the blank."
+  [                      ] 9 + ? = 17     ans  8  "What number is missing from this addition problem?"
+  [                      ] ? − 7 = 8      ans 15  "Find the missing part in this subtraction fact."
+  [                      ] 11 + ? = 17    ans  6  "Complete the addition equation by finding the missing number."
+  [                      ] ? − 5 = 8      ans 13  "Work backwards to find the missing operand."
+  [                      ] 8 + ? = 17     ans  9  "Find the missing number to complete the equation."
+  [                      ] ? − 9 = 7      ans 16  "Determine the missing number in this subtraction sentence."
+
+Count objects to 10 | missing_number | difficulty=easy | run 1 | own path | max 10
+  [                      ] 3 + ? = 7      ans  4  "Count on from the first number to find what is missing!"
+  [                      ] ? + 5 = 7      ans  2  "Think backwards or count the objects to find the missing starting numb"
+  [                      ] 4 + ? = 7      ans  3  "Find how many more you need to reach the total."
+  [                      ] ? + 6 = 9      ans  3  "What number starts this addition sentence?"
+  [                      ] 5 + ? = 9      ans  4  "Use counting on to find the missing part."
+  [                      ] ? − 3 = 5      ans  8  "Find the missing starting number for this subtraction fact."
+  [                      ] 7 − ? = 5      ans  2  "Count back to find what was taken away."
+  [                      ] ? − 4 = 5      ans  9  "Find the missing part in this subtraction equation."
+
+Count objects to 10 | missing_number | difficulty=easy | run 2 | own path | max 10
+  [                      ] 2 + ? = 5      ans  3  "Count the objects and find the missing starting number! Think about wh"
+  [                      ] ? + 2 = 6      ans  4  "Count on from your known number to find the missing part! 4 plus what "
+  [                      ] 3 + ? = 7      ans  4  "Use your counting strategies to find the starting number. What plus 4 "
+  [                      ] ? + 3 = 8      ans  5  "Count carefully! 5 plus what number gives a total of 8?"
+  [                      ] 7 + ? = 9      ans  2  "Work backwards or count on to find the missing start number. What plus"
+  [                      ] ? + 4 = 10     ans  6  "Find the missing piece of the puzzle! 6 plus what number makes 10?"
+  [                      ] 5 + ? = 10     ans  5  "You are doing great! What starting number plus 5 makes 10?"
+
+Count objects to 10 | missing_number | difficulty=medium | run 1 | own path | max 10
+  [                      ] 3 + ? = 7      ans  4  "Find the missing number to complete the equation."
+  [                      ] ? + 2 = 7      ans  5  "Find the missing number to complete the equation."
+  [                      ] 4 + ? = 8      ans  4  "Find the missing number to complete the equation."
+  [                      ] ? + 3 = 9      ans  6  "Find the missing number to complete the equation."
+  [                      ] 2 + ? = 8      ans  6  "Find the missing number to complete the equation."
+  [                      ] ? + 5 = 8      ans  3  "Find the missing number to complete the equation."
+  [                      ] 4 + ? = 9      ans  5  "Find the missing number to complete the equation."
+  [                      ] ? + 2 = 9      ans  7  "Find the missing number to complete the equation."
+
+Count objects to 10 | missing_number | difficulty=medium | run 2 | own path | max 10
+  [                      ] 3 + ? = 7      ans  4  "Find the missing number to complete the equation."
+  [                      ] ? + 2 = 7      ans  5  "Find the missing number to complete the equation."
+  [                      ] 2 + ? = 8      ans  6  "Find the missing number to complete the equation."
+  [                      ] ? + 3 = 7      ans  4  "Find the missing number to complete the equation."
+  [                      ] 1 + ? = 9      ans  8  "Find the missing number to complete the equation."
+  [                      ] ? + 3 = 9      ans  6  "Find the missing number to complete the equation."
+  [                      ] 4 + ? = 9      ans  5  "Find the missing number to complete the equation."
+  [                      ] ? + 7 = 10     ans  3  "Find the missing number to complete the equation."
+
+Count objects to 10 | missing_number | difficulty=hard | run 1 | own path | max 10
+  [                      ] ? + 4 = 7      ans  3  "Find the missing number."
+  [                      ] ? + 5 = 7      ans  2  "Find the missing number."
+  [                      ] ? + 3 = 7      ans  4  "Find the missing number."
+  [                      ] ? + 6 = 7      ans  1  "Find the missing number."
+  [                      ] ? + 3 = 8      ans  5  "Find the missing number."
+  [                      ] ? + 6 = 8      ans  2  "Find the missing number."
+  [                      ] ? + 4 = 8      ans  4  "Find the missing number."
+  [                      ] ? + 6 = 9      ans  3  "Find the missing number."
+
+Count objects to 10 | missing_number | difficulty=hard | run 2 | own path | max 10
+  [                      ] ? + 2 = 5      ans  3  "Find the missing number."
+  [                      ] ? + 3 = 7      ans  4  "Find the missing number."
+  [                      ] ? + 5 = 6      ans  1  "Find the missing number."
+  [                      ] ? + 6 = 8      ans  2  "Find the missing number."
+  [                      ] ? + 4 = 9      ans  5  "Find the missing number."
+  [                      ] ? + 4 = 7      ans  3  "Find the missing number."
+  [                      ] ? + 4 = 6      ans  2  "Find the missing number."
+  [                      ] ? + 5 = 9      ans  4  "Find the missing number."
+
+Count objects to 10 | missing_number | difficulty=(none) | run 1 | own path | max 10
+  [                      ] 3 + ? = 5      ans  2  "Find the missing number to make the equation true."
+  [                      ] ? + 4 = 8      ans  4  "Find the missing number to make the equation true."
+  [                      ] 2 + ? = 7      ans  5  "Find the missing number to make the equation true."
+  [                      ] ? + 3 = 8      ans  5  "Find the missing number to make the equation true."
+  [                      ] 1 + ? = 7      ans  6  "Find the missing number to make the equation true."
+  [                      ] ? + 4 = 7      ans  3  "Find the missing number to make the equation true."
+  [                      ] 6 + ? = 9      ans  3  "Find the missing number to make the equation true."
+  [                      ] ? + 7 = 9      ans  2  "Find the missing number to make the equation true."
+
+Count objects to 10 | missing_number | difficulty=(none) | run 2 | own path | max 10
+  [                      ] 3 + ? = 7      ans  4  "Find the missing number to make the equation true!"
+  [                      ] ? + 2 = 7      ans  5  "What number is missing from this addition sentence?"
+  [                      ] 2 + ? = 8      ans  6  "Figure out the hidden number in the puzzle!"
+  [                      ] ? + 5 = 9      ans  4  "Can you find the missing piece of this addition problem?"
+  [                      ] 1 + ? = 8      ans  7  "Discover the missing number to complete the math fact!"
+  [                      ] ? + 6 = 9      ans  3  "Find the missing number to make this equation correct."
+  [                      ] 4 + ? = 8      ans  4  "What number belongs in the blank space?"
+  [                      ] ? + 7 = 10     ans  3  "Figure out what number goes here to make 10!"

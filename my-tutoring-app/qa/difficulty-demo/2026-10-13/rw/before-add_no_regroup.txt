@@ -1,0 +1,60 @@
+
+Add and subtract within 100 | add_no_regroup | difficulty=easy | run 1 | own path
+  [                      ] {"type":"add_no_regroup","problem":"23 + 14","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"41 + 25","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"50 + 32","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=easy | run 2 | own path
+  [                      ] {"type":"add_no_regroup","problem":"21 + 34","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"43 + 25","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"50 + 28","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=easy | run 3 | own path
+  [                      ] {"type":"add_no_regroup","problem":"34 + 23","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"51 + 26","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"42 + 35","requiresRegrouping":false,"regroupCount":0,"supportTier":"easy"}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=medium | run 1 | own path
+  [                      ] {"type":"add_no_regroup","problem":"43 + 25","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"32 + 46","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"51 + 38","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=medium | run 2 | own path
+  [                      ] {"type":"add_no_regroup","problem":"43 + 25","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"32 + 41","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"54 + 33","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=medium | run 3 | own path
+  [                      ] {"type":"add_no_regroup","problem":"32 + 45","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"53 + 24","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"61 + 37","requiresRegrouping":false,"regroupCount":0,"supportTier":"medium"}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=hard | run 1 | own path
+  [                      ] {"type":"add_no_regroup","problem":"43 + 25","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"51 + 36","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"62 + 24","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=hard | run 2 | own path
+  [                      ] {"type":"add_no_regroup","problem":"43 + 25","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"32 + 46","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"51 + 34","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=hard | run 3 | own path
+  [                      ] {"type":"add_no_regroup","problem":"43 + 25","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"61 + 34","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+  [                      ] {"type":"add_no_regroup","problem":"52 + 46","requiresRegrouping":false,"regroupCount":0,"supportTier":"hard"}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"add_no_regroup","problem":"23 + 14","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"41 + 25","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"32 + 46","requiresRegrouping":false,"regroupCount":0}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"add_no_regroup","problem":"24 + 13","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"32 + 45","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"51 + 26","requiresRegrouping":false,"regroupCount":0}  ""
+
+Add and subtract within 100 | add_no_regroup | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"add_no_regroup","problem":"23 + 14","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"32 + 45","requiresRegrouping":false,"regroupCount":0}  ""
+  [                      ] {"type":"add_no_regroup","problem":"43 + 25","requiresRegrouping":false,"regroupCount":0}  ""

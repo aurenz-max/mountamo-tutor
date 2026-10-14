@@ -1,0 +1,76 @@
+
+Multiply within 100 using multiplication facts | distributive | difficulty=easy | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: product|a1|t1|h0@-1 product|a1|t0|h0@-1.32 product|a0|t0|h0@-0.86 product|a0|t1|h0@-1.29 product|a1|t0|h1@-1.06
+  [β    -1 product|a1|t1|h0 ] 10 × 10 = 100 hide product ans 100 "Break apart 10 × 10 into 5 × 10 and 5 × 10. What is the total product?"
+  [β -1.32 product|a1|t0|h0 ] 10 × 4 = 40  hide product ans  40 "Break apart 10 × 4 into 5 × 4 and 5 × 4. What is the total product?"
+  [β -0.86 product|a0|t0|h0 ] 3 × 4 = 12   hide product ans  12 "Break apart 3 × 4 into 2 × 4 and 1 × 4. What is the total product?"
+  [β -1.29 product|a0|t1|h0 ] 3 × 3 = 9    hide product ans   9 "Break apart 3 × 3 into 2 × 3 and 1 × 3. What is the total product?"
+  [β -1.06 product|a1|t0|h1 ] 2 × 8 = 16   hide product ans  16 "Break apart 2 × 8 into 1 × 8 and 1 × 8. What is the total product?"
+
+Multiply within 100 using multiplication facts | distributive | difficulty=easy | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-2.5, -0.6]: product|a1|t0|h0@-1.2 product|a0|t0|h0@-0.86 product|a1|t0|h1@-0.71 product|a0|t1|h0@-1.29 product|a1|t1|h0@-1.9
+  [β  -1.2 product|a1|t0|h0 ] 5 × 10 = 50  hide product ans  50 "Break apart 5 x 10 into 5 x 5 plus 5 x 5. What is the total product?"
+  [β -0.86 product|a0|t0|h0 ] 3 × 4 = 12   hide product ans  12 "Break apart 3 x 4 into 3 x 2 plus 3 x 2. What is the total product?"
+  [β -0.71 product|a1|t0|h1 ] 5 × 9 = 45   hide product ans  45 "Break apart 5 x 9 into 5 x 5 plus 5 x 4. What is the total product?"
+  [β -1.29 product|a0|t1|h0 ] 3 × 3 = 9    hide product ans   9 "Break apart 3 x 3 into 3 x 2 plus 3 x 1. What is the total product?"
+  [β  -1.9 product|a1|t1|h0 ] 5 × 5 = 25   hide product ans  25 "Break apart 5 x 5 into 5 x 3 plus 5 x 2. What is the total product?"
+
+Multiply within 100 using multiplication facts | distributive | difficulty=medium | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: product|a0|t1|h2@0.13 product|a0|t0|h1@-0.02 product|a1|t0|h1@-0.53 product|a1|t0|h1@-0.29 product|a0|t1|h2@0.29
+  [β  0.13 product|a0|t1|h2 ] 6 × 6 = 36   hide product ans  36 "Break 6 into 5 and 1. What is the total product for 5 times 6 plus 1 times 6?"
+  [β -0.02 product|a0|t0|h1 ] 9 × 4 = 36   hide product ans  36 "Break 9 into 5 and 4. What is the total product for 5 times 4 plus 4 times 4?"
+  [β -0.53 product|a1|t0|h1 ] 10 × 6 = 60  hide product ans  60 "Break 10 into 5 and 5. What is the total product for 5 times 6 plus 5 times 6?"
+  [β -0.29 product|a1|t0|h1 ] 8 × 10 = 80  hide product ans  80 "Break 8 into 5 and 3. What is the total product for 5 times 10 plus 3 times 10?"
+  [β  0.29 product|a0|t1|h2 ] 7 × 7 = 49   hide product ans  49 "Break 7 into 5 and 2. What is the total product for 5 times 7 plus 2 times 7?"
+
+Multiply within 100 using multiplication facts | distributive | difficulty=medium | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [-0.6, 0.6]: product|a1|t0|h1@-0.41 product|a0|t0|h1@-0.11 product|a0|t1|h2@0.29 product|a0|t0|h1@-0.02 product|a0|t1|h2@0.47
+  [β -0.41 product|a1|t0|h1 ] 7 × 10 = 70  hide product ans  70 "Break the 7 into 5 and 2. What is the total product for 7 times 10?"
+  [β -0.11 product|a0|t0|h1 ] 4 × 7 = 28   hide product ans  28 "Break the 4 into 2 and 2. What is the total product for 4 times 7?"
+  [β  0.29 product|a0|t1|h2 ] 7 × 7 = 49   hide product ans  49 "Break the first 7 into 5 and 2. What is the total product for 7 times 7?"
+  [β -0.02 product|a0|t0|h1 ] 4 × 9 = 36   hide product ans  36 "Break the 4 into 2 and 2. What is the total product for 4 times 9?"
+  [β  0.47 product|a0|t1|h2 ] 8 × 8 = 64   hide product ans  64 "Break the first 8 into 5 and 3. What is the total product for 8 times 8?"
+
+Multiply within 100 using multiplication facts | distributive | difficulty=hard | run 1 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t1|h2@0.67 product|a0|t0|h2@0.75 product|a0|t0|h2@0.77 product|a0|t0|h2@0.68 product|a0|t0|h2@0.96
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 "Break 9 x 9 into 5 x 9 and 4 x 9. What is the total product?"
+  [β  0.75 product|a0|t0|h2 ] 9 × 6 = 54   hide product ans  54 "Break 9 x 6 into 5 x 6 and 4 x 6. What is the total product?"
+  [β  0.77 product|a0|t0|h2 ] 8 × 7 = 56   hide product ans  56 "Break 8 x 7 into 5 x 7 and 3 x 7. What is the total product?"
+  [β  0.68 product|a0|t0|h2 ] 6 × 8 = 48   hide product ans  48 "Break 6 x 8 into 5 x 8 and 1 x 8. What is the total product?"
+  [β  0.96 product|a0|t0|h2 ] 9 × 8 = 72   hide product ans  72 "Break 9 x 8 into 5 x 8 and 4 x 8. What is the total product?"
+
+Multiply within 100 using multiplication facts | distributive | difficulty=hard | run 2 | item space
+  [MultiplicationExplorer] Item space mult-div-facts band [0.6, 3.5]: product|a0|t1|h2@0.67 product|a0|t0|h2@0.86 product|a0|t0|h2@0.77 product|a0|t0|h2@0.68 product|a0|t0|h2@0.6
+  [β  0.67 product|a0|t1|h2 ] 9 × 9 = 81   hide product ans  81 "Break apart the array to find the total for 9 x 9. What is the product?"
+  [β  0.86 product|a0|t0|h2 ] 9 × 7 = 63   hide product ans  63 "Break apart the array to find the total for 9 x 7. What is the product?"
+  [β  0.77 product|a0|t0|h2 ] 8 × 7 = 56   hide product ans  56 "Break apart the array to find the total for 8 x 7. What is the product?"
+  [β  0.68 product|a0|t0|h2 ] 8 × 6 = 48   hide product ans  48 "Break apart the array to find the total for 8 x 6. What is the product?"
+  [β   0.6 product|a0|t0|h2 ] 7 × 6 = 42   hide product ans  42 "Break apart the array to find the total for 7 x 6. What is the product?"
+
+Multiply within 100 using multiplication facts | distributive | difficulty=(none) | run 1 | own path
+  [                         ] 3 × 4 = 12   hide product ans  12 "Break apart 3 x 4 into (2 x 4) + (1 x 4) to find the total product."
+  [                         ] 3 × 10 = 30  hide product ans  30 "Break apart 3 x 10 into (3 x 5) + (3 x 5) to find the total product."
+  [                         ] 6 × 6 = 36   hide product ans  36 "Break apart 6 x 6 into (5 x 6) + (1 x 6) to find the total product."
+  [                         ] 6 × 4 = 24   hide product ans  24 "Break apart 6 x 4 into (5 x 4) + (1 x 4) to find the total product."
+  [                         ] 8 × 6 = 48   hide product ans  48 "Break apart 8 x 6 into (5 x 6) + (3 x 6) to find the total product."
+
+Multiply within 100 using multiplication facts | distributive | difficulty=(none) | run 2 | own path
+  [                         ] 8 × 4 = 32   hide product ans  32 "Break 8 x 4 into 5 x 4 plus 3 x 4. What is the total product?"
+  [                         ] 5 × 7 = 35   hide product ans  35 "Break 5 x 7 into 2 x 7 plus 3 x 7. What is the total product?"
+  [                         ] 7 × 2 = 14   hide product ans  14 "Break 7 x 2 into 5 x 2 plus 2 x 2. What is the total product?"
+  [                         ] 5 × 10 = 50  hide product ans  50 "Break 5 x 10 into 2 x 10 plus 3 x 10. What is the total product?"
+  [                         ] 6 × 10 = 60  hide product ans  60 "Break 6 x 10 into 5 x 10 plus 1 x 10. What is the total product?"
+
+Multiply a two-digit number by a one-digit number | distributive | difficulty=hard | run 1 | own path
+  [                         ] 5 × 8 = 40   hide product ans  40 "Break 5 x 8 into 5 x 5 and 5 x 3, then find the total product."
+  [                         ] 3 × 3 = 9    hide product ans   9 "Break 3 x 3 into 2 x 3 and 1 x 3, then find the total product."
+  [                         ] 8 × 6 = 48   hide product ans  48 "Break 8 x 6 into 5 x 6 and 3 x 6, then find the total product."
+  [                         ] 7 × 7 = 49   hide product ans  49 "Break 7 x 7 into 5 x 7 and 2 x 7, then find the total product."
+  [                         ] 10 × 9 = 90  hide product ans  90 "Break 10 x 9 into 5 x 9 and 5 x 9, then find the total product."
+
+Multiply a two-digit number by a one-digit number | distributive | difficulty=hard | run 2 | own path
+  [                         ] 8 × 10 = 80  hide product ans  80 "Break apart 8 × 10 into two easier parts. What is the total product?"
+  [                         ] 2 × 10 = 20  hide product ans  20 "Break apart 2 × 10 into two easier parts. What is the total product?"
+  [                         ] 2 × 7 = 14   hide product ans  14 "Break apart 2 × 7 into two easier parts. What is the total product?"
+  [                         ] 9 × 3 = 27   hide product ans  27 "Break apart 9 × 3 into two easier parts. What is the total product?"
+  [                         ] 5 × 8 = 40   hide product ans  40 "Break apart 5 × 8 into two easier parts. What is the total product?"

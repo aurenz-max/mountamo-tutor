@@ -1,0 +1,84 @@
+
+Addition and subtraction equations within 20 | true-false | difficulty=easy | run 1 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 3 = 8","isTrue":true}  "Compute each side, then compare — are they the same amount? Look at th"
+  [                      ] {"type":"true-false","displayEquation":"10 - 4 = 7","isTrue":false}  "Compute each side, then compare — are they the same amount? Look at th"
+  [                      ] {"type":"true-false","displayEquation":"12 + 4 = 16","isTrue":true}  "Compute each side, then compare — are they the same amount? Look at th"
+  [                      ] {"type":"true-false","displayEquation":"15 - 5 = 11","isTrue":false}  "Compute each side, then compare — are they the same amount? Look at th"
+  [                      ] {"type":"true-false","displayEquation":"9 + 8 = 17","isTrue":true}  "Compute each side, then compare — are they the same amount? Look at th"
+
+Addition and subtraction equations within 20 | true-false | difficulty=easy | run 2 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 3 = 8","isTrue":true}  "Compute each side, then compare — are they the same amount? Look at th"
+  [                      ] {"type":"true-false","displayEquation":"12 - 4 = 7","isTrue":false}  "Compute each side, then compare — are they the same amount? Look at th"
+  [                      ] {"type":"true-false","displayEquation":"9 + 6 = 15","isTrue":true}  "Compute each side, then compare — are they the same amount? Look at th"
+  [                      ] {"type":"true-false","displayEquation":"14 = 7 + 8","isTrue":false}  "Compute each side, then compare — are they the same amount? Look at th"
+  [                      ] {"type":"true-false","displayEquation":"17 - 9 = 8","isTrue":true}  "Compute each side, then compare — are they the same amount? Look at th"
+
+Addition and subtraction equations within 20 | true-false | difficulty=easy | run 3 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 3 = 8","isTrue":true}  "Compute each side, then compare — are they the same amount? Let's chec"
+  [                      ] {"type":"true-false","displayEquation":"10 - 4 = 7","isTrue":false}  "Compute each side, then compare — are they the same amount? Decide if "
+  [                      ] {"type":"true-false","displayEquation":"9 + 6 = 15","isTrue":true}  "Compute each side, then compare — are they the same amount? Is 9 + 6 ="
+  [                      ] {"type":"true-false","displayEquation":"12 = 7 + 6","isTrue":false}  "Compute each side, then compare — are they the same amount? Check if 1"
+  [                      ] {"type":"true-false","displayEquation":"14 - 5 = 9","isTrue":true}  "Compute each side, then compare — are they the same amount? See if 14 "
+
+Addition and subtraction equations within 20 | true-false | difficulty=medium | run 1 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 3 = 8","isTrue":true}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"10 - 4 = 7","isTrue":false}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"12 + 5 = 17","isTrue":true}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"15 - 6 = 10","isTrue":false}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"9 + 9 = 18","isTrue":true}  "Is this equation true or false? Check both sides."
+
+Addition and subtraction equations within 20 | true-false | difficulty=medium | run 2 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 3 = 8","isTrue":true}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"10 - 4 = 7","isTrue":false}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"9 + 6 = 15","isTrue":true}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"12 + 5 = 19","isTrue":false}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"18 - 7 = 10","isTrue":false}  "Is this equation true or false? Check both sides."
+
+Addition and subtraction equations within 20 | true-false | difficulty=medium | run 3 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"7 + 8 = 15","isTrue":true}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"12 - 4 = 7","isTrue":false}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"9 + 6 = 16","isTrue":false}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"18 - 5 = 13","isTrue":true}  "Is this equation true or false? Check both sides."
+  [                      ] {"type":"true-false","displayEquation":"11 + 7 = 19","isTrue":false}  "Is this equation true or false? Check both sides."
+
+Addition and subtraction equations within 20 | true-false | difficulty=hard | run 1 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"7 + 8 = 15","isTrue":true}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"12 - 4 = 9","isTrue":false}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"9 + 6 = 16","isTrue":false}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"14 - 5 = 9","isTrue":true}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"11 + 7 = 19","isTrue":false}  "True or false?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=hard | run 2 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 3 = 8","isTrue":true}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"12 - 4 = 7","isTrue":false}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"10 + 6 = 16","isTrue":true}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"15 - 5 = 11","isTrue":false}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"9 + 9 = 18","isTrue":true}  "True or false?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=hard | run 3 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 3 = 8","isTrue":true}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"12 - 4 = 7","isTrue":false}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"9 + 6 = 15","isTrue":true}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"14 - 5 = 10","isTrue":false}  "True or false?"
+  [                      ] {"type":"true-false","displayEquation":"11 + 7 = 18","isTrue":true}  "True or false?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=(none) | run 1 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 5 = 10","isTrue":true}  "Let us warm up! Does 5 plus 5 equal 10? Look closely and decide if thi"
+  [                      ] {"type":"true-false","displayEquation":"8 - 3 = 4","isTrue":false}  "Check this one out! Does 8 take away 3 give you 4? Decide if this equa"
+  [                      ] {"type":"true-false","displayEquation":"12 = 7 + 6","isTrue":false}  "You are doing great! Let us check if 12 equals 7 plus 6. Is this equat"
+  [                      ] {"type":"true-false","displayEquation":"14 - 5 = 9","isTrue":true}  "Keep up the awesome detective work! Does 14 minus 5 equal 9? Decide if"
+  [                      ] {"type":"true-false","displayEquation":"9 + 8 = 17","isTrue":true}  "Here is your final challenge! Does 9 plus 8 equal 17? Tell us if this "
+
+Addition and subtraction equations within 20 | true-false | difficulty=(none) | run 2 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"5 + 3 = 8","isTrue":true}  "Look closely at this equation. Do both sides show the same amount?"
+  [                      ] {"type":"true-false","displayEquation":"10 - 4 = 7","isTrue":false}  "Check this equation. Does the left side equal the right side?"
+  [                      ] {"type":"true-false","displayEquation":"6 + 6 = 12","isTrue":true}  "Let's check another one! Is this equation correct?"
+  [                      ] {"type":"true-false","displayEquation":"9 + 5 = 15","isTrue":false}  "Take a careful look at this addition sentence. Is it true or false?"
+  [                      ] {"type":"true-false","displayEquation":"14 - 6 = 8","isTrue":true}  "Here is our final challenge! Does this subtraction equation balance?"
+
+Addition and subtraction equations within 20 | true-false | difficulty=(none) | run 3 | own path | max 20
+  [                      ] {"type":"true-false","displayEquation":"7 + 8 = 15","isTrue":true}  "Let us check this addition equation. Does both sides show the exact sa"
+  [                      ] {"type":"true-false","displayEquation":"14 - 5 = 10","isTrue":false}  "Look closely at this subtraction problem. Does it balance out correctl"
+  [                      ] {"type":"true-false","displayEquation":"9 + 9 = 18","isTrue":true}  "Time to test your skills with a larger sum. Is this equation correct?"
+  [                      ] {"type":"true-false","displayEquation":"16 - 7 = 8","isTrue":false}  "Check this subtraction sentence. Does taking away the number leave the"
+  [                      ] {"type":"true-false","displayEquation":"11 + 6 = 17","isTrue":true}  "Here is our final challenge combining bigger numbers. Is this equation"

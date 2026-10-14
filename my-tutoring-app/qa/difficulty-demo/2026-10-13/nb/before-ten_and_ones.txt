@@ -1,0 +1,84 @@
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=easy | run 1 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Break the number 11 into a ten and some ones."
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=easy | run 2 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let's explore 11! Split the counters to show 10 and 1."
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=easy | run 3 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let's make 11! Show how 11 is made of a group of ten and some ones."
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=medium | run 1 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let's explore 11! Split 11 into a group of ten and the extra ones."
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=medium | run 2 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Build 11 with ten and some ones!"
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=medium | run 3 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let's explore 11! Show how 11 is made of a ten and some ones."
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=hard | run 1 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let's make 11! Split the counters to show a group of ten and some ones"
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=hard | run 2 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Can you show how 11 is made of a ten and some ones?"
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=hard | run 3 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us explore the number 11. Split 11 into a ten and some ones!"
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=(none) | run 1 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Can you show how 11 is made of a ten and some ones?"
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=(none) | run 2 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let's explore the number 11! Show how 11 is made of a group of ten and"
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"
+
+Teen numbers as ten and some ones | ten_and_ones | difficulty=(none) | run 3 | own path | max 19
+  [                      ] {"type":"ten-and-ones","whole":11,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "Let us explore the number 11! Show how 11 is made of a ten and some on"
+  [                      ] {"type":"ten-and-ones","whole":12,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 12. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":13,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 13. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":14,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 14. Break it into a ten and some more!"
+  [                      ] {"type":"ten-and-ones","whole":15,"part1":null,"part2":null,"allPairs":null,"factFamily":null,"targetEquation":null}  "The whole is 15. Break it into a ten and some more!"

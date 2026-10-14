@@ -1,0 +1,137 @@
+
+Add and subtract within 20, using numbers 11 to 20 | difficulty=easy | run 1 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 band [-2.5, -0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b0|t1@-0.7 +|start|b0|t0@-0.74 +|start|b0|t1@-1.12 +|result|b1|t1@-1.02 +|result|b0|t1@-0.66 -|result|b1|t0@-0.94 (0 stories from the code template)
+  [β  -0.7 -|result|b0|t1] 16 - 10 = 6 ?=result ans  6 "16 birds were sitting in the tree. 10 birds flew away."
+  [β -0.74 +|start|b0|t0] 2 + 2 = 4   ?=start  ans  2 "Some frogs were sitting on the lily pads. 2 more frogs hopped onto the pads. Now there are 4 frogs in total."
+  [β -1.12 +|start|b0|t1] 10 + 1 = 11 ?=start  ans 10 "Some fish swam in the deep blue water. 1 more fish swam over to join them. Now there are 11 fish swimming together."
+  [β -1.02 +|result|b1|t1] 19 + 1 = 20 ?=result ans 20 "19 lovely butterflies fluttered around the bright flowers. 1 more butterfly landed on a petal."
+  [β -0.66 +|result|b0|t1] 8 + 11 = 19 ?=result ans 19 "8 fluffy bunnies hopped across the green grass. 11 more bunnies bounded over to play with them."
+  [β -0.94 -|result|b1|t0] 10 - 2 = 8  ?=result ans  8 "10 delicious cookies were cooling on the tray. 2 cookies were eaten."
+
+Add and subtract within 20, using numbers 11 to 20 | difficulty=easy | run 2 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 band [-2.5, -0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: +|change|b0|t0@-0.86 +|change|b0|t1@-0.7 +|start|b0|t1@-1.12 -|result|b1|t1@-0.62 -|result|b0|t1@-0.7 +|result|b0|t0@-2.32 (0 stories from the code template)
+  [β -0.86 +|change|b0|t0] 6 + 3 = 9   ?=change ans  3 "6 ducks were swimming in the pond. Some more ducks joined them, and now there are 9 ducks."
+  [β  -0.7 +|change|b0|t1] 10 + 5 = 15 ?=change ans  5 "10 frogs were sitting on the log. Some more frogs hopped over, and now there are 15 frogs."
+  [β -1.12 +|start|b0|t1] 10 + 1 = 11 ?=start  ans 10 "Some stars were shining in the night sky. 1 more star appeared, and now there are 11 stars."
+  [β -0.62 -|result|b1|t1] 20 - 1 = 19 ?=result ans 19 "20 rockets were parked on the launchpad. 1 rocket flew away into space."
+  [β  -0.7 -|result|b0|t1] 15 - 10 = 5 ?=result ans  5 "15 warm cookies were on the tray. 10 cookies were eaten by hungry friends."
+  [β -2.32 +|result|b0|t0] 7 + 1 = 8   ?=result ans  8 "7 butterflies were resting on the flowers. 1 more butterfly flew in to join them."
+
+Add and subtract within 20, using numbers 11 to 20 | difficulty=medium | run 1 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 band [-0.6, 0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: +|change|b0|t1@-0.26 +|result|b1|t0@-0.52 -|start|b0|t0@0.24 +|change|b0|t0@-0.56 +|change|b1|t0@0.14 -|result|b0|t1@-0.34 (0 stories from the code template)
+  [β -0.26 +|change|b0|t1] 3 + 15 = 18 ?=change ans 15 "3 little frogs were sitting by the pond. Some more frogs hopped over, and now there are 18 frogs."
+  [β -0.52 +|result|b1|t0] 1 + 9 = 10  ?=result ans 10 "1 bright blue bird was singing in the tree. 9 more birds flew in to join the song."
+  [β  0.24 -|start|b0|t0] 6 - 3 = 3   ?=start  ans  6 "Some hungry bunnies were in the patch. 3 bunnies hopped away, and now there are 3 bunnies left."
+  [β -0.56 +|change|b0|t0] 3 + 4 = 7   ?=change ans  4 "3 cute puppies were playing on the grass. Some more puppies ran over, making a total of 7 puppies."
+  [β  0.14 +|change|b1|t0] 7 + 3 = 10  ?=change ans  3 "7 shiny stars twinkled in the night sky. Some more stars appeared, bringing the total to 10 stars."
+  [β -0.34 -|result|b0|t1] 18 - 7 = 11 ?=result ans 11 "18 yummy cupcakes were cooling on the kitchen counter. 7 cupcakes were eaten."
+
+Add and subtract within 20, using numbers 11 to 20 | difficulty=medium | run 2 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 band [-0.6, 0.6] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b0|t1@0.06 -|change|b0|t0@-0.08 +|change|b1|t0@0.52 +|change|b0|t1@-0.56 -|result|b1|t1@0.58 -|start|b0|t0@0.24 (0 stories from the code template)
+  [β  0.06 -|result|b0|t1] 19 - 12 = 7 ?=result ans  7 "19 rockets are flying in space. 12 rockets fly away."
+  [β -0.08 -|change|b0|t0] 9 - 4 = 5   ?=change ans  4 "9 stars shine brightly in the sky. Some stars fade away, and now there are 5 stars left."
+  [β  0.52 +|change|b1|t0] 6 + 4 = 10  ?=change ans  4 "6 fish are swimming in the pond. Some more fish swim over to join them, making 10 fish in all."
+  [β -0.56 +|change|b0|t1] 14 + 3 = 17 ?=change ans  3 "14 frogs are resting on lily pads. Some more frogs hop over to join them, so now there are 17 frogs."
+  [β  0.58 -|result|b1|t1] 14 - 6 = 8  ?=result ans  8 "14 apples are on the tree branch. 6 apples fall to the ground."
+  [β  0.24 -|start|b0|t0] 6 - 3 = 3   ?=start  ans  6 "Some butterflies flutter in the garden. 3 butterflies fly away, leaving 3 butterflies behind."
+
+Add and subtract within 20, using numbers 11 to 20 | difficulty=hard | run 1 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 band [0.6, 3.5] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: -|start|b1|t0@1.42 -|start|b0|t0@0.62 +|start|b1|t1@1.76 +|start|b0|t1@0.84 -|result|b1|t1@1.22 -|start|b0|t1@1.48 (0 stories from the code template)
+  [β  1.42 -|start|b1|t0] 10 - 9 = 1  ?=start  ans 10 "Some apples were on the table. 9 apples rolled away, leaving 1 apple behind."
+  [β  0.62 -|start|b0|t0] 6 - 4 = 2   ?=start  ans  6 "Some fish were swimming in the pond. 4 fish swam away, and 2 fish stayed."
+  [β  1.76 +|start|b1|t1] 7 + 8 = 15  ?=start  ans  7 "Some bunnies were in the garden. 8 more bunnies hopped over, making 15 bunnies in total."
+  [β  0.84 +|start|b0|t1] 11 + 8 = 19 ?=start  ans 11 "Some stars were shining in the sky. 8 more stars lit up, giving a total of 19 stars."
+  [β  1.22 -|result|b1|t1] 20 - 14 = 6 ?=result ans  6 "20 butterflies were fluttering near the flowers. 14 butterflies flew away."
+  [β  1.48 -|start|b0|t1] 19 - 11 = 8 ?=start  ans 19 "Some cookies were on the tray. 11 cookies were eaten, and 8 cookies are left."
+
+Add and subtract within 20, using numbers 11 to 20 | difficulty=hard | run 2 | max 20 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 band [0.6, 3.5] within 20: 6 stories
+  [AdditionSubtractionScene] Item space: -|change|b0|t1@0.86 +|start|b0|t1@0.76 +|start|b1|t0@0.84 -|start|b0|t1@1.16 -|result|b1|t1@0.66 +|change|b1|t1@0.74 (0 stories from the code template)
+  [β  0.86 -|change|b0|t1] 19 - 12 = 7 ?=change ans 12 "19 frogs were resting on the log. Some frogs hopped away, leaving 7 frogs behind."
+  [β  0.76 +|start|b0|t1] 7 + 12 = 19 ?=start  ans  7 "Some ducks were swimming in the pond. 12 more ducks swam over to join them, making 19 ducks in total."
+  [β  0.84 +|start|b1|t0] 7 + 3 = 10  ?=start  ans  7 "Some cookies were sitting on the tray. 3 more cookies were added, and now there are 10 cookies."
+  [β  1.16 -|start|b0|t1] 18 - 7 = 11 ?=start  ans 18 "Some birds were sitting in the tree. 7 birds flew away into the sky, leaving 11 birds."
+  [β  0.66 -|result|b1|t1] 20 - 7 = 13 ?=result ans 13 "20 stars were shining brightly in the night sky. 7 of those stars faded away."
+  [β  0.74 +|change|b1|t1] 3 + 9 = 12  ?=change ans  9 "3 flowers were growing in the garden bed. Some more flowers sprouted up, resulting in 12 flowers altogether."
+
+Add and subtract within 10 word problems | difficulty=easy | run 1 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 band [-2.5, -0.6] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: +|result|b0|t0@-2.16 +|start|b0|t0@-0.82 +|change|b0|t0@-0.94 -|result|b1|t0@-1.52 +|result|b1|t0@-1.32 -|result|b0|t0@-1.92 (0 stories from the code template)
+  [β -2.16 +|result|b0|t0] 3 + 3 = 6   ?=result ans  6 "3 frogs are sitting by the pond. 3 more frogs jump into the water."
+  [β -0.82 +|start|b0|t0] 3 + 1 = 4   ?=start  ans  3 "Some ducks are swimming in the pond. 1 more duck joins them, making 4 ducks in all."
+  [β -0.94 +|change|b0|t0] 5 + 2 = 7   ?=change ans  2 "5 butterflies are resting on the flowers. Some more butterflies fly over, and now there are 7 butterflies."
+  [β -1.52 -|result|b1|t0] 10 - 1 = 9  ?=result ans  9 "10 cookies are cooling on the kitchen counter. 1 cookie gets eaten."
+  [β -1.32 +|result|b1|t0] 9 + 1 = 10  ?=result ans 10 "9 cute bunnies are playing in the grass. 1 more bunny hops over to join them."
+  [β -1.92 -|result|b0|t0] 7 - 1 = 6   ?=result ans  6 "7 shiny stars are glowing in space. 1 star shoots away."
+
+Add and subtract within 10 word problems | difficulty=easy | run 2 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 band [-2.5, -0.6] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: -|result|b1|t0@-1.52 +|change|b0|t0@-0.64 -|result|b0|t0@-1.92 +|result|b0|t0@-1.44 +|result|b1|t0@-0.7 +|start|b0|t0@-0.82 (0 stories from the code template)
+  [β -1.52 -|result|b1|t0] 10 - 1 = 9  ?=result ans  9 "10 birds were sitting on a tree branch. 1 bird flew away."
+  [β -0.64 +|change|b0|t0] 2 + 6 = 8   ?=change ans  6 "2 frogs were sitting on a log. Some more frogs hopped over, and now there are 8 frogs."
+  [β -1.92 -|result|b0|t0] 4 - 1 = 3   ?=result ans  3 "4 apples were sitting on the picnic table. 1 apple rolled away."
+  [β -1.44 +|result|b0|t0] 2 + 4 = 6   ?=result ans  6 "2 cute bunnies were hopping in the grass. 4 more bunnies joined them."
+  [β  -0.7 +|result|b1|t0] 5 + 5 = 10  ?=result ans 10 "5 shiny stars twinkled in the night sky. 5 more stars appeared."
+  [β -0.82 +|start|b0|t0] 6 + 1 = 7   ?=start  ans  6 "Some playful puppies were running in the yard. 1 more puppy ran over to play, and now there are 7 puppies."
+
+Add and subtract within 10 word problems | difficulty=hard | run 1 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 band [0.6, 3.5] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: -|change|b1|t0@0.64 +|start|b1|t0@0.76 -|start|b0|t0@0.78 -|start|b1|t0@1.26 -|change|b1|t0@0.72 +|start|b1|t0@1.22 (0 stories from the code template)
+  [β  0.64 -|change|b1|t0] 10 - 8 = 2  ?=change ans  8 "There were 10 frogs on the log. Some hopped away, and now there are 2 left."
+  [β  0.76 +|start|b1|t0] 8 + 2 = 10  ?=start  ans  8 "Some ducks were swimming in the pond. 2 more ducks joined them, and now there are 10 ducks."
+  [β  0.78 -|start|b0|t0] 8 - 6 = 2   ?=start  ans  8 "Some birds were sitting in the tree. 6 flew away, leaving 2 birds behind."
+  [β  1.26 -|start|b1|t0] 10 - 7 = 3  ?=start  ans 10 "Some butterflies were in the garden. 7 flew away, and now there are 3 left."
+  [β  0.72 -|change|b1|t0] 10 - 9 = 1  ?=change ans  9 "There were 10 apples on the tree. Some fell down, and now there is 1 apple left."
+  [β  1.22 +|start|b1|t0] 6 + 4 = 10  ?=start  ans  6 "Some cookies were on the tray. 4 more cookies were added, and now there are 10 cookies."
+
+Add and subtract within 10 word problems | difficulty=hard | run 2 | max 10 | item space
+  [AdditionSubtractionScene] Item space add-sub-20 band [0.6, 3.5] within 10: 6 stories
+  [AdditionSubtractionScene] Item space: -|change|b1|t0@0.64 +|start|b1|t0@1.22 -|start|b0|t0@0.7 -|start|b1|t0@1.1 -|start|b1|t0@1.42 -|change|b1|t0@0.72 (0 stories from the code template)
+  [β  0.64 -|change|b1|t0] 10 - 8 = 2  ?=change ans  8 "There are 10 playful frogs sitting on a log. Some frogs hop away into the pond, and now there are 2 frogs left on the log."
+  [β  1.22 +|start|b1|t0] 6 + 4 = 10  ?=start  ans  6 "Some pretty flowers were blooming in the garden. 4 more flowers bloom, and now there are 10 flowers in total."
+  [β   0.7 -|start|b0|t0] 6 - 5 = 1   ?=start  ans  6 "Some cheerful birds were singing in the tree. 5 birds fly away, and now there is only 1 bird left."
+  [β   1.1 -|start|b1|t0] 10 - 5 = 5  ?=start  ans 10 "Some colorful fish were swimming in the pond. 5 fish swim away behind the rocks, and now there are 5 fish left."
+  [β  1.42 -|start|b1|t0] 10 - 9 = 1  ?=start  ans 10 "Some lovely butterflies were fluttering around. 9 butterflies fly away to another garden, and now there is only 1 butterfly left."
+  [β  0.72 -|change|b1|t0] 10 - 9 = 1  ?=change ans  9 "There are 10 bright stars shining in the night sky. Some stars fade away, and now there is only 1 star shining."
+
+Add and subtract within 20, using numbers 11 to 20 | difficulty=(none) | run 1 | max 20 | own path
+  [                    ] 12 + 3 = 15 ?=result ans 15 "There are 12 apples in the basket. You put 3 more apples inside."
+  [                    ] 15 - 4 = 11 ?=result ans 11 "There are 15 ducks in the pond. 4 ducks fly away."
+  [                    ] 10 + 8 = 18 ?=result ans 18 "10 stars are shining brightly. 8 more stars appear."
+  [                    ] 16 - 5 = 11 ?=start  ans 16 "Some cookies were on the tray. 5 cookies were eaten, and now there are 11 left."
+  [                    ] 7 + 10 = 17 ?=change ans 10 "There are 7 flowers in the garden bed. More flowers are planted, and now there are 17 flowers in total."
+  [                    ] 19 - 6 = 13 ?=result ans 13 "There are 19 fish swimming together. 6 fish hide behind a rock."
+  [                    ] 9 + 9 = 18  ?=result ans 18 "9 butterflies are on the left bush and 9 butterflies are on the right bush."
+  [                    ] 13 + 7 = 20 ?=start  ans 13 "Some rockets launched into space. 7 more rockets launched after them, making 20 rockets in total."
+
+Add and subtract within 20, using numbers 11 to 20 | difficulty=(none) | run 2 | max 20 | own path
+  [                    ] 11 + 4 = 15 ?=result ans 15 "11 rockets are flying through space. 4 more rockets join them."
+  [                    ] 16 - 5 = 11 ?=result ans 11 "16 glowing stars are shining in the sky. 5 stars shoot away."
+  [                    ] 18 - 6 = 12 ?=start  ans 18 "Some cookies are cooling on the tray. 6 cookies are eaten, leaving 12 cookies behind."
+  [                    ] 10 + 7 = 17 ?=change ans  7 "10 flowers are growing in the garden. Some more flowers sprout, and now there are 17 flowers."
+  [                    ] 12 + 7 = 19 ?=result ans 19 "12 bunnies are hopping in the grass. 7 more bunnies hop over to join them."
+  [                    ] 20 - 8 = 12 ?=result ans 12 "20 cupcakes are on the bakery shelf. 8 cupcakes are sold to customers."
+
+Count objects to tell how many | difficulty=hard | run 1 | max 10 | own path
+  [                    ] 5 - 2 = 3   ?=start  ans  5 "Some frogs were sitting on the log. 2 frogs hopped away. Now there are 3 frogs left."
+  [                    ] 7 - 3 = 4   ?=start  ans  7 "Some apples were sitting on the table. 3 apples were eaten. Now there are 4 apples left."
+  [                    ] 2 + 4 = 6   ?=start  ans  2 "Some ducks were swimming in the pond. 4 more ducks joined them. Now there are 6 ducks swimming."
+  [                    ] 5 + 3 = 8   ?=start  ans  5 "Some stars were shining in the sky. 3 more stars appeared. Now there are 8 stars shining."
+  [                    ] 7 - 5 = 2   ?=start  ans  7 "Some cookies were on the tray. 5 cookies were taken away. Now there are 2 cookies left."
+  [                    ] 5 + 4 = 9   ?=start  ans  5 "Some butterflies were resting in the garden. 4 more butterflies flew in. Now there are 9 butterflies in total."
+  [                    ] 10 - 6 = 4  ?=start  ans 10 "Some birds were sitting in the tree. 6 birds flew away. Now there are 4 birds left."
+
+Count objects to tell how many | difficulty=hard | run 2 | max 10 | own path
+  [                    ] 5 - 3 = 2   ?=start  ans  5 "Some frogs were sitting on the log. 3 of them hopped away, and now there are 2 left."
+  [                    ] 4 + 2 = 6   ?=start  ans  4 "Some ducks were swimming in the pond. 2 more ducks joined them, making 6 ducks in all."
+  [                    ] 7 - 4 = 3   ?=start  ans  7 "Some apples were on the table. 4 apples were eaten, leaving 3 apples behind."
+  [                    ] 5 + 3 = 8   ?=start  ans  5 "Some cookies were fresh on the tray. 3 more cookies were placed on top, so now there are 8 cookies."
+  [                    ] 7 - 2 = 5   ?=start  ans  7 "Some flowers were blooming in the garden. 2 flowers were picked, and now 5 flowers remain."
+  [                    ] 5 + 4 = 9   ?=start  ans  5 "Some birds were resting in the tree. 4 more birds flew over to join them, bringing the total to 9."
+  [                    ] 5 + 5 = 10  ?=start  ans  5 "Some stars were shining brightly. 5 more stars appeared in the sky, making 10 stars total."
+  [                    ] 7 - 3 = 4   ?=start  ans  7 "Some butterflies were fluttering around the flowers. 3 flew away into the distance, leaving 4 behind."

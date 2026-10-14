@@ -1,0 +1,102 @@
+
+Multiplication with arrays | build_array | difficulty=easy | run 1 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (16/0/0 drawable); tier third [-2.45, -1.70] gave 4
+  [ArrayGrid] Item space mult-div-facts: build_array band [-2.5, -0.6]: 2x2@-2.45 4x4@-1.51 4x3@-0.86 3x2@-1.73 4x2@-1.70
+  [β -2.45 product|a1|t1|h0] {"targetRows":2,"targetColumns":2,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t1|h0","beta":-2.45}}  ""
+  [β -1.51 product|a0|t1|h0] {"targetRows":4,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h0","beta":-1.51}}  ""
+  [β -0.86 product|a0|t0|h0] {"targetRows":4,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h0","beta":-0.86}}  ""
+  [β -1.73 product|a1|t0|h0] {"targetRows":3,"targetColumns":2,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.73}}  ""
+  [β  -1.7 product|a1|t0|h0] {"targetRows":4,"targetColumns":2,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.7}}  ""
+
+Multiplication with arrays | build_array | difficulty=easy | run 2 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (16/0/0 drawable); tier third [-2.45, -1.70] gave 4
+  [ArrayGrid] Item space mult-div-facts: build_array band [-2.5, -0.6]: 4x3@-0.86 5x2@-1.68 3x3@-1.59 2x2@-2.45 5x4@-1.56
+  [β -0.86 product|a0|t0|h0] {"targetRows":4,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h0","beta":-0.86}}  ""
+  [β -1.68 product|a1|t0|h0] {"targetRows":5,"targetColumns":2,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.68}}  ""
+  [β -1.59 product|a0|t1|h0] {"targetRows":3,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h0","beta":-1.59}}  ""
+  [β -2.45 product|a1|t1|h0] {"targetRows":2,"targetColumns":2,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t1|h0","beta":-2.45}}  ""
+  [β -1.56 product|a1|t0|h0] {"targetRows":5,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.56}}  ""
+
+Multiplication with arrays | build_array | difficulty=easy | run 3 | item space
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (16/0/0 drawable); tier third [-2.45, -1.70] gave 4
+  [ArrayGrid] Item space mult-div-facts: build_array band [-2.5, -0.6]: 4x4@-1.51 4x3@-0.86 5x5@-2.20 3x2@-1.73 4x5@-1.56
+  [β -1.51 product|a0|t1|h0] {"targetRows":4,"targetColumns":4,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t1|h0","beta":-1.51}}  ""
+  [β -0.86 product|a0|t0|h0] {"targetRows":4,"targetColumns":3,"itemSpace":{"space":"mult-div-facts","structure":"product|a0|t0|h0","beta":-0.86}}  ""
+  [β  -2.2 product|a1|t1|h0] {"targetRows":5,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t1|h0","beta":-2.2}}  ""
+  [β -1.73 product|a1|t0|h0] {"targetRows":3,"targetColumns":2,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.73}}  ""
+  [β -1.56 product|a1|t0|h0] {"targetRows":4,"targetColumns":5,"itemSpace":{"space":"mult-div-facts","structure":"product|a1|t0|h0","beta":-1.56}}  ""
+
+Multiplication with arrays | build_array | difficulty=medium | run 1 | own path
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (16/0/0 drawable); tier third [-1.70, -1.59] gave 4
+  [ArrayGrid] Item space mult-div-facts: build_array band [-0.6, 0.6]: no session fits; own picker kept
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":4,"targetColumns":5}  ""
+
+Multiplication with arrays | build_array | difficulty=medium | run 2 | own path
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (16/0/0 drawable); tier third [-1.70, -1.59] gave 4
+  [ArrayGrid] Item space mult-div-facts: build_array band [-0.6, 0.6]: no session fits; own picker kept
+  [                      ] {"targetRows":4,"targetColumns":2}  ""
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":2}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+
+Multiplication with arrays | build_array | difficulty=medium | run 3 | own path
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (16/0/0 drawable); tier third [-1.70, -1.59] gave 4
+  [ArrayGrid] Item space mult-div-facts: build_array band [-0.6, 0.6]: no session fits; own picker kept
+  [                      ] {"targetRows":5,"targetColumns":2}  ""
+  [                      ] {"targetRows":4,"targetColumns":5}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+
+Multiplication with arrays | build_array | difficulty=hard | run 1 | own path
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (16/0/0 drawable); tier third [-1.59, -0.86] gave 4
+  [ArrayGrid] Item space mult-div-facts: build_array band [0.6, 3.5]: no session fits; own picker kept
+  [                      ] {"targetRows":2,"targetColumns":5}  ""
+  [                      ] {"targetRows":5,"targetColumns":4}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+  [                      ] {"targetRows":4,"targetColumns":2}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+
+Multiplication with arrays | build_array | difficulty=hard | run 2 | own path
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (16/0/0 drawable); tier third [-1.59, -0.86] gave 4
+  [ArrayGrid] Item space mult-div-facts: build_array band [0.6, 3.5]: no session fits; own picker kept
+  [                      ] {"targetRows":3,"targetColumns":2}  ""
+  [                      ] {"targetRows":4,"targetColumns":5}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+  [                      ] {"targetRows":5,"targetColumns":2}  ""
+  [                      ] {"targetRows":3,"targetColumns":5}  ""
+
+Multiplication with arrays | build_array | difficulty=hard | run 3 | own path
+  [ArrayGrid] Item space mult-div-facts: this scope cannot fill every tier's band (16/0/0 drawable); tier third [-1.59, -0.86] gave 4
+  [ArrayGrid] Item space mult-div-facts: build_array band [0.6, 3.5]: no session fits; own picker kept
+  [                      ] {"targetRows":5,"targetColumns":2}  ""
+  [                      ] {"targetRows":4,"targetColumns":5}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":2}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+
+Multiplication with arrays | build_array | difficulty=(none) | run 1 | own path
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+  [                      ] {"targetRows":5,"targetColumns":4}  ""
+  [                      ] {"targetRows":2,"targetColumns":3}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+  [                      ] {"targetRows":5,"targetColumns":2}  ""
+
+Multiplication with arrays | build_array | difficulty=(none) | run 2 | own path
+  [                      ] {"targetRows":2,"targetColumns":4}  ""
+  [                      ] {"targetRows":5,"targetColumns":4}  ""
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+  [                      ] {"targetRows":4,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":2}  ""
+
+Multiplication with arrays | build_array | difficulty=(none) | run 3 | own path
+  [                      ] {"targetRows":5,"targetColumns":3}  ""
+  [                      ] {"targetRows":3,"targetColumns":2}  ""
+  [                      ] {"targetRows":4,"targetColumns":2}  ""
+  [                      ] {"targetRows":3,"targetColumns":4}  ""
+  [                      ] {"targetRows":5,"targetColumns":2}  ""

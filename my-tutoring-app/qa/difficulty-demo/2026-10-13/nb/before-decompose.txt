@@ -1,0 +1,60 @@
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=easy | run 1 | own path | max 6
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let us break apart the number 4! Move the counters into two parts and "
+  [                      ] {"type":"decompose","whole":5,"allPairs":[[0,5],[1,4],[2,3]],"part1":null,"part2":null}  "Great job! Now let us break apart the number 5. Move the counters to f"
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "You are a math star! Can you break apart the number 6? Find all the wa"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=easy | run 2 | own path | max 10
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let us break apart 4 into two parts using counters!"
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "Can you find all the ways to make 6 with counters?"
+  [                      ] {"type":"decompose","whole":8,"allPairs":[[0,8],[1,7],[2,6],[3,5],[4,4]],"part1":null,"part2":null}  "Let us discover all the wonderful ways to split 8 into parts!"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=easy | run 3 | own path | max 10
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let's explore the number 4! Move the counters to split 4 into two part"
+  [                      ] {"type":"decompose","whole":7,"allPairs":[[0,7],[1,6],[2,5],[3,4]],"part1":null,"part2":null}  "You are doing great! Now let's work with 7. Split the counters to find"
+  [                      ] {"type":"decompose","whole":10,"allPairs":[[0,10],[1,9],[2,8],[3,7],[4,6],[5,5]],"part1":null,"part2":null}  "Time for our biggest challenge! Can you find all the ways to break apa"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=medium | run 1 | own path | max 6
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let us break apart the number 4! Move the counters into two parts and "
+  [                      ] {"type":"decompose","whole":5,"allPairs":[[0,5],[1,4],[2,3]],"part1":null,"part2":null}  "Great job! Now let us break apart the number 5. Split the counters int"
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "You are doing wonderful! Let us try the number 6. Split the counters t"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=medium | run 2 | own path | max 6
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let us break apart the number 4 into two parts. Find all the ways to s"
+  [                      ] {"type":"decompose","whole":5,"allPairs":[[0,5],[1,4],[2,3]],"part1":null,"part2":null}  "Great job! Now let us explore the number 5. Find all the different way"
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "You are doing amazing! Can you find all the ways to break apart the nu"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=medium | run 3 | own path | max 6
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Can you find all the ways to split 4 into two parts?"
+  [                      ] {"type":"decompose","whole":5,"allPairs":[[0,5],[1,4],[2,3]],"part1":null,"part2":null}  "Explore 5! Let us discover all the ways to split 5 into two parts."
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "Great job! Now find all the ways to split 6 into two parts."
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=hard | run 1 | own path | max 6
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let us break apart the number 4! Move the counters into two parts and "
+  [                      ] {"type":"decompose","whole":5,"allPairs":[[0,5],[1,4],[2,3]],"part1":null,"part2":null}  "Great job! Now let us explore the number 5. Can you find all the ways "
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "You are doing wonderful! Let us try our biggest challenge yet and brea"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=hard | run 2 | own path | max 10
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let's explore the number 4! Move the counters to split 4 into differen"
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "Now let's try the number 6! Find all the ways to split 6 into two part"
+  [                      ] {"type":"decompose","whole":8,"allPairs":[[0,8],[1,7],[2,6],[3,5],[4,4]],"part1":null,"part2":null}  "You are doing great! Can you find all the different ways to break apar"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=hard | run 3 | own path | max 10
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let's explore the number 4! Move the counters to split 4 into two part"
+  [                      ] {"type":"decompose","whole":7,"allPairs":[[0,7],[1,6],[2,5],[3,4]],"part1":null,"part2":null}  "Can you break apart the number 7? Move the counters to find all the di"
+  [                      ] {"type":"decompose","whole":10,"allPairs":[[0,10],[1,9],[2,8],[3,7],[4,6],[5,5]],"part1":null,"part2":null}  "Time for our biggest challenge with 10! Move the counters to find ever"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=(none) | run 1 | own path | max 10
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let's explore the number 4! Find all the different ways to break 4 int"
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "Great job! Now let's work with the number 6. Find all the ways to spli"
+  [                      ] {"type":"decompose","whole":8,"allPairs":[[0,8],[1,7],[2,6],[3,5],[4,4]],"part1":null,"part2":null}  "You are doing amazing! Can you find all the ways to break apart the nu"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=(none) | run 2 | own path | max 10
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Can you find all the ways to split the number 4 into two parts?"
+  [                      ] {"type":"decompose","whole":7,"allPairs":[[0,7],[1,6],[2,5],[3,4]],"part1":null,"part2":null}  "Let's work with the number 7! Find all the ways to break 7 into two pa"
+  [                      ] {"type":"decompose","whole":10,"allPairs":[[0,10],[1,9],[2,8],[3,7],[4,6],[5,5]],"part1":null,"part2":null}  "You are doing great! Now find all the different ways to break apart th"
+
+Number bonds: parts and wholes within 10 | decompose | difficulty=(none) | run 3 | own path | max 10
+  [                      ] {"type":"decompose","whole":4,"allPairs":[[0,4],[1,3],[2,2]],"part1":null,"part2":null}  "Let us break apart 4! Find all the ways to split 4 into two parts."
+  [                      ] {"type":"decompose","whole":6,"allPairs":[[0,6],[1,5],[2,4],[3,3]],"part1":null,"part2":null}  "Great job! Now let us find all the ways to break apart 6 into two part"
+  [                      ] {"type":"decompose","whole":8,"allPairs":[[0,8],[1,7],[2,6],[3,5],[4,4]],"part1":null,"part2":null}  "You are a math star! Can you find all the ways to break apart 8 into t"

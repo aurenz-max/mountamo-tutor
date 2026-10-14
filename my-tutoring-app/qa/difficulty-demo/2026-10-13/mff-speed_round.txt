@@ -1,0 +1,162 @@
+
+Add and subtract within 20 | speed_round | difficulty=easy | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 speed-round band [-2.5, -0.6] within 20: -|result|b0|t1@-1.62 -|result|b1|t1@-0.64 -|result|b0|t0@-1.26 +|result|b0|t1@-0.9 +|result|b0|t0@-2.32 +|result|b0|t1@
+  [β -1.62 -|result|b0|t1] 14 − 1 = ?     ans 13  "Think back to find the missing result for this subtraction fact: 14 mi"
+  [β -0.64 -|result|b1|t1] 12 − 10 = ?    ans  2  "Subtract 10 from 12 and enter what you get."
+  [β -1.26 -|result|b0|t0] 7 − 4 = ?      ans  3  "Solve this subtraction fact by taking away 4 from 7."
+  [β  -0.9 +|result|b0|t1] 11 + 5 = ?     ans 16  "Count on from 11 by adding 5 more."
+  [β -2.32 +|result|b0|t0] 3 + 1 = ?      ans  4  "Find the sum of 3 and 1."
+  [β -1.18 +|result|b0|t1] 10 + 9 = ?     ans 19  "Add 10 and 9 together to find the total."
+  [β -1.62 -|result|b0|t1] 15 − 14 = ?    ans  1  "Take 14 away from 15 to solve this subtraction fact."
+  [β -1.92 -|result|b0|t0] 8 − 7 = ?      ans  1  "Subtract 7 from 8 and find the difference."
+
+Add and subtract within 20 | speed_round | difficulty=easy | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 speed-round band [-2.5, -0.6] within 20: -|result|b1|t1@-0.64 -|result|b0|t1@-1.62 +|result|b0|t1@-1.36 -|result|b0|t0@-1.26 +|result|b0|t0@-1.74 -|result|b0|t1
+  [β -0.64 -|result|b1|t1] 12 − 10 = ?    ans  2  "Think about taking 10 away from 12. What is the difference?"
+  [β -1.62 -|result|b0|t1] 18 − 17 = ?    ans  1  "Find the difference when you subtract 17 from 18."
+  [β -1.36 +|result|b0|t1] 3 + 11 = ?     ans 14  "Count on from 11 by adding 3 more."
+  [β -1.26 -|result|b0|t0] 9 − 3 = ?      ans  6  "Take 3 away from 9. What is left?"
+  [β -1.74 +|result|b0|t0] 7 + 2 = ?      ans  9  "Add 2 to 7. What is the total sum?"
+  [β -1.62 -|result|b0|t1] 14 − 1 = ?     ans 13  "Subtract 1 from 14 to find the difference."
+  [β -0.98 +|result|b0|t1] 15 + 4 = ?     ans 19  "Add 4 to 15. What is the total?"
+  [β -1.92 -|result|b0|t0] 5 − 4 = ?      ans  1  "What is the result when you take 4 away from 5?"
+
+Add and subtract within 20 | speed_round | difficulty=medium | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 speed-round band [-0.6, 0.6] within 20: +|result|b0|t1@-0.58 -|result|b1|t1@-0.04 -|result|b0|t1@-0.42 +|result|b1|t1@0.26 +|result|b1|t1@-0.44 -|result|b1|t1@-
+  [β -0.58 +|result|b0|t1] 9 + 11 = ?     ans 20  "Find the sum of 9 and 11."
+  [β -0.04 -|result|b1|t1] 18 − 16 = ?    ans  2  "Calculate the difference for 18 minus 16."
+  [β -0.42 -|result|b0|t1] 19 − 6 = ?     ans 13  "Subtract 6 from 19 to find the answer."
+  [β  0.26 +|result|b1|t1] 8 + 7 = ?      ans 15  "Add 8 and 7 together."
+  [β -0.44 +|result|b1|t1] 2 + 9 = ?      ans 11  "Find the total of 2 and 9."
+  [β -0.04 -|result|b1|t1] 16 − 14 = ?    ans  2  "What is 16 minus 14?"
+  [β -0.58 -|result|b0|t1] 15 − 4 = ?     ans 11  "Take 4 away from 15."
+  [β  0.14 -|result|b1|t1] 18 − 10 = ?    ans  8  "Subtract 10 from 18."
+
+Add and subtract within 20 | speed_round | difficulty=medium | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 speed-round band [-0.6, 0.6] within 20: +|result|b0|t1@-0.58 +|result|b1|t1@0.1 -|result|b1|t1@0.04 -|result|b0|t1@-0.5 +|result|b1|t1@-0.36 -|result|b0|t1@-0.2
+  [β -0.58 +|result|b0|t1] 11 + 9 = ?     ans 20  "Find the sum of 11 and 9."
+  [β   0.1 +|result|b1|t1] 9 + 5 = ?      ans 14  "What is 9 plus 5?"
+  [β  0.04 -|result|b1|t1] 16 − 13 = ?    ans  3  "Subtract 13 from 16."
+  [β  -0.5 -|result|b0|t1] 17 − 5 = ?     ans 12  "Calculate 17 minus 5."
+  [β -0.36 +|result|b1|t1] 3 + 9 = ?      ans 12  "Find the sum of 3 and 9."
+  [β -0.26 -|result|b0|t1] 20 − 8 = ?     ans 12  "What is 20 minus 8?"
+  [β  0.04 -|result|b1|t1] 11 − 8 = ?     ans  3  "Calculate 11 minus 8."
+  [β   0.1 +|result|b1|t1] 5 + 8 = ?      ans 13  "What is 5 plus 8?"
+
+Add and subtract within 20 | speed_round | difficulty=hard | run 1 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 speed-round band [0.6, 3.5] within 20: -|result|b1|t1@0.66 -|result|b1|t1@0.66 -|result|b1|t1@0.74 -|result|b1|t1@0.66 -|result|b1|t1@0.66 -|result|b1|t1@0.66 -
+  [β  0.66 -|result|b1|t1] 20 − 13 = ?    ans  7  "What is 20 minus 13?"
+  [β  0.66 -|result|b1|t1] 15 − 8 = ?     ans  7  "What is 15 minus 8?"
+  [β  0.74 -|result|b1|t1] 20 − 12 = ?    ans  8  "What is 20 minus 12?"
+  [β  0.66 -|result|b1|t1] 16 − 9 = ?     ans  7  "What is 16 minus 9?"
+  [β  0.66 -|result|b1|t1] 14 − 7 = ?     ans  7  "What is 14 minus 7?"
+  [β  0.66 -|result|b1|t1] 19 − 12 = ?    ans  7  "What is 19 minus 12?"
+  [β  0.74 -|result|b1|t1] 17 − 8 = ?     ans  9  "What is 17 minus 8?"
+  [β  0.74 -|result|b1|t1] 19 − 11 = ?    ans  8  "What is 19 minus 11?"
+
+Add and subtract within 20 | speed_round | difficulty=hard | run 2 | item space | max 20
+  [MathFactFluency] Item space add-sub-20 speed-round band [0.6, 3.5] within 20: -|result|b1|t1@0.66 -|result|b1|t1@0.74 -|result|b1|t1@0.74 -|result|b1|t1@0.82 -|result|b1|t1@0.66 -|result|b1|t1@0.82 -
+  [β  0.66 -|result|b1|t1] 16 − 9 = ?     ans  7  "Solve: 16 minus 9"
+  [β  0.74 -|result|b1|t1] 17 − 9 = ?     ans  8  "Solve: 17 minus 9"
+  [β  0.74 -|result|b1|t1] 17 − 8 = ?     ans  9  "Solve: 17 minus 8"
+  [β  0.82 -|result|b1|t1] 20 − 11 = ?    ans  9  "Solve: 20 minus 11"
+  [β  0.66 -|result|b1|t1] 15 − 8 = ?     ans  7  "Solve: 15 minus 8"
+  [β  0.82 -|result|b1|t1] 18 − 9 = ?     ans  9  "Solve: 18 minus 9"
+  [β  0.74 -|result|b1|t1] 16 − 8 = ?     ans  8  "Solve: 16 minus 8"
+  [β  0.66 -|result|b1|t1] 14 − 7 = ?     ans  7  "Solve: 14 minus 7"
+
+Add and subtract within 20 | speed_round | difficulty=(none) | run 1 | own path | max 20
+  [                      ] 7 + 8 = ?      ans 15  "Solve this addition problem at your own pace."
+  [                      ] 14 − 6 = ?     ans  8  "Find the difference for this subtraction problem."
+  [                      ] 9 + 9 = ?      ans 18  "Calculate the sum."
+  [                      ] 17 − 9 = ?     ans  8  "Subtract to find the answer."
+  [                      ] 8 + 7 = ?      ans 15  "What is the sum of these two numbers?"
+  [                      ] 16 − 7 = ?     ans  9  "Solve this subtraction problem."
+  [                      ] 6 + 9 = ?      ans 15  "Add these numbers together."
+  [                      ] 13 − 5 = ?     ans  8  "Find the result of this subtraction."
+
+Add and subtract within 20 | speed_round | difficulty=(none) | run 2 | own path | max 20
+  [                      ] 8 + 7 = ?      ans 15  "Find the sum."
+  [                      ] 14 − 6 = ?     ans  8  "Subtract to find the difference."
+  [                      ] 9 + 9 = ?      ans 18  "Add the numbers together."
+  [                      ] 17 − 8 = ?     ans  9  "Find the result."
+  [                      ] 11 + 5 = ?     ans 16  "Solve this addition problem."
+  [                      ] 20 − 7 = ?     ans 13  "What is the difference?"
+  [                      ] 6 + 12 = ?     ans 18  "Calculate the sum."
+  [                      ] 15 − 9 = ?     ans  6  "Solve this subtraction problem."
+
+Count objects to 10 | speed_round | difficulty=easy | run 1 | own path | max 10
+  [                      ] 2 + 3 = ?      ans  5  "Count up the objects carefully to find the total sum for this equation"
+  [                      ] 4 + 1 = ?      ans  5  "Think about counting on from your first number to find the total."
+  [                      ] 3 + 3 = ?      ans  6  "Use your counting strategy to find the sum of these groups."
+  [                      ] 5 + 2 = ?      ans  7  "Count on from the bigger number to solve this addition fact."
+  [                      ] 4 + 4 = ?      ans  8  "Put the two numbers together to find the total amount."
+  [                      ] 6 + 3 = ?      ans  9  "Count carefully to discover what these numbers add up to."
+  [                      ] 5 + 5 = ?      ans 10  "Add the groups together to reach the final count up to 10."
+
+Count objects to 10 | speed_round | difficulty=easy | run 2 | own path | max 10
+  [                      ] 4 + 1 = ?      ans  5  "Count up the objects and find the total sum."
+  [                      ] 3 + 2 = ?      ans  5  "Count up the objects and find the total sum."
+  [                      ] 5 + 2 = ?      ans  7  "Count up the objects and find the total sum."
+  [                      ] 4 + 4 = ?      ans  8  "Count up the objects and find the total sum."
+  [                      ] 6 + 3 = ?      ans  9  "Count up the objects and find the total sum."
+  [                      ] 5 + 5 = ?      ans 10  "Count up the objects and find the total sum."
+
+Count objects to 10 | speed_round | difficulty=medium | run 1 | own path | max 10
+  [                      ] 2 + 3 = ?      ans  5  "Find the sum for this addition problem."
+  [                      ] 4 + 1 = ?      ans  5  "Solve this addition equation."
+  [                      ] 3 + 3 = ?      ans  6  "What is the answer to this addition fact?"
+  [                      ] 5 + 2 = ?      ans  7  "Calculate the total for this equation."
+  [                      ] 4 + 4 = ?      ans  8  "Find the sum for this number sentence."
+  [                      ] 6 + 3 = ?      ans  9  "Solve this addition problem."
+  [                      ] 5 + 5 = ?      ans 10  "What is the result of this addition fact?"
+
+Count objects to 10 | speed_round | difficulty=medium | run 2 | own path | max 10
+  [                      ] 4 + 2 = ?      ans  6  "Solve the addition fact."
+  [                      ] 3 + 3 = ?      ans  6  "Find the total for this equation."
+  [                      ] 5 + 4 = ?      ans  9  "What is the sum?"
+  [                      ] 2 + 5 = ?      ans  7  "Type the answer to the equation."
+  [                      ] 4 + 4 = ?      ans  8  "Solve the problem."
+  [                      ] 6 + 3 = ?      ans  9  "What is the result?"
+  [                      ] 5 + 5 = ?      ans 10  "Calculate the sum."
+  [                      ] 7 + 2 = ?      ans  9  "Solve the equation."
+
+Count objects to 10 | speed_round | difficulty=hard | run 1 | own path | max 10
+  [                      ] 4 + 3 = ?      ans  7  "Solve this equation."
+  [                      ] 2 + 5 = ?      ans  7  "Solve this equation."
+  [                      ] 1 + 6 = ?      ans  7  "Solve this equation."
+  [                      ] 3 + 4 = ?      ans  7  "Solve this equation."
+  [                      ] 5 + 3 = ?      ans  8  "Solve this equation."
+  [                      ] 4 + 4 = ?      ans  8  "Solve this equation."
+  [                      ] 2 + 6 = ?      ans  8  "Solve this equation."
+  [                      ] 5 + 4 = ?      ans  9  "Solve this equation."
+
+Count objects to 10 | speed_round | difficulty=hard | run 2 | own path | max 10
+  [                      ] 3 + 4 = ?      ans  7  "Solve this equation."
+  [                      ] 5 + 2 = ?      ans  7  "Solve this equation."
+  [                      ] 4 + 4 = ?      ans  8  "Solve this equation."
+  [                      ] 6 + 3 = ?      ans  9  "Solve this equation."
+  [                      ] 2 + 5 = ?      ans  7  "Solve this equation."
+  [                      ] 1 + 8 = ?      ans  9  "Solve this equation."
+  [                      ] 5 + 5 = ?      ans 10  "Solve this equation."
+  [                      ] 3 + 6 = ?      ans  9  "Solve this equation."
+
+Count objects to 10 | speed_round | difficulty=(none) | run 1 | own path | max 10
+  [                      ] 2 + 3 = ?      ans  5  "Solve this addition fact at your own pace."
+  [                      ] 4 + 1 = ?      ans  5  "Find the sum for this equation."
+  [                      ] 3 + 3 = ?      ans  6  "What is the answer to this number sentence?"
+  [                      ] 5 + 2 = ?      ans  7  "Type the correct answer for this math fact."
+  [                      ] 4 + 4 = ?      ans  8  "Calculate the sum at your own pace."
+  [                      ] 6 + 3 = ?      ans  9  "Solve this addition problem."
+  [                      ] 5 + 5 = ?      ans 10  "Find the sum for this equation."
+  [                      ] 7 + 2 = ?      ans  9  "What is the answer to this math fact?"
+
+Count objects to 10 | speed_round | difficulty=(none) | run 2 | own path | max 10
+  [                      ] 3 + 4 = ?      ans  7  "Solve this addition fact."
+  [                      ] 6 − 2 = ?      ans  4  "Solve this subtraction fact."
+  [                      ] 5 + 5 = ?      ans 10  "Find the sum for this equation."
+  [                      ] 8 − 3 = ?      ans  5  "Find the difference for this equation."
+  [                      ] 2 + 6 = ?      ans  8  "What is the result of this addition problem?"
+  [                      ] 9 − 4 = ?      ans  5  "Solve this subtraction problem."
+  [                      ] 4 + 3 = ?      ans  7  "Type the answer to this equation."
+  [                      ] 10 − 7 = ?     ans  3  "Solve the equation below."

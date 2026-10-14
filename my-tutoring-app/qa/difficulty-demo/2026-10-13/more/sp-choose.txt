@@ -1,0 +1,48 @@
+
+Add within 100 | choose | difficulty=easy | run 1 | own path | max 10
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"5 - 2","operation":"subtraction","operand1":5,"operand2":2,"result":3},"availableStrategies":["counting-back"],"supportTier":"easy","showStrategyDescriptions":true,"s  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"3 - 1","operation":"subtraction","operand1":3,"operand2":1,"result":2},"availableStrategies":["counting-back"],"supportTier":"easy","showStrategyDescriptions":true,"s  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"4 + 2","operation":"addition","operand1":4,"operand2":2,"result":6},"availableStrategies":["counting-on","tally-marks"],"supportTier":"easy","showStrategyDescriptions  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"10 - 6","operation":"subtraction","operand1":10,"operand2":6,"result":4},"availableStrategies":["counting-back"],"supportTier":"easy","showStrategyDescriptions":true,  "Pick any strategy you like to solve this problem!"
+
+Add within 100 | choose | difficulty=easy | run 2 | own path | max 10
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"7 + 2","operation":"addition","operand1":7,"operand2":2,"result":9},"availableStrategies":["counting-on","make-ten","tally-marks"],"supportTier":"easy","showStrategyD  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"6 - 5","operation":"subtraction","operand1":6,"operand2":5,"result":1},"availableStrategies":["counting-back"],"supportTier":"easy","showStrategyDescriptions":true,"s  "Pick any strategy you like to solve this problem!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"4 - 2","operation":"subtraction","operand1":4,"operand2":2,"result":2},"availableStrategies":["counting-back"],"supportTier":"easy","showStrategyDescriptions":true,"s  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"5 + 5","operation":"addition","operand1":5,"operand2":5,"result":10},"availableStrategies":["counting-on","make-ten","doubles","tally-marks"],"supportTier":"easy","sh  "Pick any strategy you like to solve this!"
+
+Add within 100 | choose | difficulty=medium | run 1 | own path | max 10
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"9 + 1","operation":"addition","operand1":9,"operand2":1,"result":10},"availableStrategies":["counting-on","make-ten","tally-marks"],"supportTier":"medium","showStrate  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"2 + 7","operation":"addition","operand1":2,"operand2":7,"result":9},"availableStrategies":["counting-on","make-ten","tally-marks"],"supportTier":"medium","showStrateg  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"1 + 3","operation":"addition","operand1":1,"operand2":3,"result":4},"availableStrategies":["counting-on","tally-marks"],"supportTier":"medium","showStrategyDescriptio  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"5 - 2","operation":"subtraction","operand1":5,"operand2":2,"result":3},"availableStrategies":["counting-back"],"supportTier":"medium","showStrategyDescriptions":true,  "Pick any strategy you like to solve this!"
+
+Add within 100 | choose | difficulty=medium | run 2 | own path | max 10
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"4 + 3","operation":"addition","operand1":4,"operand2":3,"result":7},"availableStrategies":["counting-on","tally-marks"],"supportTier":"medium","showStrategyDescriptio  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"9 + 1","operation":"addition","operand1":9,"operand2":1,"result":10},"availableStrategies":["counting-on","make-ten","tally-marks"],"supportTier":"medium","showStrate  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"9 - 8","operation":"subtraction","operand1":9,"operand2":8,"result":1},"availableStrategies":["counting-back"],"supportTier":"medium","showStrategyDescriptions":true,  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"10 - 8","operation":"subtraction","operand1":10,"operand2":8,"result":2},"availableStrategies":["counting-back"],"supportTier":"medium","showStrategyDescriptions":tru  "Pick any strategy you like to solve this!"
+
+Add within 100 | choose | difficulty=hard | run 1 | own path | max 10
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"7 - 6","operation":"subtraction","operand1":7,"operand2":6,"result":1},"availableStrategies":["counting-back"],"supportTier":"hard","showStrategyDescriptions":false,"  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"8 - 3","operation":"subtraction","operand1":8,"operand2":3,"result":5},"availableStrategies":["counting-back"],"supportTier":"hard","showStrategyDescriptions":false,"  "Pick any strategy you like to solve this problem!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"4 - 2","operation":"subtraction","operand1":4,"operand2":2,"result":2},"availableStrategies":["counting-back"],"supportTier":"hard","showStrategyDescriptions":false,"  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"6 - 5","operation":"subtraction","operand1":6,"operand2":5,"result":1},"availableStrategies":["counting-back"],"supportTier":"hard","showStrategyDescriptions":false,"  "Pick any strategy you like to solve this problem!"
+
+Add within 100 | choose | difficulty=hard | run 2 | own path | max 10
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"1 + 5","operation":"addition","operand1":1,"operand2":5,"result":6},"availableStrategies":["counting-on","tally-marks"],"supportTier":"hard","showStrategyDescriptions  "Pick any strategy you like to solve this problem!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"2 + 6","operation":"addition","operand1":2,"operand2":6,"result":8},"availableStrategies":["counting-on","make-ten","tally-marks"],"supportTier":"hard","showStrategyD  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"2 + 1","operation":"addition","operand1":2,"operand2":1,"result":3},"availableStrategies":["counting-on","tally-marks"],"supportTier":"hard","showStrategyDescriptions  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"4 + 4","operation":"addition","operand1":4,"operand2":4,"result":8},"availableStrategies":["counting-on","make-ten","doubles","tally-marks"],"supportTier":"hard","sho  "Pick any strategy you like to solve this!"
+
+Add within 100 | choose | difficulty=(none) | run 1 | own path | max 10
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"10 - 2","operation":"subtraction","operand1":10,"operand2":2,"result":8},"availableStrategies":["counting-back"]}  "Pick any strategy you like to solve this problem!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"10 - 1","operation":"subtraction","operand1":10,"operand2":1,"result":9},"availableStrategies":["counting-back"]}  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"9 - 6","operation":"subtraction","operand1":9,"operand2":6,"result":3},"availableStrategies":["counting-back"]}  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"3 + 1","operation":"addition","operand1":3,"operand2":1,"result":4},"availableStrategies":["counting-on","tally-marks"]}  "Pick any strategy you like to solve this!"
+
+Add within 100 | choose | difficulty=(none) | run 2 | own path | max 10
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"2 + 4","operation":"addition","operand1":2,"operand2":4,"result":6},"availableStrategies":["counting-on","tally-marks"]}  "Pick any strategy you like to solve this problem!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"2 - 1","operation":"subtraction","operand1":2,"operand2":1,"result":1},"availableStrategies":["counting-back"]}  "Pick any strategy you like to solve this!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"5 - 3","operation":"subtraction","operand1":5,"operand2":3,"result":2},"availableStrategies":["counting-back"]}  "Pick any strategy you like to solve this problem!"
+  [                      ] {"type":"choose-your-strategy","problem":{"equation":"9 - 3","operation":"subtraction","operand1":9,"operand2":3,"result":6},"availableStrategies":["counting-back"]}  "Pick any strategy you like to solve this!"

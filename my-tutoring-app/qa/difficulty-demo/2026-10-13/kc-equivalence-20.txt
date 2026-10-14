@@ -1,0 +1,36 @@
+
+Understand the meaning of the equal sign: find the number that makes both sides of an equation the same | difficulty=easy | run 1 | item space
+  [β  -0.7 both|++|first|b0|s1] 7 + 3 = □ + 3. What number goes in the box so both sides are the same amount?  2(f) 12(f) 7* 10(n)
+  [β -0.68 reversed|n+|last|b0|s0] 4 = 1 + □. What number goes in the box so both sides are the same amount?  10(f) 8(f) 4(n) 3*
+  [β -0.61 reversed|n+|first|b0|s0] 13 = □ + 12. What number goes in the box so both sides are the same amount?  6(f) 8(f) 13(n) 1*
+  [β -0.61 standard|-|alone|b1|s0] 13 - 10 = □. What number goes in the box so both sides are the same amount?  2(n) 3* 8(f) 10(f)
+  [β -1.17 standard|-|alone|b0|s0] 12 - 11 = □. What number goes in the box so both sides are the same amount?  6(f) 8(f) 1* 2(n)
+  (5 written question(s) missed the spec; plain question used)
+
+Understand the meaning of the equal sign: find the number that makes both sides of an equation the same | difficulty=medium | run 1 | item space
+  [β   0.5 both|+-|first|b0|s0] What number goes in the box for 1 + 5 = □ - 4?  6(n) 10* 15(f) 9(n)
+  [β -0.03 reversed|n-|first|b0|s0] What number goes in the box for 18 = □ - 1?  14(f) 19* 17(n) 18(n)
+  [β  0.34 both|--|first|b0|s1] What number goes in the box for 18 - 2 = □ - 2?  18* 16(n) 19(n) 13(f)
+  [β  0.01 both|++|first|b1|s1] What number goes in the box for 8 + 9 = □ + 9?  9(n) 17(n) 13(f) 8*
+  [β   0.3 reversed|n+|last|b1|s0] What number goes in the box for 20 = 14 + □?  20(n) 6* 7(n) 11(f)
+
+Understand the meaning of the equal sign: find the number that makes both sides of an equation the same | difficulty=hard | run 1 | item space
+  [β  0.71 both|+-|first|b0|s0] What number goes in the box for 6 + 4 = □ - 7?  7(n) 12(f) 10(n) 17*
+  [β  0.91 both|-+|last|b0|s0] What number goes in the box for 18 - 1 = 5 + □?  12* 5(n) 17(n) 7(f)
+  [β  1.25 both|++|first|b2|s0] What number goes in the box for 9 + 6 = □ + 12?  3* 15(n) 2(n) 8(f)
+  [β  1.33 both|++|last|b2|s0] What number goes in the box for 2 + 9 = 6 + □?  4(n) 11(n) 5* 10(f)
+  [β  0.66 both|--|first|b1|s1] What number goes in the box for 12 - 8 = □ - 8?  12* 4(n) 11(n) 17(f)
+
+Understand the meaning of the equal sign: find the number that makes both sides of an equation the same | difficulty=(none) | run 1 | orchestrator
+  [matching_activity easy]   
+  [true_false easy] Both sides are the same.  
+  [multiple_choice medium] Which number makes both sides of the equation the same?  3* 5(n) 7(n) 9(f)
+  [multiple_choice easy] What number makes both sides equal: 5 = 3 + ___?  8(n) 2* 5(n) 0(f)
+  [fill_in_blanks easy]   
+
+Tell and write time to the hour | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] What time is shown on the clock?  12 o'clock(n) 3 o'clock* 1 o'clock(n) 6 o'clock(f)
+  [matching_activity easy]   
+  [multiple_choice easy] Which clock shows 8 o'clock?  Clock B(n) Clock A* Both clocks(f) Neither clock(f)
+  [sequencing_activity easy]   
+  [true_false easy] At 8 o'clock, the long minute hand points straight up at the 12.  

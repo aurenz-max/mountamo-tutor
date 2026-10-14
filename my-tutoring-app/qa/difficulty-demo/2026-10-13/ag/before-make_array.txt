@@ -1,0 +1,72 @@
+
+Multiplication with arrays | make_array | difficulty=easy | run 1 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":10,"ways":1}  "Make an array with 10 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":20,"ways":1}  "Make an array with 20 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":8,"ways":1}  "Make an array with 8 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":15,"ways":1}  "Make an array with 15 squares."
+
+Multiplication with arrays | make_array | difficulty=easy | run 2 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":12,"ways":1}  "Make an array with 12 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":16,"ways":1}  "Make an array with 16 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":8,"ways":1}  "Make an array with 8 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":6,"ways":1}  "Make an array with 6 squares."
+
+Multiplication with arrays | make_array | difficulty=easy | run 3 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":16,"ways":1}  "Make an array with 16 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":6,"ways":1}  "Make an array with 6 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":12,"ways":1}  "Make an array with 12 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":10,"ways":1}  "Make an array with 10 squares."
+
+Multiplication with arrays | make_array | difficulty=medium | run 1 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":15,"ways":1}  "Make an array with 15 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":8,"ways":2}  "Make an array with 8 squares. Then make a different array with 8 squar"
+  [                      ] {"targetRows":0,"targetColumns":0,"total":16,"ways":1}  "Make an array with 16 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":6,"ways":2}  "Make an array with 6 squares. Then make a different array with 6 squar"
+
+Multiplication with arrays | make_array | difficulty=medium | run 2 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":16,"ways":1}  "Make an array with 16 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":20,"ways":2}  "Make an array with 20 squares. Then make a different array with 20 squ"
+  [                      ] {"targetRows":0,"targetColumns":0,"total":10,"ways":1}  "Make an array with 10 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":6,"ways":2}  "Make an array with 6 squares. Then make a different array with 6 squar"
+
+Multiplication with arrays | make_array | difficulty=medium | run 3 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":16,"ways":1}  "Make an array with 16 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":20,"ways":2}  "Make an array with 20 squares. Then make a different array with 20 squ"
+  [                      ] {"targetRows":0,"targetColumns":0,"total":12,"ways":1}  "Make an array with 12 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":15,"ways":2}  "Make an array with 15 squares. Then make a different array with 15 squ"
+
+Multiplication with arrays | make_array | difficulty=hard | run 1 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":16,"ways":1}  "Make an array with 16 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":6,"ways":2}  "Make an array with 6 squares. Then make a different array with 6 squar"
+  [                      ] {"targetRows":0,"targetColumns":0,"total":20,"ways":1}  "Make an array with 20 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":10,"ways":2}  "Make an array with 10 squares. Then make a different array with 10 squ"
+
+Multiplication with arrays | make_array | difficulty=hard | run 2 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":10,"ways":1}  "Make an array with 10 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":15,"ways":2}  "Make an array with 15 squares. Then make a different array with 15 squ"
+  [                      ] {"targetRows":0,"targetColumns":0,"total":8,"ways":1}  "Make an array with 8 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":16,"ways":2}  "Make an array with 16 squares. Then make a different array with 16 squ"
+
+Multiplication with arrays | make_array | difficulty=hard | run 3 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":6,"ways":1}  "Make an array with 6 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":12,"ways":2}  "Make an array with 12 squares. Then make a different array with 12 squ"
+  [                      ] {"targetRows":0,"targetColumns":0,"total":16,"ways":1}  "Make an array with 16 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":20,"ways":2}  "Make an array with 20 squares. Then make a different array with 20 squ"
+
+Multiplication with arrays | make_array | difficulty=(none) | run 1 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":8,"ways":1}  "Make an array with 8 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":6,"ways":2}  "Make an array with 6 squares. Then make a different array with 6 squar"
+  [                      ] {"targetRows":0,"targetColumns":0,"total":15,"ways":1}  "Make an array with 15 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":20,"ways":2}  "Make an array with 20 squares. Then make a different array with 20 squ"
+
+Multiplication with arrays | make_array | difficulty=(none) | run 2 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":6,"ways":1}  "Make an array with 6 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":15,"ways":2}  "Make an array with 15 squares. Then make a different array with 15 squ"
+  [                      ] {"targetRows":0,"targetColumns":0,"total":16,"ways":1}  "Make an array with 16 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":8,"ways":2}  "Make an array with 8 squares. Then make a different array with 8 squar"
+
+Multiplication with arrays | make_array | difficulty=(none) | run 3 | own path
+  [                      ] {"targetRows":0,"targetColumns":0,"total":16,"ways":1}  "Make an array with 16 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":12,"ways":2}  "Make an array with 12 squares. Then make a different array with 12 squ"
+  [                      ] {"targetRows":0,"targetColumns":0,"total":6,"ways":1}  "Make an array with 6 squares."
+  [                      ] {"targetRows":0,"targetColumns":0,"total":10,"ways":2}  "Make an array with 10 squares. Then make a different array with 10 squ"

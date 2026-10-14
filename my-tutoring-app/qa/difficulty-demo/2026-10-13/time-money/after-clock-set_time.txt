@@ -1,0 +1,63 @@
+
+Tell and write time to the nearest five minutes | set_time | difficulty=easy | run 1 | code space
+  [AnalogClock] Item space clock-time: set_time band [-2.5, -0.6] grid 5: hour@-1.8 half|twelve@-0.8 half@-1 hour@-1.8 half@-1
+  [β  -1.8 hour          ] {"type":"set_time","targetHour":5,"targetMinute":0,"itemSpace":{"space":"clock-time","structure":"hour","beta":-1.8},"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to 5:00."
+  [β  -0.8 half|twelve   ] {"type":"set_time","targetHour":12,"targetMinute":30,"itemSpace":{"space":"clock-time","structure":"half|twelve","beta":-0.8},"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to 12:30."
+  [β    -1 half          ] {"type":"set_time","targetHour":7,"targetMinute":30,"itemSpace":{"space":"clock-time","structure":"half","beta":-1},"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to 7:30."
+  [β  -1.8 hour          ] {"type":"set_time","targetHour":1,"targetMinute":0,"itemSpace":{"space":"clock-time","structure":"hour","beta":-1.8},"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to 1:00."
+  [β    -1 half          ] {"type":"set_time","targetHour":10,"targetMinute":30,"itemSpace":{"space":"clock-time","structure":"half","beta":-1},"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to 10:30."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=easy | run 2 | code space
+  [AnalogClock] Item space clock-time: set_time band [-2.5, -0.6] grid 5: half@-1 half|twelve@-0.8 hour@-1.8 half@-1 half@-1
+  [β    -1 half          ] {"type":"set_time","targetHour":7,"targetMinute":30,"itemSpace":{"space":"clock-time","structure":"half","beta":-1},"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to 7:30."
+  [β  -0.8 half|twelve   ] {"type":"set_time","targetHour":12,"targetMinute":30,"itemSpace":{"space":"clock-time","structure":"half|twelve","beta":-0.8},"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to 12:30."
+  [β  -1.8 hour          ] {"type":"set_time","targetHour":2,"targetMinute":0,"itemSpace":{"space":"clock-time","structure":"hour","beta":-1.8},"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to 2:00."
+  [β    -1 half          ] {"type":"set_time","targetHour":1,"targetMinute":30,"itemSpace":{"space":"clock-time","structure":"half","beta":-1},"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to 1:30."
+  [β    -1 half          ] {"type":"set_time","targetHour":6,"targetMinute":30,"itemSpace":{"space":"clock-time","structure":"half","beta":-1},"showMinuteNumbers":true,"showHandLegend":true,"showDigitalEcho":true,"supportTier":"easy"}  "Set the clock to 6:30."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=medium | run 1 | code space
+  [AnalogClock] Item space clock-time: set_time band [-0.6, 0.6] grid 5: five-late@0.6 quarter-past@-0.5 quarter-past|twelve@-0.3 quarter-to@0.1 five@0
+  [β   0.6 five-late     ] {"type":"set_time","targetHour":8,"targetMinute":50,"itemSpace":{"space":"clock-time","structure":"five-late","beta":0.6},"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 8:50."
+  [β  -0.5 quarter-past  ] {"type":"set_time","targetHour":5,"targetMinute":15,"itemSpace":{"space":"clock-time","structure":"quarter-past","beta":-0.5},"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 5:15."
+  [β  -0.3 quarter-past|twelve] {"type":"set_time","targetHour":12,"targetMinute":15,"itemSpace":{"space":"clock-time","structure":"quarter-past|twelve","beta":-0.3},"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 12:15."
+  [β   0.1 quarter-to    ] {"type":"set_time","targetHour":1,"targetMinute":45,"itemSpace":{"space":"clock-time","structure":"quarter-to","beta":0.1},"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 1:45."
+  [β     0 five          ] {"type":"set_time","targetHour":3,"targetMinute":20,"itemSpace":{"space":"clock-time","structure":"five","beta":0},"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 3:20."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=medium | run 2 | code space
+  [AnalogClock] Item space clock-time: set_time band [-0.6, 0.6] grid 5: five|twelve@0.2 five@0 quarter-to@0.1 five-late@0.6 quarter-past@-0.5
+  [β   0.2 five|twelve   ] {"type":"set_time","targetHour":12,"targetMinute":5,"itemSpace":{"space":"clock-time","structure":"five|twelve","beta":0.2},"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 12:05."
+  [β     0 five          ] {"type":"set_time","targetHour":7,"targetMinute":5,"itemSpace":{"space":"clock-time","structure":"five","beta":0},"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 7:05."
+  [β   0.1 quarter-to    ] {"type":"set_time","targetHour":3,"targetMinute":45,"itemSpace":{"space":"clock-time","structure":"quarter-to","beta":0.1},"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 3:45."
+  [β   0.6 five-late     ] {"type":"set_time","targetHour":2,"targetMinute":40,"itemSpace":{"space":"clock-time","structure":"five-late","beta":0.6},"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 2:40."
+  [β  -0.5 quarter-past  ] {"type":"set_time","targetHour":10,"targetMinute":15,"itemSpace":{"space":"clock-time","structure":"quarter-past","beta":-0.5},"showMinuteNumbers":false,"showHandLegend":true,"showDigitalEcho":false,"supportTier":"medium"}  "Set the clock to 10:15."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=hard | run 1 | code space
+  [AnalogClock] Item space clock-time: set_time band [0.6, 3.5] grid 5: five-late@0.6 five-late|twelve@0.8 five-late@0.6 five-late@0.6 five-late|twelve@0.8
+  [β   0.6 five-late     ] {"type":"set_time","targetHour":8,"targetMinute":40,"itemSpace":{"space":"clock-time","structure":"five-late","beta":0.6},"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to 8:40."
+  [β   0.8 five-late|twelve] {"type":"set_time","targetHour":11,"targetMinute":50,"itemSpace":{"space":"clock-time","structure":"five-late|twelve","beta":0.8},"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to 11:50."
+  [β   0.6 five-late     ] {"type":"set_time","targetHour":1,"targetMinute":50,"itemSpace":{"space":"clock-time","structure":"five-late","beta":0.6},"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to 1:50."
+  [β   0.6 five-late     ] {"type":"set_time","targetHour":2,"targetMinute":40,"itemSpace":{"space":"clock-time","structure":"five-late","beta":0.6},"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to 2:40."
+  [β   0.8 five-late|twelve] {"type":"set_time","targetHour":12,"targetMinute":55,"itemSpace":{"space":"clock-time","structure":"five-late|twelve","beta":0.8},"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to 12:55."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=hard | run 2 | code space
+  [AnalogClock] Item space clock-time: set_time band [0.6, 3.5] grid 5: five-late@0.6 five-late|twelve@0.8 five-late@0.6 five-late@0.6 five-late@0.6
+  [β   0.6 five-late     ] {"type":"set_time","targetHour":5,"targetMinute":40,"itemSpace":{"space":"clock-time","structure":"five-late","beta":0.6},"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to 5:40."
+  [β   0.8 five-late|twelve] {"type":"set_time","targetHour":12,"targetMinute":40,"itemSpace":{"space":"clock-time","structure":"five-late|twelve","beta":0.8},"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to 12:40."
+  [β   0.6 five-late     ] {"type":"set_time","targetHour":3,"targetMinute":55,"itemSpace":{"space":"clock-time","structure":"five-late","beta":0.6},"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to 3:55."
+  [β   0.6 five-late     ] {"type":"set_time","targetHour":1,"targetMinute":40,"itemSpace":{"space":"clock-time","structure":"five-late","beta":0.6},"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to 1:40."
+  [β   0.6 five-late     ] {"type":"set_time","targetHour":8,"targetMinute":55,"itemSpace":{"space":"clock-time","structure":"five-late","beta":0.6},"showMinuteNumbers":false,"showHandLegend":false,"showDigitalEcho":false,"supportTier":"hard"}  "Set the clock to 8:55."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"set_time","targetHour":4,"targetMinute":0}  "Set the clock to show 4 o'clock."
+  [                      ] {"type":"set_time","targetHour":2,"targetMinute":15}  "Set the clock to show 2:15."
+  [                      ] {"type":"set_time","targetHour":7,"targetMinute":30}  "Set the clock to show 7:30."
+  [                      ] {"type":"set_time","targetHour":10,"targetMinute":45}  "Set the clock to show 10:45."
+  [                      ] {"type":"set_time","targetHour":5,"targetMinute":20}  "Set the clock to show 5:20."
+  [                      ] {"type":"set_time","targetHour":11,"targetMinute":50}  "Set the clock to show 11:50."
+
+Tell and write time to the nearest five minutes | set_time | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"set_time","targetHour":4,"targetMinute":0}  "Set the clock to show 4 o'clock."
+  [                      ] {"type":"set_time","targetHour":7,"targetMinute":15}  "Set the clock to show 7:15."
+  [                      ] {"type":"set_time","targetHour":2,"targetMinute":30}  "Set the clock to show 2:30."
+  [                      ] {"type":"set_time","targetHour":10,"targetMinute":45}  "Set the clock to show 10:45."
+  [                      ] {"type":"set_time","targetHour":5,"targetMinute":20}  "Set the clock to show 5:20."

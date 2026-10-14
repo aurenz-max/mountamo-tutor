@@ -1,0 +1,36 @@
+
+Add and subtract within 100 | add_regroup | difficulty=easy | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-100: add_regroup band [-2.5, -0.6]: 15+6@-0.8 28+8@-0.8 46+6@-0.8
+  [β  -0.8 +|2d+1d|r1    ] {"type":"add_regroup","problem":"15 + 6","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r1","beta":-0.8},"supportTier":"easy"}  ""
+  [β  -0.8 +|2d+1d|r1    ] {"type":"add_regroup","problem":"28 + 8","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r1","beta":-0.8},"supportTier":"easy"}  ""
+  [β  -0.8 +|2d+1d|r1    ] {"type":"add_regroup","problem":"46 + 6","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r1","beta":-0.8},"supportTier":"easy"}  ""
+
+Add and subtract within 100 | add_regroup | difficulty=easy | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-100: add_regroup band [-2.5, -0.6]: 77+4@-0.8 48+9@-0.8 57+5@-0.8
+  [β  -0.8 +|2d+1d|r1    ] {"type":"add_regroup","problem":"77 + 4","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r1","beta":-0.8},"supportTier":"easy"}  ""
+  [β  -0.8 +|2d+1d|r1    ] {"type":"add_regroup","problem":"48 + 9","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r1","beta":-0.8},"supportTier":"easy"}  ""
+  [β  -0.8 +|2d+1d|r1    ] {"type":"add_regroup","problem":"57 + 5","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r1","beta":-0.8},"supportTier":"easy"}  ""
+
+Add and subtract within 100 | add_regroup | difficulty=medium | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-100: add_regroup band [-0.6, 0.6]: 29+51@-0.1 92+8@0.2 96+4@0.2
+  [β  -0.1 +|2d|r1       ] {"type":"add_regroup","problem":"29 + 51","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r1","beta":-0.1},"supportTier":"medium"}  ""
+  [β   0.2 +|2d+1d|r2|chain] {"type":"add_regroup","problem":"92 + 8","requiresRegrouping":true,"regroupCount":2,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r2|chain","beta":0.2},"supportTier":"medium"}  ""
+  [β   0.2 +|2d+1d|r2|chain] {"type":"add_regroup","problem":"96 + 4","requiresRegrouping":true,"regroupCount":2,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r2|chain","beta":0.2},"supportTier":"medium"}  ""
+
+Add and subtract within 100 | add_regroup | difficulty=medium | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-100: add_regroup band [-0.6, 0.6]: 66+27@-0.1 91+9@0.2 36+16@-0.1
+  [β  -0.1 +|2d|r1       ] {"type":"add_regroup","problem":"66 + 27","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r1","beta":-0.1},"supportTier":"medium"}  ""
+  [β   0.2 +|2d+1d|r2|chain] {"type":"add_regroup","problem":"91 + 9","requiresRegrouping":true,"regroupCount":2,"itemSpace":{"space":"add-sub-100","structure":"+|2d+1d|r2|chain","beta":0.2},"supportTier":"medium"}  ""
+  [β  -0.1 +|2d|r1       ] {"type":"add_regroup","problem":"36 + 16","requiresRegrouping":true,"regroupCount":1,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r1","beta":-0.1},"supportTier":"medium"}  ""
+
+Add and subtract within 100 | add_regroup | difficulty=hard | run 1 | item space
+  [RegroupingWorkbench] Item space add-sub-100: add_regroup band [0.6, 3.5]: 67+33@0.9 15+85@0.9 76+24@0.9
+  [β   0.9 +|2d|r2|chain ] {"type":"add_regroup","problem":"67 + 33","requiresRegrouping":true,"regroupCount":2,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"supportTier":"hard"}  ""
+  [β   0.9 +|2d|r2|chain ] {"type":"add_regroup","problem":"15 + 85","requiresRegrouping":true,"regroupCount":2,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"supportTier":"hard"}  ""
+  [β   0.9 +|2d|r2|chain ] {"type":"add_regroup","problem":"76 + 24","requiresRegrouping":true,"regroupCount":2,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"supportTier":"hard"}  ""
+
+Add and subtract within 100 | add_regroup | difficulty=hard | run 2 | item space
+  [RegroupingWorkbench] Item space add-sub-100: add_regroup band [0.6, 3.5]: 13+87@0.9 59+41@0.9 55+45@0.9
+  [β   0.9 +|2d|r2|chain ] {"type":"add_regroup","problem":"13 + 87","requiresRegrouping":true,"regroupCount":2,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"supportTier":"hard"}  ""
+  [β   0.9 +|2d|r2|chain ] {"type":"add_regroup","problem":"59 + 41","requiresRegrouping":true,"regroupCount":2,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"supportTier":"hard"}  ""
+  [β   0.9 +|2d|r2|chain ] {"type":"add_regroup","problem":"55 + 45","requiresRegrouping":true,"regroupCount":2,"itemSpace":{"space":"add-sub-100","structure":"+|2d|r2|chain","beta":0.9},"supportTier":"hard"}  ""

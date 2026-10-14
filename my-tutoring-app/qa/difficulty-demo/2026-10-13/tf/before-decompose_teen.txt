@@ -1,0 +1,96 @@
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=easy | run 1 | own path
+  [                      ] {"type":"decompose_teen","targetCount":11}  "Here are 11 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":12}  "Here are 12 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":14}  "Here are 14 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":15}  "Here are 15 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":17}  "Here are 17 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":18}  "Here are 18 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=easy | run 2 | own path
+  [                      ] {"type":"decompose_teen","targetCount":11}  "Here are 11 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":13}  "Here are 13 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":14}  "Here are 14 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":16}  "Here are 16 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":17}  "Here are 17 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":19}  "Here are 19 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=easy | run 3 | own path
+  [                      ] {"type":"decompose_teen","targetCount":11}  "Here are 11 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":13}  "Here are 13 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":14}  "Here are 14 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":16}  "Here are 16 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":17}  "Here are 17 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":19}  "Here are 19 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=medium | run 1 | own path
+  [                      ] {"type":"decompose_teen","targetCount":11}  "Here are 11 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":12}  "Here are 12 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":14}  "Here are 14 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":15}  "Here are 15 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":17}  "Here are 17 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":18}  "Here are 18 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=medium | run 2 | own path
+  [                      ] {"type":"decompose_teen","targetCount":11}  "Here are 11 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":12}  "Here are 12 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":14}  "Here are 14 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":15}  "Here are 15 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":17}  "Here are 17 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":18}  "Here are 18 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=medium | run 3 | own path
+  [                      ] {"type":"decompose_teen","targetCount":12}  "Here are 12 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":13}  "Here are 13 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":15}  "Here are 15 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":16}  "Here are 16 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":18}  "Here are 18 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":19}  "Here are 19 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=hard | run 1 | own path
+  [                      ] {"type":"decompose_teen","targetCount":11}  "Here are 11 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":12}  "Here are 12 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":14}  "Here are 14 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":15}  "Here are 15 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":17}  "Here are 17 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":18}  "Here are 18 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=hard | run 2 | own path
+  [                      ] {"type":"decompose_teen","targetCount":11}  "Here are 11 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":13}  "Here are 13 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":14}  "Here are 14 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":16}  "Here are 16 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":17}  "Here are 17 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":19}  "Here are 19 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=hard | run 3 | own path
+  [                      ] {"type":"decompose_teen","targetCount":12}  "Here are 12 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":13}  "Here are 13 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":15}  "Here are 15 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":16}  "Here are 16 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":18}  "Here are 18 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":19}  "Here are 19 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"decompose_teen","targetCount":11}  "Here are 11 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":12}  "Here are 12 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":14}  "Here are 14 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":15}  "Here are 15 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":17}  "Here are 17 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":18}  "Here are 18 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"decompose_teen","targetCount":11}  "Here are 11 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":13}  "Here are 13 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":14}  "Here are 14 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":16}  "Here are 16 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":17}  "Here are 17 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":19}  "Here are 19 counters. Turn 10 of them yellow!"
+
+Teen numbers as ten and some ones | decompose_teen | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"decompose_teen","targetCount":11}  "Here are 11 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":13}  "Here are 13 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":14}  "Here are 14 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":16}  "Here are 16 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":17}  "Here are 17 counters. Turn 10 of them yellow!"
+  [                      ] {"type":"decompose_teen","targetCount":19}  "Here are 19 counters. Turn 10 of them yellow!"

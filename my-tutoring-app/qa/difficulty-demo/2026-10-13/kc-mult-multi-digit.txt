@@ -1,0 +1,35 @@
+
+Multiply a one-digit number by a multi-digit number and multiply two two-digit numbers | difficulty=easy | run 1 | item space
+  [β  -0.6 1x3|c2|h0|r0|z1] Maya has 402 boxes of crayons, and each box has 8 crayons. How many crayons does Maya have in total?  3216* 16(n) 3200(n) 4216(f)
+  [β    -1 2x2|c1|h0|r0|z0] Leo collected 90 bags of aluminum cans, with 20 cans in each bag. How many cans did Leo collect in all?  180(n) 800(f) 1800* 2800(f)
+  [β    -1 1x3|c1|h1|r0|z0] A farmer planted 800 rows of corn, and each row has 8 stalks. How many corn stalks did the farmer plant?  7400(f) 5400(f) 640(n) 6400*
+  [β  -1.5 1x3|c2|h0|r0|z0] Nina read 330 pages in a book every month for 2 months. How many pages did Nina read altogether?  120(n) 660* 760(f) 560(f)
+  [β  -0.6 1x3|c3|h0|r1|z0] Sam baked 426 batches of cookies, and each batch contains 4 cookies. How many cookies did Sam bake?  264(n) 1704* 1680(n) 2704(f)
+
+Multiply a one-digit number by a multi-digit number and multiply two two-digit numbers | difficulty=medium | run 1 | item space
+  [β   0.2 2x2|c4|h1|r1|z0] Maya baked 93 batches of cookies with 64 cookies in each batch. How many cookies did Maya bake in all?  5772(n) 1092(n) 6952(f) 5952*
+  [β   0.5 2x2|c4|h2|r1|z0] Leo collected 97 comic books and stored them in 39 boxes with the same amount in each. How many comic books does Leo have?  3720(n) 4783(f) 3573(n) 3783*
+  [β  -0.5 1x3|c2|h1|r1|z0] Sam read 460 pages in a book every week for 7 weeks. How many pages did Sam read in total?  4220(f) 2800(n) 420(n) 3220*
+  [β  -0.5 2x2|c2|h0|r1|z0] Mia planted 70 rows of flowers with 15 flowers in every row. How many flowers did Mia plant altogether?  1050* 2050(f) 350(n) 700(n)
+  [β  -0.6 1x3|c3|h1|r0|z0] Ben saved 371 stickers in each of his 7 albums. How many stickers did Ben save in all?  2597* 2107(n) 3597(f) 497(n)
+
+Multiply a one-digit number by a multi-digit number and multiply two two-digit numbers | difficulty=hard | run 1 | item space
+  [β   0.8 2x2|c4|h2|r2|z0] Emma packs 98 boxes of crayons with 84 crayons in each box. How many crayons does Emma pack in total?  9232(f) 8232* 1752(n) 7232(n)
+  [β   1.4 2x2|c4|h4|r2|z0] Liam sets up 86 rows of chairs with 67 chairs in each row. How many chairs does Liam set up altogether?  6762(f) 5762* 962(n) 5202(n)
+  [β   0.6 1x3|c3|h3|r2|z0] Sophia bakes 689 batches of cookies with 6 cookies in each batch. How many cookies does Sophia bake in all?  4134* 5134(f) 3654(n) 4080(n)
+  [β   1.1 2x2|c4|h4|r1|z0] Noah collects 96 trading cards from each of his 76 friends. How many trading cards does Noah collect in total?  1626(n) 8296(f) 6876(n) 7296*
+  [β   0.8 2x2|c4|h2|r2|z0] Mia organizes 83 sticker books with 76 stickers on each page. How many stickers does Mia organize altogether?  6308* 5618(n) 5828(n) 7308(f)
+
+Multiply a one-digit number by a multi-digit number and multiply two two-digit numbers | difficulty=(none) | run 1 | orchestrator
+  [multiple_choice medium] What is the product of the multiplication expression shown?  1,280(n) 1,300* 1,320(n) 1,200(f)
+  [fill_in_blanks medium]   
+  [multiple_choice medium] Based on the school store price list, what was the total cost of the 8 spiral notebooks sold today?  $22(n) $92(n) $112* $45(f)
+  [true_false medium] The multiplication shown in the equation below was solved correctly using proper regrouping.  
+  [multiple_choice medium] What is the product of the multiplication problem shown below?  144(n) 220(n) 360* 39(f)
+
+Tell and write time to the hour | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] Look at the analog clock description: The short hour hand is pointing directly at the 3, and the long minute hand is pointing straight up at the 12. What time does this clock show?  12:03(f) 12:15(n) 3:00* 3:12(n)
+  [true_false easy] When a clock shows an exact hour, the long minute hand points directly to the number 12.  
+  [fill_in_blanks easy]   
+  [matching_activity easy]   
+  [multiple_choice medium] Marcus started his science experiment when the classroom clock showed 2:00. He completed the experiment when the clock showed 5:00. How many hours passed between the start and the end of his experiment?  2 hours(n) 3 hours* 5 hours(n) 7 hours(f)

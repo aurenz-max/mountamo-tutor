@@ -1,0 +1,54 @@
+
+Solve two-step equations | two_step | difficulty=easy | run 1 | item space
+  [BalanceScale] Item space two-step-equations two_step band [-2.5, -0.6]: p4+|a1|h0|r0@-0.96 p<4|a1|h1|r0@-0.84 p4+|a1|h0|r1@-0.64 p4+|a0|h0|r0@-0.62
+  [β -0.96 p4+|a1|h0|r0  ] 5x + 2 = 27        ans 5  "Use the weights to subtract and share. Connect each move to its equati"
+  [β -0.84 p<4|a1|h1|r0  ] 2x + 10 = 28       ans 9  "Use the weights to subtract and share. Connect each move to its equati"
+  [β -0.64 p4+|a1|h0|r1  ] 4x + 5 = 13        ans 2  "Use the weights to subtract and share. Connect each move to its equati"
+  [β -0.62 p4+|a0|h0|r0  ] 4x + 2 = 14        ans 3  "Use the weights to subtract and share. Connect each move to its equati"
+
+Solve two-step equations | two_step | difficulty=easy | run 2 | item space
+  [BalanceScale] Item space two-step-equations two_step band [-2.5, -0.6]: p<4|a1|h0|r0@-1.34 p4+|a1|h0|r0@-1.16 p<4|a1|h0|r1@-0.86 p4+|a1|h1|r0@-0.72
+  [β -1.34 p<4|a1|h0|r0  ] 2x + 20 = 28       ans 4  "Use the weights to subtract and share. Connect each move to its equati"
+  [β -1.16 p4+|a1|h0|r0  ] 5x + 2 = 17        ans 3  "Use the weights to subtract and share. Connect each move to its equati"
+  [β -0.86 p<4|a1|h0|r1  ] 3x + 16 = 22       ans 2  "Use the weights to subtract and share. Connect each move to its equati"
+  [β -0.72 p4+|a1|h1|r0  ] 6x + 2 = 14        ans 2  "Use the weights to subtract and share. Connect each move to its equati"
+
+Solve two-step equations | two_step | difficulty=medium | run 1 | item space
+  [BalanceScale] Item space two-step-equations two_step band [-0.6, 0.6]: p<4|a0|h0|r1@-0.5 p4+|a1|h0|r1@-0.42 p<4|a1|h1|r1@-0.38 p4+|a0|h1|r0@0.38
+  [β  -0.5 p<4|a0|h0|r1  ] 3x + 1 = 10        ans 3  "Use the weights to subtract and share. Connect each move to its equati"
+  [β -0.42 p4+|a1|h0|r1  ] 4x + 16 = 24       ans 2  "Use the weights to subtract and share. Connect each move to its equati"
+  [β -0.38 p<4|a1|h1|r1  ] 2x + 5 = 21        ans 8  "Use the weights to subtract and share. Connect each move to its equati"
+  [β  0.38 p4+|a0|h1|r0  ] 4x + 3 = 39        ans 9  "Use the weights to subtract and share. Connect each move to its equati"
+
+Solve two-step equations | two_step | difficulty=medium | run 2 | item space
+  [BalanceScale] Item space two-step-equations two_step band [-0.6, 0.6]: p<4|a0|h0|r1@-0.4 p<4|a1|h1|r1@-0.34 p4+|a1|h0|r1@-0.26 p4+|a0|h1|r0@0.44
+  [β  -0.4 p<4|a0|h0|r1  ] 3x + 6 = 15        ans 3  "Use the weights to subtract and share. Connect each move to its equati"
+  [β -0.34 p<4|a1|h1|r1  ] 2x + 7 = 23        ans 8  "Use the weights to subtract and share. Connect each move to its equati"
+  [β -0.26 p4+|a1|h0|r1  ] 5x + 17 = 32       ans 3  "Use the weights to subtract and share. Connect each move to its equati"
+  [β  0.44 p4+|a0|h1|r0  ] 4x + 10 = 42       ans 8  "Use the weights to subtract and share. Connect each move to its equati"
+
+Solve two-step equations | two_step | difficulty=hard | run 1 | item space
+  [BalanceScale] Item space two-step-equations two_step band [0.6, 3.5]: p4+|a1|h1|r1@0.64 p4+|a0|h1|r0@0.64 p<4|a0|h1|r1@0.72 p4+|a0|h2|r1@1.52
+  [β  0.64 p4+|a1|h1|r1  ] 5x + 17 = 52       ans 7  "Use the weights to subtract and share. Connect each move to its equati"
+  [β  0.64 p4+|a0|h1|r0  ] 4x + 20 = 52       ans 8  "Use the weights to subtract and share. Connect each move to its equati"
+  [β  0.72 p<4|a0|h1|r1  ] 3x + 19 = 46       ans 9  "Use the weights to subtract and share. Connect each move to its equati"
+  [β  1.52 p4+|a0|h2|r1  ] 6x + 5 = 41        ans 6  "Use the weights to subtract and share. Connect each move to its equati"
+
+Solve two-step equations | two_step | difficulty=hard | run 2 | item space
+  [BalanceScale] Item space two-step-equations two_step band [0.6, 3.5]: p4+|a1|h1|r1@0.6 p4+|a0|h1|r0@0.72 p<4|a0|h1|r1@0.72 p4+|a0|h2|r1@1.76
+  [β   0.6 p4+|a1|h1|r1  ] 5x + 15 = 50       ans 7  "Use the weights to subtract and share. Connect each move to its equati"
+  [β  0.72 p4+|a0|h1|r0  ] 4x + 20 = 56       ans 9  "Use the weights to subtract and share. Connect each move to its equati"
+  [β  0.72 p<4|a0|h1|r1  ] 3x + 19 = 46       ans 9  "Use the weights to subtract and share. Connect each move to its equati"
+  [β  1.76 p4+|a0|h2|r1  ] 6x + 17 = 53       ans 6  "Use the weights to subtract and share. Connect each move to its equati"
+
+Solve two-step equations | two_step | difficulty=(none) | run 1 | own path
+  [                      ] 2x + 6 = 8 + 6     ans 4  "Use the weights to subtract and share. Connect each move to its equati"
+  [                      ] 6x + 6 = 18 + 6    ans 3  "Use the weights to subtract and share. Connect each move to its equati"
+  [                      ] 5x + 1 = 25 + 1    ans 5  "Use the weights to subtract and share. Connect each move to its equati"
+  [                      ] 6x + 7 = 48 + 7    ans 8  "Use the weights to subtract and share. Connect each move to its equati"
+
+Solve two-step equations | two_step | difficulty=(none) | run 2 | own path
+  [                      ] 3x + 8 = 12 + 8    ans 4  "Use the weights to subtract and share. Connect each move to its equati"
+  [                      ] 5x + 5 = 15 + 5    ans 3  "Use the weights to subtract and share. Connect each move to its equati"
+  [                      ] 4x + 5 = 20 + 5    ans 5  "Use the weights to subtract and share. Connect each move to its equati"
+  [                      ] 5x + 10 = 35 + 10  ans 7  "Use the weights to subtract and share. Connect each move to its equati"

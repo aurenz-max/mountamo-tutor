@@ -1,0 +1,35 @@
+
+Find the value of a collection of coins | difficulty=easy | run 1 | item space
+  [β  -1.2 n|few        ] Sarah has 4 nickels. How many cents does she have in total?  20¢* 50¢(f) 25¢(n) 40¢(f)
+  [β  -1.5 p|few        ] Leo has 2 pennies. How many cents does he have in total?  22¢(f) 2¢* 3¢(n) 32¢(f)
+  [β  -1.5 d|few        ] Mia has 4 dimes. How many cents does she have in total?  20¢(f) 60¢(f) 50¢(n) 40¢*
+  [β  -0.9 n|5+         ] Sam has 6 nickels. How many cents does he have in total?  30¢* 35¢(n) 50¢(f) 10¢(f)
+  [β  -0.9 dp|few       ] Emma has 2 dimes and 2 pennies. How many cents does she have in total?  22¢* 40¢(n) 42¢(f) 2¢(f)
+
+Find the value of a collection of coins | difficulty=medium | run 1 | item space
+  [β   0.5 qdp|few      ] Emma has 1 quarter, 1 dime and 2 pennies in her piggy bank. How many cents does she have in total?  35¢(n) 36¢(n) 57¢(f) 37¢*
+  [β -0.15 dp|5+        ] Leo counts 4 dimes and 5 pennies in his pocket. How many cents does he have?  45¢* 90¢(n) 55¢(n) 65¢(f)
+  [β  -0.3 np|5+        ] Mia finds 4 nickels and 2 pennies on the table. How many cents are there in total?  20¢(n) 22¢* 42¢(f) 17¢(n)
+  [β   0.2 qn|few       ] Noah has 1 quarter and 2 nickels in his hand. How many cents does he have?  35¢* 25¢(n) 55¢(f) 30¢(n)
+  [β  -0.1 qp|few       ] Sofia holds 2 quarters and 1 penny for the toy store. How many cents does she have?  51¢* 76¢(n) 3¢(n) 71¢(f)
+
+Find the value of a collection of coins | difficulty=hard | run 1 | item space
+  [β   1.1 qn|5+        ] Emma has 2 quarters and 8 nickels. How many cents does Emma have in all?  90¢* 10¢(n) 50¢(n) 110¢(f)
+  [β   1.4 qdp|5+       ] Liam has 1 quarter, 2 dimes and 7 pennies. How many cents does Liam have in total?  10¢(n) 72¢(f) 45¢(n) 52¢*
+  [β   0.6 dn|5+        ] Mia has 4 dimes and 6 nickels. How many cents does Mia have?  90¢(f) 70¢* 65¢(n) 40¢(n)
+  [β     2 qdnp|5+      ] Noah has 1 quarter, 2 dimes, 2 nickels and 1 penny. How many cents does Noah have?  55¢(n) 76¢(f) 66¢(n) 56¢*
+  [β  1.05 dnp|5+       ] Zoe has 4 dimes, 4 nickels and 1 penny. How many cents does Zoe have altogether?  61¢* 81¢(f) 90¢(n) 9¢(n)
+
+Find the value of a collection of coins | difficulty=(none) | run 1 | orchestrator
+  [multiple_choice easy] You have 4 dimes. What is the total value of these coins in cents?  30¢(n) 40¢* 50¢(n) 60¢(f)
+  [fill_in_blanks easy]   
+  [multiple_choice easy] Maya has 2 dimes and 3 pennies. What is the total value of her coins?  13¢(n) 23¢* 25¢(n) 30¢(f)
+  [true_false easy] A group of 3 nickels is worth more than a single quarter.  
+  [multiple_choice medium] Group A has 1 quarter and 2 nickels. Group B has 3 dimes. Which group has more money, or are they equal?  Group A* Group B(n) They are equal(n) None(f)
+
+Tell and write time to the nearest five minutes | difficulty=hard | run 1 | orchestrator
+  [multiple_choice easy] An analog clock has its short hand pointing directly at the 3 and its long hand pointing straight up at the 12. What time does the clock show?  12:15(n) 3:00* 12:03(n) 6:00(f)
+  [fill_in_blanks easy]   
+  [true_false easy] The long hand on a clock tells us what hour it is.  
+  [matching_activity easy]   
+  [multiple_choice medium] Look at the comparison panel with two clocks: Clock A has the minute hand on 7 and the hour hand past the 7, more than halfway to the 8. Clock B has the minute hand on 7 and the hour hand pointing straight at the 7. Which clock correctly shows 7:35?  Clock B, because the hour hand should point straight at the 7 until the new hour begins.(n) Clock A, because the hour hand slowly moves toward the 8 as minutes go by.* Clock B, because both clock hands are supposed to point at the exact same number.(n) Neither clock, because the minute hand must point to the 5 to show 35 minutes.(f)

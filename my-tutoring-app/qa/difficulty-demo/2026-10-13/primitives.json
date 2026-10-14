@@ -1,0 +1,1161 @@
+[
+  {
+    "componentId": "number-line",
+    "mode": "jump",
+    "difficulty": "easy",
+    "run": 0,
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "challenges": [
+      {
+        "type": "show_jump",
+        "targetValues": [
+          18
+        ],
+        "startValue": 15,
+        "text": "Put your frog on number 15, and get ready to hop! Count 3 jumps to the right to see where you land."
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          20
+        ],
+        "startValue": 18,
+        "text": "Put your finger on 18. Count 2 hops to the right to make your jump!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          12
+        ],
+        "startValue": 11,
+        "text": "Put your finger on 11, and then hop 1 step to the right!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          16
+        ],
+        "startValue": 18,
+        "text": "Put your finger on the number 18. Now, hop backwards 2 spaces to the left to find your new number!"
+      }
+    ]
+  },
+  {
+    "componentId": "number-line",
+    "mode": "jump",
+    "difficulty": "easy",
+    "run": 1,
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "challenges": [
+      {
+        "type": "show_jump",
+        "targetValues": [
+          16
+        ],
+        "startValue": 14,
+        "text": "Put your finger on the number 14. Take 2 big hops to the right!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          19
+        ],
+        "startValue": 14,
+        "text": "Let's keep exploring! Start your froggy jump at the number 14, and hop forward 5 spaces to see where you land."
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          16
+        ],
+        "startValue": 15,
+        "text": "Put your finger on the number 15. Make 1 hop to the right to see where you land!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          20
+        ],
+        "startValue": 17,
+        "text": "Put your finger on 17. Now, count 3 hops to the right to see where you land!"
+      }
+    ]
+  },
+  {
+    "componentId": "number-line",
+    "mode": "jump",
+    "difficulty": "easy",
+    "run": 2,
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "challenges": [
+      {
+        "type": "show_jump",
+        "targetValues": [
+          12
+        ],
+        "startValue": 17,
+        "text": "Let us hop backward! Start at the number 17 on your number line and hop left 5 spaces."
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          14
+        ],
+        "startValue": 13,
+        "text": "Put your finger on the number 13. Now, make 1 hop to the right!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          12
+        ],
+        "startValue": 13,
+        "text": "Put your finger on 13. Jump back 1 space to the left!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          18
+        ],
+        "startValue": 14,
+        "text": "Put your finger on 14. Now, hop 4 jumps to the right!"
+      }
+    ]
+  },
+  {
+    "componentId": "number-line",
+    "mode": "jump",
+    "difficulty": "medium",
+    "run": 2,
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "challenges": [
+      {
+        "type": "show_jump",
+        "targetValues": [
+          19
+        ],
+        "startValue": 18,
+        "text": "Put your finger on the number 18. Make 1 big hop to the right to see where you land!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          13
+        ],
+        "startValue": 14,
+        "text": "Put your finger on the number 14. Ready, set, hop back 1 space to the left!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          20
+        ],
+        "startValue": 18,
+        "text": "Let's keep going! Start your froggy hop at 18 and jump forward 2 spaces."
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          18
+        ],
+        "startValue": 14,
+        "text": "Put your finger on the number 14. Ready? Hop forward 4 spaces to the right and see where you land!"
+      }
+    ]
+  },
+  {
+    "componentId": "number-line",
+    "mode": "jump",
+    "difficulty": "medium",
+    "run": 1,
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "challenges": [
+      {
+        "type": "show_jump",
+        "targetValues": [
+          19
+        ],
+        "startValue": 18,
+        "text": "Put your finger on the number 18. Now, make 1 hop to the right to find your new spot!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          15
+        ],
+        "startValue": 11,
+        "text": "Put your finger on the starting number 11. Now, take 4 big hops to the right!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          18
+        ],
+        "startValue": 15,
+        "text": "Put your finger on 15 and hop 3 spaces forward to the right. Where do you land?"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          14
+        ],
+        "startValue": 12,
+        "text": "Put your finger on 12. Hop forward 2 spaces to the right and see where you land!"
+      }
+    ]
+  },
+  {
+    "componentId": "number-line",
+    "mode": "jump",
+    "difficulty": "medium",
+    "run": 0,
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "challenges": [
+      {
+        "type": "show_jump",
+        "targetValues": [
+          18
+        ],
+        "startValue": 17,
+        "text": "Put your finger on 17. Now, take 1 hop to the right to see where you land!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          13
+        ],
+        "startValue": 12,
+        "text": "Put your finger on the number 12. Take 1 hop to the right to see where you land!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          15
+        ],
+        "startValue": 13,
+        "text": "Find your starting spot at 13 on the number line. Hop forward 2 spaces to the right to see where you land!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          20
+        ],
+        "startValue": 16,
+        "text": "Find the number 16 on your line. Now, count forward 4 hops to the right and place your marker where you land!"
+      }
+    ]
+  },
+  {
+    "componentId": "number-line",
+    "mode": "jump",
+    "difficulty": "hard",
+    "run": 1,
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "challenges": [
+      {
+        "type": "show_jump",
+        "targetValues": [
+          17,
+          12
+        ],
+        "startValue": 18,
+        "text": "Start at 18. Make the first jump, then jump again. Where do you land?"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          12,
+          16
+        ],
+        "startValue": 16,
+        "text": "Start your journey at the number 16. Hop backward by 4, and then take another hop from where you land to find "
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          12,
+          7
+        ],
+        "startValue": 11,
+        "text": "Let's go on a two-part adventure! Start your first jump at 11 and add 1. From that new landing spot, figure ou"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          18,
+          19
+        ],
+        "startValue": 15,
+        "text": "Start your journey at 15. Make your first hop by adding 3, then hop again from where you land to reach the fin"
+      }
+    ]
+  },
+  {
+    "componentId": "number-line",
+    "mode": "jump",
+    "difficulty": "hard",
+    "run": 0,
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "challenges": [
+      {
+        "type": "show_jump",
+        "targetValues": [
+          13,
+          12
+        ],
+        "startValue": 16,
+        "text": "Put your finger on 16. Hop back 3 spaces, and then jump again until you land on your final spot!"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          16,
+          11
+        ],
+        "startValue": 18,
+        "text": "Put your finger on 18. Hop back 2 spaces and place your first marker, then make a second jump backward to fini"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          12,
+          15
+        ],
+        "startValue": 14,
+        "text": "Put your finger on 14. Take your first jump by subtracting 2, and then make your next jump to finish at the se"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          13,
+          14
+        ],
+        "startValue": 15,
+        "text": "Let us go on a double hop adventure! Start by putting your finger on 15. Make your first jump backwards by 2. "
+      }
+    ]
+  },
+  {
+    "componentId": "number-line",
+    "mode": "jump",
+    "difficulty": "hard",
+    "run": 2,
+    "range": {
+      "min": 0,
+      "max": 20
+    },
+    "challenges": [
+      {
+        "type": "show_jump",
+        "targetValues": [
+          15,
+          16
+        ],
+        "startValue": 18,
+        "text": "Start your adventure at 18. First, hop back 3 spaces. Then, take another jump from where you land to reach the"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          13,
+          17
+        ],
+        "startValue": 18,
+        "text": "Let's keep going on our number line! Start at 18. Make your first jump backward by 5, and then hop again from "
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          16,
+          13
+        ],
+        "startValue": 13,
+        "text": "Start at 13. Make your first jump by adding 3, and then jump again from where you land so your final stop brin"
+      },
+      {
+        "type": "show_jump",
+        "targetValues": [
+          20,
+          17
+        ],
+        "startValue": 16,
+        "text": "Start your journey at 16. Hop forward 4 spaces, and then jump again to reach your final stop!"
+      }
+    ]
+  },
+  {
+    "componentId": "addition-subtraction-scene",
+    "mode": "solve_story",
+    "difficulty": "easy",
+    "run": 2,
+    "range": 20,
+    "challenges": [
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 11,
+        "changeCount": 4,
+        "resultCount": 15,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many there are now!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 15,
+        "changeCount": 3,
+        "resultCount": 12,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many are left!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 12,
+        "changeCount": 5,
+        "resultCount": 17,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many there are now!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 18,
+        "changeCount": 6,
+        "resultCount": 12,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many are left!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 10,
+        "changeCount": 7,
+        "resultCount": 17,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many there are now!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 20,
+        "changeCount": 8,
+        "resultCount": 12,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many are left!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 13,
+        "changeCount": 4,
+        "resultCount": 17,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many there are now!"
+      }
+    ]
+  },
+  {
+    "componentId": "addition-subtraction-scene",
+    "mode": "solve_story",
+    "difficulty": "easy",
+    "run": 0,
+    "range": 20,
+    "challenges": [
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 11,
+        "changeCount": 4,
+        "resultCount": 15,
+        "unknownPosition": "result",
+        "text": "Listen to the story and figure out how many apples there are in all!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 14,
+        "changeCount": 3,
+        "resultCount": 11,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many cookies are left on the tray!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 12,
+        "changeCount": 5,
+        "resultCount": 17,
+        "unknownPosition": "result",
+        "text": "Listen to the story and calculate how many stars shine in the night sky!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 18,
+        "changeCount": 6,
+        "resultCount": 12,
+        "unknownPosition": "result",
+        "text": "Listen carefully and find out how many frogs remain near the pond!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 10,
+        "changeCount": 10,
+        "resultCount": 20,
+        "unknownPosition": "result",
+        "text": "Listen to the story and count how many flowers are in the garden now!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 19,
+        "changeCount": 7,
+        "resultCount": 12,
+        "unknownPosition": "result",
+        "text": "Listen to the story and figure out how many rockets are left!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 13,
+        "changeCount": 4,
+        "resultCount": 17,
+        "unknownPosition": "result",
+        "text": "Listen to the story and calculate how many cute bunnies there are!"
+      }
+    ]
+  },
+  {
+    "componentId": "addition-subtraction-scene",
+    "mode": "solve_story",
+    "difficulty": "easy",
+    "run": 1,
+    "range": 20,
+    "challenges": [
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 11,
+        "changeCount": 4,
+        "resultCount": 15,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many rockets are flying now!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 15,
+        "changeCount": 3,
+        "resultCount": 12,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many cookies are left on the tray!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 12,
+        "changeCount": 5,
+        "resultCount": 17,
+        "unknownPosition": "result",
+        "text": "Listen to the story and figure out how many stars are shining in total!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 18,
+        "changeCount": 6,
+        "resultCount": 12,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many cupcakes are left!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 13,
+        "changeCount": 7,
+        "resultCount": 20,
+        "unknownPosition": "result",
+        "text": "Listen to the story and see how many rockets are orbiting now!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 19,
+        "changeCount": 5,
+        "resultCount": 14,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find out how many cookies remain!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 14,
+        "changeCount": 4,
+        "resultCount": 18,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find the total number of stars!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 17,
+        "changeCount": 8,
+        "resultCount": 9,
+        "unknownPosition": "result",
+        "text": "Listen to the story and find how many cupcakes are left on the table!"
+      }
+    ]
+  },
+  {
+    "componentId": "addition-subtraction-scene",
+    "mode": "solve_story",
+    "difficulty": "medium",
+    "run": 1,
+    "range": 20,
+    "challenges": [
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 12,
+        "changeCount": 3,
+        "resultCount": 15,
+        "unknownPosition": "change",
+        "text": "Find out how many cookies were added to the batch!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 14,
+        "changeCount": 3,
+        "resultCount": 11,
+        "unknownPosition": "change",
+        "text": "Figure out how many apples were taken away."
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 11,
+        "changeCount": 6,
+        "resultCount": 17,
+        "unknownPosition": "change",
+        "text": "Discover how many new ducks joined the pond."
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 18,
+        "changeCount": 6,
+        "resultCount": 12,
+        "unknownPosition": "change",
+        "text": "Find out how many flowers were picked."
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 13,
+        "changeCount": 7,
+        "resultCount": 20,
+        "unknownPosition": "change",
+        "text": "Determine how many rockets landed to join the fleet."
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 16,
+        "changeCount": 6,
+        "resultCount": 10,
+        "unknownPosition": "change",
+        "text": "Find out how many butterflies flew away."
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 15,
+        "changeCount": 4,
+        "resultCount": 19,
+        "unknownPosition": "change",
+        "text": "Figure out how many fish swam into the tank."
+      }
+    ]
+  },
+  {
+    "componentId": "addition-subtraction-scene",
+    "mode": "solve_story",
+    "difficulty": "medium",
+    "run": 2,
+    "range": 20,
+    "challenges": [
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 12,
+        "changeCount": 3,
+        "resultCount": 15,
+        "unknownPosition": "change",
+        "text": "Find out how many more ducks came to join the pond!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 14,
+        "changeCount": 4,
+        "resultCount": 10,
+        "unknownPosition": "change",
+        "text": "Work out how many frogs hopped away from the log."
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 18,
+        "changeCount": 7,
+        "resultCount": 11,
+        "unknownPosition": "change",
+        "text": "Figure out how many apples were picked from the tree."
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 11,
+        "changeCount": 6,
+        "resultCount": 17,
+        "unknownPosition": "change",
+        "text": "Discover how many butterflies flew over to join the garden."
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 13,
+        "changeCount": 6,
+        "resultCount": 19,
+        "unknownPosition": "change",
+        "text": "Determine how many cookies were baked to add to the tray."
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 17,
+        "changeCount": 5,
+        "resultCount": 12,
+        "unknownPosition": "change",
+        "text": "Find out how many rockets flew away into space."
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 20,
+        "changeCount": 6,
+        "resultCount": 14,
+        "unknownPosition": "change",
+        "text": "Figure out how many fish swam away from the coral reef."
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 15,
+        "changeCount": 5,
+        "resultCount": 20,
+        "unknownPosition": "change",
+        "text": "Discover how many stars appeared in the night sky."
+      }
+    ]
+  },
+  {
+    "componentId": "addition-subtraction-scene",
+    "mode": "solve_story",
+    "difficulty": "medium",
+    "run": 0,
+    "range": 20,
+    "challenges": [
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 12,
+        "changeCount": 3,
+        "resultCount": 15,
+        "unknownPosition": "change",
+        "text": "Listen to the story and figure out how many joined the garden!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 14,
+        "changeCount": 4,
+        "resultCount": 10,
+        "unknownPosition": "change",
+        "text": "Listen to the story and find out how many hopped away!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 11,
+        "changeCount": 7,
+        "resultCount": 18,
+        "unknownPosition": "change",
+        "text": "Listen to the story and discover how many more cookies were baked!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 16,
+        "changeCount": 7,
+        "resultCount": 9,
+        "unknownPosition": "change",
+        "text": "Listen to the story and find out how many flowers were picked!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 13,
+        "changeCount": 7,
+        "resultCount": 20,
+        "unknownPosition": "change",
+        "text": "Listen to the story and figure out how many ducks arrived at the pond!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 19,
+        "changeCount": 7,
+        "resultCount": 12,
+        "unknownPosition": "change",
+        "text": "Listen to the story and find out how many rockets flew away!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 15,
+        "changeCount": 4,
+        "resultCount": 19,
+        "unknownPosition": "change",
+        "text": "Listen to the story and discover how many fluffy bunnies hopped into the yard!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 17,
+        "changeCount": 9,
+        "resultCount": 8,
+        "unknownPosition": "change",
+        "text": "Listen to the story and find out how many fish swam away!"
+      }
+    ]
+  },
+  {
+    "componentId": "addition-subtraction-scene",
+    "mode": "solve_story",
+    "difficulty": "hard",
+    "run": 2,
+    "range": 20,
+    "challenges": [
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 7,
+        "changeCount": 5,
+        "resultCount": 12,
+        "unknownPosition": "start",
+        "text": "Some ducks were swimming in the pond. 5 more joined them, and now there are 12. Can you figure out how many we"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 15,
+        "changeCount": 4,
+        "resultCount": 11,
+        "unknownPosition": "start",
+        "text": "Some apples were sitting on the table. 4 of them rolled away, leaving 11 apples behind. How many apples were t"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 8,
+        "changeCount": 6,
+        "resultCount": 14,
+        "unknownPosition": "start",
+        "text": "Some frogs were resting on a log. 6 more hopped onto the log, and now there are 14 frogs. How many frogs were "
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 16,
+        "changeCount": 7,
+        "resultCount": 9,
+        "unknownPosition": "start",
+        "text": "Some cookies were fresh out of the oven. 7 cookies were eaten, and now there are 9 left. Find out how many coo"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 9,
+        "changeCount": 8,
+        "resultCount": 17,
+        "unknownPosition": "start",
+        "text": "Some butterflies were fluttering in the garden. 8 more joined them, and now there are 17. How many butterflies"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 20,
+        "changeCount": 9,
+        "resultCount": 11,
+        "unknownPosition": "start",
+        "text": "Some stars were shining brightly in the night sky. 9 stars faded away, leaving 11 visible stars. How many star"
+      }
+    ]
+  },
+  {
+    "componentId": "addition-subtraction-scene",
+    "mode": "solve_story",
+    "difficulty": "hard",
+    "run": 1,
+    "range": 20,
+    "challenges": [
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 11,
+        "changeCount": 4,
+        "resultCount": 15,
+        "unknownPosition": "start",
+        "text": "Find out how many stars were in the sky before some more appeared!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 17,
+        "changeCount": 5,
+        "resultCount": 12,
+        "unknownPosition": "start",
+        "text": "Figure out how many cookies were on the tray before some were taken away!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 13,
+        "changeCount": 3,
+        "resultCount": 16,
+        "unknownPosition": "start",
+        "text": "Discover how many frogs were on the log before more hopped up!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 14,
+        "changeCount": 6,
+        "resultCount": 8,
+        "unknownPosition": "start",
+        "text": "Work out how many apples were in the basket before some rolled out!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 12,
+        "changeCount": 7,
+        "resultCount": 19,
+        "unknownPosition": "start",
+        "text": "Find out how many butterflies were in the garden before more fluttered in!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 18,
+        "changeCount": 8,
+        "resultCount": 10,
+        "unknownPosition": "start",
+        "text": "Calculate how many cupcakes were on the counter before some were packed up!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 15,
+        "changeCount": 5,
+        "resultCount": 20,
+        "unknownPosition": "start",
+        "text": "Determine how many rockets were on the launchpad before more arrived!"
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 20,
+        "changeCount": 9,
+        "resultCount": 11,
+        "unknownPosition": "start",
+        "text": "Figure out how many fish were swimming before some swam away!"
+      }
+    ]
+  },
+  {
+    "componentId": "addition-subtraction-scene",
+    "mode": "solve_story",
+    "difficulty": "hard",
+    "run": 0,
+    "range": 20,
+    "challenges": [
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 15,
+        "changeCount": 5,
+        "resultCount": 10,
+        "unknownPosition": "start",
+        "text": "Figure out how many apples were in the basket before some were taken away."
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 10,
+        "changeCount": 4,
+        "resultCount": 14,
+        "unknownPosition": "start",
+        "text": "Find out how many fish were swimming before more joined."
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 14,
+        "changeCount": 6,
+        "resultCount": 8,
+        "unknownPosition": "start",
+        "text": "Discover how many butterflies were on the bush before some flew away."
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 12,
+        "changeCount": 7,
+        "resultCount": 19,
+        "unknownPosition": "start",
+        "text": "Determine how many rockets were on the launchpad before more arrived."
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 17,
+        "changeCount": 8,
+        "resultCount": 9,
+        "unknownPosition": "start",
+        "text": "Figure out how many cookies were on the tray before some disappeared."
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 15,
+        "changeCount": 5,
+        "resultCount": 20,
+        "unknownPosition": "start",
+        "text": "Find out how many stars were shining before more appeared in the sky."
+      },
+      {
+        "type": "solve-story",
+        "operation": "subtraction",
+        "storyType": "separate",
+        "startCount": 13,
+        "changeCount": 7,
+        "resultCount": 6,
+        "unknownPosition": "start",
+        "text": "Discover how many frogs were near the water before some hopped away."
+      },
+      {
+        "type": "solve-story",
+        "operation": "addition",
+        "storyType": "join",
+        "startCount": 9,
+        "changeCount": 9,
+        "resultCount": 18,
+        "unknownPosition": "start",
+        "text": "Determine how many flowers were blooming before more were planted."
+      }
+    ]
+  }
+]

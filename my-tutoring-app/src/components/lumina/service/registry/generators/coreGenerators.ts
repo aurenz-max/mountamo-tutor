@@ -393,6 +393,9 @@ registerContextGenerator('knowledge-check', async (ctx) => {
     // objective reaches the orchestrator + every problem prompt (ADDITIONAL CONTEXT).
     objectiveText: config.objectiveText || ctx.intent,
     bloomsTier: config.targetEvalMode as BloomsTier | undefined,
+    // Lesson or Pulse tier (easy / medium / hard): an objective that is an item-space strand gets
+    // its problems picked by code at this difficulty (service/itemSpace).
+    difficulty: config.difficulty as string | undefined,
     // Lesson objectives with curriculum IDs (stamped by flattenManifestToLayout
     // on the final assessment) — the orchestrator tags each problem with the
     // objective it assesses so its evaluation attributes to THAT subskill.

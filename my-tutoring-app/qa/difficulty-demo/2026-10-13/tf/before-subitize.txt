@@ -1,0 +1,108 @@
+
+Numbers to 10 on a ten frame | subitize | difficulty=easy | run 1 | own path
+  [                      ] {"type":"subitize","targetCount":2,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":4,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":2000}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=easy | run 2 | own path
+  [                      ] {"type":"subitize","targetCount":3,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":9,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":2000}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=easy | run 3 | own path
+  [                      ] {"type":"subitize","targetCount":3,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":9,"flashDuration":2000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":2000}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=medium | run 1 | own path
+  [                      ] {"type":"subitize","targetCount":3,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":9,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":1500}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=medium | run 2 | own path
+  [                      ] {"type":"subitize","targetCount":3,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":4,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":1500}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=medium | run 3 | own path
+  [                      ] {"type":"subitize","targetCount":3,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":9,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":1500}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=hard | run 1 | own path
+  [                      ] {"type":"subitize","targetCount":3,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":9,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":1000}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=hard | run 2 | own path
+  [                      ] {"type":"subitize","targetCount":3,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":9,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":1000}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=hard | run 3 | own path
+  [                      ] {"type":"subitize","targetCount":3,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":4,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":9,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":1000}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"subitize","targetCount":3,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":1200}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":1200}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":4,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":1000}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"subitize","targetCount":2,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":4,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":1200}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":1200}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":9,"flashDuration":1000}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":1000}  "How many counters did you see?"
+
+Numbers to 10 on a ten frame | subitize | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"subitize","targetCount":3,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":5,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":6,"flashDuration":1500}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":8,"flashDuration":1200}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":4,"flashDuration":1200}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":7,"flashDuration":1200}  "How many counters did you see?"
+  [                      ] {"type":"subitize","targetCount":10,"flashDuration":1000}  "How many counters did you see?"

@@ -1,0 +1,91 @@
+
+Numbers to 10 on a ten frame | decompose | difficulty=easy | run 1 | own path
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+
+Numbers to 10 on a ten frame | decompose | difficulty=easy | run 2 | own path
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+
+Numbers to 10 on a ten frame | decompose | difficulty=easy | run 3 | own path
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+
+Numbers to 10 on a ten frame | decompose | difficulty=medium | run 1 | own path
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+
+Numbers to 10 on a ten frame | decompose | difficulty=medium | run 2 | own path
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  ERROR {"error":{"code":503,"message":"The service is currently unavailable.","status":"UNAVAILABLE"}}
+
+Numbers to 10 on a ten frame | decompose | difficulty=medium | run 3 | own path
+
+Numbers to 10 on a ten frame | decompose | difficulty=hard | run 1 | own path
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+
+Numbers to 10 on a ten frame | decompose | difficulty=hard | run 2 | own path
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+
+Numbers to 10 on a ten frame | decompose | difficulty=hard | run 3 | own path
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+
+Numbers to 10 on a ten frame | decompose | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+
+Numbers to 10 on a ten frame | decompose | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+
+Numbers to 10 on a ten frame | decompose | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":3}  "Turn some of the 3 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":4}  "Turn some of the 4 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"
+  [                      ] {"type":"split","targetCount":5}  "Turn some of the 5 counters yellow to make two groups!"

@@ -1,0 +1,40 @@
+
+Place value | compare | difficulty=easy | run 1 | own path
+  [                      ] {"targetNumber":7571,"highlightedDigitPlace":3,"minPlace":0,"maxPlace":3,"placeNameChoices":["Hundreds","Ten Thousands","Tens","Thousands"],"digitValueChoices":[{"value":700,"wordForm":"Seven Hundred"},{"value":70000,"wo  ""
+  [                      ] {"targetNumber":3655,"highlightedDigitPlace":3,"minPlace":0,"maxPlace":3,"placeNameChoices":["Hundreds","Ten Thousands","Thousands","Tens"],"digitValueChoices":[{"value":300,"wordForm":"Three Hundred"},{"value":30000,"wo  ""
+  [                      ] {"targetNumber":7198,"highlightedDigitPlace":0,"minPlace":0,"maxPlace":3,"placeNameChoices":["Tens","Tenths","Ones","Hundreds"],"digitValueChoices":[{"value":0.8,"wordForm":"Eight Tenths"},{"value":8,"wordForm":"Eight"},  ""
+
+Place value | compare | difficulty=easy | run 2 | own path
+  [                      ] {"targetNumber":2284,"highlightedDigitPlace":0,"minPlace":0,"maxPlace":3,"placeNameChoices":["Ones","Tens","Tenths","Hundreds"],"digitValueChoices":[{"value":4,"wordForm":"Four"},{"value":0.4,"wordForm":"Four Tenths"},{"  ""
+  [                      ] {"targetNumber":3950,"highlightedDigitPlace":3,"minPlace":0,"maxPlace":3,"placeNameChoices":["Hundreds","Ten Thousands","Thousands","Tens"],"digitValueChoices":[{"value":300,"wordForm":"Three Hundred"},{"value":30000,"wo  ""
+  [                      ] {"targetNumber":2565,"highlightedDigitPlace":0,"minPlace":0,"maxPlace":3,"placeNameChoices":["Ones","Tens","Tenths","Hundreds"],"digitValueChoices":[{"value":5,"wordForm":"Five"},{"value":0.5,"wordForm":"Five Tenths"},{"  ""
+
+Place value | compare | difficulty=medium | run 1 | own path
+  [                      ] {"targetNumber":8871,"highlightedDigitPlace":1,"minPlace":0,"maxPlace":3,"placeNameChoices":["Ones","Tens","Hundreds","Thousands"],"digitValueChoices":[{"value":7,"wordForm":"Seven"},{"value":70,"wordForm":"Seventy"},{"v  ""
+  [                      ] {"targetNumber":3396,"highlightedDigitPlace":1,"minPlace":0,"maxPlace":3,"placeNameChoices":["Tens","Ones","Hundreds","Thousands"],"digitValueChoices":[{"value":9,"wordForm":"Nine"},{"value":90,"wordForm":"Ninety"},{"val  ""
+  [                      ] {"targetNumber":6762,"highlightedDigitPlace":2,"minPlace":0,"maxPlace":3,"placeNameChoices":["Tens","Thousands","Ones","Hundreds"],"digitValueChoices":[{"value":70,"wordForm":"Seventy"},{"value":7000,"wordForm":"Seven Th  ""
+
+Place value | compare | difficulty=medium | run 2 | own path
+  [                      ] {"targetNumber":9581,"highlightedDigitPlace":2,"minPlace":0,"maxPlace":3,"placeNameChoices":["Hundreds","Tens","Thousands","Ones"],"digitValueChoices":[{"value":50,"wordForm":"Fifty"},{"value":5000,"wordForm":"Five Thous  ""
+  [                      ] {"targetNumber":6034,"highlightedDigitPlace":1,"minPlace":0,"maxPlace":3,"placeNameChoices":["Ones","Hundreds","Tens","Thousands"],"digitValueChoices":[{"value":30,"wordForm":"Thirty"},{"value":3,"wordForm":"Three"},{"va  ""
+  [                      ] {"targetNumber":1535,"highlightedDigitPlace":2,"minPlace":0,"maxPlace":3,"placeNameChoices":["Tens","Thousands","Hundreds","Ones"],"digitValueChoices":[{"value":50,"wordForm":"Fifty"},{"value":5000,"wordForm":"Five Thous  ""
+
+Place value | compare | difficulty=hard | run 1 | own path
+  [                      ] {"targetNumber":7179,"highlightedDigitPlace":2,"minPlace":0,"maxPlace":3,"placeNameChoices":["Tens","Thousands","Ones","Hundreds"],"digitValueChoices":[{"value":10,"wordForm":"Ten"},{"value":100,"wordForm":"One Hundred"}  ""
+  [                      ] {"targetNumber":7917,"highlightedDigitPlace":1,"minPlace":0,"maxPlace":3,"placeNameChoices":["Tens","Ones","Hundreds","Thousands"],"digitValueChoices":[{"value":10,"wordForm":"Ten"},{"value":1,"wordForm":"One"},{"value":  ""
+  [                      ] {"targetNumber":7515,"highlightedDigitPlace":2,"minPlace":0,"maxPlace":3,"placeNameChoices":["Tens","Thousands","Hundreds","Ones"],"digitValueChoices":[{"value":50,"wordForm":"Fifty"},{"value":5000,"wordForm":"Five Thous  ""
+
+Place value | compare | difficulty=hard | run 2 | own path
+  [                      ] {"targetNumber":3157,"highlightedDigitPlace":1,"minPlace":0,"maxPlace":3,"placeNameChoices":["Ones","Hundreds","Thousands","Tens"],"digitValueChoices":[{"value":50,"wordForm":"Fifty"},{"value":5,"wordForm":"Five"},{"valu  ""
+  [                      ] {"targetNumber":8666,"highlightedDigitPlace":2,"minPlace":0,"maxPlace":3,"placeNameChoices":["Tens","Thousands","Hundreds","Ones"],"digitValueChoices":[{"value":600,"wordForm":"Six Hundred"},{"value":60,"wordForm":"Sixty  ""
+  [                      ] {"targetNumber":5259,"highlightedDigitPlace":2,"minPlace":0,"maxPlace":3,"placeNameChoices":["Hundreds","Tens","Thousands","Ones"],"digitValueChoices":[{"value":20,"wordForm":"Twenty"},{"value":2000,"wordForm":"Two Thous  ""
+
+Place value | compare | difficulty=(none) | run 1 | own path
+  [                      ] {"targetNumber":8667,"highlightedDigitPlace":1,"minPlace":0,"maxPlace":3,"placeNameChoices":["Ones","Hundreds","Thousands","Tens"],"digitValueChoices":[{"value":60,"wordForm":"Sixty"},{"value":6,"wordForm":"Six"},{"value  ""
+  [                      ] {"targetNumber":2131,"highlightedDigitPlace":1,"minPlace":0,"maxPlace":3,"placeNameChoices":["Ones","Hundreds","Tens","Thousands"],"digitValueChoices":[{"value":3,"wordForm":"Three"},{"value":30,"wordForm":"Thirty"},{"va  ""
+  [                      ] {"targetNumber":4540,"highlightedDigitPlace":2,"minPlace":0,"maxPlace":3,"placeNameChoices":["Tens","Thousands","Ones","Hundreds"],"digitValueChoices":[{"value":50,"wordForm":"Fifty"},{"value":5000,"wordForm":"Five Thous  ""
+
+Place value | compare | difficulty=(none) | run 2 | own path
+  [                      ] {"targetNumber":5138,"highlightedDigitPlace":1,"minPlace":0,"maxPlace":3,"placeNameChoices":["Ones","Hundreds","Thousands","Tens"],"digitValueChoices":[{"value":30,"wordForm":"Thirty"},{"value":3,"wordForm":"Three"},{"va  ""
+  [                      ] {"targetNumber":8895,"highlightedDigitPlace":1,"minPlace":0,"maxPlace":3,"placeNameChoices":["Ones","Tens","Hundreds","Thousands"],"digitValueChoices":[{"value":9,"wordForm":"Nine"},{"value":90,"wordForm":"Ninety"},{"val  ""
+  [                      ] {"targetNumber":3091,"highlightedDigitPlace":1,"minPlace":0,"maxPlace":3,"placeNameChoices":["Tens","Ones","Hundreds","Thousands"],"digitValueChoices":[{"value":9,"wordForm":"Nine"},{"value":90,"wordForm":"Ninety"},{"val  ""

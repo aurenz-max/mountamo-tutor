@@ -1,0 +1,74 @@
+
+Place value and adding within 1000 | build_two_ways | difficulty=easy | run 1 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":729,"showColumnCounts":false,"showBlocksTotal":false}  "Show 729 with blocks. Then show 729 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":705,"showColumnCounts":false,"showBlocksTotal":false}  "Show 705 with blocks. Then show 705 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":537,"showColumnCounts":false,"showBlocksTotal":false}  "Show 537 with blocks. Then show 537 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":722,"showColumnCounts":false,"showBlocksTotal":false}  "Show 722 with blocks. Then show 722 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":187,"showColumnCounts":false,"showBlocksTotal":false}  "Show 187 with blocks. Then show 187 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=easy | run 2 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":99,"showColumnCounts":false,"showBlocksTotal":false}  "Show 99 with blocks. Then show 99 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":691,"showColumnCounts":false,"showBlocksTotal":false}  "Show 691 with blocks. Then show 691 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":565,"showColumnCounts":false,"showBlocksTotal":false}  "Show 565 with blocks. Then show 565 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":84,"showColumnCounts":false,"showBlocksTotal":false}  "Show 84 with blocks. Then show 84 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=easy | run 3 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":59,"showColumnCounts":false,"showBlocksTotal":false}  "Show 59 with blocks. Then show 59 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":71,"showColumnCounts":false,"showBlocksTotal":false}  "Show 71 with blocks. Then show 71 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":931,"showColumnCounts":false,"showBlocksTotal":false}  "Show 931 with blocks. Then show 931 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":576,"showColumnCounts":false,"showBlocksTotal":false}  "Show 576 with blocks. Then show 576 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=medium | run 1 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":440,"showColumnCounts":false,"showBlocksTotal":false}  "Show 440 with blocks. Then show 440 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":697,"showColumnCounts":false,"showBlocksTotal":false}  "Show 697 with blocks. Then show 697 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":152,"showColumnCounts":false,"showBlocksTotal":false}  "Show 152 with blocks. Then show 152 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":850,"showColumnCounts":false,"showBlocksTotal":false}  "Show 850 with blocks. Then show 850 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=medium | run 2 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":635,"showColumnCounts":false,"showBlocksTotal":false}  "Show 635 with blocks. Then show 635 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":765,"showColumnCounts":false,"showBlocksTotal":false}  "Show 765 with blocks. Then show 765 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":903,"showColumnCounts":false,"showBlocksTotal":false}  "Show 903 with blocks. Then show 903 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":396,"showColumnCounts":false,"showBlocksTotal":false}  "Show 396 with blocks. Then show 396 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=medium | run 3 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":841,"showColumnCounts":false,"showBlocksTotal":false}  "Show 841 with blocks. Then show 841 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":837,"showColumnCounts":false,"showBlocksTotal":false}  "Show 837 with blocks. Then show 837 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":710,"showColumnCounts":false,"showBlocksTotal":false}  "Show 710 with blocks. Then show 710 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":955,"showColumnCounts":false,"showBlocksTotal":false}  "Show 955 with blocks. Then show 955 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=hard | run 1 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":371,"showColumnCounts":false,"showBlocksTotal":false}  "Show 371 with blocks. Then show 371 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":346,"showColumnCounts":false,"showBlocksTotal":false}  "Show 346 with blocks. Then show 346 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":573,"showColumnCounts":false,"showBlocksTotal":false}  "Show 573 with blocks. Then show 573 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":897,"showColumnCounts":false,"showBlocksTotal":false}  "Show 897 with blocks. Then show 897 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=hard | run 2 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":752,"showColumnCounts":false,"showBlocksTotal":false}  "Show 752 with blocks. Then show 752 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":930,"showColumnCounts":false,"showBlocksTotal":false}  "Show 930 with blocks. Then show 930 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":745,"showColumnCounts":false,"showBlocksTotal":false}  "Show 745 with blocks. Then show 745 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":226,"showColumnCounts":false,"showBlocksTotal":false}  "Show 226 with blocks. Then show 226 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":649,"showColumnCounts":false,"showBlocksTotal":false}  "Show 649 with blocks. Then show 649 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=hard | run 3 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":977,"showColumnCounts":false,"showBlocksTotal":false}  "Show 977 with blocks. Then show 977 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":526,"showColumnCounts":false,"showBlocksTotal":false}  "Show 526 with blocks. Then show 526 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":420,"showColumnCounts":false,"showBlocksTotal":false}  "Show 420 with blocks. Then show 420 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":34,"showColumnCounts":false,"showBlocksTotal":false}  "Show 34 with blocks. Then show 34 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":229}  "Show 229 with blocks. Then show 229 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":438}  "Show 438 with blocks. Then show 438 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":808}  "Show 808 with blocks. Then show 808 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":386}  "Show 386 with blocks. Then show 386 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":91}  "Show 91 with blocks. Then show 91 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":189}  "Show 189 with blocks. Then show 189 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":220}  "Show 220 with blocks. Then show 220 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":56}  "Show 56 with blocks. Then show 56 a different way."
+
+Place value and adding within 1000 | build_two_ways | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"build_two_ways","targetNumber":118}  "Show 118 with blocks. Then show 118 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":372}  "Show 372 with blocks. Then show 372 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":383}  "Show 383 with blocks. Then show 383 a different way."
+  [                      ] {"type":"build_two_ways","targetNumber":616}  "Show 616 with blocks. Then show 616 a different way."

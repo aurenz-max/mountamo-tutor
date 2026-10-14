@@ -1,0 +1,60 @@
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=easy | run 1 | own path
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":3}],"correctTotal":13,"countMode":"mixed"}  "Count by 10s for the dimes, then add the pennies. How much money is sh"
+  [                      ] {"type":"count","displayedCoins":[{"type":"nickel","count":2},{"type":"penny","count":4}],"correctTotal":14,"countMode":"mixed"}  "Count by 5s for the nickels, then add the pennies. How much money is s"
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"nickel","count":1}],"correctTotal":25,"countMode":"mixed"}  "Count by 10s for the dimes, then add the nickels. How much money is sh"
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":2}],"correctTotal":45,"countMode":"mixed"}  "Count by 25s for the quarter, then add the dimes. How much money is sh"
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1},{"type":"penny","count":2}],"correctTotal":37,"countMode":"mixed"}  "Count the largest coins first, then add the smaller coins. How much mo"
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1},{"type":"nickel","count":1},{"type":"penny","count":3}],"correctTotal":43,"countMode":"mixed"}  "Group the coins by value from biggest to smallest. How much money is s"
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=easy | run 2 | own path
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"penny","count":3}],"correctTotal":23,"countMode":"mixed"}  "Count by 10s for the dimes, then add the pennies."
+  [                      ] {"type":"count","displayedCoins":[{"type":"nickel","count":3},{"type":"penny","count":4}],"correctTotal":19,"countMode":"mixed"}  "Count by 5s for the nickels, then add the pennies."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":2}],"correctTotal":20,"countMode":"mixed"}  "Count by 10s for the dimes, then add the nickels and pennies."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":2}],"correctTotal":45,"countMode":"mixed"}  "Start with the quarter, then count by 10s for the dimes."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":2},{"type":"dime","count":1}],"correctTotal":60,"countMode":"mixed"}  "Count the quarters first, then add the dimes and nickels."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1}],"correctTotal":35,"countMode":"mixed"}  "Add up all the coin types together starting from the largest value to "
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=medium | run 1 | own path
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":2}],"correctTotal":20,"countMode":"mixed"}  "How much money is shown on the counter?"
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"penny","count":4}],"correctTotal":29,"countMode":"mixed"}  "Add up these coins to find the price of the toy car."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"penny","count":3}],"correctTotal":23,"countMode":"mixed"}  "Count the coins in the toy shop jar."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"nickel","count":1}],"correctTotal":30,"countMode":"mixed"}  "How much money is shown here?"
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"nickel","count":1}],"correctTotal":25,"countMode":"mixed"}  "Count the coins to buy the puzzle."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1}],"correctTotal":35,"countMode":"mixed"}  "Add up these coins for the final toy purchase."
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=medium | run 2 | own path
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"penny","count":4}],"correctTotal":24,"countMode":"mixed"}  "How much money is shown for your new pencil?"
+  [                      ] {"type":"count","displayedCoins":[{"type":"nickel","count":3},{"type":"penny","count":2}],"correctTotal":17,"countMode":"mixed"}  "Count the coins in the jar to buy a notebook."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":2}],"correctTotal":20,"countMode":"mixed"}  "Add up these coins to pay for your eraser."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1},{"type":"penny","count":3}],"correctTotal":38,"countMode":"mixed"}  "Calculate the total value for a box of crayons."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"nickel","count":2},{"type":"penny","count":4}],"correctTotal":39,"countMode":"mixed"}  "How much money is shown here to buy a ruler?"
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":2},{"type":"dime","count":1},{"type":"nickel","count":1},{"type":"penny","count":3}],"correctTotal":68,"countMode":"mixed"}  "Add up these coins to purchase a brand new backpack."
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=hard | run 1 | own path
+  [                      ] {"type":"count","displayedCoins":[{"type":"nickel","count":2},{"type":"penny","count":3}],"correctTotal":13,"countMode":"mixed"}  "Count the coins earned from your first customer."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":2}],"correctTotal":20,"countMode":"mixed"}  "Add up the coins collected during the morning rush."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"penny","count":4}],"correctTotal":24,"countMode":"mixed"}  "Calculate the total value of these coins from the tip jar."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1}],"correctTotal":35,"countMode":"mixed"}  "Count this mixed pile of coins paid for a large lemonade."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":2},{"type":"dime","count":1}],"correctTotal":60,"countMode":"mixed"}  "Calculate the final closing amount in the cash box."
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=hard | run 2 | own path
+  [                      ] {"type":"count","displayedCoins":[{"type":"nickel","count":2},{"type":"penny","count":3}],"correctTotal":13,"countMode":"mixed"}  "Count the coins you have saved up for your first sweet treat."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":4}],"correctTotal":14,"countMode":"mixed"}  "Add up these coins to see how much money is in your candy pouch."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"nickel","count":2}],"correctTotal":30,"countMode":"mixed"}  "Calculate the total value of these coins for a chocolate bar."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1}],"correctTotal":35,"countMode":"mixed"}  "Count this mixed handful of coins to buy a lollipop."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"nickel","count":2}],"correctTotal":35,"countMode":"mixed"}  "Find the total value of your candy store tokens."
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"penny","count":3}],"correctTotal":23,"countMode":"mixed"}  "Count the coins in the jar to see how much Maya saved so far."
+  [                      ] {"type":"count","displayedCoins":[{"type":"nickel","count":3},{"type":"penny","count":4}],"correctTotal":19,"countMode":"mixed"}  "Add up these coins to check Maya's book fund."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1}],"correctTotal":35,"countMode":"mixed"}  "How much money is shown here for the next chapter book?"
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"nickel","count":1}],"correctTotal":25,"countMode":"mixed"}  "Calculate the total value of these coins from Maya's piggy bank."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":2}],"correctTotal":45,"countMode":"mixed"}  "Find the grand total to see if Maya can finally buy her book."
+
+Solve word problems involving dimes, nickels, pennies and quarters | count-mixed | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"penny","count":3}],"correctTotal":13,"countMode":"mixed"}  "Count the coins you need to buy a new pencil."
+  [                      ] {"type":"count","displayedCoins":[{"type":"nickel","count":1},{"type":"penny","count":4}],"correctTotal":9,"countMode":"mixed"}  "Add up these coins to find the cost of a shiny new eraser."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":2},{"type":"nickel","count":1}],"correctTotal":25,"countMode":"mixed"}  "Count the coins needed to purchase a colorful notebook."
+  [                      ] {"type":"count","displayedCoins":[{"type":"quarter","count":1},{"type":"dime","count":1}],"correctTotal":35,"countMode":"mixed"}  "Find the total value of the coins for a pack of crayons."
+  [                      ] {"type":"count","displayedCoins":[{"type":"dime","count":1},{"type":"nickel","count":2}],"correctTotal":20,"countMode":"mixed"}  "Count the coins to buy a handy glue stick."

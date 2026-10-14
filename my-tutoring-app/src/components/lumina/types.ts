@@ -705,6 +705,9 @@ export interface BaseProblemData {
   successCriteria: string[];
   /** Rich inline content (equation, table, passage, chart, etc.) generated with the problem */
   inset?: Inset;
+  /** Set when code picked this problem from an item space (service/itemSpace): the strand, the problem's
+   *  structure without its digits, and its predicted beta. Calibration data; never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
   /** The KC orchestrator's best-guess curriculum subject_id (MATHEMATICS, LANGUAGE_ARTS,
    *  SCIENCE, SOCIAL_STUDIES) for THIS assessment's content. This is the primitive-level
    *  subject signal — it wins over the lesson manifest's subject during curriculum

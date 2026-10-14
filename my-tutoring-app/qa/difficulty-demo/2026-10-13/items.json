@@ -1,0 +1,2490 @@
+{
+  "items": [
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 10 plus 6?",
+      "options": [
+        "16",
+        "15",
+        "4",
+        "20"
+      ],
+      "answer": "16",
+      "labelled": "easy",
+      "judgeP": 92,
+      "judgeSteps": 1,
+      "judgeWhy": "Adding a single-digit number to 10 is straightforward because it directly corresponds to the place-value structure of teen numbers.",
+      "maxNumber": 10,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 8 plus 2?",
+      "options": [
+        "9",
+        "10",
+        "11",
+        "6"
+      ],
+      "answer": "10",
+      "labelled": "easy",
+      "judgeP": 94,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a basic number bond to 10 that first graders practice frequently.",
+      "maxNumber": 8,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 10 + 6?",
+      "options": [
+        "15",
+        "16",
+        "14",
+        "6"
+      ],
+      "answer": "16",
+      "labelled": "easy",
+      "judgeP": 92,
+      "judgeSteps": 1,
+      "judgeWhy": "Adding a single digit to ten directly applies the foundational place-value concept of teen numbers.",
+      "maxNumber": 10,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 10 + 5?",
+      "options": [
+        "14",
+        "15",
+        "16",
+        "5"
+      ],
+      "answer": "15",
+      "labelled": "easy",
+      "judgeP": 92,
+      "judgeSteps": 1,
+      "judgeWhy": "Adding a single digit to ten directly reinforces teen place-value understanding and is very familiar to first graders.",
+      "maxNumber": 10,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 10 + 4?",
+      "options": [
+        "6",
+        "13",
+        "14",
+        "15"
+      ],
+      "answer": "14",
+      "labelled": "easy",
+      "judgeP": 90,
+      "judgeSteps": 1,
+      "judgeWhy": "Adding a single-digit number to ten is a foundational place value pattern heavily practiced in first grade.",
+      "maxNumber": 10,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 7 + 5?",
+      "options": [
+        "12",
+        "11",
+        "13",
+        "2"
+      ],
+      "answer": "12",
+      "labelled": "medium",
+      "judgeP": 82,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a standard single-step addition fact that crosses ten, requiring students to count on or use a make-ten strategy.",
+      "maxNumber": 7,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "How many crayons are left if you take 4 from 13?",
+      "options": [
+        "8",
+        "17",
+        "9",
+        "10"
+      ],
+      "answer": "9",
+      "labelled": "medium",
+      "judgeP": 72,
+      "judgeSteps": 2,
+      "judgeWhy": "Subtracting across the decade requires counting back or decomposing a ten, which is challenging for first graders.",
+      "maxNumber": 13,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "How many pencils are left after taking 5 from 13?",
+      "options": [
+        "7 pencils",
+        "8 pencils",
+        "9 pencils",
+        "18 pencils"
+      ],
+      "answer": "8 pencils",
+      "labelled": "medium",
+      "judgeP": 72,
+      "judgeSteps": 2,
+      "judgeWhy": "Students must interpret the word problem as subtraction and subtract across a ten boundary.",
+      "maxNumber": 13,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "How many apples are left from 13 after eating 5?",
+      "options": [
+        "7 apples",
+        "8 apples",
+        "9 apples",
+        "18 apples"
+      ],
+      "answer": "8 apples",
+      "labelled": "hard",
+      "judgeP": 74,
+      "judgeSteps": 1,
+      "judgeWhy": "Subtracting across ten makes this basic word problem moderately challenging for first graders.",
+      "maxNumber": 13,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "What is 13 apples take away 5 apples?",
+      "options": [
+        "7 apples",
+        "8 apples",
+        "9 apples",
+        "18 apples"
+      ],
+      "answer": "8 apples",
+      "labelled": "hard",
+      "judgeP": 74,
+      "judgeSteps": 1,
+      "judgeWhy": "Subtracting across the ten boundary requires decomposing or counting back, which can be tricky for first graders.",
+      "maxNumber": 13,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "How many blocks are left after taking 5 from 13?",
+      "options": [
+        "9",
+        "8",
+        "18",
+        "3"
+      ],
+      "answer": "8",
+      "labelled": "medium",
+      "judgeP": 72,
+      "judgeSteps": 2,
+      "judgeWhy": "Crossing the ten in subtraction requires extra mental decomposition or counting back, which can challenge some first graders.",
+      "maxNumber": 13,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "What is the total of 8 red apples and 6 green apples?",
+      "options": [
+        "13",
+        "14",
+        "2",
+        "20"
+      ],
+      "answer": "14",
+      "labelled": "medium",
+      "judgeP": 78,
+      "judgeSteps": 1,
+      "judgeWhy": "The word problem directly translates to basic addition, but crossing ten requires extra mental counting or regrouping for first graders.",
+      "maxNumber": 8,
+      "numbers": 2,
+      "opWords": 0
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "Why does 9 + 5 have the same answer as 10 + 4?",
+      "options": [
+        "Both add the number four.",
+        "One moved to make ten.",
+        "Both make fifteen.",
+        "One was taken away."
+      ],
+      "answer": "One moved to make ten.",
+      "labelled": "hard",
+      "judgeP": 58,
+      "judgeSteps": 2,
+      "judgeWhy": "Explaining the 'make ten' strategy in words requires conceptual and reading skills beyond basic computation.",
+      "maxNumber": 10,
+      "numbers": 4,
+      "opWords": 2
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "Why is 8 + 6 more than 8 + 5?",
+      "options": [
+        "Both start with 8.",
+        "It adds 1 more.",
+        "It adds 1 less.",
+        "It takes away 1."
+      ],
+      "answer": "It adds 1 more.",
+      "labelled": "hard",
+      "judgeP": 68,
+      "judgeSteps": 2,
+      "judgeWhy": "Students must compare the addends rather than just compute the sums, which requires relational thinking and reading comprehension.",
+      "maxNumber": 8,
+      "numbers": 4,
+      "opWords": 3
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "Why does 15 - 8 equal 15 - 5 - 3?",
+      "options": [
+        "Both make 10.",
+        "8 is 5 plus 3.",
+        "8 is 5 minus 3.",
+        "15 is 8 plus 5."
+      ],
+      "answer": "8 is 5 plus 3.",
+      "labelled": "hard",
+      "judgeP": 58,
+      "judgeSteps": 2,
+      "judgeWhy": "Explaining decomposition requires more abstract reasoning and reading comprehension than standard computation for first graders.",
+      "maxNumber": 15,
+      "numbers": 5,
+      "opWords": 3
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "Why does 16 - 7 give a smaller answer than 16 - 6?",
+      "options": [
+        "You took away less.",
+        "You took away more.",
+        "You started with less.",
+        "Both take away the same."
+      ],
+      "answer": "You took away more.",
+      "labelled": "hard",
+      "judgeP": 48,
+      "judgeSteps": 2,
+      "judgeWhy": "First graders often confuse inverse relationships and associate a smaller result with taking away less rather than more.",
+      "maxNumber": 16,
+      "numbers": 4,
+      "opWords": 2
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "Compare 12 - 4 and 12 - 5.",
+      "options": [
+        "12 - 5 is 1 more.",
+        "12 - 4 is 1 more.",
+        "Both give the same answer.",
+        "Both answers are zero."
+      ],
+      "answer": "12 - 4 is 1 more.",
+      "labelled": "hard",
+      "judgeP": 48,
+      "judgeSteps": 3,
+      "judgeWhy": "First graders must evaluate two subtractions across ten and often confuse subtracting a larger number with getting a larger result.",
+      "maxNumber": 12,
+      "numbers": 4,
+      "opWords": 2
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "Why does 8 + 6 equal 10 + 4?",
+      "options": [
+        "One moved to make ten.",
+        "Two moved to make ten.",
+        "Four moved to make ten.",
+        "Nothing moved to make ten."
+      ],
+      "answer": "Two moved to make ten.",
+      "labelled": "hard",
+      "judgeP": 62,
+      "judgeSteps": 2,
+      "judgeWhy": "Explaining the conceptual 'make a ten' strategy in words is harder for first graders than just computing the sum.",
+      "maxNumber": 10,
+      "numbers": 4,
+      "opWords": 2
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 1,
+      "spec": "10 - 7",
+      "tier": "apply",
+      "question": "What is 10 - 7?",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "17"
+      ],
+      "answer": "3",
+      "labelled": "medium",
+      "judgeP": 88,
+      "judgeSteps": 1,
+      "judgeWhy": "Subtracting from 10 relies on foundational tens-partner facts that are heavily practiced in first grade.",
+      "maxNumber": 10,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 1,
+      "spec": "3 + 3",
+      "tier": "apply",
+      "question": "What is 3 + 3?",
+      "options": [
+        "5",
+        "7",
+        "6",
+        "9"
+      ],
+      "answer": "6",
+      "labelled": "easy",
+      "judgeP": 95,
+      "judgeSteps": 1,
+      "judgeWhy": "Doubles facts within ten are among the earliest and most commonly memorized addition facts for first graders.",
+      "maxNumber": 3,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 1,
+      "spec": "5 - 2",
+      "tier": "apply",
+      "question": "What is 5 - 2?",
+      "options": [
+        "7",
+        "3",
+        "4",
+        "8"
+      ],
+      "answer": "3",
+      "labelled": "medium",
+      "judgeP": 93,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a basic single-digit subtraction fact within five that most first graders can quickly solve using mental math or fingers.",
+      "maxNumber": 5,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 1,
+      "spec": "9 - 3",
+      "tier": "apply",
+      "question": "What is 9 - 3?",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "12"
+      ],
+      "answer": "6",
+      "labelled": "medium",
+      "judgeP": 88,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a basic single-digit subtraction fact within 10 that most first graders can quickly solve by counting back.",
+      "maxNumber": 9,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 1,
+      "spec": "6 - 1",
+      "tier": "apply",
+      "question": "What is 6 - 1?",
+      "options": [
+        "7",
+        "5",
+        "4",
+        "1"
+      ],
+      "answer": "5",
+      "labelled": "medium",
+      "judgeP": 95,
+      "judgeSteps": 1,
+      "judgeWhy": "Subtracting one from a small single-digit number is a basic counting-back skill that nearly all first graders master quickly.",
+      "maxNumber": 6,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 1,
+      "spec": "1 + 3",
+      "tier": "apply",
+      "question": "What is 1 + 3?",
+      "options": [
+        "2",
+        "4",
+        "5",
+        "8"
+      ],
+      "answer": "4",
+      "labelled": "medium",
+      "judgeP": 96,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a basic single-digit addition fact with small addends that most first graders can easily recall or count on to solve.",
+      "maxNumber": 3,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 2,
+      "spec": "9 + 8",
+      "tier": "apply",
+      "question": "What is 9 + 8?",
+      "options": [
+        "16",
+        "17",
+        "18",
+        "11"
+      ],
+      "answer": "17",
+      "labelled": "hard",
+      "judgeP": 78,
+      "judgeSteps": 1,
+      "judgeWhy": "Crossing the ten threshold requires mental strategies like making a ten or doubles-plus-one, making it slightly challenging for first graders.",
+      "maxNumber": 9,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 2,
+      "spec": "7 + 9",
+      "tier": "apply",
+      "question": "What is 7 + 9?",
+      "options": [
+        "15",
+        "16",
+        "17",
+        "13"
+      ],
+      "answer": "16",
+      "labelled": "hard",
+      "judgeP": 74,
+      "judgeSteps": 2,
+      "judgeWhy": "Crossing the ten boundary makes this addition fact slightly harder for first graders than facts within ten.",
+      "maxNumber": 9,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 2,
+      "spec": "15 - 7",
+      "tier": "apply",
+      "question": "What is 15 - 7?",
+      "options": [
+        "7",
+        "9",
+        "8",
+        "22"
+      ],
+      "answer": "8",
+      "labelled": "medium",
+      "judgeP": 68,
+      "judgeSteps": 2,
+      "judgeWhy": "Crossing the ten requires decomposing numbers or counting back, which can be challenging for first graders.",
+      "maxNumber": 15,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 2,
+      "spec": "7 + 5",
+      "tier": "apply",
+      "question": "What is 7 + 5?",
+      "options": [
+        "11",
+        "12",
+        "13",
+        "2"
+      ],
+      "answer": "12",
+      "labelled": "medium",
+      "judgeP": 82,
+      "judgeSteps": 1,
+      "judgeWhy": "Crossing the ten threshold adds slight difficulty, but single-digit addition is a core first-grade skill.",
+      "maxNumber": 7,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 2,
+      "spec": "6 + 9",
+      "tier": "apply",
+      "question": "What is 6 + 9?",
+      "options": [
+        "14",
+        "15",
+        "16",
+        "3"
+      ],
+      "answer": "15",
+      "labelled": "hard",
+      "judgeP": 74,
+      "judgeSteps": 1,
+      "judgeWhy": "Crossing the ten threshold requires composing a ten or counting on, which can challenge first graders.",
+      "maxNumber": 9,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 2,
+      "spec": "9 + 4",
+      "tier": "apply",
+      "question": "What is 9 + 4?",
+      "options": [
+        "5",
+        "12",
+        "13",
+        "14"
+      ],
+      "answer": "13",
+      "labelled": "medium",
+      "judgeP": 78,
+      "judgeSteps": 2,
+      "judgeWhy": "Crossing the ten boundary requires students to count on or use a make-ten strategy.",
+      "maxNumber": 9,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 3,
+      "spec": "? + 9 = 17 (find the missing number)",
+      "tier": "apply",
+      "question": "Which number makes this true? ___ + 9 = 17",
+      "options": [
+        "7",
+        "8",
+        "9",
+        "26"
+      ],
+      "answer": "8",
+      "labelled": "hard",
+      "judgeP": 68,
+      "judgeSteps": 2,
+      "judgeWhy": "Missing addend problems that bridge ten are moderately challenging for first graders to solve mentally or by counting on.",
+      "maxNumber": 17,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 3,
+      "spec": "15 - 8 + 4",
+      "tier": "apply",
+      "question": "What is 15 - 8 + 4?",
+      "options": [
+        "7",
+        "11",
+        "3",
+        "19"
+      ],
+      "answer": "11",
+      "labelled": "hard",
+      "judgeP": 48,
+      "judgeSteps": 2,
+      "judgeWhy": "Performing a two-step mixed operation across ten is challenging for first graders, and the intermediate result is a tempting distractor.",
+      "maxNumber": 15,
+      "numbers": 3,
+      "opWords": 2
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 3,
+      "spec": "18 - 9 + 4",
+      "tier": "apply",
+      "question": "What is 18 - 9 + 4?",
+      "options": [
+        "9",
+        "13",
+        "5",
+        "21"
+      ],
+      "answer": "13",
+      "labelled": "hard",
+      "judgeP": 55,
+      "judgeSteps": 2,
+      "judgeWhy": "This requires two sequential operations within 20, and many first graders may stop after the first subtraction step.",
+      "maxNumber": 18,
+      "numbers": 3,
+      "opWords": 2
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 3,
+      "spec": "? + 7 = 16 (find the missing number)",
+      "tier": "apply",
+      "question": "Which number makes this true? ? + 7 = 16",
+      "options": [
+        "8",
+        "9",
+        "10",
+        "23"
+      ],
+      "answer": "9",
+      "labelled": "hard",
+      "judgeP": 70,
+      "judgeSteps": 2,
+      "judgeWhy": "Finding a missing addend that bridges across ten requires counting on or relating addition to subtraction.",
+      "maxNumber": 16,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 3,
+      "spec": "13 - 9 + 6",
+      "tier": "apply",
+      "question": "What is 13 - 9 + 6?",
+      "options": [
+        "4",
+        "8",
+        "10",
+        "11"
+      ],
+      "answer": "10",
+      "labelled": "medium",
+      "judgeP": 62,
+      "judgeSteps": 2,
+      "judgeWhy": "Performing a two-step mixed operation across 10 requires maintaining an intermediate result in working memory.",
+      "maxNumber": 13,
+      "numbers": 3,
+      "opWords": 2
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "level": 3,
+      "spec": "14 - 6 + 8",
+      "tier": "apply",
+      "question": "What is 14 - 6 + 8?",
+      "options": [
+        "8",
+        "0",
+        "16",
+        "4"
+      ],
+      "answer": "16",
+      "labelled": "medium",
+      "judgeP": 58,
+      "judgeSteps": 2,
+      "judgeWhy": "Performing two sequential operations across ten strains working memory for first graders.",
+      "maxNumber": 14,
+      "numbers": 3,
+      "opWords": 2
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 7 × 8?",
+      "options": [
+        "54",
+        "56",
+        "48",
+        "15"
+      ],
+      "answer": "56",
+      "labelled": "easy",
+      "judgeP": 72,
+      "judgeSteps": 1,
+      "judgeWhy": "The 7 times 8 fact is known to be one of the most frequently forgotten single-digit multiplication facts, though it requires only a single recall step.",
+      "maxNumber": 8,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 7 × 8?",
+      "options": [
+        "48",
+        "56",
+        "54",
+        "15"
+      ],
+      "answer": "56",
+      "labelled": "medium",
+      "judgeP": 72,
+      "judgeSteps": 1,
+      "judgeWhy": "Although it is a single-step recall problem, 7 × 8 is notoriously one of the most difficult multiplication facts for third graders to memorize.",
+      "maxNumber": 8,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 7 × 8?",
+      "options": [
+        "15",
+        "56",
+        "54",
+        "64"
+      ],
+      "answer": "56",
+      "labelled": "easy",
+      "judgeP": 72,
+      "judgeSteps": 1,
+      "judgeWhy": "Although it requires just a single retrieval step, 7 × 8 is notoriously one of the most frequently missed basic multiplication facts.",
+      "maxNumber": 8,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 7 × 8?",
+      "options": [
+        "48",
+        "54",
+        "56",
+        "64"
+      ],
+      "answer": "56",
+      "labelled": "easy",
+      "judgeP": 78,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a single-step retrieval problem, though 7 × 8 is notoriously one of the most frequently forgotten single-digit multiplication facts.",
+      "maxNumber": 8,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 7 × 8?",
+      "options": [
+        "48",
+        "56",
+        "54",
+        "15"
+      ],
+      "answer": "56",
+      "labelled": "easy",
+      "judgeP": 74,
+      "judgeSteps": 1,
+      "judgeWhy": "Although this is a single-step fact recall, 7 times 8 is notoriously one of the most frequently forgotten single-digit multiplication facts.",
+      "maxNumber": 8,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "What is 7 × 8?",
+      "options": [
+        "15",
+        "54",
+        "56",
+        "64"
+      ],
+      "answer": "56",
+      "labelled": "easy",
+      "judgeP": 72,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a single-step basic fact retrieval, but 7 × 8 is historically one of the hardest multiplication facts for third graders to memorize.",
+      "maxNumber": 8,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "Maya has 48 crayons. She puts an equal number of crayons into each of 6 boxes. How many crayons are in each box?",
+      "options": [
+        "7 crayons",
+        "8 crayons",
+        "42 crayons",
+        "54 crayons"
+      ],
+      "answer": "8 crayons",
+      "labelled": "medium",
+      "judgeP": 80,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct, single-step equal sharing word problem requiring basic division fact recall.",
+      "maxNumber": 48,
+      "numbers": 2,
+      "opWords": 4
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "Maya has 48 colored pencils. She shares them equally among 6 pencil boxes. How many colored pencils go into each box?",
+      "options": [
+        "7 colored pencils",
+        "8 colored pencils",
+        "42 colored pencils",
+        "54 colored pencils"
+      ],
+      "answer": "8 colored pencils",
+      "labelled": "medium",
+      "judgeP": 82,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a straightforward, single-step division word problem involving basic facts directly covered in the Grade 3 curriculum.",
+      "maxNumber": 48,
+      "numbers": 2,
+      "opWords": 3
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "Marcus has 6 packs of stickers with 8 stickers in each pack. He shares all the stickers equally among 4 friends. How many stickers does each friend get?",
+      "options": [
+        "48",
+        "12",
+        "14",
+        "2"
+      ],
+      "answer": "12",
+      "labelled": "medium",
+      "judgeP": 64,
+      "judgeSteps": 2,
+      "judgeWhy": "It requires two steps combining multiplication and division, with the intermediate product included as a tempting distractor.",
+      "maxNumber": 8,
+      "numbers": 3,
+      "opWords": 2
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "Maya packs 48 apples into gift boxes. She puts 6 apples into each box. How many boxes does Maya fill?",
+      "options": [
+        "42 boxes",
+        "7 boxes",
+        "8 boxes",
+        "54 boxes"
+      ],
+      "answer": "8 boxes",
+      "labelled": "medium",
+      "judgeP": 78,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct, single-step division word problem using a standard basic math fact.",
+      "maxNumber": 48,
+      "numbers": 2,
+      "opWords": 4
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "Leo has 48 muffins to put into gift boxes. He puts 6 muffins in each box. How many boxes can Leo fill?",
+      "options": [
+        "42",
+        "8",
+        "7",
+        "54"
+      ],
+      "answer": "8",
+      "labelled": "medium",
+      "judgeP": 82,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct, single-step division word problem involving basic facts within 100.",
+      "maxNumber": 48,
+      "numbers": 2,
+      "opWords": 4
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "A baker makes 54 muffins. She puts 6 muffins into each box. How many boxes does she fill?",
+      "options": [
+        "8 boxes",
+        "48 boxes",
+        "9 boxes",
+        "10 boxes"
+      ],
+      "answer": "9 boxes",
+      "labelled": "medium",
+      "judgeP": 82,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a straightforward single-step division word problem involving basic facts within 100.",
+      "maxNumber": 54,
+      "numbers": 2,
+      "opWords": 3
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "What would happen to the number of boxes needed if Maya packs 24 cookies into boxes of 6 instead of boxes of 3?",
+      "options": [
+        "She would need twice as many boxes because 6 is double 3.",
+        "She would need half as many boxes because doubling the cookies in each box cuts the number of boxes in half.",
+        "She would need 3 fewer boxes because each box holds 3 more cookies.",
+        "She would need the same number of boxes because the total number of cookies is still 24."
+      ],
+      "answer": "She would need half as many boxes because doubling the cookies in each box cuts the number of boxes in half.",
+      "labelled": "hard",
+      "judgeP": 48,
+      "judgeSteps": 3,
+      "judgeWhy": "Students often struggle with inverse relationships in division and may fall for additive distractors instead of comparing the quotients.",
+      "maxNumber": 24,
+      "numbers": 3,
+      "opWords": 3
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "Leo has 36 markers to pack into boxes. What would happen to the total number of boxes he needs if he puts 6 markers in each box instead of 3 markers?",
+      "options": [
+        "He will need twice as many boxes because each box holds more markers.",
+        "He will need half as many boxes because each box holds twice as many markers.",
+        "He will need 3 fewer boxes because 6 is 3 more than 3.",
+        "He will need the same number of boxes because the total number of markers is still 36."
+      ],
+      "answer": "He will need half as many boxes because each box holds twice as many markers.",
+      "labelled": "hard",
+      "judgeP": 48,
+      "judgeSteps": 3,
+      "judgeWhy": "Students must evaluate two separate division problems and recognize an inverse multiplicative relationship rather than an additive one.",
+      "maxNumber": 36,
+      "numbers": 3,
+      "opWords": 4
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "A baker has 24 cookies to pack into boxes. When he uses 4 boxes, each box gets 6 cookies. What would happen to the number of cookies in each box if he doubles the number of boxes to 8?",
+      "options": [
+        "Each box would get 12 cookies, because doubling the number of boxes doubles the cookies in each box.",
+        "Each box would get 6 cookies, because the total number of cookies does not change.",
+        "Each box would get 3 cookies, because sharing the same total into twice as many boxes cuts the number in each box in half.",
+        "Each box would get 2 cookies, because doubling the boxes means subtracting 4 cookies from each box."
+      ],
+      "answer": "Each box would get 3 cookies, because sharing the same total into twice as many boxes cuts the number in each box in half.",
+      "labelled": "hard",
+      "judgeP": 62,
+      "judgeSteps": 2,
+      "judgeWhy": "Students can calculate 24 divided by 8 is 3, but the conceptual language about inverse relationships and the distractor of doubling make it tricky.",
+      "maxNumber": 24,
+      "numbers": 4,
+      "opWords": 7
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "What would happen to the number of stickers each friend gets if 24 stickers are shared equally among 6 friends instead of 3 friends?",
+      "options": [
+        "Each friend gets twice as many stickers because the number of friends was doubled.",
+        "Each friend gets half as many stickers because twice as many friends are sharing the same total.",
+        "Each friend gets 3 fewer stickers because there are 3 more friends than before.",
+        "Each friend gets the same number of stickers because the total of 24 stickers did not change."
+      ],
+      "answer": "Each friend gets half as many stickers because twice as many friends are sharing the same total.",
+      "labelled": "hard",
+      "judgeP": 48,
+      "judgeSteps": 3,
+      "judgeWhy": "Students must compute both division scenarios or understand the inverse relationship, which is complicated by wordy answer choices.",
+      "maxNumber": 24,
+      "numbers": 3,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "What would happen to the number of gift bags Liam can make if he has 40 pieces of candy and doubles the number of candies in each bag from 4 to 8?",
+      "options": [
+        "He can make twice as many bags, because the number of candies inside each bag doubled.",
+        "He can make half as many bags, because each bag takes twice as much candy from the same total.",
+        "He can make 4 fewer bags, because 8 minus 4 leaves 4 fewer bags to fill.",
+        "He can make the exact same number of bags, because his total amount of candy stayed at 40."
+      ],
+      "answer": "He can make half as many bags, because each bag takes twice as much candy from the same total.",
+      "labelled": "hard",
+      "judgeP": 48,
+      "judgeSteps": 3,
+      "judgeWhy": "Students often fall for the misconception that doubling the items per bag doubles the total number of bags rather than halving it.",
+      "maxNumber": 40,
+      "numbers": 3,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "What would happen to the answer of 48 ÷ 6 if you double the 6 to 12?",
+      "options": [
+        "The answer would double because the number being divided by is twice as large.",
+        "The answer would be cut in half because sharing the same total among twice as many groups gives each group half as much.",
+        "The answer would stay the same because the starting total of 48 did not change.",
+        "The answer would decrease by 6 because 12 is 6 more than 6."
+      ],
+      "answer": "The answer would be cut in half because sharing the same total among twice as many groups gives each group half as much.",
+      "labelled": "hard",
+      "judgeP": 42,
+      "judgeSteps": 2,
+      "judgeWhy": "Understanding the inverse relationship between the divisor and the quotient is conceptually challenging, and students are often tricked into thinking the answer also doubles.",
+      "maxNumber": 48,
+      "numbers": 4,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 1,
+      "spec": "40 ÷ 5",
+      "tier": "apply",
+      "question": "Leo has 40 stickers to share equally among 5 gift bags. How many stickers go into each bag?",
+      "options": [
+        "7",
+        "8",
+        "9",
+        "35"
+      ],
+      "answer": "8",
+      "labelled": "medium",
+      "judgeP": 85,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct, single-step equal sharing word problem involving an easily recalled basic division fact.",
+      "maxNumber": 40,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 1,
+      "spec": "35 ÷ 5",
+      "tier": "apply",
+      "question": "Maya has 35 stickers to share equally among 5 friends. What is 35 ÷ 5?",
+      "options": [
+        "6",
+        "7",
+        "8",
+        "30"
+      ],
+      "answer": "7",
+      "labelled": "medium",
+      "judgeP": 88,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct, single-step division fact involving the highly familiar 5s fact family.",
+      "maxNumber": 35,
+      "numbers": 4,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 1,
+      "spec": "4 ÷ 2",
+      "tier": "apply",
+      "question": "Mia has 4 markers. She splits them equally into 2 pencil cases. What is 4 ÷ 2?",
+      "options": [
+        "1",
+        "2",
+        "6",
+        "8"
+      ],
+      "answer": "2",
+      "labelled": "easy",
+      "judgeP": 94,
+      "judgeSteps": 1,
+      "judgeWhy": "This is an extremely basic division fact with very small numbers and the exact equation explicitly given.",
+      "maxNumber": 4,
+      "numbers": 4,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 1,
+      "spec": "90 ÷ 10",
+      "tier": "apply",
+      "question": "A craft club has 90 beads and puts 10 beads into each bag. How many bags can they fill? Solve: 90 ÷ 10",
+      "options": [
+        "80",
+        "9",
+        "10",
+        "8"
+      ],
+      "answer": "9",
+      "labelled": "medium",
+      "judgeP": 90,
+      "judgeSteps": 1,
+      "judgeWhy": "Dividing by 10 is a basic fact and the equation is directly provided in the prompt.",
+      "maxNumber": 90,
+      "numbers": 4,
+      "opWords": 2
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 1,
+      "spec": "60 ÷ 10",
+      "tier": "apply",
+      "question": "A teacher has 60 pencils and puts an equal number into 10 cups. How many pencils are in each cup? Calculate 60 ÷ 10.",
+      "options": [
+        "50",
+        "6",
+        "7",
+        "600"
+      ],
+      "answer": "6",
+      "labelled": "medium",
+      "judgeP": 90,
+      "judgeSteps": 1,
+      "judgeWhy": "Dividing by 10 is a foundational fact and the equation is explicitly provided in the prompt.",
+      "maxNumber": 60,
+      "numbers": 4,
+      "opWords": 2
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 1,
+      "spec": "20 ÷ 10",
+      "tier": "apply",
+      "question": "A teacher packs 20 crayons equally into 10 small boxes. Find the number of crayons in each box by solving: 20 ÷ 10 = ?",
+      "options": [
+        "10",
+        "2",
+        "30",
+        "200"
+      ],
+      "answer": "2",
+      "labelled": "easy",
+      "judgeP": 90,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct, single-step division fact involving 10, which is very familiar to third graders.",
+      "maxNumber": 20,
+      "numbers": 4,
+      "opWords": 4
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 2,
+      "spec": "6 × 6",
+      "tier": "apply",
+      "question": "Maya has 6 packs of stickers. Each pack has 6 stickers inside. How many stickers does Maya have in all? Solve 6 × 6.",
+      "options": [
+        "12",
+        "30",
+        "36",
+        "66"
+      ],
+      "answer": "36",
+      "labelled": "medium",
+      "judgeP": 88,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a basic multiplication fact that is explicitly provided in the prompt, making it very straightforward for students.",
+      "maxNumber": 6,
+      "numbers": 4,
+      "opWords": 2
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 2,
+      "spec": "49 ÷ 7",
+      "tier": "apply",
+      "question": "Maya has 49 stickers. She places them equally onto 7 pages in her notebook. How many stickers are on each page? \n\n49 ÷ 7 = ?",
+      "options": [
+        "6",
+        "7",
+        "8",
+        "42"
+      ],
+      "answer": "7",
+      "labelled": "medium",
+      "judgeP": 85,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct single-step basic division fact, and the equation is already provided in the prompt.",
+      "maxNumber": 49,
+      "numbers": 4,
+      "opWords": 2
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 2,
+      "spec": "7 × 9",
+      "tier": "apply",
+      "question": "A garden has 7 rows of tomato plants. There are 9 tomato plants in each row. How many tomato plants are there in total? Solve 7 × 9.",
+      "options": [
+        "56",
+        "63",
+        "72",
+        "16"
+      ],
+      "answer": "63",
+      "labelled": "medium",
+      "judgeP": 74,
+      "judgeSteps": 1,
+      "judgeWhy": "The problem provides the explicit multiplication sentence, but 7 times 9 is one of the more challenging basic facts for third graders to recall.",
+      "maxNumber": 9,
+      "numbers": 4,
+      "opWords": 2
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 2,
+      "spec": "8 × 9",
+      "tier": "apply",
+      "question": "A baker packs 8 boxes of cookies. Each box holds 9 cookies. What is 8 × 9?",
+      "options": [
+        "17",
+        "64",
+        "72",
+        "81"
+      ],
+      "answer": "72",
+      "labelled": "medium",
+      "judgeP": 78,
+      "judgeSteps": 1,
+      "judgeWhy": "The equation is directly provided, so students only need to recall or calculate a single multiplication fact.",
+      "maxNumber": 9,
+      "numbers": 4,
+      "opWords": 4
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 2,
+      "spec": "63 ÷ 9",
+      "tier": "apply",
+      "question": "Maya has 63 stickers. She shares them equally among 9 gift bags. How many stickers go into each gift bag?",
+      "options": [
+        "6",
+        "7",
+        "8",
+        "54"
+      ],
+      "answer": "7",
+      "labelled": "medium",
+      "judgeP": 80,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a straightforward single-step word problem, but division facts involving 9 and 7 are among the harder facts for third graders to recall.",
+      "maxNumber": 63,
+      "numbers": 2,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 2,
+      "spec": "54 ÷ 6",
+      "tier": "apply",
+      "question": "Maya has 54 stickers. She puts them into 6 equal piles. What is 54 ÷ 6?",
+      "options": [
+        "8",
+        "9",
+        "7",
+        "48"
+      ],
+      "answer": "9",
+      "labelled": "medium",
+      "judgeP": 84,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct recall or calculation of a standard single-digit division fact clearly stated in the prompt.",
+      "maxNumber": 54,
+      "numbers": 4,
+      "opWords": 1
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 3,
+      "spec": "7 × 8 - 44 (two steps: equal groups, then some taken away)",
+      "tier": "apply",
+      "question": "A teacher has 7 packs of stickers with 8 stickers in each pack. She gives away 44 stickers to her class. What is 7 × 8 - 44?",
+      "options": [
+        "12",
+        "22",
+        "56",
+        "90"
+      ],
+      "answer": "12",
+      "labelled": "medium",
+      "judgeP": 74,
+      "judgeSteps": 2,
+      "judgeWhy": "The expression is directly provided and the subtraction requires no regrouping, though 7 × 8 is a commonly missed multiplication fact.",
+      "maxNumber": 44,
+      "numbers": 6,
+      "opWords": 4
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 3,
+      "spec": "6 × 5 - 22 (two steps: equal groups, then some taken away)",
+      "tier": "apply",
+      "question": "Leo bought 6 packs of stickers. There were 5 stickers in each pack. He then gave away 22 stickers to his classmates. How many stickers does Leo have left?",
+      "options": [
+        "8",
+        "12",
+        "30",
+        "52"
+      ],
+      "answer": "8",
+      "labelled": "medium",
+      "judgeP": 72,
+      "judgeSteps": 2,
+      "judgeWhy": "This is a standard two-step word problem requiring simple multiplication followed by subtraction with regrouping.",
+      "maxNumber": 22,
+      "numbers": 3,
+      "opWords": 3
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 3,
+      "spec": "7 × 4 + 9 (two steps: equal groups, then some more)",
+      "tier": "apply",
+      "question": "Maya has 7 boxes of crayons with 4 crayons in each box. She also has 9 loose crayons on her desk. How many crayons does Maya have in all? Solve: 7 × 4 + 9",
+      "options": [
+        "28",
+        "37",
+        "91",
+        "20"
+      ],
+      "answer": "37",
+      "labelled": "medium",
+      "judgeP": 78,
+      "judgeSteps": 2,
+      "judgeWhy": "Providing the expression directly makes this a straightforward two-step calculation involving basic multiplication and addition.",
+      "maxNumber": 9,
+      "numbers": 6,
+      "opWords": 5
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 3,
+      "spec": "7 × 8 - 45 (two steps: equal groups, then some taken away)",
+      "tier": "apply",
+      "question": "Leo bakes 7 trays of muffins with 8 muffins on each tray. He gives away 45 muffins to his classmates. How many muffins does Leo have left?",
+      "options": [
+        "9",
+        "11",
+        "21",
+        "35"
+      ],
+      "answer": "11",
+      "labelled": "medium",
+      "judgeP": 72,
+      "judgeSteps": 2,
+      "judgeWhy": "This is a two-step problem requiring a trickier multiplication fact (7 x 8) followed by two-digit subtraction.",
+      "maxNumber": 45,
+      "numbers": 3,
+      "opWords": 3
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 3,
+      "spec": "7 × 6 - 40 (two steps: equal groups, then some taken away)",
+      "tier": "apply",
+      "question": "Leo has 7 packs of stickers with 6 stickers in each pack. He gives away 40 stickers. How many stickers does Leo have left?",
+      "options": [
+        "42",
+        "2",
+        "8",
+        "82"
+      ],
+      "answer": "2",
+      "labelled": "medium",
+      "judgeP": 72,
+      "judgeSteps": 2,
+      "judgeWhy": "This is a two-step word problem requiring students to recall a basic multiplication fact before subtracting.",
+      "maxNumber": 40,
+      "numbers": 3,
+      "opWords": 3
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "level": 3,
+      "spec": "7 × 7 - 30 (two steps: equal groups, then some taken away)",
+      "tier": "apply",
+      "question": "Maya has 7 boxes of crayons with 7 crayons in each box. She gives away 30 crayons to her classmates. How many crayons does Maya have left?",
+      "options": [
+        "12",
+        "19",
+        "26",
+        "79"
+      ],
+      "answer": "19",
+      "labelled": "medium",
+      "judgeP": 72,
+      "judgeSteps": 2,
+      "judgeWhy": "This is a straightforward two-step word problem requiring basic multiplication (7x7) followed by subtraction without regrouping.",
+      "maxNumber": 30,
+      "numbers": 3,
+      "opWords": 5
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "Which body part helps a fish breathe underwater?",
+      "options": [
+        "Wings",
+        "Gills",
+        "Fins",
+        "Scales"
+      ],
+      "answer": "Gills",
+      "labelled": "easy",
+      "judgeP": 92,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct recall question about a very familiar animal adaptation taught in early elementary grades."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "Which of the following body parts helps a fish breathe underwater?",
+      "options": [
+        "Fins",
+        "Gills",
+        "Scales",
+        "Wings"
+      ],
+      "answer": "Gills",
+      "labelled": "easy",
+      "judgeP": 92,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct recall question about a widely known and foundational animal adaptation."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "Which body part helps a fish breathe underwater?",
+      "options": [
+        "Fins",
+        "Gills",
+        "Scales",
+        "Wings"
+      ],
+      "answer": "Gills",
+      "labelled": "easy",
+      "judgeP": 92,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct recall question about a very familiar animal adaptation that is commonly taught."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "Which of the following body parts helps a fish take in oxygen to breathe underwater?",
+      "options": [
+        "Fins",
+        "Gills",
+        "Scales",
+        "Feathers"
+      ],
+      "answer": "Gills",
+      "labelled": "easy",
+      "judgeP": 88,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct recall question about a widely known, fundamental adaptation taught in early elementary science."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "Which body part helps a fish breathe underwater in its ocean habitat?",
+      "options": [
+        "Gills",
+        "Fins",
+        "Scales",
+        "Wings"
+      ],
+      "answer": "Gills",
+      "labelled": "easy",
+      "judgeP": 92,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a direct recall question about a very common and well-known animal adaptation."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 1,
+      "spec": null,
+      "tier": "recall",
+      "question": "Which of the following body parts does a fish use to breathe underwater?",
+      "options": [
+        "Fins",
+        "Scales",
+        "Gills",
+        "Wings"
+      ],
+      "answer": "Gills",
+      "labelled": "easy",
+      "judgeP": 88,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a basic recall question about a very common and widely taught animal adaptation."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "A bird searches for food in a forest where insects hide deep inside narrow cracks in tree bark. Which beak would help the bird reach and catch these insects?",
+      "options": [
+        "A wide, scooped beak that strains water",
+        "A long, thin beak that pokes into small spaces",
+        "A short, thick beak that crushes hard seeds",
+        "A soft, round beak that smells sweet flowers"
+      ],
+      "answer": "A long, thin beak that pokes into small spaces",
+      "labelled": "medium",
+      "judgeP": 88,
+      "judgeSteps": 1,
+      "judgeWhy": "The correct option directly matches the physical description of narrow cracks to poking into small spaces."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "A wetland bird walks across soft, squishy mud along a riverbank to search for small fish without sinking. Which foot feature best helps this bird stay on top of the mud?",
+      "options": [
+        "Curved, sharp talons that grip tree branches tightly",
+        "Long, widely spread toes that distribute the bird's weight",
+        "Heavy, hooked claws built to dig underground tunnels",
+        "Tiny paws covered in thick fur to stay warm on ice"
+      ],
+      "answer": "Long, widely spread toes that distribute the bird's weight",
+      "labelled": "medium",
+      "judgeP": 88,
+      "judgeSteps": 1,
+      "judgeWhy": "Each answer choice explicitly explains its purpose, allowing students to easily match the mud-walking scenario to the option that distributes weight."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "A badger lives in dry grasslands and must dig deep tunnels into hard, packed soil to build a safe home. Which body feature best helps the badger survive by creating its underground home?",
+      "options": [
+        "Long, curved front claws that scrape and break apart hard dirt",
+        "Wide, webbed paws that paddle through loose soil",
+        "Soft, padded feet that muffle footsteps on rocky trails",
+        "Bright, spotted fur that shines brightly inside dark tunnels"
+      ],
+      "answer": "Long, curved front claws that scrape and break apart hard dirt",
+      "labelled": "medium",
+      "judgeP": 89,
+      "judgeSteps": 1,
+      "judgeWhy": "The correct option explicitly mentions scraping and breaking dirt, directly matching the badger's need to dig into hard soil."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "In a muddy wetland, small worms hide several inches deep under the wet soil. Which bird has the best body part to get food in this habitat?",
+      "options": [
+        "A bird with a short, thick beak that crushes hard seeds",
+        "A bird with a long, thin beak that reaches deep into the mud",
+        "A bird with a sharp, hooked beak that tears tough meat",
+        "A bird with a tiny, soft beak that sips sweet flower nectar"
+      ],
+      "answer": "A bird with a long, thin beak that reaches deep into the mud",
+      "labelled": "medium",
+      "judgeP": 88,
+      "judgeSteps": 1,
+      "judgeWhy": "The correct option directly mirrors the question's clue about reaching deep under the mud."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "A duck spends most of its day in a pond searching for food. How do its webbed feet help it survive in this habitat?",
+      "options": [
+        "They push against water like paddles to help the duck swim quickly.",
+        "They dig deep into dry soil to search for buried seeds.",
+        "They grip onto tree branches so the duck can sleep high off the ground.",
+        "They trap body heat to keep the duck warm in cold water."
+      ],
+      "answer": "They push against water like paddles to help the duck swim quickly.",
+      "labelled": "medium",
+      "judgeP": 92,
+      "judgeSteps": 1,
+      "judgeWhy": "Webbed feet helping ducks swim is a classic, highly familiar adaptation concept for third graders."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 2,
+      "spec": null,
+      "tier": "apply",
+      "question": "A woodpecker lives in a forest where beetles and ants hide deep inside tree trunks. Which beak shape helps the woodpecker get food and survive in this habitat?",
+      "options": [
+        "A strong, pointed beak that can drill holes into tree wood",
+        "A wide, flat beak that can scoop water plants from a pond",
+        "A short, curved beak that can crack open hard nutshells",
+        "A soft, flexible beak that can bend into delicate flowers"
+      ],
+      "answer": "A strong, pointed beak that can drill holes into tree wood",
+      "labelled": "medium",
+      "judgeP": 90,
+      "judgeSteps": 1,
+      "judgeWhy": "The question explicitly mentions insects inside tree trunks, directly pointing students to the option about drilling tree wood."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "Why does a desert fennec fox have very large ears, while an Arctic fox has tiny, rounded ears?",
+      "options": [
+        "Large ears let extra body heat escape into the air, while tiny ears help keep heat inside.",
+        "Large ears protect the desert fox from blowing sand, while tiny ears keep heavy snow out.",
+        "Large ears help the desert fox hear predators, while Arctic foxes do not need to listen for danger.",
+        "Large ears flap to fan cool air onto the fox, while tiny ears stop freezing winds from pushing the fox over."
+      ],
+      "answer": "Large ears let extra body heat escape into the air, while tiny ears help keep heat inside.",
+      "labelled": "hard",
+      "judgeP": 72,
+      "judgeSteps": 2,
+      "judgeWhy": "Students taught animal adaptations usually learn how ear size helps regulate body temperature in hot versus cold climates, though the longer reading choices require some focus."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "A beaver has large, webbed back feet that act like paddles in its river habitat. What would most likely happen if a beaver were born with normal, non-webbed paws like a squirrel?",
+      "options": [
+        "It would swim much more slowly and have a harder time moving through water.",
+        "It would sink to the bottom of the river because paws cannot float on water.",
+        "It would no longer be able to chew through tough tree trunks to build its home.",
+        "It would stop eating plants and begin hunting swimming fish for food."
+      ],
+      "answer": "It would swim much more slowly and have a harder time moving through water.",
+      "labelled": "medium",
+      "judgeP": 88,
+      "judgeSteps": 2,
+      "judgeWhy": "The question explicitly states that webbed feet act like paddles, making the link to swimming speed very direct for third graders."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "A snowshoe hare lives in a cold forest. In the winter, its fur turns bright white to match the snow, and its large back feet keep it from sinking into deep drifts. What would most likely happen to the hare if the forest stopped getting snow in the winter?",
+      "options": [
+        "It would become easier for predators to spot because its white coat would stand out against the bare brown ground.",
+        "It would instantly change its fur color to brown because animals choose their fur color to match their surroundings.",
+        "Its wide back feet would make it run much faster because wide paws only work well on hard, dry dirt.",
+        "It would no longer need to find food because it would not have to spend any energy moving through snow."
+      ],
+      "answer": "It would become easier for predators to spot because its white coat would stand out against the bare brown ground.",
+      "labelled": "hard",
+      "judgeP": 82,
+      "judgeSteps": 2,
+      "judgeWhy": "The concept of camouflage is very familiar to third graders, and the distractors are clearly implausible."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "Why would a desert jackrabbit struggle to survive if it had the short, tiny ears of an Arctic hare instead of its normal large ears?",
+      "options": [
+        "It would lose too much body water into the dry desert air.",
+        "It would not be able to release enough body heat to stay cool in the hot desert.",
+        "It would not be able to dig deep underground burrows to escape enemies.",
+        "It would not be able to grind up tough desert seeds and plants to eat."
+      ],
+      "answer": "It would not be able to release enough body heat to stay cool in the hot desert.",
+      "labelled": "hard",
+      "judgeP": 68,
+      "judgeSteps": 2,
+      "judgeWhy": "Students taught this adaptation generally know large ears dissipate heat, though some may confuse it with water conservation."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "Why does a desert fox have very large ears, while an arctic fox has very small ears?",
+      "options": [
+        "Large ears help the fox hear predators from far away, while arctic foxes do not need to listen for danger.",
+        "Large ears let extra body heat escape to stay cool, while small ears keep body heat trapped to stay warm.",
+        "Large ears give shade from the bright sun, while small ears keep freezing snow from getting inside.",
+        "Large ears store extra water for dry days, while small ears store extra fat for freezing days."
+      ],
+      "answer": "Large ears let extra body heat escape to stay cool, while small ears keep body heat trapped to stay warm.",
+      "labelled": "hard",
+      "judgeP": 70,
+      "judgeSteps": 2,
+      "judgeWhy": "This is a classic textbook example of adaptation, though some students may intuitively choose the distractor related to hearing."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "level": 3,
+      "spec": null,
+      "tier": "analyze",
+      "question": "What would most likely happen if a pond duck was born with sharp, curved talons like a hawk instead of webbed feet?",
+      "options": [
+        "It would sink to the bottom of the pond, because webbed feet are the body part that keeps a duck floating.",
+        "It would struggle to paddle through the pond, because narrow toes cannot push against water as well as flat, webbed skin.",
+        "It would swim much faster, because thin, sharp claws can slice through pond water with less effort than wide feet.",
+        "It would lose the ability to walk on land, because sharp talons can only be used by birds while they are flying."
+      ],
+      "answer": "It would struggle to paddle through the pond, because narrow toes cannot push against water as well as flat, webbed skin.",
+      "labelled": "hard",
+      "judgeP": 78,
+      "judgeSteps": 2,
+      "judgeWhy": "Webbed feet helping ducks swim is a very familiar concept, though the options are somewhat text-heavy for third graders."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 1,
+      "spec": "RECALL: name a familiar animal and one stated job (\"Which body part does a duck use to swim?\"). The answer is common knowledge. All wrong options are clearly unrelated body parts.",
+      "tier": "apply",
+      "question": "Which body part does a duck use to paddle and swim across a pond?",
+      "options": [
+        "Webbed feet",
+        "Flat bill",
+        "Long wings",
+        "Short tail"
+      ],
+      "answer": "Webbed feet",
+      "labelled": "medium",
+      "judgeP": 94,
+      "judgeSteps": 1,
+      "judgeWhy": "Webbed feet for swimming is a well-known, foundational animal adaptation concept familiar to almost all third graders."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 1,
+      "spec": "RECALL: name a familiar animal and one stated job (\"Which body part does a duck use to swim?\"). The answer is common knowledge. All wrong options are clearly unrelated body parts.",
+      "tier": "apply",
+      "question": "Which body part does a duck use to swim in the water?",
+      "options": [
+        "Pointed beak",
+        "Long whiskers",
+        "Webbed feet",
+        "Bushy tail"
+      ],
+      "answer": "Webbed feet",
+      "labelled": "easy",
+      "judgeP": 93,
+      "judgeSteps": 1,
+      "judgeWhy": "Webbed feet on ducks is a widely recognized adaptation that students easily identify."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 1,
+      "spec": "RECALL: name a familiar animal and one stated job (\"Which body part does a duck use to swim?\"). The answer is common knowledge. All wrong options are clearly unrelated body parts.",
+      "tier": "apply",
+      "question": "Which body part does a duck use to swim across a pond?",
+      "options": [
+        "Curved beak",
+        "Webbed feet",
+        "Tiny ears",
+        "Bushy fur"
+      ],
+      "answer": "Webbed feet",
+      "labelled": "easy",
+      "judgeP": 94,
+      "judgeSteps": 1,
+      "judgeWhy": "This is a very familiar adaptation concept with distractors that third graders easily eliminate."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 1,
+      "spec": "RECALL: name a familiar animal and one stated job (\"Which body part does a duck use to swim?\"). The answer is common knowledge. All wrong options are clearly unrelated body parts.",
+      "tier": "apply",
+      "question": "Which body part does a duck use to swim through the water?",
+      "options": [
+        "Flat beak",
+        "Webbed feet",
+        "Round eyes",
+        "Fluffy tail"
+      ],
+      "answer": "Webbed feet",
+      "labelled": "easy",
+      "judgeP": 94,
+      "judgeSteps": 1,
+      "judgeWhy": "Webbed feet helping ducks swim is one of the most familiar and frequently taught examples of animal adaptations."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 1,
+      "spec": "RECALL: name a familiar animal and one stated job (\"Which body part does a duck use to swim?\"). The answer is common knowledge. All wrong options are clearly unrelated body parts.",
+      "tier": "apply",
+      "question": "Which body part does a duck use to swim across the water?",
+      "options": [
+        "Long whiskers",
+        "Webbed feet",
+        "Curved horns",
+        "Fluffy wings"
+      ],
+      "answer": "Webbed feet",
+      "labelled": "medium",
+      "judgeP": 95,
+      "judgeSteps": 1,
+      "judgeWhy": "Webbed feet are a widely taught, familiar animal adaptation, and the distractors are easily ruled out."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 1,
+      "spec": "RECALL: name a familiar animal and one stated job (\"Which body part does a duck use to swim?\"). The answer is common knowledge. All wrong options are clearly unrelated body parts.",
+      "tier": "apply",
+      "question": "Which body part does a duck use to swim across a pond?",
+      "options": [
+        "Curved beak",
+        "Webbed feet",
+        "Feathered wings",
+        "Tiny ears"
+      ],
+      "answer": "Webbed feet",
+      "labelled": "easy",
+      "judgeP": 95,
+      "judgeSteps": 1,
+      "judgeWhy": "Webbed feet for swimming is one of the most familiar and universally taught animal adaptations in early elementary science."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 2,
+      "spec": "APPLY TO A NEW CASE: describe an animal the learner has probably not studied by its features and its habitat (do not rely on the name). Ask which feature helps it in THAT habitat. One wrong option is a real feature of the animal that does not help in that habitat.",
+      "tier": "apply",
+      "question": "A small lizard lives in a hot, dry desert where rain almost never falls. The lizard has grooved skin that pulls tiny drops of morning dew into its mouth, sharp claws for climbing, yellow eyes, and a spiky tail. Which body feature helps this lizard survive in its dry habitat?",
+      "options": [
+        "Sharp claws that grip onto rocks",
+        "Grooved skin that pulls dew into its mouth",
+        "Thick fat that keeps out the cold",
+        "Webbed feet that paddle through water"
+      ],
+      "answer": "Grooved skin that pulls dew into its mouth",
+      "labelled": "medium",
+      "judgeP": 88,
+      "judgeSteps": 2,
+      "judgeWhy": "Students directly match the dry desert environment with the feature that provides water (dew)."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 2,
+      "spec": "APPLY TO A NEW CASE: describe an animal the learner has probably not studied by its features and its habitat (do not rely on the name). Ask which feature helps it in THAT habitat. One wrong option is a real feature of the animal that does not help in that habitat.",
+      "tier": "apply",
+      "question": "A small wild fox lives in a scorching desert where daytime temperatures get dangerously high. It has huge, thin ears, sharp claws, pale sandy fur, and a black tip on its tail. Which feature helps this animal stay cool in its blazing hot habitat?",
+      "options": [
+        "The black tip on its tail",
+        "Its huge, thin ears that let extra body heat escape",
+        "A thick layer of body fat that traps warmth inside",
+        "Webbed feet for paddling through deep water"
+      ],
+      "answer": "Its huge, thin ears that let extra body heat escape",
+      "labelled": "medium",
+      "judgeP": 90,
+      "judgeSteps": 1,
+      "judgeWhy": "The correct option explicitly explains how the feature works to release heat, making the connection very obvious."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 2,
+      "spec": "APPLY TO A NEW CASE: describe an animal the learner has probably not studied by its features and its habitat (do not rely on the name). Ask which feature helps it in THAT habitat. One wrong option is a real feature of the animal that does not help in that habitat.",
+      "tier": "apply",
+      "question": "A small lizard lives in a dry desert where it rarely rains and there are no puddles or streams to drink from. The lizard has these body features:\n\n• Tiny grooves on its skin that pull morning dew directly toward its mouth\n• Sharp spikes covering its back and sides\n• A bumpy fake head on the back of its neck\n• Rough, scaly skin\n\nWhich feature directly helps this animal survive in this dry habitat?",
+      "options": [
+        "Tiny grooves on its skin that carry dew to its mouth",
+        "Sharp spikes that cover its back and sides",
+        "A bumpy fake head on the back of its neck",
+        "Wide webbed feet for paddling through deep water"
+      ],
+      "answer": "Tiny grooves on its skin that carry dew to its mouth",
+      "labelled": "medium",
+      "judgeP": 84,
+      "judgeSteps": 2,
+      "judgeWhy": "Students directly connect the problem of having no water in a dry desert to the feature that provides drinking dew."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 2,
+      "spec": "APPLY TO A NEW CASE: describe an animal the learner has probably not studied by its features and its habitat (do not rely on the name). Ask which feature helps it in THAT habitat. One wrong option is a real feature of the animal that does not help in that habitat.",
+      "tier": "apply",
+      "question": "A small wild cat lives in a dry, scorching desert covered in burning hot sand dunes. This cat has pale tan fur, a black-tipped tail, and thick pads of fur covering the bottoms of its paws. Which feature helps this animal survive in this sandy desert habitat?",
+      "options": [
+        "A black-tipped tail that twitches when it rests",
+        "Sharp claws used to climb tall rainforest trees",
+        "Thick pads of fur on its paws to walk across burning sand",
+        "Webbed feet used to paddle across deep lakes"
+      ],
+      "answer": "Thick pads of fur on its paws to walk across burning sand",
+      "labelled": "medium",
+      "judgeP": 92,
+      "judgeSteps": 1,
+      "judgeWhy": "The distractors mention completely unrelated habitats or behaviors, making the direct match to the hot sand very easy to spot."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 2,
+      "spec": "APPLY TO A NEW CASE: describe an animal the learner has probably not studied by its features and its habitat (do not rely on the name). Ask which feature helps it in THAT habitat. One wrong option is a real feature of the animal that does not help in that habitat.",
+      "tier": "apply",
+      "question": "A small mammal lives high on a freezing, snowy mountain where icy winds blow all day. This animal has thick woolly fur, tiny rounded ears, and sharp claws that it uses to scratch its back. Which feature helps this animal survive in THAT freezing habitat?",
+      "options": [
+        "Sharp claws that it uses to scratch its back",
+        "Thick woolly fur that traps its body heat",
+        "Broad webbed feet for paddling through deep water",
+        "Thin, bare skin that lets body heat escape into the air"
+      ],
+      "answer": "Thick woolly fur that traps its body heat",
+      "labelled": "medium",
+      "judgeP": 90,
+      "judgeSteps": 1,
+      "judgeWhy": "Matching thick fur to surviving freezing cold is an intuitive and familiar concept for third graders."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 2,
+      "spec": "APPLY TO A NEW CASE: describe an animal the learner has probably not studied by its features and its habitat (do not rely on the name). Ask which feature helps it in THAT habitat. One wrong option is a real feature of the animal that does not help in that habitat.",
+      "tier": "apply",
+      "question": "A small mammal lives in a blazing hot desert where temperatures become dangerously high during the day. It has pale sandy fur, oversized ears filled with tiny blood vessels, and a bushy tail with a dark tip. Which feature helps this animal survive in its hot desert habitat?",
+      "options": [
+        "The dark tip on its tail",
+        "Its oversized ears",
+        "A thick layer of blubber",
+        "Webbed feet for paddling"
+      ],
+      "answer": "Its oversized ears",
+      "labelled": "medium",
+      "judgeP": 82,
+      "judgeSteps": 2,
+      "judgeWhy": "Two distractors clearly belong to cold or aquatic habitats, making it easy to identify large ears as the desert adaptation."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 3,
+      "spec": "INFER ACROSS TWO FACTS: describe a change to a habitat (for example a pond dries up, snow comes early) and two animals with different features. Ask which animal is more likely to survive the change. Every option names a real feature; each wrong option uses a real feature in the wrong situation. The learner must connect the change to the feature.",
+      "tier": "apply",
+      "question": "A shallow marsh dries up during a long summer drought, leaving behind hard, dry ground. Animal 1 is a duck with webbed feet, and Animal 2 is a lizard with sharp claws. Which animal is more likely to move around easily to find food?",
+      "options": [
+        "The duck, because webbed feet push easily against dry dirt.",
+        "The lizard, because sharp claws grip hard, dry ground.",
+        "The lizard, because sharp claws help it paddle through deep water.",
+        "The duck, because webbed feet help it climb steep, dry rocks."
+      ],
+      "answer": "The lizard, because sharp claws grip hard, dry ground.",
+      "labelled": "medium",
+      "judgeP": 86,
+      "judgeSteps": 2,
+      "judgeWhy": "Students can easily match claws to gripping dry ground while easily ruling out nonsensical distractors."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 3,
+      "spec": "INFER ACROSS TWO FACTS: describe a change to a habitat (for example a pond dries up, snow comes early) and two animals with different features. Ask which animal is more likely to survive the change. Every option names a real feature; each wrong option uses a real feature in the wrong situation. The learner must connect the change to the feature.",
+      "tier": "apply",
+      "question": "During a hot summer, a shallow pond dries up completely into hard, dusty ground. A frog with webbed feet and a sparrow with a hard beak both lived by the water. Which animal is more likely to survive this change, and why?",
+      "options": [
+        "The sparrow, because its hard beak helps it crack open seeds found on dry land.",
+        "The frog, because its webbed feet help it run fast across the dusty ground.",
+        "The frog, because its moist skin protects it from drying out in hot, dry air.",
+        "The sparrow, because its light feathers help it swim through the dry dust."
+      ],
+      "answer": "The sparrow, because its hard beak helps it crack open seeds found on dry land.",
+      "labelled": "medium",
+      "judgeP": 78,
+      "judgeSteps": 2,
+      "judgeWhy": "Students can easily eliminate the nonsensical distractors and recognize that the sparrow is better adapted to dry land."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 3,
+      "spec": "INFER ACROSS TWO FACTS: describe a change to a habitat (for example a pond dries up, snow comes early) and two animals with different features. Ask which animal is more likely to survive the change. Every option names a real feature; each wrong option uses a real feature in the wrong situation. The learner must connect the change to the feature.",
+      "tier": "apply",
+      "question": "A forest gets an early winter storm that covers the ground in deep snow. An arctic hare has thick white fur, while a chipmunk has thin brown fur. Which animal is more likely to survive this habitat change?",
+      "options": [
+        "The arctic hare, because its white fur helps it stay hidden against the snow.",
+        "The chipmunk, because its brown fur helps it blend into the white snow.",
+        "The arctic hare, because its thick fur helps it climb tall trees to find food.",
+        "The chipmunk, because its thin fur helps it stay warm during freezing nights."
+      ],
+      "answer": "The arctic hare, because its white fur helps it stay hidden against the snow.",
+      "labelled": "medium",
+      "judgeP": 87,
+      "judgeSteps": 2,
+      "judgeWhy": "The connection between white fur and blending into snow is highly intuitive, and the incorrect options contain clear contradictions."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 3,
+      "spec": "INFER ACROSS TWO FACTS: describe a change to a habitat (for example a pond dries up, snow comes early) and two animals with different features. Ask which animal is more likely to survive the change. Every option names a real feature; each wrong option uses a real feature in the wrong situation. The learner must connect the change to the feature.",
+      "tier": "apply",
+      "question": "A mountain valley has an early winter, and deep snow covers the ground. A snowshoe hare with wide paws and white fur lives there alongside a field mouse with tiny paws and dark brown fur. Which animal is more likely to survive in this snowy habitat?",
+      "options": [
+        "The field mouse, because its dark brown fur helps it hide from predators against the white snow.",
+        "The snowshoe hare, because its wide paws spread out its weight so it does not sink into deep snow.",
+        "The snowshoe hare, because its thick white fur helps its body release heat to stay cool in the snow.",
+        "The field mouse, because its tiny paws help it paddle quickly across frozen ponds to escape danger."
+      ],
+      "answer": "The snowshoe hare, because its wide paws spread out its weight so it does not sink into deep snow.",
+      "labelled": "medium",
+      "judgeP": 82,
+      "judgeSteps": 2,
+      "judgeWhy": "Students can easily eliminate the wrong choices because the explanations clearly contradict common sense about snow and camouflage."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 3,
+      "spec": "INFER ACROSS TWO FACTS: describe a change to a habitat (for example a pond dries up, snow comes early) and two animals with different features. Ask which animal is more likely to survive the change. Every option names a real feature; each wrong option uses a real feature in the wrong situation. The learner must connect the change to the feature.",
+      "tier": "apply",
+      "question": "A freshwater wetland dries up during a long drought, turning the shallow water into hard, dry dirt. A box turtle with strong digging claws and a bullfrog with webbed feet both live there. Which animal is more likely to survive this change?",
+      "options": [
+        "The bullfrog, because its webbed feet help it run across the hard, dry dirt.",
+        "The box turtle, because its strong claws help it dig into the dirt to stay cool.",
+        "The bullfrog, because its moist skin keeps it from drying out in the hot air.",
+        "The box turtle, because its hard shell helps it paddle swiftly through deep water."
+      ],
+      "answer": "The box turtle, because its strong claws help it dig into the dirt to stay cool.",
+      "labelled": "medium",
+      "judgeP": 78,
+      "judgeSteps": 2,
+      "judgeWhy": "Students can easily match strong claws to digging in dry dirt, though reading the full scenario and options takes some care."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "level": 3,
+      "spec": "INFER ACROSS TWO FACTS: describe a change to a habitat (for example a pond dries up, snow comes early) and two animals with different features. Ask which animal is more likely to survive the change. Every option names a real feature; each wrong option uses a real feature in the wrong situation. The learner must connect the change to the feature.",
+      "tier": "apply",
+      "question": "A shallow pond dries up during a long summer drought, leaving behind hard, dry dirt. Two animals live near the pond: a green frog with thin, moist skin and webbed feet, and a box turtle with thick, scaly skin and sturdy claws. Which animal is more likely to survive this change, and why?",
+      "options": [
+        "The green frog, because its thin, moist skin lets water leave its body to cool down in the heat.",
+        "The box turtle, because its sturdy claws help it paddle across the dry dirt to find food.",
+        "The box turtle, because its thick, scaly skin keeps water trapped inside its body.",
+        "The green frog, because its webbed feet help it dig deep tunnels into the hard ground."
+      ],
+      "answer": "The box turtle, because its thick, scaly skin keeps water trapped inside its body.",
+      "labelled": "medium",
+      "judgeP": 68,
+      "judgeSteps": 2,
+      "judgeWhy": "The scenario requires reading a longer prompt, but the distractors assign nonsensical functions to the other body parts."
+    }
+  ],
+  "pairs": [
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A requires conceptual comparison, algebraic reasoning, and reading comprehension of multi-word explanations, whereas Item B is a straightforward basic addition fact (making 10) that first graders routinely practice."
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A tests conceptual understanding and meta-reasoning about the 'make a ten' strategy, requiring students to comprehend and evaluate descriptive text options, whereas Item B is a simple, direct teen-number addition fact (10 + 6) with numeric choices."
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A requires higher-order conceptual reasoning, comparative language comprehension, and an understanding of the inverse relationship between the subtrahend and the difference, which is developmentally challenging for typical first graders. In contrast, Item B is a basic, highly practiced ten-plus-single-digit addition computation."
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A tests direct recall/basic addition of a ten and ones (teen numbers), which is a straightforward computational task for first graders. Item B requires conceptual reasoning, understanding the decomposition of subtrahends (8 = 5 + 3), and significantly higher reading comprehension, making it much more difficult for typical grade 1 students."
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item B requires conceptual reasoning about the 'make a ten' strategy and number decomposition, as well as significantly higher reading comprehension, whereas Item A is a standard procedural addition problem."
+    },
+    {
+      "obj": "add20",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A is multi-step, requires subtraction across ten, and involves comparing two expressions where students must navigate the counter-intuitive inverse relationship between the subtrahend and the difference. In contrast, Item B is a single-step basic addition fact based directly on teen number place value understanding (10 + 4 = 14)."
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item A requires multiple steps with two different operations (18 - 9, then + 4) and involves subtracting across 10, which imposes significantly higher cognitive load for first graders compared to the single-step subtraction within 5 in Item B."
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item B requires multi-step evaluation combining subtraction across ten (15 - 8 = 7) and addition (7 + 4 = 11) with larger numbers, whereas Item A is a simple single-digit doubles addition fact (3 + 3 = 6)."
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item B requires a two-step calculation involving subtraction across ten (14 - 6) and then addition of doubles (8 + 8), which places significantly higher demands on working memory and arithmetic skills for first graders compared to single-step basic addition (1 + 3)."
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item A is significantly more difficult for first graders because it involves an unknown-addend structure requiring algebraic thinking or subtraction to solve, and the numbers bridge the decade (sums greater than 10). In contrast, Item B is a direct, standard subtraction fact within 10."
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item A is a two-step problem involving subtraction crossing the tens boundary (13 - 9) followed by addition (+ 6), which requires greater working memory and multi-step execution. Item B is a basic, single-step subtraction fact within 10."
+    },
+    {
+      "obj": "add20",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item B involves finding an unknown addend with numbers crossing ten (sum of 17), which requires inverse thinking or bridging through ten, whereas Item A is a standard direct subtraction fact within 10."
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item B involves complex word problem comprehension and conceptual reasoning about inverse relationships in division, whereas Item A is a standard, direct recall multiplication fact."
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A tests straightforward recall of a single-digit multiplication fact. Item B requires reading comprehension, multi-step conceptual understanding of division, and reasoning about the inverse relationship between group size and number of groups."
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A tests basic single-digit multiplication fact recall (7 × 8), whereas Item B is a multi-step conceptual word problem requiring students to understand the inverse relationship between the divisor and the quotient, parse dense text, and avoid intuitive misconceptions."
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A tests direct recall of a single basic multiplication fact (7 × 8). In contrast, Item B demands higher-order conceptual understanding of division relationships (how scaling the divisor inversely affects the quotient) combined with significantly heavier reading comprehension, making it much more challenging for typical third graders."
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A is a direct fact-retrieval task (7 × 8), whereas Item B requires higher-order conceptual understanding of division, proportional reasoning (inverse relationship between group size and share), and careful reading of multi-sentence options."
+    },
+    {
+      "obj": "mult100",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A tests basic single-digit multiplication fact recall (7 × 8), which is a direct retrieval task. Item B requires multi-step conceptual reasoning about the inverse relationship between group size and number of groups in division, combined with interpreting long text-based explanations, making it substantially harder for third graders."
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item B is a multi-step word problem requiring students to identify and perform two distinct operations (7 × 8 = 56, then 56 - 45 = 11), whereas Item A is a single-step problem with 10s that explicitly states the operation to perform (90 ÷ 10)."
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item A is a two-step word problem requiring students to first multiply (7 × 6 = 42) and then subtract (42 - 40 = 2). It also includes the intermediate result (42) as a common distractor. In contrast, Item B is a direct, single-step division fact with 10 that explicitly gives the arithmetic expression to solve."
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item A is a two-step word problem requiring both multiplication (7 × 7 = 49) and subtraction (49 - 30 = 19), whereas Item B is a simple, direct one-step division fact that even provides the explicit equation (20 ÷ 10 = ?)."
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item A is a two-step word problem requiring students to first determine the total by multiplying (6 × 5 = 30) and then subtract (30 - 22 = 8), which introduces higher cognitive load and common traps like choosing the intermediate product (30). In contrast, Item B explicitly gives the single-step division fact (35 ÷ 5), requiring only direct recall or basic division."
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item A is a two-step problem requiring both multiplication (7 × 4) and addition (+ 9), which introduces multiple opportunities for calculation errors as well as the common mistake of stopping after the first step and choosing 28. In contrast, Item B is a very basic, single-digit division fact (4 ÷ 2) that is significantly easier for typical grade 3 students."
+    },
+    {
+      "obj": "mult100",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item B is a multi-step problem requiring knowledge of a harder multiplication fact (7 × 8 = 56) followed by two-digit subtraction (56 - 44 = 12), whereas Item A is a standard, single-step division problem involving the familiar 5s fact family (40 ÷ 5 = 8)."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A is a low-level recall question testing a common biological fact that most third graders readily know. Item B requires higher-order reasoning, longer reading comprehension, and cause-and-effect analysis to predict the outcome of removing an adaptive trait."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item A requires complex reasoning about thermoregulation and the functional adaptation of ear size in specific environments, whereas Item B only requires basic recall of a commonly known animal body part (gills)."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item B requires higher-order hypothetical reasoning and evaluating cause-and-effect relationships regarding functional adaptations, combined with longer, linguistically complex answer choices, whereas Item A only tests basic factual recall of a familiar animal body part."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item B involves a much higher reading load and requires higher-order causal reasoning to predict how an environmental change affects an adaptation, whereas Item A is a simple, direct recall question about basic fish anatomy."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item B is much more cognitively demanding than Item A. Item A only requires simple recall of a widely taught fact (gills help fish breathe), whereas Item B requires advanced reading comprehension and an understanding of thermoregulation and surface area, which is a less intuitive adaptation than basic hearing."
+    },
+    {
+      "obj": "habitat",
+      "arm": "prompt",
+      "harder": "L3",
+      "why": "Item B is significantly harder because it requires complex reasoning about thermoregulation across two contrasting habitats and presents a much heavier reading load with plausible distractors, whereas Item A simply tests basic factual recall about a familiar animal structure (gills)."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item A has a significantly higher reading demand and requires students to evaluate both an animal's identity and the correct scientific explanation among plausible-sounding distractors, whereas Item B is a simple, direct recall question about a very familiar animal."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item B requires significantly higher cognitive demand and reading comprehension. Students must analyze a scenario involving environmental change, compare the adaptations of two different animals, and reason about how a specific physical feature aids survival in a new condition. In contrast, Item A is a simple, direct recall question with highly recognizable distractors."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item B has a much higher reading load, requires multi-step scientific reasoning about adaptation to environmental change (drought and moisture retention), and features compound answer choices that combine a claim and an explanation, whereas Item A is a simple, direct recall question about a familiar animal."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item A requires multi-step reasoning about habitat change, evaluating two different animals, and analyzing how specific traits function in a dry environment. In contrast, Item B is a straightforward, single-step recall question about a very familiar animal feature (duck's webbed feet)."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item B requires significantly higher cognitive load and reading comprehension. Students must analyze a changing environmental scenario (a marsh becoming dry ground), compare two different animals' adaptations, and evaluate two-part answer choices that include both a claim and a scientific rationale, whereas Item A is a simple direct-recall question about a familiar animal."
+    },
+    {
+      "obj": "habitat",
+      "arm": "struct",
+      "harder": "L3",
+      "why": "Item A is more complex because it presents a multi-sentence scenario requiring students to compare two different animals, consider environmental change (snow), and evaluate both the claim and the reasoning behind each option. In contrast, Item B is a simple, direct-recall question about a well-known animal trait (duck's webbed feet) with minimal reading demand."
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+
+Picture graphs: one picture for one thing | make_graph | difficulty=easy | run 1 | own path
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where there are one more bananas than strawberries.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where oranges have the most.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where bananas have the fewest.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where apples and bananas have the same number.  ""
+
+Picture graphs: one picture for one thing | make_graph | difficulty=easy | run 2 | own path
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where bananas have the fewest.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where there are two more peppers than broccoli.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where strawberries have the most.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where carrots and tomatoes have the same number.  ""
+
+Picture graphs: one picture for one thing | make_graph | difficulty=medium | run 1 | own path
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where strawberries have the most.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where there are three more oranges than grapes.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where grapes have the fewest.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where oranges and bananas have the same number.  ""
+
+Picture graphs: one picture for one thing | make_graph | difficulty=medium | run 2 | own path
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where oranges and grapes have the same number.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where there are three more tomatoes than broccoli.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where apples have the fewest.  ""
+  [                      ] [0,0,0] step 1 icon 1  Q: Make a graph where carrots have the most.  ""
+
+Picture graphs: one picture for one thing | make_graph | difficulty=hard | run 1 | own path
+  [                      ] [0,0,0,0] step 1 icon 1  Q: Make a graph where bananas and grapes have the same number.  ""
+  [                      ] [0,0,0,0] step 1 icon 1  Q: Make a graph where bananas have the fewest.  ""
+  [                      ] [0,0,0,0] step 1 icon 1  Q: Make a graph where there are two more bananas than oranges.  ""
+  [                      ] [0,0,0,0] step 1 icon 1  Q: Make a graph where apples have the most.  ""
+
+Picture graphs: one picture for one thing | make_graph | difficulty=hard | run 2 | own path
+  [                      ] [0,0,0,0] step 1 icon 1  Q: Make a graph where grapes have the most.  ""
+  [                      ] [0,0,0,0] step 1 icon 1  Q: Make a graph where there are one more apples than oranges.  ""
+  [                      ] [0,0,0,0] step 1 icon 1  Q: Make a graph where bananas have the fewest.  ""
+  [                      ] [0,0,0,0] step 1 icon 1  Q: Make a graph where apples and grapes have the same number.  ""

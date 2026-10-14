@@ -1,0 +1,84 @@
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=easy | run 1 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"6 + ? = 10","missingPosition":2,"correctValue":4,"options":[7,1,4]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"? + 7 = 12","missingPosition":0,"correctValue":5,"options":[8,2,5]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"14 - ? = 8","missingPosition":2,"correctValue":6,"options":[6,9,3]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"? - 5 = 4","missingPosition":0,"correctValue":9,"options":[6,9,12]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"8 + ? = 23","missingPosition":2,"correctValue":15,"options":[15,18,12]}  "Both sides must be the same — what makes the left equal the right?"
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=easy | run 2 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"6 + ? = 10","missingPosition":2,"correctValue":4,"options":[1,7,4]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"? + 5 = 12","missingPosition":0,"correctValue":7,"options":[10,7,4]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"14 - ? = 8","missingPosition":2,"correctValue":6,"options":[9,6,3]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"? - 4 = 5","missingPosition":0,"correctValue":9,"options":[6,9,12]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"11 + ? = 19","missingPosition":2,"correctValue":8,"options":[11,8,5]}  "Both sides must be the same — what makes the left equal the right?"
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=easy | run 3 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"6 + ? = 10","missingPosition":2,"correctValue":4,"options":[1,7,4]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"? + 5 = 12","missingPosition":0,"correctValue":7,"options":[7,4,10]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"15 - ? = 7","missingPosition":2,"correctValue":8,"options":[5,8,11]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"? - 4 = 5","missingPosition":0,"correctValue":9,"options":[9,6,12]}  "Both sides must be the same — what makes the left equal the right?"
+  [                      ] {"type":"missing-value","equation":"8 + ? = 19","missingPosition":2,"correctValue":11,"options":[11,8,14]}  "Both sides must be the same — what makes the left equal the right?"
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=medium | run 1 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"8 + ? = 13","missingPosition":2,"correctValue":5,"options":[7,5,6,4]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"? + 6 = 13","missingPosition":0,"correctValue":7,"options":[8,6,7,9]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"12 - ? = 8","missingPosition":2,"correctValue":4,"options":[5,3,6,4]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"? - 5 = 4","missingPosition":0,"correctValue":9,"options":[11,10,9,8]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"7 + ? = 18","missingPosition":2,"correctValue":11,"options":[10,13,11,12]}  "What number is missing?"
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=medium | run 2 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"6 + ? = 10","missingPosition":2,"correctValue":4,"options":[5,6,4,3]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"? + 5 = 12","missingPosition":0,"correctValue":7,"options":[9,8,7,6]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"15 - ? = 7","missingPosition":2,"correctValue":8,"options":[10,9,7,8]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"? - 4 = 5","missingPosition":0,"correctValue":9,"options":[8,10,9,11]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"8 + ? = 19","missingPosition":2,"correctValue":11,"options":[13,11,10,12]}  "What number is missing?"
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=medium | run 3 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"5 + ? = 12","missingPosition":2,"correctValue":7,"options":[6,9,8,7]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"? + 9 = 13","missingPosition":0,"correctValue":4,"options":[6,3,5,4]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"14 - ? = 8","missingPosition":2,"correctValue":6,"options":[8,6,7,5]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"? - 5 = 6","missingPosition":0,"correctValue":11,"options":[10,13,11,12]}  "What number is missing?"
+  [                      ] {"type":"missing-value","equation":"8 + ? = 17","missingPosition":2,"correctValue":9,"options":[11,8,9,10]}  "What number is missing?"
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=hard | run 1 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"4 + ? = 11","missingPosition":2,"correctValue":7,"options":[6,9,7,8]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"? + 6 = 15","missingPosition":0,"correctValue":9,"options":[10,11,8,9]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"14 - ? = 6","missingPosition":2,"correctValue":8,"options":[10,8,9,7]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"? - 4 = 11","missingPosition":0,"correctValue":15,"options":[17,15,14,16]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"8 + ? = 20","missingPosition":2,"correctValue":12,"options":[12,11,14,13]}  "Find the missing number."
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=hard | run 2 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"7 + ? = 11","missingPosition":2,"correctValue":4,"options":[3,6,4,5]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"? + 5 = 13","missingPosition":0,"correctValue":8,"options":[10,7,9,8]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"14 - ? = 8","missingPosition":2,"correctValue":6,"options":[6,7,8,5]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"? - 4 = 5","missingPosition":0,"correctValue":9,"options":[8,10,11,9]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"9 + ? = 16","missingPosition":2,"correctValue":7,"options":[9,6,7,8]}  "Find the missing number."
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=hard | run 3 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"12 - ? = 6","missingPosition":2,"correctValue":6,"options":[5,6,8,7]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"? + 3 = 17","missingPosition":0,"correctValue":14,"options":[16,15,13,14]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"8 + ? = 17","missingPosition":2,"correctValue":9,"options":[11,10,8,9]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"19 - ? = 8","missingPosition":2,"correctValue":11,"options":[13,11,10,12]}  "Find the missing number."
+  [                      ] {"type":"missing-value","equation":"? + 8 = 15","missingPosition":0,"correctValue":7,"options":[8,7,9,6]}  "Find the missing number."
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=(none) | run 1 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"10 + ? = 14","missingPosition":2,"correctValue":4,"options":[8,4,6,2]}  "Find the missing number that makes this addition sentence true!"
+  [                      ] {"type":"missing-value","equation":"7 + ? = 12","missingPosition":2,"correctValue":5,"options":[5,4,3,6]}  "What number do we need to add to 7 to get 12?"
+  [                      ] {"type":"missing-value","equation":"? - 5 = 10","missingPosition":0,"correctValue":15,"options":[10,20,12,15]}  "Find the missing start number in this subtraction equation."
+  [                      ] {"type":"missing-value","equation":"16 - ? = 8","missingPosition":2,"correctValue":8,"options":[8,6,7,9]}  "What number is missing from this subtraction problem?"
+  [                      ] {"type":"missing-value","equation":"9 + ? = 20","missingPosition":2,"correctValue":11,"options":[10,12,11,9]}  "Solve for the missing part to balance the big equation!"
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=(none) | run 2 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"4 + ? = 10","missingPosition":2,"correctValue":6,"options":[6,4,14,5]}  "Find the missing number to make the addition equation true."
+  [                      ] {"type":"missing-value","equation":"7 + ? = 12","missingPosition":2,"correctValue":5,"options":[7,19,3,5]}  "What number added to 7 gives you 12?"
+  [                      ] {"type":"missing-value","equation":"? + 9 = 17","missingPosition":0,"correctValue":8,"options":[26,9,8,7]}  "Find the missing start number for this addition equation."
+  [                      ] {"type":"missing-value","equation":"15 - ? = 9","missingPosition":2,"correctValue":6,"options":[6,24,4,8]}  "What number must be taken away from 15 to leave 9?"
+  [                      ] {"type":"missing-value","equation":"? - 5 = 12","missingPosition":0,"correctValue":17,"options":[8,17,7,15]}  "Solve for the missing part in this subtraction equation."
+
+Addition and subtraction equations within 20 | missing-operand | difficulty=(none) | run 3 | own path | max 20
+  [                      ] {"type":"missing-value","equation":"6 + ? = 10","missingPosition":2,"correctValue":4,"options":[2,16,6,4]}  "Find the missing number that makes this addition sentence true."
+  [                      ] {"type":"missing-value","equation":"? + 8 = 12","missingPosition":0,"correctValue":4,"options":[4,5,3,20]}  "What number added to 8 gives you a total of 12?"
+  [                      ] {"type":"missing-value","equation":"14 - ? = 9","missingPosition":2,"correctValue":5,"options":[6,9,5,4]}  "Figure out what number is missing in this subtraction equation."
+  [                      ] {"type":"missing-value","equation":"? - 6 = 9","missingPosition":0,"correctValue":15,"options":[21,9,3,15]}  "Find the missing start number for this subtraction equation."
+  [                      ] {"type":"missing-value","equation":"11 + ? = 18","missingPosition":2,"correctValue":7,"options":[7,8,6,29]}  "Solve for the missing part to keep both sides balanced."

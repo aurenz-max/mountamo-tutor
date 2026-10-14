@@ -1,0 +1,42 @@
+
+Compare two bars | compare_bars | difficulty=easy | run 1 | own path
+  [                      ] [10,6] tgt 0  Q: Which stack has MORE blocks?  ""
+  [                      ] [4,8] tgt 1  Q: Which train is longer?  ""
+  [                      ] [7,3] tgt 0  Q: Which puppy is taller?  ""
+  [                      ] [2,6] tgt 1  Q: Which toy train is longer?  ""
+  [                      ] [9,5] tgt 0  Q: Which toy group is taller?  ""
+
+Compare two bars | compare_bars | difficulty=easy | run 2 | own path
+  [                      ] [4,8] tgt 1  Q: Which train has MORE cars?  ""
+  [                      ] [5,1] tgt 0  Q: Which toy train has more blocks?  ""
+  [                      ] [4,8] tgt 1  Q: Which group has more puppies?  ""
+  [                      ] [5,1] tgt 0  Q: Which toy pile is taller?  ""
+  [                      ] [3,7] tgt 1  Q: Which toy train is longer?  ""
+
+Compare two bars | compare_bars | difficulty=medium | run 1 | own path
+  [                      ] [4,6] tgt 1  Q: Which toy stack is taller?  ""
+  [                      ] [10,8] tgt 0  Q: Which bar is taller?  ""
+  [                      ] [3,5] tgt 1  Q: Which group has MORE toy cars?  ""
+  [                      ] [7,5] tgt 0  Q: Which fruit has MORE?  ""
+  [                      ] [8,10] tgt 1  Q: Which puppy toy stack is taller?  ""
+
+Compare two bars | compare_bars | difficulty=medium | run 2 | own path
+  [                      ] [3,1] tgt 0  Q: Which group has more toys?  ""
+  [                      ] [5,7] tgt 1  Q: Which toy stack is taller?  ""
+  [                      ] [6,4] tgt 0  Q: Which toy has more cars?  ""
+  [                      ] [3,5] tgt 1  Q: Which group has more toys?  ""
+  [                      ] [3,1] tgt 0  Q: Which toy train has more wheels?  ""
+
+Compare two bars | compare_bars | difficulty=hard | run 1 | own path
+  [                      ] [4,5] tgt 1  Q: Which berry stack is taller?  ""
+  [                      ] [6,5] tgt 0  Q: Which car is taller?  ""
+  [                      ] [1,2] tgt 1  Q: Which tower is taller?  ""
+  [                      ] [9,8] tgt 0  Q: Which tower is taller?  ""
+  [                      ] [3,4] tgt 1  Q: Which tower is taller?  ""
+
+Compare two bars | compare_bars | difficulty=hard | run 2 | own path
+  [                      ] [5,6] tgt 1  Q: Which track is taller?  ""
+  [                      ] [3,2] tgt 0  Q: Which tower is taller?  ""
+  [                      ] [2,3] tgt 1  Q: Which tower is taller?  ""
+  [                      ] [10,9] tgt 0  Q: Which track is taller?  ""
+  [                      ] [8,9] tgt 1  Q: Which toy tower is taller?  ""

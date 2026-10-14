@@ -1,0 +1,75 @@
+
+Place value and adding within 1000 | build_number | difficulty=easy | run 1 | own path
+  [                      ] {"type":"build_number","targetNumber":987,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 987 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":488,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 488 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":318,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 318 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":324,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 324 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":782,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 782 with blocks!"
+
+Place value and adding within 1000 | build_number | difficulty=easy | run 2 | own path
+  [                      ] {"type":"build_number","targetNumber":449,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 449 with blocks."
+  [                      ] {"type":"build_number","targetNumber":354,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 354 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":235,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 235 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":172,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 172 with blocks!"
+
+Place value and adding within 1000 | build_number | difficulty=easy | run 3 | own path
+  [                      ] {"type":"build_number","targetNumber":496,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 496 with blocks."
+  [                      ] {"type":"build_number","targetNumber":841,"showColumnCounts":true,"showBlocksTotal":true}  "Use the blocks to show 841."
+  [                      ] {"type":"build_number","targetNumber":840,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 840 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":181,"showColumnCounts":true,"showBlocksTotal":true}  "Build the number 181 with blocks!"
+
+Place value and adding within 1000 | build_number | difficulty=medium | run 1 | own path
+  [                      ] {"type":"build_number","targetNumber":402,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 402 with blocks."
+  [                      ] {"type":"build_number","targetNumber":902,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 902 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":909,"showColumnCounts":false,"showBlocksTotal":true}  "Make 909 with the blocks."
+  [                      ] {"type":"build_number","targetNumber":800,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 800 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":908,"showColumnCounts":false,"showBlocksTotal":true}  "Use the blocks to show 908."
+
+Place value and adding within 1000 | build_number | difficulty=medium | run 2 | own path
+  [                      ] {"type":"build_number","targetNumber":204,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 204 with blocks."
+  [                      ] {"type":"build_number","targetNumber":407,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 407 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":605,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 605 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":503,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 503 with blocks!"
+
+Place value and adding within 1000 | build_number | difficulty=medium | run 3 | own path
+  [                      ] {"type":"build_number","targetNumber":204,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 204 with blocks."
+  [                      ] {"type":"build_number","targetNumber":501,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 501 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":904,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 904 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":709,"showColumnCounts":false,"showBlocksTotal":true}  "Build the number 709 with blocks."
+
+Place value and adding within 1000 | build_number | difficulty=hard | run 1 | own path
+  [                      ] {"type":"build_number","targetNumber":702,"showColumnCounts":false,"showBlocksTotal":false}  "Build the number 702 with blocks."
+  [                      ] {"type":"build_number","targetNumber":709,"showColumnCounts":false,"showBlocksTotal":false}  "Use the blocks to show 709."
+  [                      ] {"type":"build_number","targetNumber":102,"showColumnCounts":false,"showBlocksTotal":false}  "Make 102 with the blocks."
+  [                      ] {"type":"build_number","targetNumber":809,"showColumnCounts":false,"showBlocksTotal":false}  "Build the number 809 with blocks."
+
+Place value and adding within 1000 | build_number | difficulty=hard | run 2 | own path
+  [                      ] {"type":"build_number","targetNumber":409,"showColumnCounts":false,"showBlocksTotal":false}  "Build the number 409 with blocks."
+  [                      ] {"type":"build_number","targetNumber":806,"showColumnCounts":false,"showBlocksTotal":false}  "Build the number 806 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":409,"showColumnCounts":false,"showBlocksTotal":false}  "Make 409 with the blocks."
+  [                      ] {"type":"build_number","targetNumber":203,"showColumnCounts":false,"showBlocksTotal":false}  "Build the number 203 with blocks."
+
+Place value and adding within 1000 | build_number | difficulty=hard | run 3 | own path
+  [                      ] {"type":"build_number","targetNumber":303,"showColumnCounts":false,"showBlocksTotal":false}  "Build the number 303 with blocks."
+  [                      ] {"type":"build_number","targetNumber":606,"showColumnCounts":false,"showBlocksTotal":false}  "Use the blocks to show 606."
+  [                      ] {"type":"build_number","targetNumber":405,"showColumnCounts":false,"showBlocksTotal":false}  "Make 405 with the blocks."
+  [                      ] {"type":"build_number","targetNumber":606,"showColumnCounts":false,"showBlocksTotal":false}  "Build the number 606 with blocks."
+
+Place value and adding within 1000 | build_number | difficulty=(none) | run 1 | own path
+  [                      ] {"type":"build_number","targetNumber":498,"secondNumber":null}  "Build the number 498 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":503,"secondNumber":null}  "Build the number 503 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":347,"secondNumber":null}  "Build the number 347 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":576,"secondNumber":null}  "Build the number 576 with blocks!"
+
+Place value and adding within 1000 | build_number | difficulty=(none) | run 2 | own path
+  [                      ] {"type":"build_number","targetNumber":88,"secondNumber":null}  "Build the number 88 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":62,"secondNumber":null}  "Build the number 62 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":654,"secondNumber":null}  "Build the number 654 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":381,"secondNumber":null}  "Build the number 381 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":441,"secondNumber":null}  "Build the number 441 with blocks!"
+
+Place value and adding within 1000 | build_number | difficulty=(none) | run 3 | own path
+  [                      ] {"type":"build_number","targetNumber":63}  "Build the number 63 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":371}  "Build the number 371 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":680}  "Build the number 680 with blocks!"
+  [                      ] {"type":"build_number","targetNumber":536}  "Build the number 536 with blocks!"

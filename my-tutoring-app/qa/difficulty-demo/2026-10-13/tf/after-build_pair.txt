@@ -1,0 +1,72 @@
+
+Numbers to 10 on a ten frame | build_pair | difficulty=easy | run 1 | own path
+  [                      ] {"type":"build_pair","targetCount":4}  "Make 4 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":4}  "Make 4 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+
+Numbers to 10 on a ten frame | build_pair | difficulty=easy | run 2 | own path
+  [                      ] {"type":"build_pair","targetCount":4}  "Make 4 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":4}  "Make 4 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+
+Numbers to 10 on a ten frame | build_pair | difficulty=easy | run 3 | own path
+  [                      ] {"type":"build_pair","targetCount":3}  "Make 3 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":3}  "Make 3 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+
+Numbers to 10 on a ten frame | build_pair | difficulty=medium | run 1 | own path
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":8}  "Make 8 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":8}  "Make 8 with red and yellow counters!"
+
+Numbers to 10 on a ten frame | build_pair | difficulty=medium | run 2 | own path
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":8}  "Make 8 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":8}  "Make 8 with red and yellow counters!"
+
+Numbers to 10 on a ten frame | build_pair | difficulty=medium | run 3 | own path
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":5}  "Make 5 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":6}  "Make 6 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":7}  "Make 7 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":7}  "Make 7 with red and yellow counters!"
+
+Numbers to 10 on a ten frame | build_pair | difficulty=hard | run 1 | own path
+  [                      ] {"type":"build_pair","targetCount":7}  "Make 7 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":7}  "Make 7 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":9}  "Make 9 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":9}  "Make 9 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":10}  "Make 10 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":10}  "Make 10 with red and yellow counters!"
+
+Numbers to 10 on a ten frame | build_pair | difficulty=hard | run 2 | own path
+  [                      ] {"type":"build_pair","targetCount":7}  "Make 7 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":7}  "Make 7 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":8}  "Make 8 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":8}  "Make 8 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":10}  "Make 10 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":10}  "Make 10 with red and yellow counters!"
+
+Numbers to 10 on a ten frame | build_pair | difficulty=hard | run 3 | own path
+  [                      ] {"type":"build_pair","targetCount":7}  "Make 7 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":7}  "Make 7 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":8}  "Make 8 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":8}  "Make 8 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":9}  "Make 9 with red and yellow counters!"
+  [                      ] {"type":"build_pair","targetCount":9}  "Make 9 with red and yellow counters!"

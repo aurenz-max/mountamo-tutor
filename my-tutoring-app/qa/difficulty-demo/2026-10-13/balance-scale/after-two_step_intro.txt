@@ -1,0 +1,54 @@
+
+Two-step problems: set aside, then share | two_step_intro | difficulty=easy | run 1 | item space
+  [BalanceScale] Item space two-step-equations two_step_intro band [-2.5, -0.6]: p<4|a1|h0|r0@-1.6 p<4|a1|h0|r1@-1.06 p<4|a0|h0|r0@-1.02 p4+|a1|h0|r1@-0.68
+  [β  -1.6 p<4|a1|h0|r0  ] 2x + 5 = 15        ans 5  "Set known weight aside on both sides, then share what remains among th"
+  [β -1.06 p<4|a1|h0|r1  ] 3x + 6 = 12        ans 2  "Set known weight aside on both sides, then share what remains among th"
+  [β -1.02 p<4|a0|h0|r0  ] 3x + 2 = 14        ans 4  "Set known weight aside on both sides, then share what remains among th"
+  [β -0.68 p4+|a1|h0|r1  ] 4x + 3 = 11        ans 2  "Set known weight aside on both sides, then share what remains among th"
+
+Two-step problems: set aside, then share | two_step_intro | difficulty=easy | run 2 | item space
+  [BalanceScale] Item space two-step-equations two_step_intro band [-2.5, -0.6]: p<4|a0|h0|r0@-0.92 p<4|a1|h0|r1@-0.78 p4+|a1|h0|r1@-0.68 p4+|a0|h0|r0@-0.62
+  [β -0.92 p<4|a0|h0|r0  ] 3x + 7 = 19        ans 4  "Set known weight aside on both sides, then share what remains among th"
+  [β -0.78 p<4|a1|h0|r1  ] 2x + 18 = 26       ans 4  "Set known weight aside on both sides, then share what remains among th"
+  [β -0.68 p4+|a1|h0|r1  ] 4x + 3 = 11        ans 2  "Set known weight aside on both sides, then share what remains among th"
+  [β -0.62 p4+|a0|h0|r0  ] 4x + 2 = 14        ans 3  "Set known weight aside on both sides, then share what remains among th"
+
+Two-step problems: set aside, then share | two_step_intro | difficulty=medium | run 1 | item space
+  [BalanceScale] Item space two-step-equations two_step_intro band [-0.6, 0.6]: p4+|a1|h0|r1@-0.44 p<4|a0|h1|r0@-0.06 p4+|a0|h0|r1@0.14 p4+|a0|h1|r0@0.26
+  [β -0.44 p4+|a1|h0|r1  ] 4x + 15 = 23       ans 2  "Set known weight aside on both sides, then share what remains among th"
+  [β -0.06 p<4|a0|h1|r0  ] 3x + 13 = 37       ans 8  "Set known weight aside on both sides, then share what remains among th"
+  [β  0.14 p4+|a0|h0|r1  ] 4x + 6 = 22        ans 4  "Set known weight aside on both sides, then share what remains among th"
+  [β  0.26 p4+|a0|h1|r0  ] 4x + 1 = 33        ans 8  "Set known weight aside on both sides, then share what remains among th"
+
+Two-step problems: set aside, then share | two_step_intro | difficulty=medium | run 2 | item space
+  [BalanceScale] Item space two-step-equations two_step_intro band [-0.6, 0.6]: p<4|a1|h1|r1@-0.32 p<4|a0|h0|r1@-0.2 p4+|a0|h1|r0@0.12 p<4|a0|h1|r1@0.5
+  [β -0.32 p<4|a1|h1|r1  ] 2x + 8 = 24        ans 8  "Set known weight aside on both sides, then share what remains among th"
+  [β  -0.2 p<4|a0|h0|r1  ] 3x + 16 = 25       ans 3  "Set known weight aside on both sides, then share what remains among th"
+  [β  0.12 p4+|a0|h1|r0  ] 4x + 2 = 26        ans 6  "Set known weight aside on both sides, then share what remains among th"
+  [β   0.5 p<4|a0|h1|r1  ] 3x + 8 = 35        ans 9  "Set known weight aside on both sides, then share what remains among th"
+
+Two-step problems: set aside, then share | two_step_intro | difficulty=hard | run 1 | item space
+  [BalanceScale] Item space two-step-equations two_step_intro band [0.6, 3.5]: p<4|a0|h1|r1@0.6 p<4|a0|h1|r1@0.6 p4+|a0|h1|r1@0.84 p4+|a0|h1|r1@0.86
+  [β   0.6 p<4|a0|h1|r1  ] 3x + 16 = 40       ans 8  "Set known weight aside on both sides, then share what remains among th"
+  [β   0.6 p<4|a0|h1|r1  ] 3x + 13 = 40       ans 9  "Set known weight aside on both sides, then share what remains among th"
+  [β  0.84 p4+|a0|h1|r1  ] 4x + 8 = 32        ans 6  "Set known weight aside on both sides, then share what remains among th"
+  [β  0.86 p4+|a0|h1|r1  ] 4x + 5 = 33        ans 7  "Set known weight aside on both sides, then share what remains among th"
+
+Two-step problems: set aside, then share | two_step_intro | difficulty=hard | run 2 | item space
+  [BalanceScale] Item space two-step-equations two_step_intro band [0.6, 3.5]: p<4|a0|h1|r1@0.6 p4+|a0|h1|r1@0.8 p4+|a0|h1|r1@0.86 p4+|a0|h1|r1@1
+  [β   0.6 p<4|a0|h1|r1  ] 3x + 13 = 40       ans 9  "Set known weight aside on both sides, then share what remains among th"
+  [β   0.8 p4+|a0|h1|r1  ] 4x + 2 = 30        ans 7  "Set known weight aside on both sides, then share what remains among th"
+  [β  0.86 p4+|a0|h1|r1  ] 4x + 9 = 33        ans 6  "Set known weight aside on both sides, then share what remains among th"
+  [β     1 p4+|a0|h1|r1  ] 4x + 8 = 40        ans 8  "Set known weight aside on both sides, then share what remains among th"
+
+Two-step problems: set aside, then share | two_step_intro | difficulty=(none) | run 1 | own path
+  [                      ] 2x + 1 = 12 + 1    ans 6  "Set known weight aside on both sides, then share what remains among th"
+  [                      ] 4x + 5 = 8 + 5     ans 2  "Set known weight aside on both sides, then share what remains among th"
+  [                      ] 2x + 3 = 10 + 3    ans 5  "Set known weight aside on both sides, then share what remains among th"
+  [                      ] 4x + 2 = 16 + 2    ans 4  "Set known weight aside on both sides, then share what remains among th"
+
+Two-step problems: set aside, then share | two_step_intro | difficulty=(none) | run 2 | own path
+  [                      ] 2x + 3 = 4 + 3     ans 2  "Set known weight aside on both sides, then share what remains among th"
+  [                      ] 2x + 1 = 6 + 1     ans 3  "Set known weight aside on both sides, then share what remains among th"
+  [                      ] 2x + 1 = 8 + 1     ans 4  "Set known weight aside on both sides, then share what remains among th"
+  [                      ] 2x + 1 = 10 + 1    ans 5  "Set known weight aside on both sides, then share what remains among th"
