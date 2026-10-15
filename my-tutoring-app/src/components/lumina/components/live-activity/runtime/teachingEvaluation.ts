@@ -27,8 +27,12 @@ export function teachingEvaluation(items: readonly TeachingItem[], state: Teachi
         + (attempt.levers?.length ? `; levers pulled: ${attempt.levers.join(', ')}` : '') + `. Verbal assistance is recorded by explicit tutor actions; absence does not establish independence.`
         + (spoken && attempt.tutorResponse ? ` Tutor replied: "${attempt.tutorResponse.slice(0, 600)}".` : '') + scoring };
   });
+  // The score counts only items the tutor and the re-grade agree on (`uncertain`, scoreSession). When every item is
+  // uncertain there is no agreed evidence; the recorded outcomes are scored as before rather than inventing a number.
+  const certain = scored.summary.outcomes.filter(o => !o.uncertain);
+  const counted = certain.length ? certain : scored.summary.outcomes;
   // A first try made with a lever pulled is assisted work, never a first-response success.
-  const firstTryCount = scored.summary.outcomes.filter(o => o.solved && o.corrections === 0
+  const firstTryCount = counted.filter(o => o.solved && o.corrections === 0
     && !scored.attempts.find(a => a.itemId === o.id && a.correct)?.levers?.length).length;
   const wrong = learningResponses.filter(r => r.verdict === 'corrected');
   const wrongAttempts = scored.attempts.filter(a => !a.correct);
@@ -40,7 +44,7 @@ export function teachingEvaluation(items: readonly TeachingItem[], state: Teachi
     ...(tutorCorrections.length ? { judgeFeedback: tutorCorrections.join(' | ').slice(0, 2000) } : {}),
     ...(wrongAttempts.length ? { priorAttempts: wrongAttempts.slice(0, 12).map(a => ({
       challenge: byId.get(a.itemId)?.task ?? a.itemId, observed: a.response })) } : {}),
-    firstResponseScore: Math.round(firstTryCount / items.length * 100),
+    firstResponseScore: Math.round(firstTryCount / Math.max(1, counted.length) * 100),
     // `learningResponses` is index-aligned with `scored.attempts`, so each wrong phase keeps its own attempt's miss.
     phases: learningResponses.flatMap(({ itemId, phase, challenge, expected, observed, support }, i) => {
       const { correct, miss } = scored.attempts[i];
@@ -50,7 +54,9 @@ export function teachingEvaluation(items: readonly TeachingItem[], state: Teachi
   const outcomes = scored.summary.outcomes;
   return { outcomes: outcomes.map(o => ({ ...o, seconds: null })), solvedCount: scored.summary.solvedCount,
     firstTryCount, attemptsCount: state.attempts.length,
-    accuracy: Math.round(outcomes.reduce((sum, o) => sum + o.score, 0) / outcomes.length),
-    passed: scored.summary.solvedCount === items.length, learningResponses, diagnosisEvidence,
-    teachingAttempts: scored.attempts, scoringDisagreements: scored.disagreements, assistanceProvenance: 'explicit-actions-only' as const };
+    accuracy: Math.round(counted.reduce((sum, o) => sum + o.score, 0) / counted.length),
+    passed: counted.every(o => o.solved),
+    learningResponses, diagnosisEvidence,
+    teachingAttempts: scored.attempts, scoringDisagreements: scored.disagreements,
+    uncertainItems: outcomes.filter(o => o.uncertain).map(o => o.id), assistanceProvenance: 'explicit-actions-only' as const };
 }

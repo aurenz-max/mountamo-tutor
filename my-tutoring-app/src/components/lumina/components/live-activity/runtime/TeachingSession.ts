@@ -39,7 +39,9 @@ export interface TeachingState {
 /** Session-local presentation data, not a persisted evaluation or mastery result. */
 export interface TeachingSummary {
   solvedCount: number;
-  outcomes: Array<{ id: string; solved: boolean; corrections: number; attempts: number; score: number; assisted: boolean }>;
+  outcomes: Array<{ id: string; solved: boolean; corrections: number; attempts: number; score: number; assisted: boolean;
+    /** The scoring pass and the tutor disagreed on one of its spoken attempts: kept in the record, left out of the score. */
+    uncertain?: boolean }>;
 }
 
 export function teachingSummary(itemIds: readonly string[], state: TeachingState): TeachingSummary | null {

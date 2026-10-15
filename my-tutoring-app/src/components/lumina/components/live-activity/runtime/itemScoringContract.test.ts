@@ -75,3 +75,36 @@ describe('the scoring pass (user direction 09-24: the tutor judges the flow, JEV
     expect(validItemScoreRequest({ ...base, expectedAnswer: '' })).toBe(false);
   });
 });
+
+describe('a disagreement is uncertain and left out of the score (user ruling 2026-10-14)', () => {
+  const lines: TeachingItem[] = ['l1', 'l2', 'l3'].map(id => ({ id, task: 'Read it.', expectedAnswer: 'the line', response: 'speech' as const, checkResponse: () => null }));
+  const ids = lines.map(i => i.id);
+
+  it('the "gather" session: the tutor praised a misread the re-grade caught; the item drops out instead of scoring 0', () => {
+    // l3: first read missed words (both agree), the retry said "gather" for "together" (tutor praised, re-grade did not).
+    const s = state([attempt('l1', 'ok', true), attempt('l2', 'ok', true),
+      attempt('l3', 'All the farm animals rest.', false), attempt('l3', 'All the farm animals rest. Gather tonight.', true)]);
+    const scored = scoreSession(ids, s, ['correct', 'correct', 'not_correct', 'not_correct']);
+    expect(scored.summary.outcomes.map(o => !!o.uncertain)).toEqual([false, false, true]);
+    const ev = teachingEvaluation(lines, s, scored, 'literal');
+    expect(ev.accuracy).toBe(100);
+    expect(ev.passed).toBe(true);
+    expect(ev.uncertainItems).toEqual(['l3']);
+    expect(ev.outcomes.find(o => o.id === 'l3')).toMatchObject({ solved: false, uncertain: true }); // still in the record
+  });
+
+  it('the other direction: a transcript that misheard a right read does not cost the learner either', () => {
+    const s = state([attempt('l1', 'ok', true), attempt('l2', 'the dog ran fast', true), attempt('l3', 'ok', false), attempt('l3', 'ok', true)]);
+    const ev = teachingEvaluation(lines, s, scoreSession(ids, s, ['correct', 'not_correct', 'not_correct', 'correct']), 'literal');
+    expect(ev.uncertainItems).toEqual(['l2']);
+    expect(ev.accuracy).toBe(Math.round((100 + 67) / 2));
+  });
+
+  it('agreement and unclear grades are not uncertain; all-uncertain falls back to the recorded outcomes', () => {
+    const s = state([attempt('l1', 'ok', true), attempt('l2', 'no', false), attempt('l3', 'ok', true)]);
+    expect(scoreSession(ids, s, ['correct', 'not_correct', 'unclear']).summary.outcomes.some(o => o.uncertain)).toBe(false);
+    const all = scoreSession(ids, s, ['not_correct', 'correct', 'not_correct']);
+    expect(all.summary.outcomes.every(o => o.uncertain)).toBe(true);
+    expect(teachingEvaluation(lines, s, all, 'literal').accuracy).toBe(Math.round(100 / 3));
+  });
+});

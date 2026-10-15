@@ -71,8 +71,13 @@ export function scoreSession(itemIds: readonly string[], state: TeachingState, g
     const mine = attempts.filter(a => a.itemId === id);
     const first = mine.findIndex(a => a.correct);
     const solved = first >= 0;
+    // UNCERTAIN (user ruling 2026-10-14): the tutor heard the audio, the re-grade read the transcript, and on one of
+    // this item's spoken attempts each was confident of the opposite. Either can be the one that erred (the tutor
+    // praised a misread "gather" for "together"; a transcript splits a word at a pause), so neither wins: the item
+    // stays in the record and is left out of the score, moving ability neither way.
+    const uncertain = mine.some(a => (a.grade === 'correct' || a.grade === 'not_correct') && a.correct !== a.flowCorrect);
     return { id, solved, corrections: solved ? first : mine.length, attempts: mine.length, assisted: mine.some(a => a.assisted),
-      score: !solved ? 0 : first === 0 ? 100 : first === 1 ? 67 : 33 };
+      score: !solved ? 0 : first === 0 ? 100 : first === 1 ? 67 : 33, ...(uncertain ? { uncertain } : {}) };
   });
   return { attempts, summary: { solvedCount: outcomes.filter(o => o.solved).length, outcomes },
     disagreements: attempts.filter(a => a.correct !== a.flowCorrect).length };
