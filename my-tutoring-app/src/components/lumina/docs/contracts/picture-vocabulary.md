@@ -46,6 +46,7 @@ Static derivation for the picture-vocabulary slice of handoff 22 L4.
 - **Probe:** `npm test -- PicturePair.workspace`.
 
 ## Changelog
+- 2026-10-13 — **R-WS noun word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/picture-vocabulary/before.txt`): apple, cat, sun, tree, shoe, ball at every tier; receptive_match wrong pictures always from other categories; lamp pictured as 💡. After: receptive easy bacon among cloud, chick, castle → hard taco among broccoli, honey, onion; naming easy dress, worm, ear → hard potato, microphone, bucket.
 
 - 2026-09-29 — R6 added (handoff 24): the four relation modes get named misses and one model lever each. R2 holds: no option list, no answer word before credit. `npm test` 64/64 on the primitive.
 - 2026-10-08 — R7 added (OB-8L): `pair_build` forks as a second tap mode with no words on its cards; R1-R6 unchanged (`PicturePair.workspace` + `RhymePair.workspace` 16/16).

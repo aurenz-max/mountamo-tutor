@@ -1,0 +1,486 @@
+{
+ "source": "https://claude.ai/artifact/HXUusXVu2zBxzBz2oSkawY (review collection)",
+ "exported": "2026-10-14",
+ "words": {
+  "a": {
+   "status": "ok",
+   "values": {}
+  },
+  "about": {
+   "status": "ok",
+   "values": {}
+  },
+  "all": {
+   "status": "ok",
+   "values": {}
+  },
+  "alligator": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "and": {
+   "status": "ok",
+   "values": {}
+  },
+  "at": {
+   "status": "ok",
+   "values": {}
+  },
+  "automobile": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "bandages": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "bathe": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "be": {
+   "status": "ok",
+   "values": {}
+  },
+  "bikini": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "bottoms": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "but": {
+   "status": "ok",
+   "values": {}
+  },
+  "can": {
+   "status": "ok",
+   "values": {}
+  },
+  "come": {
+   "status": "ok",
+   "values": {}
+  },
+  "complain": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "copying": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G2"
+   }
+  },
+  "crocodile": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "crunch": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "cuckoo": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "did": {
+   "status": "ok",
+   "values": {}
+  },
+  "disgusted": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "dishwasher": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "do": {
+   "status": "ok",
+   "values": {}
+  },
+  "dolphin": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "dolphins": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "earring": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "energetic": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G2"
+   }
+  },
+  "for": {
+   "status": "ok",
+   "values": {}
+  },
+  "from": {
+   "status": "ok",
+   "values": {}
+  },
+  "gaga": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "get": {
+   "status": "ok",
+   "values": {}
+  },
+  "go": {
+   "status": "ok",
+   "values": {}
+  },
+  "going": {
+   "status": "ok",
+   "values": {}
+  },
+  "good": {
+   "status": "ok",
+   "values": {}
+  },
+  "got": {
+   "status": "ok",
+   "values": {}
+  },
+  "hamburgers": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G2"
+   }
+  },
+  "handbag": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "handshake": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "have": {
+   "status": "ok",
+   "values": {}
+  },
+  "he": {
+   "status": "ok",
+   "values": {}
+  },
+  "healthy": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "here": {
+   "status": "ok",
+   "values": {}
+  },
+  "him": {
+   "status": "ok",
+   "values": {}
+  },
+  "his": {
+   "status": "ok",
+   "values": {}
+  },
+  "how": {
+   "status": "ok",
+   "values": {}
+  },
+  "i": {
+   "status": "ok",
+   "values": {}
+  },
+  "if": {
+   "status": "ok",
+   "values": {}
+  },
+  "in": {
+   "status": "ok",
+   "values": {}
+  },
+  "is": {
+   "status": "ok",
+   "values": {}
+  },
+  "it": {
+   "status": "ok",
+   "values": {}
+  },
+  "just": {
+   "status": "ok",
+   "values": {}
+  },
+  "know": {
+   "status": "ok",
+   "values": {}
+  },
+  "let": {
+   "status": "ok",
+   "values": {}
+  },
+  "like": {
+   "status": "ok",
+   "values": {}
+  },
+  "lunchtime": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "me": {
+   "status": "ok",
+   "values": {}
+  },
+  "my": {
+   "status": "ok",
+   "values": {}
+  },
+  "no": {
+   "status": "ok",
+   "values": {}
+  },
+  "not": {
+   "status": "ok",
+   "values": {}
+  },
+  "now": {
+   "status": "ok",
+   "values": {}
+  },
+  "octopus": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "on": {
+   "status": "ok",
+   "values": {}
+  },
+  "out": {
+   "status": "ok",
+   "values": {}
+  },
+  "partying": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "pineapple": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "planting": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "pussycat": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "right": {
+   "status": "ok",
+   "values": {}
+  },
+  "see": {
+   "status": "ok",
+   "values": {}
+  },
+  "she": {
+   "status": "ok",
+   "values": {}
+  },
+  "slaps": {
+   "status": "changed",
+   "values": {
+    "teachable": false
+   }
+  },
+  "sleepover": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "sneakers": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "so": {
+   "status": "ok",
+   "values": {}
+  },
+  "squeaks": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "switching": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "that": {
+   "status": "ok",
+   "values": {}
+  },
+  "the": {
+   "status": "ok",
+   "values": {}
+  },
+  "think": {
+   "status": "ok",
+   "values": {}
+  },
+  "this": {
+   "status": "ok",
+   "values": {}
+  },
+  "to": {
+   "status": "ok",
+   "values": {}
+  },
+  "tornado": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "tummy": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "underpants": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G1"
+   }
+  },
+  "unlocked": {
+   "status": "changed",
+   "values": {
+    "knownBy": "later"
+   }
+  },
+  "up": {
+   "status": "ok",
+   "values": {}
+  },
+  "volleyball": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G2"
+   }
+  },
+  "want": {
+   "status": "ok",
+   "values": {}
+  },
+  "was": {
+   "status": "ok",
+   "values": {}
+  },
+  "watering": {
+   "status": "changed",
+   "values": {
+    "knownBy": "G2"
+   }
+  },
+  "we": {
+   "status": "ok",
+   "values": {}
+  },
+  "well": {
+   "status": "ok",
+   "values": {}
+  },
+  "what": {
+   "status": "ok",
+   "values": {}
+  },
+  "when": {
+   "status": "ok",
+   "values": {}
+  },
+  "why": {
+   "status": "ok",
+   "values": {}
+  },
+  "will": {
+   "status": "ok",
+   "values": {}
+  },
+  "with": {
+   "status": "ok",
+   "values": {}
+  },
+  "yes": {
+   "status": "ok",
+   "values": {}
+  },
+  "jeez": {
+   "status": "changed",
+   "values": {
+    "teachable": false
+   }
+  }
+ }
+}

@@ -12,8 +12,13 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import {
-  MAX_SENTENCE_WORDS,
-  MIN_SENTENCE_WORDS,
+  BENCHED_WINDOW,
+  READER_LADDER,
+  readerGrade,
+  readerRung,
+  type SentenceWindow,
+} from '../../primitives/visual-primitives/literacy/decodableReaderLadder';
+import {
   opensWithSentinel,
   optionSayable,
   optionsEarSeparable,
@@ -128,7 +133,7 @@ const decodableReaderSchema: Schema = {
                   },
                   required: ["id", "text", "phonicsPattern"]
                 },
-                description: `Array of words in this sentence. MUST be ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} words — the child reads this sentence aloud as one utterance and a sentence outside that range is dropped.`
+                description: `Array of words in this sentence. MUST be inside the sentence-length window the prompt states — the child reads this sentence aloud as one utterance and a sentence outside that range is dropped.`
               }
             },
             required: ["id", "words"]
@@ -239,15 +244,15 @@ const questionUsable = (q: RawQuestion, wantsSpokenAnswer: boolean): boolean => 
 };
 
 /** Everything wrong with a draw, in one pass — used to decide the retry. */
-const contentIssues = (data: DecodableReaderData, wantsSpokenAnswer: boolean): string[] => {
+const contentIssues = (data: DecodableReaderData, wantsSpokenAnswer: boolean, win: SentenceWindow = BENCHED_WINDOW): string[] => {
   const issues: string[] = [];
   const sentences = data.passage?.sentences ?? [];
   if (sentences.length === 0) issues.push('no passage sentences');
   for (const sentence of sentences) {
     const text = sentenceText(sentence);
     const count = wordsIn(text);
-    if (count < MIN_SENTENCE_WORDS || count > MAX_SENTENCE_WORDS) {
-      issues.push(`sentence "${text}" is ${count} words (need ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS})`);
+    if (count < win.min || count > win.max) {
+      issues.push(`sentence "${text}" is ${count} words (need ${win.min}-${win.max})`);
     }
     if (opensWithSentinel(text)) issues.push(`sentence "${text}" opens with a verdict sentinel`);
   }
@@ -374,22 +379,43 @@ GRADE 2 GUIDELINES:
 
   // Grade rung: ctx.grade is the canonical per-objective curriculum grade
   // ('K'|'1'..'12'), resolved once at the registry boundary — use it directly,
-  // clamped to this primitive's K-2 decodable ladder. Without it (free-form
-  // lessons) fall back to the lesson band: kindergarten → 'K', anything else →
-  // '1' (mid rung). The old code matched ctx.gradeContext prose against
-  // ['K','1','2'], which could never hit, so every passage was pinned to 'K'.
-  const LADDER = ['K', '1', '2'] as const;
+  // clamped to this primitive's K-5 ladder (decodableReaderLadder.ts; grades 3-5
+  // read grade-level connected text, not phonics-controlled text). Without it
+  // (free-form lessons) fall back to the lesson band: kindergarten → 'K',
+  // anything else → '1' (mid rung). The old code matched ctx.gradeContext prose
+  // against ['K','1','2'], which could never hit, so every passage was pinned to 'K'.
   let gradeLevelKey: string;
   if (isReadAlong) {
     // Read-along is the Kindergarten pre-reader mode — always the K rung.
     gradeLevelKey = 'K';
-  } else if (ctx.grade && (LADDER as readonly string[]).includes(ctx.grade)) {
-    gradeLevelKey = ctx.grade;
-  } else if (ctx.grade && parseInt(ctx.grade, 10) > 2) {
-    gradeLevelKey = '2';
+  } else if (readerGrade(ctx.grade)) {
+    gradeLevelKey = ctx.grade!;
+  } else if (ctx.grade && parseInt(ctx.grade, 10) > 5) {
+    gradeLevelKey = '5';
   } else {
     gradeLevelKey = ctx.gradeLevel === 'kindergarten' || ctx.gradeLevel === 'preschool' ? 'K' : '1';
   }
+
+  // ── Difficulty ladder (2026-10-14, decodableReaderLadder.ts): the support tier sets the sentence window,
+  //    the story length and the decoding load for the grade; Gemini writes inside them and the retry gate
+  //    counts every sentence. No tier (and read-along) keeps the benched 3-8 window and the grade guide below.
+  //    Windows above 8 words are unbenched until a Live sitting covers them.
+  const tier = ctx.supportTier ?? null;
+  const rung = isReadAlong ? null : readerRung(gradeLevelKey, tier);
+  const win: SentenceWindow = rung?.window ?? BENCHED_WINDOW;
+  // Grades 3-5 have no hand-written guide: with no tier they take the medium rung's words and syntax.
+  const guideRung = rung ?? (gradeContext[gradeLevelKey] ? null : READER_LADDER[readerGrade(gradeLevelKey) ?? '3'].medium);
+  const rungSection = guideRung ? `
+GRADE ${gradeLevelKey}${rung ? ` (${tier} level)` : ''} GUIDELINES:
+- ${guideRung.sentences[0]}-${guideRung.sentences[1]} sentences, each ${win.min}-${win.max} words
+- Words: ${guideRung.words}
+- Sentences: ${guideRung.syntax}
+- Tag every word with its phonicsPattern ("other" for a word no pattern fits); sight words are "sight"
+- Comprehension questions fit the grade and genuinely demand the required skill
+${gradeLevelKey === 'K' ? `- Use ONLY CVC words and sight words. If the topic's own nouns are not CVC (truck, excavator), leave them out and tell the story with CVC words a five-year-old knows (dig, mud, big, hot, sun, run)
+- Tag CVC words as "cvc". Example: "The big cat sat on a mat."
+` : ''}` : '';
+  if (rung) console.log(`[DecodableReader] Ladder: grade ${gradeLevelKey}, ${tier}: ${win.min}-${win.max} words x ${rung.sentences.join('-')} sentences`);
 
   // ── The answer-material fork, as the generator sees it ──────────────────
   // read_along and literal answers are ONE WORD the child SAYS (the word is in
@@ -435,10 +461,10 @@ ${themedFocusLine(topic, intent, { targets: 'words', carrier: 'the title and wha
 TARGET GRADE LEVEL: ${gradeLevelKey}
 ${readAlongSection}${answerSection}
 THIS TEXT IS SPOKEN ALOUD BY A LIVE TUTOR, AND THREE RULES ARE ABSOLUTE:
-- Every sentence in the passage is ${MIN_SENTENCE_WORDS} to ${MAX_SENTENCE_WORDS} words long. The child reads one sentence at a time as a single breath; a sentence outside that range is thrown away.
-- EVERY SENTENCE IS COMPLETE, NATURAL ENGLISH — this is the rule that gets broken most, so check every line against it before you answer. The child reads the line aloud EXACTLY as printed and the tutor judges every word, so a missing article is not a small flaw: a child who reads "They have a fish in the tank" off a line printed as "They have a fish in tank" is marked WRONG for reading English correctly. NEVER drop "a", "an" or "the" before a singular thing. WRONG: "They have a fish in tank." / "His frog can hop on rug." / "They went on a trip to park." RIGHT: "They have a fish in the tank." / "His frog can hop on a rug." / "They went to the park." If the natural sentence will not fit in ${MAX_SENTENCE_WORDS} words, write a SHORTER natural sentence — never a clipped one.
+- Every sentence in the passage is ${win.min} to ${win.max} words long. The child reads one sentence at a time as a single breath; a sentence outside that range is thrown away.
+- EVERY SENTENCE IS COMPLETE, NATURAL ENGLISH — this is the rule that gets broken most, so check every line against it before you answer. The child reads the line aloud EXACTLY as printed and the tutor judges every word, so a missing article is not a small flaw: a child who reads "They have a fish in the tank" off a line printed as "They have a fish in tank" is marked WRONG for reading English correctly. NEVER drop "a", "an" or "the" before a singular thing. WRONG: "They have a fish in tank." / "His frog can hop on rug." / "They went on a trip to park." RIGHT: "They have a fish in the tank." / "His frog can hop on a rug." / "They went to the park." If the natural sentence will not fit in ${win.max} words, write a SHORTER natural sentence — never a clipped one.
 - NOTHING you write may BEGIN a sentence with the word "Yes" or the words "My turn" — not the passage, not a question, not an answer choice. Those two openings are reserved: the tutor's own words would be mistaken for a verdict and the lesson would jump ahead. Anywhere ELSE in a sentence they are fine.
-${gradeContext[gradeLevelKey] || gradeContext['K']}
+${rungSection || gradeContext[gradeLevelKey] || gradeContext['K']}
 ${challengeTypeSection}
 REQUIRED INFORMATION:
 
@@ -449,7 +475,7 @@ REQUIRED INFORMATION:
 3. **Passage**: An object with:
    - sentences: Array of sentence objects, EACH with:
      - id: Unique sentence ID (s1, s2, etc.)
-     - words: Array of ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} word objects, EACH with:
+     - words: Array of ${win.min}-${win.max} word objects, EACH with:
        - id: Unique word ID (s1_w1, s1_w2, etc.)
        - text: The word as displayed AND as it is read aloud. Attach trailing punctuation to the word (e.g., "cat." not "cat" + ".")
        - phonicsPattern: One of: cvc, cvce, sight, blend, digraph, r-controlled, diphthong, other
@@ -460,7 +486,7 @@ REQUIRED INFORMATION:
    - Sight words = words that can't be fully decoded with phonics rules (the, a, is, was, said, to, I, etc.)
    - Punctuation (periods, commas) should be attached to the preceding word's text field
    - Word IDs must be unique across the entire passage
-   - Every sentence is ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} words. One sentence = one thing the child reads aloud.
+   - Every sentence is ${win.min}-${win.max} words. One sentence = one thing the child reads aloud.
 
 4. **Phonics Patterns in Passage**: Array of pattern types used (e.g., ["cvc", "sight", "blend"])
 
@@ -479,7 +505,7 @@ REQUIRED INFORMATION:
      - text: The option text
      - emoji: ONE emoji that pictures this option, so a K-1 reader can answer by picture (see the emoji rules in the schema). Every option gets a distinct, fair picture — never reuse an emoji and never give only the correct option a "real" picture.
    - correctOptionId: The letter ID of the correct option (e.g., "B")
-   - Options are SPOKEN — the tutor reads them out and the child says which one. Keep each to 3-7 words (an option over ${MAX_SENTENCE_WORDS} is thrown away), and give every option at least one key word that appears in NO other option (never let one option's words all appear inside another's).
+   - Options are SPOKEN — the tutor reads them out and the child says which one. Keep each to 3-7 words (an option over ${BENCHED_WINDOW.max} words is thrown away), and give every option at least one key word that appears in NO other option (never let one option's words all appear inside another's).
    - EVERY OPTION IS SAYABLE BY A FIVE-YEAR-OLD, because saying it IS the answer. Use the plain concrete words a child uses: "The pets play at home", never "Various cute pets enjoying their day at home". No "various", "enjoying", "several", "a variety of", no -ing noun phrases. If you would not hear it from a six-year-old, rewrite it.
    - The ${questionCount} questions must ask about DIFFERENT parts of the story — never the same fact worded two ways.
    - Mix up the position of the correct answer across questions and across generations
@@ -541,7 +567,7 @@ EXAMPLE OUTPUT FOR KINDERGARTEN:
   ]
 }
 
-Now generate a decodable reading passage about "${topic}" at grade level ${gradeLevelKey}. Ensure every word has a phonicsPattern tag, IDs are unique, every sentence is ${MIN_SENTENCE_WORDS}-${MAX_SENTENCE_WORDS} words, no sentence anywhere begins with "Yes" or "My turn", and the ${questionCount} comprehension questions genuinely demand the required comprehension skill.`;
+Now generate a decodable reading passage about "${topic}" at grade level ${gradeLevelKey}. Ensure every word has a phonicsPattern tag, IDs are unique, every sentence is ${win.min}-${win.max} words, no sentence anywhere begins with "Yes" or "My turn", and the ${questionCount} comprehension questions genuinely demand the required comprehension skill.`;
 
   // Single call over a complex-but-essential schema (per-word tagging IS the
   // interaction surface, so it can't be flattened). Guard against flash-lite
@@ -573,7 +599,8 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
         config: {
           responseMimeType: "application/json",
           responseSchema: activeSchema,
-          maxOutputTokens: 8192,
+          // Per-word objects: a grade 5 hard story (10 sentences of up to 18 words) needs the larger budget.
+          maxOutputTokens: Number(gradeLevelKey) >= 3 ? 16384 : 8192,
           systemInstruction: `You are an expert K-2 reading specialist who creates decodable reading passages for a LIVE SPOKEN tutor: the child reads each sentence out loud and the tutor judges it word by word, then asks your comprehension questions aloud. You understand controlled vocabulary, phonics patterns, and developmental reading progression. You write engaging, age-appropriate passages using only words that match the student's current decoding abilities plus appropriate sight words, in sentences short enough to read in one breath. You carefully tag every word with its correct phonics pattern. You craft comprehension questions that assess genuine understanding of the passage content.`,
         }
       });
@@ -581,7 +608,7 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
       if (!text) throw new Error("No data returned from Gemini API");
       const parsed = JSON.parse(text) as DecodableReaderData;
       const issues = [
-        ...contentIssues(parsed, wantsSpokenAnswer),
+        ...contentIssues(parsed, wantsSpokenAnswer, win),
         ...(kDecode ? kDecodeIssues(parsed, intentNames) : []),
       ];
       result = parsed;
@@ -635,6 +662,8 @@ Now generate a decodable reading passage about "${topic}" at grade level ${grade
     // Named readingMode (not `mode`) to avoid the eval-test challenge-type field
     // collision — `mode` is auto-detected as the challenge type for literacy gens.
     readingMode: isReadAlong ? 'read_along' : 'decode',
+    // The tier's window, so the script judges the same sentences the gate admitted. Absent = benched 3-8.
+    ...(rung ? { sentenceWindow: { ...rung.window }, supportTier: tier as 'easy' | 'medium' | 'hard' } : {}),
     // The kept questions are authoritative over anything merged in, for the same
     // reason: a stale config question would arrive with no gate run over it.
     comprehensionQuestions: keptQuestions,

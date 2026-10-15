@@ -41,6 +41,8 @@ registerContextGenerator('di-word-reading', async (ctx) => ({
     objectiveText: ctx.objective?.text,
     targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
     difficulty: ctx.supportTier ?? (ctx.raw.difficulty as string | undefined),
+    grade: ctx.grade,
+    remediationFocus: ctx.remediationFocus ?? (ctx.raw.remediationFocus as string | undefined),
   }),
 }));
 
@@ -83,6 +85,8 @@ registerContextGenerator('di-sentence-reading', async (ctx) => ({
     objectiveText: ctx.objective?.text,
     targetEvalMode: ctx.targetEvalMode ?? (ctx.raw.targetEvalMode as string | undefined),
     difficulty: ctx.supportTier ?? (ctx.raw.difficulty as string | undefined),
+    grade: ctx.grade,
+    remediationFocus: ctx.remediationFocus ?? (ctx.raw.remediationFocus as string | undefined),
   }),
 }));
 

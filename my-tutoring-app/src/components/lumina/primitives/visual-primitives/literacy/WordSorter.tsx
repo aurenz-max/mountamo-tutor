@@ -114,6 +114,8 @@ export interface DistractorMatch {
 
 export interface WordSorterChallenge {
   id: string;
+  /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+  wordSpace?: import('../../../service/wordSpace/pick').WordSpaceStamp;
   type: WordSorterMode;
   instruction: string;
   bucketLabels?: string[];

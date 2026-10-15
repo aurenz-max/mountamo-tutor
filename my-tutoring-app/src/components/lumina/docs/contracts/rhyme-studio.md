@@ -60,7 +60,7 @@ and [4] not attempted (as for the L1 contracts, same day).
 - **Probe:** `npm test -- RhymeStudio.di-script`.
 
 ### R7 — Support tier invariants · OBSERVED
-- **Property:** the tier never changes words, families or the correct choice. easy: rime highlight on the target card and the prose image caption; medium: neither; hard: the tutor also may not read the choices (`namesChoices` false, readers only). At K the picture and the read-aloud are forced on.
+- **Property:** on the model path the tier never changes words, families or the correct choice (on the word-space path, R10, it picks the words; families stay the target's own ending and the key stays computed). easy: rime highlight on the target card and the prose image caption; medium: neither; hard: the tutor also may not read the choices (`namesChoices` false, readers only). At K the picture and the read-aloud are forced on.
 - **Demanded by:** support-tier campaign; K PRE band.
 - **Evidence:** `gemini-rhyme-studio.ts:225-305`; `RhymeStudio.tsx:302-304`; `rhymeStudioWorkspace.ts:51-56`.
 - **Probe:** eval-test `evalMode=identification&difficulty=easy|hard&grade=1` → scaffold fields stamped, words unchanged.
@@ -81,6 +81,10 @@ and [4] not attempted (as for the L1 contracts, same day).
 - **Property:** Its own surface (`RhymePairSurface.tsx`, rules in `rhymePairBuild.ts`), mounted for `task: 'pair_build'`. Eight code-owned emoji pictures, no print; two that rhyme pass, checked in code from the pictures' known rimes; every board holds a same-first-sound decoy (`same_start`). No model call. The existing modes are unchanged.
 - **Probe:** `RhymePair.workspace.test.tsx`; headless drive `qa/open-build/rhyme-studio-2026-10-08/drive/`.
 
+### R10 — Word space: with a support tier, code picks every item · OBSERVED 2026-10-13
+- **Property:** with a support tier and no remediation focus, recognition, identification, production and collection draw from `service/wordSpace/rhymeSpaces.ts`: pictured one-syllable familiar words. A rhyme is a shared sound rime AND the same spelled ending (so the R5 gate and the rime highlight agree: bear/pear yes, bow/cow and bear/hair never). The wrong word's nearness is the difficulty: same first sound (cat/cap) > same last sound (cat/pot) > same vowel > unrelated; recognition draws half rhymes, half not (`tierPickSplit`). Production/collection targets rank by how many familiar words share the rime; R3 is unchanged (no list reaches the judge). K identification shows 2 pictures, readers 3; every card's picture is distinct and comes from the library (no ⭐ placeholder). `holdsRhymeIntegrity` passes every item unchanged. Each challenge carries a `wordSpace` stamp. pair_build unchanged.
+- **Probe:** `npm test -- src/components/lumina/service/wordSpace/rhymeSpaces.test.ts`; `scripts/word-space-lab/probe.sh rhyme-studio after ...`.
+
 ## Conflicts
 
 ### C1 — R7 easy tier vs R2 — OPEN (existing, not caused by levers)
@@ -97,6 +101,7 @@ the item's own words is forbidden by R2. Resolution belongs to a support-tier pa
 - **tutoring:** stale DI block. `aiDirectives` order bracketed `[RS_ITEM]` turns and "Yes," / "My turn:" openers for the retired runner; bound sessions never receive them (R8). Removed 2026-09-28 (handoff 22 L2 step 1).
 
 ## Changelog
+- 2026-10-13 — **R10 word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/rhyme-studio/before.txt`): cat/hat, pig/dog, sun at every tier in every mode; identification wrong cards pictured as ⭐. After: recognition easy fox/box, cap/leg → hard dig/dog (same first sound), ship/soap (same last sound); identification K hard cat → hat vs kiss; G1 hard hook → book vs hand, truck; production easy bee, cat → hard hen, sock, mug. R7 narrowed to the model path.
 
 - 2026-10-08: `pair_build` open build added as a fork (OB-3L). New challenge type; no existing requirement edited.
 

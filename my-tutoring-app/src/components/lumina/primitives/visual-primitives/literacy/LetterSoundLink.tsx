@@ -81,6 +81,7 @@ import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { letterSoundLinkPipPose } from '../../../pip/letterSoundLinkPipPose';
 import { phaseResultsFromSummary } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
+import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -108,6 +109,8 @@ export interface LetterSoundLinkChallenge {
   protocolHint?: string | null;
   showSharedSoundHint?: boolean;
   auditionBeforeCommit?: boolean;
+  /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+  wordSpace?: WordSpaceStamp;
 }
 
 export interface LetterSoundLinkData {

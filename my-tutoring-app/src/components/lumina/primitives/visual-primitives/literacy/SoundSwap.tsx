@@ -49,6 +49,7 @@ import { EASIER_LEVER, MARK_LEVER, MODEL_LEVER, leversOnScreen, practiceItemFor,
 import { speakablePhoneme } from './phonemeVoice';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { soundSwapPipPose } from '../../../pip/soundSwapPipPose';
+import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -90,6 +91,8 @@ export interface SoundSwapChallenge {
   /** @deprecated No surface since the verbal port — there are no answer buttons. */
   optionCount?: number;
   remediationMove?: 'isolate_added_sound' | 'isolate_deleted_sound' | 'contrast_replacement';
+  /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+  wordSpace?: WordSpaceStamp;
 }
 
 export interface SoundSwapData {

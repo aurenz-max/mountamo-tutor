@@ -14,6 +14,8 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
+import { mulberry32, tierPick, tierPickSplit, type WordSpaceStamp } from '../wordSpace/pick';
+import { rhymeSpace, type RhymeSpaceMode } from '../wordSpace/rhymeSpaces';
 
 type RhymeMode = 'recognition' | 'identification' | 'production' | 'collection';
 type RhymeRemediationMove = 'contrast_rime' | 'diagnostic_option' | 'constrained_production';
@@ -453,6 +455,46 @@ export const generateRhymeStudio = async (
   // key must not be spoken to a child — but a thinned activity is the student
   // paying for the model's miss, so ask for headroom instead.
   const requestCount = challengeCount + 2;
+
+  // ── Word space (2026-10-13, service/wordSpace): with a support tier and no remediation focus, code picks
+  //    every pair, option set and production target from the word library at the tier's difficulty (how near
+  //    the wrong word is: first sound > last sound > vowel > unrelated; how many familiar rhymes a target
+  //    has). The answer comes from the phonemes. No model call. If any mode cannot fill its slots, the whole
+  //    session takes the model path below.
+  if (supportTier && !ctx.remediationFocus) {
+    const modes = ((resolution?.allowedTypes ?? ['recognition', 'identification', 'production']) as RhymeSpaceMode[]);
+    const per = Math.max(1, Math.floor(challengeCount / modes.length));
+    const rand = mulberry32(Math.floor(Math.random() * 2 ** 31));
+    const used = new Set<string>();
+    const heard = new Set<string>();
+    const challenges: Array<Record<string, unknown>> = [];
+    const notes: string[] = [];
+    let short = false;
+    for (const mode of modes) {
+      // Recognition holds both answers: half its pairs rhyme, half do not.
+      const picks = mode === 'recognition'
+        ? tierPickSplit(rhymeSpace(mode, gradeLevelKey), (it) => it.key ?? '', supportTier, per, rand, used, heard)
+        : tierPick(rhymeSpace(mode, gradeLevelKey), supportTier, per, rand, used, heard);
+      notes.push(`${mode}: ${picks.length === per ? picks.map((p) => `${p.words.join('/')} ${p.structure} β${p.beta}`).join(', ') : `only ${picks.length} of ${per}`}`);
+      if (picks.length < per) { short = true; break; }
+      for (const p of picks) {
+        challenges.push({
+          id: `c${challenges.length + 1}`, ...p.payload,
+          wordSpace: { space: `rhyme-${mode}`, structure: p.structure, beta: p.beta } satisfies WordSpaceStamp,
+        });
+      }
+    }
+    const kept = short ? [] : challenges.filter(holdsRhymeIntegrity);
+    console.log(`[RhymeStudio] Word space (${supportTier}, grade ${gradeLevelKey}): ${notes.join('; ')}${short || kept.length < challenges.length ? ', model path' : ''}`);
+    if (!short && kept.length === challenges.length) {
+      const single = resolution?.modes.length === 1;
+      if (single) applyRhymeSupportTier(challenges, supportTier, gradeLevelKey === 'K');
+      return {
+        title: 'Rhyme Time!', gradeLevel: gradeLevelKey, ...(single ? { supportTier } : {}),
+        challenges: challenges as unknown as RhymeStudioData['challenges'],
+      };
+    }
+  }
 
   const gradeGuidelines: Record<string, string> = {
     K: `

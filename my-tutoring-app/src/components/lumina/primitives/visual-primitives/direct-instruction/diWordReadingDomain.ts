@@ -61,6 +61,8 @@ export interface DiWordReadingChallenge {
   asrAliases?: string[];
   /** Where the levers start (`/add-support-tiers`). Absent = easy, as in the other DI packs. */
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** Calibration stamp on a word-library item (`service/wordSpace/diWordReadingSpaces.ts`); never rendered, never sent. */
+  wordSpace?: { space: string; structure: string; beta: number };
 }
 
 /** Stretched sound per grapheme for the sound-out model. Continuants and vowels

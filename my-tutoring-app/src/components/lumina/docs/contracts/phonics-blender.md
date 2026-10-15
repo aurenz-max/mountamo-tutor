@@ -107,6 +107,11 @@ C3 there) are the same two conflicts, resolved the same two ways (band gate + sc
 - **Property:** The shared letter build (`LetterBuildSurface.tsx`, blend kinds in `letterBuild.ts`), mounted for `task: 'letter_build'`. A start tile and an ending tile; code checks the tile order and the blend, the shared word judge whether the word is real. Separately, PHB-1 (2026-10-08): `cvce_blend` now serves blends when the objective names them (R9 mode purity holds: one pattern per session). The existing modes are unchanged.
 - **Probe:** `LetterBuild.workspace.test.tsx`; headless drive `qa/open-build/phonics-blender-2026-10-08/drive/`.
 
+### R11 — word space: with a support tier, code picks the words · OBSERVED 2026-10-13
+- **Property:** with `ctx.supportTier` set and no `ctx.remediationFocus`, `cvc`, `cvce_blend` (cvce or blend), `digraph` and `advanced` (r-controlled or diphthong) take their words from `service/wordSpace/phonicsSpaces.ts`: every word inside the objective's letter scope (`scope.ts`: a letter group, one short vowel, named blends), its tiles built from the library's letter-to-sound alignment, ranked by a structural beta, and picked by tier (`tierPick`; a letter group draws two thirds from its new letters, `tierPickFocus`). No model call. Each word carries a `wordSpace` stamp {space, structure, beta}, not passed to the tutor (`blendItems` maps fields). Every word passes `isBlendWordUsable` (R6 concatenation, R7 silent-e tile, the pattern's tile); fewer than 4 words → the model path. The emoji is set only when the library has a reviewed picture (R8 narrowed: the emoji is the post-credit reward). `build_blend` is unchanged (code-built, shared judge).
+- **Narrows R9's "the draw is identical across tiers":** that holds on the model path only. On the space path the tier changes the words; the pattern still never changes (mode purity holds).
+- **Probe:** `npm test -- src/components/lumina/service/wordSpace/phonicsSpaces.test.ts`; `scripts/word-space-lab/probe.sh phonics-blender after ...` reads "code space" for every mode but build_blend.
+
 ## Conflicts
 
 ### C1 — PRE letter-primary/declutter (R3) vs Grade-1+ full chrome — RESOLVED 2026-07-15 via fork rung 2 (band gate)
@@ -194,6 +199,7 @@ scope per the handoff; only the sorting-station rider was authorized). Queue the
   descriptions are deliberately excluded from catalogContext for load — a resolver-only edit).
 
 ## Changelog
+- 2026-10-13 — **R11 word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/phonics-blender/before.txt`, 2 runs per tier): every mode gave the same 4-5 words at every tier (cat dog sun bus pig; cake bike bone cute; ship chop thin fish; boy coin cow cloud house), cute pictured as a rabbit. After: every tier changes the words (cvc easy win/men/nut → hard tug/pig/bed; silent e lake/hole → snake/flute/bride; digraph chat/hush → chimp/which/shrimp). R9 narrowed to the model path; R8 narrowed (emoji only from reviewed pictures). `pickBundledPattern` now also reads r-controlled and diphthong objectives (an r-controlled objective drew diphthongs before).
 
 - 2026-10-08: `build_blend` open build added as a fork (OB-3L). New challenge type; no existing requirement edited.
 

@@ -65,7 +65,7 @@ emergent (manifest routing) or a platform consumer (workspace, harness, misconce
 - **Probe:** `npm test -- LetterSoundLink.teaching` ("records the confused letter pair").
 
 ### R7 — Support tier invariants · OBSERVED
-- **Property:** absent tier → nothing stamped, workspace assumes `medium`. The tier never changes which letter, sound, keyword or correct option is drawn. An objective that asks for independent production forces `hard`. On the workspace the tier reaches the tutor only as `facts.supportTier`, plus `facts.coldAsk` on hard for the two spoken modes (never on `hear_see`). The generator still stamps the legacy per-challenge scaffold (`showKeywordAnchor`, `strategyHint`, `protocolHint`, `showSharedSoundHint`, `auditionBeforeCommit`) and `maxAttempts` (3/3/2); **no render path reads the five scaffold fields** — they are typed on `LetterSoundLinkChallenge` as INERT and `itemFromChallenge` does not carry them.
+- **Property:** absent tier → nothing stamped, workspace assumes `medium`. On the model path the tier never changes which letter, sound, keyword or correct option is drawn; on the letter-space path (R13) it picks which letters are asked and how near the wrong letter is, never a keyword or a sound. An objective that asks for independent production forces `hard`. On the workspace the tier reaches the tutor only as `facts.supportTier`, plus `facts.coldAsk` on hard for the two spoken modes (never on `hear_see`). The generator still stamps the legacy per-challenge scaffold (`showKeywordAnchor`, `strategyHint`, `protocolHint`, `showSharedSoundHint`, `auditionBeforeCommit`) and `maxAttempts` (3/3/2); **no render path reads the five scaffold fields** — they are typed on `LetterSoundLinkChallenge` as INERT and `itemFromChallenge` does not carry them.
 - **Demanded by:** support-tier campaign; adaptive difficulty; workspace.
 - **Evidence:** `gemini-letter-sound-link.ts:29-133,510-517,844-858`; `LetterSoundLink.tsx:101-110`; `letterSoundLinkDomain.ts:563-570`.
 - **Probe:** eval-test `evalMode=hear_see&difficulty=easy|hard|none` → same letter scope, scaffold fields stamped/absent; `npm test -- LetterSoundLink.teaching` (coldAsk only on spoken hard).
@@ -100,6 +100,10 @@ emergent (manifest routing) or a platform consumer (workspace, harness, misconce
 - **Evidence:** `qa/eval-reports/letter-sound-link-levers-2026-09-28.md`.
 - **Probe:** `npm test -- letterSoundLinkLevers LetterSoundLink.levers.workspace`.
 
+### R13 — Letter space: with a support tier, code picks the letters · OBSERVED 2026-10-13
+- **Property:** with a support tier and no remediation focus, every mode draws from `service/wordSpace/letterSpaces.ts`: target letters inside the cumulative group (R1, each mode's own askability rule), two thirds from the group's new letters (groups 2-4), ranked by how much the letter's name gives its sound away (b d t p first; f l m n s; vowels, h w y c g last) and, for hear_see / keyword_match, by how near the wrong letter is (far < look-alike b/d < sound-alike e/i < both m/n). Options still pass `validateOptions` (R4, R5); the stamp is recomputed from the wrong option actually shipped. Keywords stay the fixed per-letter anchors (`LETTER_KEYWORDS`). A group too small to tier 5 draws 4. The private group table now reads `letterGroups.ts`.
+- **Probe:** `npm test -- src/components/lumina/service/wordSpace/letterSpaces.test.ts`; `scripts/word-space-lab/probe.sh letter-sound-link after ...`.
+
 ## Conflicts
 
 None open.
@@ -112,6 +116,7 @@ None open.
 - **tutoring:** stale DI block (`[LSL_TAP]`, scripted correction lines); bound workspace sessions send `tutoring: null` (R8). Removal is an `/add-live-tutor-tools` cleanup.
 
 ## Changelog
+- 2026-10-13 — **R13 letter space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/letter-sound-link/before.txt`): the group's letters in the same order with the same wrong letters at every tier. After: see_hear group 1 easy p t s n → hard a i n s; hear_see group 2 easy m/t, d/k → hard m/n, e/a; keyword_match group 3 easy bat vs run → hard up vs octopus. R7 narrowed to the model path. `LETTER_GROUPS` now comes from `letterGroups.ts`.
 
 - 2026-10-09 — J12 per-item gaps: `pair_model` (help) on hear_see answers `other_letter` / `other_short_vowel` on items where `keyword_under_both` is refused (a later item uses a card letter, or a card is `i`) and `far_letter_pair` has no free pair (group 1). R3/R4 hold: no session letter or picture, kinds symmetric. The tutor says the two model sounds only (not the picture words, which the two-pictures guidance line forbids naming on keyword-match). Journey row rebuilds `~simpler` items with `fartherPair`. `npm test -- letterSoundLinkLevers LetterSoundLink.levers.workspace` 46/46.
 

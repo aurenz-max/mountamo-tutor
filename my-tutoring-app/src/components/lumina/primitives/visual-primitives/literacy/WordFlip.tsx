@@ -68,6 +68,8 @@ export type WordFlipChallengeType =
 export interface WordFlipChallenge {
   id: string;
   type: WordFlipChallengeType;
+  /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+  wordSpace?: import('../../../service/wordSpace/pick').WordSpaceStamp;
   /** The source word shown in the frame — "dog" or "jump". */
   sourceWord: string;
   /**

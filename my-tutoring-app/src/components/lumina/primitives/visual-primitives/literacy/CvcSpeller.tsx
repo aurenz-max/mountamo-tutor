@@ -59,6 +59,7 @@ import { KEYWORD_LEVER, MIDDLE_MODEL_LEVER, SMALL_WORD_LEVER, TOKENS_LEVER, VOWE
   middleModelFor, modelMiddleSaid, sessionStimuli, smallerWord, vowelStrip } from './cvcSpellerLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { cvcSpellerPipPose } from '../../../pip/cvcSpellerPipPose';
+import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -79,6 +80,8 @@ export interface CvcSpellerChallenge {
    *  Withdrawn at the hard tier so the student works purely from the heard
    *  word. Undefined (no tier) = treated as shown. */
   showPictureCue?: boolean;
+  /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+  wordSpace?: WordSpaceStamp;
   /** A simplify lever's practice word (`cvcSpellerLevers.ts`): its bank is its own letters plus one, never topped up. */
   practiceBank?: boolean;
 }

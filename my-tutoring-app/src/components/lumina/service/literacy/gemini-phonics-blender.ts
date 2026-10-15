@@ -6,6 +6,9 @@ import { buildRemediationPrompt } from "../generation/remediationPrompt";
 import { clampGradeToK2 } from "../scopeContext";
 import { themedFocusLine } from './themeFocus';
 import { isCvcSpelling } from './letterGroups';
+import { mulberry32, tierPick, tierPickFocus, type WordSpaceStamp } from '../wordSpace/pick';
+import { blendFocus, blendScope, blendSpace, type BlendPattern } from '../wordSpace/phonicsSpaces';
+import { scopeFromObjective } from '../wordSpace/scope';
 import { PhonicsBlenderData } from "../../primitives/visual-primitives/literacy/PhonicsBlender";
 import {
   resolveEvalModeConstraint,
@@ -213,10 +216,36 @@ const phonicsBlenderSchema: Schema = {
 export function pickBundledPattern(allowed: readonly string[], text: string, rand = Math.random): string {
   const t = text.toLowerCase();
   const named = allowed.filter(p => (p === 'blend' && /\bblends?\b|\bclusters?\b|\b(bl|cl|fl|gl|pl|sl|br|cr|dr|fr|gr|pr|tr|st|sp|sn|sk|sm|sw|mp|nd|nt|lk|ft)\b/.test(t))
-    || (p === 'cvce' && /silent[- ]?e\b|magic[- ]?e\b|\bcvce\b|long vowel/.test(t)));
+    || (p === 'cvce' && /silent[- ]?e\b|magic[- ]?e\b|\bcvce\b|long vowel/.test(t))
+    || (p === 'r-controlled' && /r-controlled|bossy r|\br[- ]vowels?\b/.test(t))
+    || (p === 'diphthong' && /diphthong|\b(oi|oy|ou)\b/.test(t)));
   const from = named.length === 1 ? named : allowed;
   return from[Math.floor(rand() * from.length)] ?? allowed[0];
 }
+
+/**
+ * A word the component can show and the tutor can judge: its tiles spell it in order, and its tiles fit the
+ * pattern (a cvc word is spelled C-V-C with 3 tiles; a silent-e word ends in its own e tile; a digraph word
+ * has a two-letter tile). Exported for the word-space test, which runs every space word through it.
+ */
+export function isBlendWordUsable(w: PhonicsBlenderData['words'][number], pattern: PhonicsBlenderData['patternType']): boolean {
+  const tiles = w.phonemes ?? [];
+  if (tiles.length < 2 || tiles.map((p) => p.letters).join('').toLowerCase() !== (w.targetWord ?? '').toLowerCase()) return false;
+  if (tiles.some((p) => p.letters.includes('_') || !p.letters)) return false;
+  switch (pattern) {
+    case 'cvc': return isCvcSpelling(w.targetWord) && tiles.length === 3;
+    case 'cvce': return tiles[tiles.length - 1].letters === 'e' && tiles[tiles.length - 1].sound === '//';
+    case 'digraph': return tiles.some((p) => ['sh', 'ch', 'th', 'wh', 'ph'].includes(p.letters));
+    case 'r-controlled': return tiles.some((p) => /^(ar|or|er|ir|ur)$/.test(p.letters));
+    case 'diphthong': return tiles.some((p) => /^(oi|oy|ou|ow)$/.test(p.letters));
+    case 'blend': return tiles.length >= 3;
+  }
+}
+
+const SPACE_TITLES: Record<BlendPattern, string> = {
+  cvc: 'Blend the Sounds!', cvce: 'Silent E Words', blend: 'Blend Words', digraph: 'Two Letters, One Sound',
+  'r-controlled': 'Bossy R Words', diphthong: 'Vowel Sound Words',
+};
 
 type PhonicsBlenderConfig = Partial<PhonicsBlenderData & {
   /** Target eval mode from the IRT calibration system. */
@@ -253,6 +282,48 @@ export const generatePhonicsBlender = async (
   const evalConstraint = bundled && sessionPattern ? { ...bundled, allowedTypes: [sessionPattern],
     promptDocs: `- ${CHALLENGE_TYPE_DOCS[sessionPattern]?.promptDoc ?? ''}` } : bundled;
   logEvalModeResolution('PhonicsBlender', config?.targetEvalMode, evalConstraint);
+
+  // Ladder rung from the canonical curriculum grade (ctx.grade) first; the prose
+  // gradeLevel band never matched ['K','1','2'] and pinned every objective to 'K',
+  // so grades 1-2 were served kindergarten cvc content.
+  const gradeLevelKey = clampGradeToK2(
+    ctx.grade,
+    (['K', '1', '2'].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : 'K') as 'K' | '1' | '2',
+  );
+  const defaultPatternType = gradeLevelKey === 'K' ? 'cvc' : gradeLevelKey === '1' ? 'blend' : 'r-controlled';
+
+  // ── Word space (2026-10-13, service/wordSpace): with a support tier and no remediation focus, code picks the
+  //    words at the tier's difficulty from the word library, inside the objective's letter scope, and builds
+  //    each word's tiles from its letter-to-sound alignment. No model call. When the space cannot fill a
+  //    session (fewer than 4 words), the model path below runs instead.
+  if (ctx.supportTier && !ctx.remediationFocus) {
+    const pattern = (evalConstraint?.allowedTypes[0] ?? config?.patternType ?? defaultPatternType) as BlendPattern;
+    const parsed = scopeFromObjective([ctx.objective.text, intent, topic]);
+    const space = blendSpace(pattern, gradeLevelKey, parsed);
+    const rand = mulberry32(Math.floor(Math.random() * 2 ** 31));
+    const scope = blendScope(pattern, parsed);
+    const draw = (n: number) => (pattern === 'cvc' && scope.focusRule === 'most'
+      ? tierPickFocus(space, blendFocus(scope), ctx.supportTier!, n, rand)
+      : tierPick(space, ctx.supportTier!, n, rand));
+    const five = draw(5);
+    const picks = five.length === 5 ? five : draw(4);
+    const words: PhonicsBlenderData['words'] = picks.map((p, i) => ({
+      id: `w${i + 1}`,
+      ...p.payload,
+      phonemes: p.payload.phonemes.map((t, j) => ({ id: `w${i + 1}_p${j + 1}`, ...t })),
+      wordSpace: { space: `phonics-${pattern}`, structure: p.structure, beta: p.beta } satisfies WordSpaceStamp,
+    })).filter((w) => isBlendWordUsable(w, pattern));
+    console.log(`[PhonicsBlender] Word space ${pattern} (${ctx.supportTier}, grade ${gradeLevelKey}, ${scope.label}, ${space.length} words): ${words.length >= 4
+      ? picks.map((p) => `${p.words[0]} ${p.structure} β${p.beta}`).join(', ')
+      : `only ${words.length}, model path`}`);
+    if (words.length >= 4) {
+      const scaffold = resolveSupportScaffold(ctx.supportTier);
+      return {
+        title: SPACE_TITLES[pattern], gradeLevel: gradeLevelKey, patternType: pattern, words,
+        supportTier: ctx.supportTier, ...scaffold,
+      };
+    }
+  }
 
   const activeSchema = evalConstraint
     ? constrainChallengeTypeEnum(phonicsBlenderSchema, evalConstraint.allowedTypes, CHALLENGE_TYPE_DOCS, {
@@ -307,15 +378,6 @@ GRADE 2 GUIDELINES:
 - Use grade 2 vocabulary that students are learning to decode
 `
   };
-
-  // Ladder rung from the canonical curriculum grade (ctx.grade) first; the prose
-  // gradeLevel band never matched ['K','1','2'] and pinned every objective to 'K',
-  // so grades 1-2 were served kindergarten cvc content.
-  const gradeLevelKey = clampGradeToK2(
-    ctx.grade,
-    (['K', '1', '2'].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : 'K') as 'K' | '1' | '2',
-  );
-  const defaultPatternType = gradeLevelKey === 'K' ? 'cvc' : gradeLevelKey === '1' ? 'blend' : 'r-controlled';
 
   // ── Build prompt ────────────────────────────────────────────────────
   const phonicsRemediationSection = ctx.remediationFocus

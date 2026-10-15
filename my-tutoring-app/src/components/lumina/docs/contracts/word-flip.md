@@ -47,11 +47,16 @@ Static derivation for the word-flip slice of handoff 22 L2.
 - **Evidence:** `qa/open-build/word-flip-2026-10-08/REPORT.md`.
 - **Probe:** `npm test -- WordFlip.buildInflect.workspace`.
 
+### R-WS — Word space: a single-rule session with a support tier takes its bases from code · OBSERVED 2026-10-13
+- **Property:** with a support tier, no remediation focus and one active rule, the session's 5 bases come from `service/wordSpace/wordFlipSpaces.ts`: plural_s / plural_es / plural_y from pictured countable library nouns (object categories only; no plural-form words such as goggles; no zero plurals such as moose) plus the rule's seed table; irregulars, past_ed and past_irregular from their seed tables. The answer is `deriveWordFlipAnswer`, unchanged. Beta: syllables, a final cluster, -es after s/x, an irregular's kind (vowel change < other form; run → ran < go → went), -ed as its own beat (painted). Each challenge carries a `wordSpace` stamp. Mixed sessions and build_inflect are unchanged.
+- **Probe:** `npm test -- src/components/lumina/service/wordSpace/wordFlipSpaces.test.ts`; `scripts/word-space-lab/probe.sh word-flip after ...`.
+
 ## Conflicts
 
 None open.
 
 ## Changelog
+- 2026-10-13 — **R-WS word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/word-flip/before.txt`): the tier changed nothing (cloud, cat, dog, star at easy and hard alike; box, fox, peach, bus, sandwich in every -es session). After: plural_s easy tag, car, whale → hard camera, ambulance, parrot; plural_y easy cherry, fly → hard trophy, factory, battery; past_irregular easy run, sit, give → hard go, do, say.
 
 - 2026-09-28 — derived (initial) with R4 (levers). `MODEL_PAIRS` exported for the levers. --check COMPATIBLE: `WordFlip.workspace`, `WordFlip.reader-fit` pass.
 - 2026-10-08 — R5 added: `build_inflect` open build is a fork; R1-R4 unchanged (`WordFlip.workspace` and levers tests pass).

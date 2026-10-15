@@ -17,6 +17,9 @@ import {
   ENDING_CARDS, basePart, inflectAsksFor, inflectItemsFrom,
 } from '../../primitives/visual-primitives/literacy/inflectBuild';
 import type { BuildPart } from '../../primitives/visual-primitives/literacy/affixBuild';
+import { clampGradeToK2 } from '../scopeContext';
+import { mulberry32, tierPick, type WordSpaceStamp } from '../wordSpace/pick';
+import { flipSpace } from '../wordSpace/wordFlipSpaces';
 
 // ---------------------------------------------------------------------------
 // WORD FLIP generator (K-2: spoken morphology transformations).
@@ -163,7 +166,7 @@ const PAST_IRREGULAR_SEEDS: readonly SeedNoun[] = [
   { word: 'say', emoji: '💬' }, { word: 'sleep', emoji: '😴' },
 ];
 
-const SEEDS_BY_TYPE: Record<WordFlipChallengeType, readonly SeedNoun[]> = {
+export const SEEDS_BY_TYPE: Record<WordFlipChallengeType, readonly SeedNoun[]> = {
   plural_s: PLURAL_S_SEEDS,
   plural_es: PLURAL_ES_SEEDS,
   plural_y: PLURAL_Y_SEEDS,
@@ -455,6 +458,30 @@ export const generateWordFlip = async (ctx: GenerationContext): Promise<WordFlip
   console.log(
     `[WordFlip] modes: ${resolution ? `${resolution.modes.map(mode => mode.evalMode).join('+')} (${resolution.source})` : 'mixed'} -> types [${activeTypes.join(', ')}]`,
   );
+
+  // ── Word space (2026-10-13, service/wordSpace/wordFlipSpaces.ts): a single-rule session with a support tier
+  //    takes its base words from code at the tier's difficulty (library nouns whose plural is itself a familiar
+  //    word, or the rule's code-owned seed table). The answer is `deriveWordFlipAnswer`, as on the model path.
+  //    No model call; too few bases → the model path.
+  if (ctx.supportTier && !ctx.remediationFocus && activeTypes.length === 1) {
+    const type = activeTypes[0];
+    const grade = clampGradeToK2(ctx.grade, '1');
+    const picks = tierPick(flipSpace(type, grade, deriveWordFlipAnswer, SEEDS_BY_TYPE[type]), ctx.supportTier, sessionSize,
+      mulberry32(Math.floor(Math.random() * 2 ** 31)));
+    console.log(`[WordFlip] Word space ${type} (${ctx.supportTier}, grade ${grade}): ${picks.length === sessionSize
+      ? picks.map((p) => `${p.payload.word}>${p.payload.answer} ${p.structure} β${p.beta}`).join(', ') : `only ${picks.length}, model path`}`);
+    if (picks.length === sessionSize) {
+      const plural = type.startsWith('plural_') || type === 'irregulars';
+      const challenges: WordFlipChallenge[] = picks.map((p, index) => ({
+        id: `word-flip-${index + 1}`, type, sourceWord: p.payload.word, answer: p.payload.answer, emoji: p.payload.emoji,
+        count: plural ? [2, 3, 4, 5][(index + p.payload.word.length) % 4] : undefined,
+        wordSpace: { space: `flip-${type}`, structure: p.structure, beta: p.beta } satisfies WordSpaceStamp,
+      }));
+      return {
+        title: plural ? 'One and Many' : 'Yesterday Words', challengeType: type, challenges, gradeLevel: ctx.gradeContext,
+      };
+    }
+  }
 
   try {
     const prompt = buildPrompt(ctx.topic, ctx.intent, ctx.gradeContext, seedHint, modeSection);

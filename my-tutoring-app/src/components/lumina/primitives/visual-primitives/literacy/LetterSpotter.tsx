@@ -99,6 +99,7 @@ import { CASE_LEVER, FIRST_LETTER_LEVER, PARTNER_LEVER, SCAN_LEVER, SMALL_GRID_L
   letterSpotterLevers, partnerCapitals, practiceItem } from './letterSpotterLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { letterSpotterPipPose } from '../../../pip/letterSpotterPipPose';
+import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -106,6 +107,8 @@ import { letterSpotterPipPose } from '../../../pip/letterSpotterPipPose';
 
 export interface LetterSpotterChallenge {
   id: string;
+  /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+  wordSpace?: WordSpaceStamp;
   mode: LetterSpotterMode;
   targetLetter: string;
   targetCase: 'uppercase' | 'lowercase' | 'both';

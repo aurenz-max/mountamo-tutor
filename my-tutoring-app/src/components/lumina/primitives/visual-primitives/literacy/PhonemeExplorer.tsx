@@ -125,6 +125,8 @@ interface PhonemeChallenge {
   resultWord?: string;
   resultEmoji?: string;
   remediationMove?: 'contrast_phoneme' | 'blend_through' | 'segment_boundary' | 'isolate_operation';
+  /** Word-space calibration stamp (service/wordSpace); never rendered or sent to the tutor. */
+  wordSpace?: { space: string; structure: string; beta: number };
 
   // ── Within-mode support tier scaffolds (stamped by the generator from
   //    ctx.supportTier). Display/instruction only — they NEVER change the

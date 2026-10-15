@@ -80,6 +80,7 @@ import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseR
 import { stableShuffle } from '../../../utils/choiceOrder';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { rhymeStudioPipPose } from '../../../pip/rhymeStudioPipPose';
+import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -111,6 +112,8 @@ interface RhymeChallenge {
    *  bank-deletion note in rhymeStudioScript.ts. */
   acceptableAnswers?: string[];
   remediationMove?: 'contrast_rime' | 'diagnostic_option' | 'constrained_production';
+  /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+  wordSpace?: WordSpaceStamp;
 
   // ── Within-mode support-tier scaffolds (stamped by the generator from
   //    ctx.supportTier). Display / instruction / tutor-latitude ONLY — they

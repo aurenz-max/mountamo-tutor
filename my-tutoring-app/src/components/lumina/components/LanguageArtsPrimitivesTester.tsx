@@ -824,6 +824,9 @@ const AITutorPanel: React.FC<{
 // Main content component
 // ============================================================================
 
+/** Word-space primitives (service/wordSpace) and letter-workshop: the tester sends `difficulty` for these. */
+const DIFFICULTY_PRIMITIVES = new Set<string>(['letter-workshop', 'phoneme-explorer', 'phonics-blender', 'cvc-speller', 'sound-swap', 'rhyme-studio', 'syllable-clapper', 'letter-sound-link', 'word-workout', 'letter-spotter', 'picture-vocabulary', 'word-sorter', 'word-flip', 'spelling-pattern-explorer', 'decodable-reader']);
+
 const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTesterProps> = ({ onBack }) => {
   const [selectedPrimitive, setSelectedPrimitive] = useState<PrimitiveType>('phonics-blender');
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('K');
@@ -831,6 +834,8 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
   // The Creation tester's switch: the free no-model lever bench, or the paid Live tutor (this tester's old default).
   const [tutorMode, setTutorMode] = useState<'offline' | 'live'>('live');
   const [letterDifficulty, setLetterDifficulty] = useState('');
+  /** Primitives whose generator reads config.difficulty (letter-workshop forms; the word-space primitives). */
+  const takesDifficulty = DIFFICULTY_PRIMITIVES.has(selectedPrimitive);
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
@@ -870,7 +875,7 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
             gradeLevel: selectedGrade,
             config: {
               ...(selectedEvalMode ? { targetEvalMode: selectedEvalMode } : {}),
-              ...(selectedPrimitive === 'letter-workshop' && letterDifficulty ? { difficulty: letterDifficulty } : {}),
+              ...(takesDifficulty && letterDifficulty ? { difficulty: letterDifficulty } : {}),
             },
           },
         }),
@@ -1019,8 +1024,8 @@ const LanguageArtsPrimitivesTesterContent: React.FC<LanguageArtsPrimitivesTester
               />
             </div>
 
-            {selectedPrimitive === 'letter-workshop' && <label className="block text-xs text-slate-400 mb-3">
-              Support and form difficulty
+            {takesDifficulty && <label className="block text-xs text-slate-400 mb-3">
+              {selectedPrimitive === 'letter-workshop' ? 'Support and form difficulty' : 'Difficulty (word space)'}
               <select aria-label="Letter difficulty" value={letterDifficulty} onChange={event => setLetterDifficulty(event.target.value)} className="block w-full mt-2 bg-slate-800 border border-slate-700 rounded-lg p-2">
                 <option value="">Default</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option>
               </select>

@@ -38,11 +38,15 @@
 - **Property:** a sight item declares only `model_word`.
 
 ### R7 — Tier sets where the levers start · OBSERVED
-- **Property:** the generator stamps `supportTier` per challenge only when `config.difficulty` is a tier; absent = easy (model card on screen). A starting position is not a pull.
+- **Property:** the generator stamps `supportTier` per challenge only when `config.difficulty` is a tier; absent = easy (model card on screen). A starting position is not a pull. On the menu path the tier changes nothing else; on the word-space path (R9) it also picks the words.
 
 ### R8 — Every named miss is answered, per mode · OBSERVED
 - **Property:** cvc_reading never lists `similar_word`; sight_word never lists a position miss.
 - **Probe:** `diWordReadingLevers.test.ts`; `journeySweep.test.tsx` J9.
+
+### R9 — With a tier, the words come from the word library (2026-10-14) · OBSERVED
+- **Property:** with a support tier, grade K or 1 and no remediation focus, each mode's words are code-picked at the tier's third of predicted beta (`service/wordSpace/diWordReadingSpaces.ts`). CVC words are phonics-blender's CVC space inside the objective's letter scope (s a t i p n admits only those letter-sounds; a short-vowel lesson binds the vowel), one letter per sound. Sight words are Dolch words the grade's taught pairs cannot decode ("and" never; "see", "make" at K only). read_word and word_reading_review hold one sight word in four (at least one from 2 slots); review draws CVC words across vowels. No word repeats in a session, and every item keeps a `model_word` card (R3). Each challenge carries `wordSpace` {space, structure, beta}, never rendered or sent to the tutor. A mode whose space cannot fill its slots takes the menu path; when every mode fills, no model call is made.
+- **Probe:** `npm test -- service/wordSpace/diWordReadingSpaces`; `qa/word-space-lab/2026-10-13/di-word-reading/run-probe.sh`.
 
 ## Conflicts
 
@@ -51,3 +55,4 @@ None open.
 ## Changelog
 
 - 2026-10-03: derived (initial, static) with the DI lever slice. 8 requirements, 0 conflicts.
+- 2026-10-14: R9 added (word space, `/add-word-space`). Before: all 4 modes gave the same words at every tier (review: and the red pig in 6/6 runs), "s a t i p n" served mat/cat/hat, a CVC-and-sight objective served 4 sight words, "and" was labelled irregular. After: all 4 modes code-picked, tiers separate (short a easy man/map/ran -> hard mad/bag/tap/pan; G1 sight easy is/blue/two -> hard were/of/could). R7 narrowed to the menu path.

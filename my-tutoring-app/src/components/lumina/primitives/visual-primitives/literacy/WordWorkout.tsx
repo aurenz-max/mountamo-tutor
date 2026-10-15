@@ -91,6 +91,7 @@ import { CHANGED_LETTER_LEVER, CHUNK_LEVER, DOTS_LEVER, QUESTION_ICON_LEVER, TRA
   practiceFor, questionIcon, wordWorkoutLevers } from './wordWorkoutLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { wordWorkoutPipPose } from '../../../pip/wordWorkoutPipPose';
+import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -100,6 +101,8 @@ export type { WordWorkoutMode };
 
 export interface WordWorkoutChallenge {
   id: string;
+  /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+  wordSpace?: WordSpaceStamp;
   /** Per-challenge mode (for multi-mode sessions). Falls back to top-level mode. */
   mode?: WordWorkoutMode;
   // Real vs. Nonsense — the child SAYS the real one.

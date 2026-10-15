@@ -74,6 +74,7 @@ import { syllableClapperPipPose } from '../../../pip/syllableClapperPipPose';
 import { phaseResultsFromSummary, practiceScore } from '../../../hooks/usePhaseResults';
 import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
 import type { LetterBuildItem } from './letterBuild';
+import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -93,6 +94,8 @@ interface SyllableChallenge {
   removePart?: string;
   /** `delete_compound` only — the real word left behind. */
   residue?: string;
+  /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+  wordSpace?: WordSpaceStamp;
 
   // ── Within-mode SUPPORT-TIER scaffolds (stamped by the generator from
   //    ctx.supportTier). ASK levers now, not render levers: the click era's

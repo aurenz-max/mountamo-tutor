@@ -102,6 +102,7 @@ import {
 /** The benched judged-utterance window, re-exported so the component, the
  *  generator and the tests all read the SAME numbers the bench sitting set. */
 export { MAX_SENTENCE_WORDS, MIN_SENTENCE_WORDS };
+import { BENCHED_WINDOW, sentenceWindowOf, type SentenceWindow } from './decodableReaderLadder';
 
 /** The eval-mode identities. `read_along` is the Kindergarten shared-reading
  *  mode (the tutor reads, the child answers); the other four are comprehension
@@ -257,8 +258,9 @@ export const contentWordsOf = (sentences: DecodableSentenceLike[]): string[] =>
 
 /**
  * Build one READ item, or return null to DROP the sentence. Drop reasons:
- *  - outside the BENCHED 3-8 word window (a longer read is unbenched; a shorter
- *    one is a phrase, not a sentence);
+ *  - outside the session's window: the benched 3-8 words, or the tier's window
+ *    from decodableReaderLadder.ts when the generator stamped one (a shorter
+ *    read is a phrase, not a sentence);
  *  - a sentence inside it opens with "Yes" or "My turn" (sentinel);
  *  - nothing left after sanitising.
  * A dropped sentence ships nothing. It is never trimmed to fit — a trimmed
@@ -268,12 +270,14 @@ export const contentWordsOf = (sentences: DecodableSentenceLike[]): string[] =>
 export const readItemFromSentence = (
   sentence: DecodableSentenceLike,
   index: number,
+  // The tier's window (decodableReaderLadder.ts) when the payload stamps one; else the benched 3-8.
+  window: SentenceWindow = BENCHED_WINDOW,
 ): DecodableReaderItem | null => {
   const text = sentenceText(sentence);
   if (!text || !/[a-z]/i.test(text)) return null;
 
   const wordCount = wordsIn(text);
-  if (wordCount < MIN_SENTENCE_WORDS || wordCount > MAX_SENTENCE_WORDS) return null;
+  if (wordCount < window.min || wordCount > window.max) return null;
   if (opensWithSentinel(text)) return null;
 
   return {
@@ -500,13 +504,14 @@ export const buildItems = (
   sentences: DecodableSentenceLike[],
   questions: DecodableQuestionLike[],
   mode: DecodableReaderMode,
+  window: SentenceWindow = BENCHED_WINDOW,
 ): DecodableReaderItem[] => {
   const isReadAlong = mode === 'read_along';
 
   const lines = isReadAlong
     ? []
     : sentences
-        .map((s, i) => readItemFromSentence(s, i))
+        .map((s, i) => readItemFromSentence(s, i, window))
         .filter((item): item is DecodableReaderItem => item !== null);
   if (!isReadAlong && lines.length === 0) return [];
 
@@ -539,6 +544,8 @@ export interface DecodableReaderPayload {
   passage?: { sentences?: DecodableSentenceLike[] };
   comprehensionQuestions?: DecodableQuestionLike[];
   comprehensionQuestion?: DecodableQuestionLike;
+  /** The tier's sentence window, stamped by the generator (decodableReaderLadder.ts); absent = benched 3-8. */
+  sentenceWindow?: SentenceWindow;
 }
 
 export const itemsFromChallenges = (
@@ -549,7 +556,7 @@ export const itemsFromChallenges = (
   const sentences = data.passage?.sentences ?? [];
   const questions =
     data.comprehensionQuestions ?? (data.comprehensionQuestion ? [data.comprehensionQuestion] : []);
-  const items = buildItems(sentences, questions, mode);
+  const items = buildItems(sentences, questions, mode, sentenceWindowOf(data.sentenceWindow));
   const askable = (mode === 'read_along' ? 0 : sentences.length) + questions.length;
   return { items, mode, dropped: Math.max(0, askable - items.length) };
 };

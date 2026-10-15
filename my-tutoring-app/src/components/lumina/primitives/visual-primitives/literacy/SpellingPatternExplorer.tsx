@@ -38,6 +38,7 @@ import {
 import { withWorkspaceController, withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import LetterBuildSurface, { type LetterBuildSummary } from './LetterBuildSurface';
 import type { LetterBuildItem } from './letterBuild';
+import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 import {
   describeTyped, dictationAssignment, dictationItems, spellingMatches, spellingMiss, spellingMissWords, spellingScene,
   type DictationItem,
@@ -72,8 +73,11 @@ export interface SpellingPatternExplorerData {
 
   // Within-mode support tier (config.difficulty → generator stamp).
   // Display-only scaffold withdrawal — absent ⇒ full-support legacy render.
-  // Content (patternWords, dictationWords, rule) is byte-identical across tiers.
+  // On the model path, content (patternWords, dictationWords, rule) is byte-identical across tiers. On the
+  // word-space path (G1-2, service/wordSpace/spellingPatternSpaces.ts) the tier also picks the dictation words.
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** Word-space calibration: the session's pattern and mean beta, and one stamp per dictation word. Never rendered. */
+  wordSpace?: WordSpaceStamp & { items: WordSpaceStamp[] };
 
   /** `pattern_build` (open build): the asks run on the shared letter build surface; the classic fields are empty. */
   task?: 'letter_build';

@@ -28,6 +28,7 @@ import {
   MIN_SENTENCE_WORDS,
   type DiSentenceReadingSupportTier,
 } from '../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain';
+import { sentenceSpace } from '../wordSpace/sentenceSpaces';
 
 const TIERS: DiSentenceReadingSupportTier[] = ['easy', 'medium', 'hard'];
 
@@ -155,14 +156,10 @@ describe('pool identity survives the band — the tier never overrides an eval m
     expect(data.challenges.every((c) => c.challengeType === 'decodable_sentence')).toBe(true);
     for (const wc of wordCounts(data)) expect(wc).toBeGreaterThanOrEqual(7);
     for (const wc of wordCounts(data)) expect(wc).toBeLessThanOrEqual(8);
-    // At least one of the L4 menu additions is drawn — proof the new entries
-    // passed module-load validation (a miscounted or sentinel-unsafe entry is
-    // silently rejected there, and this test would fail on band coverage).
-    expect(
-      data.challenges.some((c) =>
-        /sam-cat-mat|ten-red-bed|big-pig-pit|hot-dog-log|pup-sun-run/.test(c.id),
-      ),
-    ).toBe(true);
+    // The L4 menu additions passed module-load validation and reach the sentence space (2026-10-14: the space
+    // draws from the menu plus the build-time bank, so which 7-8 word sentence ships varies by session).
+    const hard = sentenceSpace('decodable_sentence', '1', null, 8).map((it) => it.payload.menuId);
+    for (const id of ['sam-cat-mat', 'ten-red-bed', 'big-pig-pit', 'hot-dog-log', 'pup-sun-run']) expect(hard).toContain(id);
   });
 
   it('a pinned vowel scope beats the band: short-a @ hard stays pure-a and saturates', async () => {
@@ -186,12 +183,11 @@ describe('pool identity survives the band — the tier never overrides an eval m
       intent: 'reading short a sentences',
     });
     expect(data.challenges.every((c) => c.challengeType === 'sentence_review')).toBe(true);
-    // Anchors are "up to 2" (the variance rotation may displace the second —
-    // pre-L4 behavior, unchanged), but the FIRST anchor always ships, and
-    // under a hard band seedForType draws it nearest-band from the focus pool:
-    // deterministically the one 8-word pure-a entry.
-    expect(data.challenges.some((c) => c.id.includes('sam-cat-mat'))).toBe(true);
-    expect(data.challenges.filter((c) => c.vowels?.includes('a')).length).toBeGreaterThanOrEqual(1);
+    // The lesson thread: at least one anchor is a long (in-band) short-a sentence. Before the sentence space
+    // (2026-10-14) this was deterministically the menu's one 8-word pure-a entry; the bank now offers several.
+    const anchors = data.challenges.filter((c) => c.vowels?.length === 1 && c.vowels[0] === 'a');
+    expect(anchors.length).toBeGreaterThanOrEqual(1);
+    expect(anchors.some((c) => c.wordCount >= 7)).toBe(true);
   });
 });
 

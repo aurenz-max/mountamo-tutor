@@ -56,6 +56,12 @@ rhyme-studio contract the same day.
 - **Evidence:** `qa/eval-reports/levers-literacy-L2-2026-09-28.md`.
 - **Probe:** `npm test -- phonemeExplorerLevers PhonemeExplorer.levers.workspace`.
 
+### R7 — Word space: a difficulty tier picks the item · OBSERVED
+- **Property:** with a support tier, grade K or 1, and no remediation focus, every mode takes its items from the word library (`service/wordSpace/phonemeSpaces.ts`): code picks the words, the answer and the wrong cards at the tier's third of the mode's predicted beta. Each challenge carries `wordSpace` {space, structure, beta}, never rendered or sent to the tutor. Within one session no target or answer word repeats, isolate/ending/medial do not repeat the asked sound, and a blend or manipulate answer is never a word an earlier item showed. Medial's answer rhymes with the target only when every wrong card shares that ending. K blend uses short-vowel CVC words whose vowel letter is the sound said; segment skips r-controlled words. A mode whose space cannot fill its slots takes the model path for that mode.
+- **Demanded by:** user 2026-10-13 (difficulty as a main parameter; K literacy word library).
+- **Evidence:** `qa/word-space-lab/2026-10-13/phoneme-explorer/before.txt`, `after.txt`.
+- **Probe:** `npm test -- service/wordSpace`; `qa/word-space-lab/2026-10-13/phoneme-explorer/run-probe.sh`.
+
 ## Conflicts
 
 None open.
@@ -66,6 +72,8 @@ None open.
 - **tutoring:** retired DI block; bound sessions never receive it (R5).
 
 ## Changelog
+
+- 2026-10-13 — R7 added, R4 narrowed (user-directed: difficulty changes the problem). Before (K, 2 runs per tier, all six modes): easy = medium = hard; cat/dog/sun/pig/pen in every mode; segment answered "three" 12 of 12; ending gave the same 5 items every run; isolate shipped "/S/ → Bus" (answer key wrong). After: every mode draws from its word space at the tier (`after.txt`). R4's scaffold withdrawal is unchanged and still applies; "the tier never changes the content" now holds only on the model path (no tier, grade 2, or a remediation focus). R1-R3, R5, R6 hold: every space item passes `itemFromChallenge`, and a mixed session loses no item to `itemsFromChallenges` (`phonemeSpaces.test.ts`). `endingSoundForWord` falls back to the library's last sound for words outside the contrast bank. Compatible.
 
 - 2026-09-29 — R6 amended (handoff 24): medial and ending also draw from `LONG_MIDDLE_POOL` (rain, mail, feet, seal, boat, soap; boxes print the vowel team, the tutor says the long vowel). Measured gap: a medial session asking all five short vowels, and an ending session asking final n/p/t/g, had no model and no practice item. R2 holds: no session word, no asked sound.
 - 2026-09-28 — R6 added (levers, handoff 22 L2). --check COMPATIBLE: R1-R5 suites pass (`PhonemeExplorer.workspace`, `.support-tiers`).

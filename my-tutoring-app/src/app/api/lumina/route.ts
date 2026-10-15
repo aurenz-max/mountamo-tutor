@@ -12,6 +12,7 @@ import {
 
 // Manifest generation
 import { generateExhibitManifest } from '@/components/lumina/service/manifest/gemini-manifest';
+import { normalizeObjectiveGrade } from '@/components/lumina/service/generation/resolveGenerationContext';
 
 // Curator brief
 import { generateIntroBriefing as generateCuratorBrief } from '@/components/lumina/service/curator-brief/gemini-curator-brief';
@@ -55,10 +56,17 @@ async function handlePost(body: Record<string, unknown>) {
       // Universal component content generator - routes to all primitives via registry
       case 'generateComponentContent': {
         // Build manifest item from params
+        // A lesson's manifest stamps the objective's grade (config.objectiveGrade -> ctx.grade). A direct call
+        // (the primitive testers) sends only a gradeLevel like "3"; without this, grade-aware generators fell
+        // back to their band default (decodable-reader grade 3 ran as grade 1). A band ("elementary") stamps nothing.
+        const directGrade = normalizeObjectiveGrade(params.gradeLevel);
         const item = {
           componentId: params.componentId,
           instanceId: params.instanceId || `${params.componentId}-${Date.now()}`,
-          config: params.config || {}
+          config: {
+            ...(directGrade && !params.config?.objectiveGrade ? { objectiveGrade: directGrade } : {}),
+            ...(params.config || {}),
+          },
         };
         const componentContent = await generateComponentContent(
           item,

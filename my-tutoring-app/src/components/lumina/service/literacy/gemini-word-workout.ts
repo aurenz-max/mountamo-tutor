@@ -26,6 +26,8 @@ import {
   earlyWordMatchesVowelScope,
   objectiveRequiresWordMeaning,
 } from '../../primitives/visual-primitives/literacy/wordWorkoutEarlyDecoding';
+import { mulberry32, tierPick, type WordSpaceStamp } from '../wordSpace/pick';
+import { workoutSpace } from '../wordSpace/wordWorkoutSpaces';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -999,6 +1001,29 @@ export const generateWordWorkout = async (
     const count = targetMode === 'inflected-word' || targetMode === 'compound-word'
       ? Math.max(2, cappedCount)
       : cappedCount;
+
+    // ── Word space (2026-10-13, service/wordSpace): with a support tier and no remediation focus, code picks
+    //    the items at the tier's difficulty: library words and verified nonsense for real-vs-nonsense,
+    //    picture-match and word-chains; the code tables, tiered by structure, for the inflected, compound and
+    //    context modes. Every item passes the judged loop's own gate. sentence-reading stays on the model.
+    if (singleModeSupportTier && !ctx.remediationFocus && targetMode !== 'sentence-reading') {
+      const spaceGrade = gradeKey === 'K' ? 'K' : gradeKey === '1' ? '1' : '2';
+      const picks = tierPick(workoutSpace(targetMode, spaceGrade, masteredVowels), singleModeSupportTier, count,
+        mulberry32(Math.floor(Math.random() * 2 ** 31)));
+      const spaceChallenges = applySupportTier(targetMode, picks.map((p, i) => ({
+        ...p.payload, id: `c${i + 1}`, ...(includeMeaning && (targetMode === 'inflected-word' || targetMode === 'compound-word') ? { includeMeaning: true } : {}),
+        wordSpace: { space: `workout-${targetMode}`, structure: p.structure, beta: p.beta } satisfies WordSpaceStamp,
+      }) as WordWorkoutChallenge).filter((ch) => challengeAskable(ch)), singleModeSupportTier);
+      console.log(`[word-workout] Word space ${targetMode} (${singleModeSupportTier}, grade ${spaceGrade}, vowels ${masteredVowels.join('')}): ${spaceChallenges.length === count
+        ? picks.map((p) => `${p.words.join('/')} ${p.structure} β${p.beta}`).join(', ') : `only ${spaceChallenges.length} of ${count}, model path`}`);
+      if (spaceChallenges.length === count) {
+        return {
+          title: `Word Workout: ${topic}`, mode: targetMode, masteredVowels, gradeLevel: gradeKey,
+          supportTier: singleModeSupportTier, challenges: spaceChallenges,
+        };
+      }
+    }
+
     const challenges = await generateModeChallenges(
       targetMode,
       topic,

@@ -147,6 +147,10 @@ export interface DecodableReaderData {
   /** Legacy single-question shape — still built, so pre-port content runs. */
   comprehensionQuestion?: DecodableComprehensionQuestion;
 
+  /** The support tier's sentence window (decodableReaderLadder.ts), stamped by the generator; absent = benched 3-8. */
+  sentenceWindow?: { min: number; max: number };
+  supportTier?: 'easy' | 'medium' | 'hard';
+
   // Evaluation props (optional, auto-injected)
   instanceId?: string;
   skillId?: string;
@@ -238,6 +242,7 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
     comprehensionType,
     comprehensionQuestions,
     comprehensionQuestion,
+    sentenceWindow,
     instanceId,
     skillId,
     subskillId,
@@ -268,8 +273,9 @@ function DecodableReaderSurface({ data, className, runtimePlanItemId }: Decodabl
       passage: { sentences },
       comprehensionQuestions,
       comprehensionQuestion,
+      sentenceWindow,
     }),
-    [readingMode, comprehensionType, sentences, comprehensionQuestions, comprehensionQuestion],
+    [readingMode, comprehensionType, sentences, comprehensionQuestions, comprehensionQuestion, sentenceWindow],
   );
 
   useEffect(() => {

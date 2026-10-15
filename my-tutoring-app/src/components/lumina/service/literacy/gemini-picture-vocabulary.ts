@@ -16,6 +16,9 @@ import { buildRemediationPrompt } from '../generation/remediationPrompt';
 import { isSingleEmojiPicture } from '../../utils/emojiPicture';
 import { clueLeak } from '../../primitives/visual-primitives/literacy/pictureVocabularyScript';
 import { makePicturePairItems } from '../../primitives/visual-primitives/literacy/picturePairBuild';
+import { clampGradeToK2 } from '../scopeContext';
+import { mulberry32, tierPick, type WordSpaceStamp } from '../wordSpace/pick';
+import { namingSpace, receptiveSpace } from '../wordSpace/categorySpaces';
 
 export type PictureVocabularyRemediationMove =
   | 'semantic_contrast'
@@ -945,6 +948,59 @@ Also provide:
 // Orchestrator
 // ---------------------------------------------------------------------------
 
+/**
+ * Word space for the two noun modes (2026-10-13, service/wordSpace/categorySpaces.ts): pictured nouns from
+ * the word library at the tier's difficulty. naming ranks by how well children know the category and the
+ * word; receptive_match also by how near the wrong pictures are (other categories at easy, the target's own
+ * category at hard). Clues are support data for a help lever: one small model call writes them, and a clue
+ * is kept only when `clueLeak` and the sentinel gate pass. Fewer than 5 items: [] (the model path runs).
+ */
+async function nounsFromSpace(
+  mode: 'receptive_match' | 'naming',
+  tier: 'easy' | 'medium' | 'hard',
+  grade: string,
+): Promise<PictureVocabChallenge[]> {
+  const rand = mulberry32(Math.floor(Math.random() * 2 ** 31));
+  const hash = (s: string) => Array.from(s).reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 100003, 7);
+  const challenges: PictureVocabChallenge[] = mode === 'naming'
+    ? tierPick(namingSpace(grade), tier, 5, rand).map((p) => ({
+      id: 'pv-pending', type: 'naming' as const, word: p.payload.target.word, emoji: p.payload.target.emoji, category: p.payload.target.category,
+      wordSpace: { space: 'picture-naming', structure: p.structure, beta: p.beta } satisfies WordSpaceStamp,
+    }))
+    : tierPick(receptiveSpace(grade), tier, 5, rand).map((p) => {
+      const options = [...p.payload.wrong];
+      options.splice(hash(p.payload.target.word + p.structure) % 4, 0, p.payload.target);
+      return {
+        id: 'pv-pending', type: 'receptive_match' as const, word: p.payload.target.word, emoji: p.payload.target.emoji,
+        category: p.payload.target.category, options,
+        wordSpace: { space: 'picture-receptive', structure: p.structure, beta: p.beta } satisfies WordSpaceStamp,
+      };
+    });
+  console.log(`[PictureVocabulary] Word space ${mode} (${tier}, grade ${grade}): ${challenges.length === 5
+    ? challenges.map((c) => `${c.word} ${c.wordSpace?.structure} β${c.wordSpace?.beta}`).join(', ') : `only ${challenges.length}, model path`}`);
+  if (challenges.length < 5) return [];
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: `For each word, write a short spoken clue a 5-year-old knows: what it does or where you find it (dog -> "it barks and wags its tail"). 4-10 words. Never the word itself, never its first sound, letters or rhymes.
+${challenges.map((c) => `- ${c.word}`).join('\n')}`,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: { type: Type.OBJECT, properties: { clues: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: {
+          word: { type: Type.STRING }, clue: { type: Type.STRING } }, required: ['word', 'clue'] } } }, required: ['clues'] },
+      },
+    });
+    const parsed = JSON.parse(response.text ?? '{}') as { clues?: Array<{ word: string; clue: string }> };
+    for (const c of challenges) {
+      const clue = parsed.clues?.find((x) => String(x.word).toLowerCase().trim() === c.word)?.clue?.trim().replace(/\.$/, '');
+      if (clue && !clueLeak(clue, c.word) && !opensWithSentinel(clue)) c.clue = clue;
+    }
+  } catch (err) {
+    console.warn('[PictureVocabulary] clue call failed; items ship without clues:', err);
+  }
+  return challenges;
+}
+
 export const generatePictureVocabulary = async (
   ctx: GenerationContext,
 ): Promise<PictureVocabularyData> => {
@@ -973,7 +1029,7 @@ export const generatePictureVocabulary = async (
   const mode = (evalConstraint?.allowedTypes[0] ?? null) as PictureVocabChallengeType | null;
 
   try {
-    let assembled: PictureVocabChallenge[];
+    let assembled: PictureVocabChallenge[] = [];
     let title: string;
     let description: string;
 
@@ -1042,6 +1098,11 @@ export const generatePictureVocabulary = async (
       assembled = assembleSingleMode('sentence_frame', pool.words, pool.words);
       ({ title, description } = pool);
 
+    } else if ((mode === 'receptive_match' || mode === 'naming') && ctx.supportTier && !ctx.remediationFocus
+      && (assembled = await nounsFromSpace(mode, ctx.supportTier, clampGradeToK2(ctx.grade, 'K'))).length === 5) {
+      // Word space (2026-10-13): code picked the nouns and, for receptive_match, the wrong pictures.
+      title = mode === 'naming' ? 'Name the Picture' : 'Find the Picture';
+      description = mode === 'naming' ? 'Look at each picture and say its name.' : 'Listen to the word and find its picture.';
     } else if (mode === 'receptive_match' || mode === 'naming') {
       let pool = await generateNounPool(topic, intent, grade, ctx.remediationFocus);
       if (pool.words.length < 5) {

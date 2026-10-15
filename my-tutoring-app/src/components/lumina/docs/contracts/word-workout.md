@@ -56,7 +56,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Probe:** `npm test -- WordWorkout.reader-fit` "picture-match is picture-primary and its pictures ARE tappable"; eval-test picture_match → 2-4 options, target present once.
 
 ### R6 — Support tier · OBSERVED
-- **Property:** the only tier lever is `chainCueLevel` on word-chains (full / highlight-only / none, screen and spoken correction). Absent → full. The stimulus (chain, target word, picture options, sentence) renders at every tier; fallbacks stay unstamped. Picture-match has no tier behaviour today.
+- **Property:** on the model path the only tier lever is `chainCueLevel` on word-chains (on the word-space path, R13, the tier also picks the items) (full / highlight-only / none, screen and spoken correction). Absent → full. The stimulus (chain, target word, picture options, sentence) renders at every tier; fallbacks stay unstamped. Picture-match has no tier behaviour today.
 - **Demanded by:** support-tiers batch 2; DI port.
 - **Evidence:** `gemini-word-workout.ts:730-780`; `WordWorkout.support-tiers.test.tsx:94-122`.
 - **Probe:** `npm test -- WordWorkout.support-tiers`.
@@ -97,6 +97,10 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Evidence:** `qa/eval-reports/levers-literacy-L3-2026-09-28.md`.
 - **Probe:** `npm test -- wordWorkoutLevers WordWorkout.levers.workspace`.
 
+### R13 — Word space: with a single-mode support tier, code picks every item · OBSERVED 2026-10-13
+- **Property:** with a support tier on a single mode and no remediation focus, every mode but sentence_reading draws from `service/wordSpace/wordWorkoutSpaces.ts`. real_vs_nonsense: a familiar CVC decodable with each letter's basic sound (never was, has, son, yes) against a string from `nonsense.json` (built from CMU + hunspell: no word, name or homophone; differs at the first letter, R10); harder = one letter off (cat/zat), hardest = a near first sound (sob/pob). picture_match: harder = a wrong picture one letter off, the vowel hardest (fin vs fan); three distinct pictures. word_chains: four familiar words, each one letter from the last, a different letter each step; harder = vowel changes. read_inflected / read_compound / choose_in_context keep their code tables (R1 vowel scope holds), tiered by ending (-s < -ing < -ed), hardest vowel, and which letter a context pair differs in. Every item passes `challengeAskable`; each carries a `wordSpace` stamp. Short draw → model path.
+- **Probe:** `npm test -- src/components/lumina/service/wordSpace/wordWorkoutSpaces.test.ts`; `scripts/word-space-lab/probe.sh word-workout after ...`.
+
 ## Conflicts
 
 ### C1 — `two_far_pictures` vs R1 — OPEN (pending lever design, handoff 22 L1)
@@ -117,6 +121,7 @@ foil from scope instead needs a ruling.
 - **tutoring.taskDescription / aiDirectives:** stale (DI "bracketed application message" frame). Bound sessions send `tutoring: null` (R8), so they do not receive it. Removal is an `/add-live-tutor-tools` cleanup.
 
 ## Changelog
+- 2026-10-13 — **R13 word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/word-workout/before.txt`): real_vs_nonsense cat/zat, pig, dog, sun, bed at every tier with "zed" (a real word) as nonsense; picture_match cat, sun, pen; word_chains cat-cot-pot-pit with "pag" inside a chain of real words; code-table modes identical across tiers. After: real_vs_nonsense easy hit/yez → hard fun/vun, sob/pob; picture_match hard fin vs fan, bug vs bun; chains easy van>tan>ten>men → hard men>met>pet>pat; inflected easy cats → hard rested. New build artifact `service/wordSpace/nonsense.json` (342 strings).
 
 - 2026-09-28 — R12 added (handoff 22 L3). R11's "the spoken modes declare none" is superseded by R12. The chunk divider waits for a first try so it does not undo the cold-read-before-chunks rule of the extended modes.
 

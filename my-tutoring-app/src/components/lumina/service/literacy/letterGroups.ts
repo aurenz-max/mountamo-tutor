@@ -128,6 +128,12 @@ export const lettersNamedIn = (text: string): string[] => {
   for (const m of Array.from(t.matchAll(/(?:^|[^a-z])([a-z](?:\s*,\s*(?:and\s+)?[a-z])+)(?![a-z])/g))) {
     hits.push({ at: m.index ?? 0, letters: m[1].replace(/\band\b/g, '').split(',').map((l) => l.replace(/[^a-z]/g, '')) });
   }
+  // Three or more single letters separated by spaces ("s a t i p n"); three keeps "a" and "I" out.
+  for (const m of Array.from(t.matchAll(/(?:^|[^a-z,])([a-z](?:[ \t]+[a-z]){2,})(?![a-z])/g))) {
+    hits.push({ at: m.index ?? 0, letters: m[1].split(/\s+/) });
+  }
+  // "SATPIN" names group 1 by its letters.
+  for (const m of Array.from(t.matchAll(/\bsatpin\b/g))) hits.push({ at: m.index ?? 0, letters: [...NEW_LETTERS[1]] });
   for (const m of Array.from(t.matchAll(/['"‘“]([a-z])['"’”]/g))) hits.push({ at: m.index ?? 0, letters: [m[1]] });
   for (const m of Array.from(t.matchAll(/\bgroup\s*([1-4])\b/g))) hits.push({ at: m.index ?? 0, letters: [...LETTER_GROUPS[Number(m[1]) as LetterGroup]] });
   const found: string[] = [];

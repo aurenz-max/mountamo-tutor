@@ -1,0 +1,4535 @@
+{
+ "note": "Drafted at build time by scripts/word-space-lab/build-sentences.mjs; every word checked against the word library. Never hand-edited.",
+ "sentences": [
+  {
+   "text": "A big bug is on Pam.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A cat can nap on Dad.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A cub hid in the mud.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fat pig sat in the wet mud.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fat rat sat on top.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fox hid.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A hen ran.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A pig is fat.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ben had jam in a pan.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob had a pet pig in his van.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob ran to Mom.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Tim tap the lid on the pan?",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Tim win?",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad got a pup.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dan can zip up the big red bag.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dan got a bun.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Deb ran up to the top.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Did Jim hug the big pup?",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Gus got wet!",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Gus has gum on his big red hat.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am in a big jet.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Jan is not sad.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken had a red cap on his bed.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken has a hat.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken has a hot bun.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Kim had a cup.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Liz got a red pen in the bin.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Max dug in mud.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Max is in mud.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Meg can jog.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom can mix the jam in a pot.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom fed the wet hen.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nan did tap on the box.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nat did dig in the mud.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam had a nap.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam sat on a big log.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat had a sip in the hot sun.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat has a fan.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Peg set a cup on it.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pip hid in bed.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex did tug on the big red rug.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex is a dog.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex ran to Dad.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ron ran to get the bus.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam got a pet.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam had a sip in bed.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tad let the pet hop up.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ted fed his dog.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ted had a red net in his van.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bad fox hid in fog.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bad rat ran to get a nut.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big hog ran in the hot sun.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog can dig.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat cat sat on it.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat pig is in mud.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat rat hid in a big bin.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The man had a big cap.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup ran.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The red van got wet.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The sad man sat on a wet log.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The wet dog ran to Mom.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom got a bug in it.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom hid in bed.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom sat on it.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Viv can sit on the rug.",
+   "draftedFor": "Decode CVC words with Mixed Short Vowels",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A cat ran up to a fat rat.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fat cat had jam on his cap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fat cat sat.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fat rat is on it.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fat rat sat.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A rat ran to the bag.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A rat ran up.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A rat sat on the map.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can a rat nap?",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Dan tag the man?",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Dan tap on the tan pan?",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad had a tan cap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad had ham and jam in his bag.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad is in it.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad ran to it.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad sat in the van.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dan can nap in the van.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dan has ham in a pan.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "His cat sat in a bag.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am in it.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am not sad.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I can tap on the bat.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the cat fat?",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the cat mad?",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the man in the van?",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the rat in the tan bag?",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Jan sat on a lap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Max can nap on the lap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Max has a bat.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Max has jam on his cap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Max ran up to the mad fat cat.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nan can tap on the tan van.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nan had ham.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nan ran to Dan.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nat had a hat but not a cap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam had a map in the tan bag.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam is sad.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam ran to the fat cat.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam ran up to Dan and Dad.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat had a map.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat sat on a map in the van.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam can tap on the pan.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam had a hat and bag.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam had his bat in a tan bag.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam is mad at the cat.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tad ran up to the cat.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tad sat in the van to nap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bad cat is not sad.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bad rat is in the tan bag.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bad rat ran up on the map.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bat is tan.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The cap is on his lap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The cat is fat.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The cat sat on the lap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fan is not on.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fan is on!",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fan is on.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat cat had a nap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat cat is not on the lap.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat cat sat on a tan bag.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The man had it.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The man had jam.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The man has a tan bag.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The man in the van is not mad.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The man is in his van.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pan is tan.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The tan cat is on it.",
+   "draftedFor": "Decode CVC words with Short 'a'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A red hen is in bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A red hen is in it.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A vet can pet the hen.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A web is wet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ben fed ten men at the red jet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ben fed the pet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ben is in bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ben is not at the vet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Rex get in?",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Rex get on the bed?",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Rex get up on his bed?",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can the vet pet the wet red hen?",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Deb has a pet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am in bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am wet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the hen red?",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the red hen in bed?",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken can set the net on the bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken fed the hen.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken has a jet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken is at the jet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Let Rex get up!",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Let the vet get to the red pet!",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Meg fed the red hen.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Meg has a net.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Meg has to get the pen.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Meg is wet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Peg had a net.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Peg has a pet and fed it.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex can get up on the wet bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex is a pet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex is on the bed but not wet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex is on the bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ted can get on the bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ted had a pet in bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ted is in bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ten men can get on the red jet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ten men can set up the net.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The hen is red.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The jet is red.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The men fed Rex.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The men fed the red hen.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The men had to get on the jet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pen is red.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pet can get on it.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pet is not in the net.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pet is on the bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pet is wet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The red hen is on the bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The red hen is wet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The red jet is not wet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The vet had to get to the jet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The web is on his leg.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The web is wet.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The wet pet had to get up.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The wet pet is in bed.",
+   "draftedFor": "Decode CVC words with Short 'e'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A big kid can hit it.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A kid can dig.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A kid can fix the bin.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Liz sit on the lid?",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can the kid sit on the big lid?",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Tim fix the bin?",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Did Pip dig in the bin?",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am a kid.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am big.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I can fix the big lid.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the pig in the big bin?",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Jim hid his pig in the big bin.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Jim hid in it.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Jim is in the big bin.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Kim and Viv can dig at it.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Kim had to win.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Kim has to mix it up.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Kim is not in the bin.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Liz had a pig.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Liz had to fix the big bin lid.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Liz hid the bin.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Liz is as big as Tim.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pip did dig in the bin.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pip is a kid.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pip is a pig.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pip is not in the big bin!",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big fin is on it.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big kid did win!",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big lid did not fit on it.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big pig can dig.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big pig can sit in the bin.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big pig is not in the bin.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The kid can sip.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The kid is not big.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The lid can fit on it.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The lid did fit.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The lid is not on it.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pig is big!",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pig is not in it.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tim had a pig.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Viv is up.",
+   "draftedFor": "Decode CVC words with Short 'i'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A dog can hop on a log.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A dog can hop on it.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fox can hop up on the log.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fox can hop.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fox is on the hot log.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A hog can hop up on a log.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A hog can jog.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A hog is hot.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob can nod.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob has a mop and a pot.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can a dog hop up on a log?",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can the fox hop on it?",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am not on the log.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I had a dog.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the log hot?",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom can mop.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom got a dog.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom has a mop in the box.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ron got a top.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The box had pop.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog can hop up to a fox.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog can hop.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog can jog up to the log.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog got up on Mom.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog got up on the box.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog is hot.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog is not a fox.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog is on it.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog is on the log.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fox got hot.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fox got in the box.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fox had to hop in a box.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fox is not in a log.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The hog is hot.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The hog is in the fog.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The hot pot is on it.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pot is hot.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom got a dog and had a box.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom got a pot and a top.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom had a dog.",
+   "draftedFor": "Decode CVC words with Short 'o'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A bug can run.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A bug had fun on the bun.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A bug is in the mug.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A bug is on the rug.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A cub is as fun as a pup.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A nut is in the mud.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A pup can tug a rug.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Gus can run up to his pup.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Gus dug in it.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Gus is in mud.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am in the tub in the sun.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am in the tub.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I can run!",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I can tug on the rug.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the bug on the bun?",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the cub up?",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the pup as fun as the cub?",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is the sun up?",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "It is a bug.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "It is fun in the sun!",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "It is fun!",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bug can run.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bug is not on his cup.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The cub is in a tub.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The cub is in the mud.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The mud is fun!",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The nut is on the rug.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup can run in the mud.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup can run to the tub.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup can tug on his rug.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup is fun.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup is not in mud.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup is not in the mud.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup is on the rug.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The sun is not up.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The sun is up.",
+   "draftedFor": "Decode CVC words with Short 'u'",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I nap in it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I sat at it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I sip at it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I sip at the tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I sip it at the tan tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I sip it at the tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I sip it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I sit at it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I sit in it at the tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I sit in it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I tap a pan at the tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I tap a pan.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I tap a tan pan.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I tap it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I tap the pan at the tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I tap the pan.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I tap the tan pan at the tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I tap the tan pan.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nan sat at the tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nan sat in it at the tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nan sat in it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nap in it!",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nat sat at it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nat sat at the tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nat sat in it at the tap.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nat sat in it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat sat in it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pip sat in it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sit in it.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tap a pan.",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tap the pan!",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tap the tan pan!",
+   "draftedFor": "Letter-Sound Group 1: s, a, t, i, p, n",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A kid had ham.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A mad cat sat.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A red hen had a nap.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A tan rat hid in it.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Pip sit?",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can the kid tap it?",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad had a nap.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad had ham in a pan.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad hit it.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad set the ham in a pan.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dan had a map.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dan had a pet.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Did Dan nap?",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Did the cat sit in the red pan?",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Did Tim tap it?",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am sad.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I can hit the red pan!",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I can sit in the red net.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I can tap it.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I had a cat.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken hid the red pen in a hat.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken set the net.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Kim had a pen.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Kim had a tan pet cat.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nan had a pet.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nan had ham in a pan.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nat can sip it.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam sat in it.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat had a cap.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat had a nap in it.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat ran in.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pip had a red pet hen.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam can tap at the red pan.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam had a hat.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam hit the red cap.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tad ran in.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tad set a net.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tam can sit in the net.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tam had a cap.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tam had a red cap in the net.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ted can tap a red pen.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ted hit the pan.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ten men had ham in the pan.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The cat sat.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The hen ran.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The hen sat.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The kid had a red cap.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pet cat had a nap in it.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The rat hid.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The rat ran.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The red hen sat.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The sad kid sat in it.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The tan cat ran.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tim can nap.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tim can pet the cat.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tim hid the map in a tan cap.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tim hid the tan cap in a net.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tim hit the pan.",
+   "draftedFor": "Letter-Sound Group 2: c, k, e, h, r, m, d",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A bug is on his lip.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fat cat had a nap.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A hog did dig in the red mud.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A pig can run.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A pig is big.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A pup ran to get a red cup.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A red bug is on Pam.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ben can get the bus.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ben ran to Mom.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ben ran up to the big tan bus.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob got a pup.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob got hot.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob is mad at the dog.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can a pig fit in it?",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can the pig sit?",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Tim hop?",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad got a big ham.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad had a dog.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad hid his tan cap in the bag.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad is in bed.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dan hid in mud.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Deb can cut a big bun.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Did Dan tap on the lid?",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Gus had a nap.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Gus has gum in a bag.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Gus is a pup.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I am on the big bed.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken had a big cup on the bed.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken had a sip in bed.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Kim fed the hen.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Meg has a pen.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Meg sat in the hot sun.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom can rub the pup.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom set the pot on it.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nan can tag Dan.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam sat on a rug.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat can sit on a big red rug.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat had a nut.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Peg has a red pen.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pip can hop on the rug.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pip dug in mud to get a nut.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pip is a bug.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ron can sip it.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ron is as mad as the big man.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam can hop.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam had a dog.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam had a red cap on his lap.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ted can tug on the bag.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ted sat on it.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bad cat hit a red cup.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big rat ran to a bin.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bug is red.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bus is red.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The cup is red.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat dog ran.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The kid can hug a pet dog.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The men sat in a big red bus.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pig is fat.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup can dig.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup did dig.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The sun is hot.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tim ran to a big log.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom got a hat.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom got mud on his leg.",
+   "draftedFor": "Letter-Sound Group 3: g, o, u, l, f, b",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A big rat ran to Rex.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fat bug sat on the wet rug.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A red fox hid in the fog.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A red fox sat on it.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob is a vet.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Dan fix the red van?",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad got a van.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Deb got jam on a bun.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Jan can win!",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Jan sat on a log in the sun.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ken dug a lot in the wet mud.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Liz has a red pen.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Max dug in the red mud.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Max is in bed.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Max sat on it.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom can fit the jam in the box.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam got a hat at the van.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam had jam on a bun.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex dug in mud.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex ran to Dad to get a hug.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big dog can run to the van.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The cat is not mad at the vet.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The cub hid in a box.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fox hid.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup is wet!",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The wet dog ran.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom can jog.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Viv had a nap in bed.",
+   "draftedFor": "Letter-Sound Group 4 (Final): j, z, w, v, y, x, q",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "All of the men want some ham.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "All the mud was wet.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob has one big cat on his lap.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can they walk to the van?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can you find Kim?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can you find where the red fox hid?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can you open his box?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can you open it?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can you open the bag of gum?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Come back from the hill.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Come to Ben.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Could the bad dog rip his red mat?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Could you open the tin lid?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dan has a cup of jam.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Did you find any jam?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Did you open the box?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do they want some ham?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you have it?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you know his pal Ted?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you know the man in the cab?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you want ham?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you want to pet the sad pup?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Four men were on the rug.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Four men were wet.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Give him some.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Give his dog a big hug.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Give it to him.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Give one to Sam.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Give some to Ben.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I know who has it.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I know who you are.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is there any fun in it?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Jan has to give a kiss to Dad.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Kim said to pack the blue kit bag.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom said to put the bag on top.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Once a fat bug sat on his leg.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Once a fox ran away.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Once a fox was there.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Once a red fox ran to Liz.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "One big dog ran away to the hill.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam said to get the bus.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Put his cap on.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Put his hat on.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Put it away.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Put some on it.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex has some jam.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam has some red wax.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The box is blue.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat cat was as big as Pip.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat cat was as quick as Rex.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup ran away from Tom.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The tub was blue.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "There was a wet pig in the mud.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They said to run away.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They want to pet him.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They want to pet the cat.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They were all wet.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They were back from the big hill.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom has to walk.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom said they were on the hill.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Two men are back.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Two men were in the van.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Two men were on the deck.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Walk away from it.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Walk away from the dog.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Walk to him.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Walk to his hut.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Was it blue?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What did they tell him?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What did you do on the bus?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What did you find in it?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What did you put in his blue box?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What do you want?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What is his job?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where are they?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where are you from?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where did Ben put his red cap?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where did they sit?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where did you put it?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where did you walk to in the fog?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where is Dan?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where is his dog?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where is the pup?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where was his blue cap?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who can give him one?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who could fit in the tub?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who could fit in there?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who has his hat?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who is there?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who was at the vet again?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who was in there?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who will open the lock on the bin?",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "You could sit in there.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "You have a big dog.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "You have to run.",
+   "draftedFor": "Read sentences with grade 1 high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A yellow fox ran away.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Are they too hot in the sun?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Are you in there?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ben said he was sad.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob said he did not want jam.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can she come to play?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can we go out now?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can you find my cap?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can you make a new red cap?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Come see my white cat now.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Come to my bed.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad came to hug me.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Did you see who got in the box?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you have a pet?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you like to sit on the rug?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you see it?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you want jam?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you want to see our dog?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Find my red hat.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Find the red one.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Go out to play.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Have you got a new pet?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "He ate our ham.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "He came to win.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "He is here now.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "He is so big.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "He ran away to Mom.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "He saw a white cat run away.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "He saw two men.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I saw one yellow bug hop away.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is he so mad?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Is he so sad?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Liz had to make a bed.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Look at me now!",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Look at me now.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Look at my funny cat.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Look at our new dog!",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Look at what is in here!",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Look for my hat.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Look under my bed!",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Make the bed for me now.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom said we have to eat ham soon.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "My big brown dog was so fun.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "My cat was brown.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "My dog is brown.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "My fat cat was on top.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Now we can ride.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat was so good to me.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam said you are so funny.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Say if you want to come play.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "See my new van!",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She can eat our bun.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She can ride too.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She can see the blue van.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She said we can play in here.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She saw my dog.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She was here.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She was there to eat a nut.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She was too hot.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sit down for me.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Soon we can go to see Mom.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bad cat ran down under my bed.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big dog is under there.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The big pig was brown.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The brown pup was too wet.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The sun is yellow.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They are so big!",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They came out to look at me.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They came out.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They want to ride on it.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Three men are in there.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Three men ate ham.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom said no to me.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Two funny men sat on our rug.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "We ate a good bun in the sun.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "We have one pet.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "We like to play.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "We saw two big men.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "We want to ride in the blue van.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "We want to ride on the big bus.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "We want to see him.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What did he say now?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What did they find under the log?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What did you say?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What do you see?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where did Ken go to find the dog?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where did the blue bug go now?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where did the white cat go?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where is my cat?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where is our cat?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who can go to the vet now?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who is in there?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who was in here?",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "You are not too bad.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "You are so good.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "You are too hot.",
+   "draftedFor": "Read sentences with high-frequency sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A big red fox sat on the log.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A brown cub sat on Mom.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A bug sat here.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "A fat rat ran down to the tub.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Bob had a van.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can Ben run?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can you find the red pen?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can you see me?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Can you see the white hen in there?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad got a new red van.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dad said we can ride the bus.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Dan sat on it.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Did you see the yellow hen?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Do you want to see a big jet?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Go to bed now!",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Gus hid under the big rug.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "He is so mad.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I like my mom.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I see a bug.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I see Mom.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I want a pet.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I want to play in the sun now.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "I want to play now.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Jan can fix the red box.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Kim dug in the hot mud.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Look at the funny bug on my cap!",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Look at the pig.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Meg ate a nut.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Meg can hop to the bus.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom said to come here soon.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Mom said to get in the van now.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Nat can make a good net for Bob.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam got wet.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pam was sad to see the cat go.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Pat ate ham in the van.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex can ride in the van.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex is my dog.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Rex was a pup.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam got a good red bat for Dan.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Sam had a pet.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She can see a blue jet.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She had fun.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "She is in bed.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tad hid the red cap in a box.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tam can jog to the top.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Ten men can ride in our big van.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The bad cat sat on our new bed.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The brown dog came to sit on me.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The dog is big.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat cat sat down.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fat cat sat on me.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The fox ran away.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The funny dog ran to me.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The good vet fed the cat.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pig is big.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The pup can run.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The sad cub hid under a big log.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The sad pig sat in the wet mud.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The sun was hot.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The tub was hot.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "The wet pup ran out.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They all ate ham in the hot sun.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They ate the ham.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "They ran out to play in the sun.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Three men sat on the bus.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tim ate a bun.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom ate the hot bun.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Tom had a hat.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Two men had a red bat.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "We can see Kim.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "We can win!",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "We saw four men run.",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "What did you find in there?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where did you get the blue mug?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where did you get the hat?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Where is the cat?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  },
+  {
+   "text": "Who is in our bed?",
+   "draftedFor": "Read simple sentences with CVC words and sight words",
+   "reviewed": false,
+   "judged": true
+  }
+ ]
+}

@@ -156,7 +156,9 @@ describe('capacity stress and no-tier guardrail', () => {
       const focus = Array.from(
         { length: focusCount },
         (_, i) => menu[(offset + i * 5) % menu.length],
-      ).join(' ');
+      // Loose mentions ("m or s or f"): since 2026-10-14 `lettersNamedIn` reads three space-separated letters
+      // ("s a t i p n") as a NAMED set, which is drilled as named and may honestly saturate the pair target.
+      ).join(' or ');
       const data = await gen(mode, tier, count, `letter sounds ${focus}`);
       const xs = letters(data);
       if (mode === 'mixed') {

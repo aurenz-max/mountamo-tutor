@@ -57,7 +57,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Probe:** `npm test -- CvcSpeller.reader-fit` bank test; `run_live_runtime.py --primitive cvc-speller --mode spell_word` presses `letter <x>`.
 
 ### R6 — Support-tier invariants · OBSERVED
-- **Property:** absent/unknown `config.difficulty` → no-op. With a tier: `showPictureCue` is withdrawn at hard (spell-word, word-sort); spell-word distractor count clean 1 / some 3 / full 5, similarity far → near; word-sort contrast vowel far → near. A tier never changes the words, the vowel focus or the answer.
+- **Property:** absent/unknown `config.difficulty` → no-op. With a tier: `showPictureCue` is withdrawn at hard (spell-word, word-sort); spell-word distractor count clean 1 / some 3 / full 5, similarity far → near; word-sort contrast vowel far → near. On the model path a tier never changes the words, the vowel focus or the answer; on the word-space path (R13) it changes the words, never the vowel focus or the mode.
 - **Demanded by:** support-tier + structural-difficulty campaign; adaptive difficulty.
 - **Evidence:** `qa/eval-reports/cvc-speller-2026-06-25.md`; `gemini-cvc-speller.ts:57-160,794-835`.
 - **Probe:** eval-test `evalMode=spell_word&grade=K&difficulty=easy|hard|none` → distractor counts 1/5/LLM, picture cue true/false/undefined, same word scope.
@@ -102,6 +102,10 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Property:** `make_word` is its own surface, the shared letter build (`LetterBuildSurface.tsx`, rules in `letterBuild.ts`), mounted when the payload has `task: 'letter_build'`; the existing modes are unchanged. Asks are code-owned from familiar CVC words (`letterBuildWords.ts`), scoped to the lesson's letters; no key ships. Code checks everything the ask states (shape, vowel, family, one letter changed, the given word, a repeat); the shared word judge (`judgeWordBuild`, `only: 'real_word'`) decides whether the word is real.
 - **Probe:** `LetterBuild.workspace.test.tsx`; headless drive `qa/open-build/cvc-speller-2026-10-08/drive/`.
 
+### R13 — Word space: with a support tier, code picks the words · OBSERVED 2026-10-13
+- **Property:** with `config.difficulty` set and no `ctx.remediationFocus`, fill-vowel, spell-word and word-sort draw from `service/wordSpace/cvcSpellerSpaces.ts`: 3-letter CVC words spelled only with the cumulative group's letters (R1), on the vowel focus when one is named, in the word family when one is named, no repeated rime (`enforceCvcScopeAndVariety` drops nothing). fill-vowel ranks by the word (e/i vowels, a nasal after the vowel, stops on both sides); word-sort's tier picks the vowel PAIR (a/i at easy → e/i at hard) and draws half its words from each vowel; spell-word ranks by spelling choices (c or k, x, b/d) and keeps R6's letter bank. Each challenge carries a `wordSpace` stamp (not sent to the tutor). A session that cannot fill 5 words (or 4 for one mode) takes the model path. make_word unchanged.
+- **Probe:** `npm test -- src/components/lumina/service/wordSpace/cvcSpellerSpaces.test.ts`; `scripts/word-space-lab/probe.sh cvc-speller after ...`.
+
 ## Conflicts
 
 None open.
@@ -114,6 +118,7 @@ None open.
 - **tutoring.aiDirectives:** stale. All directives order `[DI_CVC_ITEM]` / `[DI_CVC_BUILD]` / `[DI_CVC_MOVE_ON]` / `[DI_CVC_COMPLETE]` / `[SAY_WORD]` turns from the retired runner; the only emitters left are unused exports in `cvcSpellerScript.ts` (exercised only by `CvcSpeller.di-script.test.ts`). Bound workspace sessions send `tutoring: null`, so they do not receive these directives (R8). Removal is an `/add-live-tutor-tools` cleanup, like rhyme-studio's in handoff 22 L2.
 
 ## Changelog
+- 2026-10-13 — **R13 word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/cvc-speller/before.txt`): cat bed pig mop/dog bug/sun at every tier in every mode; rug pictured as yarn. After: fill-vowel easy rat/hug/log → hard hen/him/dig; word-sort easy a/i → medium e/u → hard e/i; spell-word hard draws c/k words (cat, cop, kid). R6 narrowed to the model path. `resolveCvcVowelFocus` now reads "Short 'o'" (the quote defeated the match on both paths).
 
 - 2026-10-08: `make_word` open build added as a fork (OB-3L). New challenge type; no existing requirement edited.
 

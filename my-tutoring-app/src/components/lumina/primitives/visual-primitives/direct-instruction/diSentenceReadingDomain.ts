@@ -85,6 +85,8 @@ export interface DiSentenceReadingChallenge {
   emoji?: string;
   /** Whole-utterance ASR aliases — passive cross-check only, never the judge. */
   asrAliases?: string[];
+  /** Calibration stamp on a sentence-space item (`service/wordSpace/sentenceSpaces.ts`); never rendered, never sent. */
+  wordSpace?: { space: string; structure: string; beta: number };
 }
 
 /** The printed text as it should be READ. Trailing whitespace only — the

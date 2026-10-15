@@ -14,7 +14,9 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
-import { asksIndependentProduction, lettersNamedIn, resolveObjectiveLetterGroup } from './letterGroups';
+import { asksIndependentProduction, lettersNamedIn, LETTER_GROUPS as SHARED_LETTER_GROUPS, NEW_LETTERS, resolveObjectiveLetterGroup } from './letterGroups';
+import { mulberry32, tierPick, tierPickFocus, type WordSpaceStamp } from '../wordSpace/pick';
+import { letterItemBeta, letterSpace } from '../wordSpace/letterSpaces';
 import {
   canProduceSound,
   keywordFor,
@@ -278,12 +280,10 @@ const letterSoundLinkSchema: Schema = {
 // Letter Group Definitions
 // ============================================================================
 
-const LETTER_GROUPS: Record<number, string[]> = {
-  1: ['s', 'a', 't', 'i', 'p', 'n'],
-  2: ['s', 'a', 't', 'i', 'p', 'n', 'c', 'k', 'e', 'h', 'r', 'm', 'd'],
-  3: ['s', 'a', 't', 'i', 'p', 'n', 'c', 'k', 'e', 'h', 'r', 'm', 'd', 'g', 'o', 'u', 'l', 'f', 'b'],
-  4: ['s', 'a', 't', 'i', 'p', 'n', 'c', 'k', 'e', 'h', 'r', 'm', 'd', 'g', 'o', 'u', 'l', 'f', 'b', 'j', 'z', 'w', 'v', 'y', 'x', 'qu'],
-};
+/** The cumulative groups come from `letterGroups.ts`, the one source of the order (2026-10-13). */
+const LETTER_GROUPS: Record<number, string[]> = Object.fromEntries(
+  Object.entries(SHARED_LETTER_GROUPS).map(([g, letters]) => [g, [...letters]]),
+);
 
 const LETTER_SOUNDS: Record<string, string> = {
   s: '/s/', a: '/\u0103/', t: '/t/', i: '/\u012d/', p: '/p/', n: '/n/',
@@ -494,6 +494,20 @@ function resolvePreReaderGradeKey(ctx: GenerationContext): string {
   return canonical || '1';
 }
 
+/** Stamp the tier's scaffold on every challenge (both paths). */
+function applyLetterSoundTier(result: LetterSoundLinkData, supportTier: SupportTier, gradeKey: string): void {
+  for (const ch of result.challenges ?? []) {
+    const sc = resolveLetterSoundSupportScaffold(ch.mode as LetterSoundMode, supportTier, gradeKey);
+    ch.showKeywordAnchor = sc.showKeywordAnchor;
+    ch.strategyHint = sc.strategyHint;
+    ch.protocolHint = sc.protocolHint;
+    ch.showSharedSoundHint = sc.showSharedSoundHint;
+    ch.auditionBeforeCommit = sc.auditionBeforeCommit;
+  }
+  result.supportTier = supportTier;
+  result.maxAttempts = MAX_ATTEMPTS_BY_TIER[supportTier];
+}
+
 export const generateLetterSoundLink = async (
   ctx: GenerationContext,
 ): Promise<LetterSoundLinkData> => {
@@ -585,6 +599,67 @@ export const generateLetterSoundLink = async (
   const countAsk = minChallenges === maxChallenges
     ? `exactly ${maxChallenges} challenges`
     : `${minChallenges}-${maxChallenges} challenges`;
+
+  // ── Letter space (2026-10-13, service/wordSpace/letterSpaces.ts): with a support tier and no remediation
+  //    focus, code picks which letters a session asks at the tier's difficulty (how much the letter's name
+  //    gives its sound away; how near the wrong letter is), two thirds of them from the group's new letters.
+  //    The options still pass `validateOptions`, the session's own gate. No model call.
+  if (supportTier && !ctx.remediationFocus) {
+    const modes = (evalConstraint?.allowedTypes ?? ['see-hear', 'hear-see', 'keyword-match']) as LetterSoundMode[];
+    const per = modes.length === 1 ? Math.min(5, maxChallenges) : 2;
+    const fresh = new Set<string>(NEW_LETTERS[letterGroup]);
+    const rand = mulberry32(Math.floor(Math.random() * 2 ** 31));
+    const used = new Set<string>();
+    const heard = new Set<string>();
+    const usedTargets = new Set<string>();
+    const namedAnchors = new Set<string>();
+    const shownAsWrong = new Set<string>();
+    const challenges: LetterSoundLinkChallenge[] = [];
+    const notes: string[] = [];
+    let short = false;
+    for (const mode of modes) {
+      const space = letterSpace(mode, cumulativeLetters, (l) => MODE_TARGETABLE[mode](l),
+        mode === 'keyword-match' ? keywordNamesItsPicture : () => true,
+        (a, b) => LETTER_SOUNDS[a] === LETTER_SOUNDS[b]);
+      // A small group (group 1 has six letters) tiers with fewer items rather than none: 5, then 4.
+      const draw = (n: number) => (letterGroup > 1
+        ? tierPickFocus(space, (it) => fresh.has(it.payload.targetLetter), supportTier, n, rand, used, heard)
+        : tierPick(space, supportTier, n, rand, used, heard));
+      let picks = draw(per);
+      if (picks.length < per && per > 4 && modes.length === 1) picks = draw(4);
+      if (picks.length < Math.min(per, 4)) { short = true; notes.push(`${mode}: only ${picks.length} of ${per}`); break; }
+      for (const p of picks) {
+        const t = p.payload.targetLetter; const w = p.payload.distractor;
+        const ch = {
+          id: `ch${challenges.length + 1}`, mode, targetLetter: t, targetSound: LETTER_SOUNDS[t],
+          keywordWord: KEYWORD_MAP[t], keywordImage: KEYWORD_MAP[t],
+          options: !w ? [] : mode === 'hear-see'
+            ? [{ letter: t, isCorrect: true }, { letter: w, isCorrect: false }]
+            : [{ sound: KEYWORD_MAP[t], isCorrect: true }, { sound: KEYWORD_MAP[w], isCorrect: false }],
+          ...(SHARED_SOUND_MAP[t] ? { sharedSoundLetters: SHARED_SOUND_MAP[t] } : {}),
+        } as LetterSoundLinkChallenge;
+        ch.options = validateOptions(ch, cumulativeLetters, usedTargets, namedAnchors, shownAsWrong);
+        // The session gate may swap a spent wrong option; the stamp describes the item actually shipped.
+        const wrong = ch.options.find((o) => !o.isCorrect);
+        const wrongLetter = !wrong ? null : mode === 'hear-see' ? wrong.letter ?? null : letterOfAnchor(wrong.sound ?? '') ?? null;
+        const stamp = letterItemBeta(mode, t, wrongLetter);
+        ch.wordSpace = { space: `letter-${mode}`, ...stamp } satisfies WordSpaceStamp;
+        usedTargets.add(t);
+        if (mode !== 'hear-see') namedAnchors.add(t);
+        challenges.push(ch);
+      }
+      notes.push(`${mode}: ${challenges.filter((c) => c.mode === mode).map((c) => `${c.targetLetter}${c.options?.length ? `/${c.options.find((o) => !o.isCorrect)?.letter ?? c.options.find((o) => !o.isCorrect)?.sound}` : ''}`).join(', ')}`);
+    }
+    console.log(`[letter-sound-link] Word space (${supportTier}, group ${letterGroup}): ${notes.join('; ')}${short ? ', model path' : ''}`);
+    if (!short) {
+      const result: LetterSoundLinkData = {
+        title: `Letter Sounds - Group ${letterGroup}!`, letterGroup: letterGroup as 1 | 2 | 3 | 4, cumulativeLetters,
+        gradeLevel: gradeKey, challenges,
+      };
+      applyLetterSoundTier(result, supportTier, gradeKey);
+      return result;
+    }
+  }
 
   const generationPrompt = `Create an interactive letter-sound correspondence activity for the topic: "${topic}".
 ${themedFocusLine(topic, intent, { targets: 'target letters', carrier: 'the title' })}
@@ -842,16 +917,7 @@ LETTER GROUP DATA:
     // OWN mode, because the answer dimension differs by mode.
     // ------------------------------------------------------------------
     if (supportTier && result.challenges) {
-      for (const ch of result.challenges) {
-        const sc = resolveLetterSoundSupportScaffold(ch.mode as LetterSoundMode, supportTier, gradeKey);
-        ch.showKeywordAnchor = sc.showKeywordAnchor;
-        ch.strategyHint = sc.strategyHint;
-        ch.protocolHint = sc.protocolHint;
-        ch.showSharedSoundHint = sc.showSharedSoundHint;
-        ch.auditionBeforeCommit = sc.auditionBeforeCommit;
-      }
-      result.supportTier = supportTier;
-      result.maxAttempts = MAX_ATTEMPTS_BY_TIER[supportTier];
+      applyLetterSoundTier(result, supportTier, gradeKey);
       console.log(
         `[letter-sound-link] Support tier "${supportTier}" applied per-challenge `
         + `(grade ${gradeKey}${gradeKey === 'K' ? ' — audition lever forced inert by the PRE band' : ''}; `

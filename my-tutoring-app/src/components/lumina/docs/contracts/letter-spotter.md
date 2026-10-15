@@ -52,7 +52,7 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Probe:** live journey transcript (`run_live_runtime.py --primitive letter-spotter --mode find_it|match_it`): no shape words about any on-screen letter.
 
 ### R5 — Support-tier invariants · INFERRED (find_it/match_it tier path never swept, eval 2026-06-21)
-- **Property:** absent/unknown `config.difficulty` → no-op. With a tier: distractor similarity easy far / medium mixed / hard near (confusable clusters b d p q g · m n h r u · i l t j f · c e o a s · v w y x z k), saturating inside the group. find_it: `showTargetReference` true at easy and medium ("Looking for X", the SAME uppercase form as the grid), false at hard. match_it option count easy 3 / medium 4 / hard 4. A tier never changes the target, the one-target grid or the answer. The spoken lead-in is tier-composed (find_it model line "Look at one row at a time, all the way across").
+- **Property:** absent/unknown `config.difficulty` → no-op. With a tier: distractor similarity easy far / medium mixed / hard near (confusable clusters b d p q g · m n h r u · i l t j f · c e o a s · v w y x z k), saturating inside the group. find_it: `showTargetReference` true at easy and medium ("Looking for X", the SAME uppercase form as the grid), false at hard. match_it option count easy 3 / medium 4 / hard 4. A tier never changes the target, the one-target grid or the answer, except on name_it's key-word path (R11), where it picks the letter and the key word. The spoken lead-in is tier-composed (find_it model line "Look at one row at a time, all the way across").
 - **Note:** the grid cycles through all ranked pool letters, so in a small group (group 1: 6 letters) all five non-targets appear at every tier and the similarity axis barely moves.
 - **Demanded by:** support-tier campaign.
 - **Evidence:** `gemini-letter-spotter.ts:193-240,305-445,1023-1097`; `LetterSpotter.tsx:501-525`.
@@ -88,6 +88,10 @@ Real-usage channel [4]: unknown (auth), not zero.
 - **Evidence:** `qa/eval-reports/letter-spotter-levers-2026-09-28.md`.
 - **Probe:** `npm test -- letterSpotterLevers LetterSpotter.levers.workspace`.
 
+### R11 — name_it key words: with a support tier, code picks the letter and the word · OBSERVED 2026-10-13
+- **Property:** with a support tier on name_it and no remediation focus, `keyWordSpace` (`service/wordSpace/letterSpaces.ts`) picks each item's letter (letter-name effect: b d t p first; vowels and g c last) and key word: a familiar noun of one or two syllables that starts with the letter AND its basic sound (never sheep, city, giraffe), two thirds from the group's new letters. The model writes only the sentence; the code-chosen letter and word override the model's, and the existing splice / sentinel / fallback-frame gates decide the printed sentence. Name-it items beyond the plan are dropped. find_it and match_it are unchanged (their grids and options are code-built by tier). The private group table now reads `letterGroups.ts` (`qu` shows as `q`).
+- **Probe:** `npm test -- src/components/lumina/service/wordSpace/letterSpaces.test.ts`; `scripts/word-space-lab/probe.sh letter-spotter after ...`.
+
 ## Conflicts
 
 ### C1 — R5 (find_it same-form reference) vs handoff 22 leak rule — OPEN
@@ -111,6 +115,7 @@ None of the five conflicts with R1-R9 when scoped as above; `other_case_referenc
 - **tutoring.aiDirectives:** stale (the `[LSP_*]` scripted-runner tags); bound sessions receive `tutoring: null`, so the live shape rule is `teachingWorkspace.guidance` (R4). Removal is an `/add-live-tutor-tools` cleanup.
 
 ## Changelog
+- 2026-10-13 — **R11 name_it key words** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/letter-spotter/before.txt`): name_it was s/sun, a/ant, t/top at every tier. After: group 1 easy t/towel, p/pudding → hard a/apple, s/scoop; group 3 easy b/bacon, f/fog → hard g/grill, c/coach. R5 narrowed. `LETTER_GROUPS`/`NEW_LETTERS` now come from `letterGroups.ts`.
 
 - 2026-09-29 — handoff 24: `name_it` declares `first_letter_model` (help, both): another picture word, printed, its first letter lit; its first letter is no session target and it is no word of any session sentence (`firstLetterModelLeak`). R3 holds (the star still covers the item's letter). All three name_it misses answered. Catalog `levers: true` set. `npm test -- letterSpotter LetterSpotter` 99/99.
 

@@ -71,6 +71,10 @@ import {
   type DiSentenceReadingSupportTier,
 } from "../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain";
 import { SENTENCE_MENU, spokenForm, type SentenceMenuEntry, type ShortVowel } from '../../primitives/visual-primitives/direct-instruction/diSentenceReadingMenu';
+import { clampGradeToK2 } from '../scopeContext';
+import { mulberry32, type WordSpaceStamp } from '../wordSpace/pick';
+import { scopeFromObjective } from '../wordSpace/scope';
+import { SENTENCE_SPACE_GRADES, bandTarget, drawSentences } from '../wordSpace/sentenceSpaces';
 
 // ── Support tier harness (L3) ───────────────────────────────────────
 
@@ -617,6 +621,8 @@ export const generateDiSentenceReading = async (
      * ceiling and never overrides an eval mode's pool.
      */
     difficulty?: string;
+    /** Canonical curriculum grade ('K', '1'): the sentence space serves K and 1. */
+    grade?: string;
     [key: string]: unknown;
   },
 ): Promise<DiSentenceReadingData> => {
@@ -653,6 +659,38 @@ export const generateDiSentenceReading = async (
   const sessionShape = supportTier
     ? resolveProblemShape('read_sentence', supportTier, wordCeiling)
     : null;
+
+  // ── Sentence space (2026-10-14, service/wordSpace/sentenceSpaces.ts): with a tier (one mode), grade K or 1 and
+  //    no remediation focus, code picks the sentences at the tier's third of predicted beta from the menu plus the
+  //    build-time bank, every word checked against the objective's letter scope. Inside the same word ceiling.
+  //    No model call. When the space cannot fill the session, the menu path below runs instead.
+  const spaceGrade = clampGradeToK2(
+    typeof config?.grade === 'string' ? config.grade : undefined,
+    /kinder|^k$|\bk\b/i.test(gradeLevel) ? 'K' : '1',
+  );
+  if (supportTier && modeTypes.length === 1 && !remediationFocus?.trim() && SENTENCE_SPACE_GRADES.includes(spaceGrade)) {
+    const type = modeTypes[0];
+    const parsed = scopeFromObjective([config?.objectiveText, intent, topic]);
+    const bands = SUPPORT_TIERS.map((t) => resolveProblemShape(type, t, wordCeiling).band);
+    const band = bands[SUPPORT_TIERS.indexOf(supportTier)];
+    const target = bandTarget(bands, SUPPORT_TIERS.indexOf(supportTier));
+    const picks = drawSentences(type, count, spaceGrade, parsed, wordCeiling, band,
+      mulberry32(Math.floor(Math.random() * 2 ** 31)), new Set(), target);
+    console.log(`[DiSentenceReading] Sentence space ${type} (${supportTier}, grade ${spaceGrade}, ${parsed?.label ?? 'no letter scope'}, ceiling ${wordCeiling}): ${
+      picks.length >= count ? picks.map((p) => `"${p.payload.text}" β${p.beta}`).join(', ') : `only ${picks.length} of ${count}, menu path`} (band ${band.join('-')}${target !== undefined ? `, target ${target} words` : ''})`);
+    if (picks.length >= count) {
+      const tier = resolveSupportStructure(type, supportTier).tier;
+      const challenges: DiSentenceReadingChallenge[] = picks.map(({ payload: { menuId, ...payload }, structure, beta }, i) => ({
+        id: `disr-${i + 1}-${menuId ?? payload.text.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '')}`,
+        challengeType: type, ...payload, supportTier: tier,
+        wordSpace: { space: `di-sentence-reading-${type}`, structure, beta } satisfies WordSpaceStamp,
+      }));
+      return {
+        title: 'Sentence Reading', description: 'Let’s read some sentences out loud together!', challengeType: type,
+        gradeLevel: gradeLevel || 'first grade', challenges, sentences: challenges.map((c) => c.text).join(' | '),
+      };
+    }
+  }
 
   // The FOCUS pool — what the objective itself scopes to, after the hard length
   // ceiling. Each eval mode derives its own pool from this (poolForType).

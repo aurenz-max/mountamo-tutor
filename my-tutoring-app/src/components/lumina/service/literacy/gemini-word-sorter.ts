@@ -2,6 +2,8 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { clampGradeToK2 } from "../scopeContext";
+import { mulberry32, tierPick, type WordSpaceStamp } from '../wordSpace/pick';
+import { CONCEPT_CATS, sortSpace } from '../wordSpace/categorySpaces';
 import { themedFocusLine } from './themeFocus';
 import {
   WordSorterData,
@@ -837,6 +839,66 @@ Generate 3-4 challenges with different matching criteria.`;
  */
 type WordSorterConfig = Partial<WordSorterData & { targetEvalMode: string }>;
 
+/** Spoken group labels and pictures for the library's categories (one or two plain words, no shared word). */
+const CATEGORY_LABEL: Record<string, { label: string; emoji: string; names: RegExp }> = {
+  animal: { label: 'Animals', emoji: '🐾', names: /\banimals?\b|\bpets?\b/ },
+  food: { label: 'Food', emoji: '🍽️', names: /\bfoods?\b|things we eat|\beat\b/ },
+  drink: { label: 'Drinks', emoji: '🥤', names: /\bdrinks?\b/ },
+  clothing: { label: 'Clothes', emoji: '👚', names: /\bcloth(es|ing)\b|things we wear|\bwear\b/ },
+  vehicle: { label: 'Vehicles', emoji: '🚦', names: /\bvehicles?\b|transportation|things that go/ },
+  body: { label: 'Body Parts', emoji: '🧍', names: /\bbody\b/ },
+  home: { label: 'Home', emoji: '🏠', names: /\bhome\b|\bhouse(hold)?\b/ },
+  toy: { label: 'Toys', emoji: '🧸', names: /\btoys?\b/ },
+  nature: { label: 'Nature', emoji: '🏞️', names: /\bnature\b|\boutdoors?\b/ },
+  weather: { label: 'Weather', emoji: '🌦️', names: /\bweather\b/ },
+  tool: { label: 'Tools', emoji: '🧰', names: /\btools?\b/ },
+  music: { label: 'Music', emoji: '🎼', names: /\bmusic(al)?\b|instruments?/ },
+  sport: { label: 'Sports', emoji: '🏟️', names: /\bsports?\b/ },
+  school: { label: 'School', emoji: '🏫', names: /\bschool\b/ },
+  place: { label: 'Places', emoji: '🗺️', names: /\bplaces?\b|places we go/ },
+};
+
+/**
+ * Word space (2026-10-13, service/wordSpace/categorySpaces.ts) for a CONCEPT sort: the objective names a
+ * category ("animals and food", "things we wear") or category sorting in general. Code picks the categories
+ * (named ones when the objective names enough; otherwise by tier: far pairs at easy, confusable pairs such
+ * as food/drink at hard) and the pictured words. The flat challenge then goes through
+ * `reconstructSortChallenge`, the model path's own gates. Grammar sorts (noun/verb, singular/plural) are not
+ * concept sorts and return null.
+ */
+function conceptSortsFromSpace(
+  type: 'binary_sort' | 'ternary_sort',
+  text: string,
+  grade: string,
+  tier: 'easy' | 'medium' | 'hard',
+  scaffold?: WordSorterSupportScaffold,
+): WordSorterChallenge[] | null {
+  const t = text.toLowerCase();
+  const named = (CONCEPT_CATS as readonly string[]).filter((c) => CATEGORY_LABEL[c]?.names.test(t));
+  const isConcept = named.length > 0 || /\bcategor(y|ies|ize)\b|\bgroup (words|objects|things)\b|things we/.test(t);
+  if (!isConcept || /\bnouns?\b|\bverbs?\b|singular|plural|past|present|future|adjective/.test(t)) return null;
+  const bins = type === 'binary_sort' ? 2 : 3;
+  const space = sortSpace(grade, bins, bins === 2 ? 4 : 3)
+    .filter((it) => named.length < bins ? named.every((c) => it.payload.categories.includes(c)) : it.payload.categories.every((c) => named.includes(c)));
+  const picks = tierPick(space, tier, 3, mulberry32(Math.floor(Math.random() * 2 ** 31)));
+  const challenges = picks.map((p, i) => {
+    const flat: FlatChallenge = { id: `ch${i + 1}`, instruction: 'Say which group each word belongs in.', wordCount: p.payload.cards.length };
+    p.payload.categories.forEach((c, b) => { flat[`bucket${b}`] = CATEGORY_LABEL[c].label; flat[`bucket${b}Emoji`] = CATEGORY_LABEL[c].emoji; });
+    p.payload.cards.forEach((card, w) => {
+      flat[`word${w}Text`] = card.word; flat[`word${w}Bucket`] = CATEGORY_LABEL[card.category].label; flat[`word${w}Emoji`] = card.emoji;
+    });
+    const ch = reconstructSortChallenge(flat, type, scaffold);
+    return ch ? [{ ...ch, wordSpace: { space: `sort-${type}`, structure: p.structure, beta: p.beta } satisfies WordSpaceStamp }] : [];
+  }).flat();
+  console.log(`[WordSorter] Word space ${type} (${tier}, grade ${grade}${named.length ? `, named ${named.join('/')}` : ''}): ${challenges.length === 3
+    ? picks.map((p) => `${p.payload.categories.join('/')} β${p.beta}`).join(', ') : `only ${challenges.length} of 3, model path`}`);
+  return challenges.length === 3 ? challenges : null;
+}
+
+/** Test seam: the concept-sort space path without a model call. */
+export const conceptSortsForTest = (type: 'binary_sort' | 'ternary_sort', text: string, grade: string, tier: 'easy' | 'medium' | 'hard') =>
+  conceptSortsFromSpace(type, text, grade, tier);
+
 export const generateWordSorter = async (
   ctx: GenerationContext,
 ): Promise<WordSorterData> => {
@@ -884,11 +946,19 @@ export const generateWordSorter = async (
   type SubResult = { title: string; sortingTopic: string; challenges: WordSorterChallenge[] };
   const generators: Promise<SubResult>[] = [];
 
+  // Concept sorts take the word space when a tier is set and no remediation focus is (2026-10-13).
+  const sortText = [ctx.objective?.text, intent, topic].filter(Boolean).join(' ');
+  const fromSpace = (type: 'binary_sort' | 'ternary_sort') => (supportTier && !ctx.remediationFocus
+    ? conceptSortsFromSpace(type, sortText, gradeKey, supportTier, scaffold) : null);
   if (allowedTypes.includes('binary_sort')) {
-    generators.push(generateBinarySortChallenges(topic, gradeKey, intent, scaffold));
+    const space = fromSpace('binary_sort');
+    generators.push(space ? Promise.resolve({ title: 'Sort the Pictures', sortingTopic: 'categories', challenges: space })
+      : generateBinarySortChallenges(topic, gradeKey, intent, scaffold));
   }
   if (allowedTypes.includes('ternary_sort')) {
-    generators.push(generateTernarySortChallenges(topic, gradeKey, intent, scaffold));
+    const space = fromSpace('ternary_sort');
+    generators.push(space ? Promise.resolve({ title: 'Sort the Pictures', sortingTopic: 'categories', challenges: space })
+      : generateTernarySortChallenges(topic, gradeKey, intent, scaffold));
   }
   if (allowedTypes.includes('match_pairs')) {
     generators.push(generateMatchPairsChallenges(topic, gradeKey, intent, scaffold));

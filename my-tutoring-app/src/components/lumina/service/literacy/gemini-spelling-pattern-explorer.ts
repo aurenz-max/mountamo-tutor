@@ -10,6 +10,9 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { makePatternItems, patternsNamed, sessionPatterns } from '../../primitives/visual-primitives/literacy/spellingPatternBuild';
+import { mulberry32, type WordSpaceStamp } from '../wordSpace/pick';
+import { scopeFromObjective } from '../wordSpace/scope';
+import { candidatePatterns, drawSpellingSession } from '../wordSpace/spellingPatternSpaces';
 
 const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   'short-vowel': {
@@ -73,10 +76,10 @@ type SpellingPatternExplorerConfig = Partial<SpellingPatternExplorerData & {
   /**
    * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
    * Second axis of the two-field contract: targetEvalMode = which skill,
-   * difficulty = how much on-screen scaffolding within it. NEVER changes
-   * numbers/content values — this primitive's tiers are 100% component display
-   * gates driven by the typed `supportTier` stamp below; nothing tier-shaped
-   * ever reaches the prompt.
+   * difficulty = how much on-screen scaffolding within it. On the model path it
+   * never changes content: the tiers are component display gates driven by the
+   * typed `supportTier` stamp below, and nothing tier-shaped reaches the prompt.
+   * On the word-space path (grades K-2) it also picks the dictation words.
    */
   difficulty: string;
 }>;
@@ -178,6 +181,36 @@ export const generateSpellingPatternExplorer = async (
   const selectedPattern = evalConstraint
     ? evalConstraint.allowedTypes[0] as PatternType
     : (config?.patternType || patterns[Math.floor(Math.random() * patterns.length)]);
+
+  // ── Word space (2026-10-14, service/wordSpace/spellingPatternSpaces.ts): at grades K-2 with a support tier
+  //    and no remediation focus, code picks one pattern the objective allows, the tier's four dictation
+  //    words and six easier pattern words from the word library, and writes the rule from the pattern.
+  //    No model call. A pattern the library cannot fill (er, mb, a one-onset family) takes the model path.
+  const spaceTier = normalizeSupportTier(config?.difficulty);
+  const lexGrade = ctx.grade === 'K' || ctx.grade === '1' || ctx.grade === '2' ? ctx.grade
+    : !ctx.grade && (gradeLevelKey === '1' || gradeLevelKey === '2') ? gradeLevelKey : null;
+  const spaceKind = (['short-vowel', 'long-vowel', 'r-controlled', 'silent-letter'] as const).find(k => k === selectedPattern);
+  if (spaceTier && lexGrade && spaceKind && !ctx.remediationFocus) {
+    const texts = [ctx.objective?.text, intent, topic];
+    const scope = scopeFromObjective(texts);
+    const candidates = candidatePatterns(spaceKind, patternsNamed(texts.filter(Boolean).join(' ')), scope?.family ?? null, scope?.vowels ?? null);
+    const session = drawSpellingSession(candidates, lexGrade, spaceTier, mulberry32(Math.floor(Math.random() * 2 ** 31)));
+    if (session) {
+      const { def, dictation, examples } = session;
+      const items: WordSpaceStamp[] = dictation.map(d => ({ space: `spelling-pattern-${spaceKind}`, structure: d.structure, beta: d.beta }));
+      const meanBeta = +(dictation.reduce((s, d) => s + d.beta, 0) / dictation.length).toFixed(2);
+      console.log(`[SpellingPatternExplorer] Word space (${spaceTier}, grade ${lexGrade}, ${def.shown} of ${candidates.join(',')}): `
+        + `dictate ${dictation.map(d => `${d.payload.word} β${d.beta}`).join(', ')}; examples ${examples.map(e => e.payload.word).join(', ')}`);
+      return finalizeSpellingPatternExplorerData({
+        title: def.title, gradeLevel: gradeLevelKey, patternType: spaceKind,
+        patternWords: examples.map(e => e.payload.word), highlightPattern: def.shown,
+        ruleTemplate: def.ruleTemplate, correctRule: def.correctRule,
+        dictationWords: dictation.map(d => d.payload.word),
+        wordSpace: { space: `spelling-pattern-${spaceKind}`, structure: def.shown, beta: meanBeta, items },
+      }, config);
+    }
+    console.log(`[SpellingPatternExplorer] Word space (${spaceTier}, grade ${lexGrade}): no pattern of ${candidates.join(',') || '(none the library holds)'} fills a session, model path`);
+  }
 
   const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
 

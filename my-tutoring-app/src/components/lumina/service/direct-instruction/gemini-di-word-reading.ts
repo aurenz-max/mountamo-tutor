@@ -35,6 +35,12 @@ import {
   DI_WORD_READING_TYPE_DOCS,
   type DiWordReadingChallengeType,
 } from '../../primitives/visual-primitives/direct-instruction/diWordReadingModes';
+import { clampGradeToK2 } from '../scopeContext';
+import { mulberry32, type WordSpaceItem, type WordSpaceStamp } from '../wordSpace/pick';
+import { scopeFromObjective } from '../wordSpace/scope';
+import {
+  WORD_READING_SPACE_GRADES, drawWordReading, type WordReadingPayload,
+} from '../wordSpace/diWordReadingSpaces';
 
 type ShortVowel = 'a' | 'e' | 'i' | 'o' | 'u';
 
@@ -389,6 +395,8 @@ export const generateDiWordReading = async (
     targetEvalMode?: string;
     /** Private student-model input; consumed only by code-owned menu ranking. */
     remediationFocus?: string;
+    /** Canonical curriculum grade ('K', '1'): the word space serves K and 1. */
+    grade?: string;
     [key: string]: unknown;
   },
 ): Promise<DiWordReadingData> => {
@@ -414,6 +422,32 @@ export const generateDiWordReading = async (
   const modeTypes: DiWordReadingChallengeType[] =
     (resolution?.allowedTypes as DiWordReadingChallengeType[] | undefined) ?? [...ALL_TYPES];
   const modeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
+  const shares = modeTypes.length === 1 ? [count] : distribute(count, modeTypes.length);
+  const supportTier = normalizeSupportTier(typeof config?.difficulty === 'string' ? config.difficulty : undefined);
+
+  // ── Word space (2026-10-14, service/wordSpace/diWordReadingSpaces.ts): with a support tier, grade K or 1 and no
+  //    remediation focus, code picks each mode's words at the tier's third of the mode's predicted beta, from the
+  //    word library inside the objective's letter scope (CVC) and the Dolch lists (sight). A mode whose space
+  //    cannot fill its slots takes the menu path below; when every mode fills, no model call is made.
+  const spaceGrade = clampGradeToK2(
+    typeof config?.grade === 'string' ? config.grade : undefined,
+    /\b(?:grade\s*1|first)\b/i.test(gradeLevel) ? '1' : 'K',
+  );
+  const spacePicks = new Map<DiWordReadingChallengeType, WordSpaceItem<WordReadingPayload>[]>();
+  if (supportTier && !remediationFocus?.trim() && WORD_READING_SPACE_GRADES.includes(spaceGrade)) {
+    const parsed = scopeFromObjective([config?.objectiveText, intent, topic]);
+    const rand = mulberry32(Math.floor(Math.random() * 2 ** 31));
+    const usedWords = new Set<string>();
+    const heardWords = new Set<string>();
+    modeTypes.forEach((type, i) => {
+      const picks = drawWordReading(type, shares[i], spaceGrade, parsed, supportTier, rand, usedWords, heardWords);
+      console.log(`[DiWordReading] Word space ${type} (${supportTier}, grade ${spaceGrade}, ${parsed?.label ?? 'no letter scope'}): ${
+        picks.length >= shares[i] ? picks.map((p) => `${p.words[0]} ${p.structure} β${p.beta}`).join(', ')
+          : `only ${picks.length} of ${shares[i]}, model path`}`);
+      if (picks.length >= shares[i]) spacePicks.set(type, picks);
+    });
+  }
+  const needsModel = modeTypes.some((type) => !spacePicks.has(type));
 
   const prompt = `Pick the target WORDS for a brisk Direct Instruction word-reading practice (beginning reader).
 
@@ -441,7 +475,7 @@ Return the wrapper JSON only.`;
   let title = 'Word Reading';
   let description = 'Let’s read some words out loud together!';
 
-  try {
+  if (needsModel) try {
     const response = await ai.models.generateContent({
       model: "gemini-flash-lite-latest",
       contents: prompt,
@@ -484,7 +518,7 @@ Return the wrapper JSON only.`;
   // Fork-A authoritative build. Single pins use one pool; blends and mixed
   // sessions split the item budget and interleave every selected identity.
   // A shared used-set prevents duplicate printed words across mode slices.
-  const used = new Set<string>();
+  const used = new Set<string>(Array.from(spacePicks.values()).flat().map((p) => p.words[0]));
   const buildWordsFor = (type: DiWordReadingChallengeType, n: number): string[] => {
     const candidates = candidatesForType(type, selected, scopeText, scopedVowels, sightScoped);
     const remediationMove = resolveDiRemediationMove(type, remediationFocus);
@@ -525,25 +559,22 @@ Return the wrapper JSON only.`;
     return words;
   };
 
-  let challenges: DiWordReadingChallenge[];
-  if (modeTypes.length === 1) {
-    challenges = buildWordsFor(modeTypes[0], count)
-      .map((word, i) => buildChallenge(word, i, modeTypes[0]));
-  } else {
-    const shares = distribute(count, modeTypes.length);
-    const perModeWords = modeTypes.map((type, i) => buildWordsFor(type, shares[i]));
-    const interleaved: Array<{ word: string; type: DiWordReadingChallengeType }> = [];
-    const maxLength = Math.max(...perModeWords.map((words) => words.length));
-    for (let round = 0; round < maxLength; round++) {
-      for (let mode = 0; mode < modeTypes.length; mode++) {
-        const word = perModeWords[mode][round];
-        if (word) interleaved.push({ word, type: modeTypes[mode] });
-      }
-    }
-    challenges = interleaved
-      .slice(0, count)
-      .map(({ word, type }, i) => buildChallenge(word, i, type));
+  // One list per mode (space picks, or the menu for a mode the space could not fill), interleaved so every
+  // selected identity runs through the session.
+  type Slot = { type: DiWordReadingChallengeType; word: string; space?: WordSpaceItem<WordReadingPayload> };
+  const perMode: Slot[][] = modeTypes.map((type, i) => spacePicks.get(type)?.map((p) => ({ type, word: p.words[0], space: p }))
+    ?? buildWordsFor(type, shares[i]).map((word) => ({ type, word })));
+  const interleaved: Slot[] = [];
+  const maxLength = Math.max(0, ...perMode.map((slots) => slots.length));
+  for (let round = 0; round < maxLength; round++) {
+    for (const slots of perMode) if (slots[round]) interleaved.push(slots[round]);
   }
+  let challenges: DiWordReadingChallenge[] = interleaved.slice(0, count).map(({ type, word, space }, i) => (space
+    ? {
+      id: `diwr-${i + 1}-${word}`, challengeType: type, ...space.payload,
+      wordSpace: { space: `di-word-reading-${space.payload.wordType}`, structure: space.structure, beta: space.beta } satisfies WordSpaceStamp,
+    }
+    : buildChallenge(word, i, type)));
 
   // Guarantee a runnable session even if every scope filter emptied out.
   if (challenges.length === 0) {
@@ -551,8 +582,8 @@ Return the wrapper JSON only.`;
   }
 
   // Where the levers start (`/add-support-tiers` Phase 6), stamped per challenge only when a tier is present: easy starts
-  // with the model card of a different word, medium and hard without it. The words, the mode and the ask never change.
-  const supportTier = normalizeSupportTier(typeof config?.difficulty === 'string' ? config.difficulty : undefined);
+  // with the model card of a different word, medium and hard without it. On the menu path the words never change with
+  // the tier; on the word-space path above the tier also picked them. The mode and the ask never change.
   if (supportTier) challenges = challenges.map((c) => ({ ...c, supportTier }));
 
   const data: DiWordReadingData = {
@@ -577,6 +608,7 @@ Return the wrapper JSON only.`;
     types: challenges.map((c) => c.challengeType),
     scope: scopedVowels ? `short ${scopedVowels.join(',')}` : sightScoped ? 'sight words' : 'generic',
     words: challenges.map((c) => `${c.word}(${c.wordType})`),
+    source: spacePicks.size === modeTypes.length ? 'word space' : spacePicks.size ? 'word space + menu' : 'menu',
     count: challenges.length,
   });
 

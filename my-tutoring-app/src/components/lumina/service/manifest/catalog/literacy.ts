@@ -1116,10 +1116,10 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
       + '(the child reads it themselves) for Grade 1-2. Every word is phonics-tagged, so the passage is controlled '
       + 'text, not a generic passage. Nothing advances on a click. Requires a microphone. ESSENTIAL for K-2 reading.',
     constraints:
-      'Grades K-2. Requires the live tutor and a microphone. Requires controlled phonics patterns matching the '
-      + 'student decoding level. Judged sentences are 3-8 words — the benched ceiling for reliable one-word-error '
-      + 'detection — so the grade ladder rides on vocabulary, pattern mix and sentence count, never on longer '
-      + 'utterances. BAND FLOOR: at Kindergarten use the read_along mode (pre-readers cannot yet decode connected '
+      'Grades K-5. Requires the live tutor and a microphone. K-2 passages use controlled phonics patterns matching '
+      + 'the student decoding level; grades 3-5 read grade-level connected text. config.difficulty (easy/medium/hard) '
+      + 'sets the sentence length, story length and decoding load for the grade (decodableReaderLadder.ts): K stays '
+      + '3-8 words a sentence, grade 1 hard reaches 10, grade 5 hard 18. BAND FLOOR: at Kindergarten use the read_along mode (pre-readers cannot yet decode connected '
       + 'text); the decoding comprehension modes (literal/sequence/inference/main_idea) are for Grade 1+. Use '
       + 'di-sentence-reading instead for ISOLATED decodable or sight-word sentences with no story around them, and '
       + 'read-aloud-studio for grade 1-6 fluency where comprehension is not being measured.',
@@ -1170,7 +1170,7 @@ export const LITERACY_CATALOG: ComponentDefinition[] = [
     ],
     supportsEvaluation: true,
     teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
       guidance: 'A decodable story, one item at a time; every answer is spoken. A read line is one '
         + 'printed sentence the learner reads aloud cold: it is judged word by word, so a skipped, added or swapped '
         + 'small word ("the" for "a") is a miss, and slow sounding-out that lands on the right words is correct. '

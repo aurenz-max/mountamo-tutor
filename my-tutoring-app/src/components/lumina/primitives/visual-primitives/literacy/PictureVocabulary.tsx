@@ -71,6 +71,7 @@ import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { pictureVocabularyPipPose } from '../../../pip/pictureVocabularyPipPose';
 import RhymePairSurface from './RhymePairSurface';
 import { PICTURE_PAIR_RULES, type PicturePairItem } from './picturePairBuild';
+import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -93,6 +94,8 @@ export interface PictureVocabOption {
 
 export interface PictureVocabChallenge {
   id: string;
+  /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+  wordSpace?: WordSpaceStamp;
   type: PictureVocabChallengeType;
   /** The word the student must produce (or tap). For 'opposite' this is the OPPOSITE word. */
   word: string;

@@ -20,6 +20,10 @@ import {
   type LetterGroup,
 } from './letterGroups';
 import { makeLetterItems } from '../../primitives/visual-primitives/literacy/letterBuild';
+import { clampGradeToK2 } from '../scopeContext';
+import { mulberry32, tierPick, type WordSpaceStamp } from '../wordSpace/pick';
+import { cvcScope, cvcSpellerSpace, wordSortPair, wordSortSpace } from '../wordSpace/cvcSpellerSpaces';
+import { scopeFromObjective } from '../wordSpace/scope';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -463,7 +467,8 @@ export function resolveCvcVowelFocus(
   const explicit = configured?.toLowerCase().trim();
   if (explicit && explicit in VOWEL_MAP) return explicit as keyof typeof VOWEL_MAP;
   for (const source of [intent, topic]) {
-    const match = source?.toLowerCase().match(/short[\s-]*([aeiou])\b/);
+    // "Short 'o'" is how the published objectives name it; the quote used to defeat the match.
+    const match = source?.toLowerCase().match(/short[\s-]*['‘’"]?([aeiou])\b/);
     if (match) return `short-${match[1]}` as keyof typeof VOWEL_MAP;
   }
   return null;
@@ -562,6 +567,58 @@ export function enforceCvcScopeAndVariety<
  * Audio-first: words are delivered via AI tutor voice, not shown as text.
  * AI scaffolding provides progressive phoneme segmentation at each level.
  */
+/**
+ * Within-mode support tier: withdraw on-screen scaffolding (never the word). Gated ONLY on the tier; each
+ * challenge resolves its scaffold from its OWN taskType. Runs after every structural fixup, so a tier can
+ * only remove help. Shared by the model path and the word-space path.
+ */
+function applyCvcSupportTier(result: CvcSpellerData, supportTier: SupportTier, targetVowel: string): void {
+  for (const ch of result.challenges ?? []) {
+    const sc = resolveSupportStructure(ch.taskType as CvcTaskType, supportTier);
+
+    // Picture cue (spell-word + word-sort): emoji/image self-check aid.
+    // fill-vowel renders no picture, so leave it untouched (no-op there).
+    if (ch.taskType === 'spell-word' || ch.taskType === 'word-sort') {
+      ch.showPictureCue = sc.showPictureCue ?? true;
+    }
+
+    // ── Axis 1 (support: distractor COUNT) × Axis 2 (structural: distractor
+    //    SIMILARITY) for spell-word. Support tier sets the cap; structural
+    //    tier picks WHICH letters fill it. selectDistractorLetters excludes
+    //    target letters, so the word stays spellable (answer-safe). ──
+    if (ch.taskType === 'spell-word' && sc.distractorLevel) {
+      const cap = sc.distractorLevel === 'clean' ? 1 : sc.distractorLevel === 'some' ? 3 : 5;
+      const shape = resolveProblemShape('spell-word', supportTier, { targetVowel });
+      ch.distractorLetters = selectDistractorLetters(
+        ch.targetLetters || ch.targetWord.split(''),
+        cap,
+        shape.letterSimilarity,
+      );
+    }
+
+    // fill-vowel's decoy-vowel re-selection and word-sort's bucket-label
+    // pinning both lived here and are DELETED — see `resolveProblemShape`
+    // for why a spoken, open-set answer has no decoy, and the schema
+    // comment for why a generated bucket label could only desync from the
+    // word it labels. word-sort keeps its axis-2 lever in the PROMPT (the
+    // tier-tuned contrast vowel governs which words are drawn), which is
+    // where it was always doing the real work.
+  }
+  // Tell the live tutor the support level (blended sessions included) so its
+  // reveal policy is tier-aware per challenge.
+  result.supportTier = supportTier;
+}
+
+/** Two lists merged in a random order, each list's own order kept. */
+function interleave<T>(a: T[], b: T[], rand: () => number): T[] {
+  const out: T[] = [];
+  while (a.length || b.length) {
+    const fromA = !b.length || (a.length > 0 && rand() < a.length / (a.length + b.length));
+    out.push((fromA ? a : b).shift()!);
+  }
+  return out;
+}
+
 type CvcSpellerConfig = Partial<CvcSpellerData & {
   targetEvalMode?: string;
   /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis:
@@ -619,6 +676,62 @@ export const generateCvcSpeller = async (
     console.log('[CvcSpeller] make_word: letter build', { letterGroup, vowelFocus, asks: buildItems.map(i => i.ask) });
     return { title: 'Make Real Words', letterGroup, availableLetters: groupLetters, challenges: [], task: 'letter_build',
       buildItems, ...(vowelFocus ? { vowelFocus: vowelFocus as CvcSpellerData['vowelFocus'] } : {}), ...(supportTier ? { supportTier } : {}) };
+  }
+
+  // ── Word space (2026-10-13, service/wordSpace): with a support tier and no remediation focus, code picks
+  //    the words from the word library inside the letter group (and vowel focus, word family), at the
+  //    tier's difficulty. fill-vowel: the word's vowel and frame; word-sort: the vowel PAIR (far at easy,
+  //    near at hard); spell-word: the word's spelling choices (the tier still sets the letter bank below).
+  //    No model call. If any mode cannot fill its slots, the whole session takes the model path.
+  const spaceTier = normalizeSupportTier(config?.difficulty);
+  if (spaceTier && !ctx.remediationFocus) {
+    const grade = clampGradeToK2(ctx.grade, 'K');
+    const family = scopeFromObjective([ctx.objective.text, intent, topic])?.family ?? null;
+    const scope = cvcScope(groupLetters, vowelFocus ? VOWEL_MAP[vowelFocus] : null, family);
+    const modes = (evalConstraint?.allowedTypes ?? ['fill-vowel', 'spell-word', 'word-sort']) as CvcTaskType[];
+    const rand = mulberry32(Math.floor(Math.random() * 2 ** 31));
+    // One set of draws for the session; a single-vowel scope may hold only 4 rimes, so a 5-word draw
+    // that comes up short retries at 4 (the model path's floor is 3).
+    const drawSession = (count: number) => {
+      const used = new Set<string>();
+      const built: CvcSpellerData['challenges'] = [];
+      const notes: string[] = [];
+      for (const mode of modes) {
+        const pair = mode === 'word-sort' ? wordSortPair(scope, grade, spaceTier, vowelFocus ? VOWEL_MAP[vowelFocus] : null, count) : null;
+        // word-sort draws half its words from each vowel of the pair, so the answer changes from word to word.
+        const picks = mode !== 'word-sort' ? tierPick(cvcSpellerSpace(mode, scope, grade), spaceTier, count, rand, used)
+          : !pair ? [] : interleave(
+            tierPick(wordSortSpace(pair, scope, grade).filter((it) => it.key === pair[0]), spaceTier, Math.ceil(count / 2), rand, used),
+            tierPick(wordSortSpace(pair, scope, grade).filter((it) => it.key === pair[1]), spaceTier, Math.floor(count / 2), rand, used),
+            rand,
+          );
+        if (picks.length < count) return { built: null, notes: [...notes, `${mode}: only ${picks.length} of ${count}`] };
+        notes.push(`${mode}${pair ? ` ${pair.join('/')}` : ''}: ${picks.map((p) => `${p.payload.targetWord} β${p.beta}`).join(', ')}`);
+        for (const p of picks) {
+          built.push({
+            id: `c${built.length + 1}`, taskType: mode, ...p.payload, distractorLetters: [],
+            wordSpace: { space: `cvc-speller-${mode}`, structure: p.structure, beta: p.beta } satisfies WordSpaceStamp,
+          } as CvcSpellerData['challenges'][number]);
+        }
+      }
+      return { built, notes };
+    };
+    let session = drawSession(modes.length === 1 ? 5 : 2);
+    if (!session.built && modes.length === 1) session = drawSession(4);
+    const built = session.built ?? [];
+    const notes = session.notes;
+    const short = !session.built;
+    const { dropped } = enforceCvcScopeAndVariety(built, groupLetters);
+    console.log(`[cvc-speller] Word space (${spaceTier}, grade ${grade}, ${scope.label}): ${short || dropped.length ? `${notes.join('; ')}${dropped.length ? `; dropped ${dropped.join(',')}` : ''}, model path` : notes.join('; ')}`);
+    if (!short && !dropped.length) {
+      const result: CvcSpellerData = {
+        title: vowelFocus ? `Short ${VOWEL_MAP[vowelFocus].toUpperCase()} Word Fun!` : 'Sounds and Letters!',
+        letterGroup: letterGroup as CvcSpellerData['letterGroup'], availableLetters: groupLetters, challenges: built,
+        ...(vowelFocus ? { vowelFocus: vowelFocus as CvcSpellerData['vowelFocus'] } : {}),
+      };
+      applyCvcSupportTier(result, spaceTier, targetVowel);
+      return result;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -809,40 +922,7 @@ PHONEME NOTATION:
     // after all structural fixups, so a tier can only REMOVE help.
     // ========================================================================
     if (supportTier && result.challenges) {
-      for (const ch of result.challenges) {
-        const sc = resolveSupportStructure(ch.taskType as CvcTaskType, supportTier);
-
-        // Picture cue (spell-word + word-sort): emoji/image self-check aid.
-        // fill-vowel renders no picture, so leave it untouched (no-op there).
-        if (ch.taskType === 'spell-word' || ch.taskType === 'word-sort') {
-          ch.showPictureCue = sc.showPictureCue ?? true;
-        }
-
-        // ── Axis 1 (support: distractor COUNT) × Axis 2 (structural: distractor
-        //    SIMILARITY) for spell-word. Support tier sets the cap; structural
-        //    tier picks WHICH letters fill it. selectDistractorLetters excludes
-        //    target letters, so the word stays spellable (answer-safe). ──
-        if (ch.taskType === 'spell-word' && sc.distractorLevel) {
-          const cap = sc.distractorLevel === 'clean' ? 1 : sc.distractorLevel === 'some' ? 3 : 5;
-          const shape = resolveProblemShape('spell-word', supportTier, { targetVowel });
-          ch.distractorLetters = selectDistractorLetters(
-            ch.targetLetters || ch.targetWord.split(''),
-            cap,
-            shape.letterSimilarity,
-          );
-        }
-
-        // fill-vowel's decoy-vowel re-selection and word-sort's bucket-label
-        // pinning both lived here and are DELETED — see `resolveProblemShape`
-        // for why a spoken, open-set answer has no decoy, and the schema
-        // comment for why a generated bucket label could only desync from the
-        // word it labels. word-sort keeps its axis-2 lever in the PROMPT (the
-        // tier-tuned contrast vowel governs which words are drawn), which is
-        // where it was always doing the real work.
-      }
-      // Tell the live tutor the support level (blended sessions included) so its
-      // reveal policy is tier-aware per challenge.
-      result.supportTier = supportTier;
+      applyCvcSupportTier(result, supportTier, targetVowel);
       console.log(
         `[cvc-speller] tier "${supportTier}" applied per-challenge — contrast="${structuralContrast}" `
         + `(${pinnedType ? 'single-mode ' + pinnedType : 'blended'}). ${TIER_GUARDRAIL}`,

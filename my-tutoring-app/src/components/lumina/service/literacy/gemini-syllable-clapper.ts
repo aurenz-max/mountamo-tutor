@@ -23,6 +23,8 @@ import {
   type SyllableTask,
 } from "../../primitives/visual-primitives/literacy/syllableClapperModes";
 import { makeSyllableItems } from "../../primitives/visual-primitives/literacy/syllableBuild";
+import { mulberry32, tierPick, tierPickSplit, type WordSpaceItem, type WordSpaceStamp } from '../wordSpace/pick';
+import { splitIsValid, syllableSpace, type SyllablePayload, type SyllableSpaceTask } from '../wordSpace/syllableSpaces';
 import {
   resolveEvalModes,
   constrainChallengeTypeEnum,
@@ -265,6 +267,7 @@ interface RawChallenge {
   difficulty?: number;
   echoWordSlowly?: boolean;
   inviteClap?: boolean;
+  wordSpace?: WordSpaceStamp;
 }
 
 /**
@@ -303,6 +306,53 @@ const dropReason = (ch: RawChallenge): string | null => {
       + `residue="${ch.residue ?? ''}" must be the two parts [${parts.join('|')}], both sayable words`;
   }
   return null;
+};
+
+/**
+ * Syllable splits for words the word library cannot split (it has no hyphenation; compounds split in code).
+ * The model only splits; code chose the word and its beat count from the phonemes, and keeps a split only
+ * when `splitIsValid` and the silent-e rule pass. One small call per session.
+ */
+async function splitWithModel(words: Array<{ word: string; count: number }>): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (!words.length) return out;
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: `Split each word into its spoken syllables (the beats a child claps), so that the parts joined spell the word exactly.
+Each word's number of beats is given; return exactly that many parts. Use dictionary hyphenation where it fits the beats
+(but-ter-fly, ti-ger, rab-bit, um-brel-la). Never make a beat out of a silent final e (cen-ti-pede, not cen-ti-pe-de).
+${words.map((w) => `- ${w.word} (${w.count} beats)`).join('\n')}`,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: { splits: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: {
+            word: { type: Type.STRING }, parts: { type: Type.ARRAY, items: { type: Type.STRING } },
+          }, required: ['word', 'parts'] } } },
+          required: ['splits'],
+        },
+      },
+    });
+    const parsed = JSON.parse(response.text ?? '{}') as { splits?: Array<{ word: string; parts: string[] }> };
+    const counts = new Map(words.map((w) => [w.word, w.count]));
+    for (const sp of parsed.splits ?? []) {
+      const word = String(sp.word ?? '').toLowerCase().trim();
+      const parts = (sp.parts ?? []).map((p) => String(p).toLowerCase().trim());
+      const count = counts.get(word);
+      if (count && splitIsValid(word, count, parts) && !endsWithSilentESyllable(parts)) out.set(word, parts);
+    }
+  } catch (err) {
+    console.warn('[syllable-clapper] syllable split call failed:', err);
+  }
+  return out;
+}
+
+/** Beats a count_parts session draws from, by tier: the count changes from word to word at every tier. */
+const COUNT_LADDER: Record<'K' | '1' | '2', Record<SyllableSupportTier, number[]>> = {
+  K: { easy: [1, 2], medium: [1, 2, 3], hard: [2, 3] },
+  '1': { easy: [1, 2], medium: [2, 3], hard: [3, 4] },
+  '2': { easy: [1, 2], medium: [2, 3], hard: [3, 4] },
 };
 
 export const generateSyllableClapper = async (
@@ -387,6 +437,56 @@ export const generateSyllableClapper = async (
   // gate alone would drop items silently and cost supply; steering the WORD
   // CHOICE is what actually fixes a draw (phoneme-explorer's blend gate moved
   // its drop rate 4/20 → 0/15 the same way).
+  // ── Word space (2026-10-13, service/wordSpace): with a support tier and no remediation focus, code picks
+  //    every word and its beat count (from its phonemes) at the tier's difficulty, and splits compounds
+  //    (cow + boy) from the library. Other words' splits come from one model call, kept only when they
+  //    match the count and spell the word. If any task cannot fill its slots, the model path below runs.
+  if (supportTier && !ctx.remediationFocus && scaffold) {
+    const tasks = (resolution?.allowedTypes ?? ['count_parts', 'blend_syllables', 'delete_compound']) as SyllableSpaceTask[];
+    const per = Math.max(1, Math.floor(challengeCount / tasks.length));
+    const rand = mulberry32(Math.floor(Math.random() * 2 ** 31));
+    const used = new Set<string>();
+    const heard = new Set<string>();
+    // Three spare words per task, so a split the model gets wrong costs a spare, not the session.
+    const drafts = tasks.map((task) => {
+      const space = syllableSpace(task, gradeLevelKey);
+      const picks: WordSpaceItem<SyllablePayload>[] = task === 'count_parts'
+        ? tierPickSplit(space.filter((it) => COUNT_LADDER[gradeLevelKey][supportTier].includes(it.payload.syllableCount)),
+          (it) => it.key ?? '', supportTier, per + 3, rand, used, heard)
+        : tierPick(space, supportTier, per + 3, rand, used, heard);
+      return { task, picks };
+    });
+    const need = drafts.flatMap((d) => d.picks).filter((p) => !p.payload.syllables).map((p) => ({ word: p.payload.word, count: p.payload.syllableCount }));
+    const splits = await splitWithModel(need);
+    const kept: RawChallenge[] = [];
+    const notes: string[] = [];
+    let short = false;
+    for (const { task, picks } of drafts) {
+      const mine: RawChallenge[] = [];
+      for (const p of picks) {
+        if (mine.length >= per) break;
+        const parts = p.payload.syllables ?? splits.get(p.payload.word);
+        if (!parts) continue;
+        const ch: RawChallenge = {
+          id: `c${kept.length + mine.length + 1}`, word: p.payload.word, challengeType: task, syllableCount: parts.length,
+          syllables: parts, imageDescription: p.payload.imageDescription, difficulty: Math.min(3 + parts.length - 1, 5),
+          ...(p.payload.removePart ? { removePart: p.payload.removePart, residue: p.payload.residue } : {}),
+          echoWordSlowly: scaffold.echoWordSlowly, inviteClap: scaffold.inviteClap,
+          wordSpace: { space: `syllable-${task}`, structure: p.structure, beta: p.beta } satisfies WordSpaceStamp,
+        } as RawChallenge;
+        if (dropReason(ch)) continue;
+        mine.push(ch);
+      }
+      notes.push(`${task}: ${mine.length === per ? mine.map((c) => `${(c.syllables ?? []).join('-')}${c.residue ? `>${c.residue}` : ''}`).join(', ') : `only ${mine.length} of ${per}`}`);
+      if (mine.length < per) { short = true; break; }
+      kept.push(...mine);
+    }
+    console.log(`[syllable-clapper] Word space (${supportTier}, grade ${gradeLevelKey}, ${splits.size}/${need.length} model splits kept): ${notes.join('; ')}${short ? ', model path' : ''}`);
+    if (!short) {
+      return { title: 'Clap It Out!', supportTier, challenges: kept as SyllableClapperData['challenges'] };
+    }
+  }
+
   const bannedSample = Array.from(DIALECT_VARIABLE_WORDS).slice(0, 24).join(', ');
 
   const generationPrompt = `Create a syllable activity for the topic: "${topic}".

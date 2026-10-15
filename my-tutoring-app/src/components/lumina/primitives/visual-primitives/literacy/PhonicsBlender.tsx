@@ -57,6 +57,7 @@ import { ARROW_LEVER, DOTS_LEVER, NAME_MODEL_LEVER, SHORT_WORD_LEVER, SLIDE_LEVE
   phonicsBlenderLevers, shortWordFor } from './phonicsBlenderLevers';
 import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { phonicsBlenderPipPose } from '../../../pip/phonicsBlenderPipPose';
+import type { WordSpaceStamp } from '../../../service/wordSpace/pick';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
@@ -78,6 +79,8 @@ export interface PhonicsBlenderData {
     /** Reward picture only. Never shown before the word is credited. */
     emoji?: string;
     imageDescription?: string;
+    /** Word-space calibration stamp (service/wordSpace); never rendered, never sent to the tutor. */
+    wordSpace?: WordSpaceStamp;
   }>;
 
   // ── Within-mode support tier (stamped in code by the generator from

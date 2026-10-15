@@ -9,6 +9,9 @@ import {
   type ChallengeTypeDoc,
 } from '../evalMode';
 import { buildRemediationPrompt } from '../generation/remediationPrompt';
+import { lexWord, soundLabel } from '../wordSpace/lexicon';
+import { mulberry32, tierPick, type WordSpaceStamp } from '../wordSpace/pick';
+import { phonemeSpace } from '../wordSpace/phonemeSpaces';
 
 // ---------------------------------------------------------------------------
 // Architecture
@@ -440,8 +443,14 @@ for (const set of ENDING_SOUND_CONTRASTS) {
 }
 
 /** Exported for the contract test: the final sound represented by a bank word. */
-export const endingSoundForWord = (word: string): string | undefined =>
-  ENDING_SOUND_BY_WORD.get(word.trim().toLowerCase());
+export const endingSoundForWord = (word: string): string | undefined => {
+  const w = word.trim().toLowerCase();
+  const fromBank = ENDING_SOUND_BY_WORD.get(w);
+  if (fromBank) return fromBank;
+  // Word-space items: the last sound from the word library's pronunciation.
+  const lex = lexWord(w);
+  return lex ? soundLabel(lex.phones[lex.phones.length - 1]) : undefined;
+};
 
 /**
  * Build a deterministic session of auditory ending-sound matches. The answer's
@@ -937,10 +946,36 @@ export const generatePhonemeExplorer = async (
   const plan = buildModePlan(allowed, Math.max(TOTAL_CHALLENGES, allowed.length));
   const distinctModes = Array.from(new Set(plan));
 
+  // ── Word space (2026-10-13, service/wordSpace): with a difficulty tier at K or grade 1, code picks
+  //    the words, the answer and the wrong cards from the word library at the tier's difficulty. Not
+  //    with a remediation focus (that path asks the model to encode one diagnosed confusion). A mode whose
+  //    space cannot fill its slots falls back to its model call below; nothing is mixed within a mode.
+  const spacePools = new Map<PhonemeMode, RawChallenge[]>();
+  if (ctx.supportTier && !ctx.remediationFocus && (gradeKey === 'K' || gradeKey === '1')) {
+    const rand = mulberry32(Math.floor(Math.random() * 2 ** 31));
+    const used = new Set<string>();
+    const heard = new Set<string>();
+    for (const mode of distinctModes) {
+      const count = plan.filter((m) => m === mode).length;
+      const picks = tierPick(phonemeSpace(mode, gradeKey), ctx.supportTier, count, rand, used, heard);
+      const built = picks
+        .map((p) => ({
+          ...p.payload,
+          mode,
+          wordSpace: { space: `phoneme-${mode}`, structure: p.structure, beta: +p.beta.toFixed(2) } satisfies WordSpaceStamp,
+        }))
+        .filter((ch) => validateModeChallenge(ch, mode));
+      if (built.length === count) spacePools.set(mode, built);
+      console.log(`[PhonemeExplorer] Word space ${mode} (${ctx.supportTier}, grade ${gradeKey}): ${built.length === count
+        ? built.map((c) => `${c.wordSpace.structure} β${c.wordSpace.beta}`).join(', ')
+        : `only ${built.length} of ${count}, model path`}`);
+    }
+  }
+
   try {
-    // ── Fan out: one call per distinct mode, in parallel ─────────────
+    // ── Fan out: one call per distinct mode, in parallel (word-space modes skip the call) ──
     const pools = await Promise.all(
-      distinctModes.map((mode) =>
+      distinctModes.map((mode) => spacePools.get(mode) ?? (
         generateModeChallenges(
           mode,
           plan.filter((m) => m === mode).length,
@@ -951,7 +986,7 @@ export const generatePhonemeExplorer = async (
         ).catch((err) => {
           console.error(`[PhonemeExplorer] ${mode} generation failed:`, err);
           return [] as RawChallenge[];
-        }),
+        })),
       ),
     );
 

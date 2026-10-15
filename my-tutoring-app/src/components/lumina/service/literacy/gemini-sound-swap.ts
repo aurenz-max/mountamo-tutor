@@ -13,6 +13,8 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { mulberry32, tierPick, type WordSpaceStamp } from '../wordSpace/pick';
+import { soundSwapSpace, type SwapOperation } from '../wordSpace/soundSwapSpaces';
 
 // ---------------------------------------------------------------------------
 // Curated valid word pairs — guides Gemini toward real-word transformations
@@ -577,7 +579,7 @@ const soundSwapSchema: Schema = {
 // Derivation — compute operation details from phoneme array diffs
 // ============================================================================
 
-interface RawChallenge {
+export interface RawChallenge {
   id: string;
   operation: "addition" | "deletion" | "substitution";
   originalWord: string;
@@ -598,7 +600,7 @@ function positionLabel(idx: number, length: number): "beginning" | "middle" | "e
  * Derive operation-specific fields by diffing originalPhonemes ↔ resultPhonemes.
  * Returns a full SoundSwapChallenge with all fields populated deterministically.
  */
-function deriveOperationFields(raw: RawChallenge): SoundSwapChallenge {
+export function deriveOperationFields(raw: RawChallenge): SoundSwapChallenge {
   const base = {
     id: raw.id,
     operation: raw.operation,
@@ -684,6 +686,47 @@ function deriveOperationFields(raw: RawChallenge): SoundSwapChallenge {
  * @param config - Optional configuration overrides (challengeCount, operations, targetEvalMode)
  * @returns SoundSwapData with grade-appropriate phoneme manipulation challenges
  */
+/**
+ * Within-mode support tier, per challenge from its own operation: withdraw on-screen help (axis 1) and
+ * count the manipulation position against the tier's target (axis 2). Shared by the model path and the
+ * word-space path.
+ */
+function applySoundSwapTier(
+  challenges: SoundSwapChallenge[],
+  supportTier: SupportTier,
+  pinnedType: SoundSwapChallenge['operation'] | undefined,
+): void {
+  let onTarget = 0;
+  let offTarget = 0;
+  for (const ch of challenges) {
+    // ── Axis 1 (scaffolding withdrawal) — display/instruction only ──
+    const sc = resolveSupportStructure(ch.operation, supportTier);
+    ch.showWordImage = sc.showWordImage;
+    ch.nameTargetSound = sc.nameTargetSound;
+    // Highlight is a substitution-only perception aid; resolveSupportStructure
+    // already returns false for non-substitution modes, but guard anyway.
+    ch.showTargetHighlight = ch.operation === 'substitution' ? sc.showTargetHighlight : false;
+    // optionCount is deliberately NOT set: the DI port made the answer spoken,
+    // so there are no choice buttons for it to size. The field survives on the
+    // type as deprecated so old generated payloads still parse.
+
+    // ── Axis 2 (structural — manipulation position): COUNT → validate. ──
+    // The position is answer-bearing and was already re-derived from the phoneme
+    // diff by deriveOperationFields(), so the answer is correct regardless. We
+    // cannot RECONSTRUCT a different position in code without inventing a word
+    // (brittle for word inventory), so we COUNT the LLM's actual position against
+    // this tier's allowed set and log target-vs-actual for the live sweep.
+    const shape = resolveProblemShape(ch.operation, supportTier);
+    const actual = actualManipPosition(ch);
+    const hit = actual !== null && shape.targetPositions.includes(actual);
+    if (hit) onTarget++; else offTarget++;
+  }
+  const shapeNote = pinnedType
+    ? `structural target=${resolveProblemShape(pinnedType, supportTier).primaryPosition}, on-target ${onTarget}/${onTarget + offTarget}`
+    : 'blended (per-challenge position validated)';
+  console.log(`[sound-swap] Difficulty tier "${supportTier}" applied per-challenge (${pinnedType ? 'single-mode ' + pinnedType : 'blended'}); ${shapeNote}`);
+}
+
 type SoundSwapConfig = Partial<{
     challengeCount: number;
     operations: string[];
@@ -721,6 +764,41 @@ export const generateSoundSwap = async (
     console.log('[SoundSwap] swap_build: letter build', { asks: buildItems.map(i => i.ask) });
     return { title: 'Change One Letter', gradeLevel, challenges: [], task: 'letter_build', buildItems,
       ...(supportTier ? { supportTier } : {}) };
+  }
+
+  // ── Word space (2026-10-13, service/wordSpace): with a support tier and no remediation focus, code picks
+  //    every pair from the word library at the tier's difficulty (position, cluster, near sound), the pair
+  //    computed from the two words' phonemes. No model call. If any operation cannot fill its slots, the
+  //    whole session takes the model path below.
+  const spaceTier = normalizeSupportTier(config?.difficulty);
+  if (spaceTier && !ctx.remediationFocus) {
+    const grade = clampGradeToK2(ctx.grade, (['K', '1', '2'].includes(gradeLevel.toUpperCase()) ? gradeLevel.toUpperCase() : 'K') as 'K' | '1' | '2');
+    const ops = (evalConstraint?.allowedTypes ?? ['addition', 'deletion', 'substitution']) as SwapOperation[];
+    const total = config?.challengeCount ?? 9;
+    const per = Math.max(1, Math.floor(total / ops.length));
+    const rand = mulberry32(Math.floor(Math.random() * 2 ** 31));
+    const used = new Set<string>();
+    const heard = new Set<string>();
+    const challenges: SoundSwapChallenge[] = [];
+    const notes: string[] = [];
+    let short = false;
+    for (const op of ops) {
+      const picks = tierPick(soundSwapSpace(op, grade), spaceTier, per, rand, used, heard);
+      notes.push(`${op}: ${picks.length === per ? picks.map((p) => `${p.payload.originalWord}>${p.payload.resultWord} ${p.structure} β${p.beta}`).join(', ') : `only ${picks.length} of ${per}`}`);
+      if (picks.length < per) { short = true; break; }
+      for (const p of picks) {
+        challenges.push({
+          ...deriveOperationFields({ id: `c${challenges.length + 1}`, ...p.payload }),
+          wordSpace: { space: `sound-swap-${op}`, structure: p.structure, beta: p.beta } satisfies WordSpaceStamp,
+        });
+      }
+    }
+    console.log(`[sound-swap] Word space (${spaceTier}, grade ${grade}): ${notes.join('; ')}${short ? ', model path' : ''}`);
+    if (!short) {
+      const pinned = ops.length === 1 ? ops[0] : undefined;
+      applySoundSwapTier(challenges, spaceTier, pinned);
+      return { title: 'Sound Swap', gradeLevel: grade, supportTier: spaceTier, challenges };
+    }
   }
 
   // ── Within-mode support tier (config.difficulty): scaffolding level, NOT numbers.
@@ -924,37 +1002,7 @@ Now generate the activity for "${topic}" at grade level ${gradeLevelKey}.`;
     //    challenge's OWN operation, so a blended session gets difficulty too — the
     //    tier is a student property, not a single-mode one. Gated ONLY on supportTier
     //    being present; never on pinnedType. ──
-    if (supportTier) {
-      let onTarget = 0;
-      let offTarget = 0;
-      for (const ch of challenges) {
-        // ── Axis 1 (scaffolding withdrawal) — display/instruction only ──
-        const sc = resolveSupportStructure(ch.operation, supportTier);
-        ch.showWordImage = sc.showWordImage;
-        ch.nameTargetSound = sc.nameTargetSound;
-        // Highlight is a substitution-only perception aid; resolveSupportStructure
-        // already returns false for non-substitution modes, but guard anyway.
-        ch.showTargetHighlight = ch.operation === 'substitution' ? sc.showTargetHighlight : false;
-        // optionCount is deliberately NOT set: the DI port made the answer spoken,
-        // so there are no choice buttons for it to size. The field survives on the
-        // type as deprecated so old generated payloads still parse.
-
-        // ── Axis 2 (structural — manipulation position): COUNT → validate. ──
-        // The position is answer-bearing and was already re-derived from the phoneme
-        // diff by deriveOperationFields(), so the answer is correct regardless. We
-        // cannot RECONSTRUCT a different position in code without inventing a word
-        // (brittle for word inventory), so we COUNT the LLM's actual position against
-        // this tier's allowed set and log target-vs-actual for the live sweep.
-        const shape = resolveProblemShape(ch.operation, supportTier);
-        const actual = actualManipPosition(ch);
-        const hit = actual !== null && shape.targetPositions.includes(actual);
-        if (hit) onTarget++; else offTarget++;
-      }
-      const shapeNote = pinnedType
-        ? `structural target=${resolveProblemShape(pinnedType, supportTier).primaryPosition}, on-target ${onTarget}/${onTarget + offTarget}`
-        : 'blended (per-challenge position validated)';
-      console.log(`[sound-swap] Difficulty tier "${supportTier}" applied per-challenge (${pinnedType ? 'single-mode ' + pinnedType : 'blended'}); ${shapeNote}`);
-    }
+    if (supportTier) applySoundSwapTier(challenges, supportTier, pinnedType);
 
     const finalData: SoundSwapData = {
       title: result.title,

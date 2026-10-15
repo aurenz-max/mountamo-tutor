@@ -30,7 +30,7 @@ Static derivation for the sound-swap slice of handoff 22 L2.
 - **Probe:** `npm test -- SoundSwap.workspace`.
 
 ### R3 — Tier invariants · OBSERVED
-- **Property:** the tier never changes the words or the sound; it withdraws the picture caption and, at hard, the substitution highlight. Pre-readers never see the prose caption or the grade/operation badges.
+- **Property:** on the model path the tier never changes the words or the sound (on the word-space path, R5, it picks them); it withdraws the picture caption and, at hard, the substitution highlight. Pre-readers never see the prose caption or the grade/operation badges.
 - **Demanded by:** support tiers; K band.
 - **Evidence:** `SoundSwap.tsx` (`showImage`, `highlightIdx`, `isPreReader`).
 - **Probe:** `npm test -- SoundSwap`.
@@ -45,6 +45,10 @@ Static derivation for the sound-swap slice of handoff 22 L2.
 - **Property:** `swap_build` is its own surface, the shared letter build (`LetterBuildSurface.tsx`, rules in `letterBuild.ts`), mounted when the payload has `task: 'letter_build'`; the existing modes are unchanged. Asks are code-owned from familiar CVC words (`letterBuildWords.ts`), scoped to the lesson's letters; no key ships. Code checks everything the ask states (shape, vowel, family, one letter changed, the given word, a repeat); the shared word judge (`judgeWordBuild`, `only: 'real_word'`) decides whether the word is real.
 - **Probe:** `LetterBuild.workspace.test.tsx`; headless drive `qa/open-build/sound-swap-2026-10-08/drive/`.
 
+### R5 — Word space: with a support tier, code picks every pair · OBSERVED 2026-10-13
+- **Property:** with `config.difficulty` set and no remediation focus, addition, deletion and substitution draw from `service/wordSpace/soundSwapSpaces.ts`: two familiar one-syllable words whose phonemes differ by one added, removed or changed sound, computed from the library's pronunciations. Beta: first < last < middle sound, a sound inside a cluster (lip → slip) hardest, deleting harder than adding, one-feature changes (b/p, e/i) and stops harder. K adds and removes only a lone first or last sound. Plural/past pairs, heteronyms and the unstressed function words (to, and, the, a) are left out. `deriveOperationFields` computes the move fields from the phoneme arrays, as on the model path; each challenge carries a `wordSpace` stamp. If any operation cannot fill its slots, the session takes the model path. swap_build unchanged.
+- **Probe:** `npm test -- src/components/lumina/service/wordSpace/soundSwapSpaces.test.ts`; `scripts/word-space-lab/probe.sh sound-swap after ...`.
+
 ## Conflicts
 
 None open.
@@ -54,6 +58,7 @@ None open.
 - **description:** stale on the clock ("its own affirmation moves the lesson on"); true in effect. Not changed.
 
 ## Changelog
+- 2026-10-13 — **R5 word space** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/sound-swap/before.txt`): addition was at/an/it plus a first sound at every tier; deletion at medium returned 0 challenges in both runs; hard deletion shipped stop → sop; substitution repeated cat, pig, sun, hop. After: addition K easy at → sat, egg → leg … hard see → seat, cow → couch; G1 hard room → broom, fill → film; deletion G1 hard ranch → ran, film → fill; substitution K hard line → lime, cup → cop. R3 narrowed to the model path.
 
 - 2026-10-08: `swap_build` open build added as a fork (OB-3L). New challenge type; no existing requirement edited.
 

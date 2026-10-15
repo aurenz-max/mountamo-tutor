@@ -315,6 +315,10 @@ export const COMPOUND_PART_WORDS = new Set([
   // people and body
   'grand', 'mother', 'father', 'some', 'one', 'body', 'hand', 'finger', 'nail',
   'tooth', 'brush', 'hair', 'cut', 'eye', 'brow', 'key', 'lock', 'rope', 'print',
+  // word-space compounds (2026-10-13): parts of the word library's familiar compounds (bathtub, backyard,
+  // hallway, waterfall, weekend, sunset, lipstick, inside), each an everyday word on its own
+  'bath', 'tub', 'yard', 'hall', 'water', 'melon', 'fall', 'week', 'end', 'set', 'lip', 'stick', 'seat',
+  'in', 'out', 'down', 'town', 'rise', 'flash', 'head', 'wall', 'sleep', 'over', 'roof',
 ]);
 
 /** Is this half of a compound a word a five-year-old owns on its own? */

@@ -17,7 +17,10 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
-import { resolveObjectiveLetterGroup } from './letterGroups';
+import { LETTER_GROUPS as SHARED_LETTER_GROUPS, NEW_LETTERS as SHARED_NEW_LETTERS, resolveObjectiveLetterGroup } from './letterGroups';
+import { clampGradeToK2 } from '../scopeContext';
+import { mulberry32, tierPick, tierPickFocus, type WordSpaceItem, type WordSpaceStamp } from '../wordSpace/pick';
+import { keyWordSpace, type KeyWordPayload } from '../wordSpace/letterSpaces';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -573,19 +576,15 @@ function requireFieldsForPinnedMode(schema: Schema, allowedTypes?: string[]): Sc
 // Letter Group Definitions
 // ============================================================================
 
-const LETTER_GROUPS: Record<number, string[]> = {
-  1: ['s', 'a', 't', 'i', 'p', 'n'],
-  2: ['s', 'a', 't', 'i', 'p', 'n', 'c', 'k', 'e', 'h', 'r', 'm', 'd'],
-  3: ['s', 'a', 't', 'i', 'p', 'n', 'c', 'k', 'e', 'h', 'r', 'm', 'd', 'g', 'o', 'u', 'l', 'f', 'b'],
-  4: ['s', 'a', 't', 'i', 'p', 'n', 'c', 'k', 'e', 'h', 'r', 'm', 'd', 'g', 'o', 'u', 'l', 'f', 'b', 'j', 'z', 'w', 'v', 'y', 'x', 'q'],
-};
-
-const NEW_LETTERS: Record<number, string[]> = {
-  1: ['s', 'a', 't', 'i', 'p', 'n'],
-  2: ['c', 'k', 'e', 'h', 'r', 'm', 'd'],
-  3: ['g', 'o', 'u', 'l', 'f', 'b'],
-  4: ['j', 'z', 'w', 'v', 'y', 'x', 'q'],
-};
+// The cumulative groups come from `letterGroups.ts`, the one source of the order (2026-10-13). A letter
+// recognition task asks for the LETTER q, so the shared table's teachable unit `qu` reads as `q` here.
+const asLetter = (l: string) => (l === 'qu' ? 'q' : l);
+const LETTER_GROUPS: Record<number, string[]> = Object.fromEntries(
+  Object.entries(SHARED_LETTER_GROUPS).map(([g, letters]) => [g, letters.map(asLetter)]),
+);
+const NEW_LETTERS: Record<number, string[]> = Object.fromEntries(
+  Object.entries(SHARED_NEW_LETTERS).map(([g, letters]) => [g, letters.map(asLetter)]),
+);
 
 /**
  * Generate Letter Spotter data using Gemini AI
@@ -687,6 +686,30 @@ export const generateLetterSpotter = async (
       ].map((l) => `- ${l}`).join('\n')}\n`
     : '';
 
+  // ── Key-word space (2026-10-13, service/wordSpace/letterSpaces.ts): with a support tier on name-it and no
+  //    remediation focus, code picks each item's letter (how much its name gives the sound away) and key word
+  //    (a familiar word starting with the letter's basic sound) at the tier's difficulty, two thirds from the
+  //    group's new letters. The model still writes the sentence around the word; the splice and fallback
+  //    frames below stay the gates.
+  let nameItPlan: WordSpaceItem<KeyWordPayload>[] = [];
+  if (supportTier && pinnedType === 'name-it' && !ctx.remediationFocus) {
+    const grade = clampGradeToK2(ctx.grade, 'K');
+    const space = keyWordSpace(cumulativeLetters.filter((l) => l !== 'x'), grade, (w) => isSayableWord(w) && !startsWithADigraph(w));
+    const rand = mulberry32(Math.floor(Math.random() * 2 ** 31));
+    const fresh = new Set(newLetters);
+    const n = Math.min(6, new Set(space.map((it) => it.payload.targetLetter)).size - 1);
+    nameItPlan = letterGroup > 1
+      ? tierPickFocus(space, (it) => fresh.has(it.payload.targetLetter), supportTier, n, rand)
+      : tierPick(space, supportTier, n, rand);
+    console.log(`[LetterSpotter] Word space name-it (${supportTier}, group ${letterGroup}): ${nameItPlan.map((p) => `${p.payload.targetLetter}→${p.payload.targetWord} β${p.beta}`).join(', ') || 'none, model words'}`);
+  }
+  const nameItPlanSection = nameItPlan.length
+    ? `
+NAME-IT ITEMS (chosen in code — write exactly ${nameItPlan.length} name-it challenges, in this order, with exactly these targetLetter and targetWord values; your job is the sentence):
+${nameItPlan.map((p, i) => `${i + 1}. targetLetter "${p.payload.targetLetter}", targetWord "${p.payload.targetWord}"`).join('\n')}
+`
+    : '';
+
   const generationPrompt = `Create an interactive letter recognition activity for the topic: "${topic}".
 ${themedFocusLine(topic, intent, { targets: 'target letters and hidden target words', carrier: 'the title and the rest of each sentence', themeWords: true })}
 TARGET GRADE LEVEL: ${gradeLevel}
@@ -697,7 +720,7 @@ NEW LETTERS (just introduced): ${newLetters.join(', ')}
 Generate 6-8 challenges. Prioritize new letters but include some review letters too.
 
 ${challengeTypeSection}
-${tierSection}
+${tierSection}${nameItPlanSection}
 MODE-SPECIFIC FIELD RULES:
 - name-it (SENTENCE SPOTTER): set sentence, targetWord, and options (4 letters). Do NOT set letterGrid.
   * sentence: a short (4-7 word) PLAIN sentence containing targetWord spelled out in full
@@ -851,6 +874,15 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
         // name-it: the model emits a PLAIN sentence; CODE owns the marker, the
         // article repair and the splice.
         if (ch.mode === 'name-it') {
+          // The code-chosen letter and key word win over whatever the model wrote; a sentence that does not
+          // hold the word then fails the splice and degrades to a frame, as before.
+          const planned = nameItPlan[nameItCount];
+          if (nameItPlan.length && !planned) { nameItCount++; return null; } // beyond the plan: dropped below
+          if (planned) {
+            ch.targetLetter = planned.payload.targetLetter;
+            ch.targetWord = planned.payload.targetWord;
+            ch.wordSpace = { space: 'letter-spotter-name-it', structure: planned.structure, beta: planned.beta } satisfies WordSpaceStamp;
+          }
           nameItCount++;
           ch.emoji = SENTENCE_EMOJI;
           // The printed sentence is lowercase running text and the tappable
@@ -993,7 +1025,7 @@ CUMULATIVE LETTERS (the ONLY letters allowed): [${cumulativeLetters.map(l => `"$
         }
 
         return ch;
-      });
+      }).filter((ch): ch is NonNullable<typeof ch> => ch !== null);
 
       // Fallback: ensure at least one challenge exists
       if (result.challenges.length === 0) {

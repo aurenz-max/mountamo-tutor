@@ -888,6 +888,8 @@ async def main():
     parser.add_argument('--backend', default='ws://localhost:8000')
     parser.add_argument('--frontend', default='http://localhost:3000')
     parser.add_argument('--mode'); parser.add_argument('--grade'); parser.add_argument('--topic')
+    parser.add_argument('--difficulty', choices=['easy', 'medium', 'hard'],
+                        help='config.difficulty for the generated content (decodable-reader: the tier sets the sentence window)')
     parser.add_argument('--input', type=Path)
     parser.add_argument('--output', type=Path, help='Keep a separate report for a verification run')
     parser.add_argument('--startup', action='store_true',
@@ -920,12 +922,12 @@ async def main():
 
     token = get_id_token()
     live = json.loads(args.input.read_text(encoding='utf-8')) if args.input else fetch_live_context(
-        args.frontend, args.primitive, args.topic, args.grade, args.mode, di=defaults['di'])
+        args.frontend, args.primitive, args.topic, args.grade, args.mode, di=defaults['di'], difficulty=args.difficulty)
     args.tutoring = live.get('tutoring')
     # Mode is part of the name: a take_away run used to overwrite the count payload,
     # so a later --input replay silently drove the wrong lesson.
     # A blend pin (`a|b`) is a legal mode but `|` is not a legal Windows filename character.
-    stem = f"{args.primitive}-runtime-{args.mode.replace('|', '+')}"
+    stem = f"{args.primitive}-runtime-{args.mode.replace('|', '+')}{f'-{args.difficulty}' if args.difficulty else ''}"
     stamp = date.today().isoformat()
     (REPORTS/f'{stem}-payload-{stamp}.json').write_text(json.dumps(live, indent=2), encoding='utf-8')
     report = args.output or REPORTS/f'{stem}-live-{stamp}.json'

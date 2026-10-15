@@ -31,6 +31,7 @@ Static derivation for the word-sorter slice of handoff 22 L4.
 - **Probe:** `npm test -- wordSorterLevers WordSorter.levers`.
 
 ## Changelog
+- 2026-10-13 — **R-WS concept sorts** (`/add-word-space`). Before (`qa/word-space-lab/2026-10-13/word-sorter/before.txt`): Animals/Food with cat, dog, pig at every tier; a ternary sort shipped eagle pictured as 🥚 and "feline". After: named animals/food varies its words (egg, snail, tiger… / lobster, bagel, kangaroo…); open sorts easy Body Parts | Home → hard Body Parts | Clothes | Places, Animals | Nature | Toys.
 
 - 2026-09-29 — handoff 28 row 3, WS-2 (`/eval-fix`): the generator skips a sort word whose picture is a group mat's picture, so
   R4's `groupPicturesLeak` should rarely fire on generated content. R3 unchanged (K mats keep their pictures). `--check`

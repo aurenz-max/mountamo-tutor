@@ -32,6 +32,10 @@
 
 ### R5 — A starting position is not a pull · OBSERVED
 
+### R6 — With a tier, the sentences come from the sentence space (2026-10-14) · OBSERVED
+- **Property:** with a support tier (one mode), grade K or 1 and no remediation focus, the sentences are code-picked from the hand menu plus the build-time bank (`service/wordSpace/sentenceSpaces.ts`, `sentenceBank.json`). Every word is checked against the objective's letter scope with the word library: a VC/CVC word whose letter-sound pairs are all taught (one letter per sound at K; and, in, up keep only the pair rule), a tricky word the mode allows (a, the, I; plus is, to, has, his, as past letter group 2; the grade's sight words in read, review and sight modes), or a name spelled with taught letters. A pattern lesson (short a) binds every content word and name to the pattern; a letter-group lesson's sentence uses a new letter-sound. The tier keeps the L4 word-count band (`resolveProblemShape`); inside it the draw is random and no two sentences open on the same content word while another is left. Where bands overlap (K: 3-4, 4-5, 5-6) each tier first takes its own length (`bandTarget`: 3, 5, 6). Every bank sentence passed a build-time sense check (`build-sentences.mjs --judge`; drops in `qa/word-space-lab/2026-10-13/di-sentence-reading/judge-drops.json`). No comma, no "Yes" opener, no "my turn". Each challenge carries `wordSpace` {space, structure, beta}, never rendered or sent. A menu sentence keeps its menu id. When the space cannot fill the session, the menu path runs.
+- **Probe:** `npm test -- service/wordSpace/sentenceSpaces`; `gemini-di-sentence-reading.structural.test.ts`; `qa/word-space-lab/2026-10-13/di-sentence-reading/run-probe.sh`.
+
 ## Conflicts
 
 None open.
@@ -39,3 +43,5 @@ None open.
 ## Changelog
 
 - 2026-10-03: derived (initial, static) with the DI lever slice. 5 requirements, 0 conflicts.
+- 2026-10-14: R6 added (`/add-word-space`). Before: both runs of a tier gave the same four sentences in every mode; "s a t i p n" served "The red hen ran" and "The dog is hot". After: 752 bank sentences + the menu, scope-checked; group 1 gets "Pip sat at it", "Nat sat in the pan"; runs differ. The structural suite's two menu-id assertions (sam-cat-mat) restated as the requirement they protect.
+- 2026-10-15: K tiers target their own length (easy and medium no longer share sentences); bank sense-checked (172 dropped, logged); bank 755.
