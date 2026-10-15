@@ -3912,13 +3912,13 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         direction: ctx.data.direction ?? 'forward' };
       // The easier practice count (a simplify lever) is not a generated challenge: rebuild it from its parent.
       const parent = skipPracticeParent(ctx.itemId, all);
-      const practice = parent ? skipPracticeItem(parent, { challenges: all, line, showOptions: ctx.data.showOptions,
+      const practice = parent ? skipPracticeItem(parent, { challenges: all, line: parent.line ?? line, showOptions: ctx.data.showOptions,
         supportTier: ctx.data.supportTier }) : null;
       const c = practice?.challenge ?? all.find((x: { id: string }) => x.id === ctx.itemId);
       if (!c) throw new Error('No current skip-counting-runner challenge');
       const at = Number(ctx.demand?.at);
       const filled = String(ctx.demand?.filled ?? '').split(',').map(s => Number(s.trim())).filter(n => Number.isFinite(n) && String(ctx.demand?.filled ?? '').trim() !== '');
-      return skipHarnessInputs(c, practice?.line ?? line, intent === 'wrong', { at: Number.isFinite(at) ? at : undefined, filled });
+      return skipHarnessInputs(c, practice?.line ?? c.line ?? line, intent === 'wrong', { at: Number.isFinite(at) ? at : undefined, filled });
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

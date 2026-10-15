@@ -66,6 +66,8 @@ export interface ScaleConfig {
 
 export interface DoubleNumberLineChallenge {
   id: string;
+  /** Calibration stamp when the ratio-missing-value item space picked the ask. Never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
   challengeType: DoubleNumberLineChallengeType;
   prompt: string;
   hint: string;

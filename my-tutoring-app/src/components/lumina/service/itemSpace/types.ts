@@ -32,6 +32,11 @@ export interface SolvedSpaceItem {
    * equal sign as "the same amount"). Told as a story, it becomes a different task.
    */
   equation?: string;
+  /**
+   * Words the question must contain because the answer has a part the computation alone does not ask for (a
+   * division's remainder: "how many are left over"). A story that asks only "how many in each" keys "73 R 1".
+   */
+  asks?: RegExp;
 }
 
 export interface SpaceDistractor {
@@ -67,4 +72,9 @@ export interface ItemSpace<I extends SpaceItem = SpaceItem> {
   distractors(item: I, rand?: () => number): SpaceDistractor[];
   /** A correct question built in code, used when the written one misses its spec. */
   plainQuestion(item: I): string;
+  /**
+   * The part of the strand an objective names, when it names one ("unlike denominators" is not 1/2 + 1/2).
+   * Undefined = the whole strand. Consumers pass it to `tierPick` as the scope, so every tier stays inside it.
+   */
+  scopeOf?(objective: string): ((item: I) => boolean) | undefined;
 }

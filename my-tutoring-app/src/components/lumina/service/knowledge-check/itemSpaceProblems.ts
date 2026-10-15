@@ -8,7 +8,7 @@
 import { Type } from '@google/genai';
 import { ai } from '../geminiClient';
 import type { MultipleChoiceProblemData, ProblemDifficulty } from '../../types';
-import { getItemSpace, type ItemSpaceId } from '../itemSpace';
+import { getItemSpace, tierPick, type ItemSpaceId } from '../itemSpace';
 
 const tierOf = (beta: number): ProblemDifficulty => (beta < -0.6 ? 'easy' : beta < 0.6 ? 'medium' : 'hard');
 const LABELS = ['A', 'B', 'C', 'D'];
@@ -47,9 +47,16 @@ export async function buildItemSpaceMcProblems(opts: {
   count: number;
   band: [number, number];
   gradeLevel: string;
+  /** The objective, for the part of the strand it names (`scopeOf`). */
+  objective?: string;
+  /** The requested tier, stamped on every problem (a beta on a band edge is still the tier asked for). */
+  tier?: ProblemDifficulty;
 }): Promise<MultipleChoiceProblemData[]> {
   const space = getItemSpace(opts.space);
-  const items = space.pick(opts.count, opts.band[0], opts.band[1]);
+  const scope = opts.objective ? space.scopeOf?.(opts.objective) : undefined;
+  const items = scope
+    ? tierPick(space, (m) => console.log(`[KC ItemSpace] ${opts.space}: ${m}`), scope)(opts.count, opts.band[0], opts.band[1], undefined, scope)
+    : space.pick(opts.count, opts.band[0], opts.band[1]);
   if (!items.length) return [];
   const specs = items.map((it, i) => ({ it, sol: space.solve(it), id: `p${i + 1}` }));
 
@@ -84,7 +91,7 @@ export async function buildItemSpaceMcProblems(opts: {
   return specs.map(({ it, sol, id }) => {
     const w = written[id];
     const fits = !!w && questionFitsSpec(w.question, sol.shown, sol.answer) && questionMatchesOperation(w.question, sol.operation)
-      && (!sol.equation || w.question.includes(sol.equation));
+      && (!sol.equation || w.question.includes(sol.equation)) && (!sol.asks || sol.asks.test(w.question));
     if (!fits) console.log(`[KC ItemSpace] ${id} ${sol.spec}: written question missed its spec; plain question used`);
     const choices = [{ value: sol.answer, distance: 'key' as const }, ...space.distractors(it)]
       .sort(() => Math.random() - 0.5);
@@ -92,7 +99,7 @@ export async function buildItemSpaceMcProblems(opts: {
     return {
       type: 'multiple_choice' as const,
       id,
-      difficulty: tierOf(it.beta),
+      difficulty: opts.tier ?? tierOf(it.beta),
       gradeLevel: opts.gradeLevel,
       question: fits ? w.question : space.plainQuestion(it),
       options,

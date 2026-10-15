@@ -235,6 +235,8 @@ async function hydrateStandardForObjective(
           bloomsTier: item.standardProblem!.evalMode as BloomsTier | undefined,
           objectiveText: item.objective!.text,
           preciseGrade: grade,
+          // The engine's tier (set from target_beta) — lets KC pick by item space.
+          difficulty: item.difficulty,
         });
       return (Array.isArray(problems) ? problems[0] : problems) ?? null;
     });
@@ -261,6 +263,7 @@ async function hydrateAsFallbackProblem(
       {
         problemType: 'multiple_choice' as ProblemType,
         count: 1,
+        difficulty: item.difficulty,
         ...(item.objective && {
           objectiveText: item.objective.text,
           preciseGrade: normalizeObjectiveGrade(item.objective.grade),

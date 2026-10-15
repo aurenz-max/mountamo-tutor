@@ -51,6 +51,10 @@
 
 ## Gaps
 
+### R6 — the tier picks the widths where width changes the work (code tier targets) · OBSERVED (2026-10-14)
+- measure, hard: odd widths first (the hard ruler labels only even wholes, so each lands on an unlabeled mark). compare: easy widths at least 2 apart, hard a consecutive run, medium a plain draw. estimate and convert unchanged; no tier keeps the plain draw. Widths stay in the mode's pool and the scope cap. Probe: `gemini-measurement-tools.tier-widths.test.ts`, `scripts/difficulty-lab/tier-probe.mjs --component measurement-tools`.
+- Open (ruling): convert converts inches to centimeters with 2.54 (3 in = 7.62 cm), decimal multiplication; the 4.MD.A.1 it claims is conversion within one system (feet to inches). WORKSTREAMS 8.1d.
+
 ### G1 — an exact-offset miss gives the key away · OPEN (2026-10-09)
 - **Shortfall:** `one_over` with the learner's answer is the length (8 and one over is 7). The packet carries the miss,
   so the tutor can derive the key; estimate's directional misses did exactly that in replay (r2/r3: "past the 2, on the
@@ -64,3 +68,4 @@
 - 2026-10-09 — derived with the W1 binding. Generator shuffles the shapes (R2); hard-tier wrong card no longer names
   the rule (R3); convert's 1.2 s delay before the conversion step removed; "Put it on the ruler" button and typed
   length boxes added.
+- 2026-10-14 — R6 added (item-space slice). Before, every tier drew widths at random from one pool. Compatible: R1-R5 untouched.

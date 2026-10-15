@@ -30,6 +30,10 @@
 - **Simplify mode floor:** `smaller_fact` stays in the session's family, has a smaller total, is never a session fact in either order, is ungraded, and returns to the full item.
 - **No make-ten lever** (user-approved table, 2026-10-03).
 
+### R5 — a tier draws harder facts only where the family has structure (item space, 2026-10-14)
+- With `config.difficulty`, facts_mixed (big_facts), turnaround and facts_3_4 rank their facts by the add-sub-20 space's beta and each tier draws from its `tierWindow` (easy: sums inside ten; hard: sums that cross ten with larger addends). Each fact carries `itemSpace` {space, structure, beta}, never rendered or sent to the tutor. plus_zero, plus_one, plus_two, doubles, facts_5_6 and facts_7_8 are one structure each and keep the full pool at every tier. The lesson's sum window (R3) bounds the tier window. Probe: `service/math/additionFactItemSpace.test.ts`, `scripts/difficulty-lab/tier-probe.mjs --component addition-fact-strategies`.
+
 ## History
 - 2026-10-03 — derived. Workspace-only from this date (comebacks and scripted cues removed; see the W1 report).
 - 2026-10-13 — R2 re-based. "No key reaches the tutor" protected no unearned credit; a sum said aloud was never credited because every item was gesture-only. Every fact is now a spoken item that also takes the tap (`TeachingItem.acceptsGesture`); JEV verdict probe 21/21, false credit 0.
+- 2026-10-14 — R5 added. Every tier of big_facts drew the same random mix (5 + 3 beside 9 + 8); the tier now picks the window of facts by predicted beta.

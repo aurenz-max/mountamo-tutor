@@ -21,6 +21,7 @@ import type {
   KnowledgeCheckVisualType,
 } from '../../types';
 import type { BloomsTier } from './gemini-knowledge-check';
+import type { KcTier } from './knowledgeCheckTier';
 
 // ============================================================================
 // Orchestrator Schema
@@ -55,7 +56,7 @@ const ORCHESTRATOR_SCHEMA: Schema = {
           insetType: {
             type: Type.STRING,
             nullable: true,
-            description: 'Inset to attach, or null for plain text. One of: katex, data-table, passage, chart, code, number-line, definition-box, or null',
+            description: 'Inset to attach, or null for plain text. One of: katex, data-table, passage, chart, code, number-line, definition-box, arrangement (kindergarten only), or null',
           },
           visualType: {
             type: Type.STRING,
@@ -179,8 +180,10 @@ function buildOrchestratorPrompt(
   context?: string,
   objectives?: KcLessonObjective[],
   preciseGrade?: string,
+  difficulty?: KcTier,
 ): string {
   const audience = audienceLabel(gradeLevel, preciseGrade);
+  const preReaderAudience = preciseGrade === 'K' || ['toddler', 'preschool', 'kindergarten'].includes(gradeLevel);
   const gradeOne = preciseGrade === '1';
   const visualRequired = gradeOne && requiresVisualSupport(topic, context, objectives);
   const tierGuidance = bloomsTier
@@ -228,7 +231,8 @@ Insets are rendered ABOVE the problem and make the question richer. Only use whe
 - **code**: Source code snippet. Use for: programming, algorithms, debugging, code tracing. Question must require reading the code.
 - **number-line**: Visual number line with points. Use for: number sense, fractions, decimals, inequalities, ordering.
 - **definition-box**: Vocabulary term with definition and example. Use for: vocabulary assessment, terminology, word meaning in context.
-- **null**: No inset — plain text problem. Perfectly fine for many topics. Don't force insets where they don't add value.
+${preReaderAudience ? `- **arrangement** (kindergarten only): a set of identical objects drawn on screen (1-10, in a row, ten-frame, or scattered; some may be crossed out). REQUIRED for any question that asks how many, counts a group, or says "there are N" things: the child counts what is drawn. The brief names the object and how many to draw.
+` : ''}- **null**: No inset — plain text problem. Perfectly fine for many topics. Don't force insets where they don't add value.${preReaderAudience ? ' At kindergarten nothing else is shown but the option pictures: a brief with no inset must never ask about a picture, a group, or a count of things.' : ''}
 
 ## Available Visual Types (Picture Evidence)
 Visuals render ABOVE the question using existing component renderers. They are NOT prose prompts:
@@ -256,13 +260,22 @@ Each objective's brief must test THAT objective's own verb and angle — not res
 ## Rules
 1. **Diversity**: Use at least 2 different problem types for sets of 3+, at least 3 different types for sets of 5+. Don't default to all multiple choice.
 2. **Evidence fit**: Use visualType when the assessed evidence is a picture/symbol/coin/shape/before-after scene. Use insetType for equations, passages, tables, charts, code, or number lines. Never set both on one problem. Generic topics may need neither.
-3. **Difficulty progression**: Sequence from easier to harder within the set. First problem should be accessible, last should challenge.
+3. **Difficulty**: ${difficulty
+    ? `This check is requested at ${difficulty.toUpperCase()} difficulty for this grade: set every problem's "difficulty" to "${difficulty}" and write every brief at that level. ${KC_TIER_BRIEF[difficulty]} Difficulty is a step within ${audience}, never harder words.`
+    : 'Sequence from easier to harder within the set. First problem should be accessible, last should challenge.'}
 4. **Brief quality**: Each brief must be detailed enough that a separate AI can generate the problem without seeing the other problems. Include: what concept to test, what angle, what the inset/visual should show, what misconceptions to target.
 5. **Topic and grade in every brief**: Always mention "${topic}" and "${audience}" context in the brief, AND state the grade-appropriate reading level and option count (3–4 for early grades) so generators stay on-target and in-band.
 6. **Evidence-problem coherence**: When using an inset or visual, the brief must describe both the evidence content AND the question — they are generated together as one unit.
 
 Plan the ${count} problems now.`;
 }
+
+/** What a brief asks of the learner at each requested difficulty (the per-problem rules: knowledgeCheckTier.ts). */
+const KC_TIER_BRIEF: Record<KcTier, string> = {
+  easy: 'Each brief asks for the idea directly on its most typical example, with wrong answers that are easy to rule out.',
+  medium: 'Each brief applies the idea to a new example or a short scenario, with one tempting wrong answer.',
+  hard: 'Each brief needs two linked steps, a less typical example, or telling the idea apart from a close one, with tempting wrong answers.',
+};
 
 function getTierGuidance(tier: BloomsTier): string {
   switch (tier) {
@@ -304,6 +317,8 @@ const VALID_PROBLEM_TYPES = new Set<string>([
   'matching_activity', 'sequencing_activity', 'categorization_activity',
 ]);
 
+/** Pre-reader bands, where the `arrangement` inset (objects to count) may be planned. */
+const PRE_READER_KEYS = new Set(['toddler', 'preschool', 'kindergarten']);
 const VALID_INSET_TYPES = new Set<string>([
   'katex', 'data-table', 'passage', 'chart', 'code', 'number-line', 'definition-box',
 ]);
@@ -322,9 +337,10 @@ export async function runKnowledgeCheckOrchestrator(
   context?: string,
   objectives?: KcLessonObjective[],
   preciseGrade?: string,
+  difficulty?: KcTier,
 ): Promise<KnowledgeCheckPlan> {
   const prompt = buildOrchestratorPrompt(
-    topic, gradeLevel, count, bloomsTier, context, objectives, preciseGrade,
+    topic, gradeLevel, count, bloomsTier, context, objectives, preciseGrade, difficulty,
   );
 
   console.log('[KC Orchestrator] Planning assessment:', {
@@ -353,7 +369,8 @@ export async function runKnowledgeCheckOrchestrator(
       console.warn(`[KC Orchestrator] Skipping unknown problem type: ${p.problemType}`);
       continue;
     }
-    if (!VALID_DIFFICULTIES.has(p.difficulty)) {
+    if (difficulty) p.difficulty = difficulty;
+    else if (!VALID_DIFFICULTIES.has(p.difficulty)) {
       p.difficulty = 'medium';
     }
 
@@ -363,7 +380,7 @@ export async function runKnowledgeCheckOrchestrator(
       index: validProblems.length,
       problemType: p.problemType as ProblemType,
       difficulty: p.difficulty as ProblemDifficulty,
-      insetType: p.insetType && VALID_INSET_TYPES.has(p.insetType)
+      insetType: p.insetType && (VALID_INSET_TYPES.has(p.insetType) || (p.insetType === 'arrangement' && PRE_READER_KEYS.has(preciseGrade === 'K' ? 'kindergarten' : gradeLevel)))
         ? (p.insetType as InsetType)
         : null,
       // 14f is a precise Grade-1 fork. Other bands retain their existing

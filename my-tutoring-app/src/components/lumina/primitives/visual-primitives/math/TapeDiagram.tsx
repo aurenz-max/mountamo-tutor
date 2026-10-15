@@ -96,6 +96,8 @@ export interface TapeDiagramChallenge {
   lockSteps?: boolean;
   /** comparison hard: hide the non-answer bar's value so the student re-reads it. */
   hideNonAnswerValue?: boolean;
+  /** Calibration stamp when an item space picked the problem. Never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface TapeDiagramData {
@@ -1185,7 +1187,10 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         {comparisonData && (
           <LuminaPrompt accent="purple" center className="mt-6">
             {comparisonData.unknownPart === 'difference'
-              ? `How many ${comparisonData.comparisonWord} does the first group have?`
+              ? (comparisonData.comparisonWord === 'fewer'
+                  // Bar 2 is always the smaller amount: "fewer" is asked of it, never of bar 1.
+                  ? 'How many fewer does the second group have?'
+                  : `How many ${comparisonData.comparisonWord} does the first group have?`)
               : `Find the missing quantity.`}
           </LuminaPrompt>
         )}

@@ -142,7 +142,7 @@ export function answerOf(c: SkipCountingChallenge, line: SkipLine): string {
 }
 
 const practiceOf = (c: SkipCountingChallenge, fields: Partial<SkipCountingChallenge>): SkipCountingChallenge =>
-  ({ ...c, id: `${c.id}${PRACTICE_SUFFIX}`, hint: '', narration: '', hiddenPositions: [], targetFact: null, ...fields });
+  ({ ...c, id: `${c.id}${PRACTICE_SUFFIX}`, hint: '', narration: '', hiddenPositions: [], targetFact: null, line: undefined, ...fields });
 
 /**
  * Leak rule for a simpler item: the same mode, its own id, never the item's own line and start, never the item's
@@ -160,7 +160,7 @@ export function practiceLeaks(p: SkipPractice, c: SkipCountingChallenge, s: Skip
   // A number the item asks for (predict's landing, a gap). count_along's taps are every landing of its count, which a
   // plainer count shares in part (10, 20 in a count by 5s): there the rule is a different step (`build`).
   if ((c.type === 'predict' || c.type === 'fill_missing') && pa.split(',').some(x => own.has(x))) return true;
-  return ahead(c, s).some(x => answerOf(x, s.line) === pa);
+  return ahead(c, s).some(x => answerOf(x, x.line ?? s.line) === pa);
 }
 
 function build(c: SkipCountingChallenge, s: SkipLeverSession, step: number, sameStep: boolean): SkipPractice | null {

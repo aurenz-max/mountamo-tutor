@@ -11,6 +11,9 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { difficultyBand } from "../itemSpace";
+import { RUN_JUMPS, SKIP_COUNT, pickSkipLines, skipCountAccept, skipRun, type SkipCountItem } from "../itemSpace/skipCount";
+import { resolveChartScope } from "./gemini-hundreds-chart";
 
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
@@ -737,6 +740,81 @@ Return the complete skip counting runner configuration.
     if (config.characterType !== undefined) data.character.type = config.characterType;
   }
 
+  // ── Item space (skip-count): with a tier, code picks the session's line (its step, start and direction)
+  // at the tier's band. Before, the tier changed only the aids: every tier counted 2s, 5s or 10s from 0
+  // (10-14 probe). The lesson's named steps bound the pick; the model's line and every number it wrote
+  // about it (positions, gaps, title, instructions) are replaced below. ──
+  const spaceBand = difficultyBand(config?.difficulty);
+  let spaceLine: SkipCountItem | null = null;
+  const toLine = (it: SkipCountItem) => {
+    const run = skipRun(it, RUN_JUMPS);
+    return { skipValue: it.step, startFrom: it.start, endAt: run[run.length - 1], direction: it.direction };
+  };
+  // find_skip_value: the answer is the line's step, so one line per session was one screen and one answer five
+  // times (10-14 probe, every tier, before and after the space). Each item gets its own line, spread across
+  // steps, starts and directions inside the lesson's named steps; with a tier, from the tier's band.
+  if (singleMode === 'find_skip_value') {
+    const named = config?.skipValue !== undefined ? [config.skipValue]
+      : (await resolveChartScope(topic, ctx.objective?.text, ctx.intent)).namedSkips;
+    const accept = skipCountAccept(ctx.grade, named);
+    const log = (m: string) => console.log(`[SkipCountingRunner] Item space skip-count: ${m}`);
+    const items = data.challenges as Array<{ startPosition?: number; hiddenPositions?: number[]; line?: unknown; itemSpace?: unknown }>;
+    const need = Math.min(3, items.length);
+    const lines = spaceBand ? pickSkipLines(items.length, spaceBand, accept, log, need)
+      : SKIP_COUNT.pick(items.length, -10, 10, undefined, accept);
+    log(`find_skip_value: ${lines.map((p) => `${p.direction} by ${p.step}s from ${p.start}@${p.beta}`).join(' ') || 'none fits; own path kept'}`);
+    if (lines.length >= need) {
+      data.challenges = items.slice(0, lines.length);
+      lines.forEach((p, i) => {
+        const c = items[i];
+        c.line = toLine(p);
+        c.startPosition = p.start;
+        delete c.hiddenPositions;
+        c.itemSpace = { space: 'skip-count', structure: p.structure, beta: p.beta };
+      });
+      // The session's own line is the first item's (the component's fallback and the oracle's frame).
+      Object.assign(data, toLine(lines[0]));
+      data.gradeBand = lines.some((p) => p.direction === 'backward' || ![2, 5, 10].includes(p.step)) ? '2-3' : data.gradeBand;
+      spaceLine = lines[0];
+    }
+  } else if (spaceBand && singleMode) {
+    const named = config?.skipValue !== undefined ? [config.skipValue]
+      : (await resolveChartScope(topic, ctx.objective?.text, ctx.intent)).namedSkips;
+    const lesson = skipCountAccept(ctx.grade, named);
+    // connect_multiplication reads the line as jumps × step = landing, so its line starts at 0 and runs forward.
+    const drawable = (it: SkipCountItem) => lesson(it)
+      && (singleMode !== 'connect_multiplication' || (it.start === 0 && it.direction === 'forward'));
+    const log = (m: string) => console.log(`[SkipCountingRunner] Item space skip-count: ${m}`);
+    const [pick] = pickSkipLines(1, spaceBand, drawable, log);
+    log(`${singleMode} band [${spaceBand.join(', ')}]: ${pick ? `${pick.direction} by ${pick.step}s from ${pick.start}@${pick.beta}` : 'none fits; own path kept'}`);
+    if (pick) {
+      spaceLine = pick;
+      const run = skipRun(pick, RUN_JUMPS);
+      data.skipValue = pick.step;
+      data.startFrom = pick.start;
+      data.endAt = run[run.length - 1];
+      data.direction = pick.direction;
+      // The band follows the line: counting back and steps other than 2, 5, 10 are the 2-3 band's.
+      data.gradeBand = pick.direction === 'backward' || ![2, 5, 10].includes(pick.step) ? '2-3' : data.gradeBand;
+      data.itemSpace = { space: 'skip-count', structure: pick.structure, beta: pick.beta };
+      // Positions on the new line, spread so no two items of a mode ask the same thing: predict from the 2nd to
+      // the 8th landing, connect_multiplication to the 3rd to 9th, fill_missing hiding different numbers.
+      const items = data.challenges as Array<{ type: string; startPosition?: number; hiddenPositions?: number[]; targetFact?: string }>;
+      const spread = (type: string, lo: number, hi: number) => {
+        const of = items.filter((c) => c.type === type);
+        of.forEach((c, i) => { c.startPosition = run[lo + Math.round((i * (hi - lo)) / Math.max(1, of.length - 1))]; });
+      };
+      for (const ch of items) { delete ch.startPosition; delete ch.hiddenPositions; delete ch.targetFact; }
+      spread('predict', 1, run.length - 2);
+      spread('connect_multiplication', 2, run.length - 1);
+      const hideable = run.slice(1);
+      items.filter((c) => c.type === 'fill_missing').forEach((c, i) => {
+        // The first gap steps by 3 through the eight hideable numbers, so six items open on six different gaps.
+        c.hiddenPositions = [0, 4, 2].map((j) => hideable[(i * 3 + j) % hideable.length]);
+      });
+    }
+  }
+
   // ── Validate / compute startPosition for each challenge ──
   // Build the full sequence of valid positions
   const positions: number[] = [];
@@ -751,6 +829,8 @@ Return the complete skip counting runner configuration.
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data.challenges.forEach((challenge: any) => {
+    // An item on its own line (find_skip_value) was placed with it.
+    if (challenge.line) return;
     // If Gemini provided a valid startPosition, use it
     if (typeof challenge.startPosition === 'number' && positionSet.has(challenge.startPosition)) {
       const idx = positions.indexOf(challenge.startPosition);
@@ -758,7 +838,9 @@ Return the complete skip counting runner configuration.
       return;
     }
 
-    // Try to extract a position from the instruction text (e.g. "is at 16", "landed on 28")
+    // Try to extract a position from the instruction text (e.g. "is at 16", "landed on 28"). Not on the space
+    // path: the text describes the model's line, not code's.
+    if (spaceLine) { challenge.startPosition = data.startFrom; progressIdx = 0; return; }
     const posRegex = /(?:at|on|reached|landed on|is at)\s+(\d+)/i;
     const match = challenge.instruction?.match(posRegex);
     if (match) {
@@ -907,7 +989,7 @@ Return the complete skip counting runner configuration.
   for (const ch of data.challenges as Array<{ type: string; instruction: string; hint: string; startPosition?: number; hiddenPositions?: number[] }>) {
     if (ch.type === 'count_along') {
       // An item that names where it starts ("from 10") starts there, so the items are not one count repeated.
-      const from = ch.instruction?.match(/from\s+(\d+)/i);
+      const from = spaceLine ? null : ch.instruction?.match(/from\s+(\d+)/i);
       const named = from ? parseInt(from[1], 10) : NaN;
       if (positionSet.has(named) && named !== endPos) ch.startPosition = named;
       const start = ch.startPosition ?? data.startFrom;
@@ -921,6 +1003,28 @@ Return the complete skip counting runner configuration.
       ch.instruction = `${who.charAt(0).toUpperCase()}${who.slice(1)} jumped from ${data.startFrom} to ${ch.startPosition}. `
         + `How many jumps of ${data.skipValue} did it make? Finish the multiplication fact.`;
       ch.hint = 'Count the jumps, one arc at a time.';
+    }
+  }
+
+  // On the space path the model wrote about its own line: every number-bearing text is code's.
+  if (spaceLine) {
+    const verb = spaceLine.direction === 'backward' ? 'Count back' : 'Count';
+    data.title = pinnedType === 'find_skip_value' ? 'How Far Is Each Jump?' : `${verb} by ${spaceLine.step}s`;
+    data.description = pinnedType === 'find_skip_value'
+      ? 'Watch where the character lands and work out how far each jump goes.'
+      : `${verb} by ${spaceLine.step}s from ${spaceLine.start}.`;
+    const Who = `${who.charAt(0).toUpperCase()}${who.slice(1)}`;
+    for (const ch of data.challenges as Array<{ type: string; instruction: string; hint: string; narration: string; startPosition?: number; targetFact?: string }>) {
+      if (ch.type === 'predict') {
+        ch.instruction = `${Who} is at ${ch.startPosition}. Where does it land next?`;
+        ch.hint = 'How far is each jump? Make one more jump that size.';
+      } else if (ch.type === 'find_skip_value') {
+        ch.instruction = 'Look at where it lands. How far is each jump?';
+      } else if (ch.type === 'connect_multiplication') {
+        const jumps = Math.abs((ch.startPosition ?? spaceLine.start) - spaceLine.start) / spaceLine.step;
+        ch.targetFact = `${jumps} × ${spaceLine.step} = ${ch.startPosition}`;
+      }
+      if (ch.type !== 'find_skip_value') ch.narration = ch.instruction;
     }
   }
 

@@ -31,6 +31,9 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { difficultyBand, getItemSpace, resolveItemSpace } from "../itemSpace";
+import type { RatioItem } from "../itemSpace/ratioMissingValue";
+import { DNL_MAX_INPUT, pickDnlSession } from "./doubleNumberLineItemSpace";
 
 // ---------------------------------------------------------------------------
 // Public types (mirrored by the component)
@@ -647,8 +650,32 @@ Return the session setup. Per-challenge ask-points are derived locally from askI
     fillCandidate++;
   }
 
+  // ---- find_missing with a tier: the item space picks the given pair and the asks ----
+  let spaceSession: { a: number; b: number; asks: RatioItem[] } | null = null;
+  const band = difficultyBand(config?.difficulty);
+  if (band && supportTier && challengeType === 'find_missing') {
+    const space = await resolveItemSpace(
+      `Lesson: ${topic}. In this activity the learner finds a missing value in equivalent ratios on a double number line.`,
+      ctx.grade, ['ratio-missing-value'],
+    );
+    if (space) {
+      const log = (m: string) => console.log(`[DoubleNumberLine] Item space ${space}: ${m}`);
+      spaceSession = pickDnlSession(getItemSpace(space), supportTier, instanceCount, Math.random, log);
+      log(spaceSession
+        ? `band [${band.join(', ')}] base ${spaceSession.a}:${spaceSession.b}: ${spaceSession.asks.map((it) => `${it.k}→${it.structure}@${it.beta}`).join(' ')}`
+        : `band [${band.join(', ')}] found no base ratio; own path kept`);
+    }
+  }
+  if (spaceSession) {
+    unitRate = spaceSession.b / spaceSession.a;
+    // The model's context and description name its own numbers, which no longer apply.
+    contextQuestion = `${bottomLabel} grows at a constant rate with ${topLabel}. Use the given pair on the lines to answer each question.`;
+    if (/\d/.test(description)) description = 'Use a given pair to find matching values on a double number line.';
+  }
+  const lineMax = spaceSession ? Math.min(DNL_MAX_INPUT, Math.max(spaceSession.a, ...spaceSession.asks.map((it) => it.k)) + 1) : maxInput;
+
   // ---- Build session context ----
-  const { topScale, bottomScale } = buildScales(maxInput, unitRate);
+  const { topScale, bottomScale } = buildScales(lineMax, unitRate);
   const session: SessionContext = {
     topLabel,
     bottomLabel,
@@ -660,9 +687,13 @@ Return the session setup. Per-challenge ask-points are derived locally from askI
   // ---- Build N challenges ----
   // For find_missing / unit_rate modes, the "given" reference pair is shared
   // across all challenges in the session so the visual stays consistent.
-  const givenReference = pickNonUnitGiven(askInputs, unitRate);
+  const givenReference = spaceSession
+    ? { topValue: spaceSession.a, bottomValue: spaceSession.b, label: 'Given' }
+    : pickNonUnitGiven(askInputs, unitRate);
   // Asks used for ask-points exclude the value used as the given reference.
-  const challengeAsks = askInputs.filter((n) => n !== givenReference.topValue).slice(0, instanceCount);
+  const challengeAsks = spaceSession
+    ? spaceSession.asks.map((it) => it.k)
+    : askInputs.filter((n) => n !== givenReference.topValue).slice(0, instanceCount);
   // If we still don't have enough, fall back to any from the pool
   while (challengeAsks.length < instanceCount) {
     const next = askInputs.find((n) => !challengeAsks.includes(n));
@@ -686,12 +717,14 @@ Return the session setup. Per-challenge ask-points are derived locally from askI
         core = buildEquivalentRatiosChallenge(session, askInput);
         break;
     }
+    const stamp = spaceSession?.asks[i];
     challenges.push({
       id: `dnl-${i + 1}`,
       challengeType,
       ...core,
       topScale,
       bottomScale,
+      ...(stamp ? { itemSpace: { space: 'ratio-missing-value', structure: stamp.structure, beta: stamp.beta } } : {}),
     });
   }
 

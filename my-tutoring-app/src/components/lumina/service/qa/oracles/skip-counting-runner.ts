@@ -120,7 +120,9 @@ export const skipCountingRunnerOracle: ContentOracle = {
 
     // Objective ceiling wins when the topic/harness carries one; else the
     // primitive's intrinsic grade-band ceiling (never a guessed one).
-    const intrinsicCeiling = gradeBand === '1-2' ? 50 : 100;
+    // The standards' counting ranges (skip-count scope, itemSpace/skipCount.ts): grade 1 counts to 120
+    // (1.NBT.1), grade 2 skip counts within 1000 (2.NBT.2). Was 50 / 100, below the objective.
+    const intrinsicCeiling = gradeBand === '1-2' ? 120 : 1000;
     const ceiling = ctx.scopeMax ?? parseScopeCeiling(ctx.topic) ?? intrinsicCeiling;
 
     // Grades 1-2 skip value is code-clamped to {2,5,10} — a regression guard.
@@ -169,6 +171,28 @@ export const skipCountingRunnerOracle: ContentOracle = {
       if (!KNOWN.has(type)) {
         uncheckedTypes.add(type);
         continue;
+      }
+      // find_skip_value: the answer is the step of the line the item is drawn on. An item on its own line
+      // (`line`) is checked on that line; two items on one line are one card twice (before 2026-10-14 every
+      // find session was five copies of the session line, and this check exempted them).
+      if (type === 'find_skip_value') {
+        const ln = (c.line && typeof c.line === 'object' ? c.line : null) as Record<string, unknown> | null;
+        const key = ln ? `${ln.skipValue}|${ln.startFrom}|${ln.direction}` : `${skipValue}|${startFrom}|${direction}`;
+        taskSeen.set(`find_skip_value|${key}`, (taskSeen.get(`find_skip_value|${key}`) ?? 0) + 1);
+        if (ln) {
+          checked++;
+          const step = Number(ln.skipValue), from = Number(ln.startFrom), to = Number(ln.endAt);
+          const back = ln.direction === 'backward';
+          const grid = Number.isInteger(step) && step > 0 && Number.isInteger(from) && Number.isInteger(to)
+            ? buildPositions(from, to, step, back ? 'backward' : 'forward') : [];
+          if (grid.length < 3) {
+            violations.push({ check: 'schema', where, detail: `own line ${JSON.stringify(ln)} draws fewer than 3 landings` });
+          } else if (Math.max(...grid) > ceiling || Math.min(...grid) < 0) {
+            violations.push({ check: 'scope', where, detail: `own line reaches ${Math.max(...grid)}, outside 0..${ceiling}` });
+          }
+          // No variety on the step: a one-step lesson ("count by 5s") answers 5 on every item, on different lines.
+          continue;
+        }
       }
       if (positions.length === 0) {
         // Can't validate positions without a valid grid; the frame-level schema

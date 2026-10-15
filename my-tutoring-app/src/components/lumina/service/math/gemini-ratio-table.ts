@@ -11,6 +11,11 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import { ratioSpec, type RatioItem } from "../itemSpace/ratioMissingValue";
+import {
+  plainRatio, ratioChallengeFromItem, ratioStoryFits, ratioTableAccepts, type RatioTableMode, type WrittenRatio,
+} from "./ratioTableItemSpace";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -271,6 +276,89 @@ type RatioTableConfig = Partial<RatioTableData> & {
     difficulty?: string;
 };
 
+// ---------------------------------------------------------------------------
+// missing_value / unit_rate from the ratio-missing-value item space (ratioTableItemSpace.ts)
+// ---------------------------------------------------------------------------
+
+const SPACE_ITEM_COUNT = 4;
+
+const ratioWordingSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING },
+    description: { type: Type.STRING },
+    problems: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          instruction: { type: Type.STRING, description: 'The word problem, ending with the question.' },
+          firstLabel: { type: Type.STRING, description: 'Row label for the first quantity, with its unit. No numbers.' },
+          secondLabel: { type: Type.STRING, description: 'Row label for the second quantity, with its unit. No numbers.' },
+        },
+        required: ['id', 'instruction', 'firstLabel', 'secondLabel'],
+      },
+    },
+  },
+  required: ['title', 'description', 'problems'],
+};
+
+/**
+ * Items picked by code at the tier's beta, or null: no tier, a mode the space does not serve, no strand
+ * fits, or the band cannot fill a session. One wording call writes every story; a failed call or a
+ * story off its spec ships the plain story.
+ */
+async function ratioItemsFromSpace(
+  mode: RatioTableMode | undefined, topic: string, gradeLevel: string, grade: string | undefined, difficulty: string | undefined,
+): Promise<{ title: string; description: string; challenges: RatioTableChallenge[] } | null> {
+  const band = difficultyBand(difficulty);
+  if (!band || !mode) return null;
+  const space = await resolveItemSpace(
+    `Lesson: ${topic}. In this activity the learner finds a missing value in equivalent ratios (or a unit rate) with a ratio table.`,
+    grade, ['ratio-missing-value'],
+  );
+  if (!space) return null;
+  const log = (m: string) => console.log(`[RatioTable] Item space ${space}: ${m}`);
+  const accept = (it: RatioItem) => ratioTableAccepts(mode, it);
+  const items = tierPick(getItemSpace(space), log, accept)(SPACE_ITEM_COUNT, band[0], band[1], Math.random, accept) as RatioItem[];
+  if (items.length < SPACE_ITEM_COUNT) {
+    log(`${mode} band [${band.join(', ')}] gave ${items.length}; own path kept`);
+    return null;
+  }
+  let written: { title?: string; description?: string; problems?: (WrittenRatio & { id: string })[] } = {};
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: `Write ${items.length} short ratio word problems for ${gradeLevel} students in a lesson on "${topic}". `
+        + `Each is about two quantities that stay in the same ratio (a different everyday context for each). Use ONLY the `
+        + `numbers in its spec, written as digits, never state the answer, and end with the question. Give each problem the `
+        + `labels of its two rows (the first quantity, then the second, with units).\n\n`
+        + items.map((it, i) => `p${i + 1}: ${ratioSpec(it)}`).join('\n')
+        + `\n\nAlso a short title and a one-sentence description for the set (no numbers).`,
+      config: { responseMimeType: 'application/json', responseSchema: ratioWordingSchema, temperature: 0.9 },
+    });
+    written = JSON.parse(response.text ?? '{}');
+  } catch (err) {
+    log(`wording call failed; plain stories shipped (${String(err).slice(0, 120)})`);
+  }
+  const byId = new Map((written.problems ?? []).map((w) => [w.id, w]));
+  let replaced = 0;
+  const challenges = items.map((it, i) => {
+    const w = byId.get(`p${i + 1}`);
+    const fits = !!w && ratioStoryFits(mode, it, w);
+    if (!fits) replaced++;
+    return ratioChallengeFromItem(mode, it, fits ? w! : plainRatio(mode, it), i);
+  });
+  log(`${mode} band [${band.join(', ')}]: ${items.map((it) => `${it.a}:${it.b}→${it.structure}@${it.beta}`).join(' ')}`
+    + `${replaced ? `; ${replaced} story(ies) off spec, plain story shipped` : ''}`);
+  return {
+    title: written.title && !/\d/.test(written.title) ? written.title : 'Ratio Tables',
+    description: written.description && !/\d/.test(written.description) ? written.description : 'Find the missing values in equivalent ratios.',
+    challenges,
+  };
+}
+
 export const generateRatioTable = async (
   ctx: GenerationContext,
 ): Promise<RatioTableData> => {
@@ -360,7 +448,11 @@ REQUIREMENTS:
 Return the complete ratio table configuration.
 `;
 
-  const result = await ai.models.generateContent({
+  // missing_value / unit_rate with a tier: the space picks every item (the LLM's own call is skipped).
+  const spaceMode = pinnedType === 'missing-value' || pinnedType === 'unit-rate' ? pinnedType : undefined;
+  const spaceData = config?.challenges ? null
+    : await ratioItemsFromSpace(spaceMode, topic, gradeLevel, ctx.grade, config?.difficulty);
+  const result = spaceData ? null : await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
     config: {
@@ -369,7 +461,7 @@ Return the complete ratio table configuration.
     },
   });
 
-  const data = result.text ? JSON.parse(result.text) : null;
+  const data = spaceData ?? (result?.text ? JSON.parse(result.text) : null);
 
   if (!data) {
     throw new Error('No valid ratio table data returned from Gemini API');

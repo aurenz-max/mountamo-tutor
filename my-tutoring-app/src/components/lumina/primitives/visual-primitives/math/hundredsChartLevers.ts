@@ -65,7 +65,9 @@ const ahead = (c: HundredsChartChallenge, s: ChartSession) => {
 // ── hop_dots: the cells passed over, from what is on the board ─────────────
 
 export const dotsAvailable = (c: HundredsChartChallenge) => c.type !== 'identify_pattern' && c.skipValue >= 2
-  && (c.type === 'highlight_sequence' ? c.startNumber > 1 : (c.givenCells ?? []).length >= 2);
+  // highlight: only a count from its own step (5, 10, 15): the dots then run from the chart's start to it. A count
+  // that starts elsewhere (by 10s from 23) has no hop before its first number.
+  && (c.type === 'highlight_sequence' ? c.startNumber > 1 && c.startNumber === c.skipValue : (c.givenCells ?? []).length >= 2);
 
 /** The numbers the dots run between: the highlighted ones and the learner's own taps (highlight: from the chart's
  *  start; with no taps yet, up to the count's first number, which is not marked). */

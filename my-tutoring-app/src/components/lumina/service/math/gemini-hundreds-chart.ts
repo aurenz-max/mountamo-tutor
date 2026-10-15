@@ -9,6 +9,8 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from "../evalMode";
+import { difficultyBand } from '../itemSpace';
+import { pickSkipLines, skipCountAccept, type SkipCountItem } from '../itemSpace/skipCount';
 
 // ---------------------------------------------------------------------------
 // Per-mode instance counts — see PRD_WITHIN_MODE_INSTANCE_DENSITY.md §5a
@@ -293,8 +295,16 @@ function buildInstruction(
   givenCount: number,
   tier: SupportTier | null,
   gridMax: number,
+  startNumber: number = skipValue,
 ): string {
   const namesStrategy = tier === 'easy';
+  // A count that does not start at its own step (by 10s from 23, by 5s from 35) names where it starts: the
+  // learner cannot tap the first number otherwise.
+  if (type === 'highlight_sequence' && skipValue > 1 && startNumber !== skipValue) {
+    return namesStrategy
+      ? `Start at ${startNumber}. Count by ${skipValue}s and tap every number you land on, all the way to ${gridMax}.${gridMax > 10 ? ' Tip: the ones digits repeat in a pattern.' : ''}`
+      : `Start at ${startNumber} and count by ${skipValue}s. Tap every number you land on, all the way to ${gridMax}.`;
+  }
   // The ones-digit pattern only exists once the grid wraps to a second row.
   const onesDigitTip = gridMax > 10 ? ' Tip: the ones digits repeat in a pattern.' : '';
   switch (type) {
@@ -422,7 +432,7 @@ const UNSCOPED: ChartScope = { max: null, namedSkips: [] };
  * Runs on every render, including one whose gridMax is pinned by the manifest — the
  * pin settles the ceiling, never which intervals the lesson is about.
  */
-async function resolveChartScope(
+export async function resolveChartScope(
   topic: string,
   objectiveText: string | undefined,
   intent: string | undefined,
@@ -552,8 +562,9 @@ function getPatternOptions(
  *  the student can't eliminate by gross magnitude and must compute carefully.
  *  In-scope: drawn from sv-2..sv+2, clamped to the valid 2-10 interval. */
 function nearSkipDistractors(sv: number): number[] {
+  // Up to 20, so a count by 10s still gets three neighbours (9, 11, 8), not two.
   const candidates = [sv - 1, sv + 1, sv - 2, sv + 2, sv + 3]
-    .filter(d => d >= 2 && d <= 10 && d !== sv);
+    .filter(d => d >= 2 && d <= 20 && d !== sv);
   return Array.from(new Set(candidates)).slice(0, 3);
 }
 
@@ -616,8 +627,10 @@ function buildChallenge(
   hint: string,
   tier: SupportTier | null = null,
   gridMax: number = 100,
+  start?: number,
 ): HundredsChartChallenge {
-  const startNumber = skipValue; // tidy multiples (by-1s starts at 1)
+  // Tidy multiples (by-1s starts at 1) unless an item-space count names its start.
+  const startNumber = start ?? skipValue;
   const fullSeq = buildSequence(skipValue, startNumber, gridMax);
   const shape = tier ? resolveProblemShape(type as ChallengeType, tier) : null;
 
@@ -664,7 +677,7 @@ function buildChallenge(
   return {
     id: `c${index + 1}`,
     type: type as HundredsChartChallenge['type'],
-    instruction: buildInstruction(type, skipValue, givenCells.length, tier, gridMax),
+    instruction: buildInstruction(type, skipValue, givenCells.length, tier, gridMax, startNumber),
     skipValue,
     startNumber,
     givenCells,
@@ -779,8 +792,33 @@ export const generateHundredsChart = async (
   // distinct count is not a cap below the lesson's intent — it IS the intent, sized
   // ([[trust-intent-over-hardcoded-caps]]).
   const sessionTypes = (effectiveChallengeTypes ?? Array.from(validChallengeTypes)) as ChallengeType[];
-  const distinctProblems = Math.max(1, legalSkips.length * sessionTypes.length);
   const requestedCount = resolveCount(singleMode);
+
+  // ── Item space (skip-count): with a tier, code picks each count (its step AND its start) at the tier's
+  // band. Before, every tier drew the same counts from their own step (2, 4, 6 / 5, 10, 15 / 10, 20, 30;
+  // 10-14 probe) and only the prefill moved, and a lesson naming one interval shipped one challenge.
+  // identify_pattern stays on its own path: the shape is set by the step, and its descriptions are written
+  // for counts from the step. ──
+  const spaceBand = difficultyBand(config?.difficulty);
+  let spacePicks: SkipCountItem[] = [];
+  if (spaceBand && singleMode && singleMode !== 'identify_pattern') {
+    // The board's end is not the line's: the chart draws every count to its own end, so only the grade's scope
+    // bounds the start (a by-10s line capped at 100 could start at 20 at most).
+    const lesson = skipCountAccept(ctx.grade, scope.namedSkips);
+    // On the chart: forward, from 1 up (a count from 0 is the count from its step), six cells or more, and an
+    // interval this board allows.
+    const drawable = (it: SkipCountItem) => lesson(it) && it.direction === 'forward' && it.start >= 1
+      && legalSkips.includes(it.step) && it.start + 5 * it.step <= gridMax;
+    const log = (m: string) => console.log(`[HundredsChart] Item space skip-count: ${m}`);
+    const picks = pickSkipLines(requestedCount, spaceBand, drawable, log, Math.min(3, requestedCount));
+    // A one-interval lesson holds few counts in a third (by 10s: one rote count, three from a multiple): three
+    // distinct counts make a session, as the old path's distinct-problem cap allows.
+    const enough = Math.min(3, requestedCount);
+    log(`${singleMode} band [${spaceBand.join(', ')}]: ${picks.length >= enough
+      ? picks.map((p) => `${p.step}s from ${p.start}@${p.beta}`).join(' ') : `${picks.length} of ${requestedCount}; own path kept`}`);
+    if (picks.length >= enough) spacePicks = picks;
+  }
+  const distinctProblems = spacePicks.length || Math.max(1, legalSkips.length * sessionTypes.length);
   const count = Math.min(requestedCount, distinctProblems);
   if (count < requestedCount) {
     console.log(
@@ -939,6 +977,15 @@ ${effectiveChallengeTypes ? `- All challenges must use type: ${effectiveChalleng
     const type = effectiveChallengeTypes?.[0] ?? 'highlight_sequence';
     challenges.push(buildChallenge(0, type, sv, genericHint(type), supportTier, gridMax));
     console.log('[HundredsChart] No valid challenges from Gemini — using fallback');
+  }
+
+  // The space path replaces the model's (type, skip) choices: code owns every count; the model wrote the title.
+  if (spacePicks.length) {
+    challenges.length = 0;
+    spacePicks.forEach((p, i) => {
+      const c = buildChallenge(i, singleMode!, p.step, genericHint(singleMode!), supportTier, gridMax, p.start);
+      challenges.push({ ...c, itemSpace: { space: 'skip-count', structure: p.structure, beta: p.beta } });
+    });
   }
 
   // Ids are positional, so renumber after dedupe/top-up (the component keys on them).

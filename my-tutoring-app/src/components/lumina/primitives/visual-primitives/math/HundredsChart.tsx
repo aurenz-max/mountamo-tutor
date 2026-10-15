@@ -59,6 +59,8 @@ export interface HundredsChartChallenge {
    *  present). Drives the tutor's reveal depth so it doesn't leak what a hard
    *  tier withheld on screen. */
   supportTier?: 'easy' | 'medium' | 'hard';
+  /** The item-space count this challenge came from (calibration only; never rendered or sent to the tutor). */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface HundredsChartData {

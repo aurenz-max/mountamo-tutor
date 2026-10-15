@@ -25,6 +25,11 @@ import {
 } from "../evalMode";
 import { buildScopePromptSection } from "../scopeContext";
 import { buildRemediationPrompt } from "../generation/remediationPrompt";
+import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../itemSpace";
+import { compareSpec, type CompareItem } from "../itemSpace/compareStories";
+import {
+  comparisonBars, comparisonChallengeFromItem, comparisonStoryFits, plainComparison, type WrittenComparison,
+} from "./tapeDiagramItemSpace";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -739,33 +744,6 @@ RULES:
         : undefined;
   const unknownPart: string = remediationUnknown ?? shape?.forcedUnknownPart ?? data.unknownPart;
 
-  let bar1Segments: BarSegment[];
-  let bar2Segments: BarSegment[];
-
-  if (unknownPart === 'difference') {
-    bar1Segments = [
-      { value: q2, label: `matching ${data.quantity2Label}` },
-      { value: diff, label: 'difference', isUnknown: true },
-    ];
-    bar2Segments = [
-      { value: q2, label: data.quantity2Label },
-    ];
-  } else if (unknownPart === 'quantity2') {
-    bar1Segments = [
-      { value: q1, label: data.quantity1Label },
-    ];
-    bar2Segments = [
-      { value: q2, label: data.quantity2Label, isUnknown: true },
-    ];
-  } else {
-    bar1Segments = [
-      { value: q1, label: data.quantity1Label, isUnknown: true },
-    ];
-    bar2Segments = [
-      { value: q2, label: data.quantity2Label },
-    ];
-  }
-
   return {
     title: data.title,
     description: data.description,
@@ -773,10 +751,10 @@ RULES:
       id: 'td-pending',
       challengeType: 'solve_comparison',
       wordProblem: data.wordProblem,
-      bars: [
-        { segments: bar1Segments, totalLabel: data.quantity1Label, color: 'from-blue-500 to-blue-600' },
-        { segments: bar2Segments, totalLabel: data.quantity2Label, color: 'from-purple-500 to-purple-600' },
-      ],
+      bars: comparisonBars(
+        { q1, q2, unknownPart: unknownPart as 'difference' | 'quantity1' | 'quantity2', comparisonWord: data.comparisonWord || 'more' },
+        { larger: data.quantity1Label, smaller: data.quantity2Label },
+      ),
       comparisonMode: true,
       showBrackets: true,
       remediationMove,
@@ -898,6 +876,84 @@ ${stepCount >= 3
 }
 
 // ===========================================================================
+// solve_comparison from an item space (tapeDiagramItemSpace.ts)
+// ===========================================================================
+
+const comparisonWordingSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING },
+    description: { type: Type.STRING },
+    problems: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          story: { type: Type.STRING, description: 'The word problem, ending with the question.' },
+          largerLabel: { type: Type.STRING, description: "Bar label for the FIRST person's amount, e.g. \"Liam's shells\". No numbers." },
+          smallerLabel: { type: Type.STRING, description: "Bar label for the SECOND person's amount, e.g. \"Zoe's shells\". No numbers." },
+        },
+        required: ['id', 'story', 'largerLabel', 'smallerLabel'],
+      },
+    },
+  },
+  required: ['title', 'description', 'problems'],
+};
+
+/**
+ * Comparison problems picked by code at the tier's beta, or null: no tier, no strand fits, or the band
+ * cannot fill the session. One wording call writes every story; a failed call or a story off its spec
+ * ships the space's plain story.
+ */
+async function comparisonsFromItemSpace(
+  topic: string, gradeLevel: string, grade: string | undefined, difficulty: string | undefined, count: number,
+): Promise<SubGenResult[] | null> {
+  const band = difficultyBand(difficulty);
+  if (!band) return null;
+  const space = await resolveItemSpace(
+    `Lesson: ${topic}. In this activity the learner solves comparison word problems ("how many more", "fewer than") with a tape diagram.`,
+    grade, ['compare-20', 'compare-100'],
+  );
+  if (!space) return null;
+  const log = (m: string) => console.log(`[TapeDiagram] Item space ${space}: ${m}`);
+  const items = tierPick(getItemSpace(space), log)(count, band[0], band[1]) as CompareItem[];
+  if (items.length < count) {
+    log(`band [${band.join(', ')}] gave ${items.length} of ${count}; own path kept`);
+    return null;
+  }
+  let written: { title?: string; description?: string; problems?: (WrittenComparison & { id: string })[] } = {};
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: `Write ${count} comparison word problems for ${gradeLevel} students in a lesson on "${topic}". `
+        + `Each compares what two people have of one kind of thing (a different kind for each problem). `
+        + `Follow each spec exactly: the FIRST person always has the larger amount. Use only the numbers in the spec, `
+        + `use the relational word it names, never state the answer, and end with the question.\n\n`
+        + items.map((it, i) => `p${i + 1}: ${compareSpec(it)}`).join('\n')
+        + `\n\nAlso give a short title and a one-sentence description for the set (no numbers).`,
+      config: { responseMimeType: 'application/json', responseSchema: comparisonWordingSchema, temperature: 0.9 },
+    });
+    written = JSON.parse(response.text ?? '{}');
+  } catch (err) {
+    log(`wording call failed; plain stories shipped (${String(err).slice(0, 120)})`);
+  }
+  const byId = new Map((written.problems ?? []).map((w) => [w.id, w]));
+  let replaced = 0;
+  const title = written.title && !/\d/.test(written.title) ? written.title : 'Comparing with Tape Diagrams';
+  const description = written.description && !/\d/.test(written.description) ? written.description : 'Use bars to compare two amounts.';
+  const results = items.map((it, i) => {
+    const w = byId.get(`p${i + 1}`);
+    const fits = !!w && comparisonStoryFits(it, w);
+    if (!fits) replaced++;
+    return { title, description, challenge: comparisonChallengeFromItem(it, fits ? w! : plainComparison(it), space) };
+  });
+  log(`band [${band.join(', ')}]: ${items.map((it) => `${it.structure}@${it.beta}`).join(' ')}`
+    + `${replaced ? `; ${replaced} story(ies) off spec, plain story shipped` : ''}`);
+  return results;
+}
+
+// ===========================================================================
 // Orchestrator: fan out N parallel sub-generator calls for one eval mode
 // ===========================================================================
 
@@ -960,7 +1016,13 @@ export const generateTapeDiagram = async (
   // comes from independent generations (per PRD §6a #2 — structured output
   // converges per-call, not across independent calls).
   const runOne = subGeneratorFor(challengeType);
-  const subResults = await Promise.all(
+  // solve_comparison with a tier: the space picks the problems and owns their shape (the tier's forced
+  // unknown does not run); scaffolds below still follow the tier. A remediation focus keeps the own path
+  // (its moves rewrite the unknown).
+  const spaceResults = challengeType === 'solve_comparison' && !ctx.remediationFocus
+    ? await comparisonsFromItemSpace(topic, gradeLevel, ctx.grade, config?.difficulty, instanceCount)
+    : null;
+  const subResults = spaceResults ?? await Promise.all(
     Array.from({ length: instanceCount }, () => runOne(
       topic,
       gradeLevel,

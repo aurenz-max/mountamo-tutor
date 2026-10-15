@@ -215,6 +215,52 @@ const pickDistinctWidths = (pool: number[], count: number): number[] => {
   return shuffled.slice(0, Math.min(count, shuffled.length));
 };
 
+/**
+ * The widths a tier draws (skill /add-item-space, code tier targets). The tier used to change only the
+ * scaffolds, so easy and hard drew the same widths (10-14 probe); a width's size alone is magnitude, not
+ * difficulty. What changes the work:
+ *   - measure, hard: the hard ruler labels only even wholes, so an odd width lands on an unlabeled mark
+ *     the learner must count to. Hard draws odd widths first.
+ *   - compare: easy draws widths at least 2 apart (ordering by sight); hard draws a run of consecutive
+ *     widths (every pair differs by one unit, so each must be measured).
+ * Falls back to the plain draw when the pool cannot hold the tier's pattern.
+ */
+export function pickWidthsForTier(
+  mode: ChallengeType, pool: number[], count: number, tier: SupportTier | null, step: number,
+): number[] {
+  const unique = Array.from(new Set(pool)).sort((a, b) => a - b);
+  if (tier && mode === 'measure' && tier === 'hard') {
+    const odd = shuffle(unique.filter((w) => w % 2 === 1));
+    const even = shuffle(unique.filter((w) => w % 2 !== 1));
+    return [...odd, ...even].slice(0, Math.min(count, unique.length));
+  }
+  if (tier && mode === 'compare' && tier !== 'medium') {
+    const runs: number[][] = [];
+    if (tier === 'hard') {
+      for (let i = 0; i + count <= unique.length; i++) {
+        const run = unique.slice(i, i + count);
+        if (run.every((w, j) => j === 0 || Math.abs(w - run[j - 1] - step) < 1e-9)) runs.push(run);
+      }
+    } else {
+      // Every combination (pools hold at most 17 widths). A 2-8 pool holds one set of four 2 apart
+      // ({2, 4, 6, 8}), which would repeat every session; under three such sets, one gap of 1 is allowed.
+      const combos = (from: number, left: number, acc: number[], ones: number, maxOnes: number) => {
+        if (left === 0) { runs.push(acc); return; }
+        for (let i = from; i <= unique.length - left; i++) {
+          const gap = acc.length ? unique[i] - acc[acc.length - 1] : Infinity;
+          const one = gap < 2 * step - 1e-9 ? 1 : 0;
+          if (ones + one > maxOnes) continue;
+          combos(i + 1, left - 1, [...acc, unique[i]], ones + one, maxOnes);
+        }
+      };
+      combos(0, count, [], 0, 0);
+      if (runs.length < 3) combos(0, count, [], 0, 1);
+    }
+    if (runs.length) return runs[Math.floor(Math.random() * runs.length)];
+  }
+  return pickDistinctWidths(pool, count);
+}
+
 const pickShapeType = (idx: number): ShapeType => {
   // ~30% squares, 70% rectangles. Deterministic by index for stable mix.
   return idx % 3 === 1 ? 'square' : 'rectangle';
@@ -236,6 +282,7 @@ const selectMeasurementChallenges = (
   /** Tier-2 scope cap (from resolveScopeRange): narrow the width pool to the lesson's
    *  range (inches). Applied only when ≥2 candidates survive, else the mode pool stands. */
   cap?: { min: number; max: number } | null,
+  tier: SupportTier | null = null,
 ): MeasurementToolsChallenge[] => {
   const target = Math.min(Math.max(count, 3), MAX_INSTANCE_COUNT);
   const config = poolConfigFor(mode, gradeBandHint);
@@ -244,7 +291,7 @@ const selectMeasurementChallenges = (
     if (narrowed.length >= 2) config.widthCandidates = narrowed;
   }
 
-  let widths = pickDistinctWidths(config.widthCandidates, target);
+  let widths = pickWidthsForTier(mode, config.widthCandidates, target, tier, config.precisionStep);
   // Fallback: if pool was too small, repeat the smallest with offset (rare). SKIP this
   // when a scope cap is active — the offset fabricates widths OUTSIDE the capped range
   // (e.g. a "1–3 inch" cap would otherwise leak a 6). With a cap, the narrowed pool is
@@ -491,7 +538,7 @@ Return only the session wrapper.
     { min: 1, max: 10 },
   );
   if (scopeCap) console.log(`📏 Measurement Tools scope cap → ${scopeCap.min}..${scopeCap.max}in (from intent)`);
-  const challenges = selectMeasurementChallenges(challengeType, instanceCount, gradeBand, scopeCap);
+  const challenges = selectMeasurementChallenges(challengeType, instanceCount, gradeBand, scopeCap, supportTier);
 
   // Ruler length: large enough for the widest shape plus headroom.
   const maxWidth = Math.max(...challenges.map((c) => c.widthInches));

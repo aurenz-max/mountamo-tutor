@@ -5,6 +5,9 @@ import type { GenerationContext } from "../generation/generationContext";
 import { buildRemediationPrompt } from "../generation/remediationPrompt";
 import { createNumberPool } from "./numberPoolService";
 import { resolveScopeRange } from "../scopeRangeResolver";
+import { difficultyBand, tierPick } from "../itemSpace";
+import { COMPARE_NUMBERS, symbolOf, type CompareNumbersItem } from "../itemSpace/compareNumbers";
+import { fallbackSession, oneMoreLessInstruction, oneMoreLessTargets } from "./comparisonBuilderTargets";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -725,6 +728,18 @@ export const generateComparisonBuilder = async (
     )
     : null;
   const countWindow = normalizeCountWindow(scopeWindow, bandMax);
+  // ── compare-numbers: the objective's numeral range ──
+  // The numerals a grade-1 lesson compares go to 100 (1.NBT.3 "compare two two-digit numbers"); the
+  // old 20 ceiling clamped a two-digit lesson's 45 vs 67 to 20 vs 20, five "=" cards in a row (10-14
+  // probe). Groups of objects keep the 10/20 band above. K stays within 10 (K.CC.7).
+  const comparesNumbers = !pinnedType || pinnedType === 'compare-numbers';
+  const numeralCeiling = resolvedBand === 'K' ? 10 : 100;
+  const numeralWindow = comparesNumbers
+    ? (await resolveScopeRange(
+      { ...ctx.scope, topic, intent }, gradeLevel, 'the two numbers the student compares with <, > or =',
+      { min: 1, max: numeralCeiling },
+    )) ?? { min: 1, max: bandMax }
+    : { min: 1, max: bandMax };
   if (countWindow.min > 1 || countWindow.max < bandMax) {
     console.log(
       `[ComparisonBuilder] objective count window → ${countWindow.min}-${countWindow.max} `
@@ -781,7 +796,7 @@ GUIDELINES FOR GRADE LEVELS:
   * Set useAlligatorMnemonic: true (the alligator mouth opens toward the bigger number)
 
 - Grade 1 (gradeBand "1"):
-  * Numbers 1-20
+  * Numbers 1-20 (compare-numbers numerals: ${numeralWindow.min}-${numeralWindow.max})
   * Groups up to 10-15 objects
   * All 4 challenge types in good balance
   * Ordering with 4-5 numbers
@@ -931,8 +946,8 @@ Return the complete comparison builder configuration.
       case 'compare-numbers': {
         if (typeof challenge.leftNumber !== 'number') challenge.leftNumber = 3;
         if (typeof challenge.rightNumber !== 'number') challenge.rightNumber = 5;
-        challenge.leftNumber = Math.max(1, Math.min(challenge.leftNumber, maxNumber));
-        challenge.rightNumber = Math.max(1, Math.min(challenge.rightNumber, maxNumber));
+        challenge.leftNumber = Math.max(numeralWindow.min, Math.min(challenge.leftNumber, numeralWindow.max));
+        challenge.rightNumber = Math.max(numeralWindow.min, Math.min(challenge.rightNumber, numeralWindow.max));
         if (challenge.leftNumber > challenge.rightNumber) {
           challenge.correctSymbol = '>';
         } else if (challenge.leftNumber < challenge.rightNumber) {
@@ -971,49 +986,17 @@ Return the complete comparison builder configuration.
     }
   }
 
-  // ── Fallback if empty ──
+  // ── Fallback if empty: a full session built in code ──
+  // The old fallback shipped ONE card (both generation attempts fail on a runaway or empty reply: 4 of 6
+  // one-more-one-less medium/hard runs on 10-14), which breaks the session's mastery count (contract R6).
   if (data.challenges.length === 0) {
-    const fallbackType = evalConstraint?.allowedTypes[0] ?? 'compare-groups';
-    // Even the degraded path honors the window — the pool's first pair when there is
-    // one, the literal counts pulled into range when there is not.
-    const fallbackPair = countPairs[0]
-      ?? { left: clampToWindow(3, countWindow), right: clampToWindow(5, countWindow) };
-    const fallbacks: Record<string, ComparisonBuilderChallenge> = {
-      'compare-groups': {
-        id: 'c1',
-        type: 'compare-groups' as const,
-        instruction: 'Which group has more bears?',
-        leftGroup: { count: fallbackPair.left, objectType: 'bears' },
-        rightGroup: { count: fallbackPair.right, objectType: 'bears' },
-        correctAnswer: fallbackPair.left > fallbackPair.right
-          ? 'more'
-          : fallbackPair.left < fallbackPair.right ? 'less' : 'equal',
-      },
-      'compare-numbers': {
-        id: 'c1',
-        type: 'compare-numbers' as const,
-        instruction: 'Pick the right symbol: is 4 greater than, less than, or equal to 7?',
-        leftNumber: 4,
-        rightNumber: 7,
-        correctSymbol: '<' as const,
-      },
-      order: {
-        id: 'c1',
-        type: 'order' as const,
-        instruction: 'Put these numbers in order from least to greatest!',
-        numbers: [3, 1, 5],
-        direction: 'ascending' as const,
-      },
-      'one-more-one-less': {
-        id: 'c1',
-        type: 'one-more-one-less' as const,
-        instruction: 'What is one more than 5? What is one less?',
-        targetNumber: 5,
-        askFor: 'both' as const,
-      },
-    };
-    console.log(`[ComparisonBuilder] No valid challenges — using ${fallbackType} fallback`);
-    data.challenges = [fallbacks[fallbackType] ?? fallbacks['compare-groups']];
+    const fallbackType = (evalConstraint?.allowedTypes[0] ?? 'compare-groups') as ComparisonBuilderChallenge['type'];
+    console.log(`[ComparisonBuilder] No valid challenges — building ${instanceCount} ${fallbackType} cards in code`);
+    data.challenges = fallbackSession(fallbackType, instanceCount, {
+      numeralMin: fallbackType === 'compare-numbers' ? numeralWindow.min : 1,
+      numeralMax: fallbackType === 'compare-numbers' ? numeralWindow.max : maxNumber,
+      groupPairs: countPairs.length ? countPairs : [{ left: clampToWindow(3, countWindow), right: clampToWindow(5, countWindow) }],
+    });
   }
 
   // ── Apply the support tier deterministically (code owns the SUPPORT structure
@@ -1023,6 +1006,34 @@ Return the complete comparison builder configuration.
   // structural lever is resolved per challenge from its OWN mode. The new on-screen
   // scaffold flags are data-level (global): for a single-mode session that mode owns
   // them; for a blend we withdraw a flag if its owning mode asks for withdrawal. ──
+  // ── compare-numbers from the item space (tier set, no remediation focus) ──
+  // The LLM's pairs converged (12 vs 18, 19 vs 11 at easy and at medium, 10-14 probe) and easy never
+  // got its distinct-tens pairs. With a tier, code picks every pair from the compare-numbers space in
+  // the objective's window (tierPick thirds: a window this narrow holds no hard-band pair) and the
+  // tier's digit-overlap lever below does not run on them. The instruction is replaced when it names
+  // a number, since the numbers changed under it.
+  const numberCards = (data.challenges as ComparisonBuilderChallenge[]).filter((c) => c.type === 'compare-numbers');
+  const band = difficultyBand(config?.difficulty);
+  if (band && numberCards.length && !ctx.remediationFocus) {
+    const inWindow = (it: CompareNumbersItem) => Math.min(it.left, it.right) >= numeralWindow.min
+      && Math.max(it.left, it.right) <= numeralWindow.max;
+    const log = (m: string) => console.log(`[ComparisonBuilder] Item space compare-numbers: ${m}`);
+    const picks = tierPick(COMPARE_NUMBERS, log, inWindow)(numberCards.length, band[0], band[1], Math.random, inWindow) as CompareNumbersItem[];
+    if (picks.length === numberCards.length) {
+      numberCards.forEach((c, i) => {
+        const it = picks[i];
+        c.leftNumber = it.left;
+        c.rightNumber = it.right;
+        c.correctSymbol = symbolOf(it.left, it.right);
+        c.itemSpace = { space: 'compare-numbers', structure: it.structure, beta: it.beta };
+        if (/\d/.test(c.instruction ?? '')) c.instruction = 'Choose the symbol that makes this true.';
+      });
+      log(`window ${numeralWindow.min}-${numeralWindow.max} band [${band.join(', ')}]: ${picks.map((p) => `${p.left}v${p.right} ${p.structure}@${p.beta}`).join(' ')}`);
+    } else {
+      log(`window ${numeralWindow.min}-${numeralWindow.max} gave ${picks.length} of ${numberCards.length}; own path kept`);
+    }
+  }
+
   if (supportTier) {
     // ---- Axis 2: in-mode structural shape, code-enforced per challenge ----
     for (const challenge of data.challenges as ComparisonBuilderChallenge[]) {
@@ -1072,16 +1083,16 @@ Return the complete comparison builder configuration.
         }
       }
 
-      if (mode === 'compare-numbers' && shape.digitOverlap &&
+      if (mode === 'compare-numbers' && shape.digitOverlap && !challenge.itemSpace &&
           typeof challenge.leftNumber === 'number' && typeof challenge.rightNumber === 'number') {
-        if (shape.digitOverlap === 'same-tens' && maxNumber > 10) {
+        if (shape.digitOverlap === 'same-tens' && numeralWindow.max > 10) {
           // Pull both numbers into the same ten (e.g. 14 vs 17) — same band, subtler.
           // Anchor on the larger value's ten; keep both distinct within that ten.
           const anchor = Math.max(challenge.leftNumber, challenge.rightNumber);
-          const tens = Math.min(Math.floor(anchor / 10) * 10, maxNumber - 9);
+          const tens = Math.min(Math.floor(anchor / 10) * 10, numeralWindow.max - 9);
           const base = Math.max(0, tens);
-          // two distinct ones digits within [base+1 .. min(base+9, maxNumber)]
-          const ceil = Math.min(base + 9, maxNumber);
+          // two distinct ones digits within [base+1 .. min(base+9, numeralWindow.max)]
+          const ceil = Math.min(base + 9, numeralWindow.max);
           const a = Math.max(base + 1, Math.min(challenge.leftNumber, ceil));
           let b = Math.max(base + 1, Math.min(challenge.rightNumber, ceil));
           if (a === b) b = a < ceil ? a + 1 : a - 1;
@@ -1108,6 +1119,21 @@ Return the complete comparison builder configuration.
       if (mode === 'order' && shape.direction && Array.isArray(challenge.numbers)) {
         challenge.direction = shape.direction;
       }
+    }
+
+    // one-more-one-less: code picks the targets by tier (comparisonBuilderTargets.ts); the LLM gave
+    // 5, 8, 12, 15, 18 at every tier. The instruction is replaced when it names a number.
+    const omlCards = (data.challenges as ComparisonBuilderChallenge[]).filter((c) => c.type === 'one-more-one-less');
+    if (omlCards.length && !ctx.remediationFocus) {
+      const askFor = omlCards[0].askFor ?? 'both';
+      const targets = oneMoreLessTargets(maxNumber, askFor, supportTier, omlCards.length);
+      omlCards.forEach((c, i) => {
+        if (targets[i] === undefined) return;
+        c.targetNumber = targets[i];
+        c.askFor = askFor;
+        if (/\d/.test(c.instruction ?? '')) c.instruction = oneMoreLessInstruction(askFor);
+      });
+      console.log(`[ComparisonBuilder] one-more-one-less ${supportTier} targets (${askFor}): ${targets.join(', ')}`);
     }
 
     // ---- Axis 1: on-screen scaffold flags (data-level / global) ----

@@ -52,6 +52,8 @@ export interface AdditionFactChallenge {
   sum: number;
   /** Turn-around only: the flipped fact the learner already knows (b + a). Shown only as help after a miss. */
   knownFact?: { a: number; b: number };
+  /** Calibration stamp from the add-sub-20 item space when a tier picked the fact. Never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface AdditionFactStrategiesData {
@@ -65,7 +67,7 @@ export interface AdditionFactStrategiesData {
   introExample?: { a: number; b: number };
   challenges: AdditionFactChallenge[];
   gradeBand?: '1' | '2';
-  /** config.difficulty: where the levers start (easy: the objects to count on screen). Never the facts. */
+  /** config.difficulty: where the levers start (easy: the objects to count on screen); the generator also draws the tier's facts. */
   supportTier?: 'easy' | 'medium' | 'hard';
 
   instanceId?: string;

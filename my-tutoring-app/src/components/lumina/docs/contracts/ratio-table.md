@@ -19,6 +19,12 @@
 - **Property:** `ratioTableLevers.ts` declares levers on every mode and every catalog miss is answered by a help lever on every item. Help: bar_chart and unit_rate_banner (where the session hides them), times_arrows, division_frame (find), equal_groups (unit rate), model_ratio (every mode). Leak rules in code: no lever text or fact carries a digit; find's arrows and the boxes carry no number; the division frame, the banner and the model never write the answer. Simplify (`simpler_problem`, every mode) opens a same-mode problem on small whole numbers with its own `~simpler` id, ask, base and answer (`practiceLeaks`), ungraded; the full item comes back blank.
 - **Evidence:** `ratioTableLevers.test.ts`, `RatioTable.levers.workspace.test.tsx`; sweep J9/J12/J13 0 findings (`qa/eval-reports/ratio-table-levers-2026-10-09.md`).
 
+### R-IS — missing_value and unit_rate with a tier take their items from the ratio-missing-value space · OBSERVED (2026-10-14)
+- With `config.difficulty`, a pinned missing_value or unit_rate mode, no manifest `challenges`, and an objective the resolver fits to `ratio-missing-value`, code picks 4 items (`tierPick`; `ratioTableItemSpace.ts`) and one flash-lite call writes the stories and row labels; `ratioStoryFits` rejects a story that misses a given number, adds a number other than 1, states the answer or does not ask, and the plain story replaces it. missing_value takes only items whose factor is exact to two decimals, so R2's header ×m is the true factor; unit_rate takes unit-rate items (whole, half, other decimals, below one). Each challenge carries `itemSpace` {space, structure, beta}, never rendered or sent to the tutor. R1 and R2 hold (keys from `ratioKey`). No tier keeps the own path.
+- Open (ruling, WORKSTREAMS 8.1e): R2 shows the missing_value factor in the header, which does the factor-finding step of 6.RP.3 for the learner.
+- Probe: `service/itemSpace/ratioMissingValue.test.ts`, `service/math/ratioTableItemSpace.test.ts`, `scripts/difficulty-lab/tier-probe.mjs --component ratio-table`.
+
 ## Changelog
 
 - 2026-10-09 — created with R1-R3 (W1 plain-shape binding and levers, C15).
+- 2026-10-14 — R-IS added. Before: the LLM chose every ratio; easy got ×3.75 and ×4.5 while medium got ×7, and the no-tier path shipped decimal base ratios (1.5:45, 8.2:140). Compatible with R1-R2.

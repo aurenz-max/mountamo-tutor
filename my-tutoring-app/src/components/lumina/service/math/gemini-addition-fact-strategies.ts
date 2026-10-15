@@ -11,6 +11,7 @@ import {
   type ChallengeTypeDoc,
 } from "../evalMode";
 import { resolveObjectiveNumberWindow } from "../objectiveNumberWindow";
+import { factStamp, tierFactPool } from "./additionFactItemSpace";
 
 /**
  * Addition Fact Strategies generator (pool service).
@@ -98,14 +99,19 @@ export interface AdditionFactSession {
   introExample?: { a: number; b: number };
 }
 
-/** Pure, Gemini-free session builder. */
+/**
+ * Pure, Gemini-free session builder. `tierPool`: the tier's window of the family (additionFactItemSpace.ts);
+ * the session's facts come from it, the intro example from the whole family.
+ */
 export function buildAdditionFactSession(
   strategy: AdditionFactStrategy,
   rng: () => number = Math.random,
   maxSum = MAX_FACT_SUM,
+  tierPool?: Pair[],
 ): AdditionFactSession {
-  const pool = strategyPool(strategy, maxSum);
-  const count = sessionCount(strategy, maxSum);
+  const family = strategyPool(strategy, maxSum);
+  const pool = tierPool ?? family;
+  const count = Math.min(sessionCount(strategy, maxSum), pool.length);
   const isTurnaround = strategy === 'turnaround';
 
   const picked: Pair[] = [];
@@ -154,6 +160,7 @@ export function buildAdditionFactSession(
     b,
     sum: a + b,
     ...(isTurnaround ? { knownFact: { a: b, b: a } } : {}),
+    ...(tierPool && factStamp(a, b) ? { itemSpace: factStamp(a, b)! } : {}),
   }));
 
   // 4. Intro example: a fact from the pool whose pair is NOT asked this session.
@@ -161,7 +168,7 @@ export function buildAdditionFactSession(
   const introStrategies: AdditionFactStrategy[] = ['plus_zero', 'plus_one', 'doubles', 'turnaround', 'plus_two'];
   if (introStrategies.includes(strategy)) {
     const asked = new Set(challenges.map((c) => pairKey(c.a, c.b)));
-    const candidate = shuffle(pool, rng).find(
+    const candidate = shuffle(family, rng).find(
       ([a, b]) => !asked.has(pairKey(a, b)) && (!isTurnaround || a !== b),
     );
     if (candidate) introExample = { a: candidate[0], b: candidate[1] };
@@ -262,7 +269,10 @@ export async function generateAdditionFactStrategies(
     targetEvalMode?: string;
     /** Parent objective text — secondary routing signal. */
     objectiveText?: string;
-    /** Where the levers start (easy: the objects to count on screen). Never changes the facts. */
+    /**
+     * Where the levers start (easy: the objects to count on screen), and which facts the session draws:
+     * each tier takes its window of the family ranked by the add-sub-20 space's beta (additionFactItemSpace.ts).
+     */
     difficulty?: string;
     [key: string]: unknown;
   },
@@ -359,7 +369,13 @@ Rules:
     objectEmoji = DEFAULT_EMOJI[strategy];
   }
 
-  const session = buildAdditionFactSession(strategy, Math.random, maxSum);
+  const factCount = sessionCount(strategy, maxSum);
+  const tierPool = supportTier ? tierFactPool(strategy, maxSum, supportTier, factCount) ?? undefined : undefined;
+  if (supportTier) {
+    console.log(`[AdditionFactStrategies] Item space add-sub-20 ${strategy} ${supportTier}: `
+      + (tierPool ? `${tierPool.length} of ${strategyPool(strategy, maxSum).length} facts` : 'not on the space; full pool'));
+  }
+  const session = buildAdditionFactSession(strategy, Math.random, maxSum, tierPool);
   const challenges = session.challenges.filter(
     (c) =>
       Number.isInteger(c.a) && Number.isInteger(c.b) &&

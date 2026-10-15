@@ -16,6 +16,8 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import { difficultyBand, resolveItemSpace } from '../itemSpace';
+import { buildKcTierPrompt, checkTierShape, normalizeKcTier, type KcTier, type KcTierRequest } from './knowledgeCheckTier';
+import { needsDrawnEvidence, preReaderReasons } from './preReaderEvidence';
 import { buildItemSpaceMcProblems } from './itemSpaceProblems';
 import {
   ProblemType,
@@ -441,6 +443,7 @@ export const generateMultipleChoiceProblems = async (
   insetType?: InsetType,
   preciseGrade?: string,
   visualType?: KnowledgeCheckVisualType,
+  tier?: KcTierRequest,
 ): Promise<MultipleChoiceProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
   const optionLabels = getMcOptionLabels(bloomsTier, gradeLevel);
@@ -557,7 +560,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${readerFitPrompt}${insetPrompt}${visualPrompt}${isPreReader ? preReaderMcPalette(insetType) : ''}
+${bloomsPrompt}${readerFitPrompt}${buildKcTierPrompt(tier, 'multiple_choice', gradeLevel, preciseGrade, optionCount)}${insetPrompt}${visualPrompt}${isPreReader ? preReaderMcPalette(insetType) : ''}
 ## Your Mission:
 Create ${count} high-quality multiple choice question${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the question directly references.` : ''}${visualType ? `\nEach problem MUST populate the schema's flat ${visualType} fields; the rendered visual is the evidence the question asks about.` : ''}
 
@@ -624,14 +627,15 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
       if (visualType && !visual) {
         throw new Error(`[Knowledge Check] Planned ${visualType} was missing required picture fields`);
       }
+      const { options, correctOptionId } = uniqueOptionIds(problem.options, problem.correctOptionId, optionLabels);
       return {
         type: 'multiple_choice' as const,
         id: problem.id,
         difficulty: problem.difficulty,
         gradeLevel: gradeLevel,
         question: problem.question,
-        options: problem.options,
-        correctOptionId: problem.correctOptionId,
+        options,
+        correctOptionId,
         rationale: problem.rationale,
         teachingNote: problem.teachingNote,
         successCriteria: problem.successCriteria,
@@ -656,6 +660,22 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
   }
 };
 
+/**
+ * Two options sharing an id make the key ambiguous: a tap on either is graded correct (seen at K: "A" on both
+ * Water and Rocks). Ids are re-lettered by position and the key follows the one option tagged `distance: key`.
+ * With no single key tag the set is left as generated and the oracle's answer-key check catches it.
+ */
+export function uniqueOptionIds(
+  options: Array<{ id: string; distance?: string }>, correctOptionId: string, labels: string[],
+): { options: any[]; correctOptionId: string } {
+  if (!Array.isArray(options) || new Set(options.map((o) => o.id)).size === options.length) return { options, correctOptionId };
+  const keys = options.filter((o) => o.distance === 'key');
+  if (keys.length !== 1) return { options, correctOptionId };
+  const relettered = options.map((o, i) => ({ ...o, id: labels[i] ?? String.fromCharCode(65 + i) }));
+  console.warn(`[Knowledge Check] duplicate option ids ${options.map((o) => o.id).join(',')} re-lettered; key from distance tag`);
+  return { options: relettered, correctOptionId: relettered[options.indexOf(keys[0])].id };
+}
+
 // ============================================================================
 // TRUE/FALSE PROBLEMS
 // ============================================================================
@@ -671,6 +691,8 @@ export const generateTrueFalseProblems = async (
   bloomsTier?: BloomsTier,
   insetType?: InsetType,
   preciseGrade?: string,
+  _visualType?: KnowledgeCheckVisualType,
+  tier?: KcTierRequest,
 ): Promise<TrueFalseProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
 
@@ -728,6 +750,7 @@ export const generateTrueFalseProblems = async (
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
   const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'true_false');
+  const tierPrompt = buildKcTierPrompt(tier, 'true_false', gradeLevel, preciseGrade);
 
   const prompt = `You are an expert educational assessment designer creating true/false questions for a knowledge check.
 
@@ -735,7 +758,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${readerFitPrompt}${insetPrompt}
+${bloomsPrompt}${readerFitPrompt}${tierPrompt}${insetPrompt}
 ## Your Mission:
 Create ${count} high-quality true/false statement${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the statement directly references.` : ''}
 
@@ -824,6 +847,8 @@ export const generateFillInBlanksProblems = async (
   bloomsTier?: BloomsTier,
   insetType?: InsetType,
   preciseGrade?: string,
+  _visualType?: KnowledgeCheckVisualType,
+  tier?: KcTierRequest,
 ): Promise<FillInBlanksProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
 
@@ -908,6 +933,7 @@ export const generateFillInBlanksProblems = async (
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
   const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'fill_in_blanks');
+  const tierPrompt = buildKcTierPrompt(tier, 'fill_in_blanks', gradeLevel, preciseGrade);
 
   const prompt = `You are an expert educational assessment designer creating fill-in-the-blank questions with drag-and-drop word banks.
 
@@ -915,7 +941,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${readerFitPrompt}${insetPrompt}
+${bloomsPrompt}${readerFitPrompt}${tierPrompt}${insetPrompt}
 ## Your Mission:
 Create ${count} high-quality fill-in-the-blank problem${count > 1 ? 's' : ''} with word banks that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the question directly references.` : ''}
 
@@ -1009,6 +1035,8 @@ export const generateCategorizationProblems = async (
   bloomsTier?: BloomsTier,
   insetType?: InsetType,
   preciseGrade?: string,
+  _visualType?: KnowledgeCheckVisualType,
+  tier?: KcTierRequest,
 ): Promise<CategorizationActivityProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
 
@@ -1091,6 +1119,7 @@ export const generateCategorizationProblems = async (
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
   const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'categorization_activity');
+  const tierPrompt = buildKcTierPrompt(tier, 'categorization_activity', gradeLevel, preciseGrade);
 
   const prompt = `You are an expert educational assessment designer creating categorization activities for a knowledge check.
 
@@ -1098,7 +1127,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${readerFitPrompt}${insetPrompt}
+${bloomsPrompt}${readerFitPrompt}${tierPrompt}${insetPrompt}
 ## Your Mission:
 Create ${count} high-quality categorization activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the activity directly references.` : ''}
 
@@ -1196,6 +1225,8 @@ export const generateMatchingProblems = async (
   bloomsTier?: BloomsTier,
   insetType?: InsetType,
   preciseGrade?: string,
+  _visualType?: KnowledgeCheckVisualType,
+  tier?: KcTierRequest,
 ): Promise<MatchingActivityProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
 
@@ -1309,6 +1340,7 @@ export const generateMatchingProblems = async (
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
   const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'matching_activity');
+  const tierPrompt = buildKcTierPrompt(tier, 'matching_activity', gradeLevel, preciseGrade);
 
   const prompt = `You are an expert educational assessment designer creating matching activities for knowledge checks.
 
@@ -1316,7 +1348,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${readerFitPrompt}${insetPrompt}
+${bloomsPrompt}${readerFitPrompt}${tierPrompt}${insetPrompt}
 ## Your Mission:
 Create ${count} high-quality matching activity problem${count > 1 ? 's' : ''} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the activity directly references.` : ''}
 
@@ -1421,6 +1453,8 @@ export const generateSequencingProblems = async (
   bloomsTier?: BloomsTier,
   insetType?: InsetType,
   preciseGrade?: string,
+  _visualType?: KnowledgeCheckVisualType,
+  tier?: KcTierRequest,
 ): Promise<SequencingActivityProblemData[]> => {
   const gradeLevelContext = getGradeLevelContext(gradeLevel, preciseGrade);
 
@@ -1482,6 +1516,7 @@ export const generateSequencingProblems = async (
   const bloomsPrompt = buildBloomsTierPrompt(bloomsTier);
   const insetPrompt = buildInsetPrompt(insetType);
   const readerFitPrompt = buildGradeOneReaderPrompt(preciseGrade, 'sequencing_activity');
+  const tierPrompt = buildKcTierPrompt(tier, 'sequencing_activity', gradeLevel, preciseGrade);
 
   const prompt = `You are an expert educational assessment designer creating sequencing activities for a knowledge check.
 
@@ -1489,7 +1524,7 @@ TOPIC: ${topic}
 TARGET AUDIENCE: ${gradeLevelContext}
 ${context ? `ADDITIONAL CONTEXT: ${context}\n` : ''}
 NUMBER OF PROBLEMS: ${count}
-${bloomsPrompt}${readerFitPrompt}${insetPrompt}
+${bloomsPrompt}${readerFitPrompt}${tierPrompt}${insetPrompt}
 ## Your Mission:
 Create ${count} high-quality sequencing activit${count > 1 ? 'ies' : 'y'} that effectively assess understanding of "${topic}".${insetType ? `\nEach problem MUST include an "inset" object with rich inline content (type: "${insetType}") that the activity directly references.` : ''}
 
@@ -1627,6 +1662,7 @@ type GenFn = (
   insetType?: InsetType,
   preciseGrade?: string,
   visualType?: KnowledgeCheckVisualType,
+  tier?: KcTierRequest,
 ) => Promise<ProblemData[]>;
 
 const GENERATOR_MAP: Record<string, GenFn> = {
@@ -1641,6 +1677,18 @@ const GENERATOR_MAP: Record<string, GenFn> = {
 const VALID_GRADE_KEYS = new Set(['toddler', 'preschool', 'kindergarten', 'elementary', 'middle-school', 'high-school', 'undergraduate', 'graduate', 'phd']);
 
 /**
+ * A requested tier is owned by code: every problem carries it, whatever the model wrote in its own
+ * `difficulty` field, and the countable shape it missed (blanks, pairs, items, steps, near options) is logged.
+ */
+function stampTier(problem: ProblemData | null, tier: KcTierRequest | undefined, gradeLevel: string, preciseGrade?: string): ProblemData | null {
+  if (!problem || !tier) return problem;
+  const misses = checkTierShape(problem, tier.difficulty, gradeLevel, preciseGrade);
+  if (misses.length) console.warn(`[KC Tier] ${problem.type} @ ${tier.difficulty} off shape: ${misses.join('; ')}`);
+  (problem as { difficulty?: string }).difficulty = tier.difficulty;
+  return problem;
+}
+
+/**
  * Generate a single problem from an orchestrator plan item.
  * Each planned problem is dispatched to its per-type generator.
  */
@@ -1651,6 +1699,7 @@ async function generateFromPlan(
   bloomsTier?: BloomsTier,
   preciseGrade?: string,
   reviewNotes?: string[],
+  tier?: KcTierRequest,
 ): Promise<ProblemData | null> {
   const generator = GENERATOR_MAP[plan.problemType];
   if (!generator) {
@@ -1658,22 +1707,43 @@ async function generateFromPlan(
     return null;
   }
 
+  const draw = async (notes: string[] | undefined, insetType: InsetType | undefined) => (await generator(
+    topic,
+    gradeLevel,
+    1,
+    // The orchestrator brief becomes the context; a redraw adds what the reviewer rejected.
+    notes?.length
+      ? `${plan.brief}\n\nA reviewer rejected an earlier draft of this problem. Fix exactly this:\n`
+        + notes.map((n) => `- ${n}`).join('\n')
+      : plan.brief,
+    bloomsTier,
+    insetType,
+    preciseGrade,
+    plan.visualType || undefined,
+    tier,
+  ))[0] || null;
+
   try {
-    const results = await generator(
-      topic,
-      gradeLevel,
-      1,
-      // The orchestrator brief becomes the context; a redraw adds what the reviewer rejected.
-      reviewNotes?.length
-        ? `${plan.brief}\n\nA reviewer rejected an earlier draft of this problem. Fix exactly this:\n`
-          + reviewNotes.map((n) => `- ${n}`).join('\n')
-        : plan.brief,
-      bloomsTier,
-      plan.insetType || undefined,
-      preciseGrade,
-      plan.visualType || undefined,
-    );
-    return results[0] || null;
+    let problem = await draw(reviewNotes, plan.insetType || undefined);
+    if (problem && isPreReaderGradeKey(gradeLevel)) {
+      // A pre-reader sees only the option pictures and the inset: a question about anything else is redrawn once,
+      // a counting question with its objects drawn (arrangement), and dropped if it still cannot be answered.
+      const reasons = preReaderReasons(problem);
+      if (reasons.length) {
+        const count = needsDrawnEvidence(String((problem as any).question ?? (problem as any).statement ?? '')) === 'count';
+        const insetType = plan.insetType || (count ? 'arrangement' as InsetType : undefined);
+        console.warn(`[KC PRE] redraw ${plan.problemType}: ${reasons.join('; ')}`);
+        problem = await draw([...(reviewNotes ?? []), ...reasons,
+          count ? 'Draw the objects to count in the arrangement inset; the key is the number drawn.'
+            : 'Nothing is shown except the option pictures: do not refer to any picture, group, or box.'], insetType);
+        const still = problem ? preReaderReasons(problem) : [];
+        if (still.length) {
+          console.warn(`[KC PRE] dropped ${plan.problemType}: ${still.join('; ')}`);
+          return null;
+        }
+      }
+    }
+    return stampTier(problem, tier, gradeLevel, preciseGrade);
   } catch (err) {
     console.warn(`[KC Dispatch] Generator failed for ${plan.problemType}:`, err);
     return null;
@@ -1714,6 +1784,8 @@ export const generateKnowledgeCheck = async (
 ): Promise<ProblemData[]> => {
   const count = config?.count || 1;
   const context = config?.context || config?.objectiveText;
+  // Requested difficulty for the problems the LLM writes (knowledgeCheckTier.ts); item-space problems use `band`.
+  const requestedTier: KcTier | undefined = normalizeKcTier(config?.difficulty);
   const bloomsTier = normalizeBloomsTier(config?.bloomsTier);
   const gradeLevel = VALID_GRADE_KEYS.has(gradeContext) ? gradeContext : 'elementary';
 
@@ -1728,7 +1800,10 @@ export const generateKnowledgeCheck = async (
   if (band && computeTask && objectiveList.length <= 1 && !isPreReaderGradeKey(gradeLevel)) {
     const space = await resolveItemSpace(objectiveList[0]?.text || config?.objectiveText || topic, config?.preciseGrade);
     if (space) {
-      const problems = await buildItemSpaceMcProblems({ space, count, band, gradeLevel });
+      const problems = await buildItemSpaceMcProblems({
+        space, count, band, gradeLevel, tier: requestedTier,
+        objective: objectiveList[0]?.text || config?.objectiveText || topic,
+      });
       if (problems.length) {
         const only = objectiveList[0];
         console.log(`[Knowledge Check] Item space ${space}: ${problems.length} problems in beta [${band.join(', ')}]`);
@@ -1813,8 +1888,9 @@ export const generateKnowledgeCheck = async (
     }
 
     const plan = await runKnowledgeCheckOrchestrator(
-      topic, gradeLevel, legacyCount, bloomsTier, context, legacyObjectives, config?.preciseGrade,
+      topic, gradeLevel, legacyCount, bloomsTier, context, legacyObjectives, config?.preciseGrade, requestedTier,
     );
+    const tierRequest: KcTierRequest | undefined = requestedTier ? { difficulty: requestedTier, subject: plan.subject } : undefined;
 
     // PRE-band routing floor: a pre-reader cannot do text-column / drag / typing
     // problem shapes, so coerce any non-MCQ/TF planned type to a picture-primary
@@ -1840,9 +1916,9 @@ export const generateKnowledgeCheck = async (
 
     // Stage 2: parallel generation from the plan, then Stage 3: the Jev review and one redraw of failing problems.
     const results = await reviewAndRedraw(
-      await Promise.all(plan.problems.map((p) => generateFromPlan(p, topic, gradeLevel, bloomsTier, config?.preciseGrade))),
+      await Promise.all(plan.problems.map((p) => generateFromPlan(p, topic, gradeLevel, bloomsTier, config?.preciseGrade, undefined, tierRequest))),
       reviewLessonFor(topic, gradeLevel, config?.preciseGrade),
-      (index, notes) => generateFromPlan(plan.problems[index], topic, gradeLevel, bloomsTier, config?.preciseGrade, notes),
+      (index, notes) => generateFromPlan(plan.problems[index], topic, gradeLevel, bloomsTier, config?.preciseGrade, notes, tierRequest),
     );
 
     // Per-problem objective attribution: stamp BEFORE filtering nulls so the
@@ -1907,9 +1983,31 @@ export const generateKnowledgeCheck = async (
     throw new Error(`Unknown problem type: ${problemType}`);
   }
 
-  const problems = await generator(
-    topic, gradeLevel, count, context, bloomsTier, insetType, config?.preciseGrade,
-  );
+  const tierRequest: KcTierRequest | undefined = requestedTier ? { difficulty: requestedTier } : undefined;
+  const drawDirect = async (ctx: string | undefined, inset: InsetType | undefined) => (await generator(
+    topic, gradeLevel, count, ctx, bloomsTier, inset, config?.preciseGrade, undefined, tierRequest,
+  )).map((p) => stampTier(p, tierRequest, gradeLevel, config?.preciseGrade)!);
+  let problems = await drawDirect(context, insetType);
+  if (isPreReaderGradeKey(gradeLevel)) {
+    // Same rule as the orchestrated path (generateFromPlan): a pre-reader problem about something not drawn is
+    // redrawn once, with the objects drawn when it counts, and dropped if it still cannot be answered.
+    const unanswerable = preReaderReasons;
+    const bad = problems.filter((p) => unanswerable(p).length);
+    if (bad.length) {
+      const reasons = bad.flatMap(unanswerable);
+      const counts = bad.some((p) => needsDrawnEvidence(String((p as any).question ?? (p as any).statement ?? '')) === 'count');
+      console.warn(`[KC PRE] direct redraw: ${reasons.join('; ')}`);
+      const redrawn = await drawDirect(
+        `${context ?? ''}\n\nA reviewer rejected an earlier draft. Fix exactly this:\n${reasons.map((r) => `- ${r}`).join('\n')}\n- ${counts
+          ? 'Draw the objects to count in the arrangement inset; the key is the number drawn.'
+          : 'Nothing is shown except the option pictures: do not refer to any picture, group, or box.'}`,
+        insetType ?? (counts ? 'arrangement' as InsetType : undefined),
+      );
+      const kept = redrawn.filter((p) => !unanswerable(p).length);
+      if (kept.length < redrawn.length) console.warn(`[KC PRE] direct dropped ${redrawn.length - kept.length} still unanswerable`);
+      problems = [...problems.filter((p) => !unanswerable(p).length), ...kept].slice(0, count);
+    }
+  }
   console.log(`[Knowledge Check] Direct: ${problems.length} ${problemType} problem(s) generated`);
   return problems;
 };

@@ -80,7 +80,7 @@ HOW TO PERSONALIZE (apply per objective, based on its state above):
 - STRUGGLING (P(correct) below ~55%, or mastery gate 0-1 with recorded attempts): weight that objective's components toward Phase 1-2 (Introduce/Visualize); place a worked-example or explainer component BEFORE any practice; set config.difficulty to "easy" on practice components.
 - NEW MATERIAL (no recorded attempts): standard grade-level progression, but start gently — full Introduce phase before any practice.
 - ON TRACK (P(correct) roughly 55-80%): standard balanced progression.
-- STRONG (P(correct) above ~80%, or mastery gate 3-4): compress Phase 1, weight toward Phase 3 (Apply) and the finalAssessment; set config.difficulty to "challenging".
+- STRONG (P(correct) above ~80%, or mastery gate 3-4): compress Phase 1, weight toward Phase 3 (Apply) and the finalAssessment; set config.difficulty to "hard".
 - NO CURRICULUM MATCH for an objective: use grade-level defaults for it.
 
 PERSONALIZATION RULES:

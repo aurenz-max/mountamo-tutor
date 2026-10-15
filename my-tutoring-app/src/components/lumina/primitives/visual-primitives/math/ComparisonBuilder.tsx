@@ -59,6 +59,8 @@ export interface ComparisonBuilderChallenge {
   leftNumber?: number;
   rightNumber?: number;
   correctSymbol?: '<' | '>' | '=';
+  /** compare-numbers: calibration stamp when the compare-numbers item space picked the pair. Never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
   // order
   numbers?: number[];
   direction?: 'ascending' | 'descending';

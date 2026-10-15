@@ -142,6 +142,12 @@ Calibration channel [4] not read (needs auth). No topic-fidelity or reader-fit r
 - **Leak rules (code, `placeValueLevers.test.ts`, 400 sessions):** the model digit is never the item's and its worth is no say_value answer in the session; no scene fact names a place or states the answer.
 - **Evidence:** `PlaceValueChart.levers.workspace.test.tsx` (say_value: both levers beside the number in one commit, credit assisted). A second build payload (`place-value-chart.build-g2.json`) carries a say_value ask; the first spends its values in dictation.
 
+### R21 — the objective narrows the number width; whole-number charts offer no decimal places · OBSERVED (2026-10-14)
+- Each mode fixes a width (identify 2 digits, build 3, compare 4, expanded_form 5). When the objective names a narrower range (`resolveScopeRange`, ceiling the mode's), the session draws from it and the chart's top column follows the range: a grade-2 "write three-digit numbers in expanded form" lesson gets 100-999 in a three-column chart (it got 65972, 10-14 probe). An objective that names no width, or a wider one, keeps the mode's; a manifest `numberRange` still wins.
+- A chart whose lowest place is the ones offers no "Tenths" place name and no decimal digit value; digit values are rounded (0.7000000000000001 shipped as a choice).
+- Not changed: tier levers (R12), the zero-trap identity (C1), the spoken band. Weak spot: in a three-digit number medium and hard both highlight the tens, the only interior place.
+- Probe: `scripts/difficulty-lab/tier-probe.mjs --component place-value-chart --mode expanded_form --grade 2 --topic "Write three-digit numbers in expanded form"`.
+
 ## Conflicts
 
 ### C1 — R12 (structural tier) vs build's zero-trap identity (R4/R5/R7) — OPEN
@@ -177,3 +183,4 @@ Proposed only; not applied.
 - 2026-09-28 — R6, R8, R9 fixed (handoff 21 M1, before the levers). R6: the behavior was right; the scene constraint, the catalog guidance and the journey comment now say a written chart is checked once the learner stops, even with a column empty. R8: the readout reads back only a full chart; an empty column shows as a gap ("5 _ 1"), and the expanded form waits for a full chart; mounted probe in `PlaceValueChart.workspace.test.tsx`, mutation-checked. R9: `buildModelFor(target, width, session, askedPairs)` builds a model as wide as the chart, never a session number, no column digit shared with the target or with a say_value ask, a zero where the target has none; `placeValueModel.test.ts` over every seventh target to 99999. Also: compare and expanded_form payloads saved. Compatible: place-value suites and sweep green.
 
 - 2026-09-28: derived (initial). 18 requirements (all OBSERVED), 1 open conflict (C1, outside the M1 zone). Three are VIOLATED with fixes queued (handoff 21 M1): R6 (stale "checks only when full" text; the behavior is right), R8 (readout fills empty columns with 0) and R9 (model number capped at 3 digits and sharing column digits). R17's compare and expanded_form payloads are untracked in the working tree. Probes run: place-value suites 12 files / 121 tests green; `journeySweep -t place-value` 4/4 green. Occasion: step 1 of handoff 21 M1 (place-value-chart), before `/eval-fix` on the content defects and the lever slice.
+- 2026-10-14 — R21 added (item-space slice, step 0b found scope bugs; no space: the tier levers already change the problem and the numbers come from the code pool). Compatible: R1-R20 untouched; C1 unchanged.

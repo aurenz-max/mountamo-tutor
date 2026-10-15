@@ -189,6 +189,27 @@ it('the scripted path (no runtime) keeps its own Next and submits once the last 
   expect(seam.submit).toHaveBeenCalledOnce();
 });
 
+it('find_skip_value items on their own lines: each opens on its line and is checked against its own step', () => {
+  // Before 2026-10-14 every find item shared the session line: five items were one screen and one answer.
+  const own = (id: string, skipValue: number, startFrom: number): SkipCountingChallenge => ({ ...base, id, type: 'find_skip_value',
+    instruction: 'How far is each jump?', startPosition: startFrom, line: { skipValue, startFrom, endAt: startFrom + 4 * skipValue, direction: 'forward' } });
+  const items = [own('s1', 10, 23), own('s2', 2, 7)];
+  const labels = (h: WorkspaceHarness) => Array.from(h.view.container.querySelectorAll('svg text')).map(t => t.textContent);
+  const h = mountWorkspace({ primitiveId: 'skip-counting-runner', evalMode: 'find_skip_value', data: runner(items) as never });
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^10:/);
+  expect(labels(h)).toContain('23');
+  play(h, items[0], typed('5')); // the session line's step is not this item's
+  expect(h.state().task!.evidence.correctness).toBe('incorrect');
+  h.dispatch('retry');
+  play(h, items[0], typed('10'));
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+  h.dispatch('advance'); h.confirmVisible();
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^2:/);
+  expect(labels(h)).toContain('7');
+  play(h, items[1], typed('2'));
+  expect(h.state().task!.evidence.correctness).toBe('correct');
+});
+
 it('the adapter refuses a challenge its own check cannot read', () => {
   const v = LIVE_ADAPTERS['skip-counting-runner'].validate;
   expect(() => v(runner([{ ...CASES.fill_missing.c, hiddenPositions: [0, 7] }]))).toThrow();

@@ -102,9 +102,9 @@ function asIntArray(v: unknown): number[] | null {
 }
 
 /** The canonical "count by N" run: N, 2N, … ≤ gridMax. Independent ground truth. */
-function multiplesRun(skip: number, gridMax: number): number[] {
+function multiplesRun(skip: number, gridMax: number, start = skip): number[] {
   const run: number[] = [];
-  for (let n = skip; n <= gridMax; n += skip) run.push(n);
+  for (let n = start; n <= gridMax; n += skip) run.push(n);
   return run;
 }
 
@@ -196,7 +196,9 @@ export const hundredsChartOracle: ContentOracle = {
       }
 
       // ── Independence: recompute the canonical count-by-skip run ──
-      const expectedRun = multiplesRun(sv, gridMax);
+      // An item-space count may start off the multiples (by 10s from 23): the run starts at its stated startNumber.
+      const start = isInt(c.startNumber) && (c.startNumber as number) >= 1 ? (c.startNumber as number) : sv;
+      const expectedRun = multiplesRun(sv, gridMax, start);
 
       if (CELL_TYPES.has(type)) {
         if (correct.length === 0) {

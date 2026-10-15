@@ -24,6 +24,7 @@ import {
 import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from '../generation/adaptationStep';
 import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from '../itemSpace';
 import type { EquivalenceItem } from '../itemSpace/fractionEquivalence';
+import type { FractionCompareItem } from '../itemSpace/fractionCompare';
 import {
   eligibleFractionCompareTeaching,
   fractionCompareTeaching,
@@ -596,6 +597,44 @@ Return the complete fraction circles configuration.
     }
   }
 
+  // ── Item space (compare): with a tier, code picks each pair from fraction-compare at the tier's band. The
+  // model's pairs did not move with the tier (easy held 6/10 vs 10/12, hard held 1/3 vs 1/2; 10-14 probe).
+  // Scope: grades K-3 compare only pairs with the same numerator or the same denominator (3.NF.3d) over the
+  // band's denominators; grade 4 and up every pair (4.NF.2). Equal pairs are 3.NF.3b's, and in a grade-3
+  // scope they were the only high-beta structure: every hard item answered "equal" (10-14 probe). A lesson that names a fraction family
+  // ("fourths and eighths") or one kind of pair ("same denominator") keeps to it. ──
+  const cmpItems = (data.challenges as FractionCirclesChallenge[]).filter((c) => c.type === 'compare');
+  if (eqBand && pinnedType === 'compare' && cmpItems.length) {
+    const space = await resolveItemSpace(
+      `Lesson: ${ctx.intent || topic}. In this activity the learner compares two fractions shown on circles and says which is larger or that they are equal.`,
+      ctx.grade,
+      ['fraction-compare'],
+    );
+    if (space === 'fraction-compare') {
+      const lessonText = [topic, ctx.intent, ctx.objective?.text].filter(Boolean).join(' ');
+      const gradeNum = ctx.grade === 'K' ? 0 : Number.parseInt(ctx.grade ?? '', 10);
+      const family = legalDenominators({ grade: ctx.grade && gradeNum >= 4 ? '4' : '3', topic, intent: ctx.intent });
+      const named = family.length && family.length < (gradeNum >= 4 ? 8 : 5) ? family : null;
+      const dens = data.gradeBand === 'K-2' ? [2, 3, 4] : gradeNum === 3 || Number.isNaN(gradeNum) ? [2, 3, 4, 6, 8] : [2, 3, 4, 5, 6, 8, 10, 12];
+      const kinds = /same\s+denominator/i.test(lessonText) && !/same\s+numerator/i.test(lessonText) ? ['sameDen']
+        : /same\s+numerator/i.test(lessonText) && !/same\s+denominator/i.test(lessonText) ? ['sameNum']
+        : gradeNum >= 4 ? null : ['sameDen', 'sameNum'];
+      const scope = (it: FractionCompareItem) => [it.b, it.d].every((x) => dens.includes(x) && (!named || named.includes(x)))
+        && (!kinds || kinds.includes(it.strategy));
+      const log = (m: string) => console.log(`[FractionCircles] Item space ${space}: ${m}`);
+      const picks = tierPick(getItemSpace(space), log, scope)(cmpItems.length, eqBand[0], eqBand[1], undefined, scope) as FractionCompareItem[];
+      log(`compare band [${eqBand.join(', ')}]: ${picks.length >= cmpItems.length ? picks.map((p) => `${p.a}/${p.b}v${p.c}/${p.d}@${p.beta}`).join(' ') : 'no session fits; own path kept'}`);
+      if (picks.length >= cmpItems.length) {
+        cmpItems.forEach((c, i) => {
+          c.numerator = picks[i].a;
+          c.denominator = picks[i].b;
+          c.compareFraction = { numerator: picks[i].c, denominator: picks[i].d };
+          c.itemSpace = { space, structure: picks[i].structure, beta: picks[i].beta };
+        });
+      }
+    }
+  }
+
   // Per-challenge validation
   for (let i = 0; i < data.challenges.length; i++) {
     const challenge = data.challenges[i] as FractionCirclesChallenge;
@@ -896,8 +935,15 @@ Return the complete fraction circles configuration.
   const remediationMove = await plannedMove;
   if (remediationMove && data.gradeBand === '3-5') {
     const selected = selectSameNumeratorContrast(data.challenges, remediationMove, legalDenominators(adaptationTask));
-    data.challenges = selected.challenges.map((c) => c.type === 'compare' && c.compareFraction
-      ? { ...c, instruction: compareInstruction(c), narration: compareInstruction(c) } : c);
+    const before = data.challenges as FractionCirclesChallenge[];
+    const pair = (c: FractionCirclesChallenge) => `${c.numerator}/${c.denominator}|${c.compareFraction?.numerator}/${c.compareFraction?.denominator}`;
+    data.challenges = selected.challenges.map((c, i) => {
+      if (c.type !== 'compare' || !c.compareFraction) return c;
+      const next = { ...c, instruction: compareInstruction(c), narration: compareInstruction(c) };
+      // A pair the adaptation rewrote is no longer the item-space pick its stamp names.
+      if (next.itemSpace && pair(next) !== pair(before[i])) delete next.itemSpace;
+      return next;
+    });
     data.learningAdaptation = stampAdaptation(remediationMove, selected);
   }
 

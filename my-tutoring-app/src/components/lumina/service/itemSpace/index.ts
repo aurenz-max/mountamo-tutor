@@ -12,9 +12,15 @@ import { Type } from '@google/genai';
 import { ai } from '../geminiClient';
 import { ADD_SUB_20 } from './addSub20';
 import { BONDS_10 } from './bonds10';
+import { COMPARE_20, COMPARE_100 } from './compareStories';
+import { COMPARE_NUMBERS } from './compareNumbers';
+import { RATIO_MISSING_VALUE } from './ratioMissingValue';
 import { EQUIVALENCE_20 } from './equivalence20';
 import { FRACTION_ADD_SUB } from './fractionAddSub';
 import { FRACTION_EQUIVALENCE } from './fractionEquivalence';
+import { FRACTION_COMPARE } from './fractionCompare';
+import { SKIP_COUNT } from './skipCount';
+import { DIV_MULTI_DIGIT, DIV_MULTI_DIGIT_5 } from './divisionMultiDigit';
 import { ADD_SUB_100, ADD_SUB_1000 } from './multiDigit';
 import { ROUNDING } from './rounding';
 import { MULT_DIV_FACTS } from './multDivFacts';
@@ -32,6 +38,10 @@ const SPACES = {
   'add-sub-100': ADD_SUB_100, 'add-sub-1000': ADD_SUB_1000, 'fraction-add-sub': FRACTION_ADD_SUB, 'fraction-equivalence': FRACTION_EQUIVALENCE, 'round-10-100': ROUNDING,
   'two-step-equations': TWO_STEP_EQUATIONS, 'mult-multi-digit': MULT_MULTI_DIGIT,
   'mult-multi-digit-5': MULT_MULTI_DIGIT_5,
+  'compare-20': COMPARE_20, 'compare-100': COMPARE_100, 'compare-numbers': COMPARE_NUMBERS,
+  'ratio-missing-value': RATIO_MISSING_VALUE,
+  'fraction-compare': FRACTION_COMPARE, 'skip-count': SKIP_COUNT,
+  'div-multi-digit': DIV_MULTI_DIGIT, 'div-multi-digit-5': DIV_MULTI_DIGIT_5,
   'clock-time': CLOCK_TIME, 'elapsed-time': ELAPSED_TIME, 'coin-sets': COIN_SETS, 'make-change': MAKE_CHANGE,
 } satisfies Record<string, ItemSpace<any>>;
 export type ItemSpaceId = keyof typeof SPACES;

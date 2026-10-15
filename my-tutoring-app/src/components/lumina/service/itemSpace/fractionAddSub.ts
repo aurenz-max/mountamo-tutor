@@ -195,4 +195,11 @@ export const FRACTION_ADD_SUB: ItemSpace<FractionItem> = {
   }),
   distractors: (it, rand) => fractionDistractors(it, rand),
   plainQuestion: (it) => `What is ${it.a}/${it.b} ${it.op} ${it.c}/${it.d}?`,
+  // 4.NF.3a is like denominators, 5.NF.1 unlike: an objective that names one gets only that part.
+  scopeOf: (objective) => {
+    const o = objective.toLowerCase();
+    if (/\b(unlike|different) denominators?\b/.test(o)) return (it) => it.b !== it.d;
+    if (/\b(like|same|common) denominators?\b/.test(o)) return (it) => it.b === it.d;
+    return undefined;
+  },
 };

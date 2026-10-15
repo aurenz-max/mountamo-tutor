@@ -28,3 +28,4 @@
 - 2026-10-09 — created with R1 (W1 plain-shape binding).
 - 2026-10-09 — R2 (levers, every mode).
 - 2026-10-13 — R3 (compare and indirect spoken beside the tap, VB-1); R1 re-based.
+- 2026-10-14 — `/add-item-space` (no space; `tierWindow`): with a tier, tile_and_count and estimate_then_tile take their counts from the tier's window (K 2-10: easy 2-6, medium 4-8, hard 6-10; grade 1 3-12). Before, the counts were 3-10 at every tier. The count is always the key: a model-written `correctAnswer: "longer"` had shipped on tile_and_count. The grade band follows the canonical grade (a K lesson had come back band 1 and counted to 12). compare and order keep their gap levers (they already separate); two_unit_compare and indirect unchanged. R1-R3 unchanged.

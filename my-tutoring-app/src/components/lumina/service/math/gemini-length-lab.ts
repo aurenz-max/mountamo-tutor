@@ -3,6 +3,7 @@ import { LengthLabData } from "../../primitives/visual-primitives/math/LengthLab
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
+import { tierWindow } from '../itemSpace';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -567,8 +568,10 @@ Return the complete length lab configuration.
 
   // ── Structural validation ──
 
-  // Validate gradeBand
-  if (data.gradeBand !== 'K' && data.gradeBand !== '1') {
+  // Validate gradeBand. A canonical grade decides it (a K lesson came back '1' and drew counts to 12).
+  if (ctx.grade === 'K' || ctx.grade === '1') {
+    data.gradeBand = ctx.grade;
+  } else if (data.gradeBand !== 'K' && data.gradeBand !== '1') {
     data.gradeBand = gradeLevel.toLowerCase().includes('kinder') ? 'K' : '1';
   }
 
@@ -645,7 +648,7 @@ Return the complete length lab configuration.
           if (v >= 1 && v <= 12) guesses.add(v);
         }
         challenge.estimateOptions = Array.from(guesses).sort((a, b) => a - b);
-        if (!challenge.correctAnswer) challenge.correctAnswer = String(truth);
+        challenge.correctAnswer = String(truth);
         break;
       }
 
@@ -677,10 +680,8 @@ Return the complete length lab configuration.
         if (!challenge.unitType || !validUnitTypes.includes(challenge.unitType)) {
           challenge.unitType = data.unitType;
         }
-        // Set a default correctAnswer if empty
-        if (!challenge.correctAnswer) {
-          challenge.correctAnswer = String(challenge.correctUnitCount);
-        }
+        // The count is the answer (a model-written "longer" shipped as the key, 10-14 probe).
+        challenge.correctAnswer = String(challenge.correctUnitCount);
         break;
       }
 
@@ -802,6 +803,32 @@ Return the complete length lab configuration.
       objectColor1: '#E57373',
       correctAnswer: 'longer',
     }];
+  }
+
+  // ── Counting modes: the tier sets how many units long the objects are. A mode whose difficulty is one
+  // ordered quantity (how far the learner counts) takes the tier's window of counts (/add-item-space,
+  // tierWindow). The model's counts were 3-10 at every tier (10-14 probe). Kindergarten counts 2-10, grade 1
+  // 3-12 (the primitive's 1-12 scope). ──
+  if (supportTier) {
+    type Counter = { type: string; objectLength0: number; correctUnitCount: number; correctAnswer: string; estimateOptions?: number[] };
+    const counters = (data.challenges as Counter[]).filter((c) => c.type === 'tile_and_count' || c.type === 'estimate_then_tile');
+    if (counters.length) {
+      const all = data.gradeBand === 'K' ? [2, 3, 4, 5, 6, 7, 8, 9, 10] : [3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+      const window = tierWindow(all, supportTier, counters.length).sort(() => Math.random() - 0.5);
+      counters.forEach((c, i) => {
+        const ch = c;
+        const truth = window[i % window.length];
+        ch.objectLength0 = truth;
+        ch.correctUnitCount = truth;
+        ch.correctAnswer = String(truth);
+        if (c.type === 'estimate_then_tile') {
+          const guesses = new Set<number>([truth]);
+          for (const d of [1, -1, 2, -2, 3]) if (guesses.size < 4 && truth + d >= 1 && truth + d <= 12) guesses.add(truth + d);
+          ch.estimateOptions = Array.from(guesses).sort((a, b) => a - b);
+        }
+      });
+      console.log(`[LengthLab] ${supportTier} counts ${counters.map((c) => c.objectLength0).join(', ')} from [${window.join(', ')}]`);
+    }
   }
 
   // ── Apply support tier deterministically (per challenge, from its OWN mode) ──

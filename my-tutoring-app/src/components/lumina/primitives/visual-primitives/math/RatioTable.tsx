@@ -55,6 +55,8 @@ export interface RatioTableChallenge {
   hiddenValue?: 'scaled-first' | 'scaled-second'; // For missing-value
   hint: string;
   tolerance?: number; // Percentage tolerance for answer checking (default 1%)
+  /** Calibration stamp when the ratio-missing-value item space picked the item. Never rendered or sent to the tutor. */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
 
 export interface RatioTableData {

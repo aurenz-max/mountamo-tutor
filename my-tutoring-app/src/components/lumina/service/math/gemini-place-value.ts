@@ -24,6 +24,7 @@ import {
 } from "../../primitives/visual-primitives/math/PlaceValueChart";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveScopeRange } from "../scopeRangeResolver";
 import { buildScopePromptSection } from '../scopeContext';
 import {
   resolveEvalModeConstraint,
@@ -532,8 +533,11 @@ function buildPlaceNameChoices(
     if (p === correctPlace) continue;
     allPlaces.push({ place: p, name: getPlaceName(p) });
   }
-  // Pull from outside the range if we don't have enough distractors.
-  for (const p of [maxPlace + 1, minPlace - 1, maxPlace + 2, minPlace - 2]) {
+  // Pull from outside the range if we don't have enough distractors. A whole-number chart (minPlace 0)
+  // never offers a decimal place: "Tenths" beside a grade-2 three-digit number names a place the learner
+  // has not met (10-14 probe).
+  const outside = minPlace < 0 ? [maxPlace + 1, minPlace - 1, maxPlace + 2, minPlace - 2] : [maxPlace + 1, maxPlace + 2, maxPlace + 3];
+  for (const p of outside) {
     if (allPlaces.length >= 6) break;
     if (PLACE_NAMES[p] && !allPlaces.some(x => x.name === PLACE_NAMES[p])) {
       allPlaces.push({ place: p, name: PLACE_NAMES[p] });
@@ -561,8 +565,12 @@ function buildPlaceNameChoices(
 function buildDigitValueChoices(
   digit: number,
   correctPlace: number,
+  /** The chart's lowest place: a whole-number chart (0) offers no tenths ("Seven Tenths" = 0.7000000000000001). */
+  minPlace = 0,
 ): { value: number; wordForm: string }[] {
-  const correctValue = digit * Math.pow(10, correctPlace);
+  const lowest = Math.min(0, minPlace);
+  const worth = (p: number) => Number((digit * Math.pow(10, p)).toFixed(6));
+  const correctValue = worth(correctPlace);
   const correctChoice = {
     value: correctValue,
     wordForm: buildDigitValueWord(digit, correctPlace),
@@ -571,27 +579,27 @@ function buildDigitValueChoices(
   const candidatePlaces: number[] = [];
   for (const offset of [-1, 1, -2, 2, -3, 3]) {
     const p = correctPlace + offset;
-    const v = digit * Math.pow(10, p);
-    // Filter: positive, not the correct value, place we have a word-form for.
+    const v = worth(p);
+    // Filter: positive, not the correct value, place we have a word-form for, not below the chart.
     if (v <= 0 || v === correctValue) continue;
-    if (p < -3 || p > 6) continue; // outside our word-form range
+    if (p < Math.max(-3, lowest) || p > 6) continue; // outside our word-form range
     if (candidatePlaces.includes(p)) continue;
     candidatePlaces.push(p);
     if (candidatePlaces.length >= 3) break;
   }
 
   const distractors = candidatePlaces.slice(0, 3).map((p) => ({
-    value: digit * Math.pow(10, p),
+    value: worth(p),
     wordForm: buildDigitValueWord(digit, p),
   }));
 
   // If we still don't have 3 distractors, pad by walking outward from
   // correctPlace using whatever word-form-supported places remain.
   if (distractors.length < 3) {
-    for (let p = -3; p <= 6 && distractors.length < 3; p++) {
+    for (let p = Math.max(-3, lowest); p <= 6 && distractors.length < 3; p++) {
       if (p === correctPlace) continue;
       if (candidatePlaces.includes(p)) continue;
-      const v = digit * Math.pow(10, p);
+      const v = worth(p);
       if (v <= 0 || v === correctValue) continue;
       distractors.push({ value: v, wordForm: buildDigitValueWord(digit, p) });
     }
@@ -710,10 +718,12 @@ function buildChallenges(
     const targetNumber = shape
       ? enforceNonZeroDigits(rawNumber, shape.minNonZeroDigits, range)
       : rawNumber;
+    // The chart's top column follows the range (99 -> tens, 999 -> hundreds), so a lesson narrowed to
+    // three-digit numbers does not draw empty thousands columns.
     const { minPlace, maxPlace } = computePlaceRange(
       targetNumber,
       profile.minPlace,
-      profile.maxPlace,
+      Math.min(profile.maxPlace, Math.floor(Math.log10(Math.max(10, range.max)))),
     );
     const highlightedDigitPlace = shape
       ? selectHighlightedPlaceForTier(targetNumber, minPlace, maxPlace, shape.highlightPreference)
@@ -726,7 +736,7 @@ function buildChallenges(
       minPlace,
       maxPlace,
       placeNameChoices: buildPlaceNameChoices(highlightedDigitPlace, minPlace, maxPlace),
-      digitValueChoices: buildDigitValueChoices(digit, highlightedDigitPlace),
+      digitValueChoices: buildDigitValueChoices(digit, highlightedDigitPlace, minPlace),
     };
   });
 }
@@ -857,10 +867,23 @@ Return ONLY the wrapper metadata in the response schema.
   const problemShape = supportTier
     ? resolveProblemShape(challengeType as ChallengeType, supportTier)
     : undefined;
+  // The objective's number width, when it names one narrower than the mode's: each mode fixes a width
+  // (compare 4 digits, expanded_form 5), and a grade-2 "write three-digit numbers in expanded form"
+  // lesson got 65972 (10-14 probe). The objective can only narrow, never widen past the mode, and an
+  // objective that names no width keeps the mode's.
+  const modeRange = (MODE_PROFILES[challengeType] ?? MODE_PROFILES.compare).numberRange;
+  const objectiveRange = config?.numberRange ? null : await resolveScopeRange(
+    ctx.scope, gradeLevel, 'the whole numbers whose digits the student reads in a place value chart',
+    { min: 11, max: modeRange.max },
+  );
+  const narrowed = objectiveRange && objectiveRange.max < modeRange.max && objectiveRange.max >= 11
+    ? { min: Math.max(11, Math.pow(10, Math.floor(Math.log10(objectiveRange.max - 1))), Math.min(objectiveRange.min, objectiveRange.max)), max: objectiveRange.max }
+    : null;
+  if (narrowed) console.log(`[PlaceValue] objective range ${narrowed.min}-${narrowed.max} narrows ${challengeType} (${modeRange.min}-${modeRange.max})`);
   let built = buildChallenges(
     challengeType,
     instanceCount,
-    config?.numberRange,
+    config?.numberRange ?? narrowed ?? undefined,
     problemShape,
   );
 
@@ -875,7 +898,7 @@ Return ONLY the wrapper metadata in the response schema.
       const digit = getDigitAtPlace(ch.targetNumber, ch.highlightedDigitPlace);
       return { ...ch,
         placeNameChoices: buildPlaceNameChoices(ch.highlightedDigitPlace, ch.minPlace, ch.maxPlace),
-        digitValueChoices: buildDigitValueChoices(digit, ch.highlightedDigitPlace),
+        digitValueChoices: buildDigitValueChoices(digit, ch.highlightedDigitPlace, ch.minPlace),
       };
     });
     console.info('[PlaceValue remediation]', { move, count: selected.count, reason: selected.reason });

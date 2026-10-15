@@ -172,15 +172,27 @@ describe('skip-counting-runner oracle — clustering', () => {
     expect(v.some((x) => x.check === 'clustering' && /identical/.test(x.detail))).toBe(true);
   });
 
-  it('does NOT flag identical find_skip_value answers (one activity = one skip value)', () => {
+  it('flags find_skip_value items on one shared line: the same card five times', () => {
     const data = {
       ...clone(connectClean),
       challenges: [1, 2, 3, 4, 5].map((i) => ({
-        id: `c${i}`, type: 'find_skip_value', instruction: `Look at ${i * 5}.`, hint: 'h', narration: 'n', startPosition: 0,
+        id: `c${i}`, type: 'find_skip_value', instruction: 'Look at where it lands.', hint: 'h', narration: 'n', startPosition: 0,
       })),
     };
     const v = oracle.verify(data, connectCtx).violations;
-    expect(v.filter((x) => x.check === 'clustering')).toEqual([]);
+    expect(v.some((x) => x.check === 'clustering' && /identical/.test(x.detail))).toBe(true);
+  });
+
+  it('passes find_skip_value items on their own lines, even with one step', () => {
+    const data = {
+      ...clone(connectClean),
+      challenges: [0, 5, 10, 15, 20].map((start, i) => ({
+        id: `c${i}`, type: 'find_skip_value', instruction: 'Look at where it lands.', hint: 'h', narration: 'n', startPosition: start,
+        line: { skipValue: 5, startFrom: start, endAt: start + 20, direction: 'forward' },
+      })),
+    };
+    const v = oracle.verify(data, connectCtx).violations;
+    expect(v).toEqual([]);
   });
 });
 

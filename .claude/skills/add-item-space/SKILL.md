@@ -138,14 +138,20 @@ These are starting points; read the strand's research before setting weights.
 | Number bonds within 10 (built: `bonds10.ts`) | whole, known part, unknown (part or whole) | missing part, whole size, the missing part is the longer count; n and 1, doubles, a 5, ten (easier) | the number shown, added the two, off by one |
 | Multi-digit add/subtract (built, sampled: `multiDigit.ts`, `add-sub-100` and `add-sub-1000`) | digits per column, op | regroupings and how many, regrouping across a zero, chained carries, number of digits, unknown slot | no regrouping, regrouped but did not decrement, smaller-from-larger per column, place misaligned |
 | Multiplication/division facts (built: `multDivFacts.ts`) | a, b, op, unknown | fact family (×0/1/2/5/10 easy; ×6-9 hard), ties, problem size, missing factor, division | adjacent fact (7×8 → 54), added instead, commuted division |
-| Multi-digit multiplication (built: `multiDigitMult.ts`, `mult-multi-digit` grade 4 and `mult-multi-digit-5` with 3 × 2); division not built | digits, divisor | partial products, regrouping in products, zero in the dividend or quotient, remainder | dropped a partial product, place shift missed, remainder as decimal |
+| Multi-digit multiplication (built: `multiDigitMult.ts`, `mult-multi-digit` grade 4 and `mult-multi-digit-5` with 3 × 2) | digits | partial products, regrouping in products, a zero inside a factor | dropped a partial product, place shift missed |
+| Multi-digit division (built: `divisionMultiDigit.ts`, `div-multi-digit` ÷ 1 digit grade 4, `div-multi-digit-5` ÷ 2 digits) | divisor, quotient, remainder | dividend digits, carried remainders, a zero in the quotient, first digit under the divisor, a remainder; grade 5: a divisor that rounds up | the quotient's zero dropped, the remainder left off, a remainder as big as the divisor, the quotient a place off |
+| Skip counting (built: `skipCount.ts`, `skip-count`, K-3) | step, start, direction (a line of 8 jumps) | no ones-digit pattern (3, 4, 6-9), off the multiples (23, 33, 43; odd numbers), counting back, crossing a hundred, three-digit; 10s, 100s, 5s and the rote count from 0 easier | counted by ones, the wrong way, one step too far, snapped to the round number |
+| Fraction compare (built: `fractionCompare.ts`, `fraction-compare`) | a/b, c/d | the strategy the pair allows (same denominator < same numerator < benchmark 1/2 < one part short < general < equal), closeness, whole-number bias pointing the wrong way, tenths and twelfths | the symbol backwards, "=" on a close pair, the pair swapped |
 | Place value: rounding (built: `rounding.ts`, `round-10-100`); compose, decompose, compare not built | number, operation (compose, decompose, round, compare) | zero as placeholder, nonstandard decomposition, rounding at a 5 or across a place | digit read as value, zero dropped, rounded the wrong place |
-| Fractions: add/subtract (built: `fractionAddSub.ts`); equivalence, compare not built | numerators, denominators, op | unlike denominators, improper or mixed, simplification needed, unit vs non-unit, benchmark distance | added denominators, compared by denominator only, numerator kept |
+| Fractions: add/subtract (built: `fractionAddSub.ts`); equivalence (built: `fractionEquivalence.ts`) | numerators, denominators, op | unlike denominators, improper or mixed, simplification needed, unit vs non-unit, benchmark distance | added denominators, compared by denominator only, numerator kept |
 | Measurement and data | quantity, unit, scale | unit conversion, a scale not in ones, start not at zero, elapsed across a boundary | counted tick marks not intervals, read from 1, unit not converted |
 | Clock reading (built: `time.ts` `clock-time`, needs a picture) | hour, minute; the lesson's minute grid | half past, quarter, five-minute mark, a minute between marks, :40+ (short hand near the next number), twelve | hour read from the nearest number, hands swapped, minute read as the number pointed at, quarter past/to swapped |
 | Elapsed time (built: `time.ts` `elapsed-time`) | start, duration (five-minute grid) | crossing an hour mark mid-way, an hour or more, hours and minutes, start off the hour, off the quarter grid, past 12 | clock times subtracted as whole numbers (410 − 350 = 60), minutes only, hours only, a tick miscounted |
 | Coin sets (built: `money.ts` `coin-sets`) | count of each coin | kinds of coin, nickels, dimes then nickels, a quarter, coins past four | every coin as one, every coin as the largest, a kind left out, one coin miscounted |
 | Making change (built: `money.ts` `make-change`) | paid (a quarter, 50¢, a dollar), cost | a borrow, a borrow across the zeros of 100, a price off the five grid, paying with a dollar | regrouped without decrementing, smaller digit from larger, ten off, the price given back |
+| Comparison stories (built: `compareStories.ts`, `compare-20`, `compare-100`) | larger, smaller, unknown (difference, larger, smaller), "more"/"fewer" | inconsistent language (the word points to the other operation), the compared amount unknown, "fewer", crossing ten / regrouping | the keyword error (the other operation), a number in the story, off by one |
+| Comparing two numbers (built: `compareNumbers.ts`, `compare-numbers`, within 100) | left, right | shared tens (the ones decide), swapped digits (47 vs 74), closeness (log of the gap), equal; fewer digits (easier). The symbol is incidental | the symbol read backwards, the pair swapped with the symbol kept |
+| Ratios: missing value, unit rate (built: `ratioMissingValue.ts`, `ratio-missing-value`, grade 6) | a : b, the scaled first quantity k, which quantity is hidden | a non-whole factor (and not a half), scaling down, finding the first quantity, a decimal or below-one unit rate; a whole rate (or 1/n) lets the learner scale across instead, so the factor features drop | the additive error, the given value copied, the factor applied the wrong way |
 | Equal sign within 20 (built: `equivalence20.ts`) | known side, boxed side, box position | work after the equal sign, operations on both sides, box last, shared addend (easier), crossing ten, subtraction | the known side's total in the box, added every number, the number beside the box |
 | Two-step equations px + q = r (built: `twoStepEquations.ts`) | p, x, q | division fact family, a borrow in r − q, four or more groups, size | wrong inverse first, stopped after one step, divided first |
 | Expressions and equations | coefficients, operations, variable position | variable on both sides, negatives, distribution, order of operations | inverse not applied to every term, left-to-right only |
@@ -281,13 +287,23 @@ mode verdicts from 0b: every mode of the primitive, wired / left alone / not a f
   fact_family, build_equation (bonds-10; decompose gets code tier wholes); ten-frame operate (add-sub-20;
   split and build_pair get tier windows of totals); equation-builder missing-result, missing-operand,
   true-false (add-sub-20); array-grid build, count, multiply (mult-div-facts, over its own admissible
-  arrays); equation-builder balance-both-sides (equivalence-20); balance-scale one_step (add-sub-20 change-unknown
+  arrays); addition-fact-strategies big_facts, turnaround, facts_3_4 (add-sub-20 beta ranks each family, `tierWindow`;
+  the other families are one structure); tape-diagram solve_comparison (compare-20/-100); comparison-builder
+  compare_numbers (compare-numbers in the objective's numeral window) and one_more_less (code tier targets);
+  ratio-table missing_value, unit_rate and double-number-line find_missing (ratio-missing-value; the DNL session's
+  base ratio is the lever, chosen by tierWindow over bases); measurement-tools measure/compare (code tier widths);
+  equation-builder balance-both-sides (equivalence-20); balance-scale one_step (add-sub-20 change-unknown
   additions), one_step_hard (mult-div-facts quotients, 2-6 parcels), two_step_intro and two_step (two-step-equations),
   equality and equality_hard (tier windows of the target); area-model build_model, find_area, factor, multiply
   (mult-multi-digit / -5; each mode keeps its grid shape), perimeter (tier windows of length + width). bar-model has no space (reading tasks; its tier levers
   already change the problem); analog-clock read, set_time, match (clock-time,
   on the lesson's minute grid), elapsed (elapsed-time); coin-counter count-like, count-mixed, make-amount, show-amount
   (coin-sets), compare (pairs of coin sets), make-change (make-change); identify and the K clock parts are not a fit.
+  skip-counting-runner, all five modes (skip-count: one line per session; connect_multiplication from 0 only);
+  hundreds-chart highlight_sequence, complete_sequence, find_skip_value (skip-count, each count its own start;
+  identify_pattern left alone, its shape is the step's); fraction-circles compare (fraction-compare; grade 3 same
+  numerator or denominator only); length-lab tile_and_count, estimate_then_tile (tierWindow of counts; compare and
+  order already separate). Division (div-multi-digit, -5) has no primitive consumer: knowledge-check only.
 - **A strand whose task is reading the equation** (equivalence-20, two-step-equations) sets `equation` in `solve`:
   knowledge-check then asks the wording call to print it, and rejects a question without it. A story turns
   "8 + 4 = ? + 5" into a compare problem.
@@ -298,8 +314,26 @@ mode verdicts from 0b: every mode of the primitive, wired / left alone / not a f
   `tierPick` returns nothing at every tier, so easy never comes from the space while medium and hard come
   from the old path. A consumer whose distinct items are fewer than its items (number-bond: a bond and
   its turnaround) counts distinct ones itself (`scopeBondCount`).
+- **An answer with a part the computation does not ask for declares `asks` in `solve`.** A division with a
+  remainder keys "73 R 1"; a story asking only "how many in each" was accepted until the check required "left
+  over" in the question.
+- **Thirds of a narrow scope can be one structure.** A forward count on a board of 100 never reaches the hard
+  band, and 45 odd-number counts share β 0.3, so item thirds put only them in hard; the hundreds chart takes
+  thirds of the distinct betas instead. In a grade-3 fraction-compare scope the only high structure was the equal
+  pair: every hard answer was "=". Look at the hard third's structures, not only its betas.
 - **A one-operation item declares `operation` in `solve`.** Knowledge-check rejects wording whose story
   reads as the other operation (`questionMatchesOperation`): a 1/2 − 1/6 item was told as pouring more in.
+- **Quantile thirds collapse on tied betas.** `tierPick` thirds are beta quantiles: when most items share one
+  beta (7,794 of 8,100 two-digit compare pairs at -1.2), easy and medium draw the same items. Give the space a
+  graded feature (compare-numbers: closeness = 1 - log10(gap)/2), not only a threshold flag.
+- **An incidental feature that splits a third makes an answer pattern.** compare-numbers weighted "<" +0.2, so
+  every easy card of a two-digit session was ">". Keep answer-identity features (a symbol, a side) at weight 0
+  and in the structure key, so the spread alternates them.
+- **Model the learner's easier route.** A ratio item with a whole rate (3 : 6) is "double it" whatever its
+  factor k/a is; scoring it by the factor ranked a 3:6 double-number-line session as hard. When two strategies
+  solve an item, its features are the cheaper strategy's.
+- **A session-level parameter is the lever when items share it.** double-number-line shares one given pair per
+  session; ranking bases (tierWindow) moved the tiers, picking asks inside a base by count alone did not.
 - **A mode whose difficulty is one ordered quantity** (how many splits a whole has, a total to split) needs
   no space: `tierWindow` gives each tier its slice of the ordered values.
 - **Measure the layout, not only the numbers.** The bar-model probe found the answer on the same side in

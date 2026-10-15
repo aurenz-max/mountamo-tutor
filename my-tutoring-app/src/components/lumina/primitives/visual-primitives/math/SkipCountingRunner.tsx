@@ -47,6 +47,9 @@ export interface SkipCountingChallenge {
   hiddenPositions?: number[];
   targetFact?: string | null;
   startPosition?: number;
+  /** The item's own line (step, start, end, direction) when it is not the session's: a find_skip_value session
+   *  gives each item a different count, so five items are not one screen and one answer five times. */
+  line?: Pick<SkipCountingRunnerData, 'skipValue' | 'startFrom' | 'endAt' | 'direction'>;
   hint: string;
   narration: string;
 }
@@ -54,6 +57,8 @@ export interface SkipCountingChallenge {
 export interface SkipCountingRunnerData {
   title: string;
   description?: string;
+  /** The item-space line this session came from (calibration only; never rendered or sent to the tutor). */
+  itemSpace?: { space: string; structure: string; beta: number };
   skipValue: number;
   startFrom: number;
   endAt: number;
@@ -188,6 +193,8 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   // On the tutor's workspace nothing moves on its own: the learner makes every jump.
   const autoPlay = autoPlayOption && !tutorOwned;
   const line = useMemo<SkipLine>(() => ({ skipValue, startFrom, endAt, direction }), [skipValue, startFrom, endAt, direction]);
+  /** The line a session item is drawn on: its own when it has one, else the session's. */
+  const lineFor = (c: SkipCountingChallenge | null | undefined): SkipLine => c?.line ?? line;
 
   const stableInstanceIdRef = useRef(instanceId || `skip-counting-runner-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -205,7 +212,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     challenges,
     getChallengeId: (ch) => ch.id,
     instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
-    workspace, assignment: ch => workspaceAssignment(ch, line),
+    workspace, assignment: ch => workspaceAssignment(ch, lineFor(ch)),
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
   });
@@ -228,17 +235,18 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   const [practice, setPractice] = useState<SkipPractice | null>(null);
   const sessionChallenge = challenges[currentChallengeIndex] ?? null;
   const currentChallenge = practice?.challenge ?? sessionChallenge;
-  const activeLine = practice?.line ?? line;
+  const itemLine = lineFor(sessionChallenge);
+  const activeLine = practice?.line ?? itemLine;
   const pulledLevers = sessionChallenge && leverState.item === sessionChallenge.id ? leverState.pulled : [];
 
   // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
   const [currentPosition, setCurrentPosition] = useState(() => {
-    const spots = openingSpots(line, challenges[0]);
+    const spots = openingSpots(lineFor(challenges[0]), challenges[0]);
     return spots[spots.length - 1];
   });
-  const [landingSpots, setLandingSpots] = useState<number[]>(() => openingSpots(line, challenges[0]));
+  const [landingSpots, setLandingSpots] = useState<number[]>(() => openingSpots(lineFor(challenges[0]), challenges[0]));
   /** fill_missing: the gaps the learner has filled. */
   const [filled, setFilled] = useState<number[]>([]);
   /** The item (session or practice) whose check came back correct, until another opens. */
@@ -304,12 +312,16 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   openItem.current = (index, retry) => {
     if (retry) { showChallenge(currentChallenge, activeLine, true); return; }
     setPractice(null);
-    showChallenge(challenges[index] ?? null, line, false);
+    showChallenge(challenges[index] ?? null, lineFor(challenges[index]), false);
   };
 
   const nextExpectedPosition = nextLanding(activeLine, currentPosition);
   const jumpCount = landingSpots.length - 1;
-  const nlMin = Math.min(activeLine.startFrom, activeLine.endAt, 0);
+  // The line shows 0 when the count is a run of multiples below 100. A count off the multiples (23, 33, 43) or
+  // among three-digit numbers starts at its own lowest number: ticks every step from 0 would miss its landings,
+  // or crowd 40 labels into the width.
+  const lineLow = Math.min(activeLine.startFrom, activeLine.endAt);
+  const nlMin = activeLine.startFrom % activeLine.skipValue !== 0 || lineLow >= 100 ? lineLow : Math.min(lineLow, 0);
   const nlMax = Math.max(activeLine.startFrom, activeLine.endAt);
   const isPractice = !!practice;
   const isCurrentChallengeComplete = (!!currentChallenge && solvedId === currentChallenge.id)
@@ -414,7 +426,9 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     const named = aidsFor(first, showOptions).jumpSize;
     const skipPhrase = named
       ? `Skip value: ${skipValue}. Count ${direction} from ${startFrom} to ${endAt}. `
-      : `Count ${direction} from ${startFrom} to ${endAt} (the skip value is the answer the student must discover — do not state it). `;
+      : first?.line
+        ? 'Each challenge is a different count on its own number line (its jump size is the answer the student must discover — do not state it). '
+        : `Count ${direction} from ${startFrom} to ${endAt} (the skip value is the answer the student must discover — do not state it). `;
     const introExcitement = named
       ? `Introduce the activity with excitement: "${charName} is going to jump by ${skipValue}s! Let's count together!" `
       : `Introduce the activity with excitement: "${charName} is going to jump! Watch the pattern and figure out how far each jump goes!" `;
@@ -626,7 +640,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   // check records, and the credited number shown as a correct check shows it. The shared lifecycle plays the sound.
   solvedAloud.current = (index) => {
     const solved = challenges[index];
-    const key = solved ? spokenSkipKey(solved, line) : null;
+    const key = solved ? spokenSkipKey(solved, lineFor(solved)) : null;
     if (!solved || key === null || checkedCorrect.current === solved.id) return;
     progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
     setSolvedId(solved.id);
@@ -642,7 +656,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
       setFeedback(`You got it! We're counting by ${key}s!`);
     } else {
       setMultiplicationInput(String(key)); setMultiplicationConnectionMade(true);
-      setFeedback(`Correct! ${key} × ${line.skipValue} = ${key * line.skipValue}`);
+      setFeedback(`Correct! ${key} × ${lineFor(solved).skipValue} = ${key * lineFor(solved).skipValue}`);
     }
     setFeedbackType('success');
   };
@@ -710,7 +724,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     const nextIndex = currentChallengeIndex + 1;
     const nextChallenge = challenges[nextIndex];
     if (!nextChallenge) return;
-    showChallenge(nextChallenge, line, false);
+    showChallenge(nextChallenge, lineFor(nextChallenge), false);
     sendText(
       `[PHASE_TRANSITION] Moving to challenge ${nextIndex + 1} of ${challenges.length}: `
       + `"${nextChallenge.instruction}" (type: ${nextChallenge.type}). Read the instruction and encourage them.`
@@ -730,7 +744,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   // -------------------------------------------------------------------------
   // Levers: what the session item shows. A practice count shows its aids plainly and carries no levers.
   // -------------------------------------------------------------------------
-  const leverSession = { challenges, line, showOptions, supportTier };
+  const leverSession = { challenges, line: itemLine, showOptions, supportTier };
   const itemLevers = sessionChallenge ? skipLevers(sessionChallenge, leverSession, pulledLevers, currentPosition) : [];
   const helpOn = (id: string) => !practice && itemLevers.some(l => l.id === id && l.pulled);
   const type = currentChallenge?.type;
@@ -741,8 +755,8 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   const arcsOn = isPractice || aids.arcs || jumpSizesOn || marksOn;
   const stepArcsOn = helpOn(STEP_ARCS);
   const ringsOn = helpOn(RING_GAPS);
-  const dots = helpOn(HOP_DOTS) ? hopDots(line) : null;
-  const model: CountModel | null = helpOn(MODEL_COUNT) && sessionChallenge ? countModel(sessionChallenge, line) : null;
+  const dots = helpOn(HOP_DOTS) ? hopDots(itemLine) : null;
+  const model: CountModel | null = helpOn(MODEL_COUNT) && sessionChallenge ? countModel(sessionChallenge, itemLine) : null;
   const solvedOrNot = (hidden: boolean) => !hidden || isCurrentChallengeComplete;
   const arrayOn = type === 'connect_multiplication' ? (!isPractice && (aids.array || helpOn(ARRAY_ROWS))) : aids.array;
   const arrayCaptionOn = solvedOrNot(type === 'connect_multiplication' || type === 'find_skip_value');
@@ -758,7 +772,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
       supportTier: practice ? undefined : supportTier, aids: shown }, view());
     const levers = practice ? [] : itemLevers;
     const onScreen = practice ? '' : levers.filter(l => l.pulled).map(l => l.id === HOP_DOTS ? DOTS_FACT
-      : l.id === MODEL_COUNT ? (model ? modelFact(model) : '') : leverFact(l.id, line, character.type)).filter(Boolean).join('. ');
+      : l.id === MODEL_COUNT ? (model ? modelFact(model) : '') : leverFact(l.id, itemLine, character.type)).filter(Boolean).join('. ');
     workspace.current = {
       ...scene,
       facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}), ...(practice ? { practice: PRACTICE_NOTE } : {}) },
@@ -778,7 +792,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
         return true as const;
       },
       // Back to the full item, blank: the practice count is not the learner's work on it.
-      endPractice: () => { setPractice(null); showChallenge(sessionChallenge, line, false); },
+      endPractice: () => { setPractice(null); showChallenge(sessionChallenge, itemLine, false); },
     };
   });
 

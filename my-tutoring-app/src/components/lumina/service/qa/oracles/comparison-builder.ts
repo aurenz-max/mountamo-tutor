@@ -41,7 +41,8 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *  - scope             : every quantity the student reads OR produces must honor
  *    the objective ceiling. "Comparing to 10" with an 8-vs-12 pair is content
  *    past the objective; one-more of 10 producing 11 exceeds a "to 10" ceiling.
- *    Ceiling = ctx.scopeMax ?? topic ceiling ?? the gradeBand intrinsic (K→10, 1→20).
+ *    Ceiling = ctx.scopeMax ?? topic ceiling ?? the gradeBand intrinsic (K→10, 1→20;
+ *    compare-numbers numerals 1→100, 1.NBT.3 compares two-digit numbers).
  *  - clustering        : within a mode the relations/targets must spread (no
  *    "every pair is 'more'"), and no exact-duplicate card (same ordered pair /
  *    same numbers+direction / same target+askFor twice).
@@ -64,6 +65,8 @@ const DIRECTIONS = new Set(['ascending', 'descending']);
 // Intrinsic quantity ceiling when neither the harness nor the topic names one.
 const INTRINSIC_BY_BAND: Record<string, number> = { K: 10, '1': 20 };
 const DEFAULT_INTRINSIC = 20;
+/** compare-numbers numerals: a grade-1 lesson compares two-digit numbers (1.NBT.3). */
+const NUMERAL_INTRINSIC_BY_BAND: Record<string, number> = { K: 10, '1': 100 };
 
 function isInt(v: unknown): v is number {
   return Number.isInteger(v);
@@ -79,6 +82,7 @@ export const comparisonBuilderOracle: ContentOracle = {
     const gradeBand = String(data.gradeBand ?? '');
     const intrinsic = INTRINSIC_BY_BAND[gradeBand] ?? DEFAULT_INTRINSIC;
     const ceiling = ctx.scopeMax ?? parseScopeCeiling(ctx.topic) ?? intrinsic;
+    const numeralCeiling = ctx.scopeMax ?? parseScopeCeiling(ctx.topic) ?? NUMERAL_INTRINSIC_BY_BAND[gradeBand] ?? intrinsic;
 
     if (challenges.length < 3) {
       violations.push({
@@ -158,8 +162,8 @@ export const comparisonBuilderOracle: ContentOracle = {
             detail: `${an} vs ${bn} is "${expected}", but correctSymbol says "${String(key)}" — a correct click would be marked wrong`,
           });
         }
-        if (Math.max(an, bn) > ceiling) {
-          violations.push({ check: 'scope', where: id, detail: `numbers ${an}/${bn} exceed objective ceiling ${ceiling} (topic "${ctx.topic}")` });
+        if (Math.max(an, bn) > numeralCeiling) {
+          violations.push({ check: 'scope', where: id, detail: `numbers ${an}/${bn} exceed objective ceiling ${numeralCeiling} (topic "${ctx.topic}")` });
         }
         derivedByType['compare-numbers'].push(expected);
         bump(cardSeen, `n:${an}v${bn}`);
