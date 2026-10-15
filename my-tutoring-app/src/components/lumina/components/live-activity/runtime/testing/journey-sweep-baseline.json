@@ -99,6 +99,12 @@
   "word-builder.build_affix": {
     "J1-drivable": "by design: the word is checked by the shared literacy judge (Jev, flash-latest), which the dry sweep has no model for; WordBuilder.buildAffix.workspace.test.tsx drives the commit with a stubbed judge"
   },
+  "airplane-diorama.find_part": {
+    "J1-drivable": "by design: the answer is a tap on a mesh of the 3D jet (WebGL), which jsdom cannot draw; AirplaneDiorama.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
+  },
+  "construction-site-diorama.load_truck": {
+    "J1-drivable": "by design: each scoop is a tap on the 3D excavator (WebGL), which jsdom cannot draw; ConstructionSiteDiorama.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
+  },
   "open-builder.build_to_goal": {
     "J1-drivable": "by design: the check is the Gemini inspector, which the dry sweep has no model for; OpenBuilder.workspace.test.tsx drives the commit with a stubbed inspector"
   },

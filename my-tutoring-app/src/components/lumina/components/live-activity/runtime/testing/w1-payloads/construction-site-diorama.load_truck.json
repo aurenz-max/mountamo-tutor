@@ -1,0 +1,59 @@
+{
+ "source": "generateComponentContent G1 load_truck 2026-10-15",
+ "primitiveId": "construction-site-diorama",
+ "evalMode": "load_truck",
+ "data": {
+  "title": "Excavator And Dump Truck",
+  "description": "Hop into the driver seat to scoop dirt with the excavator and fill the big dump truck for a special delivery.",
+  "challenges": [
+   {
+    "id": "cs-1",
+    "type": "load_truck",
+    "material": "gravel",
+    "destination": "the new playground",
+    "units": "scoops",
+    "target": 4,
+    "instruction": "Put 4 scoops of gravel in the dump truck for the new playground, then send the truck."
+   },
+   {
+    "id": "cs-2",
+    "type": "load_truck",
+    "material": "dirt",
+    "destination": "the central park path",
+    "units": "scoops",
+    "target": 2,
+    "instruction": "Put 2 scoops of dirt in the dump truck for the central park path, then send the truck."
+   },
+   {
+    "id": "cs-3",
+    "type": "load_truck",
+    "material": "rocks",
+    "destination": "the community garden beds",
+    "units": "scoops",
+    "target": 5,
+    "instruction": "Put 5 scoops of rocks in the dump truck for the community garden beds, then send the truck."
+   },
+   {
+    "id": "cs-4",
+    "type": "load_truck",
+    "material": "sand",
+    "destination": "the sunny picnic area",
+    "units": "scoops",
+    "target": 7,
+    "instruction": "Put 7 scoops of sand in the dump truck for the sunny picnic area, then send the truck."
+   },
+   {
+    "id": "cs-5",
+    "type": "load_truck",
+    "material": "gravel",
+    "destination": "the rolling grassy hill",
+    "units": "scoops",
+    "target": 3,
+    "instruction": "Put 3 scoops of gravel in the dump truck for the rolling grassy hill, then send the truck."
+   }
+  ],
+  "challengeType": "load_truck",
+  "gradeBand": "K-2",
+  "companyName": "Dig Deep"
+ }
+}

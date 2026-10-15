@@ -34,6 +34,9 @@ import EngineExplorer from '../primitives/visual-primitives/engineering/EngineEx
 import VehicleDesignStudio from '../primitives/visual-primitives/engineering/VehicleDesignStudio';
 import TransportChallenge from '../primitives/visual-primitives/engineering/TransportChallenge';
 import TrainYard from '../primitives/visual-primitives/engineering/TrainYard';
+import AirplaneDiorama from '../primitives/visual-primitives/engineering/AirplaneDiorama';
+import ConstructionSiteDiorama from '../primitives/visual-primitives/engineering/ConstructionSiteDiorama';
+import { TesterWorkspace, testerBinds } from './live-activity/TesterWorkspace';
 
 import {
   EvaluationProvider,
@@ -59,7 +62,9 @@ type PrimitiveType =
   | 'engine-explorer'
   | 'vehicle-design-studio'
   | 'transport-challenge'
-  | 'train-yard';
+  | 'train-yard'
+  | 'airplane-diorama'
+  | 'construction-site-diorama';
 
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
@@ -70,6 +75,9 @@ interface PrimitiveOption {
   topic: string;
   strand: string;
 }
+
+/** Families with their own mode picker below; every other multi-mode family uses the shared one. */
+const OWN_MODE_PICKER = new Set<string>(['ramp-lab', 'gear-train-builder', 'tower-stacker', 'lever-lab']);
 
 const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   // ===== SM: Simple Machines =====
@@ -101,6 +109,8 @@ const PRIMITIVE_OPTIONS: PrimitiveOption[] = [
   { value: 'vehicle-design-studio', label: 'Vehicle Design Studio', icon: '🚗', topic: 'Vehicle Engineering', strand: 'VF' },
   { value: 'transport-challenge', label: 'Transport Challenge', icon: '🚛', topic: 'Choosing vehicles and optimizing transport under constraints', strand: 'VF' },
   { value: 'train-yard', label: 'Train Yard', icon: '🚂', topic: 'Passenger trains and freight trains', strand: 'VF' },
+  { value: 'airplane-diorama', label: 'Airplane (3D)', icon: '✈️', topic: 'The parts of an airplane and what each part does', strand: 'VF' },
+  { value: 'construction-site-diorama', label: 'Work Site (3D)', icon: '🚜', topic: 'Loading a dump truck with an excavator', strand: 'VF' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -406,6 +416,26 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'airplane-diorama':
+      return (
+        <AirplaneDiorama
+          data={{
+            ...(data as Parameters<typeof AirplaneDiorama>[0]['data']),
+            instanceId: (data as { instanceId: string }).instanceId,
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'construction-site-diorama':
+      return (
+        <ConstructionSiteDiorama
+          data={{
+            ...(data as Parameters<typeof ConstructionSiteDiorama>[0]['data']),
+            instanceId: (data as { instanceId: string }).instanceId,
+            onEvaluationSubmit,
+          }}
+        />
+      );
     default:
       return (
         <div className="max-w-4xl mx-auto">
@@ -510,6 +540,28 @@ const EvaluationResultsPanel: React.FC = () => {
                 </div>
                 {result.metrics && 'type' in result.metrics && (
                   <p className="text-xs text-slate-400 mt-1">{result.metrics.type}</p>
+                )}
+                {result.metrics.type === 'airplane-diorama' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
+                )}
+                {result.metrics.type === 'construction-site-diorama' && (
+                  <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
+                    <span>Mode: {result.metrics.challengeType}</span>
+                    <span>Correct: {result.metrics.correctCount}/{result.metrics.totalChallenges}</span>
+                    <span>First try: {result.metrics.firstTryCount}</span>
+                    <span>Attempts: {result.metrics.attemptsCount}</span>
+                    <span>Avg attempts: {result.metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+                    <span>Hints viewed: {result.metrics.hintsViewed}</span>
+                    <span>Accuracy: {result.metrics.overallAccuracy.toFixed(0)}%</span>
+                  </div>
                 )}
                 {result.metrics.type === 'train-yard' && (
                   <div className="mt-2 text-xs text-slate-500 grid grid-cols-2 gap-1">
@@ -832,6 +884,8 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
   const [towerMode, setTowerMode] = useState('mixed');
   const [gearMode, setGearMode] = useState('mixed');
   const [leverMode, setLeverMode] = useState('mixed');
+  // Any other family with two or more modes: one shared picker.
+  const [familyMode, setFamilyMode] = useState('mixed');
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
@@ -845,6 +899,14 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
   const [error, setError] = useState<string | null>(null);
   const [tutorPanelOpen, setTutorPanelOpen] = useState(true);
   const [lastEvaluationResult, setLastEvaluationResult] = useState<PrimitiveEvaluationResult | null>(null);
+  // A family bound to the teaching workspace previews inside the tester workspace: offline (real runtime and
+  // lever bench, free) or with a Live tutor (paid).
+  const [tutorMode, setTutorMode] = useState<'offline' | 'live'>('offline');
+  const pickedMode = selectedPrimitive === 'tower-stacker' ? towerMode : selectedPrimitive === 'gear-train-builder' ? gearMode
+    : selectedPrimitive === 'lever-lab' ? leverMode : selectedPrimitive === 'ramp-lab' ? rampMode : familyMode;
+  const familyModes = getComponentById(selectedPrimitive as ComponentId)?.evalModes ?? [];
+  // A one-mode family pins its mode; otherwise the tester's choice, and "mixed" binds unpinned.
+  const selectedEvalMode = pickedMode !== 'mixed' ? pickedMode : familyModes.length === 1 ? familyModes[0].evalMode : null;
 
   const selectedOption = PRIMITIVE_OPTIONS.find((p) => p.value === selectedPrimitive);
 
@@ -872,7 +934,8 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
             config: selectedPrimitive === 'ramp-lab' ? { targetEvalMode: rampMode }
               : selectedPrimitive === 'tower-stacker' && towerMode !== 'mixed' ? { targetEvalMode: towerMode }
               : selectedPrimitive === 'gear-train-builder' && gearMode !== 'mixed' ? { targetEvalMode: gearMode }
-              : selectedPrimitive === 'lever-lab' && leverMode !== 'mixed' ? { targetEvalMode: leverMode } : {},
+              : selectedPrimitive === 'lever-lab' && leverMode !== 'mixed' ? { targetEvalMode: leverMode }
+              : !OWN_MODE_PICKER.has(selectedPrimitive) && familyMode !== 'mixed' ? { targetEvalMode: familyMode } : {},
           },
         }),
       });
@@ -954,7 +1017,7 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
                             <button
                               key={option.value}
                               onClick={() => {
-                                setSelectedPrimitive(option.value);
+                                setSelectedPrimitive(option.value); setFamilyMode('mixed');
                                 setGeneratedData(null);
                                 setError(null);
                               }}
@@ -1031,6 +1094,13 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
               <select id="lever-task" value={leverMode} onChange={event => setLeverMode(event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white">
                 <option value="mixed">Sandbox (no mode)</option>
                 {getComponentById('lever-lab')?.evalModes?.map(mode => <option key={mode.evalMode} value={mode.evalMode}>{mode.label}</option>)}
+              </select>
+            </div>}
+            {!OWN_MODE_PICKER.has(selectedPrimitive) && familyModes.length > 1 && <div>
+              <label htmlFor="family-task" className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-400">Task</label>
+              <select id="family-task" value={familyMode} onChange={event => setFamilyMode(event.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white">
+                <option value="mixed">Mixed (intent picks)</option>
+                {familyModes.map(mode => <option key={mode.evalMode} value={mode.evalMode}>{mode.label}</option>)}
               </select>
             </div>}
             <div>
@@ -1121,12 +1191,26 @@ const EngineeringPrimitivesTesterContent: React.FC<EngineeringPrimitivesTesterPr
 
             {generatedData != null && (
               <div className="space-y-6">
-                <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
-                  <PrimitiveRenderer
-                    componentId={selectedPrimitive}
-                    data={{ ...(generatedData as object), instanceId: previewInstanceId }}
-                    onEvaluationSubmit={handleEvaluationSubmit}
-                  />
+                {testerBinds(selectedPrimitive, previewInstanceId, selectedEvalMode, generatedData) && (
+                  <div role="radiogroup" aria-label="Tutor" className="flex w-fit rounded-lg border border-slate-600 text-xs">
+                    {(['offline', 'live'] as const).map(m => (
+                      <button key={m} type="button" role="radio" aria-checked={tutorMode === m} onClick={() => setTutorMode(m)}
+                        className={`px-3 py-1 ${tutorMode === m ? 'bg-cyan-600/40 text-cyan-100' : 'text-slate-400'}`}>
+                        {m === 'offline' ? 'Offline levers (free)' : 'Live tutor (paid)'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div key={`${previewInstanceId}-${tutorMode}`} data-primitive-instance-id={previewInstanceId}>
+                  <TesterWorkspace primitiveId={selectedPrimitive} instanceId={previewInstanceId} evalMode={selectedEvalMode}
+                    offline={tutorMode === 'offline'} data={generatedData} topic={topic || selectedOption?.topic || ''}
+                    gradeLevel={selectedGrade} onEvaluationSubmit={handleEvaluationSubmit}>
+                    <PrimitiveRenderer
+                      componentId={selectedPrimitive}
+                      data={{ ...(generatedData as object), instanceId: previewInstanceId }}
+                      onEvaluationSubmit={handleEvaluationSubmit}
+                    />
+                  </TesterWorkspace>
                   <CuratorCompanion />
                 </div>
               </div>

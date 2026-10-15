@@ -1,0 +1,49 @@
+{
+ "source": "qa/tutor-reports/airplane-diorama-runtime-find_part-payload-2026-10-14.json",
+ "primitiveId": "airplane-diorama",
+ "evalMode": "find_part",
+ "data": {
+  "title": "Exploring Our Airplane",
+  "description": "Come take a closer look at this friendly flying machine to see how it is put together.",
+  "challenges": [
+   {
+    "id": "ap-1",
+    "type": "find_part",
+    "part": "tail",
+    "askStyle": "name",
+    "instruction": "Find the tail on the jet and tap it."
+   },
+   {
+    "id": "ap-2",
+    "type": "find_part",
+    "part": "gear",
+    "askStyle": "name",
+    "instruction": "Find the landing gear on the jet and tap it."
+   },
+   {
+    "id": "ap-3",
+    "type": "find_part",
+    "part": "cockpit",
+    "askStyle": "name",
+    "instruction": "Find the cockpit on the jet and tap it."
+   },
+   {
+    "id": "ap-4",
+    "type": "find_part",
+    "part": "wings",
+    "askStyle": "name",
+    "instruction": "Find the wings on the jet and tap it."
+   },
+   {
+    "id": "ap-5",
+    "type": "find_part",
+    "part": "cabin",
+    "askStyle": "name",
+    "instruction": "Find the cabin on the jet and tap it."
+   }
+  ],
+  "challengeType": "find_part",
+  "gradeBand": "K-2",
+  "airlineName": "SkyPuff"
+ }
+}

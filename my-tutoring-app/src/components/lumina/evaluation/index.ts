@@ -65,6 +65,8 @@ export type {
   VehicleDesignStudioMetrics,
   TransportChallengeMetrics,
   TrainYardMetrics,
+  AirplaneDioramaMetrics,
+  ConstructionSiteDioramaMetrics,
   // Creation metrics
   OpenBuilderMetrics,
   // Assessment metrics

@@ -320,6 +320,7 @@ import { splitPictureOption as storySplitPicture } from '../../primitives/visual
 import { strategyPickerHarnessInputs } from '../../primitives/visual-primitives/math/strategyPickerWorkspace';
 import { practiceItem as strategyPracticeItem, practiceParent as strategyPracticeParent }
   from '../../primitives/visual-primitives/math/strategyPickerLevers';
+import { tanksNeeded as airplaneTanksNeeded } from '../../primitives/visual-primitives/engineering/airplaneModel';
 import { carButtonName, carFor as trainCarFor, fewestCars as trainFewestCars, fewestEngines as trainFewestEngines } from '../../primitives/visual-primitives/engineering/trainYardModel';
 import { simplerJob as simplerTrainJob } from '../../primitives/visual-primitives/engineering/trainYardLevers';
 import { answerLabel as dnlAnswerLabel, ratioLineHarnessValues as dnlHarnessValues }
@@ -2649,6 +2650,40 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [...repeat('Add an engine', trainFewestEngines(c)), ...repeat(`Add ${carButtonName(car)}`, trainFewestCars(c)), send];
     },
     probes: { mounted: { selector: 'canvas[aria-label^="The route from"]' } },
+  },
+  'construction-site-diorama': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/ConstructionSiteDiorama.tsx',
+    instanceId: 'site',
+    defaults: { grade: 'Grade 1', mode: 'load_truck', di: false, topic: 'Loading a dump truck with an excavator' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // The answer is dug and dumped by taps on meshes of the 3D site (WebGL), which the dry sweep's jsdom cannot draw;
+    // ConstructionSiteDiorama.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas.
+    inputsFor: (intent) => {
+      if (intent === 'warmup') return [];
+      throw new Error('Construction-site-diorama load_truck is taps on the 3D site, not driven at W1');
+    },
+    probes: { mounted: { selector: '[data-construction-scene]' } },
+  },
+  'airplane-diorama': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/AirplaneDiorama.tsx',
+    instanceId: 'jet',
+    defaults: { grade: 'Grade 1', mode: 'find_part', di: false, topic: 'The parts of an airplane and what each part does' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // find_part: the answer is a tap on a mesh of the 3D jet (WebGL), which the dry sweep's jsdom cannot draw;
+    // AirplaneDiorama.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas.
+    // flight_plan: load the tanks with the loader's buttons and press Fly. Wrong: one tank too many.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c || c.type !== 'flight_plan') throw new Error('Airplane-diorama find_part is a tap on the 3D jet, not driven at W1');
+      const n = airplaneTanksNeeded(c) + (intent === 'wrong' ? 1 : 0);
+      return [...Array.from({ length: n }, (): DriverInput => ({ type: 'choose', label: 'Add a tank' })), { type: 'choose', label: 'Fly!' }];
+    },
+    probes: { mounted: { selector: '[data-airplane-scene]' } },
   },
   'open-builder': {
     execution: 'workspace',

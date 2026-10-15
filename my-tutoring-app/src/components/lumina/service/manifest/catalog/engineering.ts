@@ -10,6 +10,7 @@ import type { RampMiss, RampSpokenMiss } from '../../../primitives/visual-primit
 import { TRAIN_YARD_MISSES, type TrainYardMiss } from '../../../primitives/visual-primitives/engineering/trainYardWorkspace';
 import { TOWER_MISSES, type TowerMiss } from '../../../primitives/visual-primitives/engineering/towerWorkspace';
 import { GEAR_MISSES, type GearMiss } from '../../../primitives/visual-primitives/engineering/gearWorkspace';
+import { FIND_PART_MISSES, FLIGHT_PLAN_MISSES, type AirplaneMiss } from '../../../primitives/visual-primitives/engineering/airplaneModel';
 import { missLists } from './missLists';
 
 export const ENGINEERING_CATALOG: ComponentDefinition[] = [
@@ -908,6 +909,74 @@ export const ENGINEERING_CATALOG: ComponentDefinition[] = [
         enough_pull: ['stalled', 'extra_engines'],
         build_train: [...TRAIN_YARD_MISSES],
       }),
+    },
+  },
+  {
+    id: 'construction-site-diorama',
+    description: 'A 3D construction site with an excavator, a pile of dirt, sand, gravel or rocks, and a dump truck. Students work the excavator: tap the pile to dig a scoop, tap the truck to dump it, and each scoop lands as its own mound in the truck bed. They load the truck with the right amount and send it off to a job. Younger students load a stated number of scoops (counting objects to 7, one-to-one counting while doing); older students read the truck\'s weight limit and what one scoop weighs, and work out how many scoops fill it without going over (multiplication and division, weight and capacity). Perfect for lessons on construction machines, excavators and dump trucks, how machines help people work, counting, and measurement of weight. ESSENTIAL for K-5 engineering, construction and counting.',
+    constraints: 'Grades K-5. Each session is 5 loads; code picks every number and writes every ask. K-2 asks name the number of scoops (2-7); 3-5 asks give the truck limit and the weight of one scoop (3-8 scoops). The manifest must NOT supply numbers.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: ['apply'], minutes: 6 },
+    evalModes: [
+      {
+        evalMode: 'load_truck',
+        label: 'Load the Truck',
+        beta: -1.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['load_truck'],
+        description: 'Work the excavator to load the dump truck with the right number of scoops, then send it: a stated count (K-2) or as many as the weight limit allows (3-5)',
+      },
+    ],
+    supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'Sending the truck is the check: the learner taps the pile to dig a scoop and taps the truck to dump it, then presses '
+        + 'Send. Each scoop is its own mound in the truck bed, and no number on screen counts them. On a scoops ask, counting is the '
+        + 'task: never say how many scoops are in the truck or how many more are needed; ask the learner to count the mounds, and '
+        + 'count along only after the learner starts. On a tons ask (a weight limit and the weight of one scoop), working out the '
+        + 'number of scoops is the task: never say it, and never add up the weight in the bed for the learner while loading; '
+        + 'ask what one scoop weighs and how the learner will know when the truck is full. With an empty bucket a tap on the '
+        + 'truck takes a scoop back out, so a learner who loaded too many can fix it. After Send the screen says what was in the '
+        + 'truck (and on a tons ask what the scale read); the tutor may talk about that.',
+    },
+  },
+  {
+    id: 'airplane-diorama',
+    description: 'A 3D passenger jet on a display stand that students turn, zoom and tap. Students find the parts of an airplane (wings, engines, tail, cockpit, landing gear, cabin, nose) and tap them on the jet; each part they find shows what it does (the engines spin up, the flaps slide down, the rudder moves, the gear bounces, the cockpit and cabin open to show the seats inside, the radar sweeps ahead of the nose), and the jet takes off when every part is found. Younger students find parts by name; older students find the part that does a job (lifts the plane, pushes it forward, keeps it steady). Students also plan flights: a trip between two airports on a map, where they load enough fuel tanks for the distance plus a spare and fly it (K-2 count the hops on the map; 3-5 divide the distance by how far one tank flies). Perfect for lessons on airplanes, parts of a machine and what each part does, flight, transportation, how vehicles work, and measurement or division word problems about distance and fuel. ESSENTIAL for K-5 engineering and transportation.',
+    constraints: 'Grades K-5. Each session asks for 5 different parts of the jet. The manifest may name the parts the lesson is about in the intent ("the wings and the engines"); it must NOT write the asks, which code writes. K-2 asks name the part; 3-5 asks name only its job. A flight-plan session is 4 trips; code sets every distance and fuel rule.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: ['visualize', 'apply'], minutes: 5 },
+    evalModes: [
+      {
+        evalMode: 'find_part',
+        label: 'Find the Part',
+        beta: -1.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['find_part'],
+        description: 'Find the asked part on the 3D jet and tap it: by its name (K-2) or by the job it does (3-5)',
+      },
+      {
+        evalMode: 'flight_plan',
+        label: 'Plan the Flight',
+        beta: 0.5,
+        scaffoldingMode: 3,
+        challengeTypes: ['flight_plan'],
+        description: 'Load enough fuel tanks for a trip between two airports plus one spare, then fly it: count the hops (K-2) or divide the distance by how far one tank flies (3-5)',
+      },
+    ],
+    supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'Two kinds of item; the scene says which. FIND A PART: a tap on the jet is the check: the learner turns the 3D jet and taps the part the ask names. Finding the part is '
+        + 'the task, so never say where the asked part is on the jet (front, back, under, on top, beside another part) and never '
+        + 'point toward it. When the ask gives only a job ("the part that pushes the plane forward"), never say the part\'s name '
+        + 'either: matching the job to the part is the task. After a wrong tap the screen names the part that was tapped; the '
+        + 'tutor may say what that part does and ask the learner to look again. The learner can drag to turn the jet and zoom in. '
+        + 'After the right tap that part shows what it does; the tutor may talk about it. '
+        + 'PLAN A FLIGHT: the learner loads fuel tanks and presses Fly, and the flight is the check. The trip, the map and the '
+        + 'fuel rule (how far one tank flies, plus one spare tank) are on screen and the tutor may read them out and explain '
+        + 'them. Working out the number of tanks is the task, so never say how many tanks the trip needs, never count the hops '
+        + 'for the learner, and never do the division or say its result. The tutor may ask how far the trip is, how far one '
+        + 'tank goes, and how to use a flight\'s result (how far it got, how many tanks were left).',
+      misses: missLists<AirplaneMiss>({ find_part: [...FIND_PART_MISSES], flight_plan: [...FLIGHT_PLAN_MISSES] }),
     },
   },
 ];

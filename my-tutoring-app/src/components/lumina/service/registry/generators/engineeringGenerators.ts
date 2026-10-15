@@ -35,6 +35,8 @@ import { generateVehicleDesignStudio } from '../../engineering/gemini-vehicle-de
 import { generateHydraulicsLab } from '../../engineering/gemini-hydraulics-lab';
 import { generateTransportChallenge } from '../../engineering/gemini-transport-challenge';
 import { generateTrainYard } from '../../engineering/gemini-train-yard';
+import { generateAirplaneDiorama } from '../../engineering/gemini-airplane-diorama';
+import { generateConstructionSiteDiorama } from '../../engineering/gemini-construction-site-diorama';
 
 // ============================================================================
 // Engineering/STEM Primitives Registration
@@ -213,6 +215,19 @@ registerContextGenerator('train-yard', async (ctx) => ({
   type: 'train-yard',
   instanceId: ctx.instanceId,
   data: await generateTrainYard(ctx),
+}));
+
+// Airplane Diorama (3D jet: find the parts)
+registerContextGenerator('airplane-diorama', async (ctx) => ({
+  type: 'airplane-diorama',
+  instanceId: ctx.instanceId,
+  data: await generateAirplaneDiorama(ctx),
+}));
+
+registerContextGenerator('construction-site-diorama', async (ctx) => ({
+  type: 'construction-site-diorama',
+  instanceId: ctx.instanceId,
+  data: await generateConstructionSiteDiorama(ctx),
 }));
 
 // ============================================================================

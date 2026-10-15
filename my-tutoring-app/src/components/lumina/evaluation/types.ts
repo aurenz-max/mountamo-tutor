@@ -3364,6 +3364,30 @@ export interface TransportChallengeMetrics extends BasePrimitiveMetrics {
   averageConstraintsMet: number;
 }
 
+export interface AirplaneDioramaMetrics extends BasePrimitiveMetrics {
+  type: 'airplane-diorama';
+  challengeType: 'find_part' | 'flight_plan';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
+export interface ConstructionSiteDioramaMetrics extends BasePrimitiveMetrics {
+  type: 'construction-site-diorama';
+  challengeType: 'load_truck';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface TrainYardMetrics extends BasePrimitiveMetrics {
   type: 'train-yard';
   challengeType: 'match_car' | 'enough_cars' | 'enough_pull' | 'build_train';
@@ -3865,6 +3889,8 @@ export type PrimitiveMetrics =
   | VehicleDesignStudioMetrics
   | TransportChallengeMetrics
   | TrainYardMetrics
+  | AirplaneDioramaMetrics
+  | ConstructionSiteDioramaMetrics
   // Creation
   | OpenBuilderMetrics
   // Assessment

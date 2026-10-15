@@ -156,6 +156,8 @@ import VehicleDesignStudio from '../primitives/visual-primitives/engineering/Veh
 import HydraulicsLab from '../primitives/visual-primitives/engineering/HydraulicsLab';
 import TransportChallenge from '../primitives/visual-primitives/engineering/TransportChallenge';
 import TrainYard from '../primitives/visual-primitives/engineering/TrainYard';
+import AirplaneDiorama from '../primitives/visual-primitives/engineering/AirplaneDiorama';
+import ConstructionSiteDiorama from '../primitives/visual-primitives/engineering/ConstructionSiteDiorama';
 // Creation Primitives
 import OpenBuilder from '../primitives/visual-primitives/creation/OpenBuilder';
 // Astronomy Primitives
@@ -1763,6 +1765,26 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'train-yard': {
     component: TrainYard,
     sectionTitle: 'Train Yard',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'airplane-diorama': {
+    component: AirplaneDiorama,
+    sectionTitle: 'Airplane',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+
+  'construction-site-diorama': {
+    component: ConstructionSiteDiorama,
+    sectionTitle: 'Work Site',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

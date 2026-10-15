@@ -938,6 +938,13 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "open-builder": {
         "build_to_goal": PriorConfig(0.0, "Build to the goal"),
     },
+    "construction-site-diorama": {
+        "load_truck": PriorConfig(-1.0, "Work the excavator to load a dump truck with the right number of scoops"),
+    },
+    "airplane-diorama": {
+        "find_part": PriorConfig(-1.5, "Find a part of a 3D jet and tap it"),
+        "flight_plan": PriorConfig(0.5, "Load the fuel tanks a trip needs plus a spare, then fly it"),
+    },
     "propulsion-lab": {
         "predict":    PriorConfig(-1.0, "Predict propulsion outcomes before testing"),
         "observe":    PriorConfig(0.0, "Watch particles and explain Newton's Third Law"),

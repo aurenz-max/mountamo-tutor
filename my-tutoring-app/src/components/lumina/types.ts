@@ -1708,6 +1708,8 @@ export type ComponentId =
   | 'hydraulics-lab' // Interactive hydraulics lab for fluid power and pressure concepts
   | 'transport-challenge' // Interactive transport challenge
   | 'train-yard' // Interactive train yard: build a train of cars for each rail job
+  | 'airplane-diorama' // 3D passenger jet: find and tap its parts, each part shows what it does
+  | 'construction-site-diorama' // 3D excavator + dump truck: load the truck with the right number of scoops and send it
 
   // Creation Primitives (K-5)
   | 'open-builder' // Open-ended building studio: build freely from a hopper to meet a goal, an inspector judges
@@ -2346,6 +2348,8 @@ export type { PropulsionTimelineData, TimelineMilestone, TimelineEra as Propulsi
 export type { VehicleDesignStudioData } from './primitives/visual-primitives/engineering/VehicleDesignStudio';
 export type { TransportChallengeData } from './primitives/visual-primitives/engineering/TransportChallenge';
 export type { TrainYardData } from './primitives/visual-primitives/engineering/TrainYard';
+export type { AirplaneDioramaData } from './primitives/visual-primitives/engineering/AirplaneDiorama';
+export type { ConstructionSiteDioramaData } from './primitives/visual-primitives/engineering/ConstructionSiteDiorama';
 export type { OpenBuilderData } from './primitives/visual-primitives/creation/OpenBuilder';
 export type { ConstructionSequencePlannerData, ConstructionTask, ConstructionChallenge } from './primitives/visual-primitives/engineering/ConstructionSequencePlanner';
 

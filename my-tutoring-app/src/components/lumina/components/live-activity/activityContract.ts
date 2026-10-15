@@ -114,6 +114,8 @@ import { lightShadowLabLiveDomain } from './adapters/lightShadowLabLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { trainYardLiveDomain } from './adapters/trainYardLive';
+import { airplaneDioramaLiveDomain } from './adapters/airplaneDioramaLive';
+import { constructionSiteDioramaLiveDomain } from './adapters/constructionSiteDioramaLive';
 import { openBuilderLiveDomain } from './adapters/openBuilderLive';
 import { shapeBuilderLiveDomain } from './adapters/shapeBuilderLive';
 import { shapeComposerLiveDomain } from './adapters/shapeComposerLive';
@@ -259,6 +261,8 @@ export const LIVE_ADAPTERS = {
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'train-yard': workspaceAdapter('train-yard', trainYardLiveDomain),
+  'airplane-diorama': workspaceAdapter('airplane-diorama', airplaneDioramaLiveDomain),
+  'construction-site-diorama': workspaceAdapter('construction-site-diorama', constructionSiteDioramaLiveDomain),
   'open-builder': workspaceAdapter('open-builder', openBuilderLiveDomain),
   'shape-builder': workspaceAdapter('shape-builder', shapeBuilderLiveDomain),
   'shape-composer': workspaceAdapter('shape-composer', shapeComposerLiveDomain),
