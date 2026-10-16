@@ -37,13 +37,20 @@ export interface BarSegment {
   value?: number;
   label: string;
   isUnknown?: boolean;
+  /** multi_step: this amount is the result of an earlier step (index); its value shows once that step is solved. */
+  carriedFromStep?: number;
 }
 
 export interface BarConfig {
   segments: BarSegment[];
   totalLabel?: string;
   color?: string;
+  /** The whole, drawn as one full-width bar under the parts (multi_step: one part-whole per step). */
+  whole?: BarSegment;
 }
+
+/** Segment index that addresses a bar's `whole`. */
+export const WHOLE_SEGMENT = -1;
 
 export type TapeDiagramChallengeType =
   | 'represent'
@@ -78,7 +85,10 @@ export interface TapeDiagramChallenge {
     step2Hint: string;
     /** Third-step hint — present only on hard-tier 3-step chains. */
     step3Hint?: string;
+    /** Legacy single-bar order (segment indices on bar 0); used when `steps` is absent. */
     solveOrder: number[];
+    /** One entry per step: the bar and the unknown segment it asks for (WHOLE_SEGMENT = the bar's whole). */
+    steps?: { bar: number; segment: number }[];
   };
 
   // ── Support-tier scaffolds (set by the generator when config.difficulty is
@@ -423,6 +433,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
           unknowns.push({ barIndex, segmentIndex });
         }
       });
+      if (bar.whole?.isUnknown) unknowns.push({ barIndex, segmentIndex: WHOLE_SEGMENT });
     });
     return unknowns;
   }, [bars]);
@@ -441,7 +452,10 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       // Otherwise, any tracked attempt must belong to a segment on this challenge's bars.
       const firstAttempt = Array.from(segmentAttempts.values())[0];
       if (!firstAttempt) return true;
-      const expectedLabel = challenge.bars[firstAttempt.barIndex]?.segments[firstAttempt.segmentIndex]?.label;
+      const attemptBar = challenge.bars[firstAttempt.barIndex];
+      const expectedLabel = firstAttempt.segmentIndex === WHOLE_SEGMENT
+        ? attemptBar?.whole?.label
+        : attemptBar?.segments[firstAttempt.segmentIndex]?.label;
       // If the segment doesn't exist on the new challenge's bars (or label
       // differs from what produced the attempt), state is stale.
       if (!expectedLabel) return false;
@@ -729,6 +743,8 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       showUnknownInputs?: boolean;
       isSegmentLocked?: (segIdx: number) => boolean;
       onSegmentSubmit?: (barIdx: number, segIdx: number) => void;
+      /** multi_step: whether the step a carried amount comes from is solved. */
+      isCarriedKnown?: (step: number) => boolean;
     } = {},
   ) => {
     const {
@@ -738,11 +754,89 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       showUnknownInputs = true,
       isSegmentLocked,
       onSegmentSubmit,
+      isCarriedKnown,
     } = options;
 
     const indices = visibleSegmentIndices || bar.segments.map((_, i) => i);
     const visibleSegments = indices.map((idx) => ({ segment: bar.segments[idx], originalIndex: idx }));
     const total = bar.segments.reduce((s, seg) => s + (seg.value || 0), 0);
+
+    // One cell: a part, or the bar's whole (segIdx = WHOLE_SEGMENT). A carried amount (an earlier
+    // step's result) shows its value only after that step is solved, so it never gives the answer away.
+    const renderCell = (segment: BarSegment, segIdx: number, style: React.CSSProperties) => {
+      const key = getSegmentKey(barIndex, segIdx);
+      const isUnknown = segment.isUnknown;
+      const locked = isSegmentLocked?.(segIdx) || false;
+      const segFeedback = feedback[key];
+      const carriedHidden = segment.carriedFromStep !== undefined && !(isCarriedKnown?.(segment.carriedFromStep) ?? true);
+      return (
+        <div
+          key={segIdx}
+          className="relative flex-1"
+          style={style}
+        >
+          <div
+            className={`
+              w-full h-20 rounded-lg transition-all duration-200 flex items-center justify-center shadow-lg
+              ${isUnknown
+                ? `${dropZoneStateClass(
+                    (locked
+                      ? 'filled'
+                      : segFeedback === 'correct'
+                        ? 'correct'
+                        : segFeedback === 'incorrect'
+                          ? 'incorrect'
+                          : 'idle') as DropZoneState,
+                  )} ${locked ? 'opacity-50' : ''} ${
+                    segFeedback === 'correct' ? motion.pop : segFeedback === 'incorrect' ? motion.shake : ''
+                  }`
+                : `border-2 bg-gradient-to-br ${getBarColor(barIndex, bar.color)} border-slate-600`
+              }
+            `}
+          >
+            <div className="text-center">
+              {isUnknown ? (
+                segFeedback === 'correct' ? (
+                  <div className="text-2xl font-bold text-green-400">{segment.value}</div>
+                ) : locked ? (
+                  <div className="text-2xl font-bold text-slate-600">🔒</div>
+                ) : (
+                  <div className="text-3xl font-bold text-yellow-400">?</div>
+                )
+              ) : (
+                // Known segment value. `showKnownValues` (support tier)
+                // gates this on KNOWN segments only — the unknown/answer
+                // segment is handled by the isUnknown branch above, so this
+                // can never withhold (or reveal) the answer.
+                carriedHidden ? (
+                  <div className="text-sm font-semibold text-white/70">answer from step {(segment.carriedFromStep ?? 0) + 1}</div>
+                ) : segment.value !== undefined && (effectiveShowKnownValues || segment.carriedFromStep !== undefined) && (
+                  <div className="text-2xl font-bold text-white">{segment.value}</div>
+                )
+              )}
+              <div className="text-xs font-medium text-white/90 px-2 truncate">
+                {segment.label}
+              </div>
+            </div>
+          </div>
+
+          {/* Input for unknown segments */}
+          {isUnknown && showUnknownInputs && !locked && segFeedback !== 'correct' && !isComplete && (
+            <div className="mt-3">
+              <SegmentStepper
+                label={`${segment.label} =`}
+                value={userAnswers[key] || ''}
+                onChange={(v) => handleAnswerChange(barIndex, segIdx, v)}
+                onSubmit={() => onSegmentSubmit?.(barIndex, segIdx)}
+              />
+              {segFeedback === 'incorrect' && (
+                <div className="mt-2 text-center text-red-400 text-sm font-semibold">Not quite — try again!</div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
 
     return (
       <div key={barIndex} className="relative">
@@ -773,79 +867,17 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         {/* Segments */}
         <div className={`flex ${comparisonMode ? 'items-start' : 'items-stretch'} gap-1`}>
           {visibleSegments.map(({ segment, originalIndex: segIdx }) => {
-            const key = getSegmentKey(barIndex, segIdx);
-            const isUnknown = segment.isUnknown;
-            const locked = isSegmentLocked?.(segIdx) || false;
-            const segFeedback = feedback[key];
             const widthPct = segment.value ? (segment.value / (total || 1)) * 100 : 100 / bar.segments.length;
-
-            return (
-              <div
-                key={segIdx}
-                className="relative flex-1"
-                style={{ minWidth: '80px', flex: comparisonMode ? `0 0 ${widthPct}%` : 1 }}
-              >
-                <div
-                  className={`
-                    w-full h-20 rounded-lg transition-all duration-200 flex items-center justify-center shadow-lg
-                    ${isUnknown
-                      ? `${dropZoneStateClass(
-                          (locked
-                            ? 'filled'
-                            : segFeedback === 'correct'
-                              ? 'correct'
-                              : segFeedback === 'incorrect'
-                                ? 'incorrect'
-                                : 'idle') as DropZoneState,
-                        )} ${locked ? 'opacity-50' : ''} ${
-                          segFeedback === 'correct' ? motion.pop : segFeedback === 'incorrect' ? motion.shake : ''
-                        }`
-                      : `border-2 bg-gradient-to-br ${getBarColor(barIndex, bar.color)} border-slate-600`
-                    }
-                  `}
-                >
-                  <div className="text-center">
-                    {isUnknown ? (
-                      segFeedback === 'correct' ? (
-                        <div className="text-2xl font-bold text-green-400">{segment.value}</div>
-                      ) : locked ? (
-                        <div className="text-2xl font-bold text-slate-600">🔒</div>
-                      ) : (
-                        <div className="text-3xl font-bold text-yellow-400">?</div>
-                      )
-                    ) : (
-                      // Known segment value. `showKnownValues` (support tier)
-                      // gates this on KNOWN segments only — the unknown/answer
-                      // segment is handled by the isUnknown branch above, so this
-                      // can never withhold (or reveal) the answer.
-                      segment.value !== undefined && effectiveShowKnownValues && (
-                        <div className="text-2xl font-bold text-white">{segment.value}</div>
-                      )
-                    )}
-                    <div className="text-xs font-medium text-white/90 px-2 truncate">
-                      {segment.label}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Input for unknown segments */}
-                {isUnknown && showUnknownInputs && !locked && segFeedback !== 'correct' && !isComplete && (
-                  <div className="mt-3">
-                    <SegmentStepper
-                      label={`${segment.label} =`}
-                      value={userAnswers[key] || ''}
-                      onChange={(v) => handleAnswerChange(barIndex, segIdx, v)}
-                      onSubmit={() => onSegmentSubmit?.(barIndex, segIdx)}
-                    />
-                    {segFeedback === 'incorrect' && (
-                      <div className="mt-2 text-center text-red-400 text-sm font-semibold">Not quite — try again!</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
+            return renderCell(segment, segIdx, { minWidth: '80px', flex: comparisonMode ? `0 0 ${widthPct}%` : 1 });
           })}
         </div>
+
+        {/* The whole, one full-width bar under the parts (multi_step) */}
+        {bar.whole && (
+          <div className="flex mt-1">
+            {renderCell(bar.whole, WHOLE_SEGMENT, { flex: 1 })}
+          </div>
+        )}
 
         {/* Comparison alignment line */}
         {comparisonMode && barIndex < bars.length - 1 && (
@@ -1228,30 +1260,42 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
   // =========================================================================
 
   const renderMultiStepMode = () => {
-    const solveOrder = multiStepData?.solveOrder || [2, 3];
-    const currentSolveSegIdx = solveOrder[currentStepIndex];
-    const totalSteps = solveOrder.length;
+    // One entry per step: its bar and the unknown it asks for. Legacy data (one bar, solveOrder) maps to bar 0.
+    const steps = multiStepData?.steps?.length
+      ? multiStepData.steps
+      : (multiStepData?.solveOrder || [2, 3]).map((segment) => ({ bar: 0, segment }));
+    const totalSteps = steps.length;
+    const stepOf = (barIdx: number, segIdx: number) =>
+      steps.findIndex((st) => st.bar === barIdx && st.segment === segIdx);
+    const stepSolved = (i: number) =>
+      !!steps[i] && feedback[getSegmentKey(steps[i].bar, steps[i].segment)] === 'correct';
+    const unknownOf = (i: number) => {
+      const st = steps[i];
+      const bar = bars[st?.bar ?? 0];
+      return st?.segment === WHOLE_SEGMENT ? bar?.whole : bar?.segments[st?.segment ?? 0];
+    };
 
     // Support-tier lever: `lockSteps` (default true) gates whether later steps
     // are locked until earlier ones are solved. hard → false: all unknowns are
     // unlocked and the student may solve them in any order.
-    const isSegmentLocked = (segIdx: number) => {
+    const isSegmentLocked = (barIdx: number, segIdx: number) => {
       if (!lockSteps) return false; // hard tier: nothing locked
-      const orderIdx = solveOrder.indexOf(segIdx);
+      const orderIdx = stepOf(barIdx, segIdx);
       if (orderIdx < 0) return false;
       return orderIdx > currentStepIndex;
     };
 
     const handleMultiStepSubmit = (barIndex: number, segmentIndex: number) => {
       if (isComplete || recordedRef.current) return;
-      // When steps are locked, only the current step's segment is submittable;
-      // when unlocked (hard), any unknown segment may be submitted in any order.
-      if (lockSteps && segmentIndex !== currentSolveSegIdx) return;
-      if (!solveOrder.includes(segmentIndex)) return;
+      const orderIdx = stepOf(barIndex, segmentIndex);
+      if (orderIdx < 0) return;
+      // When steps are locked, only the current step is submittable;
+      // when unlocked (hard), any step may be submitted in any order.
+      if (lockSteps && orderIdx !== currentStepIndex) return;
 
       const key = getSegmentKey(barIndex, segmentIndex);
       const userVal = parseFloat(userAnswers[key]);
-      const segment = bars[barIndex]?.segments[segmentIndex];
+      const segment = unknownOf(orderIdx);
       if (isNaN(userVal) || segment?.value === undefined) return;
 
       const isCorrect = Math.abs(userVal - segment.value) < 0.01;
@@ -1259,7 +1303,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
       trackAttempt(barIndex, segmentIndex, isCorrect);
       if (isCorrect) SoundManager.playCorrect();
       else SoundManager.playIncorrect();
-      if (!isCorrect) noteWrongAnswer(`solve step ${currentStepIndex + 1} ("${segment.label}")`, userVal, segment.value);
+      if (!isCorrect) noteWrongAnswer(`solve step ${orderIdx + 1} ("${segment.label}")`, userVal, segment.value);
 
       const newFeedback = { ...feedback, [key]: (isCorrect ? 'correct' : 'incorrect') as 'correct' | 'incorrect' };
       setFeedback(newFeedback);
@@ -1277,10 +1321,8 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
             }, 1200);
           }
         } else {
-          // Unlocked (hard): complete once every solve-order segment is correct.
-          const allSolved = solveOrder.every((si) =>
-            newFeedback[getSegmentKey(barIndex, si)] === 'correct',
-          );
+          // Unlocked (hard): complete once every step is correct.
+          const allSolved = steps.every((st) => newFeedback[getSegmentKey(st.bar, st.segment)] === 'correct');
           if (allSolved) completeCurrentChallenge(true);
         }
       }
@@ -1292,6 +1334,9 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
         ? multiStepData?.step2Hint
         : multiStepData?.step3Hint || multiStepData?.step2Hint;
 
+    // A bar whose step is still locked is drawn dim: it starts from an answer the learner has not found yet.
+    const barStep = (barIdx: number) => steps.findIndex((st) => st.bar === barIdx);
+
     return (
       <>
         {wordProblem && (
@@ -1302,7 +1347,7 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
 
         {/* Step progress — bespoke FSM step indicator */}
         <div className="flex items-center justify-center gap-4 mb-8">
-          {solveOrder.map((_, i) => (
+          {steps.map((_, i) => (
             <React.Fragment key={i}>
               {i > 0 && <div className="h-px w-8 bg-slate-600"></div>}
               <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
@@ -1323,22 +1368,32 @@ const TapeDiagram: React.FC<TapeDiagramProps> = ({ data, className }) => {
             </div>
             <p className="text-sm text-yellow-200">
               Find the value of <span className="font-bold text-yellow-300">
-                {bars[0]?.segments[currentSolveSegIdx]?.label || 'the unknown'}
+                {unknownOf(currentStepIndex)?.label || 'the unknown'}
               </span>
             </p>
           </LuminaPrompt>
         )}
 
-        <div className="space-y-16">
-          {bars.map((bar, barIndex) =>
-            renderBar(bar, barIndex, {
-              showBracket: showBrackets,
-              bracketLabel: bar.totalLabel || '',
-              showUnknownInputs: true,
-              isSegmentLocked,
-              onSegmentSubmit: handleMultiStepSubmit,
-            }),
-          )}
+        <div className="space-y-10">
+          {bars.map((bar, barIndex) => {
+            const step = barStep(barIndex);
+            const dim = lockSteps && step > currentStepIndex;
+            return (
+              <div key={barIndex} className={dim ? 'opacity-50' : ''}>
+                {bars.length > 1 && step >= 0 && (
+                  <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">Step {step + 1}</div>
+                )}
+                {renderBar(bar, barIndex, {
+                  showBracket: showBrackets && !bar.whole,
+                  bracketLabel: bar.totalLabel || '',
+                  showUnknownInputs: true,
+                  isSegmentLocked: (segIdx) => isSegmentLocked(barIndex, segIdx),
+                  onSegmentSubmit: handleMultiStepSubmit,
+                  isCarriedKnown: stepSolved,
+                })}
+              </div>
+            );
+          })}
         </div>
 
         {Object.values(feedback).some((f) => f === 'incorrect') && !isComplete && (

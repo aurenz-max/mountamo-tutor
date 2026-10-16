@@ -42,6 +42,10 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  *    objective ceiling — each segment value, the part-whole Explore total
  *    (seg0 + seg1, the whole the student types), and the comparison quantities.
  *    Ceiling = ctx.scopeMax ?? topic ceiling ("within 100") ?? a grade-band intrinsic.
+ *  - multi_step chain   : each step is its own bar with its whole drawn under the parts; the whole
+ *    must equal Σ parts (else the step's answer is wrong), each later bar must start from the
+ *    previous step's result, and no bar may carry a "Total = N" over the chain (the 10-13 bug: one
+ *    bar summed start, change, intermediate and answer into "Total = 37" for 8 + 6 - 5).
  *    (Multi-step's Σ-of-segments is NOT scoped — it double-counts intermediates and
  *    is not a magnitude the student ever produces; only the individual values are.)
  *  - clustering        : no exact-duplicate diagram (same ordered segments+flags per
@@ -162,6 +166,37 @@ export const tapeDiagramOracle: ContentOracle = {
             continue;
           }
           magnitudes.push(val);
+        }
+      }
+
+      // ── multi_step chain: whole = Σ parts per step bar; each bar starts from the last result ──
+      if (type === 'multi_step') {
+        let previousResult: number | undefined;
+        for (let b = 0; b < bars.length; b++) {
+          const whole = bars[b].whole;
+          const segs = asRecordArray(bars[b].segments);
+          if (parseStoredTotal(bars[b].totalLabel) !== undefined) {
+            violations.push({ check: 'answer-key-desync', where: `${id}.bar${b}`, detail: `multi_step bar carries "${String(bars[b].totalLabel)}" — a total over the chain sums intermediates and the answer` });
+          }
+          if (!isRecord(whole)) {
+            if (bars.length > 1) violations.push({ check: 'schema', where: `${id}.bar${b}`, detail: `multi_step step bar has no whole` });
+            continue;
+          }
+          if (whole.isUnknown === true) unknownCount++;
+          const wv = whole.value;
+          const sum = segs.reduce((acc, seg) => acc + (typeof seg.value === 'number' ? seg.value : 0), 0);
+          if (typeof wv !== 'number' || Math.abs(wv - sum) >= 0.01) {
+            violations.push({ check: 'answer-key-desync', where: `${id}.bar${b}`, detail: `step whole ${JSON.stringify(wv)} ≠ Σ parts ${sum} — the step's answer is wrong` });
+          } else {
+            magnitudes.push(wv);
+          }
+          // The step's result is its unknown (the whole when adding, a part when taking away).
+          const unknown = whole.isUnknown === true ? whole : segs.find((seg) => seg.isUnknown === true);
+          const carried = [whole, ...segs].find((seg) => typeof seg.carriedFromStep === 'number');
+          if (b > 0 && (!carried || carried.value !== previousResult)) {
+            violations.push({ check: 'answer-key-desync', where: `${id}.bar${b}`, detail: `step ${b + 1} does not start from step ${b}'s result ${previousResult}` });
+          }
+          previousResult = typeof unknown?.value === 'number' ? unknown.value : undefined;
         }
       }
 

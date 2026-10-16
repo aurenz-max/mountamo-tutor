@@ -29,7 +29,11 @@ import { difficultyBand, getItemSpace, resolveItemSpace, tierPick } from "../ite
 import { compareSpec, type CompareItem } from "../itemSpace/compareStories";
 import {
   comparisonBars, comparisonChallengeFromItem, comparisonStoryFits, plainComparison, type WrittenComparison,
+  multiStepBars, multiStepChallengeFromItem, multiStepHint, multiStepStoryFits, plainMultiStep,
+  type ChainStep, type WrittenMultiStep,
 } from "./tapeDiagramItemSpace";
+import type { AddSub20Item } from "../itemSpace/addSub20";
+import { questionFitsSpec } from "../knowledge-check/itemSpaceProblems";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -199,19 +203,21 @@ function resolveSupportStructure(
       };
     case 'multi_step':
     default:
+      // Each step is its own part-whole bar with the whole drawn under the parts, so there is no
+      // total bracket to label or withdraw (a bracket over the chain summed intermediates and answer).
       return {
         showKnownValues: true,
-        bracketLabelMode: tier === 'hard' ? 'unlabeled' : 'total',
+        bracketLabelMode: 'none',
         phaseScaffold: 'full',
         lockSteps: tier !== 'hard',         // hard unlocks all unknowns (any order)
         hideNonAnswerValue: false,
         promptLines: [
           TIER_GUARDRAIL,
           tier === 'easy'
-            ? 'EASY: steps are locked stepwise; BOTH step hints are value-explicit ("add 8 and 5"); the total bracket reads "Total = N".'
+            ? 'EASY: steps are locked stepwise; each step hint names the operation and both numbers ("add 8 and 5").'
             : tier === 'medium'
-              ? 'MEDIUM: steps stay locked, but the hints name only the OPERATION ("add these two", "then subtract"), no values.'
-              : 'HARD: all unknowns are unlocked (solve in any order); hints are question-only ("what do you need before the final answer?"); the total bracket is UNLABELED.',
+              ? 'MEDIUM: steps stay locked, but the hints name only the OPERATION ("add", "subtract"), no values.'
+              : 'HARD: all steps are unlocked (solve in any order); hints are question-only ("what do you need before the final answer?").',
         ],
       };
   }
@@ -469,49 +475,30 @@ const comparisonSchema: Schema = {
 // Schema: Multi-Step mode
 // ===========================================================================
 
-/** Build a multi-step schema for `stepCount` solve steps (2 = default no-tier;
- *  3 = hard-tier extended chain with a second intermediate). */
+/** Build a multi-step schema for `stepCount` steps (2 = default; 3 = hard-tier chain). The model gives
+ *  the start and each step's operation and number; code computes every intermediate and the answer. */
 function buildMultiStepSchema(stepCount: number): Schema {
   const props: Record<string, Schema> = {
-    title: { type: Type.STRING, description: "Title for the multi-step problem" },
-    description: { type: Type.STRING, description: "Educational description" },
+    title: { type: Type.STRING, description: "Title for the multi-step problem (no numbers)" },
+    description: { type: Type.STRING, description: "Educational description (no numbers)" },
     wordProblem: {
       type: Type.STRING,
-      description: `A multi-step word problem requiring ${stepCount} operations to solve. Must describe a situation where the student finds intermediate result(s) first, then uses them.`
+      description: `The story, telling the start and then each of the ${stepCount} changes in order, ending with the question. It states only the start and the change numbers, never a result.`,
     },
-    part1Value: { type: Type.NUMBER, description: "First known value" },
-    part1Label: { type: Type.STRING, description: "Label for first known value" },
-    part2Value: { type: Type.NUMBER, description: "Second known value" },
-    part2Label: { type: Type.STRING, description: "Label for second known value" },
-    intermediateValue: { type: Type.NUMBER, description: "The first intermediate result the student must find (e.g. subtotal)" },
-    intermediateLabel: { type: Type.STRING, description: "Label for the first intermediate result" },
-    finalValue: { type: Type.NUMBER, description: "The final answer that depends on the intermediate result(s)" },
-    finalLabel: { type: Type.STRING, description: "Label for the final answer" },
-    step1Hint: { type: Type.STRING, description: "Brief hint for finding the first intermediate value (e.g. 'Add the first two parts')" },
-    step2Hint: { type: Type.STRING, description: "Brief hint for the next step using the intermediate (e.g. 'Subtract from the total')" },
+    thing: { type: Type.STRING, description: "What is counted, plural (e.g. 'marbles')" },
+    startValue: { type: Type.NUMBER, description: "How many at the start" },
     remediationMove: {
       type: Type.STRING,
       enum: ['explicit_intermediate'],
       description: 'Private structural remediation move; omit when no remediation focus is provided.',
     },
   };
-  const required = [
-    "title", "description", "wordProblem",
-    "part1Value", "part1Label",
-    "part2Value", "part2Label",
-    "intermediateValue", "intermediateLabel",
-    "finalValue", "finalLabel",
-    "step1Hint", "step2Hint",
-  ];
-  if (stepCount >= 3) {
-    // Third known part + a SECOND intermediate so the chain is genuinely 3 steps:
-    // inter1 = f(part1,part2) → inter2 = f(inter1,part3) → final = f(inter2,...).
-    props.part3Value = { type: Type.NUMBER, description: "Third known value (used in the second step)" };
-    props.part3Label = { type: Type.STRING, description: "Label for third known value" };
-    props.intermediate2Value = { type: Type.NUMBER, description: "The SECOND intermediate result, found using the first intermediate and part3" };
-    props.intermediate2Label = { type: Type.STRING, description: "Label for the second intermediate result" };
-    props.step3Hint = { type: Type.STRING, description: "Brief hint for the final step using the second intermediate" };
-    required.push("part3Value", "part3Label", "intermediate2Value", "intermediate2Label", "step3Hint");
+  const required = ["title", "description", "wordProblem", "thing", "startValue"];
+  for (let i = 1; i <= stepCount; i++) {
+    props[`step${i}Op`] = { type: Type.STRING, enum: ['+', '-'], description: `Step ${i}: '+' when some are added, '-' when some are taken away` };
+    props[`step${i}Value`] = { type: Type.NUMBER, description: `Step ${i}: how many are added or taken away` };
+    props[`step${i}Label`] = { type: Type.STRING, description: `Step ${i}: 1-3 words for that change, no numbers (e.g. 'found', 'eaten')` };
+    required.push(`step${i}Op`, `step${i}Value`, `step${i}Label`);
   }
   return { type: Type.OBJECT, properties: props, required };
 }
@@ -779,100 +766,156 @@ async function generateMultiStepMode(
   const shape = tier ? resolveProblemShape('multi_step', tier) : null;
   const tierSection = scopeSection + (tier ? buildTierPromptSection('multi_step', tier) : '')
     + buildTapeRemediationSection('multi_step', remediationFocus);
-  // Structural lever: solve-step count (2 default, 3 at hard). Drives both the
-  // schema (a 3-step chain adds part3 + a second intermediate) and the segment
-  // assembly + solveOrder so the render and the array stay in agreement.
+  // Structural lever: step count (2 default, 3 at hard).
   const stepCount = shape?.stepCount === 3 ? 3 : 2;
   const prompt = `
 Create a multi-step word problem for teaching "${topic}" to ${gradeLevel} students.
 
-This problem requires ${stepCount} operations to solve:
-- Step 1: Find the first intermediate value using the two known parts
-${stepCount >= 3
-  ? '- Step 2: Find a second intermediate value using the first intermediate and part3\n- Step 3: Use the second intermediate to find the final answer'
-  : '- Step 2: Use the intermediate value to find the final answer'}
+Something is counted. The story says how many there are at the start, then tells ${stepCount} changes in order
+(some are added, or some are taken away), and asks how many there are at the end.
 
 ${getNumberGuidance(gradeLevel)}
 
 RULES:
-- All values must be positive integers
-- The first intermediate value must be derivable from part1 and part2 (e.g., their sum)
-- Each later value must require knowing the previous intermediate
-- The step hints should guide toward each step (without giving the answer)
-- Use a single coherent scenario
-
-MATHEMATICAL RELATIONSHIP:
-- intermediateValue = part1Value + part2Value (or a clear operation on them)
-${stepCount >= 3
-  ? '- intermediate2Value = f(intermediateValue, part3Value)\n- finalValue should relate to intermediate2Value via another operation'
-  : '- finalValue should relate to intermediateValue via another operation'}${tierSection}
+- All values are positive whole numbers, and the amount never drops to zero or below at any step
+- Use both adding and taking away across the steps
+- The story states only the start and the change numbers, written in digits; no other number, never a
+  running total or the answer
+- Use a single coherent scenario${tierSection}
 `;
 
-  const result = await ai.models.generateContent({
-    model: "gemini-flash-latest",
-    contents: prompt,
-    config: {
-      thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-      responseMimeType: "application/json",
-      responseSchema: buildMultiStepSchema(stepCount),
-    },
-  });
-
-  const data = result.text ? JSON.parse(result.text) : null;
-  if (!data) throw new Error('No valid multi-step data returned from Gemini API');
-
-  // Build the segment chain + solveOrder so the locked-render and the array
-  // agree (a mismatch would leave an unknown segment unreachable):
-  //   2 steps → [p1, p2, inter(unk), final(unk)]              solveOrder [2,3]
-  //   3 steps → [p1, p2, inter1(unk), p3, inter2(unk), final(unk)] solveOrder [2,4,5]
-  let segments: BarSegment[];
-  let solveOrder: number[];
-  let step3Hint: string | undefined;
-  if (stepCount >= 3) {
-    segments = [
-      { value: data.part1Value, label: data.part1Label },
-      { value: data.part2Value, label: data.part2Label },
-      { value: data.intermediateValue, label: data.intermediateLabel, isUnknown: true },
-      { value: data.part3Value, label: data.part3Label },
-      { value: data.intermediate2Value, label: data.intermediate2Label, isUnknown: true },
-      { value: data.finalValue, label: data.finalLabel, isUnknown: true },
-    ];
-    solveOrder = [2, 4, 5];
-    step3Hint = data.step3Hint;
-  } else {
-    segments = [
-      { value: data.part1Value, label: data.part1Label },
-      { value: data.part2Value, label: data.part2Label },
-      { value: data.intermediateValue, label: data.intermediateLabel, isUnknown: true },
-      { value: data.finalValue, label: data.finalLabel, isUnknown: true },
-    ];
-    solveOrder = [2, 3];
+  // Code owns the arithmetic: the chain is rebuilt from the start and each step, and a chain that
+  // goes below one is asked for again.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: prompt,
+      config: {
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        responseMimeType: "application/json",
+        responseSchema: buildMultiStepSchema(stepCount),
+      },
+    });
+    const data = result.text ? JSON.parse(result.text) : null;
+    if (!data) continue;
+    const thing = String(data.thing || 'things');
+    const chain: ChainStep[] = Array.from({ length: stepCount }, (_, i) => ({
+      op: data[`step${i + 1}Op`] === '-' ? '-' : '+',
+      value: Number(data[`step${i + 1}Value`]),
+      label: String(data[`step${i + 1}Label`] || (data[`step${i + 1}Op`] === '-' ? 'taken away' : 'added')),
+      resultLabel: i === stepCount - 1 ? `${thing} at the end` : `${thing} after step ${i + 1}`,
+    }));
+    const start = Number(data.startValue);
+    const built = multiStepBars(start, `${thing} at first`, chain);
+    if (!built) continue;
+    const answer = built.results[built.results.length - 1];
+    const fits = questionFitsSpec(String(data.wordProblem ?? ''), [start, ...chain.map((c) => c.value)].map(String), String(answer));
+    if (!fits) console.log(`[TapeDiagram] multi_step story off spec, plain story shipped: ${String(data.wordProblem ?? '').slice(0, 200)}`);
+    const story = fits ? String(data.wordProblem) : plainChainStory(thing, start, chain);
+    const hints = chain.map((c, i) => multiStepHint(c.op, i === 0 ? start : 'previous', c.value, tier));
+    return {
+      title: data.title,
+      description: data.description,
+      challenge: {
+        id: 'td-pending',
+        challengeType: 'multi_step',
+        wordProblem: story,
+        remediationMove: remediationFocus ? 'explicit_intermediate' : undefined,
+        bars: built.bars,
+        comparisonMode: false,
+        showBrackets: false,
+        multiStepData: { step1Hint: hints[0], step2Hint: hints[1], step3Hint: hints[2], solveOrder: [], steps: built.steps },
+      },
+    };
   }
+  throw new Error('No valid multi-step chain returned from Gemini API');
+}
 
-  const total = segments.reduce((s, seg) => s + (seg.value || 0), 0);
+/** A correct story built in code, used when the written one drops a number or states a result. */
+function plainChainStory(thing: string, start: number, chain: ChainStep[]): string {
+  const told = chain.map((c, i) => `${i === 0 ? 'Then' : 'Next'} ${c.op === '+' ? `${c.value} more are added` : `${c.value} are taken away`}.`);
+  return `There are ${start} ${thing}. ${told.join(' ')} How many ${thing} are there now?`;
+}
 
-  return {
-    title: data.title,
-    description: data.description,
-    challenge: {
-      id: 'td-pending',
-      challengeType: 'multi_step',
-      wordProblem: data.wordProblem,
-      remediationMove: remediationFocus ? 'explicit_intermediate' : undefined,
-      bars: [{
-        segments,
-        totalLabel: `Total = ${total}`,
-      }],
-      comparisonMode: false,
-      showBrackets: true,
-      multiStepData: {
-        step1Hint: data.step1Hint,
-        step2Hint: data.step2Hint,
-        step3Hint,
-        solveOrder,
+// ===========================================================================
+// multi_step from the add-sub-20 item space (two-step items, tapeDiagramItemSpace.ts)
+// ===========================================================================
+
+const multiStepWordingSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    title: { type: Type.STRING },
+    description: { type: Type.STRING },
+    problems: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          story: { type: Type.STRING, description: 'The word problem, telling the two changes in order and ending with the question.' },
+          thing: { type: Type.STRING, description: "What is counted, plural (e.g. 'shells'). No numbers." },
+          change1: { type: Type.STRING, description: "1-3 words for the first change (e.g. 'found', 'given away'). No numbers." },
+          change2: { type: Type.STRING, description: '1-3 words for the second change. No numbers.' },
+        },
+        required: ['id', 'story', 'thing', 'change1', 'change2'],
       },
     },
-  };
+  },
+  required: ['title', 'description', 'problems'],
+};
+
+/**
+ * Two-step problems picked by code at the tier's beta, or null: no tier, the objective is not
+ * add-sub-20, or the band cannot fill the session. Every item the mode draws has two steps, so the
+ * tier's 3-step lever does not run here; the tier moves bridging ten, subtraction and teen numbers.
+ */
+async function multiStepsFromItemSpace(
+  topic: string, gradeLevel: string, grade: string | undefined, difficulty: string | undefined, count: number,
+): Promise<SubGenResult[] | null> {
+  const band = difficultyBand(difficulty);
+  const tier = normalizeSupportTier(difficulty);
+  if (!band || !tier) return null;
+  const space = await resolveItemSpace(
+    `Lesson: ${topic}. In this activity the learner solves two-step word problems (add, then take away, or the reverse) with a tape diagram.`,
+    grade, ['add-sub-20'],
+  );
+  if (!space) return null;
+  const log = (m: string) => console.log(`[TapeDiagram] Item space ${space}: ${m}`);
+  const twoStep = (it: AddSub20Item) => it.steps.length === 2;
+  const items = tierPick(getItemSpace(space), log, twoStep)(count, band[0], band[1], undefined, twoStep) as AddSub20Item[];
+  if (items.length < count) {
+    log(`band [${band.join(', ')}] gave ${items.length} of ${count}; own path kept`);
+    return null;
+  }
+  let written: { title?: string; description?: string; problems?: (WrittenMultiStep & { id: string })[] } = {};
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-flash-lite-latest',
+      contents: `Write ${count} two-step word problems for ${gradeLevel} students in a lesson on "${topic}". `
+        + `Each is about one kind of thing (a different kind for each problem): how many at the start, then two changes, `
+        + `told in the order of the spec. Use only the numbers in the spec, never state a running total or the answer, `
+        + `and end with the question.\n\n`
+        + items.map((it, i) => `p${i + 1}: ${getItemSpace(space).solve(it).spec}`).join('\n')
+        + `\n\nAlso give a short title and a one-sentence description for the set (no numbers).`,
+      config: { responseMimeType: 'application/json', responseSchema: multiStepWordingSchema, temperature: 0.9 },
+    });
+    written = JSON.parse(response.text ?? '{}');
+  } catch (err) {
+    log(`wording call failed; plain stories shipped (${String(err).slice(0, 120)})`);
+  }
+  const byId = new Map((written.problems ?? []).map((w) => [w.id, w]));
+  let replaced = 0;
+  const title = written.title && !/\d/.test(written.title) ? written.title : 'Two-Step Problems with Tape Diagrams';
+  const description = written.description && !/\d/.test(written.description) ? written.description : 'Solve one step at a time.';
+  const results = items.map((it, i) => {
+    const w = byId.get(`p${i + 1}`);
+    const fits = !!w && multiStepStoryFits(it, w);
+    if (!fits) replaced++;
+    return { title, description, challenge: multiStepChallengeFromItem(it, fits ? w! : plainMultiStep(it), space, tier) };
+  });
+  log(`band [${band.join(', ')}]: ${items.map((it) => `${it.structure}@${it.beta.toFixed(2)}`).join(' ')}`
+    + `${replaced ? `; ${replaced} story(ies) off spec, plain story shipped` : ''}`);
+  return results;
 }
 
 // ===========================================================================
@@ -1019,9 +1062,12 @@ export const generateTapeDiagram = async (
   // solve_comparison with a tier: the space picks the problems and owns their shape (the tier's forced
   // unknown does not run); scaffolds below still follow the tier. A remediation focus keeps the own path
   // (its moves rewrite the unknown).
-  const spaceResults = challengeType === 'solve_comparison' && !ctx.remediationFocus
-    ? await comparisonsFromItemSpace(topic, gradeLevel, ctx.grade, config?.difficulty, instanceCount)
-    : null;
+  const spaceResults = ctx.remediationFocus ? null
+    : challengeType === 'solve_comparison'
+      ? await comparisonsFromItemSpace(topic, gradeLevel, ctx.grade, config?.difficulty, instanceCount)
+      : challengeType === 'multi_step'
+        ? await multiStepsFromItemSpace(topic, gradeLevel, ctx.grade, config?.difficulty, instanceCount)
+        : null;
   const subResults = spaceResults ?? await Promise.all(
     Array.from({ length: instanceCount }, () => runOne(
       topic,

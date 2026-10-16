@@ -11,7 +11,7 @@ Reports: `2026-10-13/REPORT.md`, `2026-10-14/kc-subjects-REPORT.md`.
 
 | # | Item | Executor | State |
 |---|---|---|---|
-| 8.1a | tape-diagram multi_step draws the intermediate and the answer as extra parts of one bar ("Total = 37" for 8 + 6 - 5); fix the diagram, then wire add-sub-20 two-step items | `/eval-fix` then `/add-item-space` | QUEUED 10-14 |
+| 8.1a | tape-diagram multi_step draws the intermediate and the answer as extra parts of one bar ("Total = 37" for 8 + 6 - 5); fix the diagram, then wire add-sub-20 two-step items | `/eval-fix` then `/add-item-space` | **DONE 10-16** — one part-whole bar per step (whole under the parts, step 2 starts from step 1's result, no chain total); code computes every intermediate; tiered K-2 draws add-sub-20 two-step items; oracle checks the chain. Probe `2026-10-16/td-multistep-g1.txt`, HUMAN-CHECKS #185 |
 | 8.1b | Numbers converge with working tier levers: tape-diagram represent (4/6/5) and solve_part_whole (12/8/15 cookies), comparison-builder order | `/add-number-pool-service` | QUEUED 10-14 |
 | 8.1c | knowledge-check offers non-math glyphs as far options on symbol questions ("十", "हू"); KC passes no scope to a space (two-digit compare objective drew 3 vs 14) — add `scopeOf` to compare spaces (pattern from 8.1m) | `/eval-fix` | QUEUED 10-14 |
 | 8.1d | measurement-tools convert is in<->cm with 2.54 (decimal multiplication); 4.MD.A.1 is within one system. **Decided 10-15:** cross-system stays allowed; the objective's grade sets the units (4.MD/5.MD within one system, cross-system only when the objective asks, e.g. 6.RP.3d) | `/eval-fix` | QUEUED 10-15 |

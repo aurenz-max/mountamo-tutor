@@ -39,7 +39,9 @@ const PRINTERS = {
 };
 PRINTERS['addition-fact-strategies'] = (c) => `${c.a} + ${c.b} = ${c.sum}`;
 PRINTERS['tape-diagram'] = (c) => {
-  const bars = (c.bars ?? []).map((b) => '[' + b.segments.map((s) => (s.isUnknown ? `?${s.value}` : s.value)).join('|') + ']').join(' ');
+  const cell = (s) => (s.isUnknown ? `?${s.value}` : s.carriedFromStep != null ? `^${s.value}` : s.value);
+  const bars = (c.bars ?? []).map((b) => '[' + b.segments.map(cell).join('|') + (b.whole ? ` / ${cell(b.whole)}` : '') + ']'
+    + (b.totalLabel && /^Total/.test(b.totalLabel) ? `{${b.totalLabel}}` : '')).join(' ');
   const cd = c.comparisonData ? ` ${c.comparisonData.unknownPart}/${c.comparisonData.comparisonWord}` : '';
   return `${bars}${cd}  Q: ${String(c.wordProblem ?? '').slice(0, 150)}`;
 };

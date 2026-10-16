@@ -13,6 +13,7 @@
  */
 import type { BarSegment, TapeDiagramChallenge } from '../../primitives/visual-primitives/math/TapeDiagram';
 import { comparePlainQuestion, solveCompare, type CompareItem } from '../itemSpace/compareStories';
+import { ADD_SUB_20, solveAddSub20, type AddSub20Item } from '../itemSpace/addSub20';
 import { questionFitsSpec } from '../knowledge-check/itemSpaceProblems';
 
 export interface ComparisonShape {
@@ -88,6 +89,97 @@ export function comparisonChallengeFromItem(
     comparisonMode: true,
     showBrackets: true,
     comparisonData: { quantity1: shape.q1, quantity2: shape.q2, difference: shape.q1 - shape.q2, comparisonWord: shape.comparisonWord, unknownPart: shape.unknownPart },
+    itemSpace: { space, structure: it.structure, beta: it.beta },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// multi_step: one part-whole bar per step
+// ---------------------------------------------------------------------------
+//
+// The old diagram drew start, change, intermediate and answer as four parts of one bar under
+// "Total = N" (8 + 6 - 5 read "Total = 37"). A step is a part-whole of its own: adding puts the
+// start and the change side by side with the result as the whole below; taking away puts the start
+// as the whole, the part taken and the part left above it. The next step's bar starts from the
+// previous result, shown only once that step is solved (`carriedFromStep`).
+
+export interface ChainStep { op: '+' | '-'; value: number; label: string; resultLabel: string }
+
+/** The bars and solve order of a chain `start op1 v1 op2 v2 ...`; null when a result leaves 1..∞. */
+export function multiStepBars(start: number, startLabel: string, chain: ChainStep[]): {
+  bars: TapeDiagramChallenge['bars']; steps: { bar: number; segment: number }[]; results: number[];
+} | null {
+  const bars: TapeDiagramChallenge['bars'] = [];
+  const steps: { bar: number; segment: number }[] = [];
+  const results: number[] = [];
+  let from: BarSegment = { value: start, label: startLabel };
+  let current = start;
+  for (let i = 0; i < chain.length; i++) {
+    const s = chain[i];
+    const next = s.op === '+' ? current + s.value : current - s.value;
+    if (!Number.isInteger(next) || next < 1 || !Number.isInteger(s.value) || s.value < 1) return null;
+    const result: BarSegment = { value: next, label: s.resultLabel, isUnknown: true };
+    if (s.op === '+') {
+      bars.push({ segments: [from, { value: s.value, label: s.label }], whole: result });
+      steps.push({ bar: i, segment: -1 });
+    } else {
+      bars.push({ segments: [{ value: s.value, label: s.label }, result], whole: from });
+      steps.push({ bar: i, segment: 1 });
+    }
+    results.push(next);
+    from = { value: next, label: s.resultLabel, carriedFromStep: i };
+    current = next;
+  }
+  return { bars, steps, results };
+}
+
+/** Step hints at a tier: easy names the operation and both numbers, medium only the operation, hard asks. */
+export function multiStepHint(op: '+' | '-', a: number | 'previous', b: number, tier: 'easy' | 'medium' | 'hard' | null): string {
+  const first = a === 'previous' ? 'your last answer' : String(a);
+  if (tier === 'hard') return 'What do you need to know before you can answer the question?';
+  if (tier === 'medium') return op === '+' ? 'This step joins two amounts. Add.' : 'This step takes some away. Subtract.';
+  return op === '+' ? `Add ${first} and ${b}.` : `Take ${b} away from ${first}.`;
+}
+
+export interface WrittenMultiStep { story: string; thing: string; change1: string; change2: string }
+
+/** The story keeps every number, adds none (no intermediate), never states the answer, and asks. */
+export function multiStepStoryFits(it: AddSub20Item, w: WrittenMultiStep): boolean {
+  const sol = solveAddSub20(it);
+  if (!w.story || !w.thing || !w.change1 || !w.change2) return false;
+  if (/\d/.test(w.thing + w.change1 + w.change2)) return false;
+  return questionFitsSpec(w.story, sol.shown.map(String), String(sol.answer));
+}
+
+export const plainMultiStep = (it: AddSub20Item): WrittenMultiStep => ({
+  story: ADD_SUB_20.plainQuestion(it),
+  thing: 'stickers',
+  change1: it.steps[0].op === '+' ? 'more stickers' : 'given away',
+  change2: it.steps[1].op === '+' ? 'more stickers' : 'given away',
+});
+
+export function multiStepChallengeFromItem(
+  it: AddSub20Item, w: WrittenMultiStep, space: string, tier: 'easy' | 'medium' | 'hard' | null,
+): TapeDiagramChallenge {
+  const [s1, s2] = it.steps;
+  const built = multiStepBars(s1.a, `${w.thing} at first`, [
+    { op: s1.op, value: s1.b, label: w.change1, resultLabel: `${w.thing} after step 1` },
+    { op: s2.op, value: s2.b, label: w.change2, resultLabel: `${w.thing} at the end` },
+  ]);
+  if (!built) throw new Error(`add-sub-20 item ${solveAddSub20(it).expr} leaves 1..20`);
+  return {
+    id: 'td-pending',
+    challengeType: 'multi_step',
+    wordProblem: w.story,
+    bars: built.bars,
+    comparisonMode: false,
+    showBrackets: false,
+    multiStepData: {
+      step1Hint: multiStepHint(s1.op, s1.a, s1.b, tier),
+      step2Hint: multiStepHint(s2.op, 'previous', s2.b, tier),
+      solveOrder: [],
+      steps: built.steps,
+    },
     itemSpace: { space, structure: it.structure, beta: it.beta },
   };
 }
