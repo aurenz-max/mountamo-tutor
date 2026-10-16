@@ -52,9 +52,8 @@ when available; re-check it, since the tree moves.
 1. Lifecycle retest scheduling:
    - `next_retest_eligible`, `RETEST_INTERVALS`
    - the retest branches of `_handle_practice_eval`
-   - the IRT gate derivation that `process_eval_result` writes and the model then overwrites. Once deleted,
-     `process_eval_result` should stop writing gates at all; keep only what something still reads, e.g.
-     `lesson_eval_count` and `global_pass_rate`, if a reader exists.
+   - NOT the IRT gate derivation as a whole. It is the only gate writer for subskills off the learner graph;
+     see "Reader map" below.
 2. `GET /{student_id}/retests/due` and its frontend caller.
 3. `BlockType.RETEST` / `'retest'`: the planner fill branch, `lesson_plan.py`, and `sessionPlanAPI.ts`
    `BlockType` / `SkillStatus`.
@@ -65,6 +64,69 @@ when available; re-check it, since the tree moves.
 
 Firestore docs keep the old fields (`next_retest_eligible`, retest counts). Stop writing them; do not migrate them.
 Any reader left must tolerate their absence.
+
+## Reader map (search 10-16, read-only; re-check before deleting)
+
+**Corrections to the list above. Read these first.**
+
+- **The IRT gate is NOT dead for subskills off the learner graph.** `_sync_lifecycle` runs only when the subskill
+  resolves onto a learner graph (`learner_model/service.py` `observe`, the `key is None` return) and
+  `lifecycle_engine` is set. For off-graph subskills (44 of 1004's 154 lifecycle docs), and for subjects with no
+  graph, `_handle_practice_eval` is the only thing that writes the gate, activation (`_activate_retention`),
+  stability and mastered. Deleting it without a replacement freezes those subskills: no planner unlock, no gate
+  counts in My Progress or the parent report.
+  - Delete only the retest scheduling.
+  - Keep the IRT gate as the off-graph fallback, or ask the user how off-graph subskills should be gated.
+  - Keep `evidence_n`, `review_count`, `completion_pct` and the pass/fail counts; the same handler writes them.
+- **A retest projection is live on a student screen.** `forecast_service.py:51-57` `RETEST_ECHO = 3.0` and
+  `RIDER_SHARE` feed `ReviewLoad` (:185-196), which `ForecastTimeline.tsx:269` shows on `MyProgressPanel` as
+  "≈N reviews/wk · X need their own block". To change it, edit these together:
+  - `models/forecast.py:55-75`, where `review_load` is a required field
+  - `forecastAPI.ts`
+  - `ForecastTimeline.tsx`
+  - `scripts/probe_forecast.py`
+- **`get_weekly_plan` is live and projects no retests.** It is called by `get_daily_plan`,
+  `daily_subject_weights` (daily-mix Pulse) and `_build_daily_session_plan`. Do not delete it. The 3d/7d/14d
+  projection is in `get_monthly_plan` (`planning_service.py:443-454`), which only the dev PlannerDashboard reads.
+
+**Safe to delete** (nothing live reads it; the readers are dev panels, tests, or the harness):
+
+- **Lifecycle engine and model:**
+  - retest field writes: engine `_activate_retention` :490-494 and `_handle_practice_eval` :610-619
+  - `RETEST_INTERVALS`
+  - the model fields `next_retest_eligible` and `retest_interval_days`, if the model ignores extra keys
+  - dead methods: `_handle_lesson_eval` (no callers), `_check_probability_gate`, `planning_service._compute_days_overdue`
+- **`GET /api/mastery/{id}/retests/due`** (`mastery.py:340-369`): no frontend caller. Its query is
+  `firestore_service.get_mastery_retests_due` :2023, mirrored in `pulse_agent/in_memory_firestore.py:1081`.
+- **`BlockType.RETEST`:**
+  - backend: `lesson_plan.py:30` and the cost tables; `lesson_group_service.py` :170-187, :278-284, :317,
+    :359-363, :455, :518-565, :658, :674
+  - tests: `test_lesson_group_service.py` :49, :113-171
+  - frontend union `sessionPlanAPI.ts:19-20`, which must go together with its entries in `DailyLessonPlan.tsx:42`,
+    `SessionBreakScreen.tsx:43-50,177,190`, and `App.tsx:335`
+  - an old stored 'retest' block for today fails validation, and the plan regenerates
+  - `BlockType.PRACTICE` is unreachable too
+- **`SessionReason.MASTERY_RETEST`:** `planning.py:34` and the `get_daily_plan` review branch
+  (`planning_service.py:762-778`; `review_queue` is always `[]`); its tests `test_planning_service.py:241-295`.
+  - PlannerDashboard `SessionRow.tsx:13,73-80` and `types.ts:36-44` are dev-only.
+  - `GATE_LABELS` ('Retest 1/2' in `MasteryComponents.tsx:9`, `PulseSession.tsx:843`, `FrontierContextCard.tsx:46`)
+    are gate names: rename them, do not delete.
+- **Harness:**
+  - `full_loop.py` :162, :317-333, :325, :681-684, :744-757
+  - `run_scenarios.py:472-491,655`
+  - `retest_ab.py`: delete it only after the post-deletion simulator check, or keep it for reading old reports
+  - keep the `reviews_are_pulse_items` assertion (`full_loop.py:1567`) as a regression guard
+- **`next_retest_eligible` readers:** `firestore_analytics.py:325,365` → `analytics.py:85` →
+  `studentAnalyticsAPI.ts:84` → `CurriculumPanel.tsx:95` "Retest due" badge (dev AnalyticsDashboard, now
+  stale). Remove them together.
+
+**Out of scope:**
+- `MasteryLifecycleEngine.get_forecast`, which is stability-based
+- leapfrog retest analytics (`firestore_analytics.py:1623-1798`)
+- misconception "certified retest" receipts, a different system
+- `mastery.py:140-200` `_seed_subskill_to_gate`, the dev seed, already broken
+- the stale docs: the PRDs, `PLANNING_ARCHITECTURE.md`, and `.claude/skills/pulse-agent/SKILL.md:302,343`.
+  Update the skill lines.
 
 ## Gates (verbatim forms in CLAUDE.md "Commands")
 
