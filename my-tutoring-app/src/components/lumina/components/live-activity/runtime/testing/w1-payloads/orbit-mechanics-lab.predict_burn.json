@@ -1,0 +1,72 @@
+{
+ "source": "qa/tutor-reports/orbit-mechanics-lab-runtime-predict_burn-payload-2026-10-16.json",
+ "primitiveId": "orbit-mechanics-lab",
+ "evalMode": "predict_burn",
+ "data": {
+  "title": "Mapping Paths Around Planet Earth",
+  "overview": "Learners will predict how different pushes change the path of a rocket traveling around Earth.",
+  "gradeLevel": "5",
+  "challengeTypes": [
+   "predict_burn"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "predict_burn-1",
+    "mode": "predict_burn",
+    "height": 2.08,
+    "dir": "forward",
+    "size": "big",
+    "choices": [
+     "falls",
+     "closer",
+     "same",
+     "farther",
+     "away"
+    ]
+   },
+   {
+    "id": "predict_burn-2",
+    "mode": "predict_burn",
+    "height": 2.15,
+    "dir": "backward",
+    "size": "small",
+    "choices": [
+     "falls",
+     "closer",
+     "same",
+     "farther",
+     "away"
+    ]
+   },
+   {
+    "id": "predict_burn-3",
+    "mode": "predict_burn",
+    "height": 1.96,
+    "dir": "backward",
+    "size": "big",
+    "choices": [
+     "falls",
+     "closer",
+     "same",
+     "farther",
+     "away"
+    ]
+   },
+   {
+    "id": "predict_burn-4",
+    "mode": "predict_burn",
+    "height": 1.92,
+    "dir": "forward",
+    "size": "small",
+    "choices": [
+     "falls",
+     "closer",
+     "same",
+     "farther",
+     "away"
+    ]
+   }
+  ]
+ }
+}

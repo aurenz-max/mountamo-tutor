@@ -1,109 +1,81 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import * as d3 from 'd3';
-import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
+/**
+ * Orbit Mechanics Lab: a rocket above Earth, gravity, and one task per eval mode (rebuilt 2026-10-16 under the 10-15
+ * ruling; the old lab scored a thrust-slider sandbox, kept the K-1 answer always in the middle and retried until right).
+ * - pick_speed: say or tap the sideways push that makes the rocket fall back, circle, swing out in a stretched loop, or fly away.
+ * - orbit_speed: say or tap the fastest or slowest rocket, or the one with the shortest or longest trip around Earth.
+ * - predict_burn: say or tap what a push forward or backward does to a circling rocket's path.
+ * - circularize: say or tap where and which way to fire once, to turn a stretched loop into a circle.
+ *
+ * Every item is built and keyed by code from the physics (`orbitWorkspace.ts`). Nothing flies before the answer is
+ * checked, and no label says what a push or a rocket does. Two paths, chosen by `withWorkspaceController`: the scripted
+ * path (tester, no tutor) has its own Next and two tries before a reveal; the workspace path (W1, plain shape) commits
+ * every check through `progress.commitCheck` with a named miss, takes a spoken answer judged by the tutor, and lets the
+ * runtime move on. The levers live in `orbitLevers.ts`.
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { OrbitMechanicsLabMetrics } from '../../../evaluation/types';
-import { SoundManager } from '../../../utils/SoundManager';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { LuminaReadAloud } from '../../../ui';
-import {
-  orbitStep,
-  calculateOrbitalElements,
-  orbitPathPoints,
-  initialLaunchState,
-  speedChoicesFor,
-  CORRECT_SPEED_CHOICE,
-  TIME_STEP,
-  KARMAN_LINE_KM,
-  LEO_ALTITUDE_KM,
-  type OrbitState,
-  type OrbitCraftConfig,
-  type OrbitalElements,
-  type SpeedChoiceId,
-} from '../../../service/astronomy/orbitPhysics';
+import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { ReadMeButton } from '../../shared/ReadMeButton';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  answerFlight, askOf, BURN_TEXT, burnResult, choiceKey, choiceLabel, CIRCLE_TEXT, COLOR_HEX, craftLabel,
+  craftPeriod, describeOrbitWork, emptyWork, flightText, isTapItem, loopPoint, orbitCorrect, orbitItems, orbitMiss,
+  PATH_TEXT, pushLabel, pushPath, RE, tapKey, tapLabel, viewKm, workComplete, workspaceAssignment, workspaceScene,
+  type ChoiceItem, type CircleItem, type OrbitItem, type OrbitMode, type OrbitTier, type OrbitWork, type Path,
+  type TapItem,
+} from './orbitWorkspace';
+import {
+  BURN_CARD_LEVER, BURN_CARD_LINES, DROP_LEVER, dropTarget, leverFacts, MARK_POINTS_LEVER, NO_LEVERS, orbitLevers,
+  PULL_CARD_LINE, PULL_LEVER, SAME_SIZE_LEVER, SPEED_ARROWS_LEVER, speedArrows, THROW_CARD_LINE, THROW_LEVER,
+  type OrbitLeverState,
+} from './orbitLevers';
 
-// Export data interface - single source of truth
-export interface OrbitConfig {
-  semiMajorAxis: number;      // km
-  eccentricity: number;       // 0 = circular, 0-1 = elliptical
-  argumentOfPeriapsis?: number; // Rotation angle of orbit (degrees)
-}
+// ============================================================================
+// Data Types (single source of truth; the generator imports them)
+// ============================================================================
 
-export interface OrbitalBody {
-  id: string;
-  name: string;
-  type: 'spacecraft' | 'target' | 'debris';
-  color: string;
-  orbit?: OrbitConfig;
-  position?: { r: number; theta: number }; // Polar coords if not in orbit
-  showTrail?: boolean;
-}
-
-// Rocket configuration matching RocketBuilder concepts
-export interface RocketConfig {
-  massKg: number;           // Total rocket mass in kg (from LLM)
-  propellantMassKg: number; // Fuel mass in kg (from LLM)
-  name?: string;            // Rocket name for display
-}
-
-// Thrust options for student selection
-export interface ThrustConfig {
-  minKN: number;            // Minimum thrust in kN
-  maxKN: number;            // Maximum thrust in kN
-  defaultKN: number;        // Default starting thrust
-  stepKN?: number;          // Step size for slider
-}
+export type { OrbitItem, OrbitMode, OrbitTier };
+/** Legacy names `types.ts` re-exports. */
+export interface OrbitConfig { semiMajorAxis: number; eccentricity: number; argumentOfPeriapsis?: number }
+export interface OrbitalBody { id: string; name: string; type: 'spacecraft' | 'target' | 'debris'; color: string }
 
 export interface OrbitMechanicsLabData {
   title: string;
-  description: string;
-  gradeLevel: 'K' | '1' | '2' | '3' | '4' | '5';
+  description?: string;
+  /** One neutral sentence under the title; never states what a push or a burn does. */
+  overview?: string;
+  /** Grade rung 'K'..'5'. */
+  gradeLevel?: string;
+  /** The eval modes this session asks, in order. */
+  challengeTypes?: OrbitMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: OrbitTier;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: OrbitItem[];
 
-  // Central body configuration
-  centralBody: 'earth' | 'moon' | 'mars' | 'sun';
-  centralBodyRadius: number;  // Visual radius in pixels
-
-  // Rocket configuration (from LLM - connects to RocketBuilder)
-  rocket: RocketConfig;
-  thrustOptions: ThrustConfig;
-
-  // Initial orbital setup
-  initialOrbit?: OrbitConfig;
-  spacecraft?: OrbitalBody;
-  targetOrbit?: OrbitConfig;
-  targetObject?: OrbitalBody;
-
-  // Display options
-  showOrbitPath: boolean;
-  showVelocityVector: boolean;
-  showApogeePerigee: boolean;
-  showOrbitalPeriod: boolean;
-  showTWR: boolean;           // Show thrust-to-weight ratio (like RocketBuilder)
-  showFuelGauge: boolean;     // Show remaining propellant
-  gravityVisualization: 'none' | 'field_lines' | 'well';
-
-  // Interaction options
-  allowLaunch: boolean;
-  allowBurns: boolean;
-  burnMode: 'direction_picker' | 'prograde_retrograde' | 'manual';
-
-  // Challenge configuration
-  challenge?: {
-    type: 'reach_altitude' | 'circularize' | 'rendezvous' | 'change_orbit' | 'reach_orbit';
-    targetAltitude?: number;   // km
-    targetOrbit?: OrbitConfig;
-    maxBurns?: number;
-    description: string;
-    successMessage: string;
-  };
-
-  // Educational hints
-  hints: string[];
-  funFact?: string;
-
-  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -115,1397 +87,660 @@ export interface OrbitMechanicsLabData {
 interface OrbitMechanicsLabProps {
   data: OrbitMechanicsLabData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
 
-/**
- * Build the SVG path for the projected orbit, or `null` when there is nothing
- * closed to draw (on the pad, still burning, crashed, or escaping).
- *
- * Exported because the branch it guards only fires mid-flight, which a render
- * test cannot reach without running the simulation — leaving it inline made it
- * untestable, and an untested `showOrbitPath` is exactly how this flag came to
- * be declared, generated for every grade, and read by nobody.
- */
-export const buildOrbitPathD = (
-  showOrbitPath: boolean,
-  spacecraft: OrbitState | null,
-  cfg: OrbitCraftConfig,
-  worldToScreen: (x: number, y: number) => { x: number; y: number },
-): string | null => {
-  if (!showOrbitPath || !spacecraft) return null;
-  if (spacecraft.isLaunching || spacecraft.hasCrashed || spacecraft.hasEscaped) return null;
-
-  const points = orbitPathPoints(spacecraft, cfg);
-  if (!points) return null;
-
-  return d3.line<{ x: number; y: number }>()
-    .x(p => worldToScreen(p.x, p.y).x)
-    .y(p => worldToScreen(p.x, p.y).y)
-    .curve(d3.curveLinearClosed)(points) || null;
+const MODE_LABEL: Record<OrbitMode, string> = {
+  pick_speed: 'Pick the push', orbit_speed: 'Which rocket?', predict_burn: 'Predict the burn', circularize: 'Make it a circle',
 };
 
-// =============================================================================
-// Central body data (real values)
-// =============================================================================
+// ============================================================================
+// The space view (bespoke SVG). Draws what it is given; a path only once flown.
+// ============================================================================
 
-const CENTRAL_BODY_DATA: Record<string, {
-  radiusKm: number;
-  massKg: number;
-  surfaceGravity: number;
-  fill: string;
-  glow: string;
-  name: string;
-}> = {
-  earth: { radiusKm: 6371, massKg: 5.972e24, surfaceGravity: 9.81, fill: '#4A90E2', glow: '#4A90E2', name: 'Earth' },
-  moon: { radiusKm: 1737, massKg: 7.342e22, surfaceGravity: 1.62, fill: '#A0A0A0', glow: '#C0C0C0', name: 'Moon' },
-  mars: { radiusKm: 3390, massKg: 6.417e23, surfaceGravity: 3.71, fill: '#CD5C5C', glow: '#CD5C5C', name: 'Mars' },
-  sun: { radiusKm: 696340, massKg: 1.989e30, surfaceGravity: 274, fill: '#FDB813', glow: '#FDB813', name: 'Sun' },
-};
+const VIEW = 400;
+const C = 200;
+const FIT = 180;
+const STARS = Array.from({ length: 80 }, (_, i) => {
+  const r = (n: number) => ((Math.sin(i * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1;
+  return { x: r(1) * VIEW, y: r(2) * VIEW, r: 0.4 + r(3) * 0.7, o: 0.15 + r(4) * 0.4 };
+});
 
-/**
- * Time compression for pre-readers. One lap of the "just right" orbit takes
- * ~102 simulated minutes; at the grade 2+ default of 10× that is a 10-minute
- * wait, so "goes around and around" would never be seen. Ascent stays slower so
- * the climb is still watchable, then time opens up once the rocket is coasting.
- */
-const PRE_READER_ASCENT_TIME_SCALE = 60;
-const PRE_READER_COAST_TIME_SCALE = 300;
+type Pt = [number, number];
+const toScreen = (scale: number) => ([x, y]: Pt): Pt => [C + x * scale, C - y * scale];
+const toD = (pts: Pt[]) => pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+const headingDeg = (a: Pt, b: Pt) => (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
 
-interface FlightStats {
-  maxAltitudeKm: number;
-  currentVelocityKmS: number;
-  apogeeKm: number;
-  perigeeKm: number;
-  eccentricity: number;
-  orbitalPeriodMin: number;
-  isInOrbit: boolean;
-  reachedSpace: boolean;
-}
+/** A rocket pointing along +x (rotate it to its heading). */
+const RocketGlyph = ({ color = '#e2e8f0', size = 1 }: { color?: string; size?: number }) => (
+  <g transform={`scale(${size})`}>
+    <polygon points="10,0 -7,-6 -3,0 -7,6" fill={color} stroke="#0f172a" strokeWidth={0.8} />
+  </g>
+);
 
-const EMPTY_FLIGHT_STATS: FlightStats = {
-  maxAltitudeKm: 0,
-  currentVelocityKmS: 0,
-  apogeeKm: 0,
-  perigeeKm: 0,
-  eccentricity: 0,
-  orbitalPeriodMin: 0,
-  isInOrbit: false,
-  reachedSpace: false,
-};
-
-const OrbitMechanicsLab: React.FC<OrbitMechanicsLabProps> = ({ data, className = '' }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
-
-  // Get central body properties
-  const centralBodyProps = CENTRAL_BODY_DATA[data.centralBody] || CENTRAL_BODY_DATA.earth;
-  const bodyRadiusKm = centralBodyProps.radiusKm;
-
-  /**
-   * PRE / EMERGING band gate.
-   *
-   * At K-1 the launch controls were a thrust slider reading "26 kN" and an
-   * angle slider reading "90°", and the only statement of the protocol was
-   * 12px text ("Set thrust and angle, then launch!"). Around them sat three
-   * permanent stat panels — mass in kg, altitude/velocity in km and m/s, a
-   * milestone ledger — none of which a five-year-old can read (PRE contract
-   * rules 1, 2, 4 and 7). The interaction underneath is genuinely K-fit, so
-   * the fix is to gate the chrome and collapse the two continuous controls
-   * into three tappable pictures, NOT to stop routing K here.
-   */
-  const isPreReader = data.gradeLevel === 'K' || data.gradeLevel === '1';
-
-  // Simulation state
-  const [isLaunched, setIsLaunched] = useState(false);
-  const [isPaused, setIsPaused] = useState(true);
-  const [spacecraft, setSpacecraft] = useState<OrbitState | null>(null);
-
-  // Student controls - thrust (kN) and angle (degrees)
-  const [selectedThrustKN, setSelectedThrustKN] = useState(data.thrustOptions?.defaultKN || 500);
-  const [launchAngle, setLaunchAngle] = useState(90); // degrees from horizontal (90 = straight up)
-  const [timeScale, setTimeScale] = useState(10);
-  const [burnCount, setBurnCount] = useState(0);
-  const [selectedBurnDirection, setSelectedBurnDirection] = useState<'prograde' | 'retrograde' | 'normal' | 'antinormal'>('prograde');
-
-  // K-1 only: which of the three speed pictures the child tapped.
-  const [selectedChoiceId, setSelectedChoiceId] = useState<SpeedChoiceId | null>(null);
-
-  // Flight statistics
-  const [flightStats, setFlightStats] = useState<FlightStats>(EMPTY_FLIGHT_STATS);
-
-  // Challenge state
-  const [challengeComplete, setChallengeComplete] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-  const [currentHint, setCurrentHint] = useState(0);
-  const [launchAttempts, setLaunchAttempts] = useState(0);
-
-  // Animation frame ref
-  const animationRef = useRef<number>();
-
-  // Evaluation integration
-  const {
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
-
-  const resolvedInstanceId = useMemo(
-    () => instanceId || `orbit-mechanics-lab-${Date.now()}`,
-    [instanceId],
+/** The flight of an answer: the path draws itself and the rocket rides it (SMIL, started on mount). */
+function FlightPath({ d, lap, color, crash }: { d: string; lap: boolean; color: string; crash: Pt | null }) {
+  const draw = useRef<SVGElement>(null);
+  const ride = useRef<SVGElement>(null);
+  useEffect(() => {
+    (draw.current as unknown as { beginElement?: () => void } | null)?.beginElement?.();
+    (ride.current as unknown as { beginElement?: () => void } | null)?.beginElement?.();
+  }, [d]);
+  return (
+    <g data-flight={lap ? 'lap' : crash ? 'crash' : 'leave'}>
+      <path d={d} fill="none" stroke={color} strokeWidth={2} pathLength={1} strokeDasharray="1" strokeDashoffset={0} opacity={0.8}>
+        <animate ref={draw as never} attributeName="stroke-dashoffset" from="1" to="0" dur="2.5s" begin="indefinite" fill="freeze" />
+      </path>
+      <g>
+        <RocketGlyph color="#f8fafc" />
+        <animateMotion ref={ride as never} dur={lap ? '4s' : '2.5s'} begin="indefinite" fill="freeze" rotate="auto" path={d}
+          {...(lap ? { repeatCount: 'indefinite' } : {})} />
+      </g>
+      {crash && <circle cx={crash[0]} cy={crash[1]} r={6} fill="#fb923c" opacity={0.85} />}
+    </g>
   );
+}
 
-  const {
-    submitResult,
-    hasSubmitted,
-    resetAttempt,
-  } = usePrimitiveEvaluation<OrbitMechanicsLabMetrics>({
+function SpaceView({ label, km, children }: { label: string; km: number; children: React.ReactNode }) {
+  const er = RE * (FIT / km);
+  return (
+    <svg viewBox={`0 0 ${VIEW} ${VIEW}`} className="mx-auto block w-full max-w-[440px] select-none rounded-2xl bg-[#050712]" role="group" aria-label={label}>
+      <defs>
+        <radialGradient id="oml-earth" cx="35%" cy="35%"><stop offset="0%" stopColor="#7fb2e5" /><stop offset="60%" stopColor="#3b7dd8" /><stop offset="100%" stopColor="#1e3a6e" /></radialGradient>
+        <radialGradient id="oml-glow"><stop offset="70%" stopColor="#60a5fa" stopOpacity={0.25} /><stop offset="100%" stopColor="#60a5fa" stopOpacity={0} /></radialGradient>
+      </defs>
+      {STARS.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#e2e8f0" opacity={s.o} />)}
+      <circle cx={C} cy={C} r={er * 1.12} fill="url(#oml-glow)" />
+      <circle cx={C} cy={C} r={er} fill="url(#oml-earth)" />
+      <ellipse cx={C - er * 0.25} cy={C - er * 0.1} rx={er * 0.3} ry={er * 0.2} fill="#4ade80" opacity={0.35} />
+      <ellipse cx={C + er * 0.3} cy={C + er * 0.25} rx={er * 0.22} ry={er * 0.14} fill="#4ade80" opacity={0.35} />
+      {children}
+    </svg>
+  );
+}
+
+// ============================================================================
+// Pictures: the asked outcome, a push arrow, and the lever cards
+// ============================================================================
+
+/** The asked outcome as a picture (a pre-reader hears the ask; this shows it). */
+function OutcomePicture({ path }: { path: Path }) {
+  const ball = <circle cx={24} cy={30} r={9} fill="#3b7dd8" />;
+  const line = { fill: 'none', stroke: '#e2e8f0', strokeWidth: 1.8 } as const;
+  const body = {
+    falls: <>{ball}<path d="M24 8 Q34 10 31 22" {...line} /><circle cx={31} cy={22} r={2.5} fill="#fb923c" /></>,
+    circle: <>{ball}<circle cx={24} cy={30} r={16} {...line} /></>,
+    stretched: <>{ball}<ellipse cx={30} cy={30} rx={22} ry={13} {...line} /></>,
+    away: <>{ball}<path d="M24 12 Q40 12 46 2" {...line} /><polygon points="46,2 41,4 44,8" fill="#e2e8f0" /></>,
+  }[path];
+  return <svg width={52} height={52} viewBox="0 0 52 52" aria-hidden="true" data-asked={path}>{body}</svg>;
+}
+
+/** A push: the rocket with a sideways arrow as long as the push. */
+function PushPicture({ f }: { f: number }) {
+  const len = Math.round(f * 46);
+  return (
+    <svg width={100} height={30} viewBox="0 0 100 30" aria-hidden="true">
+      <g transform="translate(10 15)"><RocketGlyph color="#cbd5e1" /></g>
+      <line x1={22} y1={15} x2={22 + len} y2={15} stroke="#fb923c" strokeWidth={3} />
+      <polygon points={`${26 + len},15 ${20 + len},11 ${20 + len},19`} fill="#fb923c" />
+    </svg>
+  );
+}
+
+function ThrowCard() {
+  return (
+    <LuminaPanel accent="cyan" data-lever="throw-model" className="space-y-2 text-center text-xs text-slate-300">
+      <svg width={260} height={90} viewBox="0 0 260 90" aria-label="A ball thrown sideways from a hill three times" className="mx-auto">
+        <rect x={0} y={78} width={260} height={12} fill="#14532d" />
+        <polygon points="8,78 30,30 52,78" fill="#166534" />
+        {[60, 120, 190].map((x, i) => (
+          <g key={x}>
+            <path d={`M30 30 Q${30 + (x - 30) * 0.45} ${26 - i * 2} ${x} 78`} fill="none" stroke="#e2e8f0" strokeDasharray="3 3" />
+            <circle cx={x} cy={76} r={3} fill="#fbbf24" />
+          </g>
+        ))}
+      </svg>
+      <p>{THROW_CARD_LINE}</p>
+    </LuminaPanel>
+  );
+}
+
+function PullCard() {
+  return (
+    <LuminaPanel accent="cyan" data-lever="pull-card" className="space-y-2 text-center text-xs text-slate-300">
+      <svg width={220} height={110} viewBox="0 0 220 110" aria-label="Earth's pull, drawn as arrows" className="mx-auto">
+        <circle cx={30} cy={55} r={22} fill="#3b7dd8" />
+        {[[64, 26], [110, 15], [170, 8]].map(([x, len]) => (
+          <g key={x}>
+            <line x1={x} y1={55} x2={x - len} y2={55} stroke="#f472b6" strokeWidth={3} />
+            <polygon points={`${x - len - 6},55 ${x - len},51 ${x - len},59`} fill="#f472b6" />
+            <circle cx={x + 4} cy={55} r={3} fill="#cbd5e1" />
+          </g>
+        ))}
+      </svg>
+      <p>{PULL_CARD_LINE}</p>
+    </LuminaPanel>
+  );
+}
+
+function BurnCard() {
+  return (
+    <LuminaPanel accent="cyan" data-lever="burn-card" className="space-y-2 text-xs text-slate-300">
+      <svg width={240} height={80} viewBox="0 0 240 80" aria-label="A different loop: a push changes the other side" className="mx-auto block">
+        <circle cx={60} cy={40} r={8} fill="#64748b" />
+        <ellipse cx={60} cy={40} rx={28} ry={22} fill="none" stroke="#94a3b8" strokeDasharray="3 3" />
+        <ellipse cx={74} cy={40} rx={42} ry={26} fill="none" stroke="#e2e8f0" />
+        <line x1={32} y1={40} x2={32} y2={24} stroke="#fb923c" strokeWidth={3} />
+        <polygon points="32,18 28,25 36,25" fill="#fb923c" />
+        <text x={150} y={36} fontSize={9} fill="#cbd5e1">push forward here:</text>
+        <text x={150} y={48} fontSize={9} fill="#cbd5e1">the other side lifts</text>
+      </svg>
+      {BURN_CARD_LINES.map(l => <p key={l}>{l}</p>)}
+    </LuminaPanel>
+  );
+}
+
+function SpeedArrowsCard({ before, after }: { before: number; after: number }) {
+  const px = (f: number) => Math.round(f * 110);
+  const row = (label: string, f: number, color: string) => (
+    <div className="flex items-center gap-2">
+      <span className="w-24 text-right">{label}</span>
+      <svg width={180} height={14} viewBox="0 0 180 14" aria-hidden="true">
+        <line x1={2} y1={7} x2={px(f)} y2={7} stroke={color} strokeWidth={3} />
+        <polygon points={`${px(f) + 6},7 ${px(f)},3 ${px(f)},11`} fill={color} />
+      </svg>
+    </div>
+  );
+  return (
+    <LuminaPanel accent="cyan" data-lever="speed-arrows" className="space-y-1 text-xs text-slate-300">
+      {row('Speed before', before, '#e2e8f0')}
+      {row('Speed after', after, '#fb923c')}
+    </LuminaPanel>
+  );
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
+type LeverMemo = { item: string } & OrbitLeverState;
+
+/** The loop of a circularize item, sampled for drawing (world km). */
+function loopPoints(item: CircleItem): Pt[] {
+  const rp = item.near * RE, ra = item.far * RE, e = (ra - rp) / (ra + rp), p = rp * (1 + e);
+  const peri = ((item.tilt + 180) * Math.PI) / 180;
+  return Array.from({ length: 121 }, (_, k) => {
+    const nu = (k / 120) * 2 * Math.PI, r = p / (1 + e * Math.cos(nu));
+    return [r * Math.cos(peri + nu), r * Math.sin(peri + nu)] as Pt;
+  });
+}
+
+/** A rocket's round track (world km), clockwise from where it sits. */
+function trackPoints(radiusRe: number, angleDeg: number): Pt[] {
+  const r = radiusRe * RE, a0 = (angleDeg * Math.PI) / 180;
+  return Array.from({ length: 121 }, (_, k) => {
+    const a = a0 - (k / 120) * 2 * Math.PI;
+    return [r * Math.cos(a), r * Math.sin(a)] as Pt;
+  });
+}
+
+const OrbitMechanicsLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  OrbitMechanicsLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<OrbitItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, overview, description, gradeLevel, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+
+  const items = useMemo(() => orbitItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.title, data.gradeLevel]);
+  const stableInstanceId = useRef(instanceId || `orbit-mechanics-lab-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  const item: OrbitItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [work, setWork] = useState<OrbitWork>(emptyWork);
+  /** The checked answer whose flight is on screen (pick_speed, circularize: any check; the others once solved). */
+  const [flown, setFlown] = useState<OrbitWork | null>(null);
+  /** Workspace path: the checked wrong work, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverMemo, setLeverMemo] = useState<LeverMemo>({ item: '', ...NO_LEVERS });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
+
+  const lever: OrbitLeverState = item && leverMemo.item === item.id ? leverMemo : NO_LEVERS;
+  const editLevers = (change: (s: OrbitLeverState) => Partial<OrbitLeverState>) => {
+    const id = item?.id ?? '';
+    setLeverMemo(m => { const s = m.item === id ? m : { item: id, ...NO_LEVERS }; return { ...s, ...change(s), item: id }; });
+  };
+  const leverOn = (id: string) => lever.pulled.includes(id);
+
+  const solvedNow = !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<OrbitMechanicsLabMetrics>({
     primitiveType: 'orbit-mechanics-lab',
     instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit,
+    skillId, subskillId, objectiveId, exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ==========================================================================
-  // Physics configuration — one bag, shared by the animation and the tests
-  // ==========================================================================
-
-  const craftConfig: OrbitCraftConfig = useMemo(() => ({
-    bodyRadiusKm,
-    surfaceGravity: centralBodyProps.surfaceGravity,
-    thrustKN: selectedThrustKN,
-    launchAngle,
-    rocketMassKg: data.rocket?.massKg || 1000,
-    propellantMassKg: data.rocket?.propellantMassKg || 500,
-  }), [bodyRadiusKm, centralBodyProps.surfaceGravity, selectedThrustKN, launchAngle, data.rocket]);
-
-  /**
-   * The three speed pictures. Derived from the rocket's own mass via
-   * thrust-to-weight, so whatever thrust range Gemini emitted still yields one
-   * too-slow, one orbiting and one runaway option.
-   */
-  const speedChoices = useMemo(
-    () => speedChoicesFor(data.rocket?.massKg || 1000, centralBodyProps.surfaceGravity),
-    [data.rocket?.massKg, centralBodyProps.surfaceGravity],
-  );
-
-  // Calculate TWR (Thrust-to-Weight Ratio)
-  const thrustToWeight = useMemo(() => {
-    const rocketMass = data.rocket?.massKg || 1000;
-    const weightN = rocketMass * centralBodyProps.surfaceGravity;
-    const thrustN = selectedThrustKN * 1000;
-    return thrustN / weightN;
-  }, [data.rocket?.massKg, selectedThrustKN, centralBodyProps.surfaceGravity]);
-
-  const canLift = thrustToWeight > 1;
-
-  // Scale for visualization (km to pixels)
-  const visualScale = useMemo(() => {
-    // Scale so Earth fits nicely with room for orbit
-    const targetVisualRadius = Math.min(dimensions.width, dimensions.height) * 0.2;
-    return targetVisualRadius / bodyRadiusKm;
-  }, [dimensions, bodyRadiusKm]);
-
-  // Center of the visualization
-  const center = useMemo(() => ({
-    x: dimensions.width / 2,
-    y: dimensions.height / 2,
-  }), [dimensions]);
-
-  const worldToScreen = useCallback(
-    (x: number, y: number) => ({ x: center.x + x * visualScale, y: center.y - y * visualScale }),
-    [center, visualScale],
-  );
-
-  // ==========================================================================
-  // AI tutoring — the only channel a non-reader has
-  // ==========================================================================
-
-  /** What the child can SEE the rocket doing, in words the tutor may repeat. */
-  const flightState = useMemo(() => {
-    if (!isLaunched || !spacecraft) return 'still on the launch pad';
-    if (spacecraft.hasCrashed) return 'back down on the ground';
-    if (spacecraft.hasEscaped) return 'gone so far away it left the screen';
-    if (spacecraft.isLaunching) return 'flying up away from the ground';
-    if (flightStats.isInOrbit) return 'going around and around';
-    return 'coasting through space';
-  }, [isLaunched, spacecraft, flightStats.isInOrbit]);
-
-  const chosenSpeedLabel = useMemo(() => {
-    if (!selectedChoiceId) return 'nothing yet';
-    return speedChoices.find((c) => c.id === selectedChoiceId)?.label ?? 'nothing yet';
-  }, [selectedChoiceId, speedChoices]);
-
-  // Flat object literal on purpose: assembled behind local statements,
-  // `tutor-test` reports every contextKey as "dynamic — verify at runtime",
-  // which turns a real check into a shrug.
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
   const aiPrimitiveData = useMemo(() => ({
-    title: data.title,
-    gradeLevel: data.gradeLevel ?? 'unspecified',
-    centralBodyName: centralBodyProps.name,
-    speedChoiceNames: speedChoices.map((c) => c.label).join(', '),
-    chosenSpeed: chosenSpeedLabel,
-    flightState,
-    attemptCount: launchAttempts,
-    challengeText: data.challenge?.description ?? 'just explore and watch',
-    funFact: data.funFact ?? '',
-  }), [
-    data.title, data.gradeLevel, data.challenge?.description, data.funFact,
-    centralBodyProps.name, speedChoices, chosenSpeedLabel, flightState, launchAttempts,
-  ]);
-
+    gradeLevel: gradeLevel ?? 'unspecified', mode: item?.mode ?? 'pick_speed', itemIndex: currentIndex + 1,
+    totalItems: items.length, ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
+  }), [gradeLevel, item, currentIndex, items.length, title, currentAttempts]);
   const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'orbit-mechanics-lab',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: data.gradeLevel,
+    primitiveType: 'orbit-mechanics-lab', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: gradeLevel ? (gradeLevel === 'K' ? 'Kindergarten' : `Grade ${gradeLevel}`) : undefined, enabled: !tutorOwned,
   });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
-  // `silent` suppresses only the chat-transcript entry; the socket payload is
-  // unchanged, so the tutor still speaks. A non-silent post would read as if
-  // the child had typed the machine prompt.
-  const readAloud = useCallback((text: string) => {
-    if (!text) return;
-    sendText(
-      `[ORBIT_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
-      { silent: true },
-    );
-  }, [sendText]);
+  const clearItem = () => { setWork(emptyWork()); setFlown(null); setWrongShown(false); setFeedback(null); setScriptedWrongs(0); setScriptedReveal(false); };
 
-  // ORIENT — fires once so a non-reader learns the task without asking.
-  const hasOrientedRef = useRef(false);
-  useEffect(() => {
-    if (hasOrientedRef.current) return;
-    hasOrientedRef.current = true;
-    sendText(
-      `[ORBIT_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
-      + `a rocket lab. They are flying a rocket around ${centralBodyProps.name}. `
-      + `${isPreReader
-        ? 'They choose how fast it goes by tapping ONE of three pictures — a turtle, a rocket and a lightning bolt — and it launches. '
-          + 'Tell them what to do in child words, warmly. Never tell them which picture to pick, and never speak a number or a measurement.'
-        : 'They set thrust and launch angle, then launch. Tell them what to do.'}`,
-      { silent: true },
-    );
-  }, [sendText, isPreReader, centralBodyProps.name]);
+  openItem.current = (_index, retry) => {
+    if (retry) { setWork(emptyWork()); setFlown(null); setWrongShown(false); setFeedback(null); editLevers(s => ({ wrongs: s.wrongs + 1 })); return; }
+    clearItem();
+  };
 
-  // FEEDBACK — one beat per settled flight, so the child hears what happened.
-  const lastReportedFlightRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!isLaunched || !spacecraft || spacecraft.isLaunching) return;
-    const settled = spacecraft.hasCrashed || spacecraft.hasEscaped || flightStats.isInOrbit;
-    if (!settled) return;
+  /** A spoken answer the observer credited: recorded as a correct tap records it, and shown the same way. */
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    const keyWork = isTapItem(solved) ? { pick: tapKey(solved), choice: null } : { pick: null, choice: choiceKey(solved) };
+    setWork(keyWork); setFlown(keyWork); setWrongShown(false);
+  };
 
-    const key = `${launchAttempts}:${flightState}`;
-    if (lastReportedFlightRef.current === key) return;
-    lastReportedFlightRef.current = key;
+  // ── Handlers ──
+  const closed = revealed || wrongShown || learnerBlocked();
+  const tap = (i: number) => {
+    if (!item || !isTapItem(item) || closed || lever.dropped.includes(i)) return;
+    SoundManager.select();
+    setWork({ pick: i, choice: null }); setFlown(null); setFeedback(null);
+  };
+  const choose = (c: string) => {
+    if (!item || isTapItem(item) || closed) return;
+    if (lever.dropped.includes((item.choices as string[]).indexOf(c))) return;
+    SoundManager.select();
+    setWork({ pick: null, choice: c }); setFlown(null); setFeedback(null);
+  };
 
-    sendText(
-      `[ORBIT_FLIGHT_RESULT] The rocket is now ${flightState}. `
-      + `Say in ONE short sentence what it did, using only what they can see. `
-      + `Do not say which speed was right and do not rule any of the choices out. `
-      + `Invite them to try another picture.`,
-      { silent: true },
-    );
-  }, [isLaunched, spacecraft, flightStats.isInOrbit, flightState, launchAttempts, sendText]);
+  /** pick_speed and circularize fly the learner's own answer after any check; the others fly only the answer. */
+  const fliesOwnAnswer = (it: OrbitItem) => it.mode === 'pick_speed' || it.mode === 'circularize';
 
-  // Resize observer
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const updateSize = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
-      }
-    };
-
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
-
-  // Check challenge completion
-  const checkChallengeCompletion = useCallback((state: OrbitState, orbital: OrbitalElements) => {
-    if (!data.challenge) return;
-
-    const { type, targetAltitude } = data.challenge;
-
-    switch (type) {
-      case 'reach_altitude':
-        if (targetAltitude && state.altitudeKm >= targetAltitude) {
-          setChallengeComplete(true);
-        }
-        break;
-      case 'reach_orbit':
-        if (orbital.isInOrbit && state.altitudeKm >= LEO_ALTITUDE_KM) {
-          setChallengeComplete(true);
-        }
-        break;
-      case 'circularize':
-        if (orbital.eccentricity < 0.1 && orbital.isInOrbit) {
-          setChallengeComplete(true);
-        }
-        break;
-      case 'change_orbit':
-        // Check if reached target orbit parameters
-        break;
-    }
-  }, [data.challenge]);
-
-  /**
-   * Time compression actually applied. Pre-readers never see the speed slider,
-   * so the value is chosen for them and changes once the rocket stops burning.
-   */
-  const effectiveTimeScale = isPreReader
-    ? (spacecraft?.isLaunching ? PRE_READER_ASCENT_TIME_SCALE : PRE_READER_COAST_TIME_SCALE)
-    : timeScale;
-
-  // Animation loop
-  useEffect(() => {
-    if (!isLaunched || isPaused || !spacecraft) return;
-    if (spacecraft.hasCrashed || spacecraft.hasEscaped) return;
-
-    let lastTime = performance.now();
-
-    const animate = (currentTime: number) => {
-      const deltaMs = currentTime - lastTime;
-      lastTime = currentTime;
-
-      // Apply time scaling
-      const dt = (deltaMs / 1000) * effectiveTimeScale;
-
-      setSpacecraft(prev => {
-        if (!prev || prev.hasCrashed || prev.hasEscaped) return prev;
-
-        // Run multiple small steps for stability
-        let newState = prev;
-        const steps = Math.max(1, Math.floor(dt / TIME_STEP));
-        const stepDt = dt / steps;
-
-        for (let i = 0; i < steps; i++) {
-          newState = orbitStep(newState, stepDt, newState.isLaunching, craftConfig);
-        }
-
-        // Update flight stats
-        const orbital = calculateOrbitalElements(newState, craftConfig);
-        setFlightStats(stats => ({
-          maxAltitudeKm: Math.max(stats.maxAltitudeKm, newState.altitudeKm),
-          currentVelocityKmS: orbital.velocity,
-          apogeeKm: orbital.apogee,
-          perigeeKm: orbital.perigee,
-          eccentricity: orbital.eccentricity,
-          orbitalPeriodMin: orbital.period,
-          isInOrbit: orbital.isInOrbit,
-          reachedSpace: newState.altitudeKm >= KARMAN_LINE_KM || stats.reachedSpace,
-        }));
-
-        // Check challenge completion
-        if (data.challenge && !challengeComplete) {
-          checkChallengeCompletion(newState, orbital);
-        }
-
-        return newState;
-      });
-
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isLaunched, isPaused, effectiveTimeScale, craftConfig, data.challenge, challengeComplete, checkChallengeCompletion]);
-
-  // Start a flight. No TWR guard — a rocket that cannot lift is a legitimate
-  // outcome at K-1, where "too slow" is one of the three choices and the child
-  // must SEE it fall rather than meet a disabled button reading
-  // "Need More Thrust!" (undecodable, and a dead end).
-  const startFlight = useCallback(() => {
-    SoundManager.pop();
-
-    const nextState = initialLaunchState(craftConfig);
-    setSpacecraft(nextState);
-
-    setIsLaunched(true);
-    setIsPaused(false);
-    setBurnCount(0);
-    setChallengeComplete(false);
-    setLaunchAttempts(prev => prev + 1);
-    setFlightStats(EMPTY_FLIGHT_STATS);
-  }, [craftConfig]);
-
-  // Launch spacecraft (grade 2+ path — keeps the thrust-to-weight gate)
-  const handleLaunch = useCallback(() => {
-    if (!data.allowLaunch || !canLift) {
-      SoundManager.invalid();
+  const check = () => {
+    if (!item || closed || !workComplete(item, work)) return;
+    const correct = orbitCorrect(item, work);
+    progress.commitCheck(describeOrbitWork(item, work), correct, correct ? undefined : orbitMiss(item, work));
+    if (correct || fliesOwnAnswer(item)) setFlown({ ...work });
+    if (correct) {
+      SoundManager.playCorrect(); tappedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} The flight now shows on screen. Praise briefly.`);
       return;
     }
-    startFlight();
-  }, [data.allowLaunch, canLift, startFlight]);
-
-  /**
-   * K-1 path: one tap chooses the speed AND flies it. Tap = choose (PRE rule 2)
-   * — there is no separate Launch step to discover.
-   */
-  const handleSpeedChoice = useCallback((choiceId: SpeedChoiceId) => {
-    const choice = speedChoices.find((c) => c.id === choiceId);
-    if (!choice || !data.allowLaunch) return;
-
-    setSelectedThrustKN(choice.thrustKN);
-    setLaunchAngle(choice.launchAngle);
-    setSelectedChoiceId(choiceId);
-
-    // Fly with THIS choice's numbers rather than waiting a render for state.
-    SoundManager.pop();
-    setSpacecraft(initialLaunchState({
-      ...craftConfig,
-      thrustKN: choice.thrustKN,
-      launchAngle: choice.launchAngle,
-    }));
-    setIsLaunched(true);
-    setIsPaused(false);
-    setBurnCount(0);
-    setChallengeComplete(false);
-    setLaunchAttempts(prev => prev + 1);
-    setFlightStats(EMPTY_FLIGHT_STATS);
-  }, [speedChoices, data.allowLaunch, craftConfig]);
-
-  // Apply orbital burn
-  const handleBurn = useCallback(() => {
-    if (!data.allowBurns || !spacecraft || isPaused || spacecraft.isLaunching) return;
-    SoundManager.tap();
-
-    setSpacecraft(prev => {
-      if (!prev) return prev;
-
-      const { vx, vy } = prev;
-      const v = Math.sqrt(vx * vx + vy * vy);
-      if (v === 0) return prev;
-
-      // Direction unit vectors
-      const progradex = vx / v;
-      const progradey = vy / v;
-      const normalx = -progradey;
-      const normaly = progradex;
-
-      const dv = 0.1; // km/s delta-v per burn
-
-      let dvx = 0;
-      let dvy = 0;
-
-      switch (selectedBurnDirection) {
-        case 'prograde':
-          dvx = progradex * dv;
-          dvy = progradey * dv;
-          break;
-        case 'retrograde':
-          dvx = -progradex * dv;
-          dvy = -progradey * dv;
-          break;
-        case 'normal':
-          dvx = normalx * dv;
-          dvy = normaly * dv;
-          break;
-        case 'antinormal':
-          dvx = -normalx * dv;
-          dvy = -normaly * dv;
-          break;
-      }
-
-      return {
-        ...prev,
-        vx: vx + dvx,
-        vy: vy + dvy,
-      };
-    });
-
-    setBurnCount(prev => prev + 1);
-  }, [data.allowBurns, spacecraft, isPaused, selectedBurnDirection]);
-
-  // Reset simulation
-  const handleReset = useCallback(() => {
-    setIsLaunched(false);
-    setIsPaused(true);
-    setSpacecraft(null);
-    setBurnCount(0);
-    setChallengeComplete(false);
-    setSelectedChoiceId(null);
-    resetAttempt();
-    setFlightStats(EMPTY_FLIGHT_STATS);
-  }, [resetAttempt]);
-
-  // Calculate score
-  const calculateScore = useCallback(() => {
-    if (isPreReader) {
-      // Fewer tries to find the speed that orbits = stronger evidence.
-      if (launchAttempts <= 1) return 100;
-      if (launchAttempts === 2) return 85;
-      if (launchAttempts === 3) return 70;
-      return 60;
+    SoundManager.playIncorrect();
+    if (tutorOwned) {
+      const at = isTapItem(item) ? work.pick! : (item.choices as string[]).indexOf(work.choice!);
+      editLevers(s => ({ picked: [...s.picked, at] }));
+      setWrongShown(true);
+      return;
     }
-
-    if (!data.challenge) return 100;
-
-    if (challengeComplete) {
-      const burnBonus = data.challenge.maxBurns
-        ? Math.max(0, (data.challenge.maxBurns - burnCount) * 10)
-        : 0;
-      return Math.min(100, 80 + burnBonus);
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      const keyWork = isTapItem(item) ? { pick: tapKey(item), choice: null } : { pick: null, choice: choiceKey(item) };
+      setWork(keyWork); setFlown(keyWork);
+      progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer and its flight are now on screen; explain them.`);
+      return;
     }
+    if (!fliesOwnAnswer(item)) setWork(emptyWork());
+    setFeedback(fliesOwnAnswer(item) ? `${flightText(item, work) ?? ''} That is not what was asked. Look again, and try once more.` : 'Not quite. Look again, and try once more.');
+    say(`[ANSWER_INCORRECT] ${describeOrbitWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask what the learner noticed, without naming a choice.`);
+  };
 
-    if (flightStats.isInOrbit) return 60;
-    if (flightStats.reachedSpace) return 40;
-    return 20;
-  }, [isPreReader, launchAttempts, data.challenge, challengeComplete, burnCount, flightStats]);
+  const metrics = (): OrbitMechanicsLabMetrics => {
+    const right = items.filter(i => results.some(r => r.challengeId === i.id && r.correct));
+    return {
+      type: 'orbit-mechanics-lab',
+      challengeType: item?.mode ?? 'pick_speed',
+      challengeCompleted: items.length > 0 && right.length === items.length,
+      launchAttempts: results.length,
+      burnsPerformed: 0,
+      finalOrbitEccentricity: 0,
+      finalOrbitApogee: 0,
+      finalOrbitPerigee: 0,
+      achievedStableOrbit: right.length > 0,
+      reachedOrbit: right.length > 0,
+    };
+  };
 
-  const buildMetrics = useCallback((success: boolean): OrbitMechanicsLabMetrics => ({
-    type: 'orbit-mechanics-lab',
-    challengeType: data.challenge?.type || 'free_exploration',
-    challengeCompleted: success,
-    launchAttempts,
-    burnsPerformed: burnCount,
-    maxBurnsAllowed: data.challenge?.maxBurns,
-    finalOrbitEccentricity: flightStats.eccentricity,
-    finalOrbitApogee: flightStats.apogeeKm,
-    finalOrbitPerigee: flightStats.perigeeKm,
-    achievedStableOrbit: flightStats.isInOrbit,
-    totalMassKg: data.rocket?.massKg,
-    totalThrustKN: selectedThrustKN,
-    thrustToWeightRatio: thrustToWeight,
-    propellantUsedKg: (data.rocket?.propellantMassKg || 0) - (spacecraft?.propellantKg || 0),
-    targetAltitudeReached: data.challenge?.targetAltitude
-      ? flightStats.maxAltitudeKm >= data.challenge.targetAltitude
-      : undefined,
-    reachedOrbit: flightStats.isInOrbit,
-  }), [data.challenge, data.rocket, launchAttempts, burnCount, flightStats, selectedThrustKN, thrustToWeight, spacecraft]);
+  /** Scripted path: Next, and on the last item the session report. Only a first-try answer scores (a second try is
+   *  recorded with its attempts, but a retried item never counts toward the score). */
+  const next = () => {
+    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct && r.attempts === 1).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 50, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
+  };
 
-  // Submit evaluation (grade 2+ — explicit button on challenge completion)
-  const handleSubmitEvaluation = useCallback(() => {
-    if (hasSubmitted || !isLaunched) return;
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), launchAttempts: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
-    const success = challengeComplete || !data.challenge;
-    submitResult(success, calculateScore(), buildMetrics(success), {
-      studentWork: {
-        selectedThrustKN,
-        launchAngle,
-        burnCount,
-        finalStats: flightStats,
-      },
-    });
-  }, [
-    hasSubmitted, isLaunched, challengeComplete, data.challenge, submitResult,
-    calculateScore, buildMetrics, selectedThrustKN, launchAngle, burnCount, flightStats,
-  ]);
-
-  /**
-   * K-1 assessment hides in the mechanics (PRE rule 8): there is no Submit
-   * button and no quiz. Finding the one speed that keeps the rocket going
-   * around IS the measurement, and it submits itself the first time it happens.
-   */
-  const preReaderSucceeded = isPreReader
-    && flightStats.isInOrbit
-    && selectedChoiceId === CORRECT_SPEED_CHOICE;
-
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (!isPreReader || hasSubmitted || hasAutoSubmittedRef.current) return;
-    if (!preReaderSucceeded) return;
-    hasAutoSubmittedRef.current = true;
-
-    submitResult(true, calculateScore(), buildMetrics(true), {
-      studentWork: {
-        selectedThrustKN,
-        launchAngle,
-        chosenSpeed: selectedChoiceId,
-        attempts: launchAttempts,
-      },
-    });
-  }, [
-    isPreReader, hasSubmitted, preReaderSucceeded, submitResult, calculateScore,
-    buildMetrics, selectedThrustKN, launchAngle, selectedChoiceId, launchAttempts,
-  ]);
-
-  // Get grade-appropriate labels
-  const getGradeLabel = useCallback((concept: string) => {
-    const labels: Record<string, Record<string, string>> = {
-      apogee: {
-        K: 'Highest Point', '1': 'Highest Point', '2': 'Highest Point',
-        '3': 'Apogee (High)', '4': 'Apogee', '5': 'Apogee',
-      },
-      perigee: {
-        K: 'Lowest Point', '1': 'Lowest Point', '2': 'Lowest Point',
-        '3': 'Perigee (Low)', '4': 'Perigee', '5': 'Perigee',
-      },
-      eccentricity: {
-        K: 'Shape', '1': 'Shape', '2': 'Orbit Shape',
-        '3': 'Orbit Shape', '4': 'Eccentricity', '5': 'Eccentricity',
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || (isComplete && !solvedNow)) return;
+    const scene = workspaceScene(item, { work: flown ?? work, solved: revealed, flown: !!flown });
+    const levers = revealed ? [] : orbitLevers(item, lever);
+    const onScreen = leverFacts(item, lever);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (!l) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        if (id === DROP_LEVER) {
+          const far = dropTarget(item, lever);
+          if (far === null) return 'Nothing more can be greyed out here; too few would be left.';
+          editLevers(s => ({ pulled: [...s.pulled, id], dropped: [...s.dropped, far] }));
+          if (isTapItem(item) ? work.pick === far : (item.choices as string[]).indexOf(work.choice ?? '') === far) setWork(emptyWork());
+          return true;
+        }
+        editLevers(s => ({ pulled: [...s.pulled, id] }));
+        return true;
       },
     };
-    return labels[concept]?.[data.gradeLevel] || concept;
-  }, [data.gradeLevel]);
+  });
 
-  // Render atmosphere gradient
-  const renderAtmosphere = useCallback(() => {
-    const atmosphereHeight = bodyRadiusKm * 0.015; // Thin atmosphere band
-    const visualAtmosphere = atmosphereHeight * visualScale;
-    const visualBodyRadius = bodyRadiusKm * visualScale;
-
-    return (
-      <g className="atmosphere">
-        {/* Atmosphere glow */}
-        <circle
-          cx={center.x}
-          cy={center.y}
-          r={visualBodyRadius + visualAtmosphere}
-          fill="none"
-          stroke="rgba(135, 206, 235, 0.3)"
-          strokeWidth={visualAtmosphere}
-        />
-        {/* Karman line indicator */}
-        <circle
-          cx={center.x}
-          cy={center.y}
-          r={(bodyRadiusKm + KARMAN_LINE_KM) * visualScale}
-          fill="none"
-          stroke="rgba(255, 255, 255, 0.1)"
-          strokeWidth={1}
-          strokeDasharray="4 4"
-        />
-      </g>
-    );
-  }, [bodyRadiusKm, visualScale, center]);
-
-  // Render target altitude circle
-  const renderTargetAltitude = useCallback(() => {
-    if (!data.challenge?.targetAltitude) return null;
-
-    const targetRadius = (bodyRadiusKm + data.challenge.targetAltitude) * visualScale;
-
-    return (
-      <circle
-        cx={center.x}
-        cy={center.y}
-        r={targetRadius}
-        fill="none"
-        stroke="rgba(34, 197, 94, 0.4)"
-        strokeWidth={2}
-        strokeDasharray="8 4"
-      />
-    );
-  }, [data.challenge?.targetAltitude, bodyRadiusKm, visualScale, center]);
-
-  /**
-   * Projected orbit path.
-   *
-   * `showOrbitPath` was declared on the data interface and set by the generator
-   * for every grade, but nothing ever read it — so the catalog's Kindergarten
-   * rung ("showOrbitPath only") described a feature that did not exist. It
-   * matters most at K: drawing the closed loop is what makes "goes around and
-   * around" legible in the first second, instead of after a full lap.
-   */
-  const orbitPath = useMemo(
-    () => buildOrbitPathD(data.showOrbitPath, spacecraft, craftConfig, worldToScreen),
-    [data.showOrbitPath, spacecraft, craftConfig, worldToScreen],
-  );
-
-  // Render velocity vector
-  const renderVelocityVector = useCallback(() => {
-    if (!data.showVelocityVector || !spacecraft) return null;
-
-    const { x, y, vx, vy } = spacecraft;
-    const screen = worldToScreen(x, y);
-
-    const velocityScale = 50; // Visual scale for velocity vector
-    const endX = screen.x + vx * velocityScale;
-    const endY = screen.y - vy * velocityScale;
-
-    return (
-      <g className="velocity-vector">
-        <line
-          x1={screen.x}
-          y1={screen.y}
-          x2={endX}
-          y2={endY}
-          stroke="#22c55e"
-          strokeWidth={2}
-          markerEnd="url(#arrowhead)"
-        />
-      </g>
-    );
-  }, [data.showVelocityVector, spacecraft, worldToScreen]);
-
-  const visualBodyRadius = bodyRadiusKm * visualScale;
-
-  /** Everything a non-reader would otherwise have to read, in one spoken line. */
-  const spokenBriefing = useMemo(
-    () => [data.title, data.description, data.challenge?.description]
-      .filter(Boolean)
-      .join('. '),
-    [data.title, data.description, data.challenge?.description],
-  );
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
+  // The workspace path keeps the last credited item on screen (its flight) until the session is submitted.
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete && !solvedNow);
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: `flight-${launchAttempts}`,
-    label: 'The rocket and its orbit',
-    solved: isPreReader ? preReaderSucceeded : challengeComplete,
+    scopeId: done || !item ? null : item.id,
+    label: 'The rocket, Earth and your answer',
+    solved: revealed,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
-  return (
-    <div className={`w-full ${className}`}>
-      <div className="max-w-7xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
-        {/* Ambient background */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[150px] opacity-10 bg-purple-500" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[120px] opacity-10 bg-blue-500" />
+  if (!items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title || 'Orbit Mechanics Lab'}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This lab has nothing to ask.</p></LuminaCardContent>
+      </LuminaCard>
+    );
+  }
 
-        <div className="relative z-10">
-          {/* Header */}
-          <div className="mb-6">
-            {/* Mono domain badge is developer chrome — gone for a non-reader. */}
-            {!isPreReader && (
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Astronomy:</span>
-                <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-purple-500/20 text-purple-300 border-purple-500/30">
-                  ORBIT LAB
-                </span>
-              </div>
-            )}
-            <div className="flex items-start gap-3">
-              <div className="flex-1">
-                <h3 className={`font-light text-white mb-2 ${isPreReader ? 'text-4xl' : 'text-3xl'}`}>{data.title}</h3>
-                <p className="text-slate-300 leading-relaxed">{data.description}</p>
-              </div>
-              {isPreReader && (
-                <LuminaReadAloud
-                  iconOnly
-                  size="lg"
-                  accent="cyan"
-                  speaking={isAudioPlaying}
-                  aria-label="Read this to me"
-                  className="flex-shrink-0"
-                  onClick={() => readAloud(spokenBriefing)}
-                />
+  // ── Render pieces ──
+  const km = item ? viewKm(item) : RE * 3;
+  const scale = FIT / km;
+  const S = toScreen(scale);
+  const flight = item && flown ? answerFlight(item, flown) : null;
+  const flightD = flight ? toD(flight.points.map(S)) : null;
+  const crashAt = flight?.end === 'crash' ? S(flight.points[flight.points.length - 1]) : null;
+  const flightColor = revealed ? '#4ade80' : '#fb923c';
+
+  const tapState = (it: TapItem, i: number): AnswerChoiceState => {
+    if (lever.dropped.includes(i)) return 'dimmed';
+    const key = tapKey(it);
+    if (revealed) return i === key ? 'correct' : i === work.pick ? 'incorrect' : 'dimmed';
+    if (wrongShown && work.pick === i) return 'incorrect';
+    return work.pick === i ? 'selected' : 'idle';
+  };
+  const choiceState = (it: ChoiceItem, c: string, i: number): AnswerChoiceState => {
+    if (lever.dropped.includes(i)) return 'dimmed';
+    const key = choiceKey(it);
+    if (revealed) return c === key ? 'correct' : c === work.choice ? 'incorrect' : 'dimmed';
+    if (wrongShown && work.choice === c) return 'incorrect';
+    return work.choice === c ? 'selected' : 'idle';
+  };
+
+  const renderScene = (it: OrbitItem) => {
+    if (it.mode === 'pick_speed' || it.mode === 'predict_burn') {
+      const start = S([0, it.height * RE]);
+      return (
+        <SpaceView km={km} label="The rocket above Earth">
+          {it.mode === 'predict_burn' && (
+            <circle cx={C} cy={C} r={it.height * RE * scale} fill="none" stroke="#94a3b8" strokeDasharray="5 5" opacity={0.6} data-track="circle" />
+          )}
+          {!flightD && (
+            <g transform={`translate(${start[0]} ${start[1]})`}>
+              <RocketGlyph color="#f8fafc" size={1.2} />
+              {it.mode === 'predict_burn' && (() => {
+                const len = it.size === 'small' ? 16 : 42, s = it.dir === 'forward' ? 1 : -1, x0 = s * 12;
+                return (
+                  <g data-push={`${it.size}-${it.dir}`}>
+                    <line x1={x0} y1={-14} x2={x0 + s * len} y2={-14} stroke="#fb923c" strokeWidth={3} />
+                    <polygon points={`${x0 + s * (len + 7)},-14 ${x0 + s * len},-18 ${x0 + s * len},-10`} fill="#fb923c" />
+                  </g>
+                );
+              })()}
+            </g>
+          )}
+          {flightD && <FlightPath key={flightD} d={flightD} lap={flight!.end === 'lap'} color={flightColor} crash={crashAt} />}
+        </SpaceView>
+      );
+    }
+    if (it.mode === 'orbit_speed') {
+      const sameSize = leverOn(SAME_SIZE_LEVER);
+      const tMin = Math.min(...it.crafts.map(craftPeriod));
+      return (
+        <SpaceView km={km} label="Rockets on their tracks around Earth">
+          {it.crafts.map((c, i) => {
+            const pts = trackPoints(c.radius, c.angle).map(S);
+            const d = toD(pts);
+            const dropped = lever.dropped.includes(i);
+            const size = (sameSize ? 1 : c.size) * 1.3;
+            const marked = work.pick === i || (revealed && i === tapKey(it));
+            return (
+              <g key={c.color} data-pip-object={`rocket-${i + 1}`} opacity={dropped ? 0.2 : 1} data-dropped={dropped || undefined}
+                style={{ cursor: closed || dropped ? 'default' : 'pointer' }} onClick={() => tap(i)}>
+                <path d={d} fill="none" stroke={COLOR_HEX[c.color]} strokeDasharray="4 5" opacity={0.45} />
+                {marked && <circle cx={pts[0][0]} cy={pts[0][1]} r={16} fill="none" stroke={revealed && i === tapKey(it) ? '#4ade80' : wrongShown ? '#f87171' : '#e2e8f0'} strokeDasharray={revealed ? undefined : '3 3'} />}
+                <circle cx={pts[0][0]} cy={pts[0][1]} r={18} fill="transparent" style={{ pointerEvents: 'all' }} />
+                {revealed ? (
+                  <g>
+                    <RocketGlyph color={COLOR_HEX[c.color]} size={size} />
+                    <animateMotion dur={`${(3 * craftPeriod(c)) / tMin}s`} repeatCount="indefinite" rotate="auto" path={d} />
+                  </g>
+                ) : (
+                  <g transform={`translate(${pts[0][0]} ${pts[0][1]}) rotate(${headingDeg(pts[0], pts[1])})`}>
+                    <RocketGlyph color={COLOR_HEX[c.color]} size={size} />
+                  </g>
+                )}
+              </g>
+            );
+          })}
+        </SpaceView>
+      );
+    }
+    // circularize
+    const loop = toD(loopPoints(it).map(S));
+    const at = loopPoint(it, it.at);
+    const atS = S([at.x, at.y]), nextS = S([at.x + at.vx * 60, at.y + at.vy * 60]);
+    const near = S([loopPoint(it, 'near').x, loopPoint(it, 'near').y]), far = S([loopPoint(it, 'far').x, loopPoint(it, 'far').y]);
+    return (
+      <SpaceView km={km} label="The rocket on a stretched loop around Earth">
+        <path d={loop} fill="none" stroke="#94a3b8" strokeWidth={1.5} opacity={0.7} data-track="loop" />
+        {it.show === 'ring' && (
+          <circle cx={C} cy={C} r={(it.target === 'far' ? it.far : it.near) * RE * scale} fill="none" stroke="#e2e8f0" strokeDasharray="6 5" opacity={0.7} data-ring="target" />
+        )}
+        {leverOn(MARK_POINTS_LEVER) && (
+          <g data-lever="mark-points">
+            {([[near, 'near point'], [far, 'far point']] as Array<[Pt, string]>).map(([p, w]) => (
+              <g key={w}><circle cx={p[0]} cy={p[1]} r={4} fill="#fbbf24" /><text x={p[0] + 7} y={p[1] - 7} fontSize={11} fill="#fde68a">{w}</text></g>
+            ))}
+          </g>
+        )}
+        {!flightD && (
+          <g transform={`translate(${atS[0]} ${atS[1]}) rotate(${headingDeg(atS, nextS)})`}><RocketGlyph color="#f8fafc" size={1.2} /></g>
+        )}
+        {flightD && <FlightPath key={flightD} d={flightD} lap={flight!.end === 'lap'} color={flightColor} crash={crashAt} />}
+      </SpaceView>
+    );
+  };
+
+  const revealText = (it: OrbitItem): string => {
+    if (it.mode === 'pick_speed') {
+      const path = pushPath(it, it.pushes[tapKey(it)]);
+      const why: Record<Path, string> = {
+        falls: 'Too slow sideways: gravity pulls it down before it can get around Earth.',
+        circle: 'Just fast enough sideways: it keeps falling toward Earth and keeps missing it, all the way around.',
+        stretched: 'Faster than a circle needs: it swings far out, then gravity pulls it back in.',
+        away: 'So fast sideways that gravity cannot pull it back.',
+      };
+      return `The ${pushLabel(it, tapKey(it)).toLowerCase()}: the rocket ${PATH_TEXT[path]}. ${why[path]}`;
+    }
+    if (it.mode === 'orbit_speed') {
+      return `The ${craftLabel(it.crafts[tapKey(it)]).toLowerCase()}. Close to Earth, gravity pulls harder, so a rocket there must go faster to keep missing Earth, and its trip around is shorter. Farther out, rockets go slower and take longer to get around.`;
+    }
+    if (it.mode === 'predict_burn') {
+      const k = burnResult(it);
+      const why = { falls: 'The big push backward took away so much speed that gravity pulls it down.', closer: 'Going a little slower, it falls closer to Earth on the other side of its trip.',
+        same: '', farther: 'Going a little faster, it swings farther out on the other side of its trip.', away: 'The big push forward made it so fast that gravity cannot pull it back.' }[k];
+      return `${BURN_TEXT[k]}. ${why}`;
+    }
+    const k = choiceKey(it);
+    return `${CIRCLE_TEXT[k as keyof typeof CIRCLE_TEXT]}. ${k === 'far_up'
+      ? 'Speeding up at the far point lifts the near side of the loop out to the far point, so the loop becomes a circle there.'
+      : 'Slowing down at the near point lowers the far side of the loop in to the near point, so the loop becomes a circle there.'}`;
+  };
+
+  const tapItem = item && isTapItem(item) ? item : null;
+  const choiceItem = item && !isTapItem(item) ? item : null;
+  const isPre = gradeLevel === 'K' || gradeLevel === '1';
+
+  return (
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{`🚀 ${title || 'Orbit Mechanics Lab'}`}</LuminaCardTitle>
+        {!done && item && !isPre && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {`${MODE_LABEL[item.mode]} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
+        )}
+        {(overview || description) && !done && !isPre && <p className="text-sm text-slate-400">{overview || description}</p>}
+      </LuminaCardHeader>
+
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Lab complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} answered.`}
+          </LuminaFeedbackCard>
+        ) : item && (
+          <>
+            <div className="flex items-center gap-3">
+              {item.mode === 'pick_speed' && <OutcomePicture path={item.ask} />}
+              <LuminaPrompt accent="cyan" className="flex-1">{askOf(item)}</LuminaPrompt>
+              {!tutorOwned && (
+                <ReadMeButton instruction={askOf(item)} ask="Look at the rocket, then answer."
+                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
+                  className="flex-shrink-0" aria-label="Read the question to me" />
               )}
             </div>
-          </div>
 
-          {/* Challenge Banner */}
-          {data.challenge && (
-            <div className={`mb-4 p-4 rounded-xl border ${
-              challengeComplete
-                ? 'bg-green-500/20 border-green-500/30'
-                : 'bg-blue-500/10 border-blue-500/30'
-            }`}>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  {!isPreReader && (
-                    <div className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-1">
-                      {challengeComplete ? 'Challenge Complete!' : 'Challenge'}
-                    </div>
-                  )}
-                  <p className={`${challengeComplete ? 'text-green-300' : 'text-white'} font-medium`}>
-                    {challengeComplete ? data.challenge.successMessage : data.challenge.description}
-                  </p>
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-3">
+              {renderScene(item)}
+              {flown && !revealed && fliesOwnAnswer(item) && (
+                <p className="text-center text-sm text-amber-200" data-flight-result>{flightText(item, flown)}</p>
+              )}
+
+              {item.mode === 'pick_speed' && leverOn(THROW_LEVER) && <ThrowCard />}
+              {item.mode === 'orbit_speed' && leverOn(PULL_LEVER) && <PullCard />}
+              {item.mode === 'predict_burn' && leverOn(SPEED_ARROWS_LEVER) && (() => { const a = speedArrows(item)!; return <SpeedArrowsCard before={a.before} after={a.after} />; })()}
+              {item.mode === 'circularize' && leverOn(BURN_CARD_LEVER) && <BurnCard />}
+
+              {tapItem && (
+                <div className={`grid gap-2 ${tapItem.mode === 'pick_speed' ? (tapItem.pushes.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2') : 'grid-cols-2 sm:grid-cols-4'}`}>
+                  {(tapItem.mode === 'pick_speed' ? tapItem.pushes : tapItem.crafts).map((_, i) => (
+                    <LuminaAnswerChoice key={i} aria-label={tapLabel(tapItem, i)} state={tapState(tapItem, i)}
+                      disabled={closed || lever.dropped.includes(i)} data-dropped={lever.dropped.includes(i) || undefined}
+                      className="flex items-center justify-center p-2" onClick={() => tap(i)}>
+                      {tapItem.mode === 'pick_speed'
+                        ? <PushPicture f={tapItem.pushes[i].f} />
+                        : <span className="flex items-center gap-2 font-semibold">
+                          <span className="inline-block h-3 w-3 rounded-full" style={{ background: COLOR_HEX[tapItem.crafts[i].color] }} />
+                          {craftLabel(tapItem.crafts[i])}
+                        </span>}
+                    </LuminaAnswerChoice>
+                  ))}
                 </div>
-                {/* No read-aloud button here: at K-1 the goal is folded into the
-                    header briefing, so the child meets ONE "read it to me" tap
-                    rather than two competing ones (PRE rule 4). */}
-                {/* Explicit submit is a grade 2+ act; K-1 submits from the mechanics. */}
-                {!isPreReader && challengeComplete && !hasSubmitted && (
-                  <button
-                    onClick={handleSubmitEvaluation}
-                    className="px-4 py-2 bg-green-500/30 hover:bg-green-500/40 border border-green-400/30 text-white rounded-lg text-sm font-medium transition-all"
-                  >
-                    Submit Result
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-          {pip.store && <div {...pip.dock} />}
-          <div {...pip.workspace}>
-          {/* Main Visualization */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Simulation Canvas */}
-            <div className={isPreReader ? 'lg:col-span-4' : 'lg:col-span-3'}>
-              <div
-                ref={containerRef}
-                className="relative glass-panel rounded-2xl border border-white/10 overflow-hidden bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950"
-                style={{ height: isPreReader ? '560px' : '500px' }}
-              >
-                <svg
-                  ref={svgRef}
-                  width={dimensions.width}
-                  height={dimensions.height}
-                  className="absolute top-0 left-0"
-                >
-                  <defs>
-                    <radialGradient id="centralBodyGlow">
-                      <stop offset="0%" stopColor={centralBodyProps.glow} stopOpacity="0.6" />
-                      <stop offset="100%" stopColor={centralBodyProps.glow} stopOpacity="0" />
-                    </radialGradient>
-                    <radialGradient id="earthGradient" cx="30%" cy="30%">
-                      <stop offset="0%" stopColor="#6fa8dc" />
-                      <stop offset="50%" stopColor="#4A90E2" />
-                      <stop offset="100%" stopColor="#2d5a87" />
-                    </radialGradient>
-                    <marker
-                      id="arrowhead"
-                      markerWidth="10"
-                      markerHeight="7"
-                      refX="9"
-                      refY="3.5"
-                      orient="auto"
-                    >
-                      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e" />
-                    </marker>
-                  </defs>
-
-                  {/* Background stars */}
-                  <g className="stars">
-                    {Array.from({ length: 150 }).map((_, i) => (
-                      <circle
-                        key={i}
-                        cx={(Math.sin(i * 127.1) * 0.5 + 0.5) * dimensions.width}
-                        cy={(Math.cos(i * 311.7) * 0.5 + 0.5) * dimensions.height}
-                        r={Math.abs(Math.sin(i * 73.1)) * 1.5 + 0.3}
-                        fill="white"
-                        opacity={Math.abs(Math.sin(i * 47.3)) * 0.5 + 0.2}
-                      />
-                    ))}
-                  </g>
-
-                  {/* Atmosphere */}
-                  {renderAtmosphere()}
-
-                  {/* Target altitude */}
-                  {renderTargetAltitude()}
-
-                  {/* Central body glow */}
-                  <circle
-                    cx={center.x}
-                    cy={center.y}
-                    r={visualBodyRadius * 1.8}
-                    fill="url(#centralBodyGlow)"
-                  />
-
-                  {/* Central body (Earth) */}
-                  <circle
-                    cx={center.x}
-                    cy={center.y}
-                    r={visualBodyRadius}
-                    fill={data.centralBody === 'earth' ? 'url(#earthGradient)' : centralBodyProps.fill}
-                    stroke="rgba(255, 255, 255, 0.2)"
-                    strokeWidth={1}
-                  />
-
-                  {/* Surface details for Earth */}
-                  {data.centralBody === 'earth' && (
-                    <g className="earth-details">
-                      {/* Simplified continents */}
-                      <ellipse
-                        cx={center.x - visualBodyRadius * 0.2}
-                        cy={center.y - visualBodyRadius * 0.1}
-                        rx={visualBodyRadius * 0.3}
-                        ry={visualBodyRadius * 0.2}
-                        fill="rgba(76, 175, 80, 0.4)"
-                      />
-                      <ellipse
-                        cx={center.x + visualBodyRadius * 0.3}
-                        cy={center.y + visualBodyRadius * 0.2}
-                        rx={visualBodyRadius * 0.25}
-                        ry={visualBodyRadius * 0.15}
-                        fill="rgba(76, 175, 80, 0.4)"
-                      />
-                    </g>
-                  )}
-
-                  {/* Projected orbit path — the loop, drawn before it is flown */}
-                  {orbitPath && (
-                    <path
-                      d={orbitPath}
-                      fill="none"
-                      stroke="rgba(147, 197, 253, 0.45)"
-                      strokeWidth={isPreReader ? 3 : 1.5}
-                      strokeDasharray={isPreReader ? undefined : '6 4'}
-                    />
-                  )}
-
-                  {/* Launch pad indicator (when not launched) */}
-                  {!isLaunched && (
-                    <g className="launch-pad">
-                      <rect
-                        x={center.x - 8}
-                        y={center.y - visualBodyRadius - 15}
-                        width={16}
-                        height={15}
-                        fill="#4a5568"
-                        rx={2}
-                      />
-                      <rect
-                        x={center.x - 4}
-                        y={center.y - visualBodyRadius - 25}
-                        width={8}
-                        height={12}
-                        fill="#64b5f6"
-                        rx={1}
-                      />
-                      {/* Rocket icon */}
-                      <polygon
-                        points={`${center.x},${center.y - visualBodyRadius - 30} ${center.x - 4},${center.y - visualBodyRadius - 25} ${center.x + 4},${center.y - visualBodyRadius - 25}`}
-                        fill="#e74c3c"
-                      />
-                    </g>
-                  )}
-
-                  {/* Central body label — a word, so it is a caption not a control */}
-                  {!isPreReader && (
-                    <text
-                      x={center.x}
-                      y={center.y + visualBodyRadius + 25}
-                      textAnchor="middle"
-                      fill="white"
-                      fontSize={14}
-                      className="font-medium"
-                    >
-                      {centralBodyProps.name}
-                    </text>
-                  )}
-
-                  {/* Spacecraft trail */}
-                  {spacecraft && spacecraft.trail.length > 1 && (
-                    <path
-                      d={d3.line<{ x: number; y: number }>()
-                        .x(d => worldToScreen(d.x, d.y).x)
-                        .y(d => worldToScreen(d.x, d.y).y)
-                        .curve(d3.curveBasis)(spacecraft.trail) || ''}
-                      fill="none"
-                      stroke="rgba(100, 200, 255, 0.6)"
-                      strokeWidth={2}
-                    />
-                  )}
-
-                  {/* Spacecraft */}
-                  {spacecraft && !spacecraft.hasCrashed && (
-                    <g transform={`translate(${worldToScreen(spacecraft.x, spacecraft.y).x}, ${worldToScreen(spacecraft.x, spacecraft.y).y})`}>
-                      {/* Thrust flame (when launching) */}
-                      {spacecraft.isLaunching && spacecraft.propellantKg > 0 && (
-                        <g transform={`rotate(${-launchAngle - 90})`}>
-                          <ellipse
-                            cx={0}
-                            cy={15 + Math.random() * 5}
-                            rx={4}
-                            ry={12 + Math.random() * 8}
-                            fill="url(#flameGradient)"
-                          />
-                        </g>
-                      )}
-                      {/* Spacecraft glow */}
-                      <circle r={isPreReader ? 14 : 10} fill="rgba(100, 200, 255, 0.3)" />
-                      {/* Spacecraft body */}
-                      <polygon
-                        points={isPreReader ? '0,-12 8,9 -8,9' : '0,-8 5,6 -5,6'}
-                        fill="#64b5f6"
-                        stroke="white"
-                        strokeWidth={1}
-                        transform={spacecraft.vx !== 0 || spacecraft.vy !== 0
-                          ? `rotate(${Math.atan2(-spacecraft.vx, spacecraft.vy) * 180 / Math.PI})`
-                          : `rotate(${-launchAngle + 90})`
-                        }
-                      />
-                    </g>
-                  )}
-
-                  {/* Crashed indicator — a word at grade 2+, a picture below it */}
-                  {spacecraft?.hasCrashed && (
-                    isPreReader ? (
-                      <text
-                        x={center.x}
-                        y={center.y - visualBodyRadius - 24}
-                        textAnchor="middle"
-                        fontSize={52}
-                        aria-label="The rocket came back down"
-                      >
-                        💥
-                      </text>
-                    ) : (
-                      <text
-                        x={center.x}
-                        y={center.y - visualBodyRadius - 40}
-                        textAnchor="middle"
-                        fill="#ef4444"
-                        fontSize={16}
-                        className="font-bold"
-                      >
-                        CRASHED!
-                      </text>
-                    )
-                  )}
-
-                  {/* Velocity vector */}
-                  {renderVelocityVector()}
-
-                  {/* Flame gradient definition */}
-                  <defs>
-                    <radialGradient id="flameGradient" cx="50%" cy="0%" r="100%">
-                      <stop offset="0%" stopColor="#fff7ed" />
-                      <stop offset="30%" stopColor="#fdba74" />
-                      <stop offset="70%" stopColor="#f97316" />
-                      <stop offset="100%" stopColor="#ea580c" stopOpacity="0" />
-                    </radialGradient>
-                  </defs>
-                </svg>
-
-                {/* ---------------------------------------------------------- */}
-                {/* K-1: three pictures. One tap chooses the speed AND flies.  */}
-                {/* ---------------------------------------------------------- */}
-                {isPreReader && !isLaunched && data.allowLaunch && (
-                  <div className="absolute inset-x-0 bottom-6 flex justify-center gap-4 px-4">
-                    {speedChoices.map(choice => (
-                      <button
-                        key={choice.id}
-                        onClick={() => handleSpeedChoice(choice.id)}
-                        aria-label={choice.label}
-                        className="flex flex-col items-center justify-center w-28 h-28 rounded-3xl bg-white/10 hover:bg-white/20 active:scale-95 border-2 border-white/25 backdrop-blur-md transition-all"
-                      >
-                        <span className="text-5xl leading-none" aria-hidden="true">{choice.emoji}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* K-1: after a flight, one way back — no play/pause, no speed slider */}
-                {isPreReader && isLaunched && (
-                  <div className="absolute inset-x-0 bottom-6 flex justify-center">
-                    <button
-                      onClick={handleReset}
-                      aria-label="Try again"
-                      className="flex items-center justify-center w-24 h-24 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 border-2 border-white/25 backdrop-blur-md transition-all"
-                    >
-                      <span className="text-5xl leading-none" aria-hidden="true">↺</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Launch controls (grade 2+, when not launched) */}
-                {!isPreReader && !isLaunched && data.allowLaunch && (
-                  <div className="absolute bottom-4 left-4 glass-panel backdrop-blur-md rounded-xl border border-white/20 p-4 w-64">
-                    <div className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-3">Launch Settings</div>
-
-                    {/* Thrust selector */}
-                    <div className="mb-3">
-                      <label className="text-xs text-slate-300 mb-1 block">
-                        Thrust: {selectedThrustKN.toLocaleString()} kN
-                      </label>
-                      <input
-                        type="range"
-                        min={data.thrustOptions?.minKN || 100}
-                        max={data.thrustOptions?.maxKN || 1000}
-                        step={data.thrustOptions?.stepKN || 50}
-                        value={selectedThrustKN}
-                        onChange={(e) => setSelectedThrustKN(Number(e.target.value))}
-                        className="w-full"
-                      />
-                    </div>
-
-                    {/* Angle selector */}
-                    <div className="mb-3">
-                      <label className="text-xs text-slate-300 mb-1 block">
-                        Launch Angle: {launchAngle}°
-                      </label>
-                      <input
-                        type="range"
-                        min={45}
-                        max={90}
-                        value={launchAngle}
-                        onChange={(e) => setLaunchAngle(Number(e.target.value))}
-                        className="w-full"
-                      />
-                    </div>
-
-                    {/* TWR indicator */}
-                    {data.showTWR && (
-                      <div className={`mb-3 p-2 rounded-lg ${canLift ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                        <div className="text-xs text-slate-400">Thrust/Weight</div>
-                        <div className={`text-lg font-mono ${canLift ? 'text-green-400' : 'text-red-400'}`}>
-                          {thrustToWeight.toFixed(2)}
-                          {!canLift && ' (Need > 1.0)'}
-                        </div>
-                      </div>
-                    )}
-
-                    <button
-                      onClick={handleLaunch}
-                      disabled={!canLift}
-                      className={`w-full px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
-                        canLift
-                          ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white'
-                          : 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                      }`}
-                    >
-                      {canLift ? '🚀 Launch!' : 'Need More Thrust!'}
-                    </button>
-                  </div>
-                )}
-
-                {/* Flight controls (grade 2+, when launched) */}
-                {!isPreReader && isLaunched && (
-                  <div className="absolute bottom-4 left-4 glass-panel backdrop-blur-md rounded-xl border border-white/20 p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setIsPaused(!isPaused)}
-                        className="px-3 py-1.5 bg-blue-500/30 hover:bg-blue-500/40 border border-blue-400/30 text-white rounded-lg text-sm transition-all"
-                      >
-                        {isPaused ? '▶ Play' : '⏸ Pause'}
-                      </button>
-                      <button
-                        onClick={handleReset}
-                        className="px-3 py-1.5 bg-slate-500/30 hover:bg-slate-500/40 border border-slate-400/30 text-white rounded-lg text-sm transition-all"
-                      >
-                        ↺ Reset
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs text-slate-300">
-                      <span className="font-mono">Speed:</span>
-                      <input
-                        type="range"
-                        min="1"
-                        max="50"
-                        step="1"
-                        value={timeScale}
-                        onChange={(e) => setTimeScale(Number(e.target.value))}
-                        className="w-20"
-                      />
-                      <span className="font-mono">{timeScale}x</span>
-                    </div>
-
-                    {/* Burn controls */}
-                    {data.allowBurns && !spacecraft?.isLaunching && (
-                      <div className="pt-2 border-t border-white/10">
-                        <div className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-2">
-                          Burns: {burnCount}{data.challenge?.maxBurns ? ` / ${data.challenge.maxBurns}` : ''}
-                        </div>
-                        {data.burnMode === 'prograde_retrograde' && (
-                          <div className="flex gap-1 mb-2">
-                            {(['prograde', 'retrograde'] as const).map(dir => (
-                              <button
-                                key={dir}
-                                onClick={() => { SoundManager.select(); setSelectedBurnDirection(dir); }}
-                                className={`px-2 py-1 rounded text-xs transition-all ${
-                                  selectedBurnDirection === dir
-                                    ? 'bg-green-500/40 border-green-400/50 text-green-300'
-                                    : 'bg-white/5 border-white/10 text-slate-400'
-                                } border`}
-                              >
-                                {dir === 'prograde' ? '→ Speed Up' : '← Slow Down'}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        <button
-                          onClick={handleBurn}
-                          disabled={isPaused || (data.challenge?.maxBurns !== undefined && burnCount >= data.challenge.maxBurns)}
-                          className="w-full px-3 py-2 bg-orange-500/30 hover:bg-orange-500/40 disabled:bg-slate-500/20 disabled:text-slate-500 border border-orange-400/30 text-white rounded-lg text-sm font-medium transition-all"
-                        >
-                          🔥 Burn!
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Status indicator — a sentence of protocol text, gone at K-1 */}
-                {!isPreReader && (
-                  <div className="absolute top-4 right-4 glass-panel backdrop-blur-md px-3 py-2 rounded-lg border border-white/20 text-xs text-slate-300">
-                    {!isLaunched ? 'Set thrust and angle, then launch!' :
-                     spacecraft?.isLaunching ? '🚀 Ascending...' :
-                     spacecraft?.hasCrashed ? '💥 Crashed!' :
-                     flightStats.isInOrbit ? '🛰️ In Orbit!' :
-                     flightStats.reachedSpace ? '✨ In Space!' :
-                     'Flying...'}
-                  </div>
-                )}
-              </div>
+              {choiceItem && (
+                <div className={`grid gap-2 ${choiceItem.choices.length > 3 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+                  {(choiceItem.choices as string[]).map((c, i) => (
+                    <LuminaAnswerChoice key={c} aria-label={choiceLabel(choiceItem, c)} state={choiceState(choiceItem, c, i)}
+                      disabled={closed || lever.dropped.includes(i)} data-dropped={lever.dropped.includes(i) || undefined}
+                      className="p-3 text-left font-semibold" onClick={() => choose(c)}>
+                      {choiceLabel(choiceItem, c)}
+                    </LuminaAnswerChoice>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* ------------------------------------------------------------- */}
-            {/* Info Panel — mass in kg, altitude in km, a milestone ledger.   */}
-            {/* All of it is adult chrome, so none of it exists at K-1.        */}
-            {/* ------------------------------------------------------------- */}
-            {!isPreReader && (
-              <div className="space-y-4">
-                {/* Rocket Stats (like RocketBuilder) */}
-                <div className="glass-panel rounded-xl border border-white/10 p-4">
-                  <div className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-3">
-                    {data.rocket?.name || 'Rocket'} Stats
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="p-2 rounded-lg bg-white/5">
-                      <div className="text-xs text-slate-400">Mass</div>
-                      <div className="text-sm font-mono text-white">
-                        {(data.rocket?.massKg || 0).toLocaleString()} kg
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-lg bg-white/5">
-                      <div className="text-xs text-slate-400">Thrust</div>
-                      <div className="text-sm font-mono text-white">
-                        {selectedThrustKN.toLocaleString()} kN
-                      </div>
-                    </div>
-                    {data.showTWR && (
-                      <div className={`p-2 rounded-lg ${canLift ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                        <div className="text-xs text-slate-400">TWR</div>
-                        <div className={`text-sm font-mono ${canLift ? 'text-green-400' : 'text-red-400'}`}>
-                          {thrustToWeight.toFixed(2)}
-                        </div>
-                      </div>
-                    )}
-                    {data.showFuelGauge && (
-                      <div className="p-2 rounded-lg bg-white/5">
-                        <div className="text-xs text-slate-400">Fuel</div>
-                        <div className="text-sm font-mono text-white">
-                          {spacecraft
-                            ? `${spacecraft.propellantKg.toFixed(0)} kg`
-                            : `${(data.rocket?.propellantMassKg || 0).toLocaleString()} kg`
-                          }
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Flight Data */}
-                <div className="glass-panel rounded-xl border border-white/10 p-4">
-                  <div className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-3">Flight Data</div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Altitude</span>
-                      <span className="text-white font-mono">
-                        {spacecraft ? `${spacecraft.altitudeKm.toFixed(1)} km` : '0 km'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Max Altitude</span>
-                      <span className="text-white font-mono">{flightStats.maxAltitudeKm.toFixed(1)} km</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Velocity</span>
-                      <span className="text-white font-mono">{(flightStats.currentVelocityKmS * 1000).toFixed(0)} m/s</span>
-                    </div>
-                    {data.showApogeePerigee && flightStats.isInOrbit && (
-                      <>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-400">{getGradeLabel('apogee')}</span>
-                          <span className="text-white font-mono">{flightStats.apogeeKm.toFixed(0)} km</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-400">{getGradeLabel('perigee')}</span>
-                          <span className="text-white font-mono">{flightStats.perigeeKm.toFixed(0)} km</span>
-                        </div>
-                      </>
-                    )}
-                    {data.showOrbitalPeriod && flightStats.orbitalPeriodMin < Infinity && flightStats.isInOrbit && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Orbit Time</span>
-                        <span className="text-white font-mono">{flightStats.orbitalPeriodMin.toFixed(0)} min</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Status indicators */}
-                <div className="glass-panel rounded-xl border border-white/10 p-4">
-                  <div className="text-[10px] uppercase tracking-widest text-slate-400 font-mono mb-3">Milestones</div>
-                  <div className="space-y-2">
-                    <div className={`flex items-center gap-2 text-sm ${flightStats.reachedSpace ? 'text-green-400' : 'text-slate-500'}`}>
-                      {flightStats.reachedSpace ? '✓' : '○'} Reached Space ({KARMAN_LINE_KM} km)
-                    </div>
-                    <div className={`flex items-center gap-2 text-sm ${flightStats.isInOrbit ? 'text-green-400' : 'text-slate-500'}`}>
-                      {flightStats.isInOrbit ? '✓' : '○'} Stable Orbit
-                    </div>
-                    {data.challenge?.targetAltitude && (
-                      <div className={`flex items-center gap-2 text-sm ${flightStats.maxAltitudeKm >= data.challenge.targetAltitude ? 'text-green-400' : 'text-slate-500'}`}>
-                        {flightStats.maxAltitudeKm >= data.challenge.targetAltitude ? '✓' : '○'} Target: {data.challenge.targetAltitude} km
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Hints */}
-                {data.hints.length > 0 && (
-                  <div className="glass-panel rounded-xl border border-white/10 p-4">
-                    <button
-                      onClick={() => setShowHint(!showHint)}
-                      className="w-full flex items-center justify-between text-sm"
-                    >
-                      <span className="text-slate-400">Need a hint?</span>
-                      <span className="text-blue-400">{showHint ? '▲' : '▼'}</span>
-                    </button>
-                    {showHint && (
-                      <div className="mt-3 pt-3 border-t border-white/10">
-                        <p className="text-slate-300 text-sm">{data.hints[currentHint]}</p>
-                        {data.hints.length > 1 && (
-                          <button
-                            onClick={() => setCurrentHint((currentHint + 1) % data.hints.length)}
-                            className="mt-2 text-xs text-blue-400 hover:text-blue-300"
-                          >
-                            Next hint →
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Fun Fact */}
-                {data.funFact && (
-                  <div className="glass-panel rounded-xl border border-white/10 p-4 bg-purple-500/10">
-                    <div className="text-[10px] uppercase tracking-widest text-purple-300 font-mono mb-2">Fun Fact</div>
-                    <p className="text-slate-300 text-sm">{data.funFact}</p>
-                  </div>
-                )}
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={closed || !workComplete(item, work)} onClick={check}>
+                  {item.mode === 'pick_speed' ? 'Launch and check' : 'Check Answer'}
+                </LuminaActionButton>
               </div>
             )}
-          </div>
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {revealText(item)}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
 
-          </div>
-
-          {/* K-1: the hint is a thing you HEAR, not a disclosure you open */}
-          {isPreReader && data.hints.length > 0 && (
-            <div className="mt-6 flex justify-center">
-              <LuminaReadAloud
-                size="lg"
-                accent="cyan"
-                speaking={isAudioPlaying}
-                label="Tell me what to do"
-                onClick={() => readAloud(data.hints.join(' '))}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+            {!tutorOwned && revealed && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
+              </div>
+            )}
+          </>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const OrbitMechanicsLab = withWorkspaceController<OrbitMechanicsLabProps, ProgressOptions<OrbitItem>, Progress>(
+  'orbit-mechanics-lab', OrbitMechanicsLabSurface, useScriptedProgress, useWorkspaceProgressFor('orbit-mechanics-lab'));
 
 export default OrbitMechanicsLab;

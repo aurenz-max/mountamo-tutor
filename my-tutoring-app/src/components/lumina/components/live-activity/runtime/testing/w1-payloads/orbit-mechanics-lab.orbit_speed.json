@@ -1,0 +1,140 @@
+{
+ "source": "qa/tutor-reports/orbit-mechanics-lab-runtime-orbit_speed-payload-2026-10-16.json",
+ "primitiveId": "orbit-mechanics-lab",
+ "evalMode": "orbit_speed",
+ "data": {
+  "title": "Rocket Trips Around Earth",
+  "overview": "You will pick which rocket on its track around Earth takes the shortest or longest trip around.",
+  "gradeLevel": "2",
+  "challengeTypes": [
+   "orbit_speed"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "orbit_speed-1",
+    "mode": "orbit_speed",
+    "ask": "slowest",
+    "crafts": [
+     {
+      "color": "red",
+      "radius": 1.86,
+      "angle": 344,
+      "size": 0.95
+     },
+     {
+      "color": "yellow",
+      "radius": 2.77,
+      "angle": 68,
+      "size": 0.8
+     },
+     {
+      "color": "green",
+      "radius": 1.49,
+      "angle": 239,
+      "size": 1.1
+     },
+     {
+      "color": "blue",
+      "radius": 2.33,
+      "angle": 147,
+      "size": 1.35
+     }
+    ]
+   },
+   {
+    "id": "orbit_speed-2",
+    "mode": "orbit_speed",
+    "ask": "longest_trip",
+    "crafts": [
+     {
+      "color": "red",
+      "radius": 1.88,
+      "angle": 261,
+      "size": 0.95
+     },
+     {
+      "color": "green",
+      "radius": 2.96,
+      "angle": 188,
+      "size": 0.8
+     },
+     {
+      "color": "blue",
+      "radius": 2.37,
+      "angle": 355,
+      "size": 1.1
+     },
+     {
+      "color": "yellow",
+      "radius": 1.5,
+      "angle": 86,
+      "size": 1.35
+     }
+    ]
+   },
+   {
+    "id": "orbit_speed-3",
+    "mode": "orbit_speed",
+    "ask": "fastest",
+    "crafts": [
+     {
+      "color": "yellow",
+      "radius": 2.36,
+      "angle": 88,
+      "size": 1.1
+     },
+     {
+      "color": "blue",
+      "radius": 1.66,
+      "angle": 260,
+      "size": 0.95
+     },
+     {
+      "color": "green",
+      "radius": 1.98,
+      "angle": 189,
+      "size": 1.35
+     },
+     {
+      "color": "red",
+      "radius": 1.41,
+      "angle": 3,
+      "size": 0.8
+     }
+    ]
+   },
+   {
+    "id": "orbit_speed-4",
+    "mode": "orbit_speed",
+    "ask": "shortest_trip",
+    "crafts": [
+     {
+      "color": "green",
+      "radius": 1.75,
+      "angle": 144,
+      "size": 1.1
+     },
+     {
+      "color": "blue",
+      "radius": 1.48,
+      "angle": 232,
+      "size": 0.95
+     },
+     {
+      "color": "red",
+      "radius": 2.08,
+      "angle": 317,
+      "size": 0.8
+     },
+     {
+      "color": "yellow",
+      "radius": 2.54,
+      "angle": 46,
+      "size": 1.35
+     }
+    ]
+   }
+  ]
+ }
+}

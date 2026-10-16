@@ -1,18 +1,10 @@
 /**
  * Orbit Mechanics Lab — pure physics core.
  *
- * WHY THIS MODULE EXISTS
- * ----------------------
- * The integration step, the orbital-element solve and the projected orbit path
- * all used to live inside `OrbitMechanicsLab.tsx` as closures over component
- * state. That made them untestable, so the Kindergarten speed presets below
- * could only ever have been *asserted* — never *proved* — to produce three
- * different outcomes.
- *
- * Everything here is pure. The component calls these functions rather than
- * keeping its own copy, so a test that simulates a launch is exercising the
- * SAME code the child's rocket flies on. If these two ever diverge the presets
- * become decoration, which is exactly the failure this module prevents.
+ * Gravity, the orbital-element solve and a projected orbit path, pure. Since the 2026-10-16 rebuild the lab's items
+ * and keys (`orbitWorkspace.ts`) read `calculateOrbitalElements` and `gravitationalParameter` from here: a rocket's
+ * path (falls, circle, stretched loop, flies away) is decided by these numbers, never by a model or a preset.
+ * The thrust launch (`orbitStep`, `simulateLaunch`) is the old lab's ascent; no item uses it.
  */
 
 // ============================================================================
@@ -291,72 +283,7 @@ export const orbitPathPoints = (
 };
 
 // ============================================================================
-// Kindergarten / Grade-1 speed choices
-// ============================================================================
-
-export type SpeedChoiceId = 'slow' | 'justRight' | 'fast';
-
-export interface SpeedChoice {
-  id: SpeedChoiceId;
-  emoji: string;
-  /**
-   * Word caption and accessible name. At PRE it is decoration — the tutor
-   * speaks the choice — but it must still describe the SPEED and never the
-   * correctness: a button labelled "Just right" hands over the answer to
-   * anyone who can read it, or to any child it is read aloud to.
-   */
-  label: string;
-  thrustKN: number;
-  launchAngle: number;
-}
-
-/**
- * Thrust-to-weight targets, chosen from a sweep of the real `orbitStep` physics
- * across every grade's rocket rung (propellant is 60% of mass at all of them,
- * so outcome depends on TWR alone and these generalise):
- *
- *   TWR 0.90 → never leaves the pad, falls back            → "too slow"
- *   TWR 1.02 → orbit, e≈0.11, apogee ≈1,700 km, on screen  → "just right"
- *   TWR 2.50 → orbit, e≈0.72, apogee ≈33,000 km, far off   → "too fast"
- *
- * `orbitPhysics.test.ts` re-derives all three from `orbitStep` on every run, so
- * a physics change that collapses them into the same outcome fails the build
- * instead of silently making the child's choice meaningless.
- */
-export const SPEED_CHOICE_TWR: Record<SpeedChoiceId, number> = {
-  slow: 0.90,
-  justRight: 1.02,
-  fast: 2.50,
-};
-
-/** The one choice that actually orbits — the K/G1 answer. */
-export const CORRECT_SPEED_CHOICE: SpeedChoiceId = 'justRight';
-
-/**
- * Build the three tappable speed choices for a given rocket.
- *
- * Derived from the rocket's own mass rather than hardcoded kN, so any thrust
- * range Gemini emits still yields one too-slow, one orbiting and one runaway
- * option. Values are NOT clamped into `thrustOptions` — that range exists to
- * bound the grade 2+ slider, and clamping "too slow" up into it would erase the
- * failure the K task is built on.
- */
-export const speedChoicesFor = (
-  rocketMassKg: number,
-  surfaceGravity: number,
-): SpeedChoice[] => {
-  const kNFor = (twr: number) =>
-    Math.max(1, Math.round((twr * rocketMassKg * surfaceGravity) / 1000));
-
-  return [
-    { id: 'slow', emoji: '🐢', label: 'Slow', thrustKN: kNFor(SPEED_CHOICE_TWR.slow), launchAngle: 90 },
-    { id: 'justRight', emoji: '🚀', label: 'Medium', thrustKN: kNFor(SPEED_CHOICE_TWR.justRight), launchAngle: 90 },
-    { id: 'fast', emoji: '⚡', label: 'Super fast', thrustKN: kNFor(SPEED_CHOICE_TWR.fast), launchAngle: 90 },
-  ];
-};
-
-// ============================================================================
-// Headless launch simulation — used by tests to prove the presets differ
+// Headless launch simulation (the old thrust ascent)
 // ============================================================================
 
 export type LaunchOutcome = 'crash' | 'orbit' | 'escape' | 'timeout';

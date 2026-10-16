@@ -1,0 +1,84 @@
+{
+ "source": "qa/tutor-reports/orbit-mechanics-lab-runtime-pick_speed-payload-2026-10-16.json",
+ "primitiveId": "orbit-mechanics-lab",
+ "evalMode": "pick_speed",
+ "data": {
+  "title": "Send a Rocket Around Earth",
+  "overview": "You will try different pushes to see where the rocket goes.",
+  "gradeLevel": "K",
+  "challengeTypes": [
+   "pick_speed"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "pick_speed-1",
+    "mode": "pick_speed",
+    "height": 1.59,
+    "ask": "away",
+    "pushes": [
+     {
+      "f": 1
+     },
+     {
+      "f": 1.6
+     },
+     {
+      "f": 0.52
+     }
+    ]
+   },
+   {
+    "id": "pick_speed-2",
+    "mode": "pick_speed",
+    "height": 1.69,
+    "ask": "falls",
+    "pushes": [
+     {
+      "f": 1
+     },
+     {
+      "f": 1.59
+     },
+     {
+      "f": 0.51
+     }
+    ]
+   },
+   {
+    "id": "pick_speed-3",
+    "mode": "pick_speed",
+    "height": 1.79,
+    "ask": "circle",
+    "pushes": [
+     {
+      "f": 1
+     },
+     {
+      "f": 0.58
+     },
+     {
+      "f": 1.5
+     }
+    ]
+   },
+   {
+    "id": "pick_speed-4",
+    "mode": "pick_speed",
+    "height": 1.63,
+    "ask": "away",
+    "pushes": [
+     {
+      "f": 0.5
+     },
+     {
+      "f": 1.6
+     },
+     {
+      "f": 1
+     }
+    ]
+   }
+  ]
+ }
+}

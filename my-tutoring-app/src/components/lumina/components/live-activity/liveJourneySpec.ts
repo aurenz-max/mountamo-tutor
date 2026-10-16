@@ -282,6 +282,8 @@ import { shadowHarnessAnswers } from '../../primitives/visual-primitives/astrono
 import { planetHarnessAnswers, planetItems } from '../../primitives/visual-primitives/astronomy/planetaryExplorerWorkspace';
 import { choiceLabel as telescopeChoiceLabel, isTapItem as telescopeTapItem, skyTarget, telescopeHarnessAnswers, telescopeItems }
   from '../../primitives/visual-primitives/astronomy/telescopeWorkspace';
+import { choiceLabel as orbitChoiceLabel, isTapItem as orbitTapItem, orbitHarnessAnswers, orbitItems, tapLabel as orbitTapLabel }
+  from '../../primitives/visual-primitives/astronomy/orbitWorkspace';
 import { reactionHarnessAnswers, reactionItems } from '../../primitives/visual-primitives/chemistry/reactionLabWorkspace';
 import { phHarnessAnswers, phItems } from '../../primitives/visual-primitives/chemistry/phExplorerWorkspace';
 import { fewerChoices as phFewerChoices, practiceParent as phPracticeParent } from '../../primitives/visual-primitives/chemistry/phExplorerLevers';
@@ -4147,6 +4149,26 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const answers = telescopeHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
       if (telescopeTapItem(item)) return [{ type: 'touch', target: skyTarget(work.pick!) }, { type: 'check' }];
       return [{ type: 'choose', label: telescopeChoiceLabel(item, work.choice!) }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'orbit-mechanics-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/astronomy/OrbitMechanicsLab.tsx',
+    instanceId: 'orbit-mechanics-lab',
+    defaults: { grade: 'Grade 4', mode: 'pick_speed', di: false, topic: 'How a rocket stays in orbit around Earth' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE', 'READ_CHALLENGE'],
+    prompts: WORKSPACE_PROMPTS,
+    // pick_speed taps one push and orbit_speed one rocket (each button's aria-label is its push size or rocket colour);
+    // predict_burn and circularize tap one choice by its words. Each then presses the check. A wrong answer shows the
+    // mode's first-listed miss the item can.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = orbitItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error(`No current orbit-mechanics-lab item ${ctx.itemId}`);
+      const answers = orbitHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      if (orbitTapItem(item)) return [{ type: 'choose', label: orbitTapLabel(item, work.pick!) }, { type: 'check' }];
+      return [{ type: 'choose', label: orbitChoiceLabel(item, work.choice!) }, { type: 'check' }];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

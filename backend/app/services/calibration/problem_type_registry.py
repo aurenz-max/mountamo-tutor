@@ -1106,7 +1106,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # Astronomy primitives
     # -----------------------------------------------------------------
     "rocket-builder":             {"default": PriorConfig(4.5, "Design and launch rocket")},
-    "orbit-mechanics-lab":        {"default": PriorConfig(5.0, "Orbital mechanics simulation")},
+    "orbit-mechanics-lab": {
+        "pick_speed":   PriorConfig(1.5, "Tap the sideways push that makes a rocket fall back, circle or fly away"),
+        "orbit_speed":  PriorConfig(2.5, "Tap the fastest/slowest rocket, or shortest/longest trip, by track distance"),
+        "predict_burn": PriorConfig(3.5, "Predict what a push forward or backward does to a circling rocket's path"),
+        "circularize":  PriorConfig(5.0, "Where and which way to fire once to turn a stretched loop into a circle"),
+    },
     "light-shadow-lab": {
         "observe": PriorConfig(1.5, "Observe shadow changes by dragging sun"),
         "predict": PriorConfig(3.0, "Predict shadow direction and length"),

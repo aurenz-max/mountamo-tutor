@@ -1,0 +1,80 @@
+{
+ "source": "qa/tutor-reports/orbit-mechanics-lab-runtime-circularize-payload-2026-10-16.json",
+ "primitiveId": "orbit-mechanics-lab",
+ "evalMode": "circularize",
+ "data": {
+  "title": "Round and Round Earth",
+  "overview": "You will choose where and which way to fire a rocket once to turn its stretched loop into a circle.",
+  "gradeLevel": "5",
+  "challengeTypes": [
+   "circularize"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "circularize-1",
+    "mode": "circularize",
+    "near": 1.54,
+    "far": 3.1,
+    "tilt": 238,
+    "target": "far",
+    "show": "ring",
+    "at": "side",
+    "choices": [
+     "far_up",
+     "far_down",
+     "near_up",
+     "near_down"
+    ]
+   },
+   {
+    "id": "circularize-2",
+    "mode": "circularize",
+    "near": 1.7,
+    "far": 3.62,
+    "tilt": 200,
+    "target": "near",
+    "show": "ring",
+    "at": "side",
+    "choices": [
+     "far_up",
+     "far_down",
+     "near_up",
+     "near_down"
+    ]
+   },
+   {
+    "id": "circularize-3",
+    "mode": "circularize",
+    "near": 1.66,
+    "far": 3.07,
+    "tilt": 107,
+    "target": "near",
+    "show": "ring",
+    "at": "side",
+    "choices": [
+     "far_up",
+     "far_down",
+     "near_up",
+     "near_down"
+    ]
+   },
+   {
+    "id": "circularize-4",
+    "mode": "circularize",
+    "near": 1.47,
+    "far": 3.06,
+    "tilt": 310,
+    "target": "far",
+    "show": "ring",
+    "at": "side",
+    "choices": [
+     "far_up",
+     "far_down",
+     "near_up",
+     "near_down"
+    ]
+   }
+  ]
+ }
+}

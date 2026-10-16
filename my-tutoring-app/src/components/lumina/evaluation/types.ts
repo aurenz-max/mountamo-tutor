@@ -1306,7 +1306,7 @@ export interface OrbitMechanicsLabMetrics extends BasePrimitiveMetrics {
   type: 'orbit-mechanics-lab';
 
   // Challenge information
-  challengeType: 'reach_altitude' | 'circularize' | 'rendezvous' | 'change_orbit' | 'reach_orbit' | 'free_exploration';
+  challengeType: 'pick_speed' | 'orbit_speed' | 'predict_burn' | 'circularize' | 'reach_altitude' | 'rendezvous' | 'change_orbit' | 'reach_orbit' | 'free_exploration';
   challengeCompleted: boolean;    // Did student complete the challenge
 
   // Attempt tracking
