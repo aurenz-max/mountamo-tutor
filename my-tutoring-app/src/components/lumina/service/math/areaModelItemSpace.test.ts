@@ -9,16 +9,21 @@ const sum = (xs: number[]) => xs.reduce((s, v) => s + v, 0);
 
 describe('area-model pairs from mult-multi-digit', () => {
   it('every drawable item fills the mode\'s grid with place-value parts whose product is the item', () => {
+    // Checked in plain code with one expect per mode: an expect per item took 10 s alone and timed out
+    // under the full suite's load (8.1o).
     for (const mode of MODES) {
       let drawn = 0;
+      const bad: string[] = [];
       for (const it of multDigitItems()) {
         const parts = areaPartsOf(mode, it);
         if (!parts) continue;
         drawn++;
-        expect([parts.factor1Parts.length, parts.factor2Parts.length]).toEqual(GRID[mode]);
-        expect(sum(parts.factor1Parts) * sum(parts.factor2Parts)).toBe(it.a * it.b);
-        for (const p of [...parts.factor1Parts, ...parts.factor2Parts]) expect(String(p).replace(/0+$/, '')).toHaveLength(1);
+        const grid = parts.factor1Parts.length === GRID[mode][0] && parts.factor2Parts.length === GRID[mode][1];
+        const product = sum(parts.factor1Parts) * sum(parts.factor2Parts) === it.a * it.b;
+        const placeValue = [...parts.factor1Parts, ...parts.factor2Parts].every((p) => String(p).replace(/0+$/, '').length === 1);
+        if (!(grid && product && placeValue) && bad.length < 5) bad.push(`${it.a}x${it.b}`);
       }
+      expect(bad, mode).toEqual([]);
       expect(drawn).toBeGreaterThan(100);
     }
   });

@@ -52,8 +52,17 @@ describe('generateDiShapes — code-enforced scope', () => {
       challengeCount: 6,
     });
     expect(data.challenges).toHaveLength(6);
+    // The mixed path can draw only counting items, which refuse a circle (rule #1), so "only those" is
+    // what the scope guarantees here (8.1o: this asserted both and failed 4 in 25 runs).
     const shapes = new Set(data.challenges.map((c) => c.shape));
-    expect(Array.from(shapes).sort()).toEqual(['circle', 'triangle']);
+    for (const s of Array.from(shapes)) expect(["circle", "triangle"]).toContain(s);
+    // A naming session shows every named shape.
+    const naming = await generateDiShapes('naming triangles and circles', 'kindergarten', {
+      intent: 'Correctly name triangles and circles regardless of orientation',
+      challengeCount: 6,
+      targetEvalMode: 'name_shape',
+    });
+    expect(Array.from(new Set(naming.challenges.map((c) => c.shape))).sort()).toEqual(['circle', 'triangle']);
   });
 
   it('falls back to the K.G.2 core five for a generic K objective', async () => {

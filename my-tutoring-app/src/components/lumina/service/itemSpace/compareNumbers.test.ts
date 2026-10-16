@@ -5,6 +5,20 @@ import { questionFitsSpec } from '../knowledge-check/itemSpaceProblems';
 
 const mean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length;
 const within100 = (it: { left: number; right: number }) => it.left <= 100 && it.right <= 100;
+/** A seeded generator (mulberry32): the sampled tier assertions failed now and then in full runs (8.1o). */
+const SEED = Number(process.env.TIER_SEED ?? 7);
+function seeded(seed = SEED): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+/** Eight sessions of five: a tier's property is a mean over sessions, not over one draw of five. */
+const SESSIONS = 8;
 
 describe('compare-numbers', () => {
   it('reads the structure: digit count, shared tens, swapped digits', () => {
@@ -21,14 +35,22 @@ describe('compare-numbers', () => {
   it('within 100 by tier thirds: 5 distinct pairs over several structures; hard holds more shared-tens or swapped pairs', () => {
     const subtle: number[] = [];
     const pick = tierPick(COMPARE_NUMBERS, undefined, within100);
+    const rand = seeded();
     for (const [lo, hi] of Object.values(TIER_BANDS)) {
-      const picks = pick(5, lo, hi, Math.random, within100);
-      expect(picks).toHaveLength(5);
-      expect(new Set(picks.map((p) => `${Math.min(p.left, p.right)}|${Math.max(p.left, p.right)}`)).size).toBe(5);
-      expect(new Set(picks.map((p) => p.structure)).size).toBeGreaterThan(2);
-      subtle.push(mean(picks.map((p) => p.features.sameTens + p.features.reversal)));
-      expect(new Set(picks.map((p) => Math.sign(p.left - p.right))).size).toBeGreaterThan(1);
-      expect(picks.filter((p) => p.left === p.right).length).toBeLessThanOrEqual(1);
+      const all: typeof subtle = [];
+      const signs = new Set<number>();
+      for (let k = 0; k < SESSIONS; k++) {
+        const picks = pick(5, lo, hi, rand, within100);
+        expect(picks).toHaveLength(5);
+        expect(new Set(picks.map((p) => `${Math.min(p.left, p.right)}|${Math.max(p.left, p.right)}`)).size).toBe(5);
+        expect(new Set(picks.map((p) => p.structure)).size).toBeGreaterThan(2);
+        all.push(...picks.map((p) => p.features.sameTens + p.features.reversal));
+        picks.forEach((p) => signs.add(Math.sign(p.left - p.right)));
+        expect(picks.filter((p) => p.left === p.right).length).toBeLessThanOrEqual(1);
+      }
+      // Both directions across the tier's sessions; one session of five can draw only "<" (6 of 40 seeds).
+      expect(signs.size).toBeGreaterThan(1);
+      subtle.push(mean(all));
     }
     expect(subtle[2]).toBeGreaterThan(subtle[0]);
   });
@@ -51,7 +73,9 @@ describe('compare-numbers', () => {
   it('two-digit pairs: easy, medium and hard thirds differ in mean gap or structure', () => {
     const scope = (it: { left: number; right: number }) => Math.min(it.left, it.right) >= 10 && Math.max(it.left, it.right) <= 99;
     const pick = tierPick(COMPARE_NUMBERS, undefined, scope);
-    const gaps = Object.values(TIER_BANDS).map(([lo, hi]) => mean(pick(5, lo, hi, Math.random, scope).map((p) => Math.abs(p.left - p.right))));
+    const rand = seeded();
+    const gaps = Object.values(TIER_BANDS).map(([lo, hi]) => mean(Array.from({ length: SESSIONS },
+      () => pick(5, lo, hi, rand, scope).map((p) => Math.abs(p.left - p.right))).flat()));
     expect(gaps[0]).toBeGreaterThan(gaps[1]);
     expect(gaps[1]).toBeGreaterThan(gaps[2]);
   });
