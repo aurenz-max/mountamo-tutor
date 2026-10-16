@@ -59,6 +59,11 @@
 - **Evidence:** generator `maxNumber` clamps; prompt "Do NOT name or hint at any answer"; oracle scope check.
 - **Probe:** `/oracle-test` scope 0; `/eval-test @ K` no leak.
 
+
+### R8 — order: code picks the sets and writes the instruction · OBSERVED
+- **Property:** order sets are chosen in code (`orderSets`) inside the objective's range (`resolveScopeRange`, up to 100 at grade 1; it was clamped to 20), 3 numbers at K and 4 otherwise at every tier, shown shuffled and never already sorted. The tier sets how close the numbers are: easy every neighbouring pair at least span/(size+1) apart, medium 2 or more, hard a pair 1 apart (and two in one ten above 10). The instruction is code's and names the card's direction.
+- **Demanded by:** 8.1b (sets converged; the tier changed only direction) and the 10-16 probe (a model instruction said "greatest to least" on an ascending card).
+- **Probe:** `service/math/orderSets.test.ts`; `tier-probe.mjs --component comparison-builder --mode order`.
 ### R8 — compare-groups counts are code-rolled, distinct, and include an equal case · OBSERVED
 - **Property:** The two group counts come from a pool rolled in code per generation and injected into the prompt — never invented by the model. Magnitude stays inside the range the OBJECTIVE names — resolved through the shared Tier-2 micro-call (`resolveScopeRange`, `{min,max}` schema over topic/intent/objective) with the grade band as the OUTER ceiling (K 1-10, G1 1-20); a lesson that names no range keeps the band. The gap comes from the tier (R5), refitted downward when a window is too narrow to supply a session's worth of distinct pairs, so the two axes stay separate and scope outranks structure. Every session includes at least one equal pair wherever the tier allows one (withheld at `hard`, which excludes gap=0 by contract), orientation is rolled so the key is not "more" every time, and no two comparisons in a session use the same pair of counts — a repeat is reassigned to an unused pooled pair. The grade band itself comes from `config.gradeBand` → `ctx.grade` → grade prose, never from the model.
 - **Demanded by:** K `COUNT001-03-A` + `MEAS001-02-B` (atlas finding CB-4: the same five comparisons — 5v1, 1v4, 3v3, 1v5 — across two objectives and two draws, only the objectType changing).

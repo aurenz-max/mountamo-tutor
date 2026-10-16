@@ -34,6 +34,8 @@ import {
 } from "./tapeDiagramItemSpace";
 import type { AddSub20Item } from "../itemSpace/addSub20";
 import { questionFitsSpec } from "../knowledge-check/itemSpaceProblems";
+import { createNumberPool } from "./numberPoolService";
+import { resolveScopeRange } from "../scopeRangeResolver";
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -78,6 +80,52 @@ function getNumberGuidance(gradeLevel: string): string {
   if (/[kK]|[0-2]/.test(gradeLevel)) return 'Use numbers 1–20 (small, manageable).';
   if (/[3-5]/.test(gradeLevel)) return 'Use numbers 10–100 (medium).';
   return 'Use numbers 20–500 (larger, realistic).';
+}
+
+/** The grade band's number range (the ceiling a lesson's scope narrows), from the canonical grade. */
+function gradeBandRange(grade: string | undefined): { min: number; max: number } {
+  if (!grade || grade === 'K' || grade === '1') return { min: 1, max: 20 };
+  if (grade === '2') return { min: 1, max: 100 }; // 2.OA.A.1: within 100
+  if (['3', '4', '5'].includes(grade)) return { min: 10, max: 100 };
+  return { min: 20, max: 500 };
+}
+
+const randInt = (lo: number, hi: number) => lo + Math.floor(Math.random() * (hi - lo + 1));
+
+/** `n` positive whole parts that add to `total`, in random order (8.1b: code owns part-whole values). */
+export function splitTotal(total: number, n: number): number[] {
+  // Every part gets a floor first (random cuts alone gave 1 | 1 | 12 | 4), then the rest is cut at random.
+  const floor = Math.max(1, Math.floor(total / (2 * n)));
+  const rest = total - floor * n;
+  const cuts = Array.from({ length: n - 1 }, () => randInt(0, rest)).sort((a, b) => a - b);
+  const points = [0, ...cuts, rest];
+  return points.slice(1).map((v, i) => floor + v - points[i]);
+}
+
+/**
+ * A start and `steps` changes that stay inside `range` at every step, mixing adding and taking away
+ * (8.1b: the own path's chains converged on 12 + 5 - 4 at every tier). Change sizes are at least 2.
+ */
+export function rollChain(range: { min: number; max: number }, steps: number): { start: number; chain: { op: '+' | '-'; value: number }[] } {
+  const lo = Math.max(1, range.min);
+  for (let guard = 0; guard < 500; guard++) {
+    const ops: ('+' | '-')[] = Array.from({ length: steps }, () => (Math.random() < 0.5 ? '+' : '-'));
+    if (!ops.includes('+')) ops[randInt(0, steps - 1)] = '+';
+    if (!ops.includes('-')) ops[ops.indexOf('+') === 0 ? steps - 1 : 0] = '-';
+    let current = randInt(lo, range.max);
+    const start = current;
+    const chain: { op: '+' | '-'; value: number }[] = [];
+    let ok = true;
+    for (const op of ops) {
+      const room = op === '+' ? range.max - current : current - lo;
+      if (room < 2) { ok = false; break; }
+      const value = randInt(2, room);
+      current = op === '+' ? current + value : current - value;
+      chain.push({ op, value });
+    }
+    if (ok) return { start, chain };
+  }
+  return { start: lo + 4, chain: Array.from({ length: steps }, (_, i) => ({ op: i % 2 ? '-' : '+', value: 2 })) };
 }
 
 // ---------------------------------------------------------------------------
@@ -413,21 +461,14 @@ const partWholeSchema: Schema = {
   properties: {
     title: { type: Type.STRING, description: "Title for the problem" },
     description: { type: Type.STRING, description: "Educational description" },
-    knownPart1Value: { type: Type.NUMBER, description: "Value of first known part" },
-    knownPart1Label: { type: Type.STRING, description: "Label for first known part" },
-    knownPart2Value: { type: Type.NUMBER, description: "Value of second known part" },
-    knownPart2Label: { type: Type.STRING, description: "Label for second known part" },
-    unknown1Value: { type: Type.NUMBER, description: "Value of first unknown part" },
-    unknown1Label: { type: Type.STRING, description: "Label for first unknown part" },
-    unknown2Value: { type: Type.NUMBER, description: "Value of second unknown part" },
-    unknown2Label: { type: Type.STRING, description: "Label for second unknown part" },
+    knownPart1Label: { type: Type.STRING, description: "Label for first known part (no numbers)" },
+    knownPart2Label: { type: Type.STRING, description: "Label for second known part (no numbers)" },
+    unknown1Label: { type: Type.STRING, description: "Label for first unknown part (no numbers)" },
+    unknown2Label: { type: Type.STRING, description: "Label for second unknown part (no numbers)" },
   },
   required: [
     "title", "description",
-    "knownPart1Value", "knownPart1Label",
-    "knownPart2Value", "knownPart2Label",
-    "unknown1Value", "unknown1Label",
-    "unknown2Value", "unknown2Label",
+    "knownPart1Label", "knownPart2Label", "unknown1Label", "unknown2Label",
   ],
 };
 
@@ -472,38 +513,6 @@ const comparisonSchema: Schema = {
 };
 
 // ===========================================================================
-// Schema: Multi-Step mode
-// ===========================================================================
-
-/** Build a multi-step schema for `stepCount` steps (2 = default; 3 = hard-tier chain). The model gives
- *  the start and each step's operation and number; code computes every intermediate and the answer. */
-function buildMultiStepSchema(stepCount: number): Schema {
-  const props: Record<string, Schema> = {
-    title: { type: Type.STRING, description: "Title for the multi-step problem (no numbers)" },
-    description: { type: Type.STRING, description: "Educational description (no numbers)" },
-    wordProblem: {
-      type: Type.STRING,
-      description: `The story, telling the start and then each of the ${stepCount} changes in order, ending with the question. It states only the start and the change numbers, never a result.`,
-    },
-    thing: { type: Type.STRING, description: "What is counted, plural (e.g. 'marbles')" },
-    startValue: { type: Type.NUMBER, description: "How many at the start" },
-    remediationMove: {
-      type: Type.STRING,
-      enum: ['explicit_intermediate'],
-      description: 'Private structural remediation move; omit when no remediation focus is provided.',
-    },
-  };
-  const required = ["title", "description", "wordProblem", "thing", "startValue"];
-  for (let i = 1; i <= stepCount; i++) {
-    props[`step${i}Op`] = { type: Type.STRING, enum: ['+', '-'], description: `Step ${i}: '+' when some are added, '-' when some are taken away` };
-    props[`step${i}Value`] = { type: Type.NUMBER, description: `Step ${i}: how many are added or taken away` };
-    props[`step${i}Label`] = { type: Type.STRING, description: `Step ${i}: 1-3 words for that change, no numbers (e.g. 'found', 'eaten')` };
-    required.push(`step${i}Op`, `step${i}Value`, `step${i}Label`);
-  }
-  return { type: Type.OBJECT, properties: props, required };
-}
-
-// ===========================================================================
 // Sub-generators per mode (each emits a single SubGenResult)
 // ===========================================================================
 
@@ -513,12 +522,22 @@ async function generateRepresentMode(
   tier: SupportTier | null = null,
   scopeSection = '',
   remediationFocus?: string,
+  range: { min: number; max: number } = gradeBandRange(undefined),
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('represent', tier) : null;
   const tierSection = scopeSection + (tier ? buildTierPromptSection('represent', tier) : '')
     + buildTapeRemediationSection('represent', remediationFocus);
   // Structural lever: part count 2→3→4 (default 3 when no tier). Clamp to 2-4.
   const partCount = Math.max(2, Math.min(4, shape?.partCount ?? 3));
+  // The model picked the same parts every run (4/6/5, 8.1b). Each call rolls its own pool; parts stay
+  // small enough that their total stays inside the lesson's range.
+  const partMax = Math.max(Math.min(range.max, 2 * partCount), Math.floor(range.max / partCount));
+  const pool = createNumberPool({ min: Math.min(range.min, partMax - 1), max: partMax }, { count: partCount * 2, integers: true });
+  const poolSection = pool ? '\n\n' + pool.toPromptSection({
+    label: 'PART VALUE POOL',
+    usePrimaryInstruction: false,
+    extraInstructions: `- Use ${partCount} numbers from this pool as the part values, written in digits in the story.`,
+  }) : '';
   const prompt = `
 Create a word problem for teaching "${topic}" to ${gradeLevel} students using a tape diagram.
 
@@ -532,7 +551,7 @@ RULES:
 - Use a single coherent scenario (fruits, books, toys, animals, etc.)
 - Labels should be concrete and descriptive (not "Part 1")
 - Values must be positive integers
-- Do NOT put the answer in the title or description${tierSection}
+- Do NOT put the answer in the title or description${tierSection}${poolSection}
 `;
 
   const result = await ai.models.generateContent({
@@ -555,6 +574,10 @@ RULES:
     segments.push({ value, label: data[`part${i}Label`], isUnknown: true });
     if (Number.isFinite(value)) total += value;
   }
+  // The values are read from the story, so the story must state each one.
+  const story = String(data.wordProblem ?? '');
+  const stated = segments.every((seg) => new RegExp(`(^|\\D)${seg.value}(\\D|$)`).test(story));
+  if (!stated) console.log(`[TapeDiagram] represent story does not state every part (${segments.map((x) => x.value).join(', ')}): ${story.slice(0, 160)}`);
 
   return {
     title: data.title,
@@ -580,13 +603,14 @@ async function generatePartWholeMode(
   tier: SupportTier | null = null,
   scopeSection = '',
   _remediationFocus?: string,
+  range: { min: number; max: number } = gradeBandRange(undefined),
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('solve_part_whole', tier) : null;
   const tierSection = scopeSection + (tier ? buildTierPromptSection('solve_part_whole', tier) : '');
   const prompt = `
 Create a cohesive part-whole problem for teaching "${topic}" to ${gradeLevel} students.
 
-You need to provide values and labels for 4 different parts used across 3 learning phases:
+You need to provide labels (no numbers; code sets the values) for 4 different parts used across 3 learning phases:
 - 2 known parts (always shown)
 - 2 unknown parts (revealed progressively)
 
@@ -600,10 +624,7 @@ Phase 1 (Explore): Show knownPart1 + knownPart2, student finds total
 Phase 2 (Practice): Show knownPart1 + unknown1 (as ?), show total, student solves for unknown1
 Phase 3 (Apply): Show all 4 segments, student solves for both unknowns
 
-${getNumberGuidance(gradeLevel)}
-
 RULES:
-- All values must be positive integers
 - Use a single coherent scenario (marbles, cookies, books, points, etc.)
 - All 4 labels should fit the same theme
 - Use concrete, descriptive labels (not "Part 1", "Segment A")${tierSection}
@@ -622,15 +643,17 @@ RULES:
   const data = result.text ? JSON.parse(result.text) : null;
   if (!data) throw new Error('No valid part-whole data returned from Gemini API');
 
-  const grandTotal =
-    data.knownPart1Value + data.knownPart2Value +
-    data.unknown1Value + data.unknown2Value;
+  // Code owns the values (8.1b: the model gave 12/8/15 every run, and four parts of 1-20 summed past a
+  // "within 20" lesson). No text states them, so the model writes only the labels; the whole stays
+  // inside the lesson's range.
+  const grandTotal = randInt(Math.max(8, Math.ceil(range.max * 0.4), range.min), Math.max(8, range.max));
+  const [v1, v2, v3, v4] = splitTotal(grandTotal, 4);
 
   const segments: BarSegment[] = [
-    { value: data.knownPart1Value, label: data.knownPart1Label },
-    { value: data.knownPart2Value, label: data.knownPart2Label },
-    { value: data.unknown1Value, label: data.unknown1Label, isUnknown: true },
-    { value: data.unknown2Value, label: data.unknown2Label, isUnknown: true },
+    { value: v1, label: data.knownPart1Label },
+    { value: v2, label: data.knownPart2Label },
+    { value: v3, label: data.unknown1Label, isUnknown: true },
+    { value: v4, label: data.unknown2Label, isUnknown: true },
   ];
 
   // Structural lever: unknown placement (code-enforced via isUnknown flags).
@@ -762,73 +785,80 @@ async function generateMultiStepMode(
   tier: SupportTier | null = null,
   scopeSection = '',
   remediationFocus?: string,
+  range: { min: number; max: number } = gradeBandRange(undefined),
 ): Promise<SubGenResult> {
   const shape = tier ? resolveProblemShape('multi_step', tier) : null;
   const tierSection = scopeSection + (tier ? buildTierPromptSection('multi_step', tier) : '')
     + buildTapeRemediationSection('multi_step', remediationFocus);
   // Structural lever: step count (2 default, 3 at hard).
   const stepCount = shape?.stepCount === 3 ? 3 : 2;
+  // Code rolls the chain (8.1b: the model's chains converged on 12 + 5 - 4 at every tier); the model
+  // writes the story around it and names what is counted.
+  const { start, chain: rolled } = rollChain(range, stepCount);
+  const spec = `${start} ${rolled.map((c) => `${c.op} ${c.value}`).join(' ')}`;
   const prompt = `
 Create a multi-step word problem for teaching "${topic}" to ${gradeLevel} students.
 
-Something is counted. The story says how many there are at the start, then tells ${stepCount} changes in order
-(some are added, or some are taken away), and asks how many there are at the end.
-
-${getNumberGuidance(gradeLevel)}
+Something is counted. The story says how many there are at the start, then tells ${stepCount} changes in this
+order, and asks how many there are at the end:
+- Start: ${start}
+${rolled.map((c, i) => `- Change ${i + 1}: ${c.op === '+' ? `${c.value} are added` : `${c.value} are taken away`}`).join('\n')}
 
 RULES:
-- All values are positive whole numbers, and the amount never drops to zero or below at any step
-- Use both adding and taking away across the steps
-- The story states only the start and the change numbers, written in digits; no other number, never a
-  running total or the answer
+- Use exactly these numbers, written in digits, in this order (${spec}); no other number
+- Never state a running total or the answer
 - Use a single coherent scenario${tierSection}
 `;
 
-  // Code owns the arithmetic: the chain is rebuilt from the start and each step, and a chain that
-  // goes below one is asked for again.
-  for (let attempt = 0; attempt < 3; attempt++) {
+  const schema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: 'Title (no numbers)' },
+      description: { type: Type.STRING, description: 'Educational description (no numbers)' },
+      wordProblem: { type: Type.STRING, description: 'The story, ending with the question.' },
+      thing: { type: Type.STRING, description: "What is counted, plural (e.g. 'marbles')" },
+      ...Object.fromEntries(rolled.map((_, i) => [`step${i + 1}Label`, { type: Type.STRING, description: `1-3 words for change ${i + 1}, no numbers (e.g. 'found', 'eaten')` }])),
+    },
+    required: ['title', 'description', 'wordProblem', 'thing', ...rolled.map((_, i) => `step${i + 1}Label`)],
+  };
+  let data: Record<string, unknown> = {};
+  try {
     const result = await ai.models.generateContent({
       model: "gemini-flash-latest",
       contents: prompt,
-      config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-        responseMimeType: "application/json",
-        responseSchema: buildMultiStepSchema(stepCount),
-      },
+      config: { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, responseMimeType: "application/json", responseSchema: schema },
     });
-    const data = result.text ? JSON.parse(result.text) : null;
-    if (!data) continue;
-    const thing = String(data.thing || 'things');
-    const chain: ChainStep[] = Array.from({ length: stepCount }, (_, i) => ({
-      op: data[`step${i + 1}Op`] === '-' ? '-' : '+',
-      value: Number(data[`step${i + 1}Value`]),
-      label: String(data[`step${i + 1}Label`] || (data[`step${i + 1}Op`] === '-' ? 'taken away' : 'added')),
-      resultLabel: i === stepCount - 1 ? `${thing} at the end` : `${thing} after step ${i + 1}`,
-    }));
-    const start = Number(data.startValue);
-    const built = multiStepBars(start, `${thing} at first`, chain);
-    if (!built) continue;
-    const answer = built.results[built.results.length - 1];
-    const fits = questionFitsSpec(String(data.wordProblem ?? ''), [start, ...chain.map((c) => c.value)].map(String), String(answer));
-    if (!fits) console.log(`[TapeDiagram] multi_step story off spec, plain story shipped: ${String(data.wordProblem ?? '').slice(0, 200)}`);
-    const story = fits ? String(data.wordProblem) : plainChainStory(thing, start, chain);
-    const hints = chain.map((c, i) => multiStepHint(c.op, i === 0 ? start : 'previous', c.value, tier));
-    return {
-      title: data.title,
-      description: data.description,
-      challenge: {
-        id: 'td-pending',
-        challengeType: 'multi_step',
-        wordProblem: story,
-        remediationMove: remediationFocus ? 'explicit_intermediate' : undefined,
-        bars: built.bars,
-        comparisonMode: false,
-        showBrackets: false,
-        multiStepData: { step1Hint: hints[0], step2Hint: hints[1], step3Hint: hints[2], solveOrder: [], steps: built.steps },
-      },
-    };
+    data = result.text ? JSON.parse(result.text) : {};
+  } catch (err) {
+    console.log(`[TapeDiagram] multi_step wording failed; plain story shipped (${String(err).slice(0, 120)})`);
   }
-  throw new Error('No valid multi-step chain returned from Gemini API');
+  const thing = String(data.thing || 'things');
+  const chain: ChainStep[] = rolled.map((c, i) => ({
+    ...c,
+    label: String(data[`step${i + 1}Label`] || (c.op === '-' ? 'taken away' : 'added')),
+    resultLabel: i === stepCount - 1 ? `${thing} at the end` : `${thing} after step ${i + 1}`,
+  }));
+  const built = multiStepBars(start, `${thing} at first`, chain);
+  if (!built) throw new Error(`rolled chain ${spec} left its range`);
+  const answer = built.results[built.results.length - 1];
+  const fits = questionFitsSpec(String(data.wordProblem ?? ''), [start, ...chain.map((c) => c.value)].map(String), String(answer));
+  if (!fits) console.log(`[TapeDiagram] multi_step story off spec (${spec}), plain story shipped: ${String(data.wordProblem ?? '').slice(0, 200)}`);
+  const story = fits ? String(data.wordProblem) : plainChainStory(thing, start, chain);
+  const hints = chain.map((c, i) => multiStepHint(c.op, i === 0 ? start : 'previous', c.value, tier));
+  return {
+    title: String(data.title || 'Multi-Step Problems'),
+    description: String(data.description || 'Solve one step at a time.'),
+    challenge: {
+      id: 'td-pending',
+      challengeType: 'multi_step',
+      wordProblem: story,
+      remediationMove: remediationFocus ? 'explicit_intermediate' : undefined,
+      bars: built.bars,
+      comparisonMode: false,
+      showBrackets: false,
+      multiStepData: { step1Hint: hints[0], step2Hint: hints[1], step3Hint: hints[2], solveOrder: [], steps: built.steps },
+    },
+  };
 }
 
 /** A correct story built in code, used when the written one drops a number or states a result. */
@@ -1002,7 +1032,7 @@ async function comparisonsFromItemSpace(
 
 function subGeneratorFor(
   challengeType: string,
-): (topic: string, gradeLevel: string, tier?: SupportTier | null, scopeSection?: string, remediationFocus?: string) => Promise<SubGenResult> {
+): (topic: string, gradeLevel: string, tier?: SupportTier | null, scopeSection?: string, remediationFocus?: string, range?: { min: number; max: number }) => Promise<SubGenResult> {
   switch (challengeType) {
     case 'represent':         return generateRepresentMode;
     case 'solve_comparison':  return generateComparisonMode;
@@ -1068,6 +1098,14 @@ export const generateTapeDiagram = async (
       : challengeType === 'multi_step'
         ? await multiStepsFromItemSpace(topic, gradeLevel, ctx.grade, config?.difficulty, instanceCount)
         : null;
+  // The lesson's number range, read once (a "within 10" lesson narrows the grade band). Comparison owns
+  // its numbers through the LLM or the space and does not take it.
+  const range = !spaceResults && challengeType !== 'solve_comparison'
+    ? (await resolveScopeRange(
+      { ...ctx.scope, topic }, gradeLevel, 'the largest number in a problem (a total or an amount)', gradeBandRange(ctx.grade),
+    )) ?? gradeBandRange(ctx.grade)
+    : undefined;
+  if (range) console.log(`[TapeDiagram] number range ${range.min}-${range.max} (grade ${ctx.grade ?? '?'})`);
   const subResults = spaceResults ?? await Promise.all(
     Array.from({ length: instanceCount }, () => runOne(
       topic,
@@ -1075,6 +1113,7 @@ export const generateTapeDiagram = async (
       supportTier,
       scopeSection,
       ctx.remediationFocus,
+      range,
     )),
   );
 

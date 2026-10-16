@@ -7,7 +7,7 @@ import { createNumberPool } from "./numberPoolService";
 import { resolveScopeRange } from "../scopeRangeResolver";
 import { difficultyBand, tierPick } from "../itemSpace";
 import { COMPARE_NUMBERS, symbolOf, type CompareNumbersItem } from "../itemSpace/compareNumbers";
-import { fallbackSession, oneMoreLessInstruction, oneMoreLessTargets } from "./comparisonBuilderTargets";
+import { fallbackSession, oneMoreLessInstruction, oneMoreLessTargets, orderSets } from "./comparisonBuilderTargets";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -740,6 +740,14 @@ export const generateComparisonBuilder = async (
       { min: 1, max: numeralCeiling },
     )) ?? { min: 1, max: bandMax }
     : { min: 1, max: bandMax };
+  // order: the objective's range, up to 100 at grade 1 ("order numbers to 100" was clamped to 20).
+  const ordersNumbers = !pinnedType || pinnedType === 'order';
+  const orderWindow = ordersNumbers
+    ? (await resolveScopeRange(
+      { ...ctx.scope, topic, intent }, gradeLevel, 'the numbers the student puts in order',
+      { min: 1, max: numeralCeiling },
+    )) ?? { min: 1, max: bandMax }
+    : { min: 1, max: bandMax };
   if (countWindow.min > 1 || countWindow.max < bandMax) {
     console.log(
       `[ComparisonBuilder] objective count window → ${countWindow.min}-${countWindow.max} `
@@ -962,7 +970,7 @@ Return the complete comparison builder configuration.
           challenge.numbers = [3, 1, 5];
         }
         challenge.numbers = challenge.numbers.map(
-          (n: number) => Math.max(1, Math.min(typeof n === 'number' ? n : 1, maxNumber))
+          (n: number) => Math.max(orderWindow.min, Math.min(typeof n === 'number' ? n : 1, orderWindow.max))
         );
         if (challenge.direction !== 'ascending' && challenge.direction !== 'descending') {
           challenge.direction = 'ascending';
@@ -1032,6 +1040,20 @@ Return the complete comparison builder configuration.
     } else {
       log(`window ${numeralWindow.min}-${numeralWindow.max} gave ${picks.length} of ${numberCards.length}; own path kept`);
     }
+  }
+
+  // ── order: code picks every set (comparisonBuilderTargets.orderSets) ──
+  // The LLM's sets converged and the tier changed only the sort direction (8.1b). The tier sets how
+  // close the numbers are; the set size is the session's first card's (3 at K, else 4), kept per tier.
+  const orderCards = (data.challenges as ComparisonBuilderChallenge[]).filter((c) => c.type === 'order');
+  if (orderCards.length && !ctx.remediationFocus) {
+    const size = resolvedBand === 'K' ? 3 : 4;
+    const sets = orderSets(orderWindow, size, supportTier, orderCards.length);
+    orderCards.forEach((c, i) => {
+      if (!sets[i]) return;
+      c.numbers = sets[i];
+    });
+    console.log(`[ComparisonBuilder] order ${supportTier ?? 'no-tier'} sets in ${orderWindow.min}-${orderWindow.max}: ${sets.map((x) => x.join(',')).join(' | ')}`);
   }
 
   if (supportTier) {
@@ -1209,6 +1231,13 @@ Return the complete comparison builder configuration.
     if (reassigned > 0) {
       console.log(`[ComparisonBuilder] Reassigned ${reassigned} repeated comparison(s) to unused pairs`);
     }
+  }
+
+  // order: the instruction is code's. The model's named a direction of its own ("from greatest to least"
+  // on an ascending card, 10-16 probe), and the numbers are code's too; written after the tier sets it.
+  for (const c of data.challenges as ComparisonBuilderChallenge[]) {
+    if (c.type === 'order') c.instruction = c.direction === 'descending'
+      ? 'Put the numbers in order from greatest to least.' : 'Put the numbers in order from least to greatest.';
   }
 
   // Final summary log

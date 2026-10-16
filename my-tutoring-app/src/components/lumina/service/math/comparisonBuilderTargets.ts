@@ -97,3 +97,47 @@ export function fallbackSession(
     };
   });
 }
+
+/**
+ * order: the sets to sort, chosen in code. The LLM gave the same sets every run, and the tier changed only
+ * the sort direction (8.1b, 10-14 probe). What makes a set hard to order is how close its numbers are: two
+ * neighbours (14, 15) or two in the same ten must be told apart by the ones digit. Easy keeps every
+ * neighbouring pair at least `wide` apart, medium 2 or more but not that wide, hard holds a pair 1 apart
+ * (and, above 10, two numbers in one ten). Set size stays `size` at every tier (contract: not item count).
+ * Each set is shown shuffled, never already in order.
+ */
+export function orderSets(
+  window: { min: number; max: number }, size: number, tier: Tier | null, count: number, rand: () => number = Math.random,
+): number[][] {
+  const span = window.max - window.min + 1;
+  if (span < size) return [];
+  const wide = Math.max(3, Math.floor(span / (size + 1)));
+  const minGap = (s: number[]) => Math.min(...s.slice(1).map((v, i) => v - s[i]));
+  const sameTen = (s: number[]) => new Set(s.map((v) => Math.floor(v / 10))).size < s.length;
+  const fits = (s: number[]) => {
+    const g = minGap(s);
+    if (tier === 'easy') return g >= wide;
+    if (tier === 'medium') return g >= 2 && g < wide;
+    if (tier === 'hard') return g === 1 && (window.max <= 10 || sameTen(s));
+    return true;
+  };
+  const roll = () => {
+    const pool = shuffle(Array.from({ length: span }, (_, i) => window.min + i), rand);
+    return pool.slice(0, size).sort((a, b) => a - b);
+  };
+  const out: number[][] = [];
+  const seen = new Set<string>();
+  // A narrow window may hold no set of the tier's shape: take any set rather than none.
+  for (const strict of [true, false]) {
+    for (let guard = 0; out.length < count && guard < 4000; guard++) {
+      const s = roll();
+      const key = s.join(',');
+      if (seen.has(key) || (strict && !fits(s))) continue;
+      seen.add(key);
+      let shown = shuffle(s, rand);
+      for (let t = 0; t < 6 && (shown.join() === s.join() || shown.join() === [...s].reverse().join()); t++) shown = shuffle(s, rand);
+      out.push(shown);
+    }
+  }
+  return out;
+}
