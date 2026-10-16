@@ -23,6 +23,7 @@
  * Wrong options: the keyword error (the other operation on the two numbers shown), a number shown in
  * the story, a counting slip of one; far ones by five or ten. Every option stays inside the strand's range.
  */
+import { namedNumberRange } from './numberScope';
 import type { ItemSpace } from './types';
 import { crossesTen } from './addSub20';
 import { multiDigitFeatures } from './multiDigit';
@@ -197,6 +198,11 @@ function space(max: 20 | 100): ItemSpace<CompareItem> {
     },
     distractors: (it, rand) => compareDistractors(it, max, rand).map((d) => ({ value: String(d.value), distance: d.distance })),
     plainQuestion: (it) => comparePlainQuestion(it),
+    // The amounts the story states stay in the range the objective names (8.1c).
+    scopeOf: (objective) => {
+      const r = namedNumberRange(objective);
+      return r && ((it) => it.smaller >= r.min && it.larger <= r.max);
+    },
   };
 }
 

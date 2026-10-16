@@ -27,6 +27,7 @@
  */
 import type { ItemSpace } from './types';
 import { linearBeta, pickSpread } from './spread';
+import { namedNumberRange } from './numberScope';
 
 export type CompareSymbol = '<' | '>' | '=';
 export interface CompareNumbersFeatures {
@@ -119,4 +120,9 @@ export const COMPARE_NUMBERS: ItemSpace<CompareNumbersItem> = {
   }),
   distractors: (it) => distractors(it),
   plainQuestion: (it) => `Compare ${it.left} and ${it.right}. Which is true?`,
+  // "Compare two-digit numbers" draws two two-digit numbers, "within 20" stays within 20 (8.1c).
+  scopeOf: (objective) => {
+    const r = namedNumberRange(objective);
+    return r && ((it) => Math.min(it.left, it.right) >= r.min && Math.max(it.left, it.right) <= r.max);
+  },
 };

@@ -627,7 +627,7 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
       if (visualType && !visual) {
         throw new Error(`[Knowledge Check] Planned ${visualType} was missing required picture fields`);
       }
-      const { options, correctOptionId } = uniqueOptionIds(problem.options, problem.correctOptionId, optionLabels);
+      const { options, correctOptionId } = uniqueOptionIds(mathSymbolOptions(problem.options, problem.correctOptionId), problem.correctOptionId, optionLabels);
       return {
         type: 'multiple_choice' as const,
         id: problem.id,
@@ -659,6 +659,37 @@ Now generate ${count} problem${count > 1 ? 's' : ''}.`;
     throw error;
   }
 };
+
+const MATH_SYMBOLS = ['<', '>', '=', '+', '−', '×', '÷'];
+const SYMBOL_ALIASES: Record<string, string> = { '-': '−', '–': '−', x: '×', '*': '×', '/': '÷' };
+const asSymbol = (text: unknown) => {
+  const t = String(text ?? '').trim();
+  const sym = SYMBOL_ALIASES[t] ?? t;
+  return MATH_SYMBOLS.includes(sym) || ['≤', '≥', '≠'].includes(sym) ? sym : null;
+};
+
+/**
+ * When the key is one math symbol (47 __ 74: "<"), every wrong option must be a math symbol too. The model
+ * filled far options with any glyph ("十", "हू", 8.1c), which no learner weighs against "<"; a wrong option
+ * that is not a math symbol is replaced with one the set does not use yet, keeping its distance tag.
+ */
+export function mathSymbolOptions<O extends { id: string; text?: string }>(options: O[], correctOptionId: string): O[] {
+  if (!Array.isArray(options)) return options;
+  const key = options.find((o) => o.id === correctOptionId);
+  if (!key || !asSymbol(key.text)) return options;
+  const used = new Set(options.map((o) => asSymbol(o.text)).filter(Boolean));
+  const spare = MATH_SYMBOLS.filter((m) => !used.has(m));
+  let replaced = 0;
+  const out = options.map((o) => {
+    if (o === key || asSymbol(o.text)) return o;
+    const next = spare.shift();
+    if (!next) return o;
+    replaced++;
+    return { ...o, text: next };
+  });
+  if (replaced) console.warn(`[Knowledge Check] ${replaced} non-symbol option(s) on a symbol question replaced with math symbols`);
+  return out;
+}
 
 /**
  * Two options sharing an id make the key ambiguous: a tap on either is graded correct (seen at K: "A" on both

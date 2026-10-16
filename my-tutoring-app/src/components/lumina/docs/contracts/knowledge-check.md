@@ -176,6 +176,12 @@ manifest.
 - **Probe:** `backend/tests/tutor_live/save_payload.py --primitive knowledge-check --mode <m> --topic <t> --grade <g>`, then the
   saved-payload block of `knowledgeCheckLevers.test.ts`.
 
+### R13 — a symbol question offers only math symbols; a space draws inside the objective's named range · OBSERVED
+- **Property:** when an MCQ key is one math symbol (`<`), every wrong option is a math symbol (`mathSymbolOptions` replaces any other glyph with an unused one, keeping its tag). An item-space check passes the objective to the space's `scopeOf`; the compare spaces (compare-numbers, compare-20/100) read a named range ("two-digit", "within 20", "teen numbers", `namedNumberRange`) and draw only inside it at every tier.
+- **Demanded by:** 8.1c (far options "十", "हू"; a two-digit compare objective drew 3 vs 14).
+- **Evidence:** `qa/difficulty-demo/2026-10-16/kc-compare-2digit.txt`: 12 of 12 tiered problems two-digit.
+- **Probe:** `service/itemSpace/numberScope.test.ts`; `tier-probe.mjs --component knowledge-check --count 4 --topic "Compare two two-digit numbers..."`.
+
 ## Conflicts
 
 ### C1 — R2 K picture primacy vs R3 Grade-1 independent reading — RESOLVED via band + task gate (2026-08-02)

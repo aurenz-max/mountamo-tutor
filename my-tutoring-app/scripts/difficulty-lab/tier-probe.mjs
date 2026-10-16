@@ -141,6 +141,7 @@ PRINTERS['fraction-circles'] = (c) => c.type === 'compare' ? `${c.numerator}/${c
   : `${c.type} ${c.numerator}/${c.denominator}`;
 PRINTERS['length-lab'] = (c) => `${c.type} lengths ${[c.objectLength0, c.objectLength1, c.objectLength2].filter((x) => x != null).join(',')}`
   + ` ans ${c.correctAnswer}${c.estimateOptions ? ` est [${c.estimateOptions}]` : ''}${c.unitTypeB ? ` units ${c.unitType}/${c.unitTypeB}` : ''}`;
+PRINTERS['knowledge-check'] = (c) => `${String(c.question ?? c.statement ?? '').slice(0, 110)} | ${(c.options ?? []).map((o) => `${o.id === c.correctOptionId ? '*' : ''}${o.text}`).join(' / ')}`;
 const TEXT = new Set(['id', 'title', 'description', 'instruction', 'hint', 'narration', 'storyText', 'feedback', 'explanation']);
 const fallback = (c) => JSON.stringify(Object.fromEntries(Object.entries(c).filter(([k]) => !TEXT.has(k)))).slice(0, 420);
 
@@ -155,14 +156,14 @@ try {
   const { generateComponentContent } = await loader.import('/src/components/lumina/service/geminiService.ts');
   for (const topic of TOPICS) for (const difficulty of TIERS) for (let run = 0; run < RUNS; run++) {
     const item = { componentId: COMPONENT, instanceId: `p-${run}`, title: topic, intent: topic,
-      config: { intent: topic, targetEvalMode: MODE, objectiveGrade: GRADE, ...(difficulty ? { difficulty } : {}) } };
+      config: { intent: topic, targetEvalMode: MODE, objectiveGrade: GRADE, ...(arg('--count') ? { count: Number(arg('--count')), problemCount: Number(arg('--count')) } : {}), ...(difficulty ? { difficulty } : {}) } };
     const start = logs.length;
     let d = {};
     try { d = (await generateComponentContent(item, topic, `Grade ${GRADE}`))?.data ?? {}; } catch (e) { out(`  ERROR ${e.message}`); }
     const spaceLogs = logs.slice(start).filter((l) => l.includes('Item space') || l.includes('Word space') || l.includes(' targets ') || l.includes('objective range') || l.includes('No valid challenges'));
     // One-object payloads (spelling-pattern-explorer: one pattern per session) print as one row.
     const one = (Array.isArray(d.patternWords) && d.patternWords.length) || d.passage?.sentences ? [d] : null;
-    const list = one ?? d.challenges ?? d.words ?? d.items ?? d.nouns ?? d.buildItems ?? d.pairItems ?? d.rounds ?? [];
+    const list = one ?? d.challenges ?? d.problems ?? d.words ?? d.items ?? d.nouns ?? d.buildItems ?? d.pairItems ?? d.rounds ?? [];
     const onSpace = !!d.itemSpace || list.some((c) => c.itemSpace || c.wordSpace);
     out(`\n${topic} | ${MODE} | difficulty=${difficulty ?? '(none)'} | run ${run + 1} | ${onSpace ? 'code space' : 'own path'}`
       + `${d.maxNumber != null ? ` | max ${d.maxNumber}` : ''}`
