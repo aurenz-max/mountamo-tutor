@@ -4,6 +4,7 @@ import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
 import { tierWindow } from '../itemSpace';
+import { twoUnitItems } from './lengthLabTwoUnit';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -652,26 +653,11 @@ Return the complete length lab configuration.
         break;
       }
 
-      // ── The same object, two units. The SECOND unit is bigger, so it takes
-      // fewer of them: code owns both counts because the inverse relationship
-      // between unit size and count is the thing being taught. ──
-      case 'two_unit_compare': {
-        if (!challenge.unitType || !validUnitTypes.includes(challenge.unitType)) {
-          challenge.unitType = data.unitType;
-        }
-        const smallCount = challenge.objectLength0 as number;
-        // A bigger unit spans 2 or 3 of the small ones; the object length is a
-        // whole number of both, so neither measurement ends mid-unit.
-        const factor = smallCount % 3 === 0 ? 3 : 2;
-        const bigCount = Math.max(1, Math.round(smallCount / factor));
-        challenge.objectLength0 = bigCount * factor;   // exact in both units
-        challenge.correctUnitCount = bigCount * factor; // small unit
-        challenge.correctUnitCountB = bigCount;         // big unit
-        const bigger = ['bears', 'hands', 'erasers', 'feet'];
-        challenge.unitTypeB = bigger.find((u) => u !== challenge.unitType) ?? 'bears';
-        challenge.correctAnswer = challenge.unitType;   // the smaller unit is needed more
+      // ── The same object, two units: code builds both units and counts after this loop
+      // (lengthLabTwoUnit.ts), because the inverse relationship between unit size and count is the
+      // thing being taught. ──
+      case 'two_unit_compare':
         break;
-      }
 
       case 'tile_and_count': {
         // correctUnitCount must equal objectLength0
@@ -803,6 +789,20 @@ Return the complete length lab configuration.
       objectColor1: '#E57373',
       correctAnswer: 'longer',
     }];
+  }
+
+  // ── two_unit_compare: code builds every item (lengthLabTwoUnit.ts). The answer was the first unit on
+  // every item and the lengths 6/8/10 at every tier (8.1i). ──
+  const twoUnit = (data.challenges as Array<Record<string, unknown>>).filter((c) => c.type === 'two_unit_compare');
+  if (twoUnit.length) {
+    const items = twoUnitItems(supportTier, twoUnit.length, data.unitType === 'cubes' || data.unitType === 'paper_clips' ? data.unitType : 'cubes');
+    const unitWords = (u: string) => u.replace('_', ' ');
+    twoUnit.forEach((c, i) => {
+      Object.assign(c, items[i]);
+      // The model's instruction named units of its own ("the small foot and the big foot", 10-16 probe).
+      c.instruction = `Measure the ${String(c.objectName0 ?? 'object')} with ${unitWords(items[i].unitType)} and with ${unitWords(items[i].unitTypeB)}.`;
+    });
+    console.log(`[LengthLab] two_unit_compare ${supportTier ?? 'no-tier'} items ${items.map((it) => `${it.objectLength0}: ${it.unitType} ${it.correctUnitCount} / ${it.unitTypeB} ${it.correctUnitCountB}`).join(' | ')}`);
   }
 
   // ── Counting modes: the tier sets how many units long the objects are. A mode whose difficulty is one

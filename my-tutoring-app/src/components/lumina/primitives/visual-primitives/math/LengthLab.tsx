@@ -1158,6 +1158,8 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
                 objectColor={ch.objectColor0}
                 unitType={unitA}
                 correctCount={ch.correctUnitCount || ch.objectLength0}
+                // The first unit can be the wider one (8.1i), so it is drawn at its own width too.
+                unitSpan={Math.max(1, Math.round(ch.objectLength0 / Math.max(1, ch.correctUnitCount ?? ch.objectLength0)))}
                 onComplete={handleUnitATile}
                 disabled={inputClosed}
                 showAlignmentFeedback={ch.showAlignmentFeedback !== false}
