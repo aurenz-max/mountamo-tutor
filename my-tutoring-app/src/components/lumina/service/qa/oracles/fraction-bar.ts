@@ -47,7 +47,7 @@ import { cutInto, equalBuildMiss, equalWays, makesEqual, readBuild } from '../..
  *    session teaches) must honor the objective ceiling. A "denominators to 8"
  *    topic emitting twelfths is content past the objective. Ceiling =
  *    ctx.scopeMax ?? topic ceiling ?? the primitive's intrinsic max (12, the
- *    compare-mode denominator window's top).
+ *    larger_denominators denominator window's top).
  *  - clustering        : the FRACTIONS must spread across the set. Keyed on the
  *    whole fraction "num/den", NOT the numerator — `identify` is all unit
  *    fractions (numerator always 1), so a numerator-keyed variety check would
@@ -73,11 +73,16 @@ import { cutInto, equalBuildMiss, equalWays, makesEqual, readBuild } from '../..
  * with another equal split the bar can make, that split passes the bar's own judge (`makesEqual`), the target's
  * own split does not (`same_pieces`), the instruction states the target, K-2 stays within fourths, and no two
  * builds ask for the same value. Its choice arrays are empty by design and not checked.
+ *
+ * compare has no choice questions either: two proper fractions, the stored `relation` equal to the one cross-
+ * multiplication gives (the component checks the pick against it), both denominators under the ceiling, the
+ * support tier's pair kind (easy same denominator, medium same numerator, hard neither), no pair twice in either
+ * order, at most one equal pair, and not every pair answered by the same symbol.
  */
 
-const KNOWN_TYPES = new Set(['identify', 'build', 'compare', 'add_subtract', 'build_equal']);
+const KNOWN_TYPES = new Set(['identify', 'build', 'larger_denominators', 'compare', 'add_subtract', 'build_equal']);
 // Intrinsic denominator ceiling when neither the harness nor the topic names one:
-// the top of the compare-mode denominator window (gemini-fraction-bar.ts:308-323).
+// the top of the larger_denominators denominator window (gemini-fraction-bar.ts:308-323).
 const INTRINSIC_MAX_DENOMINATOR = 12;
 
 function isInt(v: unknown): v is number {
@@ -105,6 +110,7 @@ export const fractionBarOracle: ContentOracle = {
     // identify intentionally cycles a 5-fraction pool → repeated cards are in-contract.
     const allowDuplicateCards = sessionType === 'identify';
     if (sessionType === 'build_equal') return verifyEqualBuild(data, challenges, violations, uncheckedTypes);
+    if (sessionType === 'compare') return verifyCompare(data, challenges, violations, uncheckedTypes, ctx.scopeMax ?? parseScopeCeiling(ctx.topic) ?? INTRINSIC_MAX_DENOMINATOR);
 
     // Objective ceiling on the DENOMINATOR. Harness scopeMax wins, then a "to N"
     // topic, else the primitive's intrinsic max denominator.
@@ -264,5 +270,43 @@ function verifyEqualBuild(data: Record<string, unknown>, challenges: Record<stri
   values.forEach((count, key) => {
     if (count > 1) violations.push({ check: 'clustering', where: 'challenges[]', detail: `${count} builds ask for the same value ${Number(key)}` });
   });
+  return { violations, uncheckedTypes: Array.from(uncheckedTypes), checkedChallenges: checked };
+}
+
+/** compare: the key is the relation the pair really has, and the tier's pair kind holds; see the header. */
+function verifyCompare(data: Record<string, unknown>, challenges: Record<string, unknown>[], violations: OracleViolation[],
+  uncheckedTypes: Set<string>, ceiling: number): OracleResult {
+  if (challenges.length < 3) violations.push({ check: 'schema', where: 'challenges', detail: `only ${challenges.length} challenge(s) — mastery-over-demo requires 3+` });
+  const tier = data.supportTier;
+  const pairs = new Map<string, number>();
+  const symbols = new Set<string>();
+  let equal = 0;
+  let checked = 0;
+  challenges.forEach((c, i) => {
+    const where = String(c.id ?? `#${i + 1}`);
+    const second = (c.compareWith ?? {}) as Record<string, unknown>;
+    const [a, b, x, y] = [c.numerator, c.denominator, second.numerator, second.denominator];
+    if (![a, b, x, y].every(isInt) || (a as number) < 1 || (a as number) >= (b as number) || (x as number) < 1 || (x as number) >= (y as number)) {
+      violations.push({ check: 'schema', where, detail: `compare needs two proper fractions; got ${JSON.stringify(a)}/${JSON.stringify(b)} and ${JSON.stringify(x)}/${JSON.stringify(y)}` });
+      return;
+    }
+    const [n, d, m, e] = [a, b, x, y] as number[];
+    checked++;
+    const truth = n * e > m * d ? '>' : n * e < m * d ? '<' : '=';
+    if (c.relation !== truth) violations.push({ check: 'answer-key-desync', where, detail: `${n}/${d} vs ${m}/${e}: key ${JSON.stringify(c.relation)}, true relation ${truth}` });
+    symbols.add(truth);
+    if (truth === '=') equal++;
+    for (const den of [d, e]) if (den > ceiling) violations.push({ check: 'scope', where, detail: `denominator ${den} exceeds objective ceiling ${ceiling}` });
+    const kind = d === e ? 'easy' : n === m ? 'medium' : 'hard';
+    if ((tier === 'easy' || tier === 'medium' || tier === 'hard') && kind !== tier)
+      violations.push({ check: 'scope', where, detail: `${tier} tier pair ${n}/${d} vs ${m}/${e} is a ${kind}-kind pair` });
+    const key = [`${n}/${d}`, `${m}/${e}`].sort().join('|');
+    pairs.set(key, (pairs.get(key) ?? 0) + 1);
+  });
+  pairs.forEach((count, key) => {
+    if (count > 1) violations.push({ check: 'clustering', where: 'challenges[]', detail: `pair ${key} appears ${count}×` });
+  });
+  if (equal > 1) violations.push({ check: 'clustering', where: 'challenges[]', detail: `${equal} equal pairs; at most one` });
+  if (checked >= 4 && symbols.size === 1) violations.push({ check: 'clustering', where: 'challenges[].relation', detail: `every pair is answered ${Array.from(symbols)[0]}` });
   return { violations, uncheckedTypes: Array.from(uncheckedTypes), checkedChallenges: checked };
 }

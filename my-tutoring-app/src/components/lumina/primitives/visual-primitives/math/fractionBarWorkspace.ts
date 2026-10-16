@@ -2,7 +2,7 @@
  * Fraction bar on the shared tutor/JEV teaching workspace, W1 minimal binding, plus the open build
  * `build_equal` (`/add-eval-modes` references/build-mode.md).
  *
- * identify / build / compare / add_subtract share one three-step item: pick the numerator, pick the
+ * identify / build / larger_denominators / add_subtract share one three-step item: pick the numerator, pick the
  * denominator, shade the bar, each with its own Check. A wrong check commits a miss (Try again keeps the
  * step reached); a right numerator or denominator moves to the next step without a commit, and the
  * right shading commits the item. build_equal: the learner splits the bar into equal parts of their
@@ -10,15 +10,22 @@
  * Its judgment is fraction-circles' (`fractionEqualBuild.ts`): a part is a span [start, end) of the bar
  * exactly as it is an arc of the circle.
  *
+ * compare: two fractions of the same whole, each drawn as a shaded bar, one above the other; the learner picks
+ * <, = or > and presses Check. The pair and its relation come from the fraction-compare item space.
+ *
  * Every item is a gesture checked by code, so no key reaches the tutor. Pure: the component, the
  * generator, the live adapter and the tests read the same functions.
  */
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
-import type { FractionBarChallenge, FractionBarChallengeType } from './FractionBar';
+import type { CompareRelation, FractionBarChallenge, FractionBarChallengeType } from './FractionBar';
 import { equalWays } from './fractionEqualBuild';
 
-export type FractionBarPhase = 'identify-numerator' | 'identify-denominator' | 'build-fraction';
+export type FractionBarPhase = 'identify-numerator' | 'identify-denominator' | 'build-fraction' | 'compare';
+
+/** The pair as printed: "3/8 and 1/2". */
+const pairText = (ch: FractionBarChallenge) =>
+  `${ch.numerator}/${ch.denominator} and ${ch.compareWith?.numerator}/${ch.compareWith?.denominator}`;
 
 export const equalBarInstruction = (a: number, d: number) =>
   `Make a fraction equal to ${a}/${d} your own way: split the bar into equal parts, but not ${d}, then shade some.`;
@@ -26,6 +33,7 @@ export const equalBarInstruction = (a: number, d: number) =>
 /** The ask, as the tutor is told it. The fraction is printed on screen: it is the task, not a key. */
 export function barTask(type: FractionBarChallengeType, ch: FractionBarChallenge): string {
   if (type === 'build_equal') return ch.instruction ?? equalBarInstruction(ch.numerator, ch.denominator);
+  if (type === 'compare') return `Compare ${pairText(ch)}: pick <, = or > to make the statement true.`;
   return `Name the numerator and the denominator of ${ch.numerator}/${ch.denominator}, then shade ${ch.numerator}/${ch.denominator} on the bar.`;
 }
 
@@ -38,6 +46,8 @@ export interface FractionBarView {
   phase: FractionBarPhase;
   /** The number picked on a numerator or denominator step. */
   picked: number | null;
+  /** compare: the symbol picked. */
+  relation?: CompareRelation | null;
   /** Parts shaded (build step), or shaded parts of the learner's own bar (build_equal). */
   shaded: number;
   /** build_equal: how many parts the learner split the bar into, and whether they are all the same size. */
@@ -58,6 +68,8 @@ export function describeWork(type: FractionBarChallengeType, ch: FractionBarChal
     const parts = view.parts ?? 1;
     return `Split the bar into ${parts} ${view.equalParts === false ? 'parts, not all the same size,' : 'equal parts'} and shaded ${view.shaded}`;
   }
+  if (type === 'compare') return `Picked ${view.relation ?? 'nothing'}: ${ch.numerator}/${ch.denominator} ${view.relation ?? '?'} `
+    + `${ch.compareWith?.numerator}/${ch.compareWith?.denominator}`;
   switch (view.phase) {
     case 'identify-numerator': return `Chose ${view.picked ?? 'nothing'} as the numerator`;
     case 'identify-denominator': return `Chose ${view.picked ?? 'nothing'} as the denominator`;
@@ -77,7 +89,23 @@ export type FractionBarMiss = 'chose_denominator' | 'other_numerator' | 'chose_n
 export const FRACTION_BAR_MISSES: readonly FractionBarMiss[] = ['chose_denominator', 'other_numerator', 'chose_numerator',
   'other_denominator', 'shaded_all', 'shaded_the_rest', 'one_short', 'one_over', 'short_by_more', 'over_by_more'];
 
-export function fractionBarMiss(ch: FractionBarChallenge, view: FractionBarView): FractionBarMiss | undefined {
+/**
+ * compare's misses, from the symbol picked: `said_equal` (= for two different amounts), `said_unequal` (a side for an
+ * equal pair), `more_parts_bigger` (the reversed symbol on a same-numerator pair: the fraction with more parts read as
+ * the bigger one, whole-number bias), `flipped` (the reversed symbol on any other pair).
+ */
+export type FractionCompareMiss = 'said_equal' | 'said_unequal' | 'more_parts_bigger' | 'flipped';
+export const FRACTION_COMPARE_MISSES: readonly FractionCompareMiss[] = ['said_equal', 'said_unequal', 'more_parts_bigger', 'flipped'];
+
+export function fractionCompareMiss(ch: FractionBarChallenge, picked: CompareRelation | null | undefined): FractionCompareMiss | undefined {
+  if (!picked || picked === ch.relation) return undefined;
+  if (ch.relation === '=') return 'said_unequal';
+  if (picked === '=') return 'said_equal';
+  return ch.numerator === ch.compareWith?.numerator ? 'more_parts_bigger' : 'flipped';
+}
+
+export function fractionBarMiss(ch: FractionBarChallenge, view: FractionBarView): FractionBarMiss | FractionCompareMiss | undefined {
+  if (view.phase === 'compare') return fractionCompareMiss(ch, view.relation);
   const { numerator: n, denominator: d } = ch;
   switch (view.phase) {
     case 'identify-numerator':
@@ -155,6 +183,8 @@ const STEP_CONSTRAINTS: Record<FractionBarPhase, string> = {
     + 'the activity checks it. Then they shade the bar. You cannot pick or shade.',
   'build-fraction': 'Step 3 of 3. The bar is split into equal parts. The learner taps parts to shade them and presses Submit Fraction; '
     + 'the bar checks it. You cannot shade.',
+  compare: 'Two fractions of the same whole are printed, each with its bar shaded below it, one bar above the other. The learner '
+    + 'picks <, = or > between them and presses Check; the activity checks it. You cannot pick.',
 };
 
 export function workspaceScene(type: FractionBarChallengeType, ch: FractionBarChallenge, view: FractionBarView): WorkspaceScene {
@@ -168,6 +198,12 @@ export function workspaceScene(type: FractionBarChallengeType, ch: FractionBarCh
     facts.learnerWork = describeWork(type, ch, view);
     facts.constraints = `The learner chooses how many equal parts to split the bar into (any number but ${ch.denominator}), `
       + "can cut one part in half, shades parts, and presses I'm done; the bar checks it. Many answers are right. You cannot split or shade.";
+  } else if (type === 'compare') {
+    facts.secondFraction = `${ch.compareWith?.numerator}/${ch.compareWith?.denominator}`;
+    facts.bars = `Top bar: ${ch.denominator} equal parts, ${ch.numerator} shaded. Bottom bar, the same length: `
+      + `${ch.compareWith?.denominator} equal parts, ${ch.compareWith?.numerator} shaded.`;
+    if (view.relation) facts.learnerPick = view.relation;
+    facts.constraints = STEP_CONSTRAINTS.compare;
   } else {
     facts.step = view.phase === 'identify-numerator' ? 'numerator' : view.phase === 'identify-denominator' ? 'denominator' : 'shade';
     if (view.phase === 'build-fraction') {

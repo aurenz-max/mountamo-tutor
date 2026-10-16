@@ -1,5 +1,5 @@
 /**
- * The in-item levers on the fraction-bar three-step item, which identify, build, compare and add_subtract share (pick
+ * The in-item levers on the fraction-bar three-step item, which identify, build, larger_denominators and add_subtract share (pick
  * the numerator, pick the denominator, shade the bar; `/add-support-tiers`, report
  * qa/eval-reports/fraction-bar-levers-2026-10-08.md). No real-learner evidence: the misses are what `fractionBarMiss`
  * observes. build_equal's levers stay in `fractionBarWorkspace.ts`.
@@ -14,7 +14,7 @@
  *   Both start pulled where the generator's tier shows them (easy, medium, no tier); a starting position is not a pull.
  * - `smaller_fraction` (simplify): an ungraded practice item of the same mode with fewer parts (the fewest the mode's
  *   window allows) and two choices per pick, the practice fraction's own numerator and denominator. Never the item's
- *   value or denominator (`practiceLeaks`). None on the mode's plainest items (identify 1/2, build x/3, compare x/4,
+ *   value or denominator (`practiceLeaks`). None on the mode's plainest items (identify 1/2, build x/3, larger_denominators x/4,
  *   add_subtract x/3).
  * Every builder is deterministic, so the live journey rebuilds the practice item from its parent.
  */
@@ -29,14 +29,15 @@ export const SMALLER_FRACTION_LEVER = 'smaller_fraction';
 /** The practice item's id suffix (shared with build_equal's `smallerBarTarget`). */
 export const PRACTICE_SUFFIX = '~smaller';
 
-type StepType = Exclude<FractionBarChallengeType, 'build_equal'>;
+/** compare is not the three-step item and has no levers yet (QUEUE 8.1g residual: /add-support-tiers). */
+type StepType = Exclude<FractionBarChallengeType, 'build_equal' | 'compare'>;
 const range = (lo: number, hi: number) => Array.from({ length: Math.max(0, hi - lo + 1) }, (_, i) => lo + i);
 
 /** The generator's fraction window per mode (`gemini-fraction-bar.ts` *Operands): the practice item stays inside it. */
 const WINDOW: Record<StepType, { denominators: readonly number[]; numerators: (d: number) => number[] }> = {
   identify: { denominators: [2, 3, 4, 6, 8], numerators: () => [1] },
   build: { denominators: range(3, 6), numerators: d => range(2, d - 1) },
-  compare: { denominators: range(4, 12), numerators: d => range(1, d - 1) },
+  larger_denominators: { denominators: range(4, 12), numerators: d => range(1, d - 1) },
   add_subtract: { denominators: range(3, 10), numerators: d => range(1, d - 1) },
 };
 
@@ -72,7 +73,7 @@ export function practiceLeaks(item: Fraction, practice: Fraction): boolean {
  * position always holds the answer). Null on the mode's plainest item.
  */
 export function smallerFraction(type: FractionBarChallengeType, ch: FractionBarChallenge): FractionBarChallenge | null {
-  if (type === 'build_equal') return null;
+  if (type === 'build_equal' || type === 'compare') return null;
   const window = WINDOW[type];
   for (const denominator of window.denominators.filter(d => d < ch.denominator)) {
     const numerator = window.numerators(denominator).find(n => !practiceLeaks(ch, { numerator: n, denominator }));
@@ -106,7 +107,7 @@ export interface StepLeverStart { readout: boolean; numerals: boolean }
 /** The levers on a three-step session item at its current step. `pulled` holds this item's runtime pulls. */
 export function stepLevers(type: FractionBarChallengeType, ch: FractionBarChallenge | null, phase: FractionBarPhase,
   pulled: readonly string[], start: StepLeverStart): WorkspaceLever[] {
-  if (type === 'build_equal' || !ch) return [];
+  if (type === 'build_equal' || type === 'compare' || !ch) return [];
   const lever = (id: string, kind: 'help' | 'simplify', carrier: WorkspaceLever['carrier'], when: string, does: string,
     startsPulled = false): WorkspaceLever => ({ id, kind, carrier, when, does, pulled: startsPulled || pulled.includes(id),
     answers: LEVER_ANSWERS[id] });
@@ -132,7 +133,7 @@ export function stepLevers(type: FractionBarChallengeType, ch: FractionBarChalle
 /** What the pulled levers put on screen, as the tutor and the observer read it: what is drawn, never the key. */
 export function stepLeverFacts(type: FractionBarChallengeType, ch: FractionBarChallenge, phase: FractionBarPhase,
   on: readonly string[]): string[] {
-  if (type === 'build_equal') return [];
+  if (type === 'build_equal' || type === 'compare') return [];
   const facts: string[] = [];
   const model = on.includes(MODEL_LEVER) ? modelFraction(ch) : null;
   if (model) facts.push(`A different fraction, ${model.numerator}/${model.denominator}, is drawn beside this one: the word numerator `

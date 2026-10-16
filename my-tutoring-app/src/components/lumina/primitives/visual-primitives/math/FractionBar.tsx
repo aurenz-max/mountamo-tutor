@@ -50,6 +50,9 @@ import { useBuildWatcher } from '../../build-layer/buildLayer';
 export type FractionBarChallengeType =
   | 'identify'
   | 'build'
+  // The three-step item on denominators 4-12 (this mode was named `compare` until 10-16; it compared nothing).
+  | 'larger_denominators'
+  // Two bars of the same whole: pick <, = or > (pair and key from the fraction-compare item space).
   | 'compare'
   | 'add_subtract'
   // Open build: make a fraction equal to numerator/denominator on the bar, any equal split but the target's own.
@@ -63,7 +66,15 @@ export interface FractionBarChallenge {
   denominatorChoices: number[];
   /** build_equal: the ask, stating the target (code writes it). */
   instruction?: string;
+  /** compare: the second fraction (the first is numerator/denominator), drawn as a second bar of the same whole. */
+  compareWith?: { numerator: number; denominator: number };
+  /** compare: the true relation of the first fraction to the second. Code computes it; never shown before the check. */
+  relation?: CompareRelation;
+  /** compare: where the pair came from (the item space and its predicted difficulty). */
+  itemSpace?: { space: string; structure: string; beta: number };
 }
+
+export type CompareRelation = '<' | '=' | '>';
 
 import type { LearningAdaptation } from '../../../service/generation/learningAdaptation';
 export interface FractionBarData {
@@ -118,11 +129,14 @@ interface FractionBarProps {
   runtimeEvalMode?: string;
 }
 
-type LearningPhase = 'identify-numerator' | 'identify-denominator' | 'build-fraction';
+type LearningPhase = 'identify-numerator' | 'identify-denominator' | 'build-fraction' | 'compare';
+
+const RELATIONS: readonly CompareRelation[] = ['<', '=', '>'];
 
 const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
   identify:     { label: 'Identify Fractions',  icon: '🔢', accentColor: 'purple' },
   build:        { label: 'Build Fractions',     icon: '🎯', accentColor: 'emerald' },
+  larger_denominators: { label: 'Larger Denominators', icon: '🧩', accentColor: 'blue' },
   compare:      { label: 'Compare Fractions',   icon: '⚖️', accentColor: 'blue' },
   add_subtract: { label: 'Fraction Operations', icon: '➕',       accentColor: 'pink' },
   build_equal:  { label: 'Your Way',            icon: '✂️', accentColor: 'purple' },
@@ -168,7 +182,10 @@ function tutorRevealClause(
   if (challengeType === 'build_equal') {
     return 'Open build: never name a number of parts or how many to shade, and never say whether the bar is equal before the student presses I\'m done.';
   }
-  // build / compare / add_subtract — the value is the prompt; only the strategy tiers.
+  if (challengeType === 'compare') {
+    return 'Comparison: never say which fraction is greater or whether they are equal, and never read out a symbol before the student checks; ask what they notice about how much of each bar is shaded.';
+  }
+  // build / larger_denominators / add_subtract — the value is the prompt; only the strategy tiers.
   if (tier === 'hard') {
     return 'TIER hard: do NOT name the target fraction value or how many parts to shade; ask the student what they see shaded on the bar and let them reason from the fraction alone.';
   }
@@ -210,7 +227,10 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   } = data;
   /** The open build: no numerator/denominator steps, the learner's own split, and no readout that would judge it. */
   const building = sessionChallengeType === 'build_equal';
-  const showDecimal = dataShowDecimal && !building;
+  /** compare: two shaded bars and a symbol to pick; no decimal, which would answer it. */
+  const comparing = sessionChallengeType === 'compare';
+  const firstPhase: LearningPhase = building ? 'build-fraction' : comparing ? 'compare' : 'identify-numerator';
+  const showDecimal = dataShowDecimal && !building && !comparing;
 
   const stableInstanceIdRef = useRef(instanceId || `fraction-bar-${Date.now()}`);
   const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
@@ -227,6 +247,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     onItemOpened: (_index, retry) => {
       if (!retry) { setPractice(null); return; }
       if (building) return;
+      setSelectedRelation(null);
       setSelectedNumerator(null); setSelectedDenominator(null); setShadedCount(0);
       setFeedback(''); setFeedbackType('info');
     },
@@ -260,7 +281,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const denominatorChoices = currentChallenge?.denominatorChoices ?? [];
 
   // ── Per-challenge interaction state (resets on advance) ────────
-  const [currentPhase, setCurrentPhase] = useState<LearningPhase>(building ? 'build-fraction' : 'identify-numerator');
+  const [currentPhase, setCurrentPhase] = useState<LearningPhase>(firstPhase);
   const [feedback, setFeedback] = useState<string>('');
   const [feedbackType, setFeedbackType] = useState<'success' | 'error' | 'hint' | 'info'>('info');
 
@@ -269,6 +290,9 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
 
   const [selectedDenominator, setSelectedDenominator] = useState<number | null>(null);
   const [denominatorAttempts, setDenominatorAttempts] = useState(0);
+
+  const [selectedRelation, setSelectedRelation] = useState<CompareRelation | null>(null);
+  const [compareAttempts, setCompareAttempts] = useState(0);
 
   const [shadedCount, setShadedCount] = useState(0);
   const [shadingChanges, setShadingChanges] = useState(0);
@@ -295,7 +319,9 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const [openedId, setOpenedId] = useState(currentChallenge?.id);
   if (currentChallenge && openedId !== currentChallenge.id) {
     setOpenedId(currentChallenge.id);
-    setCurrentPhase(building ? 'build-fraction' : 'identify-numerator');
+    setCurrentPhase(firstPhase);
+    setSelectedRelation(null);
+    setCompareAttempts(0);
     setFeedback('');
     setFeedbackType('info');
     setSelectedNumerator(null);
@@ -362,12 +388,13 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         + `Mode: ${sessionChallengeType}. The student will work through ${challenges.length} different fractions, `
         + (building
           ? 'each time splitting the bar their own way to make a fraction equal to the one shown. '
+          : comparing ? 'each a pair of fractions shown as two shaded bars, picking <, = or > between them. '
           : 'each running through three phases (identify numerator, identify denominator, build on the bar). ')
         + `Introduce the session warmly and briefly. `
         + tutorRevealClause(supportTier, sessionChallengeType),
       { silent: true },
     );
-  }, [isConnected, tutorOwned, building, challenges.length, sessionChallengeType, supportTier, gradeLevel, sendText]);
+  }, [isConnected, tutorOwned, building, comparing, challenges.length, sessionChallengeType, supportTier, gradeLevel, sendText]);
 
   // ── Evaluation hook ──────────────────────────────────────────
   const {
@@ -508,6 +535,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const view = (over: Partial<FractionBarView> = {}): FractionBarView => ({
     phase: currentPhase,
     picked: currentPhase === 'identify-numerator' ? selectedNumerator : selectedDenominator,
+    ...(comparing ? { relation: selectedRelation } : {}),
     shaded: building ? made.shaded : shadedCount,
     ...(building ? { parts: made.pieces, equalParts: made.equal } : {}),
     readout: readoutOn,
@@ -521,7 +549,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   /** A step's check, committed on both paths; a right numerator or denominator only moves to the next step. */
   const commitStep = (correct: boolean, work: FractionBarView) => {
     if (!currentChallenge) return;
-    if (!correct || work.phase === 'build-fraction') {
+    if (!correct || work.phase === 'build-fraction' || work.phase === 'compare') {
       progress.commitCheck(describeWork(sessionChallengeType, currentChallenge, work), correct,
         correct ? undefined : building ? equalBuildMiss(currentChallenge, made) : fractionBarMiss(currentChallenge, work));
     }
@@ -627,6 +655,41 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           + tutorRevealClause(supportTier, sessionChallengeType),
         { silent: true },
       );
+    }
+  };
+
+  // ── compare: check the symbol picked between the two bars ──
+  const second = currentChallenge?.compareWith;
+  const handleCheckCompare = () => {
+    if (learnerBlocked() || challengeDone || !currentChallenge || !second) return;
+    if (selectedRelation === null) {
+      setFeedback('Pick <, = or > first!');
+      setFeedbackType('error');
+      return;
+    }
+    const nextAttempts = compareAttempts + 1;
+    setCompareAttempts(nextAttempts);
+    if (!practice) responsesRef.current.push({ challengeId: currentChallenge.id, numerator, denominator, phase: 'compare',
+      expected: currentChallenge.relation ?? '', selected: selectedRelation, attempt: nextAttempts,
+      hintsBefore: challengeHintCount, compareWith: second });
+    const correct = selectedRelation === currentChallenge.relation;
+    commitStep(correct, view({ phase: 'compare', relation: selectedRelation }));
+    const statement = `${numerator}/${denominator} ${selectedRelation} ${second.numerator}/${second.denominator}`;
+    if (correct) {
+      SoundManager.playCorrect();
+      setFeedback(`Yes! ${statement}.`);
+      setFeedbackType('success');
+      sendText(`[ANSWER_CORRECT] Student compared correctly: ${statement}. Attempt ${nextAttempts}. Celebrate briefly.`, { silent: true });
+      completeCurrentChallenge(true, phaseScore(nextAttempts), nextAttempts, { compareAttempts: nextAttempts });
+    } else {
+      SoundManager.playIncorrect();
+      // Never the right symbol: the learner looks at the bars again.
+      setFeedback(selectedRelation === '='
+        ? 'Not quite. Look again: do the two bars have the same amount shaded?'
+        : 'Not quite. Look again at how much of each bar is shaded.');
+      setFeedbackType('error');
+      sendText(`[ANSWER_INCORRECT] Student picked ${statement}, which is not true. Attempt ${nextAttempts}. `
+        + tutorRevealClause(supportTier, sessionChallengeType), { silent: true });
     }
   };
 
@@ -755,7 +818,15 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     setChallengeHintCount((c) => c + 1);
     setFeedbackType('hint');
 
-    if (building) {
+    if (comparing) {
+      setFeedback(denominator === second?.denominator
+        ? 'Hint: both bars have the same size parts. Which bar has more of them shaded?'
+        : numerator === second?.numerator
+          ? 'Hint: both bars have the same number of parts shaded. Which bar has the bigger parts?'
+          : 'Hint: both bars are the same whole. Look at where the shading stops on each one. Is it before or after the middle?');
+      sendText(`[HINT_REQUESTED] Student asked for a hint comparing ${numerator}/${denominator} and ${second?.numerator}/${second?.denominator}. `
+        + tutorRevealClause(supportTier, sessionChallengeType), { silent: true });
+    } else if (building) {
       setFeedback(`Hint: split the bar so every part is the same size, then shade the same amount as ${numerator}/${denominator}.`);
       sendText(`[HINT_REQUESTED] Student asked for a hint on an open build of a fraction equal to ${numerator}/${denominator}. `
         + tutorRevealClause(supportTier, sessionChallengeType), { silent: true });
@@ -787,7 +858,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         { silent: true },
       );
     }
-  }, [challengeDone, building, currentPhase, numerator, denominator, sendText, supportTier, sessionChallengeType]);
+  }, [challengeDone, building, comparing, second, currentPhase, numerator, denominator, sendText, supportTier, sessionChallengeType]);
 
   // ── Workspace path: what the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
@@ -913,7 +984,8 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
             </span>
           </div>
 
-          {/* ── Fraction display (constant reference) ──────── */}
+          {/* ── Fraction display (constant reference; compare prints both fractions beside their bars) ── */}
+          {!comparing && (
           <div className="flex justify-center mb-8">
             <div className="glass-panel rounded-2xl border border-purple-500/20 px-12 py-6 text-center">
               <div className="text-6xl font-bold text-white font-mono flex items-center justify-center gap-2">
@@ -928,6 +1000,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
               )}
             </div>
           </div>
+          )}
 
           {/* ── model_fraction lever: a different fraction, its parts named and drawn; never this item's numbers ── */}
           {model && (
@@ -951,7 +1024,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           )}
 
           {/* ── Within-challenge phase indicator (the three-step item) ── */}
-          {!building && (
+          {!building && !comparing && (
           <div className="flex items-center justify-center gap-3 mb-8">
             {/* Phase 1 pill */}
             <div
@@ -1193,6 +1266,57 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
           )}
 
           {/* ═══════════════════════════════════════════════════
+              compare — two bars of the same whole, a symbol between
+             ═══════════════════════════════════════════════════ */}
+          {comparing && currentChallenge && second && (
+            <div className="glass-panel rounded-2xl border border-blue-500/30 p-6 mb-6 relative overflow-hidden" data-compare>
+              <p className="text-slate-300 leading-relaxed mb-6 text-center">
+                Both bars are the same whole. Pick the sign that makes the statement true.
+              </p>
+              <div className="flex flex-col gap-4 mb-6">
+                {[{ n: numerator, d: denominator, key: 'top' }, { n: second.numerator, d: second.denominator, key: 'bottom' }].map(bar => (
+                  <div key={bar.key} className="flex items-center gap-4" data-compare-bar={bar.key}>
+                    <span className="w-16 shrink-0 text-right text-2xl font-bold font-mono text-white">{bar.n}/{bar.d}</span>
+                    <div className="flex flex-1 border-2 border-slate-600 rounded-lg overflow-hidden h-14">
+                      {Array.from({ length: bar.d }).map((_, i) => (
+                        <div key={i} data-part={i < bar.n ? 'shaded' : 'empty'}
+                          className={`flex-1 border-r border-slate-600 last:border-r-0 flex items-center justify-center ${
+                            i < bar.n ? 'bg-gradient-to-br from-purple-500 to-purple-600' : 'bg-slate-700/50'}`}>
+                          {showPartitionNumerals && <span className="text-xs text-white/40 font-mono">{i + 1}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-center gap-4 mb-6 text-3xl font-bold font-mono text-white">
+                <span>{numerator}/{denominator}</span>
+                <span className="min-w-12 rounded-lg border border-white/20 px-3 text-center text-blue-300">{selectedRelation ?? '?'}</span>
+                <span>{second.numerator}/{second.denominator}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3 mb-6" role="group" aria-label="Pick a sign">
+                {RELATIONS.map(r => (
+                  <button key={r} aria-label={r === '<' ? 'less than' : r === '>' ? 'greater than' : 'equal to'}
+                    onClick={() => { if (learnerBlocked() || challengeDone) return; SoundManager.select(); setSelectedRelation(r); }}
+                    disabled={challengeDone}
+                    className={`p-4 rounded-xl border text-center transition-all duration-300 text-3xl font-bold font-mono ${
+                      selectedRelation === r
+                        ? 'glass-panel border-blue-400/50 text-blue-300 shadow-lg scale-105'
+                        : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:border-white/20'}`}>
+                    {r}
+                  </button>
+                ))}
+              </div>
+              {!challengeDone && (
+                <button onClick={handleCheckCompare} disabled={selectedRelation === null || !stepOpen}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 px-6 rounded-xl disabled:bg-white/10 disabled:text-slate-500 disabled:cursor-not-allowed transition-all duration-300 hover:scale-[1.02]">
+                  Check Answer
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════
               build_equal — the learner's own bar (open build)
              ═══════════════════════════════════════════════════ */}
           {building && currentChallenge && (
@@ -1273,7 +1397,7 @@ const FractionBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
                   </span>
                 )}
               </div>
-              {!building && (
+              {!building && !comparing && (
                 <p className="text-sm text-slate-300">
                   You correctly built the fraction{' '}
                   <span className="font-bold text-white">

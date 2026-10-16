@@ -12,7 +12,7 @@ const keys = (list: readonly FractionBarChallenge[]) => list.map(c => `${c.numer
 
 it('offers the move only for build, where fractions are non-unit', () => {
   expect(eligibleFractionBarTeaching({ mode: 'build', tier: 'hard' })).toBe(true);
-  for (const mode of ['identify', 'compare', 'add_subtract', undefined]) expect(eligibleFractionBarTeaching({ mode, tier: 'medium' })).toBe(false);
+  for (const mode of ['identify', 'larger_denominators', 'compare', 'add_subtract', undefined]) expect(eligibleFractionBarTeaching({ mode, tier: 'medium' })).toBe(false);
 });
 
 it('recognizes only consecutive fractions whose shared number changes role with both numbers offered', () => {

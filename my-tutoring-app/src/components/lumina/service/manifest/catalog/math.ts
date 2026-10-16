@@ -39,7 +39,7 @@ import type { ComparisonMiss } from '../../../primitives/visual-primitives/math/
 import type { CountMiss, SpokenCountMiss } from '../../../primitives/visual-primitives/math/countingBoardDomain';
 import type { EquationBuilderMiss } from '../../../primitives/visual-primitives/math/equationBuilderWorkspace';
 import type { FractionMiss } from '../../../primitives/visual-primitives/math/fractionCirclesLevers';
-import type { FractionBarMiss } from '../../../primitives/visual-primitives/math/fractionBarWorkspace';
+import type { FractionBarMiss, FractionCompareMiss } from '../../../primitives/visual-primitives/math/fractionBarWorkspace';
 import type { TouchMiss } from '../../../primitives/visual-primitives/math/fractionCirclesWorkspace';
 import { EQUAL_BUILD_MISSES, type EqualBuildMiss } from '../../../primitives/visual-primitives/math/fractionEqualBuild';
 import type { FunctionMachineMiss } from '../../../primitives/visual-primitives/math/functionMachineWorkspace';
@@ -642,19 +642,22 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'then the denominator, from four number buttons, then shade that many equal parts of a bar; each step has its own Check and the '
         + 'bar checks it, so you are not told the answer. In the open build (build_equal) the learner splits a bar into equal parts of '
         + "their own choosing, shades some, and presses I'm done; many splits are right. Never name a number of parts or how many to "
-        + "shade, and never say whether the bar is equal before I'm done. You cannot pick, split or shade for the learner.",
+        + "shade, and never say whether the bar is equal before I'm done. In compare two fractions are printed, each above its shaded "
+        + 'bar of the same whole, and the learner picks <, = or >; never say which is greater or whether they are equal before the '
+        + "check. You cannot pick, split or shade for the learner.",
       // The bar's own checks (`fractionBarMiss`; build_equal: `equalBuildMiss`, shared with fraction-circles).
-      misses: missLists<FractionBarMiss | EqualBuildMiss>({
-        ...sameMisses<FractionBarMiss>(['identify', 'build', 'compare', 'add_subtract'], ['chose_denominator', 'other_numerator',
+      misses: missLists<FractionBarMiss | FractionCompareMiss | EqualBuildMiss>({
+        ...sameMisses<FractionBarMiss>(['identify', 'build', 'larger_denominators', 'add_subtract'], ['chose_denominator', 'other_numerator',
           'chose_numerator', 'other_denominator', 'shaded_all', 'shaded_the_rest', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
+        compare: ['said_equal', 'said_unequal', 'more_parts_bigger', 'flipped'],
         build_equal: ['unequal_pieces', 'same_pieces', 'shaded_the_rest', 'cut_cannot_make', 'one_off', 'off_by_more'],
       }),
     },
     misconceptionScope: 'skill',
     observationDelivery: 'server',
     learningObservations: { eligible: fractionBarDeliveryEligible },
-    description: 'Multi-challenge interactive fraction bar. Each session walks the student through 3-6 distinct fractions in the same eval mode. Every fraction runs through three within-challenge phases: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. Open-build mode build_equal skips the three phases: the student makes a fraction equal to a given one on the bar their own way (chooses how many equal parts, shades some), and any equal fraction passes. ESSENTIAL for elementary fraction introduction.',
-    constraints: 'Session-level configuration. The generator picks fractions locally per eval mode, so do NOT supply specific numerators, denominators, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (2-3, unit fractions), build (3-4, non-unit proper fractions), compare (4-5, larger denominators), add_subtract (5-6, operation context), build_equal (open build: make an equal fraction your own way).',
+    description: 'Multi-challenge interactive fraction bar. Each session walks the student through 3-6 distinct fractions in the same eval mode. Every fraction runs through three within-challenge phases: (1) identify the numerator via multiple choice, (2) identify the denominator via multiple choice, (3) build the fraction by shading parts on a bar. Progressive scaffolding from vocabulary to hands-on construction. Open-build mode build_equal skips the three phases: the student makes a fraction equal to a given one on the bar their own way (chooses how many equal parts, shades some), and any equal fraction passes. Mode compare skips the three phases too: two fractions of the same whole are drawn as shaded bars, one above the other, and the student picks <, = or > (3.NF.A.3d, 4.NF.A.2). ESSENTIAL for elementary fraction introduction.',
+    constraints: 'Session-level configuration. The generator picks fractions locally per eval mode, so do NOT supply specific numerators, denominators, or MC choices from the manifest — they are generated per challenge. Supports challengeTypes: identify (2-3, unit fractions), build (3-4, non-unit proper fractions), larger_denominators (4-5, name and shade denominators 4-12), compare (3-4, two bars: <, = or >), add_subtract (5-6, operation context), build_equal (open build: make an equal fraction your own way).',
     affordances: { representation: 'pictorial', answers: ['tap', 'build'], role: 'apply', minutes: 5 },
     tutoring: {
       taskDescription: 'Walk through {{totalChallenges}} fraction problems in {{challengeType}} mode. Current: fraction {{currentChallengeIndex}} of {{totalChallenges}} = {{numerator}}/{{denominator}}. Phase: {{currentPhase}}.',
@@ -700,12 +703,21 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Non-unit proper fractions (2/3, 3/4, 2/5).',
       },
       {
+        evalMode: 'larger_denominators',
+        label: 'Larger Denominators (Tier 3)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['larger_denominators'],
+        description: 'Name the numerator and denominator, then shade, on fractions with denominators 4-12. Compares nothing.',
+      },
+      {
         evalMode: 'compare',
         label: 'Compare Fractions (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['compare'],
-        description: 'Fractions with larger denominators, harder distractors.',
+        description: 'Compare two fractions shown as shaded bars of the same whole: pick <, = or >. Same denominator, same numerator, '
+          + 'or unlike pairs and pairs against 1/2 (3.NF.A.3d, 4.NF.A.2). Not ordering three or more fractions.',
       },
       {
         evalMode: 'add_subtract',

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * fraction-bar three-step levers (`fractionBarLevers.ts`: identify, build, compare, add_subtract), mounted the way a
+ * fraction-bar three-step levers (`fractionBarLevers.ts`: identify, build, larger_denominators, add_subtract), mounted the way a
  * lesson mounts it. The model is a different fraction; the counting levers show the learner's own bar; the practice
  * fraction is ungraded and gives the full item back from step one; only the full item's answer is credited, with the
  * levers recorded.
@@ -26,16 +26,16 @@ import {
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
 
-type Step = Exclude<FractionBarChallengeType, 'build_equal'>;
+type Step = Exclude<FractionBarChallengeType, 'build_equal' | 'compare'>;
 const range = (lo: number, hi: number) => Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
 /** Every fraction the generator can make per mode (`gemini-fraction-bar.ts` *Operands). */
 const WINDOWS: Record<Step, Array<[number, number]>> = {
   identify: [2, 3, 4, 6, 8].map(d => [1, d]),
   build: range(3, 6).flatMap(d => range(2, d - 1).map(n => [n, d] as [number, number])),
-  compare: range(4, 12).flatMap(d => range(1, d - 1).map(n => [n, d] as [number, number])),
+  larger_denominators: range(4, 12).flatMap(d => range(1, d - 1).map(n => [n, d] as [number, number])),
   add_subtract: range(3, 10).flatMap(d => range(1, d - 1).map(n => [n, d] as [number, number])),
 };
-const PLAINEST: Record<Step, number> = { identify: 2, build: 3, compare: 4, add_subtract: 3 };
+const PLAINEST: Record<Step, number> = { identify: 2, build: 3, larger_denominators: 4, add_subtract: 3 };
 const make = (id: string, n: number, d: number): FractionBarChallenge => ({ id, numerator: n, denominator: d,
   numeratorChoices: [n, d, d + 1, d + 2], denominatorChoices: [d, n, d + 1, d + 2] });
 const OFF = { readout: false, numerals: false };

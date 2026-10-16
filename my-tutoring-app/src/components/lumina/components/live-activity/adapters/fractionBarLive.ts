@@ -11,6 +11,10 @@ function runnable(type: FractionBarData['challengeType']) {
     if (!c || typeof c.id !== 'string' || !whole(c.denominator, 2, 12)) return false;
     // The open build needs another equal split the bar can make (never the target's own).
     if (type === 'build_equal') return whole(c.numerator, 1, c.denominator - 1) && equalWays(c.numerator, c.denominator).length > 0;
+    // compare: two proper fractions and the relation the check expects.
+    if (type === 'compare') return whole(c.numerator, 1, c.denominator - 1) && !!c.compareWith
+      && whole(c.compareWith.denominator, 2, 12) && whole(c.compareWith.numerator, 1, c.compareWith.denominator - 1)
+      && ['<', '=', '>'].includes(c.relation as string);
     return whole(c.numerator, 0, c.denominator) && Array.isArray(c.numeratorChoices) && c.numeratorChoices.includes(c.numerator)
       && Array.isArray(c.denominatorChoices) && c.denominatorChoices.includes(c.denominator);
   };
@@ -18,7 +22,7 @@ function runnable(type: FractionBarData['challengeType']) {
 
 export function validateFractionBarData(value: unknown): FractionBarData {
   const type = (value as FractionBarData | null)?.challengeType;
-  if (!['identify', 'build', 'compare', 'add_subtract', 'build_equal'].includes(type as string))
+  if (!['identify', 'build', 'larger_denominators', 'compare', 'add_subtract', 'build_equal'].includes(type as string))
     throw new Error('Generated fraction bar has no known challenge type.');
   return validateChallengePool<FractionBarData>(value, runnable(type as FractionBarData['challengeType']), {
     pool: 'Generated fraction bar has no valid challenges.',

@@ -16,6 +16,7 @@ import { Type, Schema, ThinkingLevel } from "@google/genai";
 import {
   FractionBarData,
   FractionBarChallenge,
+  FractionBarChallengeType,
 } from "../../primitives/visual-primitives/math/FractionBar";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
@@ -31,6 +32,7 @@ import { adaptationTaskFor, planAdaptation, plannedMode, stampAdaptation } from 
 import { eligibleFractionBarTeaching, fractionBarTeaching, selectSharedDigitRoleContrast } from "./fractionBarRemediation";
 import { equalTargets } from '../../primitives/visual-primitives/math/fractionEqualBuild';
 import { equalBarInstruction } from '../../primitives/visual-primitives/math/fractionBarWorkspace';
+import { FRACTION_COMPARE, compareSymbol, type FractionCompareItem } from '../itemSpace/fractionCompare';
 
 // ---------------------------------------------------------------------------
 // Challenge type documentation registry
@@ -49,11 +51,17 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Focus on shading correctly. Grades 3-4. Pictorial representation with prompts.`,
     schemaDescription: "'build' (shade non-unit proper fractions)",
   },
+  larger_denominators: {
+    promptDoc:
+      `"larger_denominators": The three-step item (name the numerator, name the denominator, shade the bar) on fractions `
+      + `with larger denominators (3/8, 5/12). Denominators 4-12. Grades 4-5. Pictorial with reduced prompts.`,
+    schemaDescription: "'larger_denominators' (name and shade fractions with denominators 4-12)",
+  },
   compare: {
     promptDoc:
-      `"compare": Fractions with larger denominators (3/8, 5/12). Denominators 2-12. `
-      + `More complex MC distractors. Grades 4-5. Pictorial with reduced prompts.`,
-    schemaDescription: "'compare' (fractions with larger denominators)",
+      `"compare": Two fractions of the same whole, each shown as a shaded bar, one above the other. The student picks `
+      + `<, = or > to make the statement true. The app chooses every pair; the title and description name no fraction.`,
+    schemaDescription: "'compare' (two bars: is the first fraction <, = or > the second)",
   },
   add_subtract: {
     promptDoc:
@@ -72,7 +80,7 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
 };
 
 /** An open build is reached only by a pin; an unpinned session keeps the four modes it always had. */
-const UNPINNED_TYPES = ['identify', 'build', 'compare', 'add_subtract'];
+const UNPINNED_TYPES = ['identify', 'build', 'larger_denominators', 'compare', 'add_subtract'];
 
 // ---------------------------------------------------------------------------
 // Wrapper schema — Gemini emits session-level metadata only.
@@ -84,9 +92,9 @@ const fractionBarWrapperSchema: Schema = {
   properties: {
     challengeType: {
       type: Type.STRING,
-      enum: ["identify", "build", "compare", "add_subtract", "build_equal"],
+      enum: ["identify", "build", "larger_denominators", "compare", "add_subtract", "build_equal"],
       description:
-        "Challenge type controlling difficulty: 'identify' (2-3), 'build' (3-4), 'compare' (4-5), 'add_subtract' (5-6).",
+        "Challenge type: 'identify' (2-3), 'build' (3-4), 'larger_denominators' (4-5), 'compare' (3-4), 'add_subtract' (5-6).",
     },
     title: {
       type: Type.STRING,
@@ -115,7 +123,7 @@ const fractionBarWrapperSchema: Schema = {
 // Constants
 // ---------------------------------------------------------------------------
 
-type ChallengeType = 'identify' | 'build' | 'compare' | 'add_subtract' | 'build_equal';
+type ChallengeType = FractionBarChallengeType;
 
 // ---------------------------------------------------------------------------
 // Within-mode difficulty = structural SUPPORT tier (config.difficulty)
@@ -130,7 +138,7 @@ type ChallengeType = 'identify' | 'build' | 'compare' | 'add_subtract' | 'build_
 // A harder tier means LESS on-bar/readout help + TIGHTER MC distractors, never a bigger
 // or out-of-scope fraction. See memory: structural-difficulty-not-numeric.
 
-type SupportTier = 'easy' | 'medium' | 'hard';
+export type SupportTier = 'easy' | 'medium' | 'hard';
 
 const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
 
@@ -209,15 +217,21 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
             : 'Keep the partition numerals but hide the running-target restatement; the student tracks how many parts they have shaded without a live tally.',
       );
       break;
-    case 'compare':
+    case 'larger_denominators':
       promptLines.push(
         tier === 'easy'
-          ? 'Keep the decimal and all readouts on so the student can compare magnitudes numerically as well as visually.'
+          ? 'Keep the decimal and all readouts on so the student can check the fraction numerically as well as visually.'
           : tier === 'hard'
-            ? 'Hide the decimal, partition numerals, and readouts; the student compares from the shaded bar alone.'
+            ? 'Hide the decimal, partition numerals, and readouts; the student shades from the fraction alone.'
             : 'Hide the decimal but keep the partition numerals; dim the running readout so the student leans on the bar.',
       );
       break;
+    case 'compare':
+      // The tier sets the KIND of pair (compareOperands), never support: a decimal would answer the comparison.
+      promptLines.length = 0;
+      promptLines.push(`Support tier: ${tier.toUpperCase()}. ${COMPARE_TIER_LINE[tier]}`);
+      return { showDecimal: false, showPartitionNumerals: tier !== 'hard', showShadedReadout: false, distractorTightness,
+        showPromptGloss, promptLines };
     case 'build_equal':
       // Starts bare at every tier: choosing the split and keeping count IS the task; its levers come on a miss.
       promptLines.push('build_equal: the bar starts whole with no count or readout shown; the student chooses the split and keeps count.');
@@ -253,7 +267,8 @@ const MAX_INSTANCE_COUNT = 8;
 const COUNT_BY_MODE: Record<ChallengeType, number> = {
   identify: 7,
   build: 3,
-  compare: 3,
+  larger_denominators: 3,
+  compare: 5,
   add_subtract: 3,
   build_equal: 4,
 };
@@ -326,7 +341,7 @@ function buildOperands(count: number): FractionPair[] {
   return pairs;
 }
 
-function compareOperands(count: number): FractionPair[] {
+function largerDenominatorOperands(count: number): FractionPair[] {
   // Proper fractions, denominators 4-12, full numerator range.
   const pairs: FractionPair[] = [];
   const seen = new Set<string>();
@@ -383,6 +398,69 @@ function equalBuildOperands(count: number, band: 'K-2' | '3-5'): FractionPair[] 
   return pairs;
 }
 
+// ---------------------------------------------------------------------------
+// compare: code picks every pair and its key from the fraction-compare item space
+// ---------------------------------------------------------------------------
+
+/**
+ * The tier sets which comparison strategy the pair allows (ruling 10-15, QUEUE 8.1g):
+ * easy = same denominator (compare the numerators), medium = same numerator (more parts are smaller parts, where
+ * whole-number reasoning gives the wrong answer), hard = unlike numerators and denominators, or a pair against 1/2.
+ * No tier = every kind the grade allows, easiest first.
+ */
+const COMPARE_TIER_LINE: Record<SupportTier, string> = {
+  easy: 'Every pair has the same denominator: the student compares how many equal parts are shaded.',
+  medium: 'Every pair has the same numerator: the student reasons that more parts make smaller parts.',
+  hard: 'The pairs have different numerators and denominators, or one fraction is compared with one half.',
+};
+
+const hasHalf = (it: FractionCompareItem) => 2 * it.a === it.b || 2 * it.c === it.d;
+
+/** Which pairs a grade and a tier allow. The grade is a ceiling (scopeContext): 3.NF.3d is same numerator or same
+ *  denominator, plus pairs against 1/2 at the hard tier; 4.NF.2 adds every other pair. */
+export function compareScope(grade: string | undefined, tier: SupportTier | null): (it: FractionCompareItem) => boolean {
+  const g = (grade ?? '').trim().toUpperCase();
+  const n = g === 'K' ? 0 : Number.parseInt(g, 10);
+  const level = Number.isNaN(n) ? 4 : n;
+  const dens = level <= 2 ? [2, 3, 4] : level === 3 ? [2, 3, 4, 6, 8] : [2, 3, 4, 5, 6, 8, 10, 12];
+  const kind = (it: FractionCompareItem): boolean => {
+    const unlike = it.strategy !== 'sameDen' && it.strategy !== 'sameNum';
+    if (tier === 'easy') return it.strategy === 'sameDen';
+    if (tier === 'medium') return it.strategy === 'sameNum';
+    if (level <= 2) return tier === 'hard' ? false : !unlike;
+    if (level === 3) return tier === 'hard' ? unlike && hasHalf(it) : !unlike || hasHalf(it);
+    return tier === 'hard' ? unlike : true;
+  };
+  return (it) => dens.includes(it.b) && dens.includes(it.d) && kind(it);
+}
+
+export function compareChallenges(count: number, grade: string | undefined, tier: SupportTier | null): FractionBarChallenge[] {
+  let scope = compareScope(grade, tier);
+  // Grade 2 has no hard pairs (no unlike pairs below grade 3): it keeps its medium kind rather than an empty session.
+  if (!FRACTION_COMPARE.items!().some(scope)) scope = compareScope(grade, 'medium');
+  const picks = FRACTION_COMPARE.pick(count, -Infinity, Infinity, Math.random, scope);
+  // Which side holds the larger fraction is incidental (the space carries no weight for it), but a session that is
+  // all "<" can be answered without looking: half the unequal pairs go each way, in a shuffled order.
+  const unequal = picks.filter(it => it.strategy !== 'equal').length;
+  const sides = shuffle(Array.from({ length: unequal }, (_, i) => (i % 2 ? '<' : '>')));
+  let next = 0;
+  const oriented = [...picks].sort((p, q) => p.beta - q.beta).map(it => {
+    if (it.strategy === 'equal' || compareSymbol(it) === sides[next++]) return it;
+    const swapped = { ...it, a: it.c, b: it.d, c: it.a, d: it.b };
+    return { ...swapped, structure: `${compareSymbol(swapped)}${it.structure.slice(1)}` };
+  });
+  return oriented.map((it, idx) => ({
+    id: `fraction-bar-${idx + 1}`,
+    numerator: it.a,
+    denominator: it.b,
+    numeratorChoices: [],
+    denominatorChoices: [],
+    compareWith: { numerator: it.c, denominator: it.d },
+    relation: compareSymbol(it),
+    itemSpace: { space: 'fraction-compare', structure: it.structure, beta: it.beta },
+  }));
+}
+
 function selectFractionBarOperands(
   challengeType: ChallengeType,
   count: number,
@@ -392,7 +470,8 @@ function selectFractionBarOperands(
     case 'build_equal': return equalBuildOperands(count, band);
     case 'identify': return identifyOperands(count);
     case 'build': return buildOperands(count);
-    case 'compare': return compareOperands(count);
+    case 'larger_denominators': return largerDenominatorOperands(count);
+    case 'compare': return [];
     case 'add_subtract': return addSubtractOperands(count);
   }
 }
@@ -469,7 +548,10 @@ function buildChallenges(
   // no-tier path produces byte-identical choices to before.
   tightness: DistractorTightness = 'wide',
   band: 'K-2' | '3-5' = '3-5',
+  grade?: string,
+  tier: SupportTier | null = null,
 ): FractionBarChallenge[] {
+  if (challengeType === 'compare') return compareChallenges(count, grade, tier);
   const pairs = selectFractionBarOperands(challengeType, count, band);
   // build_equal has no numerator/denominator questions: the instruction states the target, the choices are empty.
   if (challengeType === 'build_equal') {
@@ -565,7 +647,7 @@ export const generateFractionBar = async (
 Create the wrapper metadata for a MULTI-CHALLENGE fraction bar session for "${topic}"
 ${scopeSection} (${gradeLevel}).
 
-This session walks the student through ${instanceCount} DIFFERENT fractions of the SAME challenge type. Each fraction runs through a three-phase flow: identify the numerator (MC) → identify the denominator (MC) → shade the fraction on a bar.
+This session walks the student through ${instanceCount} DIFFERENT ${presumedMode === 'compare' ? 'pairs of fractions. For each pair the student sees two shaded bars of the same whole and picks <, = or > to compare them' : 'fractions of the SAME challenge type. Each fraction runs through a three-phase flow: identify the numerator (MC) → identify the denominator (MC) → shade the fraction on a bar'}.
 
 ${challengeTypeSection}
 ${tierSection}
@@ -626,7 +708,7 @@ Return ONLY the wrapper metadata in the response schema.
       ? appliedScaffold.distractorTightness
       : 'wide';
 
-  let challenges = buildChallenges(challengeType, instanceCount, distractorTightness, gradeBand);
+  let challenges = buildChallenges(challengeType, instanceCount, distractorTightness, gradeBand, ctx.grade, supportTier);
   let learningAdaptation: FractionBarData['learningAdaptation'];
   if (remediationMove && challengeType === 'build') {
     const selected = selectSharedDigitRoleContrast(challenges, remediationMove, (p) => ({
@@ -638,7 +720,8 @@ Return ONLY the wrapper metadata in the response schema.
   }
 
   // Decimal: tier wins when present; else the existing config/grade-based behavior.
-  const showDecimal = appliedScaffold
+  // compare never shows a decimal: the two decimals would answer the comparison.
+  const showDecimal = challengeType === 'compare' ? false : appliedScaffold
     ? appliedScaffold.showDecimal
     : (config?.showDecimal ??
        (typeof wrapper.showDecimal === 'boolean' ? wrapper.showDecimal : true));
@@ -661,7 +744,7 @@ Return ONLY the wrapper metadata in the response schema.
     topic,
     challengeType,
     instanceCount: challenges.length,
-    fractions: challenges.map(c => `${c.numerator}/${c.denominator}`),
+    fractions: challenges.map(c => `${c.numerator}/${c.denominator}${c.compareWith ? ` ${c.relation} ${c.compareWith.numerator}/${c.compareWith.denominator}` : ''}`),
   });
 
   return {

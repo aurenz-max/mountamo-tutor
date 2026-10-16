@@ -743,7 +743,7 @@ export interface PercentBarMetrics extends BasePrimitiveMetrics {
 
 export interface FractionBarMetrics extends BasePrimitiveMetrics {
   type: 'fraction-bar';
-  challengeType: 'identify' | 'build' | 'compare' | 'add_subtract' | 'build_equal';
+  challengeType: 'identify' | 'build' | 'larger_denominators' | 'compare' | 'add_subtract' | 'build_equal';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;

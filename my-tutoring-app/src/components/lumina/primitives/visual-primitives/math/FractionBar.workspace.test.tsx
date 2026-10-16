@@ -70,7 +70,7 @@ function mount(mode: FractionBarChallengeType, challenges: FractionBarChallenge[
   return { runtime, view, state, dispatch, confirmVisible, press, shadeTo, attempts, solve };
 }
 
-it.each(['identify', 'build', 'compare', 'add_subtract'] as const)('%s binds: a gesture item told the fraction, never a key', mode => {
+it.each(['identify', 'build', 'larger_denominators', 'add_subtract'] as const)('%s binds: a gesture item told the fraction, never a key', mode => {
   const h = mount(mode, [fraction('q0', 3, 4)]);
   const task = h.state().task!;
   expect(task).toMatchObject({ itemId: 'q0' });

@@ -172,7 +172,8 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "fraction-bar": {
         "identify":     PriorConfig(1.5, "Concrete: identify unit fractions"),
         "build":        PriorConfig(2.5, "Pictorial: shade non-unit proper fractions"),
-        "compare":      PriorConfig(3.5, "Pictorial: fractions with larger denominators"),
+        "larger_denominators": PriorConfig(3.0, "Pictorial: name and shade fractions with denominators 4-12"),
+        "compare":      PriorConfig(3.5, "Pictorial: compare two fractions on two bars (<, = or >)"),
         "add_subtract": PriorConfig(4.5, "Transitional: fractions in operation context"),
         "build_equal":  PriorConfig(4.6, "Pictorial: open build, an equal fraction on the bar your own way"),
     },
