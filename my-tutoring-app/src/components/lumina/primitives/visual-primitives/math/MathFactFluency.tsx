@@ -298,6 +298,8 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
   const reopen = useRef<(retry: boolean) => void>(() => {});
   /** Bound below: records a fact the learner answered aloud and the tutor's feedback credited. */
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
 
   // -------------------------------------------------------------------------
   // Challenge progress: the teaching workspace owns it
@@ -309,6 +311,7 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
     workspace, assignment: mathFactAssignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
     onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -469,6 +472,16 @@ function MathFactFluencySurface({ data, className, runtimePlanItemId }: MathFact
       challengeId: solved.id, correct: true, attempts: currentAttempts + 1, timeMs: responseTime, responseTimeSec,
       isFast: currentAttempts === 0 && responseTimeSec <= targetResponseTime, streak: newStreak,
     });
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    setPracticeSolved(true);
+    setFeedback('Correct!'); setFeedbackType('success');
+    if (practice.options?.includes(practice.correctAnswer)) setSelectedAnswer(practice.correctAnswer);
+    else setTypedAnswer(String(practice.correctAnswer));
   };
 
   const handleSelectOption = (value: number) => {

@@ -34,6 +34,7 @@ import { useTeachingEvaluation, type TeachingEvaluationResult }
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
 import { NeedsTutor } from '../../../components/live-activity/runtime/NeedsTutor';
 import { WorkspacePin } from '../../../components/live-activity/runtime/workspacePin';
+import { PracticeCreditScope } from '../../../components/live-activity/runtime/practiceCredit';
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import { catalogBindsWorkspace } from '../../../components/live-activity/pinnedModes';
 import type { PrimitiveMetrics } from '../../../evaluation';
@@ -142,7 +143,10 @@ export default function DiTeachingStage<Item extends { id: string }, M extends P
       <p>{props.copy.empty}</p>
     </LuminaCardContent></LuminaCard>;
   }
-  return <WorkspacePin pin={props.runtimeEvalMode}><StageWorkspace key={props.data.instanceId} {...props} /></WorkspacePin>;
+  // A credited practice item shows as in every bound mount (VB-F1).
+  return <WorkspacePin pin={props.runtimeEvalMode}><PracticeCreditScope>
+    <StageWorkspace key={props.data.instanceId} {...props} />
+  </PracticeCreditScope></WorkspacePin>;
 }
 
 function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>({ primitiveId, data, items,

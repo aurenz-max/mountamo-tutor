@@ -378,6 +378,8 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
   const openItem = useRef<(retry: boolean) => void>(() => {});
   /** Bound below; a spoken answer the observer credited (`onSolved`). */
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
   const progress = useController({
@@ -387,6 +389,7 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     workspace, assignment: workspaceAssignment,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onSolved: (index) => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -1211,6 +1214,20 @@ const ComparisonBuilderSurface = ({ data, className, runtimePlanItemId, runtimeE
     else if (solved.type === 'one-more-one-less' && solved.targetNumber !== undefined) {
       if ((solved.askFor ?? 'both') === 'one-more') setOneMoreAnswer(solved.targetNumber + 1);
       else setOneLessAnswer(solved.targetNumber - 1);
+    }
+    setFeedback("That's right!");
+    setFeedbackType('success');
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    if (practice.type === 'compare-groups') { setSelectedAnswer(practice.correctAnswer ?? null); setShowLines(true); }
+    else if (practice.type === 'compare-numbers') setSelectedAnswer(practice.correctSymbol ?? null);
+    else if (practice.type === 'one-more-one-less' && practice.targetNumber !== undefined) {
+      if ((practice.askFor ?? 'both') === 'one-more') setOneMoreAnswer(practice.targetNumber + 1);
+      else setOneLessAnswer(practice.targetNumber - 1);
     }
     setFeedback("That's right!");
     setFeedbackType('success');

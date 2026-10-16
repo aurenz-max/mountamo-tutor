@@ -331,6 +331,8 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
   const reopen = useRef<(retry: boolean) => void>(() => {});
   /** Bound below; a spoken answer the observer credited (`onSolved`). */
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
 
   // ── Progress: the teaching workspace owns it ───────────────────
   const progress = useAdditionFactProgress({
@@ -339,6 +341,7 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
     workspace, assignment: additionFactAssignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
     onSolved: (index) => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const { currentIndex, currentAttempts, results, isComplete, recordResult } = progress;
   const canAttempt = progress.canAttempt !== false;
@@ -433,6 +436,13 @@ function AdditionFactStrategiesSurface({ data, className, runtimePlanItemId }: A
     if (currentAttempts === 0) firstResponseMsRef.current.push(Date.now() - openedAt.current);
     const attempts = currentAttempts + 1;
     progress.mergeResult({ challengeId: solvedFact.id, correct: true, attempts, score: scoreFor(attempts), a: solvedFact.a, b: solvedFact.b });
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    setPracticeSolved(true);
   };
 
   // ── Completion: once every fact is solved, submit once (only under an evaluation provider) ──

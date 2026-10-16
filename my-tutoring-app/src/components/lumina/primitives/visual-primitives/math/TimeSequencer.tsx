@@ -444,6 +444,8 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
   /** Bound below; a spoken answer the observer credited (`onSolved`). */
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
   const progress = useController({
@@ -454,6 +456,7 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
     onSolved: (index) => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -817,6 +820,18 @@ const TimeSequencerSurface = ({ data, className, runtimePlanItemId, tutorOwned, 
     else if (solved.type === 'before-after') setSelectedEvent(solved.correctEvent ?? null);
     else if (solved.type === 'duration-compare') setDurationAnswer(solved.correctAnswer ?? null);
     else if (solved.type === 'read-schedule') setScheduleAnswer(solved.correctActivity ?? null);
+    setFeedback("Yes, that's right!");
+    setFeedbackType('success');
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    if (practice.type === 'match-time-of-day') setSelectedPeriod(practice.correctPeriod ?? null);
+    else if (practice.type === 'before-after') setSelectedEvent(practice.correctEvent ?? null);
+    else if (practice.type === 'duration-compare') setDurationAnswer(practice.correctAnswer ?? null);
+    else if (practice.type === 'read-schedule') setScheduleAnswer(practice.correctActivity ?? null);
     setFeedback("Yes, that's right!");
     setFeedbackType('success');
   };

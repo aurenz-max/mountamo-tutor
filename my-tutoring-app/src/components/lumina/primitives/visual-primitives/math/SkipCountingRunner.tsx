@@ -206,6 +206,8 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   /** Bound below; a spoken answer the observer credited (`onSolved`). */
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct check already recorded, so its `onSolved` records nothing twice. */
   const checkedCorrect = useRef<string | null>(null);
   const progress = useController({
@@ -215,6 +217,7 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     workspace, assignment: ch => workspaceAssignment(ch, lineFor(ch)),
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -657,6 +660,29 @@ const SkipCountingRunnerSurface = ({ data, className, runtimePlanItemId, tutorOw
     } else {
       setMultiplicationInput(String(key)); setMultiplicationConnectionMade(true);
       setFeedback(`Correct! ${key} × ${lineFor(solved).skipValue} = ${key * lineFor(solved).skipValue}`);
+    }
+    setFeedbackType('success');
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    const solved = practice?.challenge;
+    const key = solved ? spokenSkipKey(solved, practice.line) : null;
+    if (source !== 'speech' || !solved || key === null) return;
+    setSolvedId(solved.id);
+    if (solved.type === 'predict') {
+      setPredictionInput(String(key)); setPredictedPosition(key);
+      setFeedback(`Yes! ${key} is correct!`);
+    } else if (solved.type === 'fill_missing') {
+      setFilled([key]); setFillInput('');
+      setFeedback(`Yes! ${key} is in the sequence!`);
+    } else if (solved.type === 'find_skip_value') {
+      setFillInput(String(key)); setPatternIdentified(true);
+      setFeedback(`You got it! We're counting by ${key}s!`);
+    } else {
+      setMultiplicationInput(String(key)); setMultiplicationConnectionMade(true);
+      setFeedback(`Correct! ${key} × ${practice.line.skipValue} = ${key * practice.line.skipValue}`);
     }
     setFeedbackType('success');
   };

@@ -623,6 +623,8 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
   /** Bound below; a spoken answer the observer credited (`onSolved`). */
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; a spoken answer the observer credited on the practice item (`onPracticeSolved`). */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
   const progress = useController({
@@ -633,6 +635,7 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     onItemOpened: (index, retry) => openItem.current(index, retry),
     onFinished: result => finish.current(result),
     onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -966,6 +969,17 @@ const AnalogClockSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       score: Math.max(100 - (currentAttempts * 25), 25), targetTime: formatTime(solved.targetHour, solved.targetMinute) });
     if (solved.type === 'hand_name') setPickedHand(solved.targetHand ?? null);
     else setSelectedOption(solved.correctOptionIndex ?? null);
+    setFeedback('Correct!');
+    setFeedbackType('success');
+  };
+
+  // The same, credited on the simplify lever's practice item: shown on the practice face only, recorded nowhere. The
+  // full item comes back blank. A tap sets its own state in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice || !isSpokenClock(practice)) return;
+    setPracticeSolved(true);
+    if (practice.type === 'hand_name') setPickedHand(practice.targetHand ?? null);
+    else setSelectedOption(practice.correctOptionIndex ?? null);
     setFeedback('Correct!');
     setFeedbackType('success');
   };

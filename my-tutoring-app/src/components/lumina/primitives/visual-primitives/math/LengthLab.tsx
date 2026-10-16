@@ -668,6 +668,8 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
   const openItem = useRef<(retry: boolean) => void>(() => {});
   /** Bound below; a spoken answer the observer credited (`onSolved`). */
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
   const progress = useController({
@@ -677,6 +679,7 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     workspace, assignment: workspaceAssignment,
     onItemOpened: (_index, retry) => openItem.current(retry),
     onSolved: (index) => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const {
     currentIndex,
@@ -801,6 +804,14 @@ const LengthLabSurface = ({ data, runtimePlanItemId, tutorOwned, useController }
     if (!solved || tappedCorrect.current === solved.id || (solved.type !== 'compare' && solved.type !== 'indirect')) return;
     progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
     setSelectedAnswer(solved.correctAnswer);
+    setShowFeedback(true);
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice || (practice.type !== 'compare' && practice.type !== 'indirect')) return;
+    setSelectedAnswer(practice.correctAnswer);
     setShowFeedback(true);
   };
 

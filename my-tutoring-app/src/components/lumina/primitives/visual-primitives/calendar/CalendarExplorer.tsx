@@ -293,6 +293,8 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
   // ── Challenge Progress ──────────────────────────────────────────
   /** Bound below; a spoken answer the observer credited (`onSolved`). */
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
   const progress = useCalendarProgress<CalendarExplorerChallenge>({
@@ -308,6 +310,7 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
       challengeStartRef.current = Date.now();
     },
     onSolved: (index) => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const {
     currentIndex,
@@ -480,6 +483,18 @@ const CalendarGridSurface = ({ data, runtimePlanItemId }: CalendarExplorerProps)
     if (isGridAnswerChallenge(solved)) setClickedDate(Number(shown));
     setFeedback({ correct: true, message: 'Correct!' });
     if (solved.highlightDates) setHighlightedDates(new Set(solved.highlightDates));
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    const shown = isGridAnswerChallenge(practice) ? practice.correctAnswer.trim()
+      : practice.options?.find(o => o.trim().toLowerCase() === practice.correctAnswer.trim().toLowerCase()) ?? practice.correctAnswer;
+    setSelectedAnswer(shown);
+    if (isGridAnswerChallenge(practice)) setClickedDate(Number(shown));
+    setFeedback({ correct: true, message: 'Correct!' });
+    if (practice.highlightDates) setHighlightedDates(new Set(practice.highlightDates));
   };
 
   // ── Determine if we can proceed ─────────────────────────────────

@@ -291,6 +291,8 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
   /** Bound below; a spoken answer the observer credited (`onSolved`). */
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
   const progress = useController({
@@ -302,6 +304,7 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     onItemOpened: (_index, retry) => openItem.current(retry),
     onFinished: result => finish.current(result),
     onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -730,6 +733,23 @@ const CoinCounterSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     } else {
       setSelectedGroup(solved.correctGroup ?? null);
       setFeedback(solved.correctGroup === 'equal' ? 'Correct! Both groups are worth the same.' : `Correct! Group ${solved.correctGroup} has more.`);
+    }
+    setFeedbackType('success');
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice || !isSpokenCoin(practice, gradeBand)) return;
+    if (practice.type === 'count') {
+      setCountInput(String(practice.correctTotal ?? 0));
+      setFeedback(`Yes! The total is ${formatCents(practice.correctTotal ?? 0)}!`);
+    } else if (practice.type === 'make-change') {
+      setChangeInput(String(practice.correctChange ?? 0));
+      setFeedback(`Yes! The change is ${formatCents(practice.correctChange ?? 0)}!`);
+    } else {
+      setSelectedGroup(practice.correctGroup ?? null);
+      setFeedback(practice.correctGroup === 'equal' ? 'Correct! Both groups are worth the same.' : `Correct! Group ${practice.correctGroup} has more.`);
     }
     setFeedbackType('success');
   };

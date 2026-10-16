@@ -443,6 +443,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
   /** Handlers the progress hook calls back into, bound after the state they touch is declared. */
   const reopen = useRef<(index: number, retry: boolean) => void>(() => {});
   const solvedSpoken = useRef<(index: number) => void>(() => {});
+  const practiceSpoken = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct tap already recorded, so its `onSolved` records nothing twice. */
   const tappedCorrect = useRef<string | null>(null);
 
@@ -454,6 +455,7 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
     workspace, assignment: spatialAssignment,
     onItemOpened: (index, retry) => reopen.current(index, retry),
     onSolved: index => solvedSpoken.current(index),
+    onPracticeSolved: (_id, source) => practiceSpoken.current(source),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -549,6 +551,16 @@ function SpatialSceneSurface({ data, className, runtimePlanItemId }: SpatialScen
     if (challenge?.type !== 'describe_scene') return;
     recordResult({ challengeId: challenge.id, correct: true, attempts: Math.max(1, currentAttempts + 1),
       relation: challenge.correctPosition, referenceObjectName: challenge.referenceObjectName });
+  };
+
+  // A spoken answer the observer credited on the practice scene: shown as a correct tap shows it, on the practice
+  // scene only. It records nothing; the full item comes back blank (`endPractice`). A tap shows its own feedback.
+  practiceSpoken.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    const word = (POSITION_LABELS[practice.correctPosition] ?? practice.correctPosition).toLowerCase();
+    if (practice.type === 'identify' || practice.type === 'describe') setSelectedOption(practice.correctPosition);
+    setFeedback(`Yes! The ${practice.targetObject.name} is ${word} the ${practice.referenceObjectName}!`);
+    setFeedbackType('success');
   };
 
   // ── Check Handlers ─────────────────────────────────────────────────

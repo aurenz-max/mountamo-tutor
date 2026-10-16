@@ -46,6 +46,11 @@ export interface WorkspaceRunOptions<Item extends WorkspaceRunItem> {
   onPresentStimulus?: (item: Item, index: number) => void;
   /** Once per item, when its success is committed: the first moment an answer may appear. */
   onAffirmed?: (item: Item, response?: string) => void;
+  /**
+   * A simplify lever's easier item was credited (spoken or checked): show it on the practice surface. Never an
+   * affirmation of `currentItem`, never recorded; the full item comes back blank when the practice closes.
+   */
+  onPracticeSolved?: (practiceId: string, response: string, source: 'speech' | 'gesture') => void;
   /** Once, with the finished record, and only under an evaluation provider. */
   onFinished?: (result: TeachingEvaluationResult) => void;
 }
@@ -67,6 +72,8 @@ export interface WorkspaceRun<Item extends WorkspaceRunItem> {
   revealHeld: boolean;
   /** A simplify lever's easier item is on screen in place of `currentItem`: its checks are practice. */
   practice: boolean;
+  /** The practice item on screen has been credited and is held there (never `currentSolved`). */
+  practiceSolved?: boolean;
   tutorSpeaking: boolean;
   cuedItemId: string;
   summary: null;
@@ -173,11 +180,13 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
     // never renders the solved state, and the next item's reset would run first.
     onSolved: (index, response) => affirm(latest.current.items[index], response),
     checkPractice: itemId => checked.current?.itemId === itemId ? checked.current.correct : null,
+    onPracticeSolved: (practiceId, response, source) => latest.current.onPracticeSolved?.(practiceId, response, source),
   });
   const { state } = lesson;
   const item = items[state.index];
   // A simpler item's success is practice: it never affirms, reveals or closes the session item.
   const solved = state.phase === 'checked' && !!state.lastResponse?.correct && !state.practice;
+  const practiceSolved = state.phase === 'checked' && !!state.lastResponse?.correct && !!state.practice;
 
   useEffect(() => { if (solved) affirm(item, state.lastResponse?.response); }, [solved, item, affirm, state.lastResponse]);
 
@@ -200,7 +209,7 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
 
   return { currentIndex: state.index, currentItem: item, running: state.phase !== 'completed', preparing: false,
     stage: state.phase === 'completed' ? 'done' : solved ? 'affirmed' : 'asking',
-    currentSolved: solved, canAttempt: lesson.canAttempt, revealHeld: solved, practice: !!state.practice, tutorSpeaking: lesson.tutorSpeaking,
+    currentSolved: solved, canAttempt: lesson.canAttempt, revealHeld: solved, practice: !!state.practice, practiceSolved, tutorSpeaking: lesson.tutorSpeaking,
     cuedItemId: item.id, summary: null, practiceSummary: lesson.summary, teachingResult,
     start: async () => {}, isAwaitingGesture: lesson.isBlocked,
     armStillness: (commit, ms = DEFAULT_STILLNESS_MS) => {

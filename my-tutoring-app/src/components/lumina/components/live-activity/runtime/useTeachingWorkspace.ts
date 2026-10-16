@@ -13,6 +13,7 @@ import { SoundManager } from '../../../utils/SoundManager';
 import { isFillerUtterance, latestLearnerUtterance } from './learnerUtterance';
 import { lastMiss, nextLever } from './observerLever';
 import { useWorkspacePin } from './workspacePin';
+import { useReportPracticeCredit } from './practiceCredit';
 import { pinAllowsMissFromWords } from '../pinnedModes';
 import type { ExecutableAffordance, RuntimeMount, WorkspaceLever } from './contract';
 
@@ -91,6 +92,12 @@ export interface TeachingWorkspaceOptions {
   onSolved?: (index: number, response: string) => void;
   /** The activity's own check of a gesture on a simpler (practice) item, as `checkResponse` for a session item. */
   checkPractice?: (itemId: string, response: string) => boolean | null;
+  /**
+   * A correct response was just committed on the simpler (practice) item `practiceId`, spoken or checked, before any
+   * return to the full item. `onSolved` never fires for practice: the session item is not solved, and nothing is
+   * recorded. The primitive shows the credit on the practice surface here (VB-F1: a spoken credit showed nothing).
+   */
+  onPracticeSolved?: (practiceId: string, response: string, source: 'speech' | 'gesture') => void;
 }
 const noSubscription = () => () => {};
 /** No scene yet is not ready; a scene that does not say otherwise is. */
@@ -127,6 +134,8 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
   useLayoutEffect(() => { latest.current = options; aiRef.current = ai; });
   const session = useMemo(() => new TeachingSession(options.items.map(i => i.id)), [options.instanceId]);
   const state = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  // A credited practice item is shown by the bound mount's scope (VB-F1); it never solves the session item.
+  useReportPracticeCredit(!!state.practice && state.phase === 'checked' && !!state.lastResponse?.correct);
   const celebratedItems = useMemo(() => new Set<string>(), [session]);
   useEffect(() => {
     for (const attempt of state.attempts) if (attempt.correct && !celebratedItems.has(attempt.itemId)) {
@@ -291,7 +300,9 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
             return commit(() => {
               if (!session.submit(speech.id, speech.text, 'speech', d.verdict === 'correct', true, d.tutor, miss)) return false;
               pendingSpeech.current = null; dropSpokenMiss();
-              if (d.verdict === 'correct' && !session.getSnapshot().practice) latest.current.onSolved?.(session.getSnapshot().index, speech.text);
+              const credited = session.getSnapshot();
+              if (d.verdict === 'correct' && !credited.practice) latest.current.onSolved?.(credited.index, speech.text);
+              else if (d.verdict === 'correct') latest.current.onPracticeSolved?.(credited.practice!, speech.text, 'speech');
               if (d.transition === 'retry') { session.retry(); reset(); }
               if (d.transition === 'advance' && session.getSnapshot().practice) closePractice();
               else if (d.transition === 'advance') {
@@ -500,7 +511,9 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
     if (correct === null || !session.submit(`gesture:${++gestureSequence.current}`, response, 'gesture', correct, false, undefined, miss)) return;
     // The checked gesture answers the item: speech heard before it no longer waits for a verdict.
     if (open.response === 'speech') rescope();
-    if (correct && !session.getSnapshot().practice) latest.current.onSolved?.(session.getSnapshot().index, response);
+    const credited = session.getSnapshot();
+    if (correct && !credited.practice) latest.current.onSolved?.(credited.index, response);
+    else if (correct) latest.current.onPracticeSolved?.(credited.practice!, response, 'gesture');
     // Facts trigger the live conversation: what the learner did and what the board found, no instruction. A tail
     // telling the tutor to respond changed no reply in a text replay (2026-10-07); how they got there rides in the
     // packet's demand, which the doctrine's credit rule reads.

@@ -40,6 +40,11 @@ export interface ProgressOptions<C> extends UseChallengeProgressOptions<C> {
    * primitive's own, so this is where the primitive records its result.
    */
   onSolved?: (index: number) => void;
+  /**
+   * Workspace only: the easier practice item a simplify lever opened was credited, spoken or checked. It records
+   * nothing and never fires `onSolved`; the primitive shows the credit on its practice surface (VB-F1).
+   */
+  onPracticeSolved?: (practiceId: string, source: 'speech' | 'gesture') => void;
   /** Once, with the finished record, and only under an evaluation provider. */
   onFinished?: (result: TeachingEvaluationResult) => void;
 }
@@ -52,6 +57,8 @@ export interface Progress extends UseChallengeProgressReturn {
   commitCheck: (response: string, correct: boolean, miss?: string) => void;
   /** Workspace only: false while a checked answer waits for Try again or Next challenge. */
   canAttempt?: boolean;
+  /** Workspace only: the practice item on screen has been credited and is held there. */
+  practiceSolved?: boolean;
   /**
    * Workspace only: whether a lesson's evaluation provider is present. The live host has none, and a
    * workspace family submits only under one, as the judged-runner families do.
@@ -100,6 +107,7 @@ export function useWorkspaceProgressFor(primitiveId: string) {
       onPracticeClosed: (_item, index) => latest.current.onItemOpened?.(index, false),
       onAffirmed: item => latest.current.onSolved?.(latest.current.challenges
         .findIndex(c => latest.current.getChallengeId(c) === item.id)),
+      onPracticeSolved: (practiceId, _response, source) => latest.current.onPracticeSolved?.(practiceId, source),
       onFinished: result => latest.current.onFinished?.(result),
     });
     const write = useCallback((result: ChallengeResult, merge: boolean) => setResults(prev => {
@@ -128,7 +136,7 @@ export function useWorkspaceProgressFor(primitiveId: string) {
         if (correct && !now.practice) mergeResult(baseResult(now.currentItem.id, attemptCount.current));
         now.commitGesture({ response, correct, miss, cue: () => '' });
       },
-      canAttempt: run.canAttempt, recordsEvaluation, publishWorkspace: run.publishWorkspace,
+      canAttempt: run.canAttempt, practiceSolved: run.practiceSolved, recordsEvaluation, publishWorkspace: run.publishWorkspace,
       practiceSummary: run.practiceSummary, teachingResult: run.teachingResult,
     };
   };

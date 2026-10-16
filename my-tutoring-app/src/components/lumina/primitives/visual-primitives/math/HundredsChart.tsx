@@ -141,6 +141,8 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
   const reopen = useRef<(retry: boolean) => void>(() => {});
   /** Bound below; a spoken answer the observer credited (`onSolved`). */
   const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
   /** The challenge a correct Check already recorded, so its `onSolved` records nothing twice. */
   const checkedCorrect = useRef<string | null>(null);
 
@@ -154,6 +156,7 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
     workspace, assignment: hundredsChartAssignment,
     onItemOpened: (_index, retry) => reopen.current(retry),
     onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
   });
   const {
     currentIndex: currentChallengeIndex,
@@ -363,6 +366,16 @@ function HundredsChartSurface({ data, className, runtimePlanItemId }: HundredsCh
     if (!solved || key === null || checkedCorrect.current === solved.id) return;
     recordResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1,
       score: Math.max(0, 100 - currentRetries * RETRY_PENALTY * 100) });
+    setSelectedOption(key);
+    setFeedback('Correct!');
+    setFeedbackType('success');
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    const key = practice ? hundredsChartKey(practice) : null;
+    if (source !== 'speech' || !practice || key === null) return;
     setSelectedOption(key);
     setFeedback('Correct!');
     setFeedbackType('success');

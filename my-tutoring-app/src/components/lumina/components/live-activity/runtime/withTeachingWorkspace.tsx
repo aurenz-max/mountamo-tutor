@@ -5,6 +5,7 @@ import { useLiveRuntime } from './LiveRuntimeContext';
 import { catalogBindsWorkspace } from '../pinnedModes';
 import { NeedsTutor } from './NeedsTutor';
 import { WorkspacePin } from './workspacePin';
+import { PracticeCreditScope } from './practiceCredit';
 import { createWorkspaceSubmission, WorkspaceSubmissionContext } from '../../../evaluation/workspaceSubmission';
 
 /**
@@ -14,7 +15,10 @@ import { createWorkspaceSubmission, WorkspaceSubmissionContext } from '../../../
 function SubmissionScope({ children }: { children: React.ReactNode }) {
   const [submission] = useState(createWorkspaceSubmission);
   useEffect(() => () => submission.flush(), [submission]);
-  return <WorkspaceSubmissionContext.Provider value={submission}>{children}</WorkspaceSubmissionContext.Provider>;
+  // Every bound mount also shows a credited practice item (VB-F1), whatever its primitive draws.
+  return <WorkspaceSubmissionContext.Provider value={submission}>
+    <PracticeCreditScope>{children}</PracticeCreditScope>
+  </WorkspaceSubmissionContext.Provider>;
 }
 
 /**

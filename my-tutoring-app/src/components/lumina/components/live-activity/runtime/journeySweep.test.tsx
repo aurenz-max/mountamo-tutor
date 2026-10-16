@@ -58,6 +58,7 @@ export const JOURNEY_INVARIANTS = {
   'J13-help-lever-keeps-item': "On an item with help levers, after a miss each help lever the observer can pull commits, puts the key nowhere new on screen or in the scene facts, and the row's correct input still credits the item (time-sequencer 10-09: a pulled picture renamed the answer buttons)",
   'J10-clean-record': 'A clean program (every item right first time) submits once, and the record says so: passed, score 100, every item first try, no assistance',
   'J14-sayable-is-spoken': "An item whose correct input names one sayable answer (a number, or a word or short phrase on the button pressed) also takes it spoken: it is a speech item with acceptsGesture (math-fact-fluency 10-13: \"18\" said aloud was praised and never credited)",
+  'J15-practice-credit-shows': "On an item with a simplify lever whose practice item is spoken, a credited spoken answer on the practice item changes the visible screen while the tutor holds it, records nothing on the session item, and the full item comes back without its key on screen (VB-F1, spatial-scene and analog-clock 10-16: the credit showed nothing)",
   'J11-recovery-record': 'The wrong-then-right program submits once, and the record says so: every item solved, each miss in teachingAttempts before its correct try, the score and first-response score set by the first-response gate',
 } as const;
 type Invariant = keyof typeof JOURNEY_INVARIANTS;
@@ -556,7 +557,7 @@ interface MomentRecord { payload: string; primitiveId: string; evalMode: string;
   gradeLevel: string | null; leakTokens: string[]; ask: string; keys: string[]; menu: string[]; moments: Moment[]; stopped?: string }
 const MOMENTS: MomentRecord[] = [];
 
-async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { file: string }): Promise<MomentRecord | null> {
+async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { file: string }): Promise<MomentRecord[] | null> {
   const row = LIVE_JOURNEYS[primitiveId];
   if (!row || row.execution === 'teaching') return null;
   // A family whose session ends inside the replay drive submits; the replay records moments, not submissions.
@@ -564,9 +565,12 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
   const h = mountWorkspace({ primitiveId, evalMode, data });
   h.settle();
   const task = () => h.state().task!;
-  const record: MomentRecord = { payload: file, primitiveId, evalMode,
-    guidance: buildLiveActivitySpec([primitiveId]).activities[0].guidance, topic: row.defaults.topic,
-    gradeLevel: (data.gradeLevel as string) ?? row.defaults.grade, leakTokens: row.leakTokens, ask: task().task, keys: [], menu: [], moments: [] };
+  const guidance = buildLiveActivitySpec([primitiveId]).activities[0].guidance;
+  const newRecord = (n: number): MomentRecord => ({ payload: n ? `${file}#${n + 1}` : file, primitiveId, evalMode, guidance,
+    topic: row.defaults.topic, gradeLevel: (data.gradeLevel as string) ?? row.defaults.grade, leakTokens: row.leakTokens,
+    ask: task().task, keys: [], menu: [], moments: [] });
+  let record = newRecord(0);
+  const records = [record];
   const context = (): JourneyContext => ({ data: { ...data, instanceId: 'ws' },
     challenge: (data.challenges ?? []).find((c: { id: string }) => c.id === task().itemId) ?? null,
     diItems: [], itemId: task().itemId, demand: task().demand ?? null, expectedAnswer: task().workspace?.expectedAnswer ?? null });
@@ -608,18 +612,22 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
     return true;
   };
   try {
+   let opened: string[] = [LESSON_ENTRY];
+   for (let index = 0; index < (REPLAY_ITEMS ? MAX_ITEMS : 1); index++) {
+    if (index) { record = newRecord(index); records.push(record); }
     const item = task().itemId;
-    moment('start', { host: [LESSON_ENTRY] });
+    moment('start', { host: opened });
     const warmup = row.inputsFor('warmup', context());
     if (warmup.length) { perform(h, warmup); h.settle(); }
     const wrong = row.inputsFor('wrong', context()), correct = row.inputsFor('correct', context());
     record.keys = keyPhrases(task().workspace?.expectedAnswer, correct, wrong, h.view.container)
       .filter(k => !forms(k).some(f => occurrences(record.ask, f)));
     // The options on screen: a reply that reads them all names the key among them, which is not giving it away
-    // (replay_checks.read_as_menu; time-sequencer replay 10-09).
+    // (replay_checks.read_as_menu; time-sequencer replay 10-09). A sentence-long choice is still a choice: at 40
+    // characters fact-file's options fell out and every reply reading them was flagged (10-16, 17 of 55).
     record.menu = Array.from(new Set(Array.from(h.view.container.querySelectorAll('button, [data-pip-object]'))
       .flatMap(el => [el.textContent ?? '', el.getAttribute('aria-label') ?? ''])
-      .map(t => t.trim().toLowerCase()).filter(t => t && t.length <= 40)));
+      .map(t => t.trim().toLowerCase()).filter(t => t && t.length <= 160)));
     // A gesture key no input names (a fraction build's slice count): the challenge's own answer fields.
     // A row whose inputs type the answer in parts (one digit per place box) names the whole answer instead: a part
     // that is also an operand's digit is read with the problem ("7 plus 5" over 27 + 45 = 72, regrouping replay 10-09).
@@ -635,10 +643,10 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
         await act(async () => { await Promise.resolve(); });
         h.settle(); h.confirmVisible(); h.settle();
         const declared = (task().workspace?.levers ?? []).find(l => l.pulled && !before.has(l.id));
-        if (!declared) { record.stopped = 'the second wrong answer pulled no lever'; return record; }
+        if (!declared) { record.stopped = 'the second wrong answer pulled no lever'; return records; }
         moment('lever', { host: [leverPulledMessage(declared, helpBeforeLastWrong(task().workspace!, item) ? 'wrong_with_help' : 'second_wrong')],
           lever: { id: declared.id, kind: declared.kind, does: declared.does } });
-        if (task().workspace?.practice) { record.stopped = 'a simplify lever opened a practice item'; return record; }
+        if (task().workspace?.practice) { record.stopped = 'a simplify lever opened a practice item'; return records; }
         if (task().phase !== 'working' && h.offer('retry')) { h.dispatch('retry'); h.confirmVisible(); h.settle(); }
       }
     } else if (wrong.length && answer(wrong, 'miss') && task().itemId === item && h.state().status === 'active') {
@@ -652,7 +660,7 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
         const declared = levers.find(l => l.id === lever)!;
         h.dispatch('pull_lever', { lever }); h.confirmVisible(); h.settle();
         moment('lever', { host: [leverPulledMessage(declared)], lever: { id: declared.id, kind: declared.kind, does: declared.does } });
-        if (task().workspace?.practice) { record.stopped = 'a simplify lever opened a practice item'; return record; }
+        if (task().workspace?.practice) { record.stopped = 'a simplify lever opened a practice item'; return records; }
       }
       if (task().phase !== 'working' && h.offer('retry')) { h.dispatch('retry'); h.confirmVisible(); h.settle(); }
     }
@@ -663,12 +671,21 @@ async function recordMoments({ primitiveId, evalMode, data, file }: Payload & { 
     const wrongNumbers = new Set(responses.filter(a => !a.correct).flatMap(a => numbers(a.response)));
     if (!row.replayKeys) for (const n of numbers(responses.find(a => a.correct)?.response))
       if (!wrongNumbers.has(n) && !occurrences(record.ask, n) && !record.keys.includes(n)) record.keys.push(n);
+    // TUTOR_REPLAY_ITEMS: move to the next item; the host text the tutor got as it opened starts that item's record.
+    if (!REPLAY_ITEMS || record.stopped) break;
+    const at = mark();
+    if (task()?.itemId === item && h.offer('advance')) { h.dispatch('advance'); h.confirmVisible(); h.settle(); }
+    const s = h.state();
+    if (s.status !== 'active' || !s.task || s.task.itemId === item || s.task.workspace?.practice) break;
+    const host = hostSince(at);
+    opened = host.length ? host : [LESSON_ENTRY];
+   }
   } catch (e) {
     record.stopped = (e as Error).message;
   } finally {
     h.close();
   }
-  return record;
+  return records;
 }
 
 /**
@@ -760,6 +777,100 @@ async function driveHelped({ primitiveId, evalMode, data }: Payload & { file: st
   }
 }
 
+/**
+ * J15: the first item whose simplify lever opens a spoken practice item. The lever is pulled, the practice item's
+ * published key is said, and the scripted observer credits it with no transition (the tutor talks about it before
+ * returning). The screen must change; the session item must stay unsolved; the return must not show the full item's key.
+ * The other programs never pull a simplify lever, so a spoken practice credit went unseen (VB-F1).
+ * `checked`: whether some item reached the spoken practice credit, for the report.
+ */
+async function driveSimplified({ primitiveId, evalMode, data }: Payload & { file: string }): Promise<{ findings: Finding[]; checked: boolean }> {
+  const findings: Finding[] = [];
+  const row = LIVE_JOURNEYS[primitiveId];
+  if (!row || row.execution === 'teaching') return { findings, checked: false };
+  const find = (detail: string) => findings.push({ invariant: 'J15-practice-credit-shows', detail });
+  seam.evaluationContext = { lesson: 'simplified', submitEvaluation: () => Promise.resolve() };
+  const h = mountWorkspace({ primitiveId, evalMode, data });
+  try {
+    h.settle();
+    const task = () => h.state().task!;
+    const context = (): JourneyContext => ({ data: { ...data, instanceId: 'ws' },
+      challenge: (data.challenges ?? []).find((c: { id: string }) => c.id === task().itemId) ?? null,
+      diItems: [], itemId: task().itemId, demand: task().demand ?? null, expectedAnswer: task().workspace?.expectedAnswer ?? null });
+    const answerRight = async (inputs: DriverInput[]) => {
+      const attempts = task().evidence.attemptNumber;
+      const spoken = perform(h, inputs);
+      h.settle();
+      if (spoken !== null && task().evidence.attemptNumber === attempts) {
+        await hear(h, spoken);
+        if (!task().workspace?.pendingResponse) return false;
+        h.feedback('correct', 'advance'); h.confirmVisible(); h.settle();
+        return true;
+      }
+      return task().evidence.attemptNumber !== attempts;
+    };
+    for (let n = 0; n < MAX_ITEMS && h.state().status === 'active' && h.state().task; n++) {
+      const item = task().itemId;
+      let wrong: DriverInput[], correct: DriverInput[];
+      try {
+        const warmup = row.inputsFor('warmup', context());
+        if (warmup.length) { perform(h, warmup); h.settle(); }
+        wrong = row.inputsFor('wrong', context()); correct = row.inputsFor('correct', context());
+      } catch { return { findings, checked: false }; }
+      const simplify = (task().workspace?.levers ?? []).find(l => l.kind === 'simplify' && !l.pulled);
+      const pull = () => {
+        if (!simplify || !h.offer('pull_lever')) return false;
+        const receipt = h.dispatch('pull_lever', { lever: simplify.id });
+        h.confirmVisible(); h.settle();
+        return receipt.status === 'committed' && !!task().workspace?.practice;
+      };
+      const keys = keyPhrases(task().workspace?.expectedAnswer, correct, wrong, h.view.container)
+        .filter(k => k.length > 1 && !forms(k).some(f => occurrences(task().task, f)));
+      const fullScreen = screenText(h);
+      const opened = simplify && pull();
+      const spokenPractice = opened && task().demand?.response === 'speech' && task().workspace?.expectedAnswer !== undefined;
+      if (!spokenPractice) {
+        // Back to the full item (a gesture practice item is another rule's), then on to the next item.
+        if (opened && h.offer('advance')) { h.dispatch('advance'); h.confirmVisible(); h.settle(); }
+        if (opened && task().workspace?.practice) return { findings, checked: false };
+        try { if (!(await answerRight(row.inputsFor('correct', context())))) return { findings, checked: false }; }
+        catch { return { findings, checked: false }; }
+        if (task()?.itemId === item && h.offer('advance')) { h.dispatch('advance'); h.confirmVisible(); h.settle(); }
+        continue;
+      }
+      const practiceId = task().itemId;
+      // A practice item with a stimulus still to show (a flash, a race): the tutor presents it first. One the learner
+      // must prepare (a roll, a build) has no input here, since the row knows only session items: undriven, not a finding.
+      if (task().demand?.presentation === 'not ready' && h.offer('present')) { h.dispatch('present'); h.confirmVisible(); h.settle(); }
+      if (task().demand?.presentation === 'not ready') return { findings, checked: false };
+      await hear(h, String(task().workspace!.expectedAnswer));
+      if (!task().workspace?.pendingResponse) {
+        find(`${item}: the practice item ${practiceId}'s spoken answer opened no pending response (phase ${task().phase}, `
+          + `facts ${JSON.stringify(task().demand ?? {}).slice(0, 300)})`);
+        return { findings, checked: true };
+      }
+      const before = screenText(h);
+      h.feedback('correct', 'none'); h.confirmVisible(); h.settle();
+      const s = h.state();
+      if (!s.task?.workspace?.practice || s.task.phase !== 'checked')
+        find(`${item}: a credit with no transition left the practice item (practice ${s.task?.workspace?.practice ? 'open' : 'closed'}, phase ${s.task?.phase})`);
+      if (screenText(h) === before) find(`${item}: the spoken credit on practice item ${practiceId} changed nothing on screen`);
+      if ((s.task?.workspace?.attempts ?? []).some(a => a.itemId === item && a.correct))
+        find(`${item}: the practice credit was recorded on the session item`);
+      if (!h.offer('advance')) { find(`${item}: no return to the full item is offered after the practice credit`); return { findings, checked: true }; }
+      h.dispatch('advance'); h.confirmVisible(); h.settle();
+      if (task().itemId !== item || task().workspace?.practice) find(`${item}: the return did not reopen the full item (now ${task().itemId})`);
+      const back = screenText(h);
+      keys.filter(k => occurrences(back, k) > occurrences(fullScreen, k))
+        .forEach(k => find(`${item}: back on the full item, its key "${k}" newly appears: …${around(back, k)}…`));
+      return { findings, checked: true };
+    }
+    return { findings, checked: false };
+  } finally {
+    h.close();
+  }
+}
+
 beforeEach(() => {
   installRuntimeTimers();
   stubObservationRoutes();
@@ -813,14 +924,31 @@ afterAll(() => {
 const LADDER = process.env.TUTOR_REPLAY_LADDER;
 /** `TUTOR_REPLAY_ONLY=number-line,ten-frame` limits recording to those families. */
 const REPLAY_ONLY = (process.env.TUTOR_REPLAY_ONLY ?? '').split(',').filter(Boolean);
+/** `TUTOR_REPLAY_ITEMS=all` records every item of a payload (one record each, `<file>#2`...), not only the first. */
+const REPLAY_ITEMS = process.env.TUTOR_REPLAY_ITEMS === 'all';
 describe.runIf(!!process.env.TUTOR_REPLAY_OUT)('tutor replay moments', () => {
   it.each(PAYLOADS.filter(p => !REPLAY_ONLY.length || REPLAY_ONLY.includes(p.primitiveId)).map(p => [p.file, p] as const))('%s', async (_file, payload) => {
-    const record = await recordMoments(payload);
-    if (record) MOMENTS.push(record);
+    const records = await recordMoments(payload);
+    if (records) MOMENTS.push(...records);
   }, 30_000);
 });
 
-describe('dry journey, every saved payload', () => {
+/** `JOURNEY_SWEEP_ONLY=J15` runs only the simplify-lever program (J15) on every payload: minutes, not the full sweep. */
+const ONLY_J15 = process.env.JOURNEY_SWEEP_ONLY === 'J15';
+describe.runIf(ONLY_J15)('J15 only, every saved payload', () => {
+  it.each(PAYLOADS.map(p => [p.file, p] as const))('%s', async (file, payload) => {
+    let findings: Finding[], checked = false;
+    try { ({ findings, checked } = await driveSimplified(payload)); } catch (e) {
+      findings = [{ invariant: 'J15-practice-credit-shows', detail: `simplified program: mount or drive threw: ${(e as Error).message}` }];
+    }
+    RESULTS.push({ payload: file, items: 0, findings, advisories: checked ? ['J15: a spoken practice credit was driven'] : [] });
+    const known = BASELINE[file]?.['J15-practice-credit-shows'];
+    expect(known ? [] : findings, 'a finding not in journey-sweep-baseline.json').toEqual([]);
+    if (known) expect(findings.length, 'fixed: delete it from journey-sweep-baseline.json').toBeGreaterThan(0);
+  }, 30_000);
+});
+
+describe.skipIf(ONLY_J15)('dry journey, every saved payload', () => {
   it.each(PAYLOADS.map(p => [p.file, p] as const))('%s', async (file, payload) => {
     let result: Result;
     try { result = await drive(payload); } catch (e) {
@@ -840,6 +968,14 @@ describe('dry journey, every saved payload', () => {
       result.findings.push(...await driveHelped(payload));
     } catch (e) {
       result.findings.push({ invariant: 'J13-help-lever-keeps-item', detail: `helped program: mount or drive threw: ${(e as Error).message}` });
+    }
+    try {
+      cleanup();
+      const simplified = await driveSimplified(payload);
+      result.findings.push(...simplified.findings);
+      if (simplified.checked) result.advisories.push('J15: a spoken practice credit was driven');
+    } catch (e) {
+      result.findings.push({ invariant: 'J15-practice-credit-shows', detail: `simplified program: mount or drive threw: ${(e as Error).message}` });
     }
     RESULTS.push(result);
     const known = BASELINE[file] ?? {};
