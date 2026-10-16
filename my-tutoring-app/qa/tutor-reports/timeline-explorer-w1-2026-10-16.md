@@ -89,3 +89,9 @@ cause_effect; the workspace test drives a spoken identify answer.
   event, no date on any check card, reading before the questions) are recorded only here. `/primitive-contract`.
 - The spoken path is not swept (the row taps), so the spoken-miss probe has no requests. `/eval-test`.
 - 429s from parallel agents blank 2-5% of replay samples; the replay does not retry them. `/add-live-tutor-tools` (replay harness).
+
+## Follow-up 2026-10-16 (R6)
+- The prompt asks for causes, not "what came next", with at least two links that skip an event; code ranks a link set
+  of next-event links only below every other set (only hard's extra effect ranks above it). 8 generations each
+  (connect, medium): links to the very next event 0.84 -> 0.21; cause_effect items answerable by time order alone
+  4/8 -> 0/8. The model now often links in a skip-one pattern (0->2, 1->3).

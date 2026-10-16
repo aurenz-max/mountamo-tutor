@@ -225,6 +225,12 @@ const DigitalSkillsSimSurface = ({ data, className, runtimePlanItemId, tutorOwne
 
   // ── The check ──
   const closed = solvedNow || wrongShown || learnerBlocked();
+  /**
+   * Scripted path: a wrong try (its red mark, the key it pressed, "Not quite") stays on screen until the next try
+   * clears it. It used to clear after 700 ms, so a wrong click read as no response at all (browser run 10-16, R14).
+   */
+  const retryPending = !tutorOwned && feedback === 'wrong';
+  const freshTry = (): SkillWork => { setWork(emptyWork()); setDragAt(null); setFeedback(null); return emptyWork(); };
   const commit = (w: SkillWork) => {
     if (!item) return;
     const correct = skillCorrect(item, w, reach);
@@ -241,12 +247,13 @@ const DigitalSkillsSimSurface = ({ data, className, runtimePlanItemId, tutorOwne
     setFeedback('wrong');
     if (tutorOwned) { setWrongShown(true); return; }
     say(`[ANSWER_INCORRECT] ${describeSkillWork(item, w, reach)}, for: ${askOf(item)} Encourage another try without saying where to go.`);
-    timer.current = setTimeout(() => { setWork(emptyWork()); setDragAt(null); setFeedback(null); }, 700);
   };
 
   // ── Arena (click, drag): one SVG, read in viewBox units ──
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!item || item.mode === 'type' || closed || work.release) return;
+    if (!item || item.mode === 'type' || closed) return;
+    const base = retryPending ? freshTry() : work;
+    if (base.release) return;
     const p = coordinate(e);
     if (!p) return;
     if (item.mode === 'drag') {
@@ -261,10 +268,12 @@ const DigitalSkillsSimSurface = ({ data, className, runtimePlanItemId, tutorOwne
     if (p) setDragAt({ x: DRAG_START.x + p.x - dragFrom.current.x, y: DRAG_START.y + p.y - dragFrom.current.y });
   };
   const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!item || item.mode === 'type' || closed || work.release) return;
+    if (!item || item.mode === 'type' || closed) return;
+    const base = retryPending ? freshTry() : work;
+    if (base.release) return;
     const p = coordinate(e);
     if (!p) return;
-    if (item.mode === 'click') { const w = { ...work, release: p }; setWork(w); commit(w); return; }
+    if (item.mode === 'click') { const w = { ...base, release: p }; setWork(w); commit(w); return; }
     const from = dragFrom.current;
     dragFrom.current = null;
     try { e.currentTarget.releasePointerCapture?.(e.pointerId); } catch { /* as above */ }
@@ -272,15 +281,17 @@ const DigitalSkillsSimSurface = ({ data, className, runtimePlanItemId, tutorOwne
     const at = { x: DRAG_START.x + p.x - from.x, y: DRAG_START.y + p.y - from.y };
     if (Math.hypot(p.x - from.x, p.y - from.y) < MIN_DRAG) { setDragAt(null); return; }
     // The drop is where the picture's centre is let go: the picture moved with the pointer from where it was grabbed.
-    const w = { ...work, release: at };
+    const w = { ...base, release: at };
     setDragAt(at); setWork(w); commit(w);
   };
 
   // ── Keyboard ──
   const pressKey = (k: string) => {
-    if (!item || item.mode !== 'type' || closed || workComplete(item, work)) return;
+    if (!item || item.mode !== 'type' || closed) return;
+    const base = retryPending ? freshTry() : work;
+    if (workComplete(item, base)) return;
     SoundManager.tick();
-    const w = { ...work, keys: [...work.keys, k.toUpperCase()] };
+    const w = { ...base, keys: [...base.keys, k.toUpperCase()] };
     setWork(w);
     if (workComplete(item, w)) commit(w);
   };

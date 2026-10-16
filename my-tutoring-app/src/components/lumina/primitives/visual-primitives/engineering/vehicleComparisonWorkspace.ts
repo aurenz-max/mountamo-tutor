@@ -22,6 +22,7 @@
 import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import type { VehicleVisualCategory, VehicleVisualKind } from './vehicleVisualKind';
+import { plausible } from './vehiclePlausibility';
 
 export type MetricKey =
   | 'topSpeed' | 'weight' | 'passengerCapacity' | 'cargoCapacity' | 'range' | 'yearIntroduced' | 'co2PerPassengerKm';
@@ -231,6 +232,17 @@ const PRIORITY: Partial<Record<MetricKey, string>> = {
 };
 export const PRIORITY_METRICS = Object.keys(PRIORITY) as MetricKey[];
 export const MINIMUM_METRICS: MetricKey[] = ['passengerCapacity', 'cargoCapacity', 'range', 'topSpeed'];
+/**
+ * The minimums a job with this priority would set: a people job does not ask for tons of cargo, nor a cargo job for
+ * seats ("carry at least 5 people ... which carries the most cargo", 10-16). Searched first; any minimum after.
+ */
+const SUITED_MINIMUMS: Partial<Record<MetricKey, MetricKey[]>> = {
+  topSpeed: ['passengerCapacity', 'cargoCapacity', 'range'],
+  range: ['passengerCapacity', 'cargoCapacity', 'topSpeed'],
+  passengerCapacity: ['range', 'topSpeed'],
+  cargoCapacity: ['range', 'topSpeed'],
+  co2PerPassengerKm: ['passengerCapacity', 'range', 'topSpeed'],
+};
 export function minimumText(item: Pick<ItemBase, 'units'>, n: Minimum): string {
   const v = formatNumber(n.atLeast);
   switch (n.metric) {
@@ -282,7 +294,8 @@ const rawValue = (v: ComparisonVehicle, m: MetricKey): { value: number; unit: st
   if (m === 'yearIntroduced') value = v.metrics?.yearIntroduced;
   else if (m === 'co2PerPassengerKm') value = v.metrics?.co2PerPassengerKm;
   else { const metric = v.metrics?.[m]; value = metric?.value; unit = String(metric?.unit ?? '').trim(); }
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && !sentinel(value) ? { value, unit } : null;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && !sentinel(value)
+    && plausible(m, value, unit, v.visualKind) ? { value, unit } : null;
 };
 
 /** The roster as rows: one unit per measure (a value in another unit is left out), no sentinels. */
@@ -409,7 +422,7 @@ function tradeoffItem(r: Roster, tier: VehicleTier, rng: Rng, avoid: Set<MetricK
     const fresh = priorities.filter(m => !avoid.has(m));
     if (!priorities.length) return null;
     const metric = pick(strict && fresh.length ? fresh : priorities, rng);
-    const minPool = all.filter(m => MINIMUM_METRICS.includes(m) && m !== metric);
+    const minPool = all.filter(m => (strict ? SUITED_MINIMUMS[metric] ?? MINIMUM_METRICS : MINIMUM_METRICS).includes(m) && m !== metric);
     const nMins = tier === 'easy' || (!strict && minPool.length < 2) ? 1 : 2;
     if (minPool.length < nMins) continue;
     const mins = shuffle(preferFocus(r, minPool), rng).slice(0, nMins);

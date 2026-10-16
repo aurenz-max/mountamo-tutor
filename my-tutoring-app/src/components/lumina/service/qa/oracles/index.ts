@@ -56,6 +56,7 @@ import { systemsEquationsVisualizerOracle } from './systems-equations-visualizer
 import { tapeDiagramOracle } from './tape-diagram';
 import { tenFrameOracle } from './ten-frame';
 import { twoWayTableOracle } from './two-way-table';
+import { vehicleComparisonLabOracle } from './vehicle-comparison-lab';
 import { vocabularyExplorerOracle } from './vocabulary-explorer';
 import { wordFlipOracle } from './word-flip';
 
@@ -123,6 +124,7 @@ export const CONTENT_ORACLES: ContentOracle[] = [
   tapeDiagramOracle,
   tenFrameOracle,
   twoWayTableOracle,
+  vehicleComparisonLabOracle,
   vocabularyExplorerOracle,
   wordFlipOracle,
 ];

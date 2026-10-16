@@ -92,3 +92,11 @@ None. The sweep taps every kind; the workspace test drives a spoken identify ans
   shared lever doctrine's owner.
 - The catalog `tutoring` block (scripted fallback) still lists a `[STEP_NAVIGATION]` directive nothing sends; remove when
   the fallback is retired.
+
+## Follow-up 2026-10-16 (R26)
+- The prompt's "use no word of the title" rule made purposes paraphrase ("the porcelain basin", "the returning
+  fluid") and, once plainness was asked for, renamed the steps instead ("Pulling the Metal Loop"). Code already blanks
+  the target step's title words from every purpose choice, so the prompt rule is dropped and the purpose is asked in
+  plain words, claiming nothing the description does not say. 6 topics read before and after: parts named plainly
+  (the bowl, used blood, the chain), titles plain again, 0-2 words blanked per purpose shown. The chainring
+  "multiplies the force" claim did not recur.

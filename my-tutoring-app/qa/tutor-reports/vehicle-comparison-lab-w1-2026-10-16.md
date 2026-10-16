@@ -112,3 +112,11 @@ spoken answer on metric_leader.
 - The full journey sweep's worker crash: an order-dependent confetti frame after train-yard; it does not reproduce on
   any single payload. A shared fix (stub canvas-confetti, or cancel animation frames in the sweep's afterEach) belongs
   to `/add-live-tutor-tools` (sweep harness).
+
+## Follow-up 2026-10-16 (R24, trade-off minimums)
+- `vehiclePlausibility.ts`: a range per statistic and vehicle kind (unit-converted, wide: it catches a slipped unit or
+  a lost digit). A statistic outside it is left off the roster. New `vehicle-comparison-lab` oracle (implausible
+  values, a single key, minimums that decide something). `/oracle-test`, 3 modes x 5 runs: 6 implausible model
+  statistics (a ferry at 5-25 t, a 747 at 183,500 t, a delivery van drawn as a car), 0 on a table.
+- Trade-off minimums suit the priority (a people job sets no cargo minimum, a cargo job no seats); any minimum only
+  in the search's last 40%. On the W1 roster, 360 items: unsuited 103 -> 0.

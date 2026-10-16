@@ -280,7 +280,11 @@ export function linkItemParts(deck: Deck, tier: TimelineTier, rng: Rng, links = 
   const size = Math.min(want, links.length);
   const pick = (from: number, acc: Array<[string, string]>) => { if (acc.length === size) { sets.push(acc); return; } for (let i = from; i < links.length; i++) pick(i + 1, [...acc, links[i]]); };
   pick(0, []);
-  const score = (s: Array<[string, string]>) => (s.some(([c]) => s.some(([, e]) => e === c)) ? 2 : 0) + (tier === 'hard' && !extraFor(s) ? 1 : 0);
+  // Every link to the very next event: "what came next" answers it, not the causes (R6, 10-16). Only the hard tier's
+  // extra effect, which defines that tier, outranks it.
+  const nextOnly = (s: Array<[string, string]>) => s.every(([c, e]) => rankOf(deck, e) === rankOf(deck, c) + 1);
+  const score = (s: Array<[string, string]>) => (tier === 'hard' && !extraFor(s) ? 8 : 0) + (nextOnly(s) ? 4 : 0)
+    + (s.some(([c]) => s.some(([, e]) => e === c)) ? 2 : 0);
   const chosen = shuffle(sets, rng).sort((a, b) => score(a) - score(b))[0];
   const causes = chosen.map(([c]) => c), effects = chosen.map(([, e]) => e);
   const extra = tier === 'hard' ? extraFor(chosen) : undefined;

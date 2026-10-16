@@ -86,3 +86,9 @@ None. The sweep taps cards; the workspace test drives a spoken answer on single_
 - Some limits come out at odd values ($1,375, 825 kg) when the gap between two totals is narrow. `/eval-fix`
   (prefer a load with a wider gap).
 - No `docs/contracts/transport-challenge.md`. `/primitive-contract`.
+
+## Follow-up 2026-10-16 (R23)
+- The featured vehicle is on every job it can carry: the load is drawn from its range first (600 attempts, the last
+  150 without), and every limit has at most two significant figures when such a job exists. Probe over every vehicle
+  featured x 3 modes x 3 tiers x 6 seeds: featured on 594/594 (was 575/591), round limits 594/594 (was 542/591), no
+  failed build (was 3).

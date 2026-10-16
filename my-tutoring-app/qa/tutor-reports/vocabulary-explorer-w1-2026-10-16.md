@@ -108,3 +108,7 @@ drives a spoken answer on a situation item.
 - The spoken path is not swept (the row taps), so the spoken-miss probe has no requests. `/eval-test`.
 - `replay_checks.py` `no_key_before_try` flags a tutor reading every on-screen meaning in order (r2, 6 replies): the
   key's word is read with the others. `/add-live-tutor-tools` (replay checks).
+
+## Follow-up 2026-10-16 (R27)
+- The fit judge's effect, 12 generations (4 per mode): it runs only when an item has choices (explore has none);
+  over 20 choice items it removed 5 foils a careful reader could defend (0.25 per choice item), 0 judge failures.

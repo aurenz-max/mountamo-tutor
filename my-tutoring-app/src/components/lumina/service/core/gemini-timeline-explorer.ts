@@ -190,7 +190,7 @@ For each event:
 - impact: one sentence on its lasting consequence.
 - connection: one sentence on how it connects to the next event.
 - clue: one sentence describing what happened, so a learner who read the timeline can tell which event it is. Use NO word from the event's own title and NO date, year or century.
-- ledTo: the id of ONE later event on this timeline that this event directly helped cause, or "" if none. Give at least 4 events a ledTo, each pointing to a different later event.
+- ledTo: the id of ONE later event on this timeline that this event directly helped cause, or "" if none. Give at least 4 events a ledTo, each pointing to a different later event. A cause is not "what came next": choose the event it really brought about, which is often two or more events later, and make at least two of your ledTo links skip over at least one event. Never link an event to the next one only because it came next.
 
 Also write a title, subtitle, overview (1-2 sentences, no dates of individual events), the time span, and a summary with its key theme.
 
@@ -198,7 +198,7 @@ Rules:
 1. Events MUST be in correct time order and historically or factually accurate.
 2. For K-2, use simple, familiar sequences and very simple language; for 3-5, concrete historical events, discoveries and milestones; for 6-8, more complex periods and connections.
 3. A clue never contains a word from its event's title, and never a date.
-4. A ledTo always points to a LATER event, and the cause really did lead to it.`;
+4. A ledTo always points to a LATER event, and the cause really did lead to it; at least two ledTo links skip an event.`;
 
   let data: TimelineExplorerData | null = null;
   for (let attempt = 1; attempt <= 2 && !data; attempt++) {

@@ -21,6 +21,7 @@ Reports: `2026-10-13/REPORT.md`, `2026-10-14/kc-subjects-REPORT.md`.
 | 8.1i | length-lab two_unit_compare: answer is the small unit on every item; lengths 6/8/10 at every tier | `/eval-fix` | QUEUED 10-14 |
 | 8.1j | `compare-numbers` takes three-digit objectives (space is within 100) | `/add-item-space` | QUEUED 10-14 |
 | 8.1n | fraction-bar `add_subtract`: ruling owed before wiring | user | QUEUED 10-14 |
+| 8.1o | Full-suite load flakes: `compareNumbers.test.ts` (tier gaps), `areaModelItemSpace.test.ts`, `gemini-di-shapes.test.ts` fail in the full vitest run and pass alone (10-16, two runs, different subsets). Seed or widen the sampled assertions | `/eval-fix` | QUEUED 10-16 |
 | 8.1o | Browser: off-multiple skip-counting-runner line; hundreds-chart count from 23 | user (HUMAN-CHECKS) | OWED |
 
 ## K-2 word spaces (`/add-word-space`)

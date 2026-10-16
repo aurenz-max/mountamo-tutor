@@ -31,7 +31,7 @@ queue item (a defect class) · `qa/<lane>/` (run evidence) · here, as a row (st
 
 | # | Phase | Queue · executor | State · next pull |
 |---|---|---|---|
-| 1 | A miss is one contract, both channels | `qa/workspace-rollout/ROLLOUT.md` · `/add-live-tutor-tools` | **ACTIVE 10-15 (user).** 158 `teachingWorkspace` blocks. R1 done: batches 1-3 10-15 (15 primitives), batch 4 10-16 (9: engineering + exhibits, all rebuilt; rulings closed 10-16, all accepted). VB-F1 done 10-16 (J15). Next R2 (26 without modes), then VB-2, then phase 2 |
+| 1 | A miss is one contract, both channels | `qa/workspace-rollout/ROLLOUT.md` · `/add-live-tutor-tools` | **ACTIVE 10-15 (user).** 158 `teachingWorkspace` blocks. R1 done: batches 1-3 10-15 (15 primitives), batch 4 10-16 (9: engineering + exhibits, all rebuilt; rulings closed 10-16, all accepted; follow-ups shipped). VB-F1 done 10-16 (J15). Next R2 (26 without modes), then VB-2, then phase 2 |
 | 2 | The ladder tests a pass, then a miss | handoff 19/20, `LIVE_TESTING.md` · `/add-live-tutor-tools` | J10/J11 done 09-28. Open: T2 observer replay, T3 responsiveness, one gate command per family |
 | 3 | Levers answer misses | `qa/support-levers/`, `qa/lever-bench/QUEUE.md` · `/add-support-tiers` | Levers on every workspace primitive (3.1e, 10-09). **Ready, paid, user approves:** DI class Live (`di-lever-plan-2026-10-03.md` step 9), literacy G2-6 class Live (`literacy-lever-plan-2026-10-03.md` step 5). M2 Live needs a mixed payload. Residuals: `QUEUE-item-gaps-2026-10-09.md` |
 | 4.1 | Open build is a modality | `qa/open-build/ROADMAP.md` · `/add-eval-modes` | OB waves 1-3, OB-4 pilots, OB-9M, OB-10 committed. Next: OB-4 pulley/bridge/blueprint; capabilities C1-C5; literacy class Live (go-ahead); 3 rulings |

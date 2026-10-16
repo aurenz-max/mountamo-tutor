@@ -242,13 +242,22 @@ const LIMIT_SETS: Record<TransportMode, LimitType[][]> = {
   full_optimization: [['budget', 'time', 'co2']],
 };
 
-/** One item of a mode at a tier, on a frame; null when the search finds none. */
+/** Two significant figures at most ($1,400, 850 kg, 7 hours): a limit at $1,375 or 825 kg reads as a trick. */
+export const roundLimit = (n: number) => n < 20 || n % 10 ** (Math.floor(Math.log10(n)) - 1) === 0;
+
+/**
+ * One item of a mode at a tier, on a frame; null when the search finds none. The lesson's featured vehicle is on the
+ * job (its load is one the vehicle can carry in MAX_TRIPS) and every limit is a round number, when such a job can be
+ * found; the search falls back to a job without them rather than none (ruling R23, 2026-10-16).
+ */
 export function buildItem(mode: TransportMode, tier: TransportTier, frame: TransportFrame, rng: Rng, id = ''): TransportItem | null {
   const pool = VEHICLES.filter(v => v.kind === frame.kind);
   const featured = pool.find(v => v.id === frame.featured);
   const n = Math.min(VEHICLE_COUNT[mode][tier], pool.length);
+  const featuredLoads = featured ? LOADS[frame.kind].filter(a => Math.ceil(a / featured.capacity) <= MAX_TRIPS) : [];
+  let fallback: TransportItem | null = null;
   for (let attempt = 0; attempt < 600; attempt++) {
-    const amount = pickOne(LOADS[frame.kind], rng);
+    const amount = pickOne(attempt < 450 && featuredLoads.length ? featuredLoads : LOADS[frame.kind], rng);
     const fits = pool.filter(v => Math.ceil(amount / v.capacity) <= MAX_TRIPS);
     if (fits.length < n) continue;
     let chosen = shuffle(fits, rng).slice(0, n);
@@ -262,13 +271,16 @@ export function buildItem(mode: TransportMode, tier: TransportTier, frame: Trans
     const choices = types.map(t => shuffle(limitChoices(base, t), rng));
     const combos: Array<Array<[number, number]>> = [[]];
     for (const cs of choices) { const next: Array<Array<[number, number]>> = []; for (const c of combos) for (const x of cs) next.push([...c, x]); combos.splice(0, combos.length, ...next); }
+    const featuredOn = !featured || vehicles.some(v => v.id === featured.id);
     for (const combo of combos) {
       const limits = types.map((type, i) => ({ type, max: roundIn(combo[i][0], combo[i][1]) }));
       const item: TransportItem = { ...base, limits, shows: tier === 'easy' ? [...types] : [...LIMIT_TYPES] };
-      if (modeOk(item) && tierOk(item, tier)) return item;
+      if (!modeOk(item) || !tierOk(item, tier)) continue;
+      if (featuredOn && limits.every(l => roundLimit(l.max))) return item;
+      if (!fallback || (featuredOn && featured && !fallback.vehicles.some(v => v.id === featured.id))) fallback = item;
     }
   }
-  return null;
+  return fallback;
 }
 
 export const ITEM_COUNT: Record<TransportMode, [number, number]> = {

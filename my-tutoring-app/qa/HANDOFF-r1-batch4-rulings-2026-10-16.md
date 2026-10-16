@@ -1,5 +1,9 @@
 # Handoff: R1 batch 4 rulings — 2026-10-16
 
+**CLOSED 2026-10-16.** The user accepted every recommendation (R23: a lesson's featured vehicle must appear on a job).
+Shipped 8bac7f00 (VB-F1), b4e1ae85 (R1), ef741cad (PM); follow-ups in the next commit, results in each report's
+"Follow-up 2026-10-16" section and the batch 4 row of `workspace-rollout/ROLLOUT.md`.
+
 ## What is being decided
 
 R1 batch 4 (`qa/workspace-rollout/ROLLOUT.md`) rebuilt nine primitives under the 10-15 ruling

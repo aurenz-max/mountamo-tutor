@@ -76,7 +76,7 @@ const stepSchema: Schema = {
     keyTermTerm: { type: Type.STRING, description: "Optional key vocabulary term introduced in this step" },
     keyTermDefinition: { type: Type.STRING, description: "Definition of the key term (required if keyTermTerm provided)" },
     funFact: { type: Type.STRING, description: "A surprising, fun fact related to this step — include a number or comparison" },
-    purpose: { type: Type.STRING, description: "ONE sentence (10-18 words) saying what this step makes possible or why the process needs it. Use NO word from this step's title." },
+    purpose: { type: Type.STRING, description: "ONE plain sentence (10-18 words) saying what this step does for the whole process, in everyday words a teacher would use, claiming nothing the description does not say. The app blanks this step's title words out of it." },
   },
   required: ["stepNumber", "title", "description", "imagePrompt", "purpose"],
 };
@@ -451,7 +451,7 @@ After reading, the student answers questions the app builds from your steps: whi
 - stepNumber starts at 1
 - title: 2-5 word label for the step
 - description: 2-3 sentences explaining what happens — vivid, concrete language. Describe the action in other words than the title's (a reader should recognise the step from the description without its title)
-- purpose: ONE sentence (10-18 words) saying what this step makes possible or why the process needs it, using NO word from this step's title (e.g. for "Pushing the Pedals": "It starts the turning motion that the rest of the bicycle passes along to the wheel.")
+- purpose: ONE plain sentence (10-18 words) saying what this step does for the whole process (e.g. for "Pushing the Pedals": "It starts the turning motion that the rest of the bicycle passes along to the wheel."). The app blanks the step's title words out of it, so it must still make sense without them; name the parts plainly anyway. Use the everyday words a teacher would use: a toilet's bowl is "the bowl", not "the porcelain basin"; blood is "blood", not "the fluid". Claim nothing the step's description does not say, and no science the description does not explain.
 - whatsHappening: OPTIONAL deeper mechanism note — include only when there is a real mechanism to add, in 1-2 SHORT sentences (under 40 words). Never pad; omit it when the description already says it
 - imagePrompt: Photorealistic image prompt describing a REAL-WORLD scene as a photographer would capture it. Describe the actual objects, materials, textures, natural lighting, and camera angle. NO glowing effects, NO cross-sections, NO cutaways, NO diagram overlays, NO magical/sci-fi styling. Think documentary photography, not textbook illustration. (e.g. "Close-up of a diesel engine compartment on a yellow Caterpillar excavator, showing the engine block, hydraulic hoses, and oil filter, photographed in natural daylight at a construction site")
 - keyTermTerm + keyTermDefinition: Important vocabulary — aim for at least 2-3 key terms across all steps

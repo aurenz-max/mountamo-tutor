@@ -76,3 +76,10 @@ None. The sweep drives clicks and drags as `draw` strokes on the arena SVG and k
 - No `docs/contracts/digital-skills-sim.md`; the new requirements (code keys, no marked target, gesture only) are
   recorded only here. `/primitive-contract`.
 - Emoji rendering of the newer pictures (bucket, kite, yo-yo, planet) is not checked on older devices. `/eval-test`.
+
+## Follow-up 2026-10-16 (R14)
+- A wrong try on the scripted path cleared itself after 700 ms, so a wrong click read as no response (browser run 10-16).
+  It now stays (red mark, pressed key, "Not quite") until the next try clears it. Re-driven in headless Chromium on
+  click easy and hard: the card and one mark show 1.5 s after a wrong tap; the next tap leaves one mark.
+- The rebuilt generator read only the topic (intent contract test, 187/188). It now frames the title and picture set
+  from the lesson scope: same topic, a farm intent gave the farm set and a space intent the space set.
