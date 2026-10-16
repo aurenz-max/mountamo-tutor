@@ -4,6 +4,7 @@ import { TIER_BANDS, tierPick } from './index';
 import { questionFitsSpec } from '../knowledge-check/itemSpaceProblems';
 
 const mean = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length;
+const within100 = (it: { left: number; right: number }) => it.left <= 100 && it.right <= 100;
 
 describe('compare-numbers', () => {
   it('reads the structure: digit count, shared tens, swapped digits', () => {
@@ -14,14 +15,14 @@ describe('compare-numbers', () => {
   });
 
   it('no pair reaches the hard band: comparing within 100 is easy for a taught grade-1 learner', () => {
-    expect(Math.max(...compareNumbersItems().map((it) => it.beta))).toBeLessThan(TIER_BANDS.hard[0]);
+    expect(Math.max(...compareNumbersItems().filter(within100).map((it) => it.beta))).toBeLessThan(TIER_BANDS.hard[0]);
   });
 
   it('within 100 by tier thirds: 5 distinct pairs over several structures; hard holds more shared-tens or swapped pairs', () => {
     const subtle: number[] = [];
-    const pick = tierPick(COMPARE_NUMBERS);
+    const pick = tierPick(COMPARE_NUMBERS, undefined, within100);
     for (const [lo, hi] of Object.values(TIER_BANDS)) {
-      const picks = pick(5, lo, hi);
+      const picks = pick(5, lo, hi, Math.random, within100);
       expect(picks).toHaveLength(5);
       expect(new Set(picks.map((p) => `${Math.min(p.left, p.right)}|${Math.max(p.left, p.right)}`)).size).toBe(5);
       expect(new Set(picks.map((p) => p.structure)).size).toBeGreaterThan(2);
@@ -53,6 +54,23 @@ describe('compare-numbers', () => {
     const gaps = Object.values(TIER_BANDS).map(([lo, hi]) => mean(pick(5, lo, hi, Math.random, scope).map((p) => Math.abs(p.left - p.right))));
     expect(gaps[0]).toBeGreaterThan(gaps[1]);
     expect(gaps[1]).toBeGreaterThan(gaps[2]);
+  });
+
+  it('three-digit (8.1j): only an objective that asks for them draws them; hard has more shared-hundreds or swapped pairs', () => {
+    expect(compareNumbersFeatures(347, 374)).toMatchObject({ threeDigit: 1, sameHundreds: 1, reversal: 1 });
+    expect(compareNumbersFeatures(352, 358)).toMatchObject({ sameHundredsTens: 1 });
+    expect(compareNumbersFeatures(87, 103)).toMatchObject({ fewerDigits: 1, threeDigit: 0 });
+    const plain = COMPARE_NUMBERS.scopeOf!('Compare two numbers using >, =, <')!;
+    expect(compareNumbersItems().filter(plain).every(within100)).toBe(true);
+    const scope = COMPARE_NUMBERS.scopeOf!('Compare two three-digit numbers based on meanings of the hundreds, tens, and ones digits')!;
+    const pick = tierPick(COMPARE_NUMBERS, undefined, scope);
+    const subtle = Object.values(TIER_BANDS).map(([lo, hi]) => {
+      const picks = pick(5, lo, hi, Math.random, scope);
+      expect(picks).toHaveLength(5);
+      for (const p of picks) expect(Math.min(p.left, p.right)).toBeGreaterThanOrEqual(100);
+      return mean(picks.map((p) => p.features.sameHundreds + p.features.sameHundredsTens + p.features.reversal));
+    });
+    expect(subtle[2]).toBeGreaterThan(subtle[0]);
   });
 
   it('contract: three distinct wrong statements, one far, never the key; a plain question that fits', () => {
