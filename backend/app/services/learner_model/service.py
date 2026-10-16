@@ -378,23 +378,54 @@ class LearnerStateService:
         retention state) adds time: memory stability (x the child's multiplier) of
         MASTERY_STABILITY_THRESHOLD days, earned by any spaced practice, where the
         retest calendar used to be the only way."""
-        from ...models.mastery_lifecycle import GATE_P_THRESHOLDS, MASTERY_STABILITY_THRESHOLD
         try:
             docs = await self._lifecycle(student_id, lg, grade)
-            m = eng.mem_m()
-            updates = []
-            for k in keys:
-                doc, ro = docs.get(k), readout.get(k)
-                if doc is None or ro is None:
-                    continue
-                pm, pc = ro[0], ro[1]
-                gate = 4 if pm >= MASTERED else next((g for g in (3, 2, 1) if pc >= GATE_P_THRESHOLDS[g]), 1)
-                stab = float((eng.touched.get(k) or {}).get("S") or 0.0) * m
-                state = "mastered" if gate == 4 and stab >= MASTERY_STABILITY_THRESHOLD else "active"
-                updates.append({"doc": doc, "gate": gate, "retention_state": state, "stability": stab, "pc": pc})
+            updates = self._gate_updates(docs, readout, eng.touched, eng.mem_m(), keys)
             await self.lifecycle_engine.apply_model_states(student_id, updates)
         except Exception as e:  # never break a submission
             logger.warning(f"[LEARNER_STATE] lifecycle sync failed for {student_id}: {e}", exc_info=True)
+
+    @staticmethod
+    def _gate_updates(docs: Dict[str, dict], readout: dict, touched: dict, m: float, keys) -> List[dict]:
+        """The `apply_model_states` update for each key with a lifecycle doc and a readout."""
+        from ...models.mastery_lifecycle import GATE_P_THRESHOLDS, MASTERY_STABILITY_THRESHOLD
+        updates = []
+        for k in keys:
+            doc, ro = docs.get(k), readout.get(k)
+            if doc is None or ro is None:
+                continue
+            pm, pc = ro[0], ro[1]
+            gate = 4 if pm >= MASTERED else next((g for g in (3, 2, 1) if pc >= GATE_P_THRESHOLDS[g]), 1)
+            stab = float((touched.get(k) or {}).get("S") or 0.0) * m
+            state = "mastered" if gate == 4 and stab >= MASTERY_STABILITY_THRESHOLD else "active"
+            updates.append({"doc": doc, "gate": gate, "retention_state": state, "stability": stab, "pc": pc})
+        return updates
+
+    async def regate(self, student_id, subject: str, apply: bool = False,
+                     doc: Optional[dict] = None) -> Optional[dict]:
+        """Every lifecycle doc of `subject` set from the stored readout (C14 backfill).
+        The answer-time sync re-gates only the subskills an answer moves, so docs
+        written before C13 keep their IRT/retest gates until touched. Same verdict
+        as `_sync_lifecycle`. `doc` replaces the stored learner state (a rebuilt
+        one: states stored before 10-16 carry no memory stability, and every
+        mastered retention state would fall to active). Returns {"updates",
+        "written"}; None when the subject has no learner graph or no learner state."""
+        hit = await self._graph(subject)
+        if hit is None:
+            return None
+        lg, _ = hit
+        doc = doc if doc is not None else (await self.fs.get_learner_state(student_id, lg.subject) or {})
+        if not doc.get("readout_json"):
+            return None
+        state = json.loads(doc["state_json"]) if doc.get("state_json") else {}
+        grade = await self._student_grade(student_id)
+        docs = await self._lifecycle(student_id, lg, grade)
+        updates = self._gate_updates(docs, json.loads(doc["readout_json"]), state.get("touched") or {},
+                                     memory.multiplier(state.get("mem_fit")), docs.keys())
+        written = 0
+        if apply and self.lifecycle_engine is not None:
+            written = await self.lifecycle_engine.apply_model_states(student_id, updates)
+        return {"updates": updates, "written": written}
 
     async def _lifecycle(self, student_id, lg: LearnerGraph, grade: Optional[str]) -> Dict[str, dict]:
         """The student's mastery lifecycle docs keyed by learner-graph key."""

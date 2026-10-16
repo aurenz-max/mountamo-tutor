@@ -148,6 +148,11 @@ async def run(student: int, subjects: List[str], apply: bool) -> None:
     if not apply:
         print(f"dry run: would write {len(mem.state)} summaries, {len(mem.grids)} grids, {len(mem.events)} events (--apply to write)")
         return
+    print(f"wrote {write_state(fs, student, mem)} docs")
+
+
+def write_state(fs, student: int, mem: "_MemStore") -> int:
+    """A replayed store's summaries, grids and events into Firestore; returns the doc count."""
     c = fs.client
     root = fs._student_doc(student)
     ops = []
@@ -162,7 +167,7 @@ async def run(student: int, subjects: List[str], apply: bool) -> None:
         for ref, data in ops[i:i + 400]:
             b.set(ref, data)
         b.commit()
-    print(f"wrote {len(ops)} docs")
+    return len(ops)
 
 
 class _Frozen:
