@@ -1822,13 +1822,8 @@ class FirestoreAnalyticsService:
         """
         Pick the next lesson's target subskills: the learner model's picks
         (`LearnerStateService.select`), the same brain that assembles Pulse
-        sessions. Two target kinds:
-
-        - "confirm": the model believes the subskill mastered but the mastery
-          lifecycle has not recorded it; the lesson's job is the evidence that
-          advances the gate. Half the picks when supply allows.
-        - "learn": expected learning, P(right) x teaching value over the Jev
-          learner graph (frontier, unlock, easier-form transfer).
+        sessions, learning picks only (`learn_only`): reviews and probes of
+        mastered subskills are single Pulse items, not lessons.
 
         `grade` (a per-subject promotion override) moves the exposure window;
         default is the student's grade of record. A subject with no learner
@@ -1842,7 +1837,7 @@ class FirestoreAnalyticsService:
             from app.services.learner_model.service import LearnerStateService
             self.learner_state = LearnerStateService(self.fs)
         sel = await self.learner_state.select(
-            student_id, subject, count=count, confirm_share=0.5, grade=grade,
+            student_id, subject, count=count, grade=grade, learn_only=True,
         )
         if sel is None:
             return {"student_id": student_id, "subject": subject, "grade": grade,
@@ -1890,6 +1885,7 @@ class FirestoreAnalyticsService:
                     "pMastered": p["p_mastered"],
                     "targetBeta": p["target_beta"],
                     "currentGate": p["current_gate"],
+                    "seen": p["seen"],
                 }
             )
 
@@ -1901,6 +1897,7 @@ class FirestoreAnalyticsService:
             "graph_version": sel.get("graph_version"),
             "objectives": objectives,
             "pool_sizes": sel.get("pool_sizes", {}),
+            "reach_grade": sel.get("reach_grade"),
         }
 
     # ------------------------------------------------------------------
@@ -1982,11 +1979,13 @@ class FirestoreAnalyticsService:
             lc = lifecycle_map.get(sid) or {}
 
             gate_after = lc.get("current_gate", 0)
-            gate_before = 0
+            # the gate in force when the lesson began: the latest entry before
+            # it (learner-model gates can fall, so not the max; C13 10-16)
+            gate_before, before_ts = 0, None
             for gh in lc.get("gate_history", []):
                 ts = _parse_ts(gh.get("timestamp"))
-                if ts and ts < since_dt:
-                    gate_before = max(gate_before, gh.get("gate", 0))
+                if ts and ts < since_dt and (before_ts is None or ts >= before_ts):
+                    gate_before, before_ts = gh.get("gate", 0), ts
 
             row: Dict[str, Any] = {
                 "subskillId": sid,

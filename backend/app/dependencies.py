@@ -434,6 +434,7 @@ def get_learner_state_service(
     if _learner_state_service is None:
         from .services.learner_model.service import LearnerStateService
         _learner_state_service = LearnerStateService(firestore_service)
+        _learner_state_service.lifecycle_engine = get_mastery_lifecycle_engine(firestore_service)
     return _learner_state_service
 
 

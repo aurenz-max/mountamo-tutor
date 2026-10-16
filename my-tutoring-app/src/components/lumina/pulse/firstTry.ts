@@ -15,8 +15,12 @@ export function firstTryResults(result: Pick<PrimitiveEvaluationResult, 'student
         Array.isArray(v) && v.length > 0
         && v.every((e) => e && typeof e === 'object' && typeof (e as { attempts?: unknown }).attempts === 'number')
       ) {
-        return v.map((e) => (e as { attempts: number; correct?: boolean }).attempts === 1
-          && (e as { correct?: boolean }).correct !== false);
+        // Mirrors backend `first_try_of`: right on the first attempt, unaided;
+        // workspace outcomes carry `solved`, not `correct`; uncertain items are left out.
+        type Entry = { attempts: number; correct?: boolean; solved?: boolean; assisted?: boolean; uncertain?: boolean };
+        const flags = (v as Entry[]).filter((e) => !e.uncertain).map((e) => e.attempts === 1
+          && e.correct !== false && e.solved !== false && !e.assisted);
+        return flags.length ? flags : undefined;
       }
     }
   }

@@ -10,7 +10,7 @@ class FakeLearnerState:
         self.pools = pools
         self.calls = []
 
-    async def select(self, student_id, subject, count, confirm_share=0.5, grade=None):
+    async def select(self, student_id, subject, count, grade=None):
         self.calls.append((subject, grade))
         if subject not in self.pools:
             return None

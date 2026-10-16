@@ -173,6 +173,23 @@ BURSTY = SyntheticProfile(
 )
 
 
+STEADY_HL = SyntheticProfile(
+    student_id=900_021,
+    name="Steady-Recall Sam",
+    description="Steady learner whose subskills fade as the FSRS-5 defaults assume (half-life ~21 days).",
+    archetype="steady_hl",
+    target_sessions=20,
+)
+
+FORGETFUL_HL = SyntheticProfile(
+    student_id=900_022,
+    name="Forgetful-Recall Fred",
+    description="Learns well, forgets each subskill ~7x faster than the defaults (half-life 3 days).",
+    archetype="forgetful_hl",
+    target_sessions=15,
+)
+
+
 # Registry for CLI lookup
 ALL_PROFILES: Dict[str, SyntheticProfile] = {
     "gifted": GIFTED_STUDENT,
@@ -187,4 +204,6 @@ ALL_PROFILES: Dict[str, SyntheticProfile] = {
     "volatile": VOLATILE,
     "plateau": PLATEAU,
     "bursty": BURSTY,
+    "steady_hl": STEADY_HL,
+    "forgetful_hl": FORGETFUL_HL,
 }

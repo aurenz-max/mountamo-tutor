@@ -271,11 +271,9 @@ class TestDailyPlan(unittest.TestCase):
         for s in plan.sessions:
             self.assertEqual(s["type"], "new")
 
-    def test_mastery_retests_have_priority(self):
-        """The due retest is the first review in the session list.
-
-        The interleave (PRD §8) opens with a new-skill block while the student
-        is fresh, then places reviews most-overdue first."""
+    def test_due_retests_are_not_planned(self):
+        """Lifecycle retests are retired (C12, 10-16): a due retest takes no slot;
+        reviews are single Pulse items the memory model schedules."""
         yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
         self.firestore.get_mastery_retests_due = AsyncMock(return_value=[
             {
@@ -288,38 +286,8 @@ class TestDailyPlan(unittest.TestCase):
         ])
 
         plan = self._run(self.service.get_daily_plan(student_id=1))
-        self.assertGreater(plan.review_slots, 0)
-        reviews = [s for s in plan.sessions if s["type"] == "review"]
-        self.assertEqual(reviews[0]["skill_id"], "R1")
-        self.assertEqual(reviews[0]["reason"], "mastery_retest")
-        self.assertLessEqual(plan.sessions.index(reviews[0]), 1)
-
-    def test_most_overdue_first(self):
-        """Most overdue mastery retests sort before less overdue ones."""
-        week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-        yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
-
-        self.firestore.get_mastery_retests_due = AsyncMock(return_value=[
-            {
-                "subskill_id": "RECENT",
-                "subject": "Math",
-                "current_gate": 2,
-                "completion_pct": 0.5,
-                "next_retest_eligible": yesterday,
-            },
-            {
-                "subskill_id": "OVERDUE",
-                "subject": "Math",
-                "current_gate": 1,
-                "completion_pct": 0.25,
-                "next_retest_eligible": week_ago,
-            },
-        ])
-
-        plan = self._run(self.service.get_daily_plan(student_id=1))
-        # Most overdue (OVERDUE) should come first
-        review_sessions = [s for s in plan.sessions if s["type"] == "review"]
-        self.assertEqual(review_sessions[0]["skill_id"], "OVERDUE")
+        self.assertEqual(plan.review_slots, 0)
+        self.assertNotIn("R1", [s["skill_id"] for s in plan.sessions])
 
     def test_capacity_respected(self):
         """Total sessions should not exceed daily capacity."""

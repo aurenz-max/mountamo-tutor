@@ -46,12 +46,13 @@ from app.services.curriculum_service import CurriculumService
 from app.services.firestore_analytics import FirestoreAnalyticsService
 from app.services.planning_service import PlanningService
 from app.services.pulse_engine import PulseEngine
-from app.services.calibration.problem_type_registry import get_item_key, get_prior_beta
+from app.services.calibration.problem_type_registry import get_item_discrimination, get_item_key, get_prior_beta
 from app.models.pulse import PulseResultRequest
 
 from .in_memory_firestore import InMemoryFirestoreService
 from .profiles import SyntheticProfile
 from .truth_model import TRUTH_PARAMS, LatentStudent, DEFAULT_DISCRIMINATION_A
+from app.services.learner_model.engine import TYPICAL_A
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,10 @@ MAX_LESSON_SUBSKILLS_PER_DAY = 20
 ITEMS_PER_SUBSKILL = 3          # mastery-over-demo: 3+ instances per target
 DEFAULT_PRIMITIVE = "ten-frame"  # fallback primitive identity for lesson items
 PULSE_ITEMS_PER_DAY = 6
+DELAYED_DAYS = 7.0              # delayed posttest: truth read this long after the last day
+# C3: each item is answered as CHALLENGES first-try right/wrong results, sent as
+# `first_try` like a real primitive's per-challenge array. 0 = legacy continuous score.
+CHALLENGES = 4
 
 
 _LG_CACHE: Dict[str, Any] = {}
@@ -169,6 +174,10 @@ class DaySnapshot:
     leapfrogs: List[Dict[str, Any]] = field(default_factory=list)
     # today's pulse items in order: [{subskill_id, kind, band, target_beta, p_right, score}]
     pulse_log: List[Dict[str, Any]] = field(default_factory=list)
+    # the selector's top candidates when Pulse was assembled: [{key, kind, value, retain, pc, pm, R, picked}]
+    pulse_ranking: List[Dict[str, Any]] = field(default_factory=list)
+    # today's lesson items in order: [{subskill_id, score, first_try}]
+    lesson_log: List[Dict[str, Any]] = field(default_factory=list)
 
     # Evening: canonical profile serve
     profile_total_attempts: int = 0
@@ -204,6 +213,9 @@ class LoopTimeline:
     promotions: List[Dict[str, Any]] = field(default_factory=list)
 
     final_profile: Dict[str, Any] = field(default_factory=dict)
+    # truth P(right) on each served subskill's typical item after DELAYED_DAYS
+    # more days with no practice (a delayed posttest)
+    truth_delayed: Dict[str, float] = field(default_factory=dict)
     truth_snapshot: Dict[str, float] = field(default_factory=dict)
     parity: Dict[str, Any] = field(default_factory=dict)
     mastery_final: Dict[str, Dict[str, Any]] = field(default_factory=dict)
@@ -302,8 +314,23 @@ class FullLoopRunner:
         pulse_engine: PulseEngine,
         seed: Optional[int] = None,
         grade_loader: Optional[Any] = None,
+        retests: bool = True,
+        fill_from: Optional[str] = None,
+        model_gates: bool = True,
     ):
         self.fs = mem_fs
+        # retests=False: the planner sees no lifecycle retests due (the memory
+        # model's Pulse reviews are the only review channel). The morning
+        # census still counts what WOULD have been due.
+        self._retests_due = mem_fs.get_mastery_retests_due
+        self.retests = retests
+        # fill_from: a retests-on run directory; each day the freed slots are
+        # as many as that run (same child, same seed) spent on retests
+        self.fill_from = fill_from
+        if not retests:
+            async def _none_due(*_a, **_k):
+                return []
+            mem_fs.get_mastery_retests_due = _none_due
         self.engine = pulse_engine
         self.seed = seed
         # async (graph_subject_id, grade_level) -> bool. Fetches a grade's
@@ -340,11 +367,22 @@ class FullLoopRunner:
         # subject); no graph -> observe() returns None and the loop runs as before.
         from app.services.learner_model.service import LearnerStateService
         self.learner_state = LearnerStateService(mem_fs, graph_source=_published_learner_graph, background=False)
+        self.learner_state.lifecycle_engine = self.mastery if model_gates else None
         self.competency.learner_state_service = self.learner_state
         pulse_engine.learner_state = self.learner_state
         self.analytics.learner_state = self.learner_state   # the one selection brain
 
     # -- item difficulty (same source the engine uses) -----------------------
+
+    async def _subskill_beta(self, student_id, subject: str, subskill_id: str) -> Optional[float]:
+        """The subskill's typical-item beta on the learner graph (None off-graph)."""
+        ls = getattr(self, "learner_state", None)
+        hit = await ls._graph(subject) if ls else None
+        if hit is None:
+            return None
+        lg, ga = hit
+        key = ls._resolve_key(lg, await ls._canonical(subskill_id), await ls._student_grade(student_id))
+        return float(ga.bmed[ga.index[key]]) if key in ga.index else None
 
     async def _item_beta(self, primitive_type: str, eval_mode: str) -> float:
         item_key = get_item_key(primitive_type, eval_mode)
@@ -416,23 +454,39 @@ class FullLoopRunner:
         the latent student of its own subject."""
         scores: List[float] = []
         items_by_subject: Dict[str, int] = {}
+        log: List[Dict[str, Any]] = []
         primary = base_subject_key(profile.subject)
         for target in work:
             subj_key = target.get("subject") or primary
             student = students.get(subj_key) or students[primary]
-            eval_mode = target["verb"]
-            beta = await self._item_beta(DEFAULT_PRIMITIVE, eval_mode)
+            # a lesson serves the subskill at its own level, like Pulse: the registry
+            # mode nearest the subskill's beta (the Bloom verb is not an eval mode;
+            # used as one it served every subskill one fixed ten-frame item)
+            sub_beta = await self._subskill_beta(profile.student_id, subj_key, target["subskill_id"])
+            if sub_beta is not None:
+                prim, eval_mode = _nearest_registry_mode(sub_beta)
+            else:
+                prim, eval_mode = DEFAULT_PRIMITIVE, target["verb"]
+            beta = await self._item_beta(prim, eval_mode)
             for _ in range(ITEMS_PER_SUBSKILL):
-                theta = student.theta_for(target["skill_id"])
-                # Reuse the truth response model directly (same math as pulse)
-                from app.services.calibration_engine import p_correct as _p
-                p = _p(theta, DEFAULT_DISCRIMINATION_A, beta)
-                params = student.params
-                weight = params.guess + (1.0 - params.guess - params.slip) * p
-                weight += student.rng.gauss(0.0, params.noise_sd)
-                weight = max(0.0, min(1.0, weight))
-                score = round(weight * 10.0, 1)
-                student.practice(target["skill_id"])
+                flags = None
+                if CHALLENGES:
+                    # the item the learner engine scores: registry a, beta, c
+                    a, c = get_item_discrimination(prim, eval_mode)
+                    beta = get_prior_beta(prim, eval_mode)
+                    score, flags = student.answer_challenges(target["skill_id"], "", beta, CHALLENGES, a, c,
+                                                             subskill_id=target["subskill_id"])
+                else:
+                    theta = student.theta_for(target["skill_id"])
+                    # Reuse the truth response model directly (same math as pulse)
+                    from app.services.calibration_engine import p_correct as _p
+                    p = _p(theta, DEFAULT_DISCRIMINATION_A, beta)
+                    params = student.params
+                    weight = params.guess + (1.0 - params.guess - params.slip) * p
+                    weight += student.rng.gauss(0.0, params.noise_sd)
+                    weight = max(0.0, min(1.0, weight))
+                    score = round(weight * 10.0, 1)
+                    student.practice(target["skill_id"])
 
                 await self.competency.update_competency_from_problem(
                     student_id=profile.student_id,
@@ -441,13 +495,17 @@ class FullLoopRunner:
                     subskill_id=target["subskill_id"],
                     evaluation={"score": score, "correct": score >= 7.0},
                     source="lesson",
-                    primitive_type=DEFAULT_PRIMITIVE,
+                    primitive_type=prim,
                     eval_mode=eval_mode,
                     attempt_id=str(uuid.uuid4()),
+                    first_try=flags,
+                    evidence_parts=len(flags) if flags else 1,
                 )
                 scores.append(score)
+                log.append({"subskill_id": target["subskill_id"], "score": score, "first_try": flags,
+                            "beta": beta})
                 items_by_subject[subj_key] = items_by_subject.get(subj_key, 0) + 1
-        return len(scores), scores, items_by_subject
+        return len(scores), scores, items_by_subject, log
 
     async def _do_pulse_session(
         self,
@@ -471,9 +529,17 @@ class FullLoopRunner:
         scores: List[float] = []
         gate_advances = 0
         log: List[Dict[str, Any]] = []
+        self.last_ranking = list(getattr(self.learner_state, "last_ranking", None) or [])
         for item in session_resp.items:
-            score = student.answer(item)
+            flags = None
             prim, mode = _nearest_registry_mode(item.target_beta)
+            if CHALLENGES:
+                a, c = get_item_discrimination(prim, mode)
+                score, flags = student.answer_challenges(item.skill_id, item.description,
+                                                         get_prior_beta(prim, mode), CHALLENGES, a, c,
+                                                         subskill_id=item.subskill_id)
+            else:
+                score = student.answer(item)
             result = await self.engine.process_result(
                 student_id=profile.student_id,
                 session_id=session_resp.session_id,
@@ -483,14 +549,20 @@ class FullLoopRunner:
                     primitive_type=prim,
                     eval_mode=mode,
                     duration_ms=5000,
+                    first_try=flags,
                 ),
                 now_override=virtual_now,
             )
             if result.gate_update and result.gate_update.new_gate > result.gate_update.old_gate:
                 gate_advances += 1
+            # the engine's P(right) on the item served (observe runs inline here):
+            # what the calibration check compares with the child's answers
+            ev = (getattr(self.fs, "_learner_events", {}).get(str(profile.student_id)) or [None])[-1]
+            p_served = ((ev or {}).get("cause") or {}).get("p_right_predicted")                 if ((ev or {}).get("cause") or {}).get("subskill_id") == item.subskill_id else None
             log.append({"subskill_id": item.subskill_id, "kind": item.selection_kind,
                         "band": item.band.value, "target_beta": item.target_beta,
-                        "p_right": item.p_right, "score": score})
+                        "p_right": item.p_right, "p_served": p_served, "p_mastered": item.p_mastered,
+                        "score": score, "first_try": flags})
             scores.append(score)
         return len(scores), scores, gate_advances, log
 
@@ -606,7 +678,7 @@ class FullLoopRunner:
 
             # 1. MORNING — what would the platform serve today?
             try:
-                due = await self.fs.get_mastery_retests_due(
+                due = await self._retests_due(
                     profile.student_id, virtual_now.isoformat()
                 )
                 day.retests_due_morning = len(due)
@@ -668,8 +740,29 @@ class FullLoopRunner:
                     }
                     for t in day.targets if t.get("subskillId")
                 ]
+            slots = 0
+            if not self.retests and self.fill_from:
+                import json as _json
+                ref = next(Path(self.fill_from).glob(f"G*/loop_{profile.name.replace(' ', '_')}_*.json"), None)
+                if ref is not None:
+                    rd = _json.loads(ref.read_text(encoding="utf-8"))["days"]
+                    if day_num <= len(rd):
+                        slots = sum(p["type"] in ("retest", "review") for p in rd[day_num - 1]["plan_subskills"])
+            if slots:
+                # the slots the retests would have taken go to the selector's
+                # learning picks (the C5 plan), so both arms practise as much
+                have = {t["subskill_id"] for t in work}
+                extra = await self.analytics.select_session_targets(
+                    profile.student_id, subject=subjects[0], count=4 + slots)
+                for o in extra.get("objectives", []):
+                    sid = o.get("subskillId")
+                    if sid and sid not in have and len(work) < len(day.plan_subskills) + slots:
+                        have.add(sid)
+                        work.append({"subskill_id": sid, "skill_id": self._skill_for_subskill(sid, o.get("skillId")),
+                                     "type": "fill", "verb": o.get("verb") or "identify",
+                                     "subject": base_subject_key(subjects[0])})
             if work:
-                n, scores, by_subject = await self._do_lesson_work(
+                n, scores, by_subject, day.lesson_log = await self._do_lesson_work(
                     profile, students, work
                 )
                 day.lesson_items = n
@@ -692,6 +785,7 @@ class FullLoopRunner:
                     day.pulse_items = n
                     day.gate_advances = adv
                     day.pulse_log = plog
+                    day.pulse_ranking = getattr(self, "last_ranking", [])
                     all_scores.extend(scores)
                 except Exception as e:
                     logger.warning(f"  Day {day_num}: pulse session failed: {e}")
@@ -807,6 +901,18 @@ class FullLoopRunner:
         }
 
         timeline.learner_final = await self._learner_final(profile, students)
+        import copy as _copy
+        nodes = timeline.learner_final.get("nodes") or {}
+        served = {it["subskill_id"] for d in timeline.days for it in (d.lesson_log or []) + d.pulse_log}
+        later = {k: _copy.deepcopy(st) for k, st in students.items()}
+        for st in later.values():
+            st.sleep(DELAYED_DAYS)
+        for sid in served:
+            n = nodes.get(sid)
+            st = next((x for x in later.values() if n and n[0] in x.theta_true), None)
+            if st is not None:
+                timeline.truth_delayed[sid] = round(st.p_typical(n[0], sid, n[1], TYPICAL_A), 4)
+        timeline.learner_final["contained_in"] = await self._contained_in(profile, timeline)
         timeline.learner_final["replay"] = await self.check_learner_replay_parity(
             profile.student_id, skip=seeded_from is not None
         )
@@ -817,6 +923,33 @@ class FullLoopRunner:
         )
         return timeline
 
+    async def _contained_in(self, profile: SyntheticProfile, timeline: "LoopTimeline") -> Dict[str, List[str]]:
+        """sid -> served subskills whose practice retrieves it (the learner graph's
+        R steps and easier forms, transitively): the common-sense checker credits
+        a success on one as a review of the other. Curriculum structure, not
+        engine state."""
+        from app.services.learner_model.engine import GraphArrays
+        served = {it["subskill_id"] for d in timeline.days for it in (d.lesson_log or []) + d.pulse_log}
+        lg = await _published_learner_graph(profile.subject)
+        if lg is None:
+            return {}
+        ga = GraphArrays.from_nodes(lg.version, lg.nodes)
+        sid_of = [k.split(":", 1)[1] for k in ga.keys]
+        parents_of: Dict[int, List[int]] = {i: [int(q) for q in ga.spa[i]] for i in range(ga.n)}
+        out: Dict[str, set] = {}
+        for i in range(ga.n):
+            if sid_of[i] not in served:
+                continue
+            seen, stack = set(), list(parents_of[i])
+            while stack:
+                q = stack.pop()
+                if q in seen:
+                    continue
+                seen.add(q)
+                out.setdefault(sid_of[q], set()).add(sid_of[i])
+                stack.extend(parents_of[q])
+        return {k: sorted(v) for k, v in out.items()}
+
     async def _learner_final(self, profile: SyntheticProfile, students: Dict[str, LatentStudent]) -> Dict[str, Any]:
         """Learner state vs the journey: one event per on-graph answer, the
         stored observation counts, and agreement with the latent truth (the
@@ -825,7 +958,14 @@ class FullLoopRunner:
         import json as _json
         from app.services.calibration_engine import p_correct as _p
         events = self.fs._learner_events.get(str(profile.student_id), [])
-        out: Dict[str, Any] = {"events": len(events), "subjects": {}, "pairs": []}
+        out: Dict[str, Any] = {"events": len(events), "subjects": {}, "pairs": [], "nodes": {}}
+        # sid -> [skill_id, typical-item beta]: lets a report read the truth's
+        # P(right) on any subskill on any day from the daily truth_snapshot
+        for subj in {sj for (sd, sj) in self.fs._learner_state if sd == str(profile.student_id)}:
+            lg = await _published_learner_graph(subj)
+            for key, nd in ((lg.nodes if lg else {}) or {}).items():
+                if nd.get("skill_id"):
+                    out["nodes"][key.split(":", 1)[-1]] = [nd["skill_id"], float(nd.get("beta") or 3.0)]
         for (sid, subj), doc in self.fs._learner_state.items():
             if sid != str(profile.student_id):
                 continue
@@ -839,8 +979,9 @@ class FullLoopRunner:
                 if not nd or st is None or nd.get("skill_id") not in st.theta_true:
                     continue
                 pr = st.params
-                truth = pr.guess + (1 - pr.guess - pr.slip) * _p(st.theta_true[nd["skill_id"]], DEFAULT_DISCRIMINATION_A, float(nd.get("beta") or 3.0))
+                truth = pr.guess + (1 - pr.guess - pr.slip) * _p(st.theta_true[nd["skill_id"]], TYPICAL_A, float(nd.get("beta") or 3.0))
                 pairs.append((ro[key][1], truth, t["n"]))
+                out.setdefault("readout", {})[key.split(":", 1)[-1]] = [ro[key][0], ro[key][1], t["n"]]
             out["subjects"][subj] = {"n_obs": doc["n_obs"], "seen": len(touched), "truth_pairs": len(pairs)}
             out["pairs"].extend(pairs)
         return out
@@ -1352,6 +1493,41 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
         ),
     ))
 
+    # 6b. "NEW" MEANS FIRST LESSON (T6): a subskill is planned as "new" on one
+    # day at most; after that it is practice. NO STUCK REPEAT: a learn pick
+    # served and missed (day mean < 7) on more days running than the
+    # selector's MISS_DAYS steps down or rests.
+    from app.services.learner_model.engine import MISS_DAYS, MISS_X
+    new_days: Dict[str, int] = {}
+    for d in days:
+        for sid in {p.get("subskill_id") for p in d.plan_subskills if p.get("type") == "new"}:
+            new_days[sid] = new_days.get(sid, 0) + 1
+    renewed = sorted(s for s, n in new_days.items() if n > 1)
+    results.append(AssertionResult(
+        name="new_means_first_lesson",
+        passed=not renewed,
+        message=(f"{len(new_days)} subskills planned as 'new', each on one day" if not renewed
+                 else f"{len(renewed)} subskills planned as 'new' on more than one day (first 5: {renewed[:5]})"),
+    ))
+    run: Dict[str, int] = {}
+    worst_run, worst_sid = 0, ""
+    for d in days:
+        served: Dict[str, List[float]] = {}
+        for it in d.pulse_log:
+            if it.get("kind") == "learn":
+                served.setdefault(it["subskill_id"], []).append(it["score"])
+        missed = {s for s, v in served.items() if sum(v) / len(v) < MISS_X * 10}
+        run = {s: run.get(s, 0) + 1 for s in missed}
+        for s, n in run.items():
+            if n > worst_run:
+                worst_run, worst_sid = n, s
+    results.append(AssertionResult(
+        name="no_stuck_repeat",
+        passed=worst_run <= MISS_DAYS,
+        message=(f"longest run of days a learn pick was served and missed: {worst_run}"
+                 + (f" ({worst_sid})" if worst_sid else "") + f"; limit {MISS_DAYS}"),
+    ))
+
     # 7. THE LEARNER MODEL SELECTS PULSE (user 10-12: one brain). Every
     # pulse item carries the model's kind; capable students get confirm items
     # on subskills they never practised (what leapfrog probes used to do);
@@ -1388,23 +1564,19 @@ def run_loop_assertions(timeline: LoopTimeline) -> List[Any]:
                  f"pulse success {hits}/{len(plog)} ({hits / max(1, len(plog)):.0%})"),
     ))
 
-    # 8. REVIEWS SURFACE: when mastery retests fall due on the virtual
-    # timeline, the daily plan must carry review blocks. (High-ability
-    # archetypes can jump G0→G4 directly and never owe a retest — then
-    # there is nothing to surface and this passes vacuously.)
-    due_days = sum(1 for d in days if d.retests_due_morning > 0)
-    review_days = sum(
+    # 8. REVIEWS ARE PULSE ITEMS: lifecycle retests are retired (C12,
+    # 10-16). No plan entry is a retest or review lesson; reviews arrive as
+    # single Pulse items (kind "confirm") the memory model schedules.
+    retest_days = sum(
         1 for d in days
         if any(p.get("type") in ("review", "retest") for p in d.plan_subskills)
     )
+    confirm_items = sum(1 for d in days for it in d.pulse_log if it.get("kind") == "confirm")
     results.append(AssertionResult(
-        name="reviews_surfaced",
-        passed=review_days > 0 if due_days > 0 else True,
-        message=(
-            f"Retests due on {due_days}/{len(days)} days; review blocks "
-            f"planned on {review_days} days"
-            + ("" if due_days else " — none fell due, nothing to surface")
-        ),
+        name="reviews_are_pulse_items",
+        passed=retest_days == 0,
+        message=(f"retest/review lessons planned on {retest_days}/{len(days)} days; "
+                 f"{confirm_items} Pulse review items"),
     ))
 
     # 9. PROMOTION CONTINUITY (--promote runs only): after a grade

@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from app.services.learner_model.service import first_try_of
+
 from .graph import Graph
 
 
@@ -74,7 +76,7 @@ def from_review(review: dict, lookup: Dict[str, int]) -> Optional[Evidence]:
         final = 10.0
     return Evidence(node=node, subskill_id=review["subskill_id"], primitive=md.get("primitive_type") or "unknown",
                     mode=md.get("eval_mode") or "default", ts=str(review.get("timestamp")),
-                    first=[e.get("attempts") == 1 and e.get("correct") is not False for e in res],
+                    first=first_try_of(res),
                     final_score=final, source=review.get("source_system") or "real")
 
 

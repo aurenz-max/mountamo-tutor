@@ -25,7 +25,6 @@ from ..models.pulse import (
     DAILY_MIX_SUBJECT,
     DEFAULT_PULSE_ITEM_COUNT,
     PRIMITIVE_HISTORY_WINDOW,
-    PULSE_CONFIRM_SHARE,
     GateUpdate,
     IrtProbabilityData,
     SessionIrtSummary,
@@ -116,7 +115,7 @@ class PulseEngine:
             raise RuntimeError("PulseEngine needs the learner model (LearnerStateService)")
         if subject:
             sel = await self.learner_state.select(
-                student_id, subject, count=item_count, confirm_share=PULSE_CONFIRM_SHARE,
+                student_id, subject, count=item_count,
             )
             if sel is not None:
                 sel["picks"] = [{**p, "subject": subject} for p in sel["picks"]]
@@ -146,6 +145,7 @@ class PulseEngine:
                 selection_kind=p["kind"],
                 selection_reason=p["reason"],
                 p_right=p["p_right"],
+                p_mastered=p.get("p_mastered"),
                 grade=p.get("grade"),
             ))
 
@@ -230,7 +230,6 @@ class PulseEngine:
 
         async def pick(s: str, n: int) -> Optional[dict]:
             return await self.learner_state.select(student_id, s, count=n,
-                                                   confirm_share=PULSE_CONFIRM_SHARE,
                                                    grade=subject_weights[s].get("grade"))
 
         sel_by = dict(zip(order, await asyncio.gather(*(

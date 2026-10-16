@@ -469,6 +469,28 @@ def main():
         ),
     )
     parser.add_argument(
+        "--no-retests",
+        action="store_true",
+        help="Loop mode: the planner serves no lifecycle retests (memory-model Pulse reviews only)",
+    )
+    parser.add_argument(
+        "--fill-from",
+        type=str,
+        default=None,
+        help="With --no-retests: a retests-on run dir; each day's freed retest slots go to selector learning picks",
+    )
+    parser.add_argument(
+        "--mem-k",
+        type=float,
+        default=None,
+        help="Loop mode: credibility constant K of the child's forgetting fit (memory.K_CRED); inf = defaults only",
+    )
+    parser.add_argument(
+        "--irt-gates",
+        action="store_true",
+        help="Loop mode: lifecycle gates from IRT + retests only (the learner model does not set them)",
+    )
+    parser.add_argument(
         "--list",
         action="store_true",
         help="List available profiles and exit",
@@ -625,9 +647,13 @@ def main():
                     load_published=True,
                 )
 
+        if args.mem_k is not None:
+            from app.services.learner_model import memory as _memory
+            _memory.K_CRED = args.mem_k
         loop_runner = FullLoopRunner(
             firestore_service, pulse_engine, seed=args.seed,
-            grade_loader=grade_loader,
+            grade_loader=grade_loader, retests=not args.no_retests, fill_from=args.fill_from,
+            model_gates=not args.irt_gates,
         )
         profiles = (
             list(ALL_PROFILES.values()) if args.all else [ALL_PROFILES[args.profile]]

@@ -51,9 +51,6 @@ LEAPFROG_CREDIBILITY_WEIGHT = 1  # indirect observations credited per leapfrog
 
 # Per-skill cap in current-band selection — prevents one skill dominating a session
 MAX_CURRENT_ITEMS_PER_SKILL = 3
-# Share of a Pulse session the learner model spends confirming what it believes
-# is mastered but the lifecycle has not recorded (the rest teaches).
-PULSE_CONFIRM_SHARE = 0.34
 # Session subject of a Pulse with no subject picked: the daily mix, whose items
 # each carry their own subject.
 DAILY_MIX_SUBJECT = "DAILY_MIX"
@@ -136,6 +133,7 @@ class PulseItemSpec(BaseModel):
     selection_kind: Optional[str] = None
     selection_reason: Optional[str] = None
     p_right: Optional[float] = None
+    p_mastered: Optional[float] = None
     # The subskill's own grade ("Kindergarten", "1", ...): the generator's scope,
     # which can sit above the student's grade of record (session_meta.student_grade)
     grade: Optional[str] = None

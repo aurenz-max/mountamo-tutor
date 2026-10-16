@@ -24,7 +24,7 @@ State model:
 import logging
 import math
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 # Maximum gate_history entries to retain per lifecycle document.
 # Prevents unbounded Firestore document growth (1 MiB limit).
@@ -369,6 +369,35 @@ class MasteryLifecycleEngine:
         result["_last_irt_p"] = getattr(lifecycle, "_last_irt_p", None)
         result["_last_empirical_p"] = getattr(lifecycle, "_last_empirical_p", None)
         return result
+
+    async def apply_model_states(self, student_id: int, updates: List[Dict[str, Any]]) -> int:
+        """Set gates from the learner model (C12, 10-16). Each update carries the
+        lifecycle doc and the model's `gate`, `retention_state` and `stability`
+        (memory stability, days). The model's mastery call matches what the child
+        can do (precision 0.93-1.00, recall 0.79-1.00 vs truth); the IRT/retest
+        gate missed 76-92% of it, and without retests it stops advancing, so every
+        gate reader (planner unlock, My Progress, parent report, Pulse) reads the
+        model through this doc. Writes only what changed; returns the write count."""
+        _vn = getattr(self.firestore, "virtual_now", None)
+        now = (_vn if isinstance(_vn, datetime) else datetime.now(timezone.utc)).isoformat()
+        n = 0
+        for u in updates:
+            doc = u["doc"]
+            new = {"current_gate": int(u["gate"]), "retention_state": u["retention_state"],
+                   "stability": round(float(u["stability"]), 2)}
+            if all(doc.get(k) == v for k, v in new.items()):
+                continue
+            # history carries the verdict too: the lesson close-out reads the
+            # gate before the lesson from it (get_subskill_progress_delta)
+            hist = list(doc.get("gate_history") or []) + [GateHistoryEntry(
+                gate=new["current_gate"], timestamp=now, score=round(10 * float(u.get("pc", 0.0)), 2),
+                passed=new["current_gate"] >= 4, source="learner_model").model_dump()]
+            await self.firestore.upsert_mastery_lifecycle(
+                student_id, doc["subskill_id"],
+                {**doc, **new, "gate_history": hist[-MAX_GATE_HISTORY:],
+                 "gate_source": "learner_model", "updated_at": now})
+            n += 1
+        return n
 
     # ------------------------------------------------------------------
     # Lesson-mode handler (Gate 0 → 1 / not_started → active)

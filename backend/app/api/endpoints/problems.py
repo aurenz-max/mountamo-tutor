@@ -106,8 +106,10 @@ def _first_try_signals(primitive_response: dict) -> dict:
     metrics = primitive_response.get('metrics') or {}
     results = _find_challenge_results(primitive_response.get('student_work'), metrics)
     if results:
-        total = len(results)
-        first_try = sum(1 for r in results if r.get('attempts') == 1 and r.get('correct') is not False)
+        from app.services.learner_model.service import first_try_of
+        flags = first_try_of(results)
+        total = len(flags)
+        first_try = sum(flags)
         total_attempts = sum(int(r.get('attempts') or 0) for r in results)
         return {
             "first_try_rate": round(first_try / total, 4) if total else None,

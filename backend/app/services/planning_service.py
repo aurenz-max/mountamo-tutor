@@ -128,6 +128,13 @@ class PlanningService:
         return ids
 
     @staticmethod
+    def _reach_past(reach_grade: Optional[str], grade: str) -> bool:
+        """The learner model's reach grade is above `grade` ("Kindergarten", "1".."12")."""
+        from .learner_model.engine import grade_index
+        r, g = grade_index(str(reach_grade)) if reach_grade else None, grade_index(str(grade))
+        return r is not None and g is not None and r > g
+
+    @staticmethod
     def _count_by_gate_status(
         lifecycles: List[Dict[str, Any]],
         subject: str,
@@ -573,48 +580,12 @@ class PlanningService:
         planning = await self.firestore.get_student_planning_fields(student_id)
         capacity = planning.get("daily_session_capacity", DEFAULT_CAPACITY)
 
-        # ---- Step 1: Review queue (single source — PRD §5.2) ----
-        # All reviews come from mastery_lifecycle retests. No dual-source merge.
+        # ---- Step 1: Review queue ----
+        # Lifecycle retests are retired (C11/C12, 10-16): reviews are single
+        # Pulse items the memory model schedules (LearnerStateService.select),
+        # so every slot goes to learning. Retests kept 94-100% as much a week
+        # later on 10% of the review items; the slots they took teach more.
         review_queue: List[Dict[str, Any]] = []
-        try:
-            mastery_due = await self.firestore.get_mastery_retests_due(
-                student_id, self._now().isoformat()
-            )
-            for ml in mastery_due:
-                retest_eligible = ml.get("next_retest_eligible", "")
-                try:
-                    days_overdue = max(
-                        0,
-                        (today - date.fromisoformat(retest_eligible[:10])).days,
-                    )
-                except (ValueError, TypeError):
-                    days_overdue = 0
-
-                review_queue.append({
-                    "skill_id": ml.get("subskill_id", ""),
-                    "subject": ml.get("subject", ""),
-                    "skill_name": ml.get("subskill_id", ""),
-                    "type": "review",
-                    "reason": SessionReason.MASTERY_RETEST.value,
-                    "mastery_gate": ml.get("current_gate", 0),
-                    "completion_factor": ml.get("completion_pct", 0.0),
-                    "days_overdue": days_overdue,
-                })
-
-            # Sort: most overdue first, then lowest gate first (PRD §5.2)
-            review_queue.sort(
-                key=lambda x: (
-                    -x.get("days_overdue", 0),
-                    x.get("mastery_gate", 0),
-                )
-            )
-
-            if review_queue:
-                logger.info(
-                    f"[DAILY_PLAN] {len(review_queue)} mastery retests due for student {student_id}"
-                )
-        except Exception as e:
-            logger.warning(f"[DAILY_PLAN] Failed to fetch mastery retests: {e}")
 
         # ---- Step 2: Capacity allocation ----
         max_review_slots = math.floor(capacity * 0.85)
@@ -1025,22 +996,9 @@ class PlanningService:
 
         all_candidates: List[Dict[str, Any]] = []
 
-        # --- Step 1a: Due mastery retests (reviews) ---
-        try:
-            mastery_due = await self.firestore.get_mastery_retests_due(
-                student_id, self._now().isoformat()
-            )
-            for ml in mastery_due:
-                all_candidates.append({
-                    "skill_id":          ml.get("subskill_id", ""),
-                    "subject":           ml.get("subject", ""),
-                    "type":              "review",
-                    "mastery_gate":      ml.get("current_gate", 0),
-                    "completion_factor": ml.get("completion_pct", 0.0),
-                    "days_overdue":      self._compute_days_overdue(ml),
-                })
-        except Exception as e:
-            logger.warning(f"[SESSION_PLAN] Mastery retests error: {e}")
+        # --- Step 1a: (retired) lifecycle retests ---
+        # Reviews are single Pulse items scheduled by the memory model; the
+        # minutes retests took go to the selector's learning picks (C12, 10-16).
 
         # --- Step 1b: New subskills (per subject) ---
         # IRT-first: the session-scope selector picks confirm/learn targets
@@ -1087,18 +1045,40 @@ class PlanningService:
                 learner_graph = False
                 if self.analytics:
                     try:
+                        subj_grade = self._subject_grade(subj, student_grade, grade_overrides)
                         targets = await self.analytics.select_session_targets(
                             student_id,
                             subj,
-                            grade=self._subject_grade(subj, student_grade, grade_overrides),
+                            grade=subj_grade,
                             count=pace.selector_count if pace else 5,
                         )
                         learner_graph = not targets.get("no_learner_graph")
+                        # Grade exhausted by the one brain: no learning pick and
+                        # the model's reach is past this grade (everything in the
+                        # window is known, inferred or shown). The KG frontier
+                        # still lists unpractised subskills the model infers, so
+                        # its exhaustion check never fires; retests used to fill
+                        # those days (gifted idle days 19-28, C12 10-16). Reach
+                        # guards a child with nothing READY from promotion.
+                        if (learner_graph and not targets.get("objectives") and subj_grade is not None
+                                and self._reach_past(targets.get("reach_grade"), subj_grade)):
+                            promoted = await self._handle_frontier_exhausted(
+                                student_id, subj, subj_grade,
+                                (pace.total_subskills - pace.remaining_subskills) if pace else 0,
+                                grade_overrides, promotion_ready, promo_warnings,
+                            )
+                            if promoted:
+                                targets = await self.analytics.select_session_targets(
+                                    student_id, subj, grade=promoted,
+                                    count=pace.selector_count if pace else 5,
+                                )
                         for o in targets.get("objectives", []):
                             all_candidates.append({
                                 "skill_id":         o["subskillId"],
                                 "subject":          subj,
-                                "type":             "new",
+                                # "new" is the first lesson only; a subskill
+                                # the model has answers on is practice
+                                "type":             "practice" if o.get("seen") else "new",
                                 "mastery_gate":     o.get("currentGate", 0),
                                 # Model-state verb (confirm→apply, learn→
                                 # identify/explain) — wins over keyword
@@ -1156,8 +1136,7 @@ class PlanningService:
                         if added >= 20:   # cap per subject; time budget handles final selection
                             break
 
-        # One subskill, one block a day: a due retest wins over a selector pick
-        # of the same subskill (retests are collected first).
+        # One subskill, one block a day.
         seen_ids: set = set()
         deduped: List[Dict[str, Any]] = []
         for c in all_candidates:
@@ -1372,10 +1351,13 @@ class PlanningService:
             )
             p.allocated_minutes = round(budget_minutes * p.weight, 1)
             # Candidate-pool sizing, not a quota: budget fill trims, so aim a
-            # little above what the subject's minutes can hold (~8 min/target).
+            # little above what the subject's minutes can hold. A lesson costs
+            # ~3 min per subskill plus a base (block_cost_minutes); ~4 min per
+            # target fills the day now that retests no longer take half of it
+            # (8 min/target left 40-minute days half empty, C12 10-16).
             p.selector_count = (
                 0 if p.remaining_subskills == 0
-                else max(2, min(8, math.ceil(p.allocated_minutes / 8)))
+                else max(2, min(12, math.ceil(p.allocated_minutes / 4)))
             )
 
         # Pace signal for UIs/telemetry: what finishing on time would take.

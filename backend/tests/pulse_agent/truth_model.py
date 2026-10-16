@@ -22,6 +22,14 @@ Development is emergent, not scripted:
   consolidated floor (theta0 + retention * (peak - theta0)):
   theta = floor + (theta - floor) * exp(-decay_rate * gap_days)
 - DRIFT: optional per-session drift models regression/motivation loss.
+- RECALL (opt-in, half_life0 > 0; the *_hl archetypes): each practised
+  SUBSKILL has a half-life h; recall R = 2 ** (-days / h) (exponential,
+  half-life regression: Settles & Meeder 2016; a different curve family from
+  the engine's power law, so the engine is not judged by its own assumption).
+  Not recalled, the child answers at the skill's pre-learning ability theta0.
+  A recalled practice on a later day grows h by 1 + spacing_gain (1 - R) (the
+  spacing effect: more fading, more growth); a forgotten one halves it (floor
+  half_life0). Skill-level decay is off for these children (decay_rate 0).
 
 Because the sim knows theta_true, assertions can test what v1 never could:
 does the engine's ESTIMATED theta converge to the truth, and does the
@@ -71,6 +79,8 @@ class TruthParams:
     slip: float = 0.05         # ceiling loss of response weight
     skill_jitter_sd: float = 0.4   # per-skill spread around base_theta
     weak_cluster_offset: float = 0.0  # added to theta for weak-keyword skills
+    half_life0: float = 0.0    # days; > 0 turns on per-subskill recall (see RECALL)
+    spacing_gain: float = 10.0 # half-life growth factor per unit of faded recall
 
     def clamp_theta(self, t: float) -> float:
         return max(THETA_MIN, min(THETA_MAX, t))
@@ -107,8 +117,13 @@ TRUTH_PARAMS: Dict[str, TruthParams] = {
     # Solid middle: learns steadily, mild forgetting.
     "steady": TruthParams(base_theta=4.3, growth_cap=8.0, learning_rate=0.12,
                           decay_rate=0.010),
-    # Low ability, slow gains, forgets faster than learns.
-    "struggling": TruthParams(base_theta=1.8, growth_cap=5.0, learning_rate=0.05,
+    # Low starting ability, forgets faster. Learns per item at steady's rate
+    # (first-item gain ~0.055 theta): students differ in where they start far
+    # more than in how fast they learn, ~0.1 log-odds per practice opportunity
+    # for all (Koedinger et al. 2023 PNAS; replicated EDM 2024). It was 0.05 /
+    # cap 5.0: a third of that rate, and G1 subskills above beta ~4 unreachable
+    # however diligent the practice (that child is "plateau").
+    "struggling": TruthParams(base_theta=1.8, growth_cap=6.5, learning_rate=0.075,
                               decay_rate=0.020, noise_sd=0.12),
     # Strong overall, genuinely weak on one conceptual cluster.
     "selective_weakness": TruthParams(base_theta=5.8, growth_cap=8.5,
@@ -132,6 +147,16 @@ TRUTH_PARAMS: Dict[str, TruthParams] = {
                             noise_sd=0.30, slip=0.10),
     # Fast ramp into a LOW cap — consistent mediocrity forever after.
     "plateau": TruthParams(base_theta=3.0, growth_cap=5.6, learning_rate=0.35),
+    # Per-subskill recall (RECALL in the module docstring). steady_hl forgets as
+    # the FSRS-5 defaults assume: R = 0.9 after 3.2 days is a half-life of ~21
+    # days; forgetful_hl forgets ~7x faster (half-life 3 days). Both start
+    # below G1 (theta 2.5) and learn ~0.1 theta per item, so what they learn is
+    # new and forgetting it shows: a theta-4.3 child already gets 86% of the
+    # items served on first sight, and forgetting back to that costs nothing.
+    "steady_hl": TruthParams(base_theta=2.5, growth_cap=8.0, learning_rate=0.15,
+                             decay_rate=0.0, half_life0=21.0),
+    "forgetful_hl": TruthParams(base_theta=2.5, growth_cap=8.0, learning_rate=0.15,
+                                decay_rate=0.0, half_life0=3.0),
     # Steady-like learner; the 7-day profile gap is what stresses decay.
     "bursty": TruthParams(base_theta=5.0, growth_cap=8.0, learning_rate=0.14,
                           decay_rate=0.06),
@@ -155,6 +180,8 @@ class LatentStudent:
         self._theta0: Dict[str, float] = {}   # initial truth per skill
         self._peak: Dict[str, float] = {}     # highest truth reached per skill
         self.exposures: Dict[str, int] = {}
+        self.day = 0.0                         # days elapsed (sleep advances it)
+        self._mem: Dict[str, list] = {}        # subskill -> [half-life, last practice day]
 
     # -- initialization ------------------------------------------------------
 
@@ -185,6 +212,59 @@ class LatentStudent:
         return self.theta_true[skill_id]
 
     # -- response model ------------------------------------------------------
+
+    def recall(self, subskill_id: Optional[str]) -> float:
+        """P(the child retrieves the subskill now); 1 without per-subskill recall
+        or before its first practice."""
+        m = self._mem.get(subskill_id or "")
+        if not self.params.half_life0 or m is None:
+            return 1.0
+        return 2.0 ** (-(self.day - m[1]) / m[0])
+
+    def _p_right(self, skill_id: str, subskill_id: Optional[str], beta: float, a: float, c: float = 0.0,
+                 description: str = "") -> float:
+        """P(a challenge right) before guess/slip: recalled at theta, else theta0."""
+        p = p_correct(self.theta_for(skill_id, description), a, beta, c)
+        r = self.recall(subskill_id)
+        return p if r >= 1.0 else r * p + (1 - r) * p_correct(self._theta0[skill_id], a, beta, c)
+
+    def _remember(self, subskill_id: Optional[str]) -> None:
+        """Update the subskill's half-life after a practice (once per day)."""
+        p = self.params
+        if not p.half_life0 or not subskill_id:
+            return
+        m = self._mem.get(subskill_id)
+        if m is None:
+            self._mem[subskill_id] = [p.half_life0, self.day]
+            return
+        if self.day <= m[1]:
+            return
+        r = self.recall(subskill_id)
+        m[0] = m[0] * (1 + p.spacing_gain * (1 - r)) if self.rng.random() < r else max(p.half_life0, m[0] / 2)
+        m[1] = self.day
+
+    def p_typical(self, skill_id: str, subskill_id: str, beta: float, a: float) -> float:
+        """Noise-free P(right) on the subskill's typical item now (for reports)."""
+        p = self.params
+        return p.guess + (1 - p.guess - p.slip) * self._p_right(skill_id, subskill_id, beta, a)
+
+    def answer_challenges(self, skill_id: str, description: str, beta: float, n: int,
+                          a: float = DEFAULT_DISCRIMINATION_A, c: float = 0.0,
+                          subskill_id: Optional[str] = None) -> tuple:
+        """Answer one item as `n` challenges, each right or wrong on the first
+        try (the evidence contract real primitives meet), then practise once.
+        `a`, `c` are the served item's registry parameters: answering with a
+        different `a` than the engine scores with reads as model bias (a = 1.0
+        child vs a = 1.4 item: 81% right fits theta low, C9 10-15).
+        Returns (0-10 score, first-try flags)."""
+        p = self.params
+        prob = self._p_right(skill_id, subskill_id, beta, a, c, description)
+        weight = p.guess + (1.0 - p.guess - p.slip) * prob + self.rng.gauss(0.0, p.noise_sd)
+        weight = max(0.0, min(1.0, weight))
+        flags = [self.rng.random() < weight for _ in range(n)]
+        self._remember(subskill_id)
+        self.practice(skill_id)
+        return round(10.0 * sum(flags) / n, 1), flags
 
     def answer(self, item: PulseItemSpec) -> float:
         """Answer one item: sample a 0-10 score from the 3PL truth model,
@@ -223,6 +303,7 @@ class LatentStudent:
         """Between sessions: exponential forgetting toward a consolidated floor,
         plus any per-session drift (regression archetypes)."""
         p = self.params
+        self.day += gap_days
         for skill_id, t in self.theta_true.items():
             theta0 = self._theta0[skill_id]
             peak = self._peak[skill_id]

@@ -454,6 +454,8 @@ class LessonGroupService:
             return "mastered"
         if item_type == "review":
             return "retest" if gate >= 1 else "review"
+        if item_type == "practice":
+            return "practice"
         return "new"
 
     @staticmethod
@@ -573,7 +575,10 @@ class LessonGroupService:
         if practices and review_minutes_used >= review_budget:
             warnings.append("Review cap reached — some reviews deferred to tomorrow")
 
-        # 3. Fill new lessons with remaining intro budget (within subject budgets)
+        # 3. Fill new lessons with what the reviews left: the review cap bounds
+        #    reviews, it does not reserve minutes, so unused review time teaches
+        #    (with retests retired the review share is mostly empty, 10-16).
+        intro_budget = budget_minutes - review_minutes_used
         for block in lessons:
             if (intro_minutes_used + block.estimated_minutes <= intro_budget
                     and subject_fits(block)):

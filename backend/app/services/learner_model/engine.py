@@ -29,7 +29,7 @@ what the lab does after every observation.
 Readouts (`readout`) are Rao-Blackwellized where it is cheap, so before/after
 deltas are mostly signal, not chain noise:
     pm     P(subskill mastered)
-    pc     P(right) on the subskill's typical item (a = 1, beta = beta_k)
+    pc     P(right) on the subskill's typical item (a = TYPICAL_A, beta = beta_k)
     ready  P(not mastered and every R prerequisite mastered), the frontier
 
 Exposure gate (`exposure_gate`, WORKSTREAMS 7.13). The model has no "taught
@@ -51,12 +51,20 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
+from . import memory
+
 PHI = np.arange(0.0, 11.0, 1.0)
 PHI_MEAN, PHI_SD = 4.5, 2.5
 W_SCALE = 3.0
 MIN_STEP = 0.8               # a parent with Jev step >= this is performed inside the child (R)
 MIN_EASIER, MAX_STEP_E = 0.6, 0.8
-MASTERY_MARGIN = 1.4         # theta - beta at which a 2PL item with a=1 gives P = 0.80
+# The typical item: the registry's median discrimination (a = 1.4 on 513 of
+# 704 modes; tests/test_learner_typical_item.py fails if that drifts). Mastered
+# = 80% right on the items actually served. With a = 1 here, as before 10-15,
+# "80% on a typical item" meant ~88% on the a = 1.4 items served, and a child
+# at 85% first try was never mastered (steady OPS002-06-c, 16 days running).
+TYPICAL_A = 1.4
+MASTERY_MARGIN = float(np.log(0.8 / 0.2) / TYPICAL_A)   # theta - beta at which the typical item gives P = 0.80
 NONMASTER_HEADROOM = 0.7
 LAMBDA = 0.15
 TRANSFER = 0.5
@@ -65,6 +73,9 @@ DEFAULT_BETA = 3.0
 TH = np.linspace(0.0, 10.0, 101)
 BASE_SD = 2.0
 DIFFUSION_SD = 0.2
+# theta drift per sqrt(day) since the subskill was last practised (C2): evidence
+# goes stale while the child learns elsewhere (siblings, easier forms) or forgets
+DIFFUSION_DAY_SD = 0.0
 CHAINS = 256
 SWEEPS = 6
 READY_WINDOW = 1             # exposure gate: ready up to this many grades above the grade of record
@@ -340,6 +351,44 @@ def demonstration(g: GraphArrays, gated: Dict[str, List[float]], touched,
     return out
 
 
+# Per-day record per touched subskill (last practice day, that day's mean
+# first-try result, closed days running below MISS_X). The selector no longer
+# rests on it (10-15: memory.value ranks a missed subskill below its easier
+# form); the loop harness's stuck-run assertion reads MISS_X / MISS_DAYS.
+MISS_X, MISS_DAYS = 0.7, 3
+
+
+def _diffuse(post: np.ndarray, sd: float) -> np.ndarray:
+    """Gaussian random-walk step of `sd` on the theta grid."""
+    step = TH[1] - TH[0]
+    half = max(10, int(np.ceil(5 * sd / step)))   # 10 = the old fixed kernel at sd 0.2
+    off = np.arange(-half, half + 1) * step
+    kern = np.exp(-0.5 * (off / sd) ** 2)
+    out = np.convolve(post, kern / kern.sum(), mode="same")
+    return out / out.sum()
+
+
+def _day_record(t: dict, day: Optional[str], x: float) -> dict:
+    """The touched entry's day fields after one more answer `x` on `day`.
+    `miss_run` counts closed days only; the current day closes when the
+    next day's first answer arrives (or is read through `miss_days`)."""
+    if not day:
+        return {k: t[k] for k in ("day", "day_x", "day_n", "miss_run") if k in t}
+    if t.get("day") == day:
+        dn = int(t.get("day_n", 0))
+        return {"day": day, "day_x": (float(t["day_x"]) * dn + x) / (dn + 1), "day_n": dn + 1,
+                "miss_run": int(t.get("miss_run", 0))}
+    return {"day": day, "day_x": x, "day_n": 1, "miss_run": miss_days(t)}
+
+
+def miss_days(t: dict) -> int:
+    """Days in a row, ending with the last practice day, whose mean first-try
+    result was below MISS_X."""
+    if not t.get("day"):
+        return 0
+    return int(t.get("miss_run", 0)) + 1 if float(t["day_x"]) < MISS_X else 0
+
+
 def counts_toward_grade(state: Optional[str]) -> bool:
     return state in (MASTERED_STATE, SHOWN_STATE)
 
@@ -389,6 +438,7 @@ class LearnerEngine:
         self.loglik: Dict[int, np.ndarray] = {}
         self._grids_dirty: set = set()
         self.n_obs = 0
+        self.mem_fit = memory.new_fit()   # the child's own forgetting (memory.multiplier)
         self._dirty = set(range(n))
         self.f = self.rng.choice(len(PHI), size=self.C, p=np.exp(self.logphi))
         self.K = np.zeros((self.C, n))
@@ -407,6 +457,8 @@ class LearnerEngine:
         if not state:
             return e
         e.n_obs = int(state.get("n_obs", 0))
+        if state.get("mem_fit"):
+            e.mem_fit = {"ll": list(state["mem_fit"]["ll"]), "n": int(state["mem_fit"]["n"])}
         for key, t in (state.get("touched") or {}).items():
             k = g.index.get(key)
             if k is None:
@@ -447,6 +499,7 @@ class LearnerEngine:
         return {
             "graph_version": self.g.version,
             "n_obs": self.n_obs,
+            "mem_fit": self.mem_fit,
             "touched": self.touched,
             "practice": {self.g.keys[k]: [float(self.nprac[k]), float(self.noln[k])]
                          for k in np.nonzero((self.nprac > 0) | (self.noln < 0))[0]},
@@ -604,14 +657,20 @@ class LearnerEngine:
     def theta_dist(self, k: int) -> np.ndarray:
         return self.post[k] if k in self.post else self._prior(k)
 
+    def mem_m(self) -> float:
+        """The child's stability multiplier (memory.multiplier): 1 until reviews show otherwise."""
+        return memory.multiplier(self.mem_fit)
+
     def predict(self, key: str, a: float, beta: float, c: float) -> float:
         """P(right) on an item of this subskill. Needs the grid loaded if touched."""
         k = self.g.index[key]
         return float((self.theta_dist(k) * p_item(a, beta, c)).sum())
 
-    def observe(self, key: str, a: float, beta: float, c: float, x: float, n: float) -> None:
+    def observe(self, key: str, a: float, beta: float, c: float, x: float, n: float,
+                day: Optional[str] = None) -> None:
         """x = first-try fraction (0-1), n = evidence weight. Grid for `key`
-        must be loaded first (`load_grid`) when the subskill was seen before."""
+        must be loaded first (`load_grid`) when the subskill was seen before.
+        `day` (YYYY-MM-DD) feeds the per-day miss record the selector rests on."""
         g, k = self.g, self.g.index[key]
         t = self.touched.get(key)
         if t is None:
@@ -619,22 +678,29 @@ class LearnerEngine:
         if k not in self.post:      # first meeting (or a lost grid doc: restart from the prior)
             self.post[k] = self._prior(k)
             self.loglik[k] = np.zeros_like(TH)
+        if day and t.get("S") is not None:
+            # a later-day practice is a recall test, scored against what knowledge predicted
+            memory.observe_recall(self.mem_fit, t, day, x, n, self.predict(key, a, beta, c))
         base = _normal(float(t["base_mean"]), BASE_SD)
+        if DIFFUSION_DAY_SD and day and t.get("day") and t["day"] < day:
+            from datetime import date
+            gap = (date.fromisoformat(day) - date.fromisoformat(t["day"])).days
+            self.post[k] = _diffuse(self.post[k], DIFFUSION_DAY_SD * np.sqrt(gap))
         P = p_item(a, beta, c)
         ll = n * (x * np.log(P) + (1 - x) * np.log1p(-P))
         self.loglik[k] = self.loglik[k] + ll
         post = self.post[k] * np.exp(ll - ll.max())
         post /= post.sum()
-        off = np.arange(-10, 11) * (TH[1] - TH[0])
-        kern = np.exp(-0.5 * (off / DIFFUSION_SD) ** 2)
-        post = np.convolve(post, kern / kern.sum(), mode="same")
-        self.post[k] = post / post.sum()
+        self.post[k] = _diffuse(post, DIFFUSION_SD)
         self._grids_dirty.add(k)
         self._update_lr(k, base)
         self.touched[key] = {"lr": float(self.lr[k]), "base_mean": float(t["base_mean"]),
                              "theta_mean": float((TH * self.post[k]).sum()),
-                             "pc": float((self.post[k] * p_item(1.0, g.bmed[k], 0.0)).sum()),
-                             "n": int(t.get("n", 0)) + 1}
+                             "pc": float((self.post[k] * p_item(TYPICAL_A, g.bmed[k], 0.0)).sum()),
+                             "n": int(t.get("n", 0)) + 1,
+                             **_day_record(t, day, x)}
+        self.touched[key].update(memory.update(t, day, x, self.touched[key]["pc"], self.mem_m()))
+        self._refresh_parts(k, day, x)
         self._mark_relevant(k)
         local = sorted(({k} | set(g.parents[k]) | set(g.ch[k])) & self.relevant)
         for _ in range(SWEEPS):
@@ -646,6 +712,25 @@ class LearnerEngine:
         self.practice(k, x)
         self.sweep(local)
         self._redraw_barren()
+
+    def _refresh_parts(self, k: int, day: Optional[str], x: float) -> None:
+        """A successful day on k is a review of what k demonstrates (its R steps
+        and easier forms, transitively: the g.spa edges evidence and gates
+        travel): adding within 20 retrieves adding within 10. Only practised
+        parts carry a memory trace to refresh; a miss on k says nothing about
+        its parts."""
+        if not day or x < memory.SUCCESS:
+            return
+        seen, stack = {k}, [int(q) for q in self.g.spa[k]]
+        while stack:
+            q = stack.pop()
+            if q in seen:
+                continue
+            seen.add(q)
+            t = self.touched.get(self.g.keys[q])
+            if t is not None and t.get("S") is not None:
+                t.update(memory.update(t, day, 1.0, float(t.get("pc", memory.GOOD_P)), self.mem_m()))
+            stack.extend(int(p) for p in self.g.spa[q])
 
     # ── readouts ──────────────────────────────────────────────────────────
     def readout(self, grade: Optional[int] = None) -> Dict[str, List[float]]:
@@ -685,7 +770,7 @@ class LearnerEngine:
         D = np.where(self.above, base * (pm / np.maximum(b1, 1e-12))[:, None],
                      base * ((1 - pm) / np.maximum(b0, 1e-12))[:, None])
         D = np.where(ok[:, None], D, base)
-        typical = np.clip(sig(TH[None, :] - g.bmed[:, None]), 1e-6, 1 - 1e-6)
+        typical = np.clip(sig(TYPICAL_A * (TH[None, :] - g.bmed[:, None])), 1e-6, 1 - 1e-6)
         pc = (D * typical).sum(axis=1)
         for key, t in self.touched.items():
             pc[g.index[key]] = t["pc"]

@@ -45,8 +45,9 @@ class GateHistoryEntry(BaseModel):
     timestamp: str = Field(..., description="ISO-8601 timestamp")
     score: float = Field(..., ge=0, le=10, description="Score on 0-10 scale")
     passed: bool = Field(..., description="Whether the score met the threshold")
-    source: Literal["lesson", "practice", "diagnostic"] = Field(
-        ..., description="Eval source: lesson-mode, practice-mode, or diagnostic-mode"
+    source: Literal["lesson", "practice", "diagnostic", "learner_model"] = Field(
+        ..., description="Eval source: lesson-mode, practice-mode, diagnostic-mode, or the "
+                         "learner model's gate verdict (score = 10 x its P(right))"
     )
     # Theta-based gate tracking (populated when gate_mode="theta")
     theta: Optional[float] = Field(default=None, description="Student theta at eval time")

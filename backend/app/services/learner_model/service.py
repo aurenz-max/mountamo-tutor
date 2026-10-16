@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+
+import numpy as np
 import logging
 import time
 import uuid
@@ -40,7 +42,9 @@ from ..calibration.problem_type_registry import (
 from ..curriculum_scope import grade_key, subject_key
 from ..learner_graph import LearnerGraph, get_learner_graph
 from .engine import (READY_WINDOW, GraphArrays, LearnerEngine, exposure_gate, grade_index, grade_name,
-                     grade_reach, n_eff, demonstration, counts_toward_grade, MASTERED_STATE)
+                     grade_reach, n_eff, demonstration, counts_toward_grade, MASTERED_STATE,
+                     LAMBDA, GROWN_PAST_SHARE)
+from . import memory
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +57,19 @@ NEIGHBOUR_DEPTH = 3       # hops that count as prerequisite / unlocks
 # pick whose parts are not in place is not served, even when general ability
 # predicts a right answer. One number for the card and the selector.
 MASTERED, READY_MIN = 0.8, 0.4
-# A practised subskill the model is already this sure of is not confirmed again:
-# the answer carries no information (a gifted child spent week 4 re-proving
-# "count to 5"). Spaced retention stays the lifecycle's retest schedule.
-CONFIRM_MAX = 0.95
 READY_SHOWN = 0.5          # by_cause: P(ready) at or above this counts as newly within reach
 
 GraphSource = Callable[[str], Awaitable[Optional[LearnerGraph]]]
+
+
+def first_try_of(entries: List[dict]) -> List[bool]:
+    """THE first-try rule (learner model, XP bonus, lab replay): right on the
+    first attempt, unaided. A workspace outcome carries `solved` instead of
+    `correct`, so an item missed once and never solved is not a first-try pass;
+    an `assisted` item (a help lever pulled) is not unaided; an `uncertain`
+    item (tutor and re-grade disagree, user ruling 10-14) is left out."""
+    return [e.get("attempts") == 1 and e.get("correct") is not False and e.get("solved") is not False
+            and not e.get("assisted") for e in entries if not e.get("uncertain")]
 
 
 def first_try_from_response(primitive_response: Optional[dict]) -> Optional[List[bool]]:
@@ -74,8 +84,26 @@ def first_try_from_response(primitive_response: Optional[dict]) -> Optional[List
             continue
         for v in src.values():
             if isinstance(v, list) and v and all(isinstance(e, dict) and isinstance(e.get("attempts"), (int, float)) for e in v):
-                return [e.get("attempts") == 1 and e.get("correct") is not False for e in v]
+                return first_try_of(v) or None
     return None
+
+
+TARGET_P = 0.84     # P(right) an item is served at: the 85% rule's optimum (Wilson et al. 2019)
+BETA_REACH = 1.0    # served item at most this far from the subskill's typical item: one step of a
+                    # mode ladder (/lumina-densify-primitives keeps adjacent modes within 1.0 beta)
+
+
+def served_beta(bmed: float, pc: float) -> Tuple[float, float]:
+    """(item beta to serve, P(right) on it): the difficulty at which this child is
+    right TARGET_P of the time, within BETA_REACH of the typical item (beta_k,
+    where `pc` is read). A child at 60% on a subskill's typical item gets an
+    easier mode of it; a child at 97% a harder one."""
+    from .engine import TYPICAL_A
+    lg = lambda p: float(np.log(p / (1.0 - p)))
+    pc = min(max(pc, 1e-4), 1 - 1e-4)
+    shift = float(np.clip((lg(pc) - lg(TARGET_P)) / TYPICAL_A, -BETA_REACH, BETA_REACH))
+    p_srv = 1.0 / (1.0 + np.exp(-(lg(pc) - TYPICAL_A * shift)))
+    return bmed + shift, float(p_srv)
 
 
 def plain_reason(kind: str, seen: bool, p_right: float) -> str:
@@ -101,6 +129,9 @@ class LearnerStateService:
         self._locks: Dict[Tuple[str, str], asyncio.Lock] = {}
         self._grades: Dict[str, Tuple[float, Optional[str]]] = {}
         self._tasks: set = set()
+        # MasteryLifecycleEngine: when set, each answer's readout sets the gates of
+        # the subskills it moved (`_sync_lifecycle`). None in replays and reports.
+        self.lifecycle_engine = None
 
     # ── graph ─────────────────────────────────────────────────────────────
     async def _graph(self, subject: str) -> Optional[Tuple[LearnerGraph, GraphArrays]]:
@@ -247,6 +278,9 @@ class LearnerStateService:
                 before = json.loads(doc["readout_json"]) if doc.get("readout_json") else None
                 grid = await self.fs.get_learner_grid(student_id, lg.subject, key) if state and key in state.get("touched", {}) else None
 
+                # the pulse-agent's in-memory store carries a virtual clock
+                ts = timestamp or (getattr(self.fs, "virtual_now", None) or datetime.now(timezone.utc)).isoformat()
+
                 def run():
                     n_obs = int((state or {}).get("n_obs", 0))
                     eng = LearnerEngine.from_state(ga, state, LearnerEngine.seed_for(student_id, n_obs))
@@ -254,7 +288,7 @@ class LearnerStateService:
                     p_before = eng.predict(key, a, beta, c)
                     prior = (exposure_gate(ga, before, (state or {}).get("touched", {}), gidx)
                              if before is not None else eng.readout(gidx))
-                    eng.observe(key, a, beta, c, x, n)
+                    eng.observe(key, a, beta, c, x, n, day=ts[:10])
                     return eng, p_before, prior, eng.readout(gidx), eng.phi_summary()
 
                 eng, p_before, prior, after, (phi_m, phi_sd) = await asyncio.to_thread(run)
@@ -262,8 +296,6 @@ class LearnerStateService:
                 grown_before = set(grade_reach(ga, prior, (state or {}).get("touched", {}), gidx)[1])
                 grown_now = grade_reach(ga, after, eng.touched, gidx)[1]
                 grown_past = dict(doc.get("grown_past") or {})
-                # the pulse-agent's in-memory store carries a virtual clock
-                ts = timestamp or (getattr(self.fs, "virtual_now", None) or datetime.now(timezone.utc)).isoformat()
                 event = {
                     "event_id": attempt_id or str(uuid.uuid4()),
                     "ts": ts, "subject": lg.subject, "graph_version": ga.version, "source": source,
@@ -289,6 +321,9 @@ class LearnerStateService:
                     event={**{k: v for k, v in event.items() if k != "changes"},
                            "changes_json": json.dumps(event["changes"], separators=(",", ":"))},
                 )
+                if self.lifecycle_engine is not None:
+                    await self._sync_lifecycle(student_id, lg, record, after, eng,
+                                               {c["key"] for c in event["changes"]} | {key})
             return event
         except Exception as e:  # shadow: never break a submission
             logger.warning(f"[LEARNER_STATE] observe failed for student {student_id} {subject}/{subskill_id}: {e}", exc_info=True)
@@ -335,6 +370,32 @@ class LearnerStateService:
             c.pop("_o")
         return out[:MAX_CHANGES], round(tide, 4)
 
+    async def _sync_lifecycle(self, student_id, lg: LearnerGraph, grade: Optional[str],
+                              readout: dict, eng, keys: set) -> None:
+        """The model's verdict onto the lifecycle docs of practised subskills it moved:
+        gate 4 when P(mastered) >= MASTERED; below that the GATE_P_THRESHOLDS rung its
+        P(right) on the typical item clears (gate 1 once practised). Mastered (the
+        retention state) adds time: memory stability (x the child's multiplier) of
+        MASTERY_STABILITY_THRESHOLD days, earned by any spaced practice, where the
+        retest calendar used to be the only way."""
+        from ...models.mastery_lifecycle import GATE_P_THRESHOLDS, MASTERY_STABILITY_THRESHOLD
+        try:
+            docs = await self._lifecycle(student_id, lg, grade)
+            m = eng.mem_m()
+            updates = []
+            for k in keys:
+                doc, ro = docs.get(k), readout.get(k)
+                if doc is None or ro is None:
+                    continue
+                pm, pc = ro[0], ro[1]
+                gate = 4 if pm >= MASTERED else next((g for g in (3, 2, 1) if pc >= GATE_P_THRESHOLDS[g]), 1)
+                stab = float((eng.touched.get(k) or {}).get("S") or 0.0) * m
+                state = "mastered" if gate == 4 and stab >= MASTERY_STABILITY_THRESHOLD else "active"
+                updates.append({"doc": doc, "gate": gate, "retention_state": state, "stability": stab, "pc": pc})
+            await self.lifecycle_engine.apply_model_states(student_id, updates)
+        except Exception as e:  # never break a submission
+            logger.warning(f"[LEARNER_STATE] lifecycle sync failed for {student_id}: {e}", exc_info=True)
+
     async def _lifecycle(self, student_id, lg: LearnerGraph, grade: Optional[str]) -> Dict[str, dict]:
         """The student's mastery lifecycle docs keyed by learner-graph key."""
         out: Dict[str, dict] = {}
@@ -366,25 +427,26 @@ class LearnerStateService:
                 "lifecycle": lifecycle, "states": demonstration(ga, ro, touched, lifecycle)}
 
     # ── selection: the one brain for Pulse and the session planner ────────
-    async def select(self, student_id, subject: str, count: int, confirm_share: float = 0.5,
-                     max_per_skill: int = 2, grade: Optional[str] = None) -> Optional[dict]:
-        """The next subskills to serve, from the learner model alone.
+    async def select(self, student_id, subject: str, count: int,
+                     max_per_skill: int = 2, grade: Optional[str] = None,
+                     learn_only: bool = False) -> Optional[dict]:
+        """The next subskills to serve, from the learner model alone, ranked by
+        one value (`memory.value`): what serving the subskill today adds to
+        P(mastered and retrievable) a week out.
 
-            teach    expected learning = P(right) x teaching value (frontier,
-                     unlock, easier-form transfer); the lab's success-weighted
-                     selector without the look-ahead
-            confirm  the model believes it mastered (P(mastered) >= MASTERED)
-                     but the mastery lifecycle has not recorded it: the item's
-                     job is the evidence that advances the gate. Covers what
-                     leapfrog probes did: inferred-but-unshown subskills at or
-                     below the grade of record get checked
+            learn    not yet mastered: new learning (LAMBDA x P(right) x teaching
+                     value: frontier, unlock, easier-form transfer), discounted
+                     by how much of it will be kept
+            confirm  mastered (model or lifecycle) and practised: a review,
+                     worth what recall has lost since the last practice
 
-        Lifecycle-mastered subskills are left out: retests are the lifecycle's
-        schedule. Scope: practised subskills plus everything up to READY_WINDOW
+        Scope: practised subskills plus everything up to READY_WINDOW
         grades above the grade of record. Each pick carries `target_beta` (the
         subskill's typical item); the frontend picks the primitive and mode.
         `grade` (a per-subject promotion override) replaces the grade of record
-        for the window. Returns None when the subject has no learner graph."""
+        for the window. `learn_only` (lesson targets): a review or probe is one
+        quick retrieval, Pulse's job; served as a three-item lesson on a
+        mastered subskill it was drill (gifted, 10-15: 42 of 68 drill items). Returns None when the subject has no learner graph."""
         hit = await self._graph(subject)
         if hit is None:
             return None
@@ -398,9 +460,10 @@ class LearnerStateService:
         def run():
             eng = LearnerEngine.from_state(ga, state, LearnerEngine.seed_for(student_id, int((state or {}).get("n_obs", 0))))
             ro = eng.readout(gidx)
-            return ro, eng.teaching_gain(ro), set(eng.touched)
+            return ro, eng.teaching_gain(ro), dict(eng.touched), eng.mem_m()
 
-        ro, gain, touched = await asyncio.to_thread(run)
+        ro, gain, touched, mem_m = await asyncio.to_thread(run)
+        today = (getattr(self.fs, "virtual_now", None) or datetime.now(timezone.utc)).date().isoformat()
         top, _grown = grade_reach(ga, ro, touched, gidx, lifecycle)
         # gates and retention flow down the demonstration edges: a subskill whose
         # harder form is lifecycle-mastered is not served, and its confirm item
@@ -408,36 +471,73 @@ class LearnerStateService:
         states = demonstration(ga, ro, touched, lifecycle)
         from ...models.mastery_lifecycle import GATE_P_THRESHOLDS
 
-        teach, confirm, unready = [], [], []
+        # One value for every candidate (memory.value): the expected P(mastered and
+        # retrievable) H days out that serving it today adds, retention plus the
+        # new learning that will be kept. Replaces the fixed rules it subsumes
+        # (10-15): CONFIRM_MAX (a sure, recently practised subskill has R ~ 1, so
+        # ~0 retention value), the 3-missed-days rest and step-down (a missed
+        # subskill's low P(right) lowers its value; its easier form's rises), and
+        # the confirm quota (reviews compete on the same value as learning).
+        # Lifecycle-mastered subskills are candidates too: their review is due
+        # when recall has faded, whatever the retest calendar says.
+        # Evidence still needed per grade before it counts as grown past (the
+        # reach rule: GROWN_PAST_SHARE of its subskills shown). A probe of a
+        # subskill believed mastered but never practised is worth what it adds
+        # toward that; once the grade is grown past it changes no decision.
+        # Only the grade that gates reach counts: the lowest grade at or above
+        # the grade of record not yet grown past (engine._reach). Evidence below
+        # the grade of record, or past the gating grade, moves nothing.
+        shown = np.array([1.0 if counts_toward_grade((states.get(kk) or {}).get("state")) else 0.0 for kk in ga.keys])
+        need: Dict[int, float] = {}
+        if gidx is not None:
+            gating = gidx + len(_grown)
+            mask = ga.gi == gating
+            if mask.any():
+                need[gating] = max(0.0, GROWN_PAST_SHARE - float(shown[mask].mean())) / GROWN_PAST_SHARE
+        teach, unready = [], []
         for k, key in enumerate(ga.keys):
             seen = key in touched
             if top is not None and not seen and ga.gi[k] > top:
                 continue
             st = states.get(key) or {}
-            if st.get("state") == MASTERED_STATE:
-                continue
             pm, pc, ready = ro[key]
             gate = max(0, st.get("gate") or 0)
+            mastered = st.get("state") == MASTERED_STATE or pm >= MASTERED
+            if mastered and learn_only:
+                continue
+            if mastered and not seen:
+                if shown[k]:
+                    continue    # demonstrated by what was practised: nothing to probe
+                probe = pm * memory.retrievability(memory.HORIZON, memory.S0) * need.get(int(ga.gi[k]), 0.0)
+                if probe <= 0:
+                    continue
+                b_srv, p_srv = served_beta(float(ga.bmed[k]), pc)
+                teach.append({"key": key, "k": k, "seen": False, "gate": gate, "pm": pm, "pc": pc, "ready": ready,
+                              "beta": b_srv, "p_served": p_srv,
+                              "gain": float(gain[k]), "value": probe, "retain": 0.0, "R": None,
+                              "skill": ga.skill[k], "kind": "confirm"})
+                continue
+            # gain = P(right) x teaching value; learning per item weighs P(right)
+            # by the 85% rule instead, so a trivially easy item stops looking best.
+            # P(right) is read on the item that will be served (served_beta)
+            teach_v = float(gain[k]) / pc if pc > 0 else 0.0
+            b_srv, p_srv = served_beta(float(ga.bmed[k]), pc)
+            mv = memory.value(touched.get(key), today, pm, p_srv, LAMBDA * memory.w85(p_srv) * teach_v, mem_m)
+            if mv["value"] <= 0:
+                continue
             row = {"key": key, "k": k, "seen": seen, "gate": gate, "pm": pm, "pc": pc, "ready": ready,
-                   "gain": float(gain[k]), "skill": ga.skill[k]}
-            if pm >= MASTERED:
-                # gate 4 = accuracy shown; what remains is spaced stability,
-                # which the lifecycle's retest schedule owns
-                if gate < 4 and (seen or gidx is None or ga.gi[k] <= max(gidx, top - 1))                         and not (seen and pm >= CONFIRM_MAX):
-                    row["kind"] = "confirm"
-                    confirm.append(row)
-            elif gain[k] > 0:
-                row["kind"] = "learn"
-                (teach if ready >= READY_MIN else unready).append(row)
-        teach.sort(key=lambda r: -r["gain"])
+                   "beta": b_srv, "p_served": p_srv,
+                   "gain": float(gain[k]), "value": mv["value"], "retain": mv["retain"], "R": mv["R"],
+                   "skill": ga.skill[k], "kind": "confirm" if mastered else "learn"}
+            # READY_MIN (user ruling 10-12) asks whether the parts are in place:
+            # P(prerequisites mastered) = P(ready) / P(not mastered). Read off
+            # P(ready) itself, a subskill likely mastered already failed the floor
+            # and its easier-form review sank to last resort (10-15)
+            parts = ready / max(1.0 - pm, 1e-6) if pm < 1.0 else 1.0
+            (teach if mastered or parts >= READY_MIN else unready).append(row)
+        teach.sort(key=lambda r: -r["value"])
         # last resort (a child below every floor): the most-ready of the rest
-        unready.sort(key=lambda r: (-r["ready"], -r["gain"]))
-        # confirm alternates inferred (never practised: discovery, what leapfrog
-        # probes did) with practised (gate evidence), each by P(mastered)
-        unseen = sorted((r for r in confirm if not r["seen"]), key=lambda r: -r["pm"])
-        seen_c = sorted((r for r in confirm if r["seen"]), key=lambda r: -r["pm"])
-        confirm = [r for pair in zip(unseen, seen_c) for r in pair]
-        confirm += unseen[len(seen_c):] + seen_c[len(unseen):]
+        unready.sort(key=lambda r: (-r["ready"], -r["value"]))
 
         picked: List[dict] = []
         per_skill: Dict[str, int] = {}
@@ -452,37 +552,38 @@ class LearnerStateService:
                 per_skill[r["skill"]] = per_skill.get(r["skill"], 0) + 1
                 want -= 1
 
-        n_confirm = int(round(count * confirm_share))
-        take(confirm, n_confirm)
-        take(teach, count - len(picked))
-        take(confirm, count - len(picked))
+        take(teach, count)
         take(unready, count - len(picked))
+        # the ranking behind the picks, for traces (the loop harness logs it)
+        self.last_ranking = [{"key": r["key"], "kind": r["kind"], "value": round(r["value"], 4),
+                              "retain": round(r["retain"], 4), "pc": r["pc"], "pm": r["pm"],
+                              "R": None if r["R"] is None else round(r["R"], 3), "picked": r in picked}
+                             for r in (teach + unready)[:15]]
 
         labels = await self._labels() if picked else {}
         out = []
         for r in picked:
             nd = lg.nodes.get(r["key"], {})
             nxt = min(r["gate"] + 1, 4)
-            if r["kind"] == "confirm":
-                detail = (f"model P(mastered) {r['pm']:.2f}, lifecycle gate {r['gate']}: "
-                          f"evidence to advance the gate")
-            else:
-                detail = (f"P(right) {r['pc']:.2f} x teaching value: expected learning {r['gain']:.3f} "
-                          f"(P(ready) {r['ready']:.2f})")
+            recall = f"recall now {r['R']:.2f}" if r["R"] is not None else "not practised yet"
+            detail = (f"value {r['value']:.3f} = keep {r['retain']:.3f} + learn {r['value'] - r['retain']:.3f} "
+                      f"({recall}; P(mastered) {r['pm']:.2f}, P(right) {r['pc']:.2f}, gate {r['gate']})")
             reason = plain_reason(r["kind"], r["seen"], r["pc"])
             out.append({
                 "key": r["key"], "subskill_id": nd.get("subskill_id"), "skill_id": nd.get("skill_id", ""),
                 "grade": nd.get("grade"), "description": nd.get("label", ""),
                 "label": self._label(labels, lg, r["key"])[0],
                 "kind": r["kind"], "reason": reason, "reason_detail": detail, "seen": r["seen"],
-                "target_beta": round(float(ga.bmed[r["k"]]), 3),
+                "target_beta": round(r["beta"], 3),
                 "p_right": r["pc"], "p_mastered": r["pm"], "p_ready": r["ready"], "gain": round(r["gain"], 4),
                 "current_gate": r["gate"], "next_gate": nxt, "gate_threshold": GATE_P_THRESHOLDS[nxt],
             })
         return {"subject": lg.subject, "graph_version": lg.version, "student_grade": grade,
                 "reach_grade": grade_name(top) if top is not None else None,
                 "grown_past": [grade_name(i) for i in _grown],
-                "observations": int((state or {}).get("n_obs", 0)), "picks": out, "pool_sizes": {"learn": len(teach), "confirm": len(confirm), "unready": len(unready)}}
+                "observations": int((state or {}).get("n_obs", 0)), "picks": out,
+                "pool_sizes": {"learn": sum(r["kind"] == "learn" for r in teach),
+                               "confirm": sum(r["kind"] == "confirm" for r in teach), "unready": len(unready)}}
 
     # ── read path ─────────────────────────────────────────────────────────
     async def profile(self, student_id, subject: str, top: int = 8) -> Optional[dict]:

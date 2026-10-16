@@ -48,7 +48,7 @@ class BlockSubskill(BaseModel):
     subskill_name: str
     bloom_phase:   BloomLevel
     gate:          int = 0   # Current mastery gate (0–4)
-    status:        str = "new"  # "new" | "review" | "retest" | "mastered"
+    status:        str = "new"  # "new" (first lesson) | "practice" | "review" | "retest" | "mastered"
 
 
 class BloomPhase(BaseModel):
