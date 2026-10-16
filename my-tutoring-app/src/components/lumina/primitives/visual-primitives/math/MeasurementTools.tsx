@@ -44,7 +44,8 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import {
-  INCH_TO_CM, ORDER_ITEM_ID, conversionCorrect, conversionTarget, describeMeasurementWork, lessonOf,
+  ORDER_ITEM_ID, UNIT_ABBR, conversionCorrect, conversionMultiplies, conversionRule, conversionTarget, crossSystem,
+  defaultConvertTo, describeMeasurementWork, lessonOf, type LengthUnit,
   measureCorrect, measurementItems, measurementMiss, orderChoices, orderCorrect, orderShapes, workspaceAssignment, workspaceScene,
   type MeasurementItem, type MeasurementView,
 } from './measurementToolsWorkspace';
@@ -76,10 +77,10 @@ export interface MeasurementToolsData {
   challengeType: MeasurementToolsChallengeType;
   challenges: MeasurementToolsChallenge[];
   rulerLengthInches: number;
-  unit: 'inches' | 'centimeters';
+  unit: LengthUnit;
   precision: 'whole' | 'half';
   gradeBand: 'K-2' | '3-5';
-  convertToUnit?: 'inches' | 'centimeters';
+  convertToUnit?: LengthUnit;
 
   // -- Support tier (within-mode scaffolding level; set by the generator) --
   // All fields are display-/instruction-only and default to the medium-tier
@@ -152,7 +153,7 @@ const parseLength = (text: string): number | null => {
 
 interface RulerProps {
   lengthInches: number;
-  unit: 'inches' | 'centimeters';
+  unit: LengthUnit;
   precision: 'whole' | 'half';
   pixelsPerUnit: number;
   leftPad: number;
@@ -236,7 +237,7 @@ const Ruler: React.FC<RulerProps> = ({ lengthInches, unit, precision, pixelsPerU
         fontSize={11}
         className="select-none"
       >
-        {unit === 'inches' ? 'in' : 'cm'}
+        {UNIT_ABBR[unit] ?? unit}
       </text>
     </g>
   );
@@ -479,7 +480,10 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
     onEvaluationSubmit,
   } = data;
 
-  const effectiveConvertToUnit = data.convertToUnit || (unit === 'inches' ? 'centimeters' : 'inches');
+  const effectiveConvertToUnit = data.convertToUnit || defaultConvertTo(unit);
+  /** The rule the convert step names ("1 foot = 12 inches"), and whether converting multiplies. */
+  const rule = conversionRule(unit, effectiveConvertToUnit);
+  const multiplies = conversionMultiplies(unit, effectiveConvertToUnit);
   const stableInstanceIdRef = useRef<string>(instanceId || `measurement-tools-${Date.now()}`);
   const resolvedInstanceId = stableInstanceIdRef.current;
 
@@ -700,11 +704,11 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
 
   const convertRevealClause = useMemo(() => {
     if (supportTier === 'easy')
-      return ' (Tier EASY: you may restate 1 inch = 2.54 cm and name multiply vs divide, but never the final number.)';
+      return ` (Tier EASY: you may restate ${rule} and name multiply vs divide, but never the final number.)`;
     if (supportTier === 'hard')
-      return ' (Tier HARD: the conversion factor is hidden on screen on purpose — do NOT state "1 inch = 2.54 cm" or which operation. Ask what they recall about inches and centimeters. Never reveal the answer.)';
+      return ` (Tier HARD: the conversion factor is hidden on screen on purpose — do NOT state "${rule}" or which operation. Ask what they recall about ${unit} and ${effectiveConvertToUnit}. Never reveal the answer.)`;
     return ' (Tier MEDIUM: nudge the operation and rough size without restating the full rule or the answer.)';
-  }, [supportTier]);
+  }, [supportTier, rule, unit, effectiveConvertToUnit]);
 
   // -- AI Tutoring (scripted path) ------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
@@ -987,10 +991,8 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
       // The rule is named only where the session shows it; at the hard tier the learner recalls it.
       setConvertFeedback({
         message: !showConversionFactor
-          ? 'Not quite. Think about how inches and centimeters compare.'
-          : effectiveConvertToUnit === 'centimeters'
-            ? `Not quite. Remember: 1 inch = ${INCH_TO_CM} centimeters. Try multiplying!`
-            : `Not quite. Remember: 1 inch = ${INCH_TO_CM} centimeters. Try dividing!`,
+          ? `Not quite. Think about how ${unit} and ${effectiveConvertToUnit} compare.`
+          : `Not quite. Remember: ${rule}. Try ${multiplies ? 'multiplying' : 'dividing'}!`,
         correct: false,
       });
       sendText(
@@ -1002,7 +1004,7 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
     }
   }, [
     currentChallenge, currentItem, convertInput, measuredValue, unit, effectiveConvertToUnit, lesson,
-    showConversionFactor, completeChallenge, sendText, convertRevealClause,
+    showConversionFactor, completeChallenge, sendText, convertRevealClause, rule, multiplies,
   ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -- Comparison checking (compare mode's last item) -----------------------
@@ -1258,7 +1260,7 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
   };
 
   const measureStep = precision === 'half' ? 0.5 : 1;
-  const convertStepSize = 0.5;
+  const convertStepSize = crossSystem(unit, effectiveConvertToUnit) ? 0.5 : 1;
   const shapeRecorded = !!currentChallenge && completedIds.has(currentChallenge.id);
   const measureLocked = hasSubmitted || shapeRecorded || feedback?.correct === true;
   const convertLocked = hasSubmitted || shapeRecorded || convertFeedback?.correct === true;
@@ -1607,21 +1609,19 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
                       Withdrawn at the hard tier so the student recalls it. */}
                   {showConversionFactor && (
                     <p className="text-slate-500 text-xs mt-2 font-normal">
-                      {unit === 'inches'
-                        ? `Hint: 1 inch = ${INCH_TO_CM} centimeters`
-                        : `Hint: 1 inch = ${INCH_TO_CM} centimeters (divide to get inches)`}
+                      {multiplies ? `Hint: ${rule}` : `Hint: ${rule} (divide to get ${effectiveConvertToUnit})`}
                     </p>
                   )}
                 </LuminaPrompt>
 
-                {leverOn(INCH_MODEL_LEVER) && <InchModel />}
+                {leverOn(INCH_MODEL_LEVER) && crossSystem(unit, effectiveConvertToUnit) && <InchModel />}
 
                 <div className="flex flex-col items-center gap-2">
                   <span className="text-slate-300 text-sm">How many {effectiveConvertToUnit}?</span>
                   <div className="flex items-center gap-2">
                     <LuminaButton
                       className="h-11 w-11 text-slate-200 text-lg font-bold p-0"
-                      aria-label="Less, by a half"
+                      aria-label={convertStepSize === 1 ? "Less, by one" : "Less, by a half"}
                       onClick={() => {
                         if (learnerBlocked()) return;
                         SoundManager.tick();
@@ -1644,7 +1644,7 @@ const MeasurementToolsSurface = ({ data, className, runtimePlanItemId, tutorOwne
                     />
                     <LuminaButton
                       className="h-11 w-11 text-slate-200 text-lg font-bold p-0"
-                      aria-label="More, by a half"
+                      aria-label={convertStepSize === 1 ? "More, by one" : "More, by a half"}
                       onClick={() => {
                         if (learnerBlocked()) return;
                         SoundManager.tick();

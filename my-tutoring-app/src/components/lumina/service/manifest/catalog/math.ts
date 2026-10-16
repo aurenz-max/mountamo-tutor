@@ -4074,7 +4074,8 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['convert'],
-        description: 'Measure and convert between units.',
+        description: 'Measure, then convert the length to a smaller unit: within one system (feet to inches, meters to '
+          + 'centimeters; 4.MD.A.1, 5.MD.A.1) unless the objective asks to convert between systems (inches and centimeters; 6.RP.A.3d).',
       },
     ],
     teachingWorkspace: {
@@ -4086,7 +4087,7 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'is teaching, saying the length is not. A named miss says which way the answer was off: never turn it into '
         + 'the length, and never name a number the edge reaches, passes or lies between; the learner reads them. On '
         + 'estimate the edge lands between two whole marks: ask which marks they are and whether it sits on the half. On convert the learner measures, then changes the checked length '
-        + 'to the other unit. The scene says whether the screen shows 1 inch = 2.54 centimeters; when it does not, ask '
+        + 'to a smaller unit (feet to inches, meters to centimeters, or inches and centimeters). The scene says whether the screen shows the rule; when it does not, ask '
         + 'what they remember and do not state the rule or whether to multiply or divide. Never say the converted '
         + 'number. On compare the learner measures every shape, then taps them from shortest to longest: ask them to '
         + 'look at the drawn lengths or recall their measurements; never say which is shortest or longest. You cannot '

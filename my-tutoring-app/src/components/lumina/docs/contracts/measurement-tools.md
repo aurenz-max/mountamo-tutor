@@ -53,7 +53,7 @@
 
 ### R6 — the tier picks the widths where width changes the work (code tier targets) · OBSERVED (2026-10-14)
 - measure, hard: odd widths first (the hard ruler labels only even wholes, so each lands on an unlabeled mark). compare: easy widths at least 2 apart, hard a consecutive run, medium a plain draw. estimate and convert unchanged; no tier keeps the plain draw. Widths stay in the mode's pool and the scope cap. Probe: `gemini-measurement-tools.tier-widths.test.ts`, `scripts/difficulty-lab/tier-probe.mjs --component measurement-tools`.
-- Open (ruling): convert converts inches to centimeters with 2.54 (3 in = 7.62 cm), decimal multiplication; the 4.MD.A.1 it claims is conversion within one system (feet to inches). WORKSTREAMS 8.1d.
+- convert's units come from the lesson (ruling 10-15, closed 10-16 as QUEUE 8.1d): within one system, feet to inches (x12) or meters to centimeters (x100) when the lesson is metric, checked exact to a half; inches and centimeters (2.54, checked within 10%) only from grade 6 or when the objective asks between systems. `convertUnitsFor` in the generator; the unit table (`conversionRule`, `convertValue`, `crossSystem`) in `measurementToolsWorkspace.ts`. R3 now withholds whichever rule the session uses. `inch_model` is offered on inch/centimeter sessions only. Probe: `gemini-measurement-tools.convert-units.test.ts`.
 
 ### G1 — an exact-offset miss gives the key away · OPEN (2026-10-09)
 - **Shortfall:** `one_over` with the learner's answer is the length (8 and one over is 7). The packet carries the miss,
@@ -62,6 +62,8 @@
 - **Path:** a ruling on whether a miss's direction reaches the tutor → `/add-live-tutor-tools` (shared packet).
 
 ## Changelog
+
+- 2026-10-16 — convert within one system for grades 4-5 (feet/inches, meters/centimeters); inches/centimeters only for grade 6 or a between-systems objective. Units `feet` and `meters` added. Compatible: R1-R5 hold for every pair; `inch_model` narrowed to its own pair.
 
 - 2026-10-09 — R5 levers on every mode (`/add-support-tiers`).
 

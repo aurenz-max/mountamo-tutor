@@ -10,7 +10,7 @@ export function validateMeasurementToolsData(value: unknown): MeasurementToolsDa
   if (!d || typeof d.title !== 'string' || !MODES.includes(d.challengeType) || !Array.isArray(d.challenges)
       || !d.challenges.length || d.challenges.length > 11
       || new Set(d.challenges.map(c => c?.id)).size !== d.challenges.length
-      || !(d.rulerLengthInches > 0) || !['inches', 'centimeters'].includes(d.unit))
+      || !(d.rulerLengthInches > 0) || !['inches', 'centimeters', 'feet', 'meters'].includes(d.unit))
     throw new Error('Generated measurement tools session has invalid lesson content.');
   for (const c of d.challenges)
     if (!c || typeof c.id !== 'string' || !c.id || typeof c.label !== 'string' || !c.label.trim()

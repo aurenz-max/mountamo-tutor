@@ -94,7 +94,7 @@ import { practiceItem as coinPracticeItem, practiceParent as coinPracticeParent 
 import { practiceItem as clockPracticeItem, practiceParent as clockPracticeParent } from '../../primitives/visual-primitives/math/analogClockLevers';
 import { practiceItem as measurePracticeItem, practiceParent as measurePracticeParent } from '../../primitives/visual-primitives/math/measureLabLevers';
 import { practiceItem as rulerPracticeItem, practiceParent as rulerPracticeParent } from '../../primitives/visual-primitives/math/measurementToolsLevers';
-import { lessonOf as rulerLessonOf, measurementItems } from '../../primitives/visual-primitives/math/measurementToolsWorkspace';
+import { convertValue as rulerConvert, defaultConvertTo, type LengthUnit, lessonOf as rulerLessonOf, measurementItems } from '../../primitives/visual-primitives/math/measurementToolsWorkspace';
 import { cellProducts as areaCellProducts, partsFit as areaPartsFit } from '../../primitives/visual-primitives/math/areaModelWorkspace';
 import { practiceItem as areaPracticeItem, practiceParent as areaPracticeParent } from '../../primitives/visual-primitives/math/areaModelLevers';
 import { practiceItem as timePracticeItem, practiceParent as timePracticeParent } from '../../primitives/visual-primitives/math/timeSequencerLevers';
@@ -1712,12 +1712,12 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         return [...(wrong ? sorted.reverse() : sorted).map(choose), choose('Check Order')];
       }
       const c = item.challenge;
-      const toUnit = d.convertToUnit || (d.unit === 'inches' ? 'centimeters' : 'inches');
+      const toUnit = d.convertToUnit || defaultConvertTo(d.unit as LengthUnit);
       const measure = (value: number): DriverInput[] => [
         ...(String(ctx.demand?.placed ?? '').startsWith('on the ruler') ? [] : [choose('Put it on the ruler')]),
         { type: 'write', label: `Length in ${d.unit}`, text: String(value) }, choose('Check Answer')];
       if (d.challengeType === 'convert') {
-        const exact = d.unit === 'inches' ? c.widthInches * 2.54 : c.widthInches / 2.54;
+        const exact = rulerConvert(c.widthInches, d.unit, toUnit);
         const converted = wrong ? c.widthInches : Math.round(exact * 10) / 10;
         const convert: DriverInput[] = [{ type: 'write', label: `Length in ${toUnit}`, text: String(converted) }, choose('Check Conversion')];
         return ctx.demand?.step === 'convert' ? convert : [...measure(c.widthInches), ...convert];

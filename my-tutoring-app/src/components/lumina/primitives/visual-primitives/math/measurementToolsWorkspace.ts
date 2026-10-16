@@ -12,6 +12,32 @@ import type { TeachingAssignment, WorkspaceScene } from '../../../components/liv
 import type { MeasurementToolsChallenge, MeasurementToolsData } from './MeasurementTools';
 
 export const INCH_TO_CM = 2.54;
+
+/**
+ * The units a session measures and converts in. convert changes the measured length to one other unit: within one
+ * system (feet to inches, meters to centimeters: 4.MD.A.1, whole-number multiplication) or across systems (inches and
+ * centimeters with 2.54, decimal multiplication; only for an objective that asks for it, e.g. 6.RP.3d). QUEUE 8.1d.
+ */
+export type LengthUnit = 'inches' | 'centimeters' | 'feet' | 'meters';
+export const UNIT_ABBR: Record<LengthUnit, string> = { inches: 'in', centimeters: 'cm', feet: 'ft', meters: 'm' };
+const SINGULAR: Record<LengthUnit, string> = { inches: 'inch', centimeters: 'centimeter', feet: 'foot', meters: 'meter' };
+/** Each pair as [larger unit, smaller unit, how many of the smaller make one larger]. */
+const CONVERSIONS: readonly [LengthUnit, LengthUnit, number][] = [
+  ['inches', 'centimeters', INCH_TO_CM], ['feet', 'inches', 12], ['meters', 'centimeters', 100],
+];
+const pairOf = (from: string, to: string) => CONVERSIONS.find(([a, b]) => (a === from && b === to) || (a === to && b === from));
+/** The unit a session converts to when the data names none. */
+export const defaultConvertTo = (unit: LengthUnit): LengthUnit =>
+  unit === 'inches' ? 'centimeters' : unit === 'centimeters' ? 'inches' : unit === 'feet' ? 'inches' : 'centimeters';
+/** Inches and centimeters: the one pair across two systems. */
+export const crossSystem = (from: string, to: string) => pairOf(from, to)?.[2] === INCH_TO_CM;
+/** "1 foot = 12 inches", the rule the convert step shows when the tier shows it. */
+export function conversionRule(from: string, to: string): string {
+  const pair = pairOf(from, to);
+  return pair ? `1 ${SINGULAR[pair[0]]} = ${pair[2]} ${pair[1]}` : '';
+}
+/** Changing to the smaller unit multiplies; to the larger, divides. */
+export const conversionMultiplies = (from: string, to: string) => pairOf(from, to)?.[0] === from;
 /** The compare session's last item: order the measured shapes. */
 export const ORDER_ITEM_ID = 'order-shapes';
 
@@ -39,7 +65,7 @@ export interface MeasurementLesson {
 export function lessonOf(data: MeasurementToolsData): MeasurementLesson {
   return {
     challengeType: data.challengeType, challenges: data.challenges, unit: data.unit,
-    convertToUnit: data.convertToUnit || (data.unit === 'inches' ? 'centimeters' : 'inches'),
+    convertToUnit: data.convertToUnit || defaultConvertTo(data.unit),
     precision: data.precision, rulerLengthInches: data.rulerLengthInches, rulerLabels: data.rulerLabels ?? 'whole',
     showConversionFactor: data.showConversionFactor ?? true,
   };
@@ -64,17 +90,18 @@ export function orderChoices(challenges: MeasurementToolsChallenge[]): Measureme
 export const correctOrder = (challenges: MeasurementToolsChallenge[]): string[] =>
   [...challenges].sort((a, b) => a.widthInches - b.widthInches).map(c => c.id);
 
-const singular = (unit: string) => unit === 'inches' ? 'inch' : unit.replace(/s$/, '');
+const singular = (unit: string) => SINGULAR[unit as LengthUnit] ?? unit.replace(/s$/, '');
 
 export function convertValue(value: number, from: string, to: string): number {
-  if (from === to) return value;
-  if (from === 'inches' && to === 'centimeters') return value * INCH_TO_CM;
-  if (from === 'centimeters' && to === 'inches') return value / INCH_TO_CM;
-  return value;
+  const pair = from === to ? undefined : pairOf(from, to);
+  if (!pair) return value;
+  return pair[0] === from ? value * pair[2] : value / pair[2];
 }
 
 export const measureTolerance = (precision: MeasurementLesson['precision']) => precision === 'half' ? 0.25 : 0.5;
-export const conversionTolerance = (target: number) => Math.max(0.5, target * 0.1);
+/** Across systems the answer is a decimal, so close counts; within one system it is a whole number, exact to a half. */
+export const conversionTolerance = (target: number, exact = false) => exact ? 0.5 : Math.max(0.5, target * 0.1);
+const exactPair = (lesson: MeasurementLesson) => !crossSystem(lesson.unit, lesson.convertToUnit);
 
 export function measureCorrect(challenge: MeasurementToolsChallenge, lesson: MeasurementLesson, value: number | null): boolean {
   return value !== null && Number.isFinite(value) && Math.abs(value - challenge.widthInches) <= measureTolerance(lesson.precision);
@@ -87,7 +114,7 @@ export const conversionTarget = (challenge: MeasurementToolsChallenge, lesson: M
 export function conversionCorrect(challenge: MeasurementToolsChallenge, lesson: MeasurementLesson, value: number | null): boolean {
   if (value === null || !Number.isFinite(value)) return false;
   const target = conversionTarget(challenge, lesson);
-  return Math.abs(value - target) <= conversionTolerance(target);
+  return Math.abs(value - target) <= conversionTolerance(target, exactPair(lesson));
 }
 
 export function orderCorrect(shapes: MeasurementToolsChallenge[], order: readonly string[]): boolean {
@@ -173,7 +200,7 @@ export function measurementMiss(item: MeasurementItem | null, lesson: Measuremen
     if (got === null || conversionCorrect(c, lesson, got)) return undefined;
     if (Math.abs(got - c.widthInches) < 0.05) return 'same_number';
     const inverse = convertValue(c.widthInches, lesson.convertToUnit, lesson.unit);
-    if (Math.abs(got - inverse) <= conversionTolerance(inverse)) return 'wrong_operation';
+    if (Math.abs(got - inverse) <= conversionTolerance(inverse, exactPair(lesson))) return 'wrong_operation';
     return got < conversionTarget(c, lesson) ? 'too_small' : 'too_large';
   }
   const got = view.measure;
@@ -205,10 +232,10 @@ export function workspaceScene(item: MeasurementItem, lesson: MeasurementLesson,
     drawn.shape = `the ${c.label}`;
     drawn.measured = `the learner measured it as ${c.widthInches} ${lesson.unit}, checked right and shown on screen`;
     drawn.conversion = lesson.showConversionFactor
-      ? `the screen shows 1 inch = ${INCH_TO_CM} centimeters`
-      : 'the screen does not show how inches and centimeters relate (left off on purpose at this level)';
+      ? `the screen shows ${conversionRule(lesson.unit, lesson.convertToUnit)}`
+      : `the screen does not show how ${lesson.unit} and ${lesson.convertToUnit} relate (left off on purpose at this level)`;
     drawn.howToAnswer = `type the length in ${lesson.convertToUnit} or set it with − and +, then press Check Conversion; `
-      + 'an answer close to the exact value, to a whole or a half, is accepted';
+      + (exactPair(lesson) ? 'the exact whole number is accepted' : 'an answer close to the exact value, to a whole or a half, is accepted');
   } else {
     const unit = singular(lesson.unit);
     drawn.step = 'measure';

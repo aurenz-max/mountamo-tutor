@@ -21,7 +21,7 @@
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import type { MeasurementToolsChallenge } from './MeasurementTools';
 import {
-  correctOrder, orderChoices, orderShapes,
+  correctOrder, crossSystem, orderChoices, orderShapes,
   type MeasurementItem, type MeasurementLesson, type MeasurementMiss,
 } from './measurementToolsWorkspace';
 
@@ -52,8 +52,8 @@ const practiceShape = (id: string, colour: number, widthInches: number): Measure
 /** The length a shape's simplify practice uses, or null when nothing shorter keeps the mode. */
 function shorterWidth(c: MeasurementToolsChallenge, lesson: MeasurementLesson): number | null {
   if (lesson.challengeType === 'convert') {
-    // Converting one inch (or five centimeters, about two inches) is the rule on its own.
-    if (lesson.unit === 'inches') return c.widthInches > 1 ? 1 : null;
+    // Converting one inch, foot or meter (or five centimeters, about two inches) is the rule on its own.
+    if (lesson.unit !== 'centimeters') return c.widthInches > 1 ? 1 : null;
     return c.widthInches > 5 ? 5 : null;
   }
   // Estimate keeps the half: one and a half. The others count fewer whole spaces.
@@ -128,11 +128,12 @@ export function measurementLevers(item: MeasurementItem | null, lesson: Measurem
       lesson.challengeType === 'estimate' ? ['too_long', 'too_short', 'whole_not_half'] : ['too_long', 'too_short'],
       'This shape is too long to read yet.',
       `Opens an easier shape first: a shorter practice rectangle on the same ruler. ${practiceNote}`)] : [];
+  // The inch-over-centimeters picture belongs to that pair only (a within-system picture is not built yet: QUEUE 8.1q).
   if (convert && view.convertStep) return [
-    lever(INCH_MODEL_LEVER, 'help', ['same_number', 'wrong_operation', 'too_small', 'too_large'],
+    ...(crossSystem(lesson.unit, lesson.convertToUnit) ? [lever(INCH_MODEL_LEVER, 'help', ['same_number', 'wrong_operation', 'too_small', 'too_large'],
       'The learner keeps the number, converts the wrong way, or misjudges the size.',
       'Shows a picture outside the item: a bar one inch long over a centimeter scale, reaching about two and a half '
-        + 'centimeter spaces. It uses neither the item\'s length nor its answer.'),
+        + 'centimeter spaces. It uses neither the item\'s length nor its answer.')] : []),
     ...simplify,
   ];
   const estimate = lesson.challengeType === 'estimate';

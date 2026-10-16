@@ -6,6 +6,7 @@ import {
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { resolveScopeRange } from "../scopeRangeResolver";
+import { UNIT_ABBR, conversionRule, type LengthUnit } from "../../primitives/visual-primitives/math/measurementToolsWorkspace";
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -51,8 +52,9 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   convert: {
     promptDoc:
       `"convert": Student measures each shape in one unit, then converts the `
-      + `value to the other unit. Widths are chosen so the conversion lands on `
-      + `clean numbers. Grades 3-4.`,
+      + `length to a smaller unit. The app sets the units from the lesson: within one system `
+      + `(feet to inches, meters to centimeters) for grades 4-5, inches and centimeters only when `
+      + `the objective asks to convert between systems (grade 6 ratio reasoning). Grades 4-6.`,
     schemaDescription: "'convert' (measure and convert between units)",
   },
 };
@@ -90,12 +92,12 @@ interface SupportScaffold {
   instructionDetail: 'full' | 'standard' | 'minimal';
   /** Attempts before the "Need a Hint?" button is offered (#2). */
   hintThreshold: number;
-  /** convert mode: hand over the "1 inch = 2.54 cm" factor, or withdraw it (#2). */
+  /** convert mode: hand over the conversion rule ("1 foot = 12 inches"), or withdraw it (#2). */
   showConversionFactor: boolean;
   promptLines: string[];
 }
 
-function resolveSupportStructure(mode: ChallengeType, tier: SupportTier): SupportScaffold {
+function resolveSupportStructure(mode: ChallengeType, tier: SupportTier, rule = ''): SupportScaffold {
   const rulerLabels: SupportScaffold['rulerLabels'] =
     tier === 'easy' ? 'all' : tier === 'hard' ? 'sparse' : 'whole';
   const instructionDetail: SupportScaffold['instructionDetail'] =
@@ -110,13 +112,42 @@ function resolveSupportStructure(mode: ChallengeType, tier: SupportTier): Suppor
   if (tier === 'easy') {
     lines.push('Easy support: warm, explicit title/description that names the measuring method (line the left edge up with 0, read where the right edge lands).');
     if (mode === 'estimate') lines.push('Reassure that the small marks between numbers are halves.');
-    if (mode === 'convert') lines.push('State the conversion relationship plainly (1 inch = 2.54 cm).');
+    if (mode === 'convert' && rule) lines.push(`State the conversion relationship plainly (${rule}).`);
   } else if (tier === 'hard') {
     lines.push('Hard support: terse, neutral title/description. Do NOT spell out the align-at-0 / read-the-edge method or (for convert) the conversion factor — the student recalls those.');
   } else {
     lines.push('Medium support: standard title/description naming the task without a step-by-step method.');
   }
   return { rulerLabels, instructionDetail, hintThreshold, showConversionFactor, promptLines: lines };
+}
+
+// ---------------------------------------------------------------------------
+// convert: the lesson sets the units (ruling 10-15, QUEUE 8.1d)
+// ---------------------------------------------------------------------------
+
+const CROSS_SYSTEM_ASK = /inch\w*\s+(?:to|and|into)\s+centimet|centimet\w*\s+(?:to|and|into)\s+inch|metric\s+and\s+customary|customary\s+and\s+metric|between\s+(?:the\s+)?(?:two\s+)?(?:measurement\s+)?systems/i;
+const WITHIN_ONE_SYSTEM = /within\s+(?:a|one)\s+(?:single\s+)?system/i;
+const METRIC_WORDS = /centimet|millimet|kilomet|\bmet(?:er|re)s?\b|metric/i;
+const CUSTOMARY_WORDS = /\binch|\bfoot\b|\bfeet\b|\byards?\b|\bmiles?\b|customary/i;
+
+/**
+ * The units a convert session measures and converts in. 4.MD.A.1 and 5.MD.A.1 convert within one system, a larger
+ * unit to a smaller one in whole numbers: feet to inches, or meters to centimeters when the lesson is metric. Inches
+ * and centimeters (2.54, decimal multiplication) only when the objective asks to convert between systems, or from
+ * grade 6 (6.RP.3d, ratio reasoning). The grade is a ceiling: an unknown grade is treated as within one system.
+ */
+export function convertUnitsFor(grade: string | undefined, lessonText: string, preferred: LengthUnit = 'inches',
+  rand: () => number = Math.random): { unit: LengthUnit; convertToUnit: LengthUnit } {
+  const g = (grade ?? '').trim().toUpperCase();
+  const n = g === 'K' ? 0 : Number.parseInt(g, 10);
+  const cross = !WITHIN_ONE_SYSTEM.test(lessonText) && (CROSS_SYSTEM_ASK.test(lessonText) || (!Number.isNaN(n) && n >= 6));
+  if (cross) {
+    const unit: LengthUnit = preferred === 'centimeters' ? 'centimeters' : 'inches';
+    return { unit, convertToUnit: unit === 'inches' ? 'centimeters' : 'inches' };
+  }
+  const metric = METRIC_WORDS.test(lessonText), customary = CUSTOMARY_WORDS.test(lessonText);
+  const useMetric = metric !== customary ? metric : rand() < 0.5;
+  return useMetric ? { unit: 'meters', convertToUnit: 'centimeters' } : { unit: 'feet', convertToUnit: 'inches' };
 }
 
 // ---------------------------------------------------------------------------
@@ -433,8 +464,11 @@ export const generateMeasurementTools = async (
 
   // Tier prompt tone (the LLM only authors the title/description here, so this
   // just steers their warmth/terseness — the scaffold fields are applied in code).
+  const lessonText = [topic, ctx.scope.objectiveText, ctx.scope.intent].filter(Boolean).join(' ');
+  const convertUnits = convertUnitsFor(ctx.grade, lessonText, config?.unit);
+  const convertRule = conversionRule(convertUnits.unit, convertUnits.convertToUnit);
   const tierToneScaffold = pinnedType && supportTier
-    ? resolveSupportStructure(pinnedType, supportTier)
+    ? resolveSupportStructure(pinnedType, supportTier, convertRule)
     : null;
   const tierSection = tierToneScaffold
     ? `\n## WITHIN-MODE SUPPORT TIER (scaffolding level — NOT number size)\n${tierToneScaffold.promptLines.map((l) => `- ${l}`).join('\n')}\n`
@@ -465,7 +499,9 @@ ${config?.gradeBand === '3-5' || (!config?.gradeBand && !gradeLevel.toLowerCase(
 `}
 
 UNIT:
-- Use ${config?.unit ?? 'inches'} unless the topic clearly calls for centimeters.
+${pinnedType === 'convert'
+    ? `- This session measures in ${convertUnits.unit} and converts to ${convertUnits.convertToUnit} (${convertRule}). Name only these units.`
+    : `- Use ${config?.unit ?? 'inches'} unless the topic clearly calls for centimeters.`}
 
 Return only the session wrapper.
 `;
@@ -508,11 +544,12 @@ Return only the session wrapper.
     gradeBand = '3-5';
   }
 
-  let unit: 'inches' | 'centimeters' = wrapper.unit === 'centimeters' ? 'centimeters' : 'inches';
+  let unit: LengthUnit = wrapper.unit === 'centimeters' ? 'centimeters' : 'inches';
   if (config?.unit) unit = config.unit;
-
-  const convertToUnit: 'inches' | 'centimeters' =
-    unit === 'inches' ? 'centimeters' : 'inches';
+  let convertToUnit: LengthUnit = unit === 'inches' ? 'centimeters' : 'inches';
+  // convert: the lesson's grade and objective set the pair, never the model.
+  if (challengeType === 'convert') ({ unit, convertToUnit } = pinnedType === 'convert'
+    ? convertUnits : convertUnitsFor(ctx.grade, lessonText, unit));
 
   const title = typeof wrapper.title === 'string' && wrapper.title.trim().length > 0
     ? wrapper.title
@@ -544,7 +581,7 @@ Return only the session wrapper.
   const maxWidth = Math.max(...challenges.map((c) => c.widthInches));
   const rulerLengthInches = Math.max(12, Math.ceil(maxWidth + 2));
 
-  const labels = challenges.map((c) => `${c.label} (${c.widthInches} in)`).join(', ');
+  const labels = challenges.map((c) => `${c.label} (${c.widthInches} ${UNIT_ABBR[unit]})`).join(', ');
   console.log(
     `[MeasurementTools] ${challengeType} session: ${challenges.length} challenges → [${labels}]`,
   );
@@ -553,7 +590,8 @@ Return only the session wrapper.
   // Resolve from the session's challengeType (single-mode primitive). Fields
   // are display-/instruction-only; left undefined when no tier so the no-tier
   // path is byte-identical to before.
-  const scaffold = supportTier ? resolveSupportStructure(challengeType, supportTier) : null;
+  const scaffold = supportTier
+    ? resolveSupportStructure(challengeType, supportTier, conversionRule(unit, convertToUnit)) : null;
   if (supportTier) {
     console.log(
       `[MeasurementTools] Support tier "${supportTier}" applied (mode ${challengeType}): `
