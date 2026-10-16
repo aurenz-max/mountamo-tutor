@@ -17,3 +17,15 @@ Found when the journey sweep began checking lever coverage per item (J12) instea
 | pattern-builder.create | c1: no lever on this item answers "no_repeat" (levers here: none); c2: no lever on this item answers "no_repeat" (levers here: none); c3: no lever on this item answers "no_repeat" (levers here: none); c4: no lever on this item answers "no_repeat" (levers here: none); c5: no lever on this item answers "no_repeat" (levers here: none) | open |
 
 Note: `pattern-builder.create` is the pre-OB-9M payload (no asked shape); the current generator always sets one. Regenerate the payload rather than add a lever.
+
+## Moved from WORKSTREAMS 3.1e (2026-10-15)
+
+| Item | Executor | State |
+|---|---|---|
+| strategy-picker got levers despite the 10-02 SKIP: keep or revert | user ruling | owed |
+| Rulings: recount_moved, habitat connect gap, balance-scale easy-tier numbers, hundreds-chart practice, 3d 'like a box' | user | owed |
+| Class: tutor says "the other card" on two-choice retries | `/add-live-tutor-tools` | open |
+| Class: tutor improvises aids on no-lever modes (speed_round) | `/add-live-tutor-tools` | open |
+| Class: empty tutor turns at lever/credit moments | `/add-live-tutor-tools` | open |
+| Class: text replay pulls only the first fitting lever | `/add-live-tutor-tools` | open |
+| Browser checks on every new lever render (45 primitives, reports `../eval-reports/<id>-levers-2026-10-08.md`) | user (HUMAN-CHECKS) | owed |

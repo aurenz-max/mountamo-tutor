@@ -7,7 +7,7 @@ no `maxPerLesson` cap (user 10-11: one per lesson is too limiting; measure inste
 Code: `src/components/lumina/primitives/visual-primitives/drawers/`, `service/drawers/gemini-drawers.ts`,
 catalog `service/manifest/catalog/drawers.ts`, lab `/lumina/lab/drawers` (dev only).
 
-## D0-D1 pilot — BUILT 10-11 (uncommitted)
+## D0-D1 pilot — BUILT 10-11 (committed 9e39be02)
 
 Kinds: `drawer-model-slider`, `drawer-part-whole`, `drawer-cause-chain`.
 
@@ -20,7 +20,7 @@ Kinds: `drawer-model-slider`, `drawer-part-whole`, `drawer-cause-chain`.
   (miss: area of rectangles, already covered by area-model); 0/2 controls (counting to 10, short vowels);
   2 lessons picked 2 drawers. Runs: `drawer-runs/trace-on.json` in the session scratchpad.
 
-## D2 wave — 15 more kinds BUILT 10-11 (uncommitted)
+## D2 wave — 15 more kinds BUILT 10-11 (committed 9e39be02)
 
 User 10-11: build the kinds first and let them be seen; post-generation quality work (DR-2 judge, reader
 level) waits for the next phase. Model switched to `gemini-flash-lite-latest` (all 18 kinds, 1-6 s each).
