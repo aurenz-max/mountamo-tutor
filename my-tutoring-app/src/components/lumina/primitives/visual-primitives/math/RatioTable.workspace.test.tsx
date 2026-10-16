@@ -120,7 +120,10 @@ it('the live host (no evaluation provider) never submits', async () => {
 it('the tutor is told what is drawn: both columns with the hidden cell as ?, the aids, never the answer', () => {
   const h = mountWorkspace({ primitiveId: 'ratio-table', evalMode: 'missing_value',
     data: { ...table([missing]), showBarChart: false } as unknown as Record<string, unknown> });
-  expect(h.state().task!.demand).toMatchObject({ baseColumn: '2 Cups of Flour to 12 Cookies', scaledColumn: '×3: 6 Cups of Flour, ? Cookies',
+  // 8.1e: the header hides the factor at every tier; it is the times_arrows lever's to show.
+  expect(h.view.container.textContent).toMatch(/Scaled ×\?/);
+  expect(h.view.container.textContent).not.toMatch(/Scaled ×3/);
+  expect(h.state().task!.demand).toMatchObject({ baseColumn: '2 Cups of Flour to 12 Cookies', scaledColumn: '×?: 6 Cups of Flour, ? Cookies',
     aids: 'a unit-rate banner showing how many Cookies per 1 Cups of Flour; no bar chart', learnerWork: 'nothing typed yet' });
 });
 

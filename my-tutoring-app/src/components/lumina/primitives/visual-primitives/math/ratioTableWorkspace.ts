@@ -72,8 +72,9 @@ export function ratioCorrect(ch: RatioTableChallenge, work: RatioWork): boolean 
   return Number.isFinite(n) && matchesKey(ch, n);
 }
 
-/** The multiplier the header names on a missing-value item, or null when naming it would name the answer (the hidden
- *  row's base is 1, so its scaled value IS the multiplier). */
+/** The multiplier the times_arrows lever writes on a missing-value item, or null when writing it would name the answer
+ *  (the hidden row's base is 1, so its scaled value IS the multiplier). The header never writes it: finding the factor
+ *  is the step 6.RP.3 asks of the learner (ruling 10-15, QUEUE 8.1e). */
 export function shownMultiplier(ch: RatioTableChallenge): number | null {
   if (ch.type !== 'missing-value') return null;
   return formatNum(ch.targetMultiplier) === formatNum(ratioKey(ch)) ? null : ch.targetMultiplier;
@@ -188,10 +189,8 @@ export function workspaceScene(ch: RatioTableChallenge, view: RatioTableView): W
   } else if (ch.type === 'find-multiplier') {
     facts.scaledColumn = `×?: ${formatNum(a * k)} ${A}, ${formatNum(b * k)} ${B}`;
   } else {
-    const shown = shownMultiplier(ch);
     const first = ch.hiddenValue === 'scaled-first';
-    facts.scaledColumn = `×${shown === null ? '?' : formatNum(shown)}: ${first ? '?' : formatNum(a * k)} ${A}, `
-      + `${first ? formatNum(b * k) : '?'} ${B}`;
+    facts.scaledColumn = `×?: ${first ? '?' : formatNum(a * k)} ${A}, ${first ? formatNum(b * k) : '?'} ${B}`;
   }
   facts.aids = [
     bannerShown(ch, view.showUnitRate) ? `a unit-rate banner showing how many ${B} per 1 ${A}` : 'no unit-rate banner',

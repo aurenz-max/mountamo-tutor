@@ -7,7 +7,8 @@
  * - `unit_rate_banner` (help, missing value, where the session does not draw it): the banner with how many of the second
  *   quantity go with 1 of the first. Never on a unit-rate item, never when that number is the answer.
  * - `times_arrows` (help, missing value / find multiplier / build): an arrow on EACH row from the base cell to the
- *   scaled cell, labelled with the header's multiplier (missing value), "× ?" (find multiplier), or the slider's
+ *   scaled cell, labelled with the multiplier (missing value: the header shows "×?" at every tier, so this lever is
+ *   the one place the factor appears, and only when it is not the answer), "× ?" (find multiplier), or the slider's
  *   current multiplier (build): the same multiplier acts on both rows.
  * - `division_frame` (help, find multiplier): "scaled ÷ base = ?" written under the table for one row, using numbers
  *   already on screen and never the answer.
@@ -176,8 +177,9 @@ export function ratioLevers(c: RatioTableChallenge | null, pulled: readonly stri
         : t === 'build-ratio'
           ? 'Draws an arrow on each row from the base cell to the scaled cell, labelled with where the slider is now, so the '
             + 'same multiplier visibly acts on both rows. It follows the slider and never shows the target multiplier.'
-          : 'Draws an arrow on each row from the base cell to the scaled cell, labelled with the multiplier the header '
-            + 'already shows (a question mark where the header hides it), so the hidden cell is its base cell times it.'));
+          : 'Draws an arrow on each row from the base cell to the scaled cell, labelled with the multiplier that takes '
+            + 'the base column to the scaled column (a question mark where that multiplier is the answer), so the hidden '
+            + 'cell is its base cell times it. The header does not show the multiplier.'));
   }
   if (t === 'find-multiplier' && divisionRow(c)) {
     out.push(lever(DIVISION_LEVER, 'help', 'shown', ['inverse', 'unit_rate', 'difference', 'near_miss', 'too_high', 'too_low'],
@@ -215,7 +217,7 @@ export function leverFacts(c: RatioTableChallenge | null, pulled: readonly strin
   const on = (id: string) => pulled.includes(id);
   const arrows = c.type === 'find-multiplier' ? 'times a question mark'
     : c.type === 'build-ratio' ? 'with where the slider is now'
-      : shownMultiplier(c) === null ? 'times a question mark' : 'with the header\'s multiplier';
+      : shownMultiplier(c) === null ? 'times a question mark' : 'with the multiplier from the base column to the scaled column';
   return [
     on(BAR_CHART_LEVER) && 'Under the table is a bar chart of both columns; a hidden cell\'s bar is labelled with a question mark.',
     on(BANNER_LEVER) && 'The unit-rate banner is on screen.',

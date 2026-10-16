@@ -234,8 +234,9 @@ const RatioTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
   const targetValue = useMemo(() => (currentChallenge ? ratioKey(currentChallenge) : 0), [currentChallenge]);
 
-  /** The header's multiplier on a missing-value item, hidden when it would name the answer. */
-  const headerMultiplier = currentChallenge ? shownMultiplier(currentChallenge) : null;
+  /** The times_arrows lever's multiplier on a missing-value item, hidden when it would name the answer. The header
+   *  never shows it (ruling 10-15, QUEUE 8.1e): finding the factor is 6.RP.3's step. */
+  const arrowMultiplier = currentChallenge ? shownMultiplier(currentChallenge) : null;
   /** The unit-rate banner, never on a unit-rate item and never when its number is the answer. */
   const showBanner = !!currentChallenge && bannerShown(currentChallenge, showUnitRate || leverOn(BANNER_LEVER));
   /** The bar chart: the session's, or the `bar_chart` lever's on the session item. */
@@ -773,7 +774,7 @@ const RatioTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                     ? 'Scaled ×?'
                     : currentChallenge.type === 'unit-rate'
                     ? 'Unit Rate'
-                    : `Scaled ×${headerMultiplier === null && !isCurrentChallengeComplete ? '?' : formatNum(targetMultiplier)}`
+                    : `Scaled ×${isCurrentChallengeComplete ? formatNum(targetMultiplier) : '?'}`
                   }
                 </span>
               </div>
@@ -811,7 +812,7 @@ const RatioTableSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
           const ch = currentChallenge;
           const arrowLabel = ch.type === 'find-multiplier' ? '× ?'
             : ch.type === 'build-ratio' ? `×${formatNum(sliderMultiplier)}`
-              : headerMultiplier === null ? '× ?' : `×${formatNum(targetMultiplier)}`;
+              : arrowMultiplier === null ? '× ?' : `×${formatNum(targetMultiplier)}`;
           const division = leverOn(DIVISION_LEVER) ? divisionRow(ch) : null;
           const divisionLabel = division ? rowLabels[baseRatio.indexOf(division[1])] ?? rowLabels[0] : '';
           const boxes = leverOn(GROUPS_LEVER) ? groupCount(ch) : null;

@@ -40,7 +40,7 @@ queue item (a defect class) · `qa/<lane>/` (run evidence) · here, as a row (st
 | 5 | Parent report | `qa/parent-report/ROADMAP.md` | PR-1..4 done 10-08. Left: rulings PR-R1/R2, PR-D2 cleanup (user). Proposed CLOSE |
 | 6 | Drawers + curator brief | `qa/drawers/ROADMAP.md` | 18 kinds + one-screen brief committed (9e39be02, bbe0a635). Next DR-2 quality, DR-3 leak, DR-5 tutor. Brief findings: K hook with no pattern drawn, empty Pip dock |
 | 7 | Prerequisite graph + practice selection | `qa/pulse/ROADMAP.md` · `/pulse-fix`, `/pulse-agent` | Learner model selects (10-13) and sets gates (C13, b40aa75a); C14 backfill applied to every student 10-16. In progress: C15 retest deletion + C18 Pulse shows the model gate (handoff c15-c18). Then C16 browser check, C17, C12 joint fit; T5, T6 residual, 7.14, 7.8, P5 |
-| 8 | Difficulty is code-owned | `my-tutoring-app/qa/difficulty-demo/QUEUE.md` · `/add-item-space`, `/add-word-space`, `/eval-fix` | 24 math spaces, 15 word-space primitives committed. Next: 8.1a/b/c/f/i/j/o (handoff 8.1-item-space-fixes); 8.1d/e/g (handoff 8.1-decided-forks); 8.1n ruling; 8.2q one browser sitting |
+| 8 | Difficulty is code-owned | `my-tutoring-app/qa/difficulty-demo/QUEUE.md` · `/add-item-space`, `/add-word-space`, `/eval-fix` | 24 math spaces, 15 word-space primitives committed. 8.1d/e/g DONE 10-16 (handoff 8.1-decided-forks). Next: 8.1f/i/j/o; 8.1p/q levers (`/add-support-tiers`); 8.1n ruling; 8.2q one browser sitting |
 
 ## Proposed WIP (10-15, user to confirm)
 
@@ -52,7 +52,7 @@ resumed (R1 first), phase 2 follows it.
 
 | Ruling | Where |
 |---|---|
-| 8.1n fraction-bar add_subtract (8.1d/e/g decided 10-15) | `qa/difficulty-demo/QUEUE.md` |
+| 8.1n fraction-bar add_subtract (8.1d/e/g done 10-16) | `qa/difficulty-demo/QUEUE.md` |
 | strategy-picker levers keep/revert; 3.1e rulings | `qa/support-levers/QUEUE-item-gaps-2026-10-09.md` |
 | Learner model: how far ahead a K child may go (T1); target share above grade (T3) | `qa/pulse/ROADMAP.md` |
 | story-bridge spoken misses or out of L4's class gate | handoff 24 step 3 |

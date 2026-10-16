@@ -12,7 +12,7 @@
 - **Probe:** `RatioTable.workspace.test.tsx`; `journeySweep -t ratio-table`.
 
 ### R2 — nothing on screen or in the ask names the answer · OBSERVED (2026-10-09)
-- **Property:** a build_ratio ask is built by code (`buildRatioAsk`) and names one scaled value to reach, never the multiplier (flash-lite named the factor on 4/4 items). A missing_value header hides its multiplier when it equals the answer (hidden row base 1). The unit-rate banner is not drawn when its number is the answer.
+- **Property:** a build_ratio ask is built by code (`buildRatioAsk`) and names one scaled value to reach, never the multiplier (flash-lite named the factor on 4/4 items). A missing_value header shows ×? at every tier until the item is checked right (fork 10-16, below); the `times_arrows` lever writes the multiplier, and hides it when it equals the answer (hidden row base 1). The unit-rate banner is not drawn when its number is the answer.
 - **Probe:** `RatioTable.workspace.test.tsx` (build ask, header, banner cases).
 
 ### R3 — every mode's levers change the picture, never the answer · OBSERVED (2026-10-09)
@@ -20,8 +20,8 @@
 - **Evidence:** `ratioTableLevers.test.ts`, `RatioTable.levers.workspace.test.tsx`; sweep J9/J12/J13 0 findings (`qa/eval-reports/ratio-table-levers-2026-10-09.md`).
 
 ### R-IS — missing_value and unit_rate with a tier take their items from the ratio-missing-value space · OBSERVED (2026-10-14)
-- With `config.difficulty`, a pinned missing_value or unit_rate mode, no manifest `challenges`, and an objective the resolver fits to `ratio-missing-value`, code picks 4 items (`tierPick`; `ratioTableItemSpace.ts`) and one flash-lite call writes the stories and row labels; `ratioStoryFits` rejects a story that misses a given number, adds a number other than 1, states the answer or does not ask, and the plain story replaces it. missing_value takes only items whose factor is exact to two decimals, so R2's header ×m is the true factor; unit_rate takes unit-rate items (whole, half, other decimals, below one). Each challenge carries `itemSpace` {space, structure, beta}, never rendered or sent to the tutor. R1 and R2 hold (keys from `ratioKey`). No tier keeps the own path.
-- Open (ruling, WORKSTREAMS 8.1e): R2 shows the missing_value factor in the header, which does the factor-finding step of 6.RP.3 for the learner.
+- With `config.difficulty`, a pinned missing_value or unit_rate mode, no manifest `challenges`, and an objective the resolver fits to `ratio-missing-value`, code picks 4 items (`tierPick`; `ratioTableItemSpace.ts`) and one flash-lite call writes the stories and row labels; `ratioStoryFits` rejects a story that misses a given number, adds a number other than 1, states the answer or does not ask, and the plain story replaces it. missing_value takes only items whose factor is exact to two decimals, so the lever's ×m is the true factor; unit_rate takes unit-rate items (whole, half, other decimals, below one). Each challenge carries `itemSpace` {space, structure, beta}, never rendered or sent to the tutor. R1 and R2 hold (keys from `ratioKey`). No tier keeps the own path.
+- **Fork (2026-10-16, ruling 10-15, QUEUE 8.1e), missing_value only:** R2 changed from "the header shows the factor unless it is the answer" to "the header never shows the factor": the factor is the step 6.RP.3 asks of the learner. The ×m label moved into the `times_arrows` help lever. Tiers stay structural (whole factor, non-whole, unit rate below one); no tier shows the factor. Other modes unchanged. Probe: `RatioTable.workspace.test.tsx` (header ×? and scene ×?), Chrome drive easy + hard (header ×?, lever pulled once writes ×m).
 - Probe: `service/itemSpace/ratioMissingValue.test.ts`, `service/math/ratioTableItemSpace.test.ts`, `scripts/difficulty-lab/tier-probe.mjs --component ratio-table`.
 
 ## Changelog
