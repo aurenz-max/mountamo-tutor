@@ -1,0 +1,83 @@
+{
+ "source": "qa/tutor-reports/propulsion-lab-runtime-experiment-payload-2026-10-16.json",
+ "primitiveId": "propulsion-lab",
+ "evalMode": "experiment",
+ "data": {
+  "title": "Craft and Test Lab",
+  "overview": "Learners will set up two fair tests using air and throttle with their craft.",
+  "gradeBand": "3-5",
+  "challengeTypes": [
+   "experiment"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "experiment-1",
+    "mode": "experiment",
+    "question": {
+     "vary": "throttle",
+     "engine": "propeller"
+    },
+    "lockA": false,
+    "start": {
+     "a": {
+      "engine": "propeller",
+      "place": "space",
+      "throttle": "low"
+     },
+     "b": {
+      "engine": "propeller",
+      "place": "space",
+      "throttle": "high"
+     }
+    }
+   },
+   {
+    "id": "experiment-2",
+    "mode": "experiment",
+    "question": {
+     "vary": "place",
+     "engine": "rocket"
+    },
+    "lockA": false,
+    "start": {
+     "a": {
+      "engine": "rocket",
+      "place": "air",
+      "throttle": "low"
+     },
+     "b": {
+      "engine": "propeller",
+      "place": "space",
+      "throttle": "high"
+     }
+    }
+   },
+   {
+    "id": "experiment-3",
+    "mode": "experiment",
+    "question": {
+     "vary": "engine",
+     "engines": [
+      "propeller",
+      "rocket"
+     ],
+     "place": "space"
+    },
+    "lockA": false,
+    "start": {
+     "a": {
+      "engine": "propeller",
+      "place": "space",
+      "throttle": "low"
+     },
+     "b": {
+      "engine": "rocket",
+      "place": "air",
+      "throttle": "high"
+     }
+    }
+   }
+  ]
+ }
+}

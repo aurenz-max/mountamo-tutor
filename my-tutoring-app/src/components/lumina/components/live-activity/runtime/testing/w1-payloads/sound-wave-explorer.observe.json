@@ -1,0 +1,35 @@
+{
+ "source": "qa/tutor-reports/sound-wave-explorer-runtime-observe-payload-2026-10-15.json",
+ "primitiveId": "sound-wave-explorer",
+ "evalMode": "observe",
+ "data": {
+  "title": "Shake and Make Music",
+  "description": "Students investigate how shaking and stopping sound makers changes what we hear.",
+  "soundFocus": "both",
+  "challengeTypes": [
+   "observe"
+  ],
+  "difficulty": "hard",
+  "gradeLevel": "K",
+  "items": [
+   {
+    "id": "observe-1",
+    "mode": "observe",
+    "maker": "drum",
+    "event": "speaker_off"
+   },
+   {
+    "id": "observe-2",
+    "mode": "observe",
+    "maker": "tuning_fork",
+    "event": "fork_water"
+   },
+   {
+    "id": "observe-3",
+    "mode": "observe",
+    "maker": "drum",
+    "event": "speaker_on"
+   }
+  ]
+ }
+}

@@ -1,0 +1,150 @@
+{
+ "source": "qa/tutor-reports/reaction-lab-runtime-explain-payload-2026-10-15.json",
+ "primitiveId": "reaction-lab",
+ "evalMode": "explain",
+ "data": {
+  "title": "Fizzy Lemon Volcano",
+  "description": "Mix baking soda and lemon juice to discover exciting signs of a chemical reaction like fizzing and bubbling!",
+  "experiment": {
+   "name": "Lemon Juice and Baking Soda Volcano",
+   "category": "acid_base",
+   "safetyLevel": "safe",
+   "realWorldConnection": "This is very similar to how baking powder helps fluffy cakes rise in your oven when mixed with wet ingredients!"
+  },
+  "substances": [
+   {
+    "id": "sub-baking-soda",
+    "name": "Baking Soda",
+    "state": "solid",
+    "color": "white",
+    "safetyInfo": "Do not taste. Wash hands after handling.",
+    "amount": "2 tablespoons",
+    "formula": "NaHCO3",
+    "imagePrompt": "A pile of white powder on a spoon"
+   },
+   {
+    "id": "sub-lemon-juice",
+    "name": "Lemon Juice",
+    "state": "liquid",
+    "color": "yellow",
+    "safetyInfo": "Avoid getting in eyes.",
+    "amount": "50 mL",
+    "formula": "C6H8O7",
+    "imagePrompt": "Fresh yellow lemon juice in a clear glass cup"
+   }
+  ],
+  "reaction": {
+   "type": "chemical",
+   "signs": [
+    "fizzing",
+    "gas_produced",
+    "temperature_change"
+   ],
+   "isReversible": false,
+   "energyChange": "endothermic",
+   "particleDescription": "When the lemon juice touches the baking soda, their tiny particles smash together, breaking old bonds and creating brand-new gas particles that escape into the air as bubbly foam!",
+   "equation": "C6H8O7 + 3NaHCO3 -> Na3C6H5O7 + 3H2O + 3CO2"
+  },
+  "animation": {
+   "realView": {
+    "duration": 4.5,
+    "effects": [
+     "bubbles",
+     "foam"
+    ],
+    "temperatureChange": -2.5
+   },
+   "particleView": {
+    "reactantMolecules": [
+     "Baking Soda",
+     "Lemon Juice"
+    ],
+    "productMolecules": [
+     "Sodium Citrate",
+     "Water",
+     "Carbon Dioxide Gas"
+    ],
+    "bondBreaking": true,
+    "bondForming": true
+   }
+  },
+  "challenges": [
+   {
+    "id": "chal-1",
+    "type": "explain",
+    "instruction": "Why did the mixture suddenly bubble up and fizz when the two substances met?",
+    "targetAnswer": "The substances swapped partners and created a brand-new gas.",
+    "hint": "Think about what happened to the particles when they touched.",
+    "narration": "Fantastic job thinking like a real scientist! You uncovered how mixing two things can unleash invisible gases.",
+    "correctOptionId": "A",
+    "isTrueFalse": false,
+    "options": [
+     {
+      "id": "A",
+      "text": "The particles rearranged themselves and formed bubbles of new gas."
+     },
+     {
+      "id": "B",
+      "text": "The lemon juice simply painted the white powder yellow."
+     },
+     {
+      "id": "C",
+      "text": "The baking soda melted from the wetness of the juice."
+     },
+     {
+      "id": "D",
+      "text": "Air from the room got trapped inside the spoon."
+     }
+    ]
+   },
+   {
+    "id": "chal-2",
+    "type": "conservation",
+    "instruction": "True or False: Even though gas floated away into the air, the total amount of matter is still conserved during the reaction.",
+    "targetAnswer": "true",
+    "hint": "Matter doesn't disappear; it just changes form!",
+    "narration": "You are mastering the secrets of the universe! Matter always accounts for itself.",
+    "correctBoolean": true,
+    "isTrueFalse": true
+   }
+  ],
+  "notebook": {
+   "predictPrompt": "What do you think will happen when we pour lemon juice onto the white baking soda powder?",
+   "predictionOptions": [
+    {
+     "id": "A",
+     "text": "It will start bubbling, fizzing, and foaming up."
+    },
+    {
+     "id": "B",
+     "text": "It will turn into a solid rock."
+    },
+    {
+     "id": "C",
+     "text": "Nothing at all will happen."
+    },
+    {
+     "id": "D",
+     "text": "It will glow brightly in the dark."
+    }
+   ],
+   "correctPredictionId": "A",
+   "observePrompts": [
+    "What did you see happen right after the liquids and solids mixed?",
+    "Did you hear any sounds during the experiment?",
+    "Did the cup feel warmer, colder, or stay the same?"
+   ],
+   "explainPrompt": "How do you know for sure that a chemical reaction took place here?"
+  },
+  "showOptions": {
+   "showParticleView": true,
+   "showEquation": false,
+   "showSafetyBadge": true,
+   "showTemperatureGauge": true,
+   "showObservationNotebook": true,
+   "showConservationCounter": false
+  },
+  "gradeBand": "3-5",
+  "imagePrompt": "A fun science experiment with a cup, foaming fizz, lemon slices, and baking soda on a wooden table"
+ }
+}

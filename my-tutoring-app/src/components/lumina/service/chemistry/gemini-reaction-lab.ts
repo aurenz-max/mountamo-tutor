@@ -2,6 +2,12 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import {
+  resolveEvalModeConstraint,
+  constrainChallengeTypeEnum,
+  logEvalModeResolution,
+  type ChallengeTypeDoc,
+} from "../evalMode";
+import {
   ReactionLabData,
   Substance,
   ReactionChallenge,
@@ -458,6 +464,54 @@ const reactionLabSchema: Schema = {
 };
 
 /**
+ * The challenge types, as the catalog's eval modes group them: predict = `predict` (answered before mixing);
+ * observe = `observe`, `identify_signs`, `classify` (read off the reaction); explain = `explain`, `balance`,
+ * `conservation` (why it happened). A pinned mode or blend narrows the schema enum and the kept challenges.
+ */
+const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
+  predict: {
+    promptDoc: '"predict": asked BEFORE the substances are mixed: what will happen when they are mixed. 3-4 options, one right. The instruction never says or hints what happens (no "all that foam", "the bubbles").',
+    schemaDescription: "'predict' (what will happen, asked before mixing)",
+  },
+  observe: {
+    promptDoc: '"observe": asked AFTER the reaction is shown: what the learner saw. Every option describes something a beaker could show; the right one matches the animation effects and temperature change. 3-4 options.',
+    schemaDescription: "'observe' (what was seen)",
+  },
+  identify_signs: {
+    promptDoc: '"identify_signs": which signs of change happened. 3-4 options, each a set of signs; only one matches reaction.signs.',
+    schemaDescription: "'identify_signs' (which signs of change happened)",
+  },
+  classify: {
+    promptDoc: '"classify": was this a chemical or a physical change. No options (the screen has Chemical Change / Physical Change buttons); targetAnswer "chemical" or "physical", matching reaction.type.',
+    schemaDescription: "'classify' (chemical or physical change)",
+  },
+  explain: {
+    promptDoc: '"explain": why the reaction happened, at the particle level. 3-4 options, one right; never reuse the wording of particleDescription in the right option.',
+    schemaDescription: "'explain' (why it happened)",
+  },
+  balance: {
+    promptDoc: '"balance" (grades 6-8 only): which equation is balanced. 3-4 equation options, exactly one balanced.',
+    schemaDescription: "'balance' (which equation is balanced)",
+  },
+  conservation: {
+    promptDoc: '"conservation": a true/false statement about mass or atoms before and after (isTrueFalse true, correctBoolean set).',
+    schemaDescription: "'conservation' (true/false about mass)",
+  },
+};
+
+/** The challenge types a pin allows: one mode, a blend ('a|b'), or null for mixed / no pin. */
+function pinnedChallengeTypes(targetEvalMode: string | undefined): { types: string[]; label: string } | null {
+  const keys = (targetEvalMode ?? "").split("|").map((k) => k.trim()).filter((k) => k && k !== "mixed");
+  const resolved = keys.map((k) => resolveEvalModeConstraint("reaction-lab", k, CHALLENGE_TYPE_DOCS)).filter((c) => !!c);
+  if (!resolved.length) return null;
+  logEvalModeResolution("ReactionLab", targetEvalMode, resolved[0]);
+  return {
+    types: Array.from(new Set(resolved.flatMap((c) => c!.allowedTypes))),
+    label: resolved.map((c) => `${c!.definition.label}: ${c!.definition.description}`).join("; "),
+  };
+}
+
+/**
  * Determine the grade band from grade level context string
  */
 const resolveGradeBand = (gradeLevel: string): "K-2" | "3-5" | "6-8" => {
@@ -549,6 +603,16 @@ export const generateReactionLab = async (ctx: GenerationContext): Promise<React
       "Particle view must show correct reactant and product molecules.",
   };
 
+  const pinned = pinnedChallengeTypes(ctx.targetEvalMode);
+  const challengeRule = pinned
+    ? `5. Provide 3-5 challenges, EVERY one of type ${pinned.types.map((t) => `"${t}"`).join(" or ")} (eval mode ${pinned.label}). No other challenge type.
+${pinned.types.map((t) => `   - ${CHALLENGE_TYPE_DOCS[t]?.promptDoc ?? t}`).join("\n")}`
+    : `5. Provide 3-5 challenges sequenced by difficulty:
+   - Start with a "predict" challenge (what do you think will happen?)
+   - Middle challenges: "observe", "identify_signs", or "classify"
+   - End with harder challenges: "explain", "balance", or "conservation"`;
+  const schema = pinned ? constrainChallengeTypeEnum(reactionLabSchema, pinned.types, CHALLENGE_TYPE_DOCS) : reactionLabSchema;
+
   const generationPrompt = `Create a Reaction Lab experiment about "${topic}" for ${gradeBand} students.
 ${intent ? `\nTeaching intent: ${intent}` : ""}
 
@@ -560,10 +624,7 @@ GENERAL REQUIREMENTS:
 2. Include 2-4 substances with accurate physical descriptions (state, color, amount).
 3. The reaction must have at least 2 observable signs of change.
 4. Always include a realWorldConnection — explain where this reaction happens in everyday life.
-5. Provide 3-5 challenges sequenced by difficulty:
-   - Start with a "predict" challenge (what do you think will happen?)
-   - Middle challenges: "observe", "identify_signs", or "classify"
-   - End with harder challenges: "explain", "balance", or "conservation"
+${challengeRule}
 6. Every narration field should be wonder-driven (e.g. "Amazing! You just witnessed a chemical reaction — the same kind that makes bread rise!").
 7. Animation effects should match the actual reaction (e.g. acid-base → bubbles + foam, oxidation → colorShift).
 8. Temperature change should be realistic (e.g. exothermic reactions: +5 to +30°C, endothermic: -5 to -20°C).
@@ -613,7 +674,7 @@ Use the right answer format for each challenge type:
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: reactionLabSchema,
+        responseSchema: schema,
         systemInstruction:
           "You are an expert chemistry educator creating interactive virtual experiment activities for K-8 students. " +
           "Design safe, engaging experiments that follow the scientific method: predict → experiment → observe → explain. " +
@@ -741,6 +802,21 @@ Use the right answer format for each challenge type:
           }
         }
 
+        // The key and the model's own statement of the answer must agree. Seen 2026-10-15 (explain payload): key "A"
+        // ("dissolved the powder") while targetAnswer "Atoms rearranged to form a new gas" was option B. When another
+        // option alone shares clearly more words with targetAnswer than the keyed one, it is the key.
+        if (challenge.options && challenge.options.length > 1 && challenge.correctOptionId && challenge.targetAnswer) {
+          const words = (t: string) => new Set(t.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3));
+          const target = words(challenge.targetAnswer);
+          const overlap = (t: string) => Array.from(words(t)).filter((w) => target.has(w)).length;
+          const scored = challenge.options.map((o) => ({ id: o.id, n: overlap(o.text) })).sort((a, b) => b.n - a.n);
+          const keyed = scored.find((s) => s.id === challenge.correctOptionId)?.n ?? 0;
+          if (scored[0].id !== challenge.correctOptionId && scored[0].n >= 2 && scored[0].n > scored[1].n && scored[0].n > keyed) {
+            console.warn(`[ReactionLab] ${challenge.id}: key ${challenge.correctOptionId} disagreed with targetAnswer; re-keyed to ${scored[0].id}`);
+            challenge.correctOptionId = scored[0].id;
+          }
+        }
+
         // Ensure correctBoolean is set when isTrueFalse is present
         if (challenge.isTrueFalse && challenge.correctBoolean === undefined) {
           const target = challenge.targetAnswer.toLowerCase();
@@ -749,6 +825,14 @@ Use the right answer format for each challenge type:
 
         return challenge;
       });
+    }
+
+    // A pinned mode keeps only its own challenge types (the schema enum already asks for them).
+    if (pinned && result.challenges) {
+      result.challenges = result.challenges.filter((c) => pinned.types.includes(c.type));
+      if (!result.challenges.length) {
+        throw new Error(`reaction-lab: no ${pinned.types.join("/")} challenge generated for the pinned mode`);
+      }
     }
 
     // Ensure notebook defaults

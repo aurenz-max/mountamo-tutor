@@ -1,91 +1,83 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+/**
+ * Transport Challenge: a job (move a load of people or tons of cargo) and the vehicles that could do it. Each card
+ * shows what ONE trip of that vehicle carries and costs; the learner works out trips (the load / what a trip carries,
+ * rounded up) and totals (trips x the per-trip figure) and picks the vehicle the mode asks for:
+ * - single_constraint: the vehicle that does the whole job within one limit;
+ * - multi_constraint: the vehicle that keeps both limits;
+ * - full_optimization: no vehicle keeps all three limits; the one that breaks only one.
+ *
+ * Every item is built and keyed by code (`transportWorkspace.ts`). No card shows trips or totals before a pick is
+ * checked; a checked pick runs that one vehicle (its trips play out, its totals fill bars against the limits), and the
+ * table of every vehicle appears only once the item is credited. Two paths, chosen by `withWorkspaceController`: the
+ * scripted path (tester, no tutor) has its own Next and two tries before a reveal; the workspace path (W1, plain shape)
+ * commits every check through `progress.commitCheck` with a named miss, takes a spoken answer judged by the tutor, and
+ * lets the runtime move on. The levers live in `transportLevers.ts`.
+ */
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import {
-  LuminaCard,
-  LuminaCardHeader,
-  LuminaCardTitle,
-  LuminaCardContent,
-  LuminaBadge,
-  LuminaButton,
-  LuminaPanel,
-  LuminaActionButton,
-  LuminaAnswerChoice,
-  LuminaFeedbackCard,
-  LuminaReadAloud,
-  type AnswerChoiceState,
-} from '../../../ui';
-import { usePrimitiveEvaluation } from '../../../evaluation';
-import type { TransportChallengeMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
+import type { TransportChallengeMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { ReadMeButton } from '../../shared/ReadMeButton';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaBadge,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  amountText, askOf, carriesText, describeTransportWork, emptyWork, keyVehicle, limitLabel, loadText, perTripText,
+  runText, totalFor, transportCorrect, transportItems, transportMiss, tripsFor, workspaceAssignment, workspaceScene,
+  type LimitType, type TransportFrame, type TransportItem, type TransportMode, type TransportTier, type TransportVehicle,
+  type TransportWork,
+} from './transportWorkspace';
+import {
+  leverFact, simplerItem, SHOW_TRIPS_LEVER, TIMES_SETUP_LEVER, timesLines, transportLevers, tripLine,
+} from './transportLevers';
 
-// ─── Data Interfaces ──────────────────────────────────────────────────────────
+// ============================================================================
+// Data Types (single source of truth; the generator imports them)
+// ============================================================================
 
-export interface VehicleOption {
-  id: string;
-  name: string;
-  emoji: string;
-  capacity: number;
-  speedKmh: number;
-  costPerTrip: number;
-  co2PerTrip: number;
-  turnaroundMinutes: number;
-  requiresInfrastructure?: string;
-  infrastructureCost?: number;
-  color: string;
-}
+export type { TransportFrame, TransportItem, TransportMode, TransportTier };
 
-export interface TransportConstraint {
-  type: 'budget' | 'time' | 'co2';
-  limit: number;
-  unit: string;
-}
-
-/**
- * What a scenario moves. Vehicle `capacity` is per trip in `unit`, so a
- * freight job (tons of lumber) and a passenger job (festival visitors) run on
- * the same trip/cost/time math.
- */
-export interface TransportLoad {
-  kind: 'people' | 'cargo';
-  amount: number;
-  /** Count unit shown next to numbers: "people", "tons". */
-  unit: string;
-  /** What is being moved, e.g. "festival visitors", "lumber". */
-  name: string;
-}
-
-export interface TransportScenario {
-  id: string;
-  type: 'single_constraint' | 'multi_constraint' | 'full_optimization';
-  title: string;
-  origin: string;
-  destination: string;
-  originEmoji?: string;
-  destinationEmoji?: string;
-  distanceKm: number;
-  load: TransportLoad;
-  constraints: TransportConstraint[];
-  vehicles: VehicleOption[];
-  bestVehicleId: string;
-  acceptableVehicleIds: string[];
-  tradeOffQuestion: string;
-  tradeOffOptions: string[];
-  tradeOffCorrectIndex: number;
-  explanation: string;
+/** A generation from before 2026-10-16 (model-written scenarios and trade-off questions): read for its modes and names. */
+export interface LegacyTransportScenario {
+  type?: string; title?: string; origin?: string; destination?: string;
+  load?: { kind?: string; name?: string };
 }
 
 export interface TransportChallengeData {
   title: string;
-  description: string;
-  scenarios: TransportScenario[];
+  description?: string;
+  /** The eval modes this session asks, in order (`resolveTransportModes`). */
+  challengeTypes?: TransportMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: TransportTier;
+  /** The lesson's names for each job (titles, places, what is moved, the vehicle it is about). */
+  frames?: TransportFrame[];
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: TransportItem[];
+  scenarios?: LegacyTransportScenario[];
+
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -94,908 +86,424 @@ export interface TransportChallengeData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<TransportChallengeMetrics>) => void;
 }
 
-// ─── Simulation Types ─────────────────────────────────────────────────────────
-
-interface VehicleState {
-  progress: number; // 0-1 along route
-  direction: 'waiting' | 'outbound' | 'unloading' | 'returning' | 'loading' | 'done';
-  tripNumber: number;
-}
-
-interface SimSnapshot {
-  vehicles: VehicleState[];
-  delivered: number;
-  remaining: number;
-  totalCost: number;
-  totalCO2: number;
-  elapsedMinutes: number;
-  tripsCompleted: number;
-  totalTripsNeeded: number;
-  isComplete: boolean;
-}
-
-interface VehicleOutcome {
-  vehicleId: string;
-  totalTrips: number;
-  totalTimeMinutes: number;
-  totalCost: number;
-  totalCO2: number;
-  constraintResults: { type: string; met: boolean; actual: number; limit: number }[];
-  allConstraintsMet: boolean;
-}
-
-// ─── Simulation Helpers ───────────────────────────────────────────────────────
-
-const MAX_FLEET_SIZE = 15;
-const TARGET_SIM_SECONDS = 18;
-const SIM_TICK_MS = 50; // 20fps
-
-function computeVehicleOutcome(
-  scenario: TransportScenario,
-  vehicle: VehicleOption,
-): VehicleOutcome {
-  const { distanceKm, constraints } = scenario;
-  const totalTrips = Math.ceil(scenario.load.amount / vehicle.capacity);
-  const fleetSize = Math.min(totalTrips, MAX_FLEET_SIZE);
-  const outboundMinutes = (distanceKm / vehicle.speedKmh) * 60;
-  const roundTripMinutes = outboundMinutes * 2 + vehicle.turnaroundMinutes;
-  const batches = Math.ceil(totalTrips / fleetSize);
-  // First batch: outbound only. Subsequent batches: full round trip each.
-  const totalTimeMinutes = outboundMinutes + (batches > 1 ? (batches - 1) * roundTripMinutes : 0)
-    + vehicle.turnaroundMinutes / 2; // unload time for last batch
-  const totalCost = totalTrips * vehicle.costPerTrip + (vehicle.infrastructureCost ?? 0);
-  const totalCO2 = totalTrips * vehicle.co2PerTrip;
-
-  const constraintResults = constraints.map(c => {
-    const actual = c.type === 'budget' ? totalCost : c.type === 'time' ? totalTimeMinutes : totalCO2;
-    return { type: c.type, met: actual <= c.limit, actual, limit: c.limit };
-  });
-
-  return {
-    vehicleId: vehicle.id,
-    totalTrips,
-    totalTimeMinutes,
-    totalCost,
-    totalCO2,
-    constraintResults,
-    allConstraintsMet: constraintResults.every(r => r.met),
-  };
-}
-
-function getVehicleStateAtTime(
-  vehicleIndex: number,
-  simMinutes: number,
-  outboundMin: number,
-  roundTripMin: number,
-  unloadMin: number,
-  maxTripsForVehicle: number,
-): VehicleState {
-  const stagger = vehicleIndex * 0.4;
-  const t = simMinutes - stagger;
-  if (t < 0) return { progress: 0, direction: 'waiting', tripNumber: 0 };
-
-  const loadMin = unloadMin; // symmetric
-  const fullRound = outboundMin + unloadMin + outboundMin + loadMin;
-
-  const roundIndex = Math.floor(t / fullRound);
-  const phase = t % fullRound;
-
-  if (roundIndex >= maxTripsForVehicle) {
-    return { progress: 0, direction: 'done', tripNumber: maxTripsForVehicle };
-  }
-
-  if (phase < outboundMin) {
-    return { progress: phase / outboundMin, direction: 'outbound', tripNumber: roundIndex };
-  } else if (phase < outboundMin + unloadMin) {
-    return { progress: 1, direction: 'unloading', tripNumber: roundIndex };
-  } else if (phase < outboundMin + unloadMin + outboundMin) {
-    const rp = phase - outboundMin - unloadMin;
-    return { progress: 1 - rp / outboundMin, direction: 'returning', tripNumber: roundIndex };
-  } else {
-    return { progress: 0, direction: 'loading', tripNumber: roundIndex + 1 };
-  }
-}
-
-function computeSimSnapshot(
-  simMinutes: number,
-  scenario: TransportScenario,
-  vehicle: VehicleOption,
-): SimSnapshot {
-  const { distanceKm } = scenario;
-  const amount = scenario.load.amount;
-  const totalTripsNeeded = Math.ceil(amount / vehicle.capacity);
-  const fleetSize = Math.min(totalTripsNeeded, MAX_FLEET_SIZE);
-  const outboundMin = (distanceKm / vehicle.speedKmh) * 60;
-  const unloadMin = vehicle.turnaroundMinutes / 2;
-  const roundTripMin = outboundMin * 2 + vehicle.turnaroundMinutes;
-
-  // Distribute trips across fleet
-  const baseTrips = Math.floor(totalTripsNeeded / fleetSize);
-  const extraTrips = totalTripsNeeded % fleetSize;
-
-  const vehicles: VehicleState[] = [];
-  let totalDeliveries = 0;
-
-  for (let i = 0; i < fleetSize; i++) {
-    const maxTrips = baseTrips + (i < extraTrips ? 1 : 0);
-    const vs = getVehicleStateAtTime(i, simMinutes, outboundMin, roundTripMin, unloadMin, maxTrips);
-    vehicles.push(vs);
-
-    // Count completed deliveries for this vehicle
-    let delivered = vs.tripNumber;
-    if (vs.direction === 'unloading' || vs.direction === 'returning' || vs.direction === 'loading' || vs.direction === 'done') {
-      if (vs.direction !== 'done') delivered = vs.tripNumber + 1;
-      else delivered = vs.tripNumber;
-    }
-    // Adjust: outbound trips that haven't arrived yet don't count
-    if (vs.direction === 'outbound') delivered = vs.tripNumber;
-    totalDeliveries += Math.min(delivered, maxTrips);
-  }
-
-  const effectiveTrips = Math.min(totalDeliveries, totalTripsNeeded);
-  const delivered = Math.min(effectiveTrips * vehicle.capacity, amount);
-  const totalCost = effectiveTrips * vehicle.costPerTrip + (vehicle.infrastructureCost ?? 0);
-  const totalCO2 = effectiveTrips * vehicle.co2PerTrip;
-
-  return {
-    vehicles,
-    delivered,
-    remaining: amount - delivered,
-    totalCost,
-    totalCO2,
-    elapsedMinutes: simMinutes,
-    tripsCompleted: effectiveTrips,
-    totalTripsNeeded,
-    isComplete: delivered >= amount,
-  };
-}
-
-function formatConstraintValue(value: number, type: string): string {
-  if (type === 'budget') return `$${Math.round(value).toLocaleString()}`;
-  if (type === 'time') {
-    const hours = value / 60;
-    return hours >= 1 ? `${hours.toFixed(1)}h` : `${Math.round(value)}m`;
-  }
-  if (type === 'co2') return `${Math.round(value)}kg`;
-  return String(Math.round(value));
-}
-
-/** "40 people", "2,000 tons of lumber" */
-function describeLoad(load: TransportLoad, amount = load.amount): string {
-  const n = Math.round(amount).toLocaleString();
-  if (load.kind === 'people') {
-    return load.name && load.name !== load.unit ? `${n} ${load.name}` : `${n} ${load.unit}`;
-  }
-  return `${n} ${load.unit} of ${load.name}`;
-}
-
-function constraintIcon(type: string): string {
-  if (type === 'budget') return '💰';
-  if (type === 'time') return '⏱️';
-  if (type === 'co2') return '🌿';
-  return '📊';
-}
-
-// ─── Phase Config ─────────────────────────────────────────────────────────────
-
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  single_constraint: { label: 'Basic', icon: '🚗', accentColor: 'emerald' },
-  multi_constraint: { label: 'Trade-offs', icon: '⚖️', accentColor: 'blue' },
-  full_optimization: { label: 'Optimize', icon: '🎯', accentColor: 'purple' },
-};
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-type ScenarioPhase = 'picking' | 'simulating' | 'results' | 'question' | 'answered';
-
 interface TransportChallengeProps {
   data: TransportChallengeData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
 
-const TransportChallenge: React.FC<TransportChallengeProps> = ({ data, className }) => {
-  const {
-    title,
-    description,
-    scenarios = [],
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
+const MODE_LABEL: Record<TransportMode, string> = {
+  single_constraint: 'One limit', multi_constraint: 'Two limits', full_optimization: 'Three limits',
+};
+const LIMIT_ICON: Record<LimitType, string> = { budget: '💰', time: '⏱️', co2: '🌿' };
+const MAX_ICONS = 40;
 
-  const resolvedInstanceId = instanceId || `tc-${Date.now()}`;
+// ============================================================================
+// Pieces
+// ============================================================================
 
-  // ── Challenge Progress ────────────────────────────────────────────────────
-  const {
-    currentIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allScenariosComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges: scenarios, getChallengeId: (s) => s.id });
-
-  const phaseResults = usePhaseResults({
-    challenges: scenarios,
-    results: challengeResults,
-    isComplete: allScenariosComplete,
-    getChallengeType: (s) => s.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
-
-  // ── Evaluation ────────────────────────────────────────────────────────────
-  const startTime = useRef(Date.now());
-  const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
-
-  const { submitResult, hasSubmitted, elapsedMs } = usePrimitiveEvaluation<TransportChallengeMetrics>({
-    primitiveType: 'transport-challenge' as any,
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit as any,
-  });
-
-  // ── AI Tutoring ───────────────────────────────────────────────────────────
-  const currentScenario = scenarios[currentIndex];
-
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'transport-challenge' as any,
-    instanceId: resolvedInstanceId,
-    primitiveData: {
-      currentScenario: currentScenario?.title,
-      origin: currentScenario?.origin,
-      destination: currentScenario?.destination,
-      load: currentScenario ? describeLoad(currentScenario.load) : undefined,
-      loadUnit: currentScenario?.load.unit,
-      constraints: currentScenario?.constraints?.map(c => `${c.type}: ${c.limit} ${c.unit}`).join(', '),
-    },
-    gradeLevel: 'K-5',
-  });
-
-  // ── Read-aloud for young learners ─────────────────────────────────────────
-  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
-  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
-  const readBlockAloud = useCallback((text: string, tag: string) => {
-    if (!text) return;
-    SoundManager.tap();
-    sendText?.(
-      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
-    );
-  }, [sendText]);
-
-  // ── Per-Scenario State ────────────────────────────────────────────────────
-  const [scenarioPhase, setScenarioPhase] = useState<ScenarioPhase>('picking');
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-  const [simTime, setSimTime] = useState(0);
-  const [questionAnswer, setQuestionAnswer] = useState<number | null>(null);
-  const [questionAttempts, setQuestionAttempts] = useState(0);
-  const simContainerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(600);
-
-  // Measure container
-  useEffect(() => {
-    if (simContainerRef.current) {
-      setContainerWidth(simContainerRef.current.offsetWidth);
-    }
-  }, [scenarioPhase]);
-
-  // ── Derived State ─────────────────────────────────────────────────────────
-  const selectedVehicle = useMemo(
-    () => currentScenario?.vehicles.find(v => v.id === selectedVehicleId) ?? null,
-    [currentScenario, selectedVehicleId],
+/** show_trips: one block a trip, the last part full when the load does not fill it. */
+const TripBlocks = ({ item, v }: { item: TransportItem; v: TransportVehicle }) => {
+  const trips = tripsFor(item, v);
+  const lastFill = (item.load.amount - (trips - 1) * v.capacity) / v.capacity;
+  return (
+    <div data-lever="show-trips" className="mt-2 space-y-1">
+      <div className="flex flex-wrap gap-0.5" aria-hidden="true">
+        {Array.from({ length: trips }, (_, i) => (
+          <span key={i} className="relative inline-block h-3 w-3 overflow-hidden rounded-sm border border-cyan-300/40 bg-slate-800">
+            <span className="absolute inset-y-0 left-0 bg-cyan-400/70" style={{ width: `${(i === trips - 1 ? Math.min(lastFill, 1) : 1) * 100}%` }} />
+          </span>
+        ))}
+      </div>
+      <p className="text-xs text-cyan-200">{tripLine(item, v)}</p>
+    </div>
   );
+};
 
-  const simSnapshot = useMemo(() => {
-    if (!selectedVehicle || !currentScenario || simTime <= 0) return null;
-    return computeSimSnapshot(simTime, currentScenario, selectedVehicle);
-  }, [simTime, selectedVehicle, currentScenario]);
-
-  const allOutcomes = useMemo(() => {
-    if (!currentScenario) return [];
-    return currentScenario.vehicles.map(v => ({
-      ...computeVehicleOutcome(currentScenario, v),
-      vehicle: v,
-    }));
-  }, [currentScenario]);
-
-  const selectedOutcome = useMemo(
-    () => allOutcomes.find(o => o.vehicleId === selectedVehicleId) ?? null,
-    [allOutcomes, selectedVehicleId],
-  );
-
-  // Sim speed: target ~18 real seconds for the full simulation
-  const estTotalMinutes = useMemo(() => {
-    if (!selectedVehicle || !currentScenario) return 60;
-    return computeVehicleOutcome(currentScenario, selectedVehicle).totalTimeMinutes;
-  }, [selectedVehicle, currentScenario]);
-
-  const simSpeedMultiplier = useMemo(
-    () => Math.max(estTotalMinutes / TARGET_SIM_SECONDS, 1),
-    [estTotalMinutes],
-  );
-
-  // ── Simulation Animation ──────────────────────────────────────────────────
-  useEffect(() => {
-    if (scenarioPhase !== 'simulating') return;
-    const t0 = Date.now();
-    const interval = setInterval(() => {
-      const realSeconds = (Date.now() - t0) / 1000;
-      const simMin = realSeconds * simSpeedMultiplier;
-      setSimTime(simMin);
-
-      // Check if simulation is complete
-      if (simMin >= estTotalMinutes * 1.15 || realSeconds > 30) {
-        clearInterval(interval);
-        setScenarioPhase('results');
-        if (selectedVehicle && selectedOutcome) {
-          const met = selectedOutcome.allConstraintsMet;
-          sendText(
-            `[SIMULATION_COMPLETE] Vehicle: ${selectedVehicle.name}. ` +
-            `Trips: ${selectedOutcome.totalTrips}. ` +
-            `All constraints met: ${met ? 'YES' : 'NO'}. ` +
-            `${met ? 'Congratulate and ask why this worked.' : 'Ask what went wrong and what they notice about the numbers.'}`,
-            { silent: true },
+/** A checked vehicle's run: its trips play out along the route, its totals fill bars against the limits. */
+const RunPanel = ({ item, v }: { item: TransportItem; v: TransportVehicle }) => {
+  const trips = tripsFor(item, v);
+  return (
+    <LuminaPanel data-run={v.id} className="space-y-3">
+      <div className="flex items-center gap-2 text-xs text-slate-400">
+        <span>{item.origin}</span><span className="flex-1 border-t border-dashed border-white/20" /><span>{item.destination}</span>
+      </div>
+      <div className="flex flex-wrap gap-1" aria-label={`${trips} trips of the ${v.name.toLowerCase()}`}>
+        {Array.from({ length: Math.min(trips, MAX_ICONS) }, (_, i) => (
+          <span key={i} className="animate-in fade-in zoom-in text-lg" style={{ animationDelay: `${i * 60}ms`, animationFillMode: 'both' }}>{v.emoji}</span>
+        ))}
+        {trips > MAX_ICONS && <span className="text-xs text-slate-400">+{trips - MAX_ICONS} more</span>}
+      </div>
+      <div className="space-y-1.5">
+        {item.limits.map(l => {
+          const total = totalFor(item, v, l.type), over = total > l.max;
+          return (
+            <div key={l.type} className="flex items-center gap-2 text-xs">
+              <span className="w-5">{LIMIT_ICON[l.type]}</span>
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-800">
+                <div className={cn('h-full rounded-full transition-all duration-700', over ? 'bg-red-500' : 'bg-emerald-500')}
+                  style={{ width: `${Math.min(total / l.max, 1) * 100}%` }} />
+              </div>
+              <span className={cn('w-40 text-right tabular-nums', over ? 'text-red-300' : 'text-slate-300')}>
+                {amountText(l.type, total)} of {amountText(l.type, l.max)}
+              </span>
+            </div>
           );
-        }
-      }
-    }, SIM_TICK_MS);
-    return () => clearInterval(interval);
-  }, [scenarioPhase, simSpeedMultiplier, estTotalMinutes, selectedVehicle, selectedOutcome, sendText]);
+        })}
+      </div>
+    </LuminaPanel>
+  );
+};
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-  const handlePickVehicle = useCallback((vehicleId: string) => {
-    if (scenarioPhase !== 'picking') return;
+/** Every vehicle's trips and totals: shown once the item is answered. */
+const CompareTable = ({ item }: { item: TransportItem }) => (
+  <div className="overflow-x-auto" data-compare="all">
+    <table className="w-full text-xs">
+      <thead>
+        <tr className="border-b border-white/10 text-slate-400">
+          <th className="py-1.5 pr-2 text-left">Vehicle</th>
+          <th className="px-2 py-1.5 text-right">Trips</th>
+          {item.limits.map(l => <th key={l.type} className="px-2 py-1.5 text-right">{LIMIT_ICON[l.type]} {amountText(l.type, l.max)}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {item.vehicles.map(v => (
+          <tr key={v.id} className="border-b border-white/5">
+            <td className="py-1.5 pr-2 text-slate-200">{v.emoji} {v.name}</td>
+            <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{tripsFor(item, v)}</td>
+            {item.limits.map(l => {
+              const t = totalFor(item, v, l.type);
+              return <td key={l.type} className={cn('px-2 py-1.5 text-right tabular-nums', t > l.max ? 'text-red-300' : 'text-emerald-300')}>{amountText(l.type, t)}</td>;
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+// ============================================================================
+// Component
+// ============================================================================
+
+const TransportChallengeSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  TransportChallengeProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TransportItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, description, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+
+  const items = useMemo(() => transportItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.frames, data.scenarios, data.title]);
+  const stableInstanceId = useRef(instanceId || `transport-challenge-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  const sessionItem: TransportItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<TransportItem | null>(null);
+  const item = practice ?? sessionItem;
+
+  const [work, setWork] = useState<TransportWork>(emptyWork);
+  /** The vehicle whose run is on screen: the learner's checked pick (or, once answered, the key). */
+  const [ran, setRan] = useState<string | null>(null);
+  /** Workspace path: the checked wrong pick, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
+
+  const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
+  const leverOn = (id: string) => pulled.includes(id);
+  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<TransportChallengeMetrics>({
+    primitiveType: 'transport-challenge',
+    instanceId: resolvedInstanceId,
+    skillId, subskillId, objectiveId, exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
+  const aiPrimitiveData = useMemo(() => ({
+    mode: item?.mode ?? 'single_constraint', itemIndex: currentIndex + 1, totalItems: items.length,
+    ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
+  }), [item, currentIndex, items.length, title, currentAttempts]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'transport-challenge', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: 'Grade 3-5', enabled: !tutorOwned,
+  });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
+
+  const clearItem = () => {
+    setWork(emptyWork()); setRan(null); setWrongShown(false);
+    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+  };
+
+  openItem.current = (index, retry) => {
+    if (retry) { setWork(emptyWork()); setRan(null); setWrongShown(false); setPracticeSolved(false); return; }
+    setPractice(null); clearItem();
+    void index;
+  };
+
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    const key = keyVehicle(solved);
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    if (key) { setWork({ picked: key.id }); setRan(key.id); }
+    setWrongShown(false);
+  };
+
+  // A spoken credit on the smaller job shows it as a checked pick would: the right card and its run.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    const key = keyVehicle(practice);
+    if (key) { setWork({ picked: key.id }); setRan(key.id); }
+    setWrongShown(false); setPracticeSolved(true);
+  };
+
+  // ── Handlers ──
+  const closed = revealed || wrongShown || learnerBlocked();
+  const pick = (id: string) => {
+    if (!item || closed) return;
     SoundManager.select();
-    setSelectedVehicleId(vehicleId);
-  }, [scenarioPhase]);
+    setWork({ picked: id });
+  };
 
-  const handleStartSimulation = useCallback(() => {
-    if (!selectedVehicle || !currentScenario) return;
-    const totalTrips = Math.ceil(currentScenario.load.amount / selectedVehicle.capacity);
-    sendText(
-      `[VEHICLE_SELECTED] Student chose ${selectedVehicle.name} (${selectedVehicle.emoji}, ` +
-      `carries ${selectedVehicle.capacity} ${currentScenario.load.unit} per trip) for ${describeLoad(currentScenario.load)}. ` +
-      `That's ${totalTrips} trips needed. Ask them: "How many trips do you think that'll take?"`,
-      { silent: true },
-    );
-    setSimTime(0);
-    setScenarioPhase('simulating');
-  }, [selectedVehicle, currentScenario, sendText]);
-
-  const handleShowQuestion = useCallback(() => {
-    setScenarioPhase('question');
-  }, []);
-
-  const handleSubmitAnswer = useCallback(() => {
-    if (questionAnswer === null || !currentScenario) return;
-    const correct = questionAnswer === currentScenario.tradeOffCorrectIndex;
-    setQuestionAttempts(prev => prev + 1);
-
-    if (correct) SoundManager.playCorrect();
-    else SoundManager.playIncorrect();
-
+  const check = () => {
+    if (!item || closed || !work.picked) return;
+    const correct = transportCorrect(item, work);
+    progress.commitCheck(describeTransportWork(item, work), correct, correct ? undefined : transportMiss(item, work));
+    setRan(work.picked);
     if (correct) {
-      setScenarioPhase('answered');
-      sendText(
-        `[ANSWER_CORRECT] Student answered the trade-off question correctly. Congratulate briefly.`,
-        { silent: true },
-      );
-    } else if (questionAttempts >= 1) {
-      // Second wrong attempt — show answer
-      setScenarioPhase('answered');
-      sendText(
-        `[ANSWER_INCORRECT] Student answered wrong twice. The correct answer was ` +
-        `"${currentScenario.tradeOffOptions[currentScenario.tradeOffCorrectIndex]}". ` +
-        `Explain why gently.`,
-        { silent: true },
-      );
-    } else {
-      incrementAttempts();
-      setQuestionAnswer(null);
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${currentScenario.tradeOffOptions[questionAnswer]}" ` +
-        `but correct is "${currentScenario.tradeOffOptions[currentScenario.tradeOffCorrectIndex]}". ` +
-        `Give a hint without revealing the answer.`,
-        { silent: true },
-      );
-    }
-  }, [questionAnswer, questionAttempts, currentScenario, incrementAttempts, sendText]);
-
-  const handleNextScenario = useCallback(() => {
-    if (!currentScenario || !selectedOutcome) return;
-
-    // Score this scenario
-    const vehicleScore = selectedVehicleId === currentScenario.bestVehicleId ? 60
-      : currentScenario.acceptableVehicleIds.includes(selectedVehicleId!) ? 40
-      : selectedOutcome.allConstraintsMet ? 25
-      : 0;
-    const questionScore = questionAnswer === currentScenario.tradeOffCorrectIndex ? 40
-      : questionAttempts >= 2 ? 10 : 0;
-    const score = vehicleScore + questionScore;
-
-    recordResult({
-      challengeId: currentScenario.id,
-      correct: score >= 60,
-      attempts: currentAttempts + 1,
-      score,
-      vehicleChosen: selectedVehicleId,
-      constraintsMet: selectedOutcome.allConstraintsMet,
-    });
-
-    // Advance or finish
-    if (!advanceProgress()) {
-      // All scenarios complete
-      const overallScore = Math.round(
-        challengeResults.reduce((s, r) => s + ((r.score as number) ?? 0), score) /
-        scenarios.length,
-      );
-
-      const durationMs = Date.now() - startTime.current;
-      const vehicleAccuracy = challengeResults.filter(r => (r.score as number) >= 40).length / scenarios.length;
-      const questionAcc = challengeResults.filter(r => r.correct).length / scenarios.length;
-
-      submitResult(
-        overallScore >= 60,
-        overallScore,
-        {
-          type: 'transport-challenge',
-          scenariosCompleted: scenarios.length,
-          totalScenarios: scenarios.length,
-          vehicleChoiceAccuracy: Math.round(vehicleAccuracy * 100),
-          tradeOffAccuracy: Math.round(questionAcc * 100),
-          averageConstraintsMet: Math.round(
-            (challengeResults.filter(r => r.constraintsMet).length / scenarios.length) * 100,
-          ),
-        },
-      );
-      setSubmittedResult({ score: overallScore });
-
-      const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-      sendText(
-        `[ALL_COMPLETE] Phase scores: ${phaseScoreStr}. Overall: ${overallScore}%. ` +
-        `Give encouraging phase-specific feedback about transport planning skills.`,
-        { silent: true },
-      );
+      SoundManager.playCorrect();
+      if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner picked the right vehicle for: ${askOf(item)} Its run is on screen. Praise briefly.`);
       return;
     }
+    SoundManager.playIncorrect();
+    if (tutorOwned) { setWrongShown(true); return; }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      const key = keyVehicle(item);
+      setScriptedReveal(true);
+      if (key) { setWork({ picked: key.id }); setRan(key.id); }
+      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] Two picks missed on: ${askOf(item)} Every vehicle's totals are now on screen; explain them.`);
+      return;
+    }
+    say(`[ANSWER_INCORRECT] ${describeTransportWork(item, work)} for: ${askOf(item)} Its run is on screen and it does not answer. `
+      + 'You are not told the answer: ask how many trips a vehicle needs and what its totals come to, without naming a vehicle.');
+  };
 
-    // Reset for next scenario
-    setScenarioPhase('picking');
-    setSelectedVehicleId(null);
-    setSimTime(0);
-    setQuestionAnswer(null);
-    setQuestionAttempts(0);
+  const metrics = (): TransportChallengeMetrics => {
+    const right = items.filter(i => results.some(r => r.challengeId === i.id && r.correct));
+    return {
+      type: 'transport-challenge',
+      scenariosCompleted: results.length,
+      totalScenarios: items.length,
+      vehicleChoiceAccuracy: items.length ? Math.round((right.length / items.length) * 100) : 0,
+      firstTryCount: results.filter(r => r.correct && r.attempts === 1).length,
+      attemptsCount: currentAttempts,
+    };
+  };
 
-    sendText(
-      `[NEXT_ITEM] Moving to scenario ${currentIndex + 2} of ${scenarios.length}. Introduce it briefly.`,
-      { silent: true },
-    );
-  }, [
-    currentScenario, selectedVehicleId, selectedOutcome, questionAnswer, questionAttempts,
-    currentAttempts, recordResult, advanceProgress, challengeResults, scenarios, submitResult,
-    phaseResults, sendText, currentIndex,
-  ]);
+  /** Scripted path: Next, and on the last item the session report. */
+  const next = () => {
+    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Job ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 50, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} jobs. Celebrate briefly.`);
+  };
 
-  // ── Early return ──────────────────────────────────────────────────────────
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: (instanceId || 'transport-challenge'),
-    scopeId: allScenariosComplete || hasSubmitted ? null : currentScenario?.id ?? null,
-    label: 'The vehicles, the trip, and the question',
-    solved: scenarioPhase === 'answered' && questionAnswer === currentScenario?.tradeOffCorrectIndex && !!selectedOutcome?.allConstraintsMet,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'transport-challenge'),
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), attemptsCount: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const scene = workspaceScene(item, { work, ran, solved: revealed });
+    const levers = practice ? [] : transportLevers(sessionItem, pulled);
+    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'A smaller job of the same kind, before the full job comes back.' } : {}),
+        ...(onScreen ? { onScreen } : {}) },
+      levers,
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (l.kind === 'simplify') {
+          const simpler = simplerItem(sessionItem);
+          if (!simpler) return 'There is no smaller job here; try a help lever.';
+          setLeverState(nextState); clearItem(); setPractice(simpler);
+          return { practice: workspaceAssignment(simpler) };
+        }
+        setLeverState(nextState);
+        return true;
+      },
+      endPractice: () => { clearItem(); setPractice(null); },
+    };
   });
 
-  if (!scenarios.length) {
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: done || !item ? null : item.id,
+    label: 'The job, the vehicles and your pick',
+    solved: revealed,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
+  if (!items.length) {
     return (
       <LuminaCard className={className}>
-        <LuminaCardContent className="p-6">
-          <p className="text-slate-400">No transport scenarios available.</p>
-        </LuminaCardContent>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This challenge has no jobs to plan.</p></LuminaCardContent>
       </LuminaCard>
     );
   }
 
-  const scenario = currentScenario;
-  const routeMargin = 80; // px from edges for origin/destination markers
-  const routeWidth = containerWidth - routeMargin * 2;
+  const key = item ? keyVehicle(item) : null;
+  const ranVehicle = item?.vehicles.find(v => v.id === ran) ?? null;
+  const cardState = (v: TransportVehicle): AnswerChoiceState => {
+    if (revealed) return v.id === key?.id ? 'correct' : v.id === ran ? 'incorrect' : 'dimmed';
+    if (wrongShown && v.id === work.picked) return 'incorrect';
+    return work.picked === v.id ? 'selected' : 'idle';
+  };
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <LuminaCard className={cn('overflow-hidden', className)}>
-      <LuminaCardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <LuminaCardTitle>{title}</LuminaCardTitle>
-          <LuminaBadge>
-            {currentIndex + 1} / {scenarios.length}
-          </LuminaBadge>
-        </div>
-        <div className="flex items-start gap-2">
-          <p className="text-slate-400 text-sm flex-1">{description}</p>
-          <LuminaReadAloud
-            iconOnly
-            size="sm"
-            accent="cyan"
-            speaking={isAudioPlaying}
-            aria-label="Read the lesson intro to me"
-            className="flex-shrink-0"
-            onClick={() => readBlockAloud(description, '[READ_INTRO]')}
-          />
-        </div>
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{title}</LuminaCardTitle>
+        {!done && item && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {practice ? 'A smaller job first' : `${MODE_LABEL[item.mode]} · job ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
+        )}
+        {description && !done && <p className="text-sm text-slate-400">{description}</p>}
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* ── Phase Summary (when complete) ──────────────────────────────── */}
-        {allScenariosComplete && phaseResults.length > 0 && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={submittedResult?.score ?? 0}
-            durationMs={Date.now() - startTime.current}
-            heading="Transport Challenge Complete!"
-            celebrationMessage="You've mastered transport planning!"
-            className="mb-6"
-          />
-        )}
-
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allScenariosComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
-        {!allScenariosComplete && scenario && (
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Challenge complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} jobs planned.`}
+          </LuminaFeedbackCard>
+        ) : item && (
           <>
-            {/* ── Scenario Header ──────────────────────────────────────── */}
-            <LuminaPanel>
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <h3 className="text-slate-100 font-semibold text-lg">{scenario.title}</h3>
-                <ReadMeButton
-                  instruction={`${scenario.title}. Move ${describeLoad(scenario.load)} from ${scenario.origin} to ${scenario.destination}, about ${scenario.distanceKm} kilometers away.`}
-                  ask="Look at the rules, then choose a vehicle for the job."
-                  speaking={isAudioPlaying}
-                  onAskTutor={(m) => sendText(m)}
-                  tag="[READ_SCENARIO]"
-                  className="flex-shrink-0"
-                  aria-label="Read the transport task to me"
-                />
-              </div>
-              <p className="text-slate-300 text-sm mb-3">
-                {scenario.load.kind === 'cargo' ? 'Haul' : 'Move'}{' '}
-                <span className="text-blue-300 font-bold">{describeLoad(scenario.load)}</span> from{' '}
-                <span className="text-amber-300">{scenario.origin}</span> to{' '}
-                <span className="text-emerald-300">{scenario.destination}</span>{' '}
-                <span className="text-slate-500">({scenario.distanceKm} km)</span>
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {scenario.constraints.map(c => (
-                  <LuminaBadge key={c.type} className="text-xs">
-                    {constraintIcon(c.type)} {c.type}: {formatConstraintValue(c.limit, c.type)}
-                  </LuminaBadge>
+            <div className="flex items-start gap-2">
+              <LuminaPrompt accent="cyan" className="flex-1" {...(practice ? { 'data-practice': 'simpler' } : {})}>
+                <span className="block font-semibold">{item.title}</span>
+                {askOf(item)}
+              </LuminaPrompt>
+              {!tutorOwned && (
+                <ReadMeButton instruction={askOf(item)} ask="Work out each vehicle's trips and totals, then pick one."
+                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
+                  className="flex-shrink-0" aria-label="Read the job to me" />
+              )}
+            </div>
+
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
+              <LuminaPanel className="space-y-2">
+                <p className="text-sm text-slate-300">
+                  Move <span className="font-bold text-blue-300">{loadText(item.load)}</span> from{' '}
+                  <span className="text-amber-300">{item.origin}</span> to <span className="text-emerald-300">{item.destination}</span>.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {item.limits.map(l => <LuminaBadge key={l.type} className="text-xs">{LIMIT_ICON[l.type]} {limitLabel(l)}</LuminaBadge>)}
+                </div>
+              </LuminaPanel>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {item.vehicles.map(v => (
+                  <LuminaAnswerChoice key={v.id} aria-label={v.name} state={cardState(v)} disabled={closed}
+                    className="p-3 text-sm" onClick={() => pick(v.id)}>
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className="text-2xl" aria-hidden="true">{v.emoji}</span>
+                      <span className="font-medium text-slate-100">{v.name}</span>
+                    </div>
+                    <div className="space-y-0.5 text-xs text-slate-400">
+                      <div>{carriesText(item, v)}</div>
+                      <div>{item.shows.map(t => perTripText(v, t)).join(' · ')}</div>
+                    </div>
+                    {leverOn(SHOW_TRIPS_LEVER) && <TripBlocks item={item} v={v} />}
+                    {leverOn(TIMES_SETUP_LEVER) && (
+                      <div data-lever="times-setup" className="mt-2 space-y-0.5 font-mono text-xs text-cyan-200">
+                        {timesLines(item, v).map(line => <div key={line}>{line}</div>)}
+                      </div>
+                    )}
+                  </LuminaAnswerChoice>
                 ))}
               </div>
-            </LuminaPanel>
 
-            {/* ── Vehicle Selector (picking phase) ─────────────────────── */}
-            {scenarioPhase === 'picking' && (
-              <div className="space-y-3">
-                <h4 className="text-slate-300 text-sm font-medium">Choose your vehicle:</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {scenario.vehicles.map(v => {
-                    // Trips needed is the student's own math (the tutor's hints
-                    // ask for it); the results table shows it after the run.
-                    return (
-                      <button
-                        key={v.id}
-                        onClick={() => handlePickVehicle(v.id)}
-                        className={cn(
-                          'p-3 rounded-lg border text-left transition-all',
-                          selectedVehicleId === v.id
-                            ? 'border-blue-400 bg-blue-500/10 ring-1 ring-blue-400/30'
-                            : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8',
-                        )}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-2xl">{v.emoji}</span>
-                          <span className="text-slate-100 font-medium">{v.name}</span>
-                        </div>
-                        <div className="text-slate-400 text-xs space-y-0.5">
-                          <div>{v.capacity.toLocaleString()} {scenario.load.unit}/trip • {v.speedKmh} km/h</div>
-                          <div>${v.costPerTrip}/trip • {v.co2PerTrip}kg CO₂/trip</div>
-                          {v.requiresInfrastructure && (
-                            <div className="text-amber-400/80">Requires {v.requiresInfrastructure}</div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-                {selectedVehicleId && (
-                  <LuminaButton tone="primary" onClick={handleStartSimulation} className="w-full">
-                    Start Transport →
-                  </LuminaButton>
-                )}
+              {ranVehicle && <RunPanel item={item} v={ranVehicle} />}
+              {revealed && <CompareTable item={item} />}
+            </div>
+
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={closed || !work.picked} onClick={check}>Check my pick</LuminaActionButton>
               </div>
             )}
 
-            {/* ── Simulation View ──────────────────────────────────────── */}
-            {(scenarioPhase === 'simulating' || scenarioPhase === 'results' || scenarioPhase === 'question' || scenarioPhase === 'answered') && selectedVehicle && (
-              <div className="space-y-3">
-                {/* Route Visualization */}
-                <div
-                  ref={simContainerRef}
-                  className="relative h-44 bg-slate-950/60 rounded-lg border border-white/10 overflow-hidden"
-                >
-                  {/* Sky gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-slate-800/20 to-slate-950/40" />
+            {revealed && key && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {`${runText(item, key).replace(/^the /, 'The ')}.`}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && ranVehicle && (
+              <LuminaFeedbackCard status="incorrect">
+                {`Your pick's run: ${runText(item, ranVehicle)}. That does not answer the job${tutorOwned ? '.' : '; pick again.'}`}
+              </LuminaFeedbackCard>
+            )}
 
-                  {/* Route line */}
-                  <div
-                    className="absolute top-1/2 h-1 rounded-full bg-gradient-to-r from-amber-500/40 via-slate-500/20 to-emerald-500/40"
-                    style={{ left: routeMargin, right: routeMargin }}
-                  />
-                  {/* Lane divider */}
-                  <div
-                    className="absolute h-px bg-white/10"
-                    style={{ left: routeMargin, right: routeMargin, top: 'calc(50% + 6px)' }}
-                  />
-
-                  {/* Origin */}
-                  <div className="absolute left-1 top-1/2 -translate-y-1/2 text-center" style={{ width: routeMargin - 8 }}>
-                    <div className="text-xl">{scenario.originEmoji || '📍'}</div>
-                    <div className="text-[10px] text-amber-300 font-medium truncate">{scenario.origin}</div>
-                    <div className="text-base font-bold text-slate-100 tabular-nums">
-                      {Math.round(simSnapshot ? simSnapshot.remaining : scenario.load.amount).toLocaleString()}
-                    </div>
-                    <div className="text-[10px] text-slate-500">{scenario.load.unit} waiting</div>
-                  </div>
-
-                  {/* Destination */}
-                  <div className="absolute right-1 top-1/2 -translate-y-1/2 text-center" style={{ width: routeMargin - 8 }}>
-                    <div className="text-xl">{scenario.destinationEmoji || '🏁'}</div>
-                    <div className="text-[10px] text-emerald-300 font-medium truncate">{scenario.destination}</div>
-                    <div className="text-base font-bold text-slate-100 tabular-nums">
-                      {Math.round(simSnapshot ? simSnapshot.delivered : 0).toLocaleString()}
-                    </div>
-                    <div className="text-[10px] text-slate-500">{scenario.load.unit} arrived</div>
-                  </div>
-
-                  {/* Animated Vehicles */}
-                  {simSnapshot?.vehicles.map((vs, i) => {
-                    if (vs.direction === 'waiting' || vs.direction === 'done') return null;
-                    const x = routeMargin + vs.progress * routeWidth;
-                    const isOutbound = vs.direction === 'outbound' || vs.direction === 'unloading';
-                    const y = isOutbound ? '36%' : '62%';
-                    return (
-                      <div
-                        key={i}
-                        className="absolute transition-all duration-75 ease-linear"
-                        style={{
-                          left: `${x}px`,
-                          top: y,
-                          transform: `translateX(-50%) translateY(-50%) ${isOutbound ? '' : 'scaleX(-1)'}`,
-                          opacity: vs.direction === 'unloading' || vs.direction === 'loading' ? 0.6 : 1,
-                        }}
-                      >
-                        <span className="text-lg drop-shadow-lg select-none">{selectedVehicle.emoji}</span>
-                      </div>
-                    );
-                  })}
-
-                  {/* Trip counter */}
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 text-xs text-slate-400 bg-slate-900/60 px-2 py-0.5 rounded-full">
-                    {simSnapshot
-                      ? `Trip ${simSnapshot.tripsCompleted} of ${simSnapshot.totalTripsNeeded}`
-                      : 'Starting...'}
-                  </div>
-
-                  {/* Simulation status badge (painted on the sim surface) */}
-                  {scenarioPhase === 'simulating' && (
-                    <div className="absolute top-2 right-2">
-                      <span className="inline-flex items-center rounded-full border border-blue-400/30 bg-blue-500/20 px-2.5 py-0.5 text-xs font-medium text-blue-300 animate-pulse">
-                        Transporting...
-                      </span>
-                    </div>
-                  )}
-                  {scenarioPhase !== 'simulating' && (
-                    <div className="absolute top-2 right-2">
-                      <span className={cn(
-                        'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                        selectedOutcome?.allConstraintsMet
-                          ? 'border-emerald-400/30 bg-emerald-500/20 text-emerald-300'
-                          : 'border-red-400/30 bg-red-500/20 text-red-300',
-                      )}>
-                        {selectedOutcome?.allConstraintsMet ? '✅ All constraints met' : '❌ Constraint violated'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Constraint Bars */}
-                <div className="space-y-1.5">
-                  {scenario.constraints.map(c => {
-                    const finalOutcome = selectedOutcome;
-                    const finalValue = finalOutcome?.constraintResults.find(r => r.type === c.type)?.actual ?? 0;
-                    // During simulation, interpolate; after, show final
-                    const currentValue = scenarioPhase === 'simulating'
-                      ? (simSnapshot
-                        ? c.type === 'budget' ? simSnapshot.totalCost
-                        : c.type === 'time' ? simSnapshot.elapsedMinutes
-                        : simSnapshot.totalCO2
-                        : 0)
-                      : finalValue;
-                    const pct = Math.min((currentValue / c.limit) * 100, 130);
-                    const exceeded = currentValue > c.limit;
-
-                    return (
-                      <div key={c.type} className="flex items-center gap-2">
-                        <span className="text-xs w-5">{constraintIcon(c.type)}</span>
-                        <span className="text-xs text-slate-400 w-12 capitalize">{c.type}</span>
-                        <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              'h-full rounded-full transition-all duration-100',
-                              exceeded ? 'bg-red-500 animate-pulse' : pct > 80 ? 'bg-amber-500' : 'bg-emerald-500',
-                            )}
-                            style={{ width: `${Math.min(pct, 100)}%` }}
-                          />
-                        </div>
-                        <span className={cn('text-xs w-28 text-right tabular-nums', exceeded ? 'text-red-400' : 'text-slate-300')}>
-                          {formatConstraintValue(currentValue, c.type)} / {formatConstraintValue(c.limit, c.type)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Results: Comparison Table */}
-                {(scenarioPhase === 'results' || scenarioPhase === 'question' || scenarioPhase === 'answered') && (
-                  <div className="space-y-3">
-                    <h4 className="text-slate-300 text-sm font-medium">How all vehicles compare:</h4>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-slate-400 border-b border-white/10 text-xs">
-                            <th className="text-left py-1.5 pr-2">Vehicle</th>
-                            <th className="text-right py-1.5 px-2">Trips</th>
-                            <th className="text-right py-1.5 px-2">Time</th>
-                            <th className="text-right py-1.5 px-2">Cost</th>
-                            <th className="text-right py-1.5 px-2">CO₂</th>
-                            <th className="text-center py-1.5 pl-2">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {allOutcomes.map(o => (
-                            <tr
-                              key={o.vehicleId}
-                              className={cn(
-                                'border-b border-white/5 text-xs',
-                                o.vehicleId === selectedVehicleId && 'bg-blue-500/10',
-                                o.vehicleId === scenario.bestVehicleId && scenarioPhase === 'answered' && 'bg-emerald-500/5',
-                              )}
-                            >
-                              <td className="py-1.5 pr-2 text-slate-200">
-                                {o.vehicle.emoji} {o.vehicle.name}
-                                {o.vehicleId === selectedVehicleId && (
-                                  <span className="text-blue-400 ml-1">← your pick</span>
-                                )}
-                              </td>
-                              <td className="text-right py-1.5 px-2 text-slate-300 tabular-nums">{o.totalTrips}</td>
-                              <td className="text-right py-1.5 px-2 text-slate-300 tabular-nums">
-                                {formatConstraintValue(o.totalTimeMinutes, 'time')}
-                              </td>
-                              <td className="text-right py-1.5 px-2 text-slate-300 tabular-nums">
-                                {formatConstraintValue(o.totalCost, 'budget')}
-                              </td>
-                              <td className="text-right py-1.5 px-2 text-slate-300 tabular-nums">
-                                {formatConstraintValue(o.totalCO2, 'co2')}
-                              </td>
-                              <td className="text-center py-1.5 pl-2">
-                                {o.allConstraintsMet ? '✅' : '❌'}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {scenarioPhase === 'results' && (
-                      <LuminaButton onClick={handleShowQuestion} className="w-full">
-                        Answer Trade-off Question →
-                      </LuminaButton>
-                    )}
-                  </div>
-                )}
-
-                {/* Trade-off Question */}
-                {(scenarioPhase === 'question' || scenarioPhase === 'answered') && (
-                  <LuminaPanel className="space-y-3">
-                    <div className="flex items-start gap-2">
-                      <p className="text-slate-100 font-medium text-sm flex-1">{scenario.tradeOffQuestion}</p>
-                      <ReadMeButton
-                        instruction={scenario.tradeOffQuestion}
-                        ask="Read the choices and tap the one you think is best."
-                        speaking={isAudioPlaying}
-                        onAskTutor={(m) => sendText(m)}
-                        tag="[READ_QUESTION]"
-                        className="flex-shrink-0"
-                        aria-label="Read the question to me"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      {scenario.tradeOffOptions.map((opt, i) => {
-                        const isSelected = questionAnswer === i;
-                        const isCorrect = i === scenario.tradeOffCorrectIndex;
-                        const answered = scenarioPhase === 'answered';
-                        const state: AnswerChoiceState = answered
-                          ? isCorrect
-                            ? 'correct'
-                            : isSelected
-                              ? 'incorrect'
-                              : 'dimmed'
-                          : isSelected
-                            ? 'selected'
-                            : 'idle';
-                        return (
-                          <LuminaAnswerChoice
-                            key={i}
-                            state={state}
-                            onClick={() => scenarioPhase === 'question' && setQuestionAnswer(i)}
-                            disabled={answered}
-                            className="p-2.5 text-sm"
-                          >
-                            {opt}
-                          </LuminaAnswerChoice>
-                        );
-                      })}
-                    </div>
-
-                    {scenarioPhase === 'question' && questionAnswer !== null && (
-                      <LuminaActionButton action="check" onClick={handleSubmitAnswer} className="w-full">
-                        Submit Answer
-                      </LuminaActionButton>
-                    )}
-
-                    {scenarioPhase === 'answered' && (
-                      <>
-                        <LuminaFeedbackCard
-                          status={questionAnswer === scenario.tradeOffCorrectIndex ? 'correct' : 'insight'}
-                        >
-                          <div className="flex items-start gap-2">
-                            <span className="flex-1">{scenario.explanation}</span>
-                            <LuminaReadAloud
-                              iconOnly
-                              size="sm"
-                              accent="cyan"
-                              speaking={isAudioPlaying}
-                              aria-label="Read the explanation to me"
-                              className="flex-shrink-0"
-                              onClick={() => readBlockAloud(scenario.explanation, '[READ_EXPLANATION]')}
-                            />
-                          </div>
-                        </LuminaFeedbackCard>
-                        <LuminaActionButton action="next" onClick={handleNextScenario} className="w-full">
-                          {currentIndex < scenarios.length - 1 ? 'Next Scenario →' : 'See Results'}
-                        </LuminaActionButton>
-                      </>
-                    )}
-                  </LuminaPanel>
-                )}
+            {!tutorOwned && revealed && !practice && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next job →' : 'Finish'}</LuminaActionButton>
               </div>
             )}
           </>
         )}
-        </div>
-
       </LuminaCardContent>
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const TransportChallenge = withWorkspaceController<TransportChallengeProps, ProgressOptions<TransportItem>, Progress>(
+  'transport-challenge', TransportChallengeSurface, useScriptedProgress, useWorkspaceProgressFor('transport-challenge'));
 
 export default TransportChallenge;

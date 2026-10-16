@@ -188,8 +188,12 @@ def score(reply, moment, record):
     """reply: {'text': str, 'calls': [{'name', 'args'}]}. Returns {check: True/False/None} and the evidence for each miss."""
     text, calls = (reply.get('text') or '').strip(), reply.get('calls') or []
     kind = moment['kind']
+    if reply.get('error'):
+        # The API refused the call (a 429 after every retry): there is no reply to score, so no check applies.
+        return {'checks': {'no_api_error': False}, 'evidence': {'no_api_error': reply['error'][:160]}, 'pulledLever': None}
     leak = re.compile('|'.join([SHARED_LEAK, REPLAY_LEAK, *(re.escape(t) for t in record.get('leakTokens') or [])]), re.I)
-    pulled = any(c['name'] == 'perform_runtime_action' and (c.get('args') or {}).get('lever') for c in calls)
+    levers = [c['args']['lever'] for c in calls if c['name'] == 'perform_runtime_action' and (c.get('args') or {}).get('lever')]
+    pulled = bool(levers)
     # A key the ask itself states ("Give me four apples") is the assignment, not a secret.
     ask = record.get('ask') or ''
     secret = [k for k in record.get('keys') or [] if not any(says(without_asked_fractions(ask, ask), f) for f in forms(k))]
@@ -207,16 +211,22 @@ def score(reply, moment, record):
         'no_key_before_try': (key is None) if kind in PRE_TRY and secret else None,
         'no_fix_before_try': (fix is None) if kind in PRE_TRY else None,
         'no_change_before_receipt': (early is None) if kind == 'stuck' and pulled else None,
+        # A reply describes one change at a time; a second pull in the same turn is one the reply rarely names
+        # (W2 10-09 and 10-15 lever-turn rows). Counted on the calls the tutor made, whatever the bridge answered.
+        'one_lever_per_turn': (len(levers) <= 1) if pulled else None,
     }
     evidence = {k: v for k, v in {'no_protocol_leak': leaked and leaked.group(0), 'no_key_before_try': key,
-                                  'no_fix_before_try': fix, 'no_change_before_receipt': early and early.group(0)}.items() if v}
+                                  'no_fix_before_try': fix, 'no_change_before_receipt': early and early.group(0),
+                                  'one_lever_per_turn': len(levers) > 1 and ', '.join(levers)}.items() if v}
     return {'checks': checks, 'evidence': evidence, 'pulledLever': pulled if kind == 'stuck' else None}
 
 
 CHECKS = {
     'not_empty': 'The tutor replied (words or a tool call)',
+    'no_api_error': 'The model call succeeded (an API error is not an empty reply)',
     'no_protocol_leak': 'No protocol tag, id, JSON, tool name, or the word "lever" spoken',
     'no_key_before_try': 'Before a try, the reply does not say the answer in any spoken form',
     'no_fix_before_try': 'Before a try, the reply does not tell the learner what to change by how much',
     'no_change_before_receipt': 'A reply that pulls a lever does not describe the change as already on screen',
+    'one_lever_per_turn': 'A reply pulls at most one lever',
 }

@@ -1,64 +1,75 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { usePrimitiveEvaluation } from '../../../evaluation';
+/**
+ * Race Track Lab: toy cars on a track of numbered squares, one question per item (one eval mode each).
+ * - observe: run a timed race that a bell stops; which car is the fastest?
+ * - predict: a card per car gives its speed; which car will cross the finish line first? (run only after credit)
+ * - measure: run a timed race, then count how far a car moved, or how much farther one car moved than another.
+ * - calculate: a race log gives start, stop and seconds; what is the car's speed?
+ * - graph: a position-time graph; which car is fastest, or what is a car's speed?
+ *
+ * Every item is built and keyed by code (`raceTrackWorkspace.ts`). Nothing on screen states the answer before credit:
+ * no speed readout, medal or finish time; the cars are named by colour, never by an animal whose usual speed hints
+ * the answer; the predict race and the graph's race play only once the answer is credited; the log's speed reads "?".
+ * Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries
+ * before a reveal; the workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a
+ * named miss, takes a spoken answer judged by the tutor, and lets the runtime move on. Levers: `raceTrackLevers.ts`.
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { RaceTrackLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaButton,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askOf, cardText, choicesOf, describeRaceWork, endOf, finishTime, fmtNum, isNameAsk, keyChoice, needsRun, positionAt,
+  raceCorrect, raceItems, raceMiss, runTime, workspaceAssignment, workspaceScene,
+  type RaceItem, type RaceMode, type RaceTier,
+} from './raceTrackWorkspace';
+import {
+  GAP_BRACKET_LEVER, leverFact, NEEDS_RUN_LEVERS, ONE_SECOND_LEVER, raceLevers, SECOND_MARKS_LEVER, simplerItem, stepLines,
+  stepMarks, STEP_MARKS_LEVER, TO_GO_LEVER, TRAIL_COUNT_LEVER, TRAIL_TICKS_LEVER,
+} from './raceTrackLevers';
 
-// =============================================================================
-// Data Interface — Single Source of Truth
-// =============================================================================
+// ============================================================================
+// Data Types (single source of truth; the generator imports them)
+// ============================================================================
 
-export type RaceTrackChallengeType = 'observe' | 'predict' | 'measure' | 'calculate' | 'graph';
-
-export interface Racer {
-  name: string;
-  emoji: string;
-  speed: number; // pixels per second (scaled for visual)
-  color: string;
-}
-
-export interface RaceChallenge {
-  id: string;
-  type: RaceTrackChallengeType;
-  instruction: string;
-  racers: Racer[];
-  trackLength: number; // grid squares
-  timeLimit?: number;  // seconds — used for measure/calculate/graph modes
-  question: string;
-  correctAnswer: string;
-  distractor0: string;
-  distractor1: string;
-  distractor2?: string;
-  hint: string;
-  /**
-   * Support-tier display lever (second axis: scaffolding level, never numbers).
-   * When false the per-racer speed readout legend is withdrawn so the student
-   * must infer relative speed from the race itself. Defaults to shown (true) so
-   * no-tier sessions render exactly as before. NEVER changes the answer.
-   */
-  showSpeedLegend?: boolean;
-}
+export type { RaceItem, RaceMode, RaceTier };
 
 export interface RaceTrackLabData {
   title: string;
-  description: string;
-  challenges: RaceChallenge[];
-
-  /**
-   * Within-mode support tier ('easy' | 'medium' | 'hard'), threaded from the
-   * manifest so the live AI tutor's reveal policy is tier-aware. Scaffolding
-   * level only — it never changes the numbers or the answer.
-   */
-  supportTier?: 'easy' | 'medium' | 'hard';
+  description?: string;
+  /** The eval modes this session asks, in order (`resolveRaceModes`). */
+  challengeTypes?: RaceMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: RaceTier;
+  /** 'K', '1' ... '8': picks the modes when none is pinned. */
+  grade?: string;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: RaceItem[];
+  /** Legacy generations: read only for their modes. */
+  challenges?: Array<{ type?: string }>;
+  supportTier?: string;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -66,920 +77,544 @@ export interface RaceTrackLabData {
   subskillId?: string;
   objectiveId?: string;
   exhibitId?: string;
-  onEvaluationSubmit?: (result: unknown) => void;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<RaceTrackLabMetrics>) => void;
 }
 
 interface RaceTrackLabProps {
   data: RaceTrackLabData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-// =============================================================================
-// Constants
-// =============================================================================
-
-const CANVAS_W = 740;
-const CANVAS_H = 340;
-const TRACK_LEFT = 60;
-const TRACK_RIGHT = CANVAS_W - 40;
-const TRACK_WIDTH = TRACK_RIGHT - TRACK_LEFT;
-const LANE_HEIGHT = 50;
-const TRACK_TOP = 50;
-const GRID_SQUARE_PX = 40; // pixels per grid square
-
-const RACER_COLORS = ['#60A5FA', '#F97316', '#A78BFA', '#34D399'];
-
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  observe:   { label: 'Observe',   icon: '👀', accentColor: 'blue' },
-  predict:   { label: 'Predict',   icon: '🔮', accentColor: 'purple' },
-  measure:   { label: 'Measure',   icon: '📏', accentColor: 'emerald' },
-  calculate: { label: 'Calculate', icon: '🧮', accentColor: 'amber' },
-  graph:     { label: 'Graph',     icon: '📈', accentColor: 'pink' },
+const MODE_LABEL: Record<RaceMode, string> = {
+  observe: 'Who is fastest?', predict: 'Predict the winner', measure: 'Count the squares', calculate: 'Work out the speed', graph: 'Read the graph',
 };
 
-// =============================================================================
-// Physics / Race State
-// =============================================================================
+// ============================================================================
+// The track (canvas). Draws each car where it is at the time it is given; the surface decides when a race plays.
+// ============================================================================
 
-interface RacerState {
-  name: string;
-  emoji: string;
-  speed: number;
-  color: string;
-  x: number;        // current position in grid squares
-  finished: boolean;
-  finishTime: number | null;
-}
+const W = 720;
+const LEFT = 92;
+const RIGHT = W - 24;
+const TOP = 46;
+const LANE = 46;
 
-interface RaceState {
-  racers: RacerState[];
-  trackLength: number;
-  timeLimit: number | null;
-  elapsed: number;     // seconds elapsed
-  isRunning: boolean;
-  isFinished: boolean;
-  placements: string[]; // racer names in finish order
-  snapshots: Array<{ time: number; positions: number[] }>; // for graph mode
-}
+const durationOf = (item: RaceItem) => Math.max(...item.racers.map(r => (item.mode === 'predict' ? finishTime(item, r) : runTime(item, r))));
 
-function initRaceState(challenge: RaceChallenge): RaceState {
-  return {
-    racers: challenge.racers.map((r, i) => ({
-      name: r.name,
-      emoji: r.emoji,
-      speed: r.speed,
-      color: r.color || RACER_COLORS[i % RACER_COLORS.length],
-      x: 0,
-      finished: false,
-      finishTime: null,
-    })),
-    trackLength: challenge.trackLength,
-    timeLimit: challenge.timeLimit ?? null,
-    elapsed: 0,
-    isRunning: false,
-    isFinished: false,
-    placements: [],
-    snapshots: [{ time: 0, positions: challenge.racers.map(() => 0) }],
-  };
-}
-
-function stepRace(state: RaceState, dt: number): RaceState {
-  if (!state.isRunning || state.isFinished) return state;
-
-  const next: RaceState = {
-    ...state,
-    racers: state.racers.map(r => ({ ...r })),
-    elapsed: state.elapsed + dt,
-    placements: [...state.placements],
-    snapshots: [...state.snapshots],
-  };
-
-  // Update positions
-  for (const racer of next.racers) {
-    if (racer.finished) continue;
-    racer.x += racer.speed * dt;
-
-    // Check finish
-    if (racer.x >= next.trackLength) {
-      racer.x = next.trackLength;
-      racer.finished = true;
-      racer.finishTime = next.elapsed;
-      next.placements.push(racer.name);
-    }
-  }
-
-  // Snapshot every 1 second for graph mode
-  const prevSnapshotTime = state.snapshots.length > 0
-    ? state.snapshots[state.snapshots.length - 1].time
-    : -1;
-  if (Math.floor(next.elapsed) > Math.floor(prevSnapshotTime)) {
-    next.snapshots.push({
-      time: Math.floor(next.elapsed),
-      positions: next.racers.map(r => Math.min(r.x, next.trackLength)),
-    });
-  }
-
-  // Check race over
-  const allFinished = next.racers.every(r => r.finished);
-  const timeUp = next.timeLimit !== null && next.elapsed >= next.timeLimit;
-
-  if (allFinished || timeUp) {
-    next.isRunning = false;
-    next.isFinished = true;
-    // Add any unfinished racers to placements by position
-    const unfinished = next.racers
-      .filter(r => !r.finished)
-      .sort((a, b) => b.x - a.x);
-    for (const r of unfinished) {
-      if (!next.placements.includes(r.name)) {
-        next.placements.push(r.name);
-      }
-    }
-    // Final snapshot
-    next.snapshots.push({
-      time: next.elapsed,
-      positions: next.racers.map(r => Math.min(r.x, next.trackLength)),
-    });
-  }
-
-  return next;
-}
-
-// =============================================================================
-// Canvas Drawing
-// =============================================================================
-
-function drawTrack(
-  ctx: CanvasRenderingContext2D,
-  state: RaceState,
-  dpr: number,
-  showGraph: boolean,
-) {
-  const w = CANVAS_W;
-  const h = CANVAS_H;
-
-  ctx.save();
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, w, h);
-
-  // Background
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-  bgGrad.addColorStop(0, '#0F172A');
-  bgGrad.addColorStop(1, '#1E293B');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, w, h);
-
-  if (showGraph && state.snapshots.length > 1) {
-    drawPositionTimeGraph(ctx, state);
-  } else {
-    drawRaceView(ctx, state);
-  }
-
-  ctx.restore();
-}
-
-function drawRaceView(ctx: CanvasRenderingContext2D, state: RaceState) {
-  const numLanes = state.racers.length;
-  const trackBottom = TRACK_TOP + numLanes * LANE_HEIGHT;
-
-  // Grid lines (vertical)
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.lineWidth = 1;
-  for (let sq = 0; sq <= state.trackLength; sq++) {
-    const xPx = TRACK_LEFT + (sq / state.trackLength) * TRACK_WIDTH;
-    ctx.beginPath();
-    ctx.moveTo(xPx, TRACK_TOP - 5);
-    ctx.lineTo(xPx, trackBottom + 5);
-    ctx.stroke();
-  }
-
-  // Grid square numbers along top
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.font = '9px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  for (let sq = 0; sq <= state.trackLength; sq += Math.max(1, Math.floor(state.trackLength / 10))) {
-    const xPx = TRACK_LEFT + (sq / state.trackLength) * TRACK_WIDTH;
-    ctx.fillText(`${sq}`, xPx, TRACK_TOP - 8);
-  }
-
-  // "Distance" label
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.font = '10px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Distance (squares)', TRACK_LEFT + TRACK_WIDTH / 2, TRACK_TOP - 20);
-
-  // Lane backgrounds
-  for (let i = 0; i < numLanes; i++) {
-    const y = TRACK_TOP + i * LANE_HEIGHT;
-    ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.06)';
-    ctx.fillRect(TRACK_LEFT, y, TRACK_WIDTH, LANE_HEIGHT);
-
-    // Lane border
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.beginPath();
-    ctx.moveTo(TRACK_LEFT, y);
-    ctx.lineTo(TRACK_RIGHT, y);
-    ctx.stroke();
-  }
-  // Bottom border
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-  ctx.beginPath();
-  ctx.moveTo(TRACK_LEFT, trackBottom);
-  ctx.lineTo(TRACK_RIGHT, trackBottom);
-  ctx.stroke();
-
-  // Finish line (checkered)
-  const finishX = TRACK_RIGHT - 2;
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-  ctx.lineWidth = 3;
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.moveTo(finishX, TRACK_TOP);
-  ctx.lineTo(finishX, trackBottom);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.font = '9px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('FINISH', finishX, trackBottom + 14);
-
-  // Racers
-  for (let i = 0; i < state.racers.length; i++) {
-    const racer = state.racers[i];
-    const laneY = TRACK_TOP + i * LANE_HEIGHT;
-    const centerY = laneY + LANE_HEIGHT / 2;
-    const xPx = TRACK_LEFT + (racer.x / state.trackLength) * TRACK_WIDTH;
-
-    // Racer name label (left side)
-    ctx.fillStyle = racer.color;
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(racer.name, TRACK_LEFT - 6, centerY);
-
-    // Trail line
-    ctx.strokeStyle = racer.color + '40';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(TRACK_LEFT, centerY);
-    ctx.lineTo(xPx, centerY);
-    ctx.stroke();
-
-    // Racer circle + emoji
-    ctx.fillStyle = racer.color + '30';
-    ctx.beginPath();
-    ctx.arc(xPx, centerY, 16, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = racer.color;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.font = '20px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(racer.emoji, xPx, centerY);
-
-    // Placement badge
-    if (racer.finished && racer.finishTime !== null) {
-      const placeIdx = state.placements.indexOf(racer.name);
-      const placeLabel = placeIdx === 0 ? '🥇' : placeIdx === 1 ? '🥈' : placeIdx === 2 ? '🥉' : `#${placeIdx + 1}`;
-      ctx.font = '14px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(placeLabel, xPx + 20, centerY - 8);
-
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.font = '9px sans-serif';
-      ctx.fillText(`${racer.finishTime.toFixed(1)}s`, xPx + 20, centerY + 8);
-    }
-  }
-
-  // Timer display
-  ctx.fillStyle = 'rgba(255,255,255,0.8)';
-  ctx.font = 'bold 14px monospace';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'top';
-  ctx.fillText(`⏱ ${state.elapsed.toFixed(1)}s`, CANVAS_W - 10, 8);
-
-  // Time limit indicator
-  if (state.timeLimit !== null) {
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = '10px sans-serif';
-    ctx.fillText(`/ ${state.timeLimit}s`, CANVAS_W - 10, 26);
-  }
-
-  // Race status
-  if (state.isFinished) {
-    ctx.fillStyle = '#34D399';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('RACE COMPLETE', 10, 8);
-  } else if (state.isRunning) {
-    ctx.fillStyle = '#FBBF24';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('RACING...', 10, 8);
-  } else {
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('Ready', 10, 8);
-  }
-}
-
-function drawPositionTimeGraph(ctx: CanvasRenderingContext2D, state: RaceState) {
-  const graphLeft = 70;
-  const graphRight = CANVAS_W - 30;
-  const graphTop = 40;
-  const graphBottom = CANVAS_H - 40;
-  const graphW = graphRight - graphLeft;
-  const graphH = graphBottom - graphTop;
-
-  // Title
-  ctx.fillStyle = 'rgba(255,255,255,0.8)';
-  ctx.font = 'bold 12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText('Position vs. Time Graph', CANVAS_W / 2, 8);
-
-  // Axes
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(graphLeft, graphTop);
-  ctx.lineTo(graphLeft, graphBottom);
-  ctx.lineTo(graphRight, graphBottom);
-  ctx.stroke();
-
-  // Axis labels
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.font = '10px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText('Time (seconds)', graphLeft + graphW / 2, graphBottom + 12);
-
-  ctx.save();
-  ctx.translate(12, graphTop + graphH / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText('Position (squares)', 0, 0);
-  ctx.restore();
-
-  const maxTime = state.snapshots[state.snapshots.length - 1]?.time ?? 1;
-  const maxPos = state.trackLength;
-
-  // Grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.lineWidth = 0.5;
-
-  // Horizontal grid
-  for (let p = 0; p <= maxPos; p += Math.max(1, Math.floor(maxPos / 5))) {
-    const y = graphBottom - (p / maxPos) * graphH;
-    ctx.beginPath();
-    ctx.moveTo(graphLeft, y);
-    ctx.lineTo(graphRight, y);
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = '9px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(`${p}`, graphLeft - 6, y);
-  }
-
-  // Vertical grid
-  for (let t = 0; t <= maxTime; t += Math.max(1, Math.floor(maxTime / 8))) {
-    const x = graphLeft + (t / maxTime) * graphW;
-    ctx.beginPath();
-    ctx.moveTo(x, graphTop);
-    ctx.lineTo(x, graphBottom);
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = '9px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(`${t}`, x, graphBottom + 2);
-  }
-
-  // Plot each racer
-  for (let ri = 0; ri < state.racers.length; ri++) {
-    const racer = state.racers[ri];
-    ctx.strokeStyle = racer.color;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-
-    let started = false;
-    for (const snap of state.snapshots) {
-      const x = graphLeft + (snap.time / maxTime) * graphW;
-      const y = graphBottom - (snap.positions[ri] / maxPos) * graphH;
-      if (!started) {
-        ctx.moveTo(x, y);
-        started = true;
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-    ctx.stroke();
-
-    // Racer label at end of line
-    const lastSnap = state.snapshots[state.snapshots.length - 1];
-    if (lastSnap) {
-      const endX = graphLeft + (lastSnap.time / maxTime) * graphW;
-      const endY = graphBottom - (lastSnap.positions[ri] / maxPos) * graphH;
-      ctx.fillStyle = racer.color;
-      ctx.font = '14px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${racer.emoji} ${racer.name}`, endX + 4, endY);
-    }
-  }
-}
-
-// =============================================================================
-// Main Component
-// =============================================================================
-
-export default function RaceTrackLab({ data, className = '' }: RaceTrackLabProps) {
-  const {
-    title,
-    description,
-    challenges,
-    supportTier,
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-  } = data;
-
-  // Tier-aware tutor reveal clause: the AI tutor is a second scaffold channel.
-  // easy → name the strategy & walk the setup; medium → nudge execution only;
-  // hard → never name the strategy the instruction withheld, ask what the
-  // student sees on the track, never reveal which racer wins.
-  const tierTutorClause =
-    supportTier === 'easy'
-      ? ' SUPPORT TIER easy: name the strategy out loud (e.g. compare the speeds, or distance = speed × time) and walk the setup; do not state the final answer.'
-      : supportTier === 'hard'
-        ? ' SUPPORT TIER hard: do NOT name the strategy or the rule — ask the student what they observed on the track (who pulled ahead, how far each traveled) and let them justify; never reveal which racer wins.'
-        : supportTier === 'medium'
-          ? ' SUPPORT TIER medium: nudge the execution only — assume the student knows the idea, help them carry it out; do not reveal the answer.'
-          : '';
-
-  const resolvedInstanceId = instanceId || 'race-track-lab-default';
-
-  // ── Evaluation hook ──────────────────────────────────────────────
-  const { submitResult, elapsedMs } = usePrimitiveEvaluation<RaceTrackLabMetrics>({
-    primitiveType: 'race-track-lab',
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-  });
-
-  // ── AI tutoring ──────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    challengeCount: challenges.length,
-    supportTier,
-  }), [challenges.length, supportTier]);
-
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'race-track-lab',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'K',
-  });
-
-  // ── Challenge progress (shared hooks) ────────────────────────────
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
-
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
-
-  // ── Canvas & race state ──────────────────────────────────────────
+const RaceTrack = ({ item, played, runKey, overlays }: { item: RaceItem; played: boolean; runKey: number; overlays: readonly string[] }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const raceRef = useRef<RaceState>(initRaceState(challenges[0] ?? {
-    id: 'fallback', type: 'observe', instruction: '', racers: [], trackLength: 10,
-    question: '', correctAnswer: '', distractor0: '', distractor1: '', hint: '',
-  }));
-  const animFrameRef = useRef<number>(0);
+  const H = TOP + item.racers.length * LANE + 34;
+  const duration = durationOf(item);
+  const [t, setT] = useState(played ? duration : 0);
 
-  // ── UI state ─────────────────────────────────────────────────────
-  const currentChallenge = challenges[currentChallengeIndex] ?? challenges[0];
-  const [raceRunning, setRaceRunning] = useState(false);
-  const [raceFinished, setRaceFinished] = useState(false);
-  const [showGraph, setShowGraph] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
-  const [showingAnswer, setShowingAnswer] = useState(false);
-  const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
+  useEffect(() => { if (!runKey) setT(played ? duration : 0); }, [played, duration, runKey]);
 
-  // Synchronous score for the summary panel. submittedResult is set in the
-  // auto-submit effect, which runs *after* the panel first mounts — without this
-  // fallback the panel mounts at score 0 ('needs-work' tier) and the once-only
-  // celebration (sound + confetti) fires silently, then its guard blocks re-firing.
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challengeResults.length === 0) return 0;
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    return Math.round((correctCount / challengeResults.length) * 100);
-  }, [allChallengesComplete, challengeResults]);
-
-  // ── Auto-submit evaluation when all challenges complete ──────────
-  const hasAutoSubmitted = useRef(false);
+  // A run plays from 0 to its end in real time, sped up so it never lasts more than about four seconds.
   useEffect(() => {
-    if (!allChallengesComplete || hasAutoSubmitted.current) return;
-    hasAutoSubmitted.current = true;
-
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const overallScore = Math.round((correctCount / Math.max(challengeResults.length, 1)) * 100);
-
-    const metrics: RaceTrackLabMetrics = {
-      type: 'race-track-lab',
-      evalMode: currentChallenge?.type,
-      challengesCompleted: challengeResults.length,
-      challengesCorrect: correctCount,
-      totalAttempts,
-      accuracy: overallScore,
-      averageAttemptsPerChallenge: totalAttempts / Math.max(challengeResults.length, 1),
+    if (!runKey) return;
+    const rate = Math.max(1, duration / 4);
+    let frame = 0;
+    const began = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const tick = () => {
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const next = Math.min(duration, ((now - began) / 1000) * rate);
+      setT(next);
+      if (next < duration) frame = requestAnimationFrame(tick);
     };
-
-    submitResult(overallScore >= 70, overallScore, metrics);
-    setSubmittedResult({ score: overallScore });
-
-    const phaseScoreStr = phaseResults.map(
-      p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
-    ).join(', ');
-    sendText(
-      `[ALL_COMPLETE] Student finished all race track challenges! Phase scores: ${phaseScoreStr || `Overall ${overallScore}%`}. Overall: ${overallScore}%. Give encouraging feedback about speed, distance, and time.`,
-      { silent: true },
-    );
-  }, [allChallengesComplete, challengeResults, currentChallenge, submitResult, phaseResults, sendText]);
-
-  // ── Init race for current challenge ──────────────────────────────
-  const resetRace = useCallback((challenge: RaceChallenge) => {
-    raceRef.current = initRaceState(challenge);
-  }, []);
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [runKey, duration]);
 
   useEffect(() => {
-    if (currentChallenge && !allChallengesComplete) {
-      resetRace(currentChallenge);
-      setRaceRunning(false);
-      setRaceFinished(false);
-      setShowGraph(false);
-      setSelectedAnswer(null);
-      setFeedback(null);
-      setShowingAnswer(false);
-      // Redraw
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) drawTrack(ctx, raceRef.current, window.devicePixelRatio || 1, false);
-      }
+    const ctx = canvasRef.current?.getContext?.('2d');
+    if (!ctx) return;
+    const L = item.trackLength, x = (sq: number) => LEFT + (sq / L) * (RIGHT - LEFT);
+    const bottom = TOP + item.racers.length * LANE;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0F172A'; ctx.fillRect(0, 0, W, H);
+    // Squares: a line at every square, its number on top.
+    ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    for (let sq = 0; sq <= L; sq++) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x(sq), TOP - 4); ctx.lineTo(x(sq), bottom + 4); ctx.stroke();
+      ctx.fillStyle = 'rgba(226,232,240,0.7)'; ctx.fillText(String(sq), x(sq), TOP - 8);
     }
-  }, [currentChallengeIndex, currentChallenge, allChallengesComplete, resetRace]);
-
-  // ── Canvas setup ─────────────────────────────────────────────────
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = CANVAS_W * dpr;
-    canvas.height = CANVAS_H * dpr;
-    canvas.style.width = `${CANVAS_W}px`;
-    canvas.style.height = `${CANVAS_H}px`;
-    const ctx = canvas.getContext('2d');
-    if (ctx) drawTrack(ctx, raceRef.current, dpr, false);
-  }, []);
-
-  // ── Animation loop ───────────────────────────────────────────────
-  useEffect(() => {
-    if (!raceRunning) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-
-    let running = true;
-    const loop = () => {
-      if (!running) return;
-      raceRef.current = stepRace(raceRef.current, 1 / 60);
-      drawTrack(ctx, raceRef.current, dpr, false);
-
-      if (!raceRef.current.isRunning && raceRef.current.isFinished) {
-        setRaceRunning(false);
-        setRaceFinished(true);
-      } else {
-        animFrameRef.current = requestAnimationFrame(loop);
+    if (item.mode === 'predict') {
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 3; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(x(L), TOP); ctx.lineTo(x(L), bottom); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.textBaseline = 'top'; ctx.fillText('FINISH', x(L), bottom + 6);
+    }
+    item.racers.forEach((r, i) => {
+      const y = TOP + i * LANE + LANE / 2;
+      ctx.fillStyle = i % 2 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.025)';
+      ctx.fillRect(LEFT, TOP + i * LANE, RIGHT - LEFT, LANE);
+      ctx.fillStyle = r.color; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText(r.name, LEFT - 8, y);
+      const p = positionAt(item, r, t);
+      // The trail: from where the car started to where it is now.
+      ctx.strokeStyle = `${r.color}99`; ctx.lineWidth = 6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x(r.start), y); ctx.lineTo(x(p), y); ctx.stroke();
+      const showCounts = overlays.includes(TRAIL_COUNT_LEVER) || (overlays.includes(TRAIL_TICKS_LEVER) && i === (item.target ?? 0));
+      if (showCounts && p > r.start) {
+        for (let sq = r.start + 1; sq <= Math.floor(p + 1e-9); sq++) {
+          const cx = (x(sq - 1) + x(sq)) / 2;
+          if (overlays.includes(TRAIL_COUNT_LEVER)) {
+            ctx.fillStyle = '#F8FAFC'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(String(sq - r.start), cx, y - 13);
+          } else {
+            ctx.strokeStyle = '#F8FAFC'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(cx, y - 17); ctx.lineTo(cx, y - 9); ctx.stroke();
+          }
+        }
       }
-    };
-    animFrameRef.current = requestAnimationFrame(loop);
+      if (overlays.includes(SECOND_MARKS_LEVER)) {
+        for (let s = 1; s < runTime(item, r); s++) {
+          const sx = x(r.start + r.speed * s);
+          ctx.strokeStyle = '#FDE68A'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(sx, y - 15); ctx.lineTo(sx, y + 15); ctx.stroke();
+        }
+      }
+      if (overlays.includes(STEP_MARKS_LEVER)) {
+        for (const m of stepMarks(item).filter(mk => mk.car === i)) {
+          ctx.fillStyle = '#FDE68A'; ctx.beginPath(); ctx.arc(x(m.square), y + 15, 4, 0, Math.PI * 2); ctx.fill();
+          ctx.font = '9px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(`${m.second}s`, x(m.square), y + 18);
+        }
+      }
+      if (overlays.includes(TO_GO_LEVER)) {
+        ctx.fillStyle = '#FDE68A'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        ctx.fillText(`${L - r.start} to go`, x(r.start) + 18, y - 12);
+      }
+      // The car.
+      ctx.fillStyle = `${r.color}55`; ctx.beginPath(); ctx.arc(x(p), y, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = r.color; ctx.lineWidth = 2; ctx.stroke();
+      ctx.font = '16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🚗', x(p), y + 1);
+    });
+    if (overlays.includes(GAP_BRACKET_LEVER) && item.other !== undefined && t >= duration) {
+      const a = endOf(item, item.racers[item.target ?? 0]), b = endOf(item, item.racers[item.other]);
+      ctx.strokeStyle = '#FDE68A'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x(b), bottom + 8); ctx.lineTo(x(b), bottom + 16); ctx.lineTo(x(a), bottom + 16); ctx.lineTo(x(a), bottom + 8); ctx.stroke();
+    }
+    if (item.mode !== 'predict') {
+      ctx.fillStyle = 'rgba(248,250,252,0.85)'; ctx.font = 'bold 13px monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      ctx.fillText(`⏱ ${fmtNum(Math.floor(t * 10) / 10)} s`, W - 8, 6);
+    }
+  }, [item, t, overlays, H, duration]);
 
-    return () => {
-      running = false;
-      cancelAnimationFrame(animFrameRef.current);
-    };
-  }, [raceRunning]);
+  return <canvas ref={canvasRef} width={W} height={H} className="w-full rounded-lg border border-white/10"
+    style={{ maxWidth: W, aspectRatio: `${W}/${H}` }} aria-label="The race track" />;
+};
 
-  // ── Redraw when toggling graph view ──────────────────────────────
+// ============================================================================
+// The position-time graph (canvas, graph mode)
+// ============================================================================
+
+const GW = 560;
+const GH = 320;
+const RaceGraph = ({ item, overlays }: { item: RaceItem; overlays: readonly string[] }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvasRef.current?.getContext?.('2d');
     if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-    drawTrack(ctx, raceRef.current, dpr, showGraph);
-  }, [showGraph]);
+    const l = 56, r = GW - 110, top = 18, bottom = GH - 40, T = item.time, L = item.trackLength;
+    const gx = (s: number) => l + (s / T) * (r - l), gy = (p: number) => bottom - (p / L) * (bottom - top);
+    ctx.fillStyle = '#0F172A'; ctx.fillRect(0, 0, GW, GH);
+    ctx.font = '10px sans-serif';
+    for (let s = 0; s <= T; s++) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.beginPath(); ctx.moveTo(gx(s), top); ctx.lineTo(gx(s), bottom); ctx.stroke();
+      ctx.fillStyle = 'rgba(226,232,240,0.75)'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(String(s), gx(s), bottom + 4);
+    }
+    for (let p = 0; p <= L; p += 2) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.beginPath(); ctx.moveTo(l, gy(p)); ctx.lineTo(r, gy(p)); ctx.stroke();
+      ctx.fillStyle = 'rgba(226,232,240,0.75)'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(String(p), l - 6, gy(p));
+    }
+    ctx.fillStyle = 'rgba(226,232,240,0.8)'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('Time (seconds)', (l + r) / 2, bottom + 20);
+    ctx.save(); ctx.translate(14, (top + bottom) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('Position (squares)', 0, 0); ctx.restore();
+    item.racers.forEach((car, i) => {
+      ctx.strokeStyle = car.color; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(gx(0), gy(car.start)); ctx.lineTo(gx(T), gy(endOf(item, car))); ctx.stroke();
+      for (let s = 0; s <= T; s++) { ctx.fillStyle = car.color; ctx.beginPath(); ctx.arc(gx(s), gy(car.start + car.speed * s), 4, 0, Math.PI * 2); ctx.fill(); }
+      ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(car.name, gx(T) + 8, gy(endOf(item, car)));
+      if (overlays.includes(ONE_SECOND_LEVER) && stepLines(item).includes(i)) {
+        ctx.strokeStyle = '#FDE68A'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(gx(0), gy(car.start)); ctx.lineTo(gx(1), gy(car.start)); ctx.lineTo(gx(1), gy(car.start + car.speed)); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    });
+  }, [item, overlays]);
+  return <canvas ref={canvasRef} width={GW} height={GH} className="w-full rounded-lg border border-white/10"
+    style={{ maxWidth: GW, aspectRatio: `${GW}/${GH}` }} aria-label="The position-time graph" />;
+};
 
-  // ── Start race ───────────────────────────────────────────────────
-  const handleStartRace = useCallback(() => {
-    if (raceRunning) return;
+// ============================================================================
+// Component
+// ============================================================================
+
+const RaceTrackLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  RaceTrackLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<RaceItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+
+  const items = useMemo(() => raceItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.grade, data.title]);
+  const stableInstanceId = useRef(instanceId || `race-track-lab-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  const sessionItem: RaceItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<RaceItem | null>(null);
+  const item = practice ?? sessionItem;
+
+  const [choice, setChoice] = useState<string | null>(null);
+  /** Workspace path: the wrong choice just checked, shown until Try again. */
+  const [wrongPick, setWrongPick] = useState<string | null>(null);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  /** observe, measure: the learner pressed Run the race. */
+  const [ran, setRan] = useState(false);
+  /** Bumped to play the race on the track. */
+  const [runKey, setRunKey] = useState(0);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
+
+  const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
+  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+  const waitingForRun = !!item && needsRun(item) && !ran;
+
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<RaceTrackLabMetrics>({
+    primitiveType: 'race-track-lab',
+    instanceId: resolvedInstanceId,
+    skillId, subskillId, objectiveId, exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
+  const aiPrimitiveData = useMemo(() => ({
+    mode: item?.mode ?? 'observe', itemIndex: currentIndex + 1, totalItems: items.length,
+    ask: item ? askOf(item) : title, choices: item ? choicesOf(item).join(', ') : '', attemptNumber: currentAttempts + 1,
+  }), [item, currentIndex, items.length, title, currentAttempts]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'race-track-lab', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: data.grade ? (data.grade === 'K' ? 'Kindergarten' : `Grade ${data.grade}`) : 'Grade 3', enabled: !tutorOwned,
+  });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
+
+  const clearItem = () => {
+    setChoice(null); setWrongPick(null); setFeedback(null);
+    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+    setRan(false); setRunKey(0);
+  };
+
+  openItem.current = (_index, retry) => {
+    // Try again keeps the race on the track; a new item starts on the start line.
+    if (retry) { setChoice(null); setWrongPick(null); setFeedback(null); setPracticeSolved(false); return; }
+    setPractice(null); clearItem();
+  };
+
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setChoice(keyChoice(solved)); setWrongPick(null);
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    setPracticeSolved(true);
+    setChoice(keyChoice(practice)); setWrongPick(null);
+  };
+
+  // Once credited (or revealed), a race the learner has not watched plays: predict to the finish, the log, the graph's race.
+  const playedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!item || !revealed || needsRun(item) || playedFor.current === item.id) return;
+    playedFor.current = item.id;
+    setRunKey(k => k + 1);
+  }, [item, revealed]);
+  useEffect(() => { if (!revealed) playedFor.current = null; }, [revealed]);
+
+  // ── Handlers ──
+  const run = () => {
+    if (!item || !needsRun(item)) return;
     SoundManager.tap();
-    if (currentChallenge) {
-      resetRace(currentChallenge);
-    }
-    raceRef.current.isRunning = true;
-    setRaceRunning(true);
-    setRaceFinished(false);
-    setShowGraph(false);
-  }, [raceRunning, currentChallenge, resetRace]);
+    setRan(true); setRunKey(k => k + 1);
+  };
 
-  // ── MC options ───────────────────────────────────────────────────
-  const mcOptions = useMemo(() => {
-    if (!currentChallenge) return [];
-    const correct = currentChallenge.correctAnswer;
-    const distractors = [
-      currentChallenge.distractor0,
-      currentChallenge.distractor1,
-      currentChallenge.distractor2,
-    ].filter(Boolean) as string[];
-    return [correct, ...distractors].sort(() => Math.random() - 0.5);
-  }, [currentChallenge]);
+  const pick = (c: string) => {
+    if (!item || revealed || waitingForRun || wrongPick !== null || learnerBlocked()) return;
+    SoundManager.select();
+    setChoice(c); setFeedback(null);
+  };
 
-  // ── Answer checking ──────────────────────────────────────────────
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge || !selectedAnswer) return;
-    incrementAttempts();
-    const isCorrect = selectedAnswer === currentChallenge.correctAnswer;
-
-    if (isCorrect) {
+  const check = () => {
+    if (!item || choice === null || revealed || waitingForRun || wrongPick !== null || learnerBlocked()) return;
+    const correct = raceCorrect(item, choice);
+    progress.commitCheck(describeRaceWork(item, { choice }), correct, correct ? undefined : raceMiss(item, choice));
+    if (correct) {
       SoundManager.playCorrect();
-      setFeedback({ correct: true, message: 'Correct! Great job!' });
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student correctly answered "${currentChallenge.correctAnswer}" for "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Congratulate briefly and explain the speed/distance concept.${tierTutorClause}`,
-        { silent: true },
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback({
-        correct: false,
-        message: currentChallenge.hint,
-      });
-      if (currentAttempts >= 2) {
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: false,
-          attempts: currentAttempts + 1,
-        });
-        setShowingAnswer(true);
-      }
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". Question: "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Give a hint about speed and distance.${tierTutorClause}`,
-        { silent: true },
-      );
-    }
-  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText, tierTutorClause]);
-
-  // ── Advance to next challenge ────────────────────────────────────
-  const handleNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All done — evaluation auto-submitted via useEffect above
+      if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner chose "${choice}" for: ${askOf(item)} Praise briefly.`);
       return;
     }
+    SoundManager.playIncorrect();
+    if (tutorOwned) { setWrongPick(choice); return; }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer is on screen ("${keyChoice(item)}"); explain it plainly with squares and seconds.`);
+      return;
+    }
+    setChoice(null);
+    setFeedback(isNameAsk(item.ask) ? 'Not quite. Look again at how far each car goes in the same time, and try once more.'
+      : 'Not quite. Count the squares again, and try once more.');
+    say(`[ANSWER_INCORRECT] The learner chose "${choice}" for: ${askOf(item)} It is wrong. You are not told the answer: ask what `
+      + 'the track shows about squares and seconds, without naming a choice.');
+  };
 
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. Introduce it briefly.`,
-      { silent: true },
-    );
-  }, [advanceProgress, sendText, currentChallengeIndex, challenges.length]);
+  const metrics = (attempts: number): RaceTrackLabMetrics => {
+    const correct = items.filter(i => results.some(r => r.challengeId === i.id && r.correct)).length;
+    const accuracy = items.length ? Math.round((correct / items.length) * 100) : 0;
+    return {
+      type: 'race-track-lab', evalMode: items[0]?.mode,
+      challengesCompleted: items.length, challengesCorrect: correct, totalAttempts: attempts, accuracy,
+      averageAttemptsPerChallenge: items.length ? attempts / items.length : 0,
+    };
+  };
 
-  // For predict mode: answer before race
-  const isPredictMode = currentChallenge?.type === 'predict';
-  const needsAnswerFirst = isPredictMode && !raceFinished && !feedback?.correct;
-  const isGraphMode = currentChallenge?.type === 'graph';
+  /** Scripted path: Next, and on the last item the session report. */
+  const next = () => {
+    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 50, score, metrics(results.reduce((s, r) => s + r.attempts, 0)), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} races. Celebrate briefly.`);
+  };
 
-  // ── Render ───────────────────────────────────────────────────────
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, metrics(result.teachingAttempts.length),
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const scene = workspaceScene(item, { choice: wrongPick ?? choice, ran, solved: revealed });
+    const levers = practice ? [] : raceLevers(sessionItem, pulled);
+    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler race of the same kind, with other cars, before the full item comes back.' } : {}),
+        ...(onScreen ? { onScreen } : {}) },
+      // observe and measure wait for the learner to run the race: before that there is nothing to answer from.
+      readyForResponse: !waitingForRun,
+      levers,
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        if (NEEDS_RUN_LEVERS.includes(id) && !ran) return 'The race has not run yet: ask the learner to press Run the race first.';
+        const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (l.kind === 'simplify') {
+          const simpler = simplerItem(sessionItem);
+          if (!simpler) return 'There is no simpler race here; try a help lever.';
+          setLeverState(nextState); clearItem(); setPractice(simpler);
+          return { practice: workspaceAssignment(simpler) };
+        }
+        setLeverState(nextState);
+        return true;
+      },
+      endPractice: () => { clearItem(); setPractice(null); },
+    };
+  });
+
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete ? null : currentChallenge?.id ?? null,
+    scopeId: done || !item ? null : item.id,
     label: 'The race track and your answer',
-    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    solved: revealed,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
+  if (!items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This lab has no races to run.</p></LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  const key = item ? keyChoice(item) : '';
+  const choiceState = (c: string): AnswerChoiceState => revealed ? (c === key ? 'correct' : c === choice ? 'incorrect' : 'dimmed')
+    : wrongPick === c ? 'incorrect' : choice === c ? 'selected' : 'idle';
+  const closed = revealed || waitingForRun || wrongPick !== null || learnerBlocked();
+  const colorOf = (name: string) => item?.racers.find(r => r.name === name)?.color;
+
+  const revealText = () => {
+    if (!item) return '';
+    if (item.ask === 'fastest') {
+      const f = item.racers.find(r => r.name === key)!;
+      return `${key} is the fastest: it moves ${fmtNum(f.speed)} squares every second.${item.mode === 'observe' ? ' Every car raced for the same time, so the one that moved the most squares is fastest.' : ' Its line is the steepest.'}`;
+    }
+    if (item.ask === 'winner') return `${key} crosses the finish line first.`;
+    if (item.ask === 'distance' || item.ask === 'farther_by') return `The answer is ${key}.`;
+    return `The answer is ${key}: the squares moved divided by the seconds.`;
+  };
+
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-slate-100">{title}</CardTitle>
-            <CardDescription className="text-slate-400">{description}</CardDescription>
-          </div>
-          {!allChallengesComplete && challenges.length > 0 && (
-            <Badge variant="outline" className="border-white/20 text-slate-300">
-              {currentChallengeIndex + 1} / {challenges.length}
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Summary panel when complete */}
-        {allChallengesComplete && phaseResults.length > 0 && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
-            heading="Race Complete!"
-            celebrationMessage="You explored speed, distance, and time!"
-            className="mb-6"
-          />
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{title}</LuminaCardTitle>
+        {!done && item && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {practice ? 'A simpler race first' : `${MODE_LABEL[item.mode]} · race ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
         )}
+      </LuminaCardHeader>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
-        {/* Canvas */}
-        <div className="rounded-lg overflow-hidden border border-white/10">
-          <canvas
-            ref={canvasRef}
-            className="w-full"
-            style={{ maxWidth: CANVAS_W, aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}
-          />
-        </div>
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Lab complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} races answered.`}
+          </LuminaFeedbackCard>
+        ) : item && (
+          <>
+            <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-        {/* Race controls */}
-        {!allChallengesComplete && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-              onClick={handleStartRace}
-              disabled={raceRunning || needsAnswerFirst}
-            >
-              {raceRunning ? '🏁 Racing...' : needsAnswerFirst ? 'Predict first!' : raceFinished ? '🔄 Replay' : '▶ Start Race'}
-            </Button>
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
+              {item.mode === 'predict' && (
+                <LuminaPanel>
+                  <table className="w-full text-sm" aria-label="The cars">
+                    <tbody>
+                      {item.racers.map(r => (
+                        <tr key={r.name} className="text-slate-200">
+                          <td className="py-1 pr-3 font-semibold" style={{ color: r.color }}>{r.name}</td>
+                          <td className="py-1">{cardText(item, r).slice(r.name.length + 1)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </LuminaPanel>
+              )}
 
-            {/* Graph toggle for graph mode or after race */}
-            {(isGraphMode || raceFinished) && raceRef.current.snapshots.length > 1 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`text-xs ${showGraph ? 'bg-rose-500/20 border-rose-400/40 text-rose-300' : 'bg-white/5 border border-white/20 text-slate-400'}`}
-                onClick={() => { SoundManager.tap(); setShowGraph(!showGraph); }}
-              >
-                {showGraph ? '🏁 Race View' : '📈 Graph View'}
-              </Button>
-            )}
+              {item.mode === 'calculate' && (
+                <LuminaPanel>
+                  <table className="w-full text-sm" aria-label="The race log">
+                    <thead>
+                      <tr className="text-left text-xs text-slate-400">
+                        <th className="py-1">Car</th><th className="py-1">Started at</th><th className="py-1">Stopped at</th>
+                        <th className="py-1">Seconds</th><th className="py-1">Speed</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {item.racers.map(r => (
+                        <tr key={r.name} className="font-mono text-slate-200">
+                          <td className="py-1 pr-2 font-sans font-semibold" style={{ color: r.color }}>{r.name}</td>
+                          <td className="py-1">square {r.start}</td>
+                          <td className="py-1">square {fmtNum(endOf(item, r))}</td>
+                          <td className="py-1">{runTime(item, r)}</td>
+                          <td className="py-1 text-cyan-200">{revealed ? `${fmtNum(r.speed)} squares per second` : '?'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </LuminaPanel>
+              )}
 
-            {/* Racer speed legend — a support-tier display lever. When the tier
-                withdraws it (showSpeedLegend === false) only the numeric (speed)
-                readout drops; the colored racer name/emoji key stays so the race
-                is still readable. Defaults to the full readout (no-tier sessions). */}
-            {currentChallenge && (
-              <div className="flex gap-2 ml-auto">
-                {currentChallenge.racers.map((r, i) => (
-                  <span key={i} className="text-xs text-slate-400">
-                    <span style={{ color: r.color || RACER_COLORS[i % RACER_COLORS.length] }}>
-                      {r.emoji} {r.name}
-                    </span>
-                    {currentChallenge.showSpeedLegend !== false && (
-                      <>{' '}({r.speed} sq/s)</>
-                    )}
-                  </span>
+              {item.mode === 'graph' && <RaceGraph key={item.id} item={item} overlays={pulled} />}
+
+              {(item.mode !== 'graph' || revealed) && (
+                <RaceTrack key={item.id} item={item} runKey={runKey} overlays={pulled}
+                  played={item.mode === 'calculate' || (needsRun(item) ? ran : false) || (item.mode === 'graph' && revealed)} />
+              )}
+
+              {needsRun(item) && !revealed && (
+                <div className="flex justify-center">
+                  <LuminaButton tone="primary" aria-label={ran ? 'Watch again' : 'Run the race'} onClick={run}>
+                    {ran ? 'Watch again' : 'Run the race'}
+                  </LuminaButton>
+                </div>
+              )}
+
+              <div className={`grid gap-2 ${choicesOf(item).length > 3 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                {choicesOf(item).map(c => (
+                  <LuminaAnswerChoice key={c} aria-label={c} state={choiceState(c)} disabled={closed}
+                    className="p-3 text-center font-semibold" onClick={() => pick(c)}>
+                    {colorOf(c) && <span className="mr-2 inline-block h-3 w-3 rounded-full align-middle" style={{ background: colorOf(c) }} />}
+                    {c}
+                  </LuminaAnswerChoice>
                 ))}
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Challenge instruction / question */}
-        {currentChallenge && !allChallengesComplete && (
-          <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-            <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-            <p className="text-slate-300 text-sm mt-1">{currentChallenge.question}</p>
-            {currentChallenge.timeLimit && (
-              <p className="text-slate-400 text-xs mt-1">Time limit: {currentChallenge.timeLimit} seconds</p>
-            )}
-          </div>
-        )}
-
-        {/* MC answer options */}
-        {currentChallenge && !allChallengesComplete && mcOptions.length > 0 && (
-          <div className="space-y-2">
-            {isPredictMode && !raceFinished && (
-              <p className="text-xs text-amber-400/70">Make your prediction first, then start the race to check!</p>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {mcOptions.map((opt, i) => {
-                const isSelected = selectedAnswer === opt;
-                const isCorrectAnswer = opt === currentChallenge.correctAnswer;
-                const showCorrect = showingAnswer && isCorrectAnswer;
-
-                return (
-                  <Button
-                    key={`${currentChallenge.id}-${i}`}
-                    variant="ghost"
-                    className={`text-left text-sm justify-start h-auto py-2 px-3 whitespace-normal ${
-                      showCorrect
-                        ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
-                        : isSelected
-                          ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300'
-                          : 'bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10'
-                    }`}
-                    onClick={() => {
-                      if (feedback?.correct || showingAnswer) return;
-                      SoundManager.select();
-                      setSelectedAnswer(opt);
-                    }}
-                    disabled={!!feedback?.correct || showingAnswer}
-                  >
-                    {opt}
-                  </Button>
-                );
-              })}
             </div>
 
-            {/* Check / Next buttons */}
-            <div className="flex gap-2">
-              {!feedback?.correct && !showingAnswer && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleCheckAnswer}
-                  disabled={!selectedAnswer}
-                >
-                  Check Answer
-                </Button>
-              )}
-              {(feedback?.correct || showingAnswer) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-300"
-                  onClick={handleNextChallenge}
-                >
-                  {currentChallengeIndex + 1 >= challenges.length ? 'Finish' : 'Next Challenge'}
-                </Button>
-              )}
-            </div>
-
-            {/* Feedback */}
-            {feedback && (
-              <div className={`text-sm px-3 py-2 rounded-lg ${
-                feedback.correct
-                  ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-400/20'
-                  : 'bg-amber-500/10 text-amber-300 border border-amber-400/20'
-              }`}>
-                {feedback.message}
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={choice === null || closed} onClick={check}>Check Answer</LuminaActionButton>
               </div>
             )}
-          </div>
-        )}
-        </div>
 
-      </CardContent>
-    </Card>
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {revealText()}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongPick !== null && <LuminaFeedbackCard status="incorrect">{`"${wrongPick}" is not it.`}</LuminaFeedbackCard>}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
+
+            {!tutorOwned && revealed && !practice && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
+              </div>
+            )}
+          </>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
-}
+};
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const RaceTrackLab = withWorkspaceController<RaceTrackLabProps, ProgressOptions<RaceItem>, Progress>(
+  'race-track-lab', RaceTrackLabSurface, useScriptedProgress, useWorkspaceProgressFor('race-track-lab'));
+
+export default RaceTrackLab;

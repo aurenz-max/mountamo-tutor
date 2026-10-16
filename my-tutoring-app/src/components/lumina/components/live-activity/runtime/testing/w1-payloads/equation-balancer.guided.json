@@ -1,0 +1,30 @@
+{
+ "source": "qa/tutor-reports/equation-balancer-runtime-guided-payload-2026-10-15.json",
+ "primitiveId": "equation-balancer",
+ "evalMode": "guided",
+ "data": {
+  "title": "Everyday Reactions",
+  "description": "Explore how the building blocks of matter rearrange in amazing transformations all around you.",
+  "equations": [
+   {
+    "id": "water",
+    "for": "guided",
+    "realWorld": "This reaction happens inside hydrogen fuel cell cars to generate clean electricity and pure water."
+   },
+   {
+    "id": "table_salt",
+    "for": "guided",
+    "realWorld": "This reaction is used in factories to produce the edible seasoning we sprinkle on our food every day."
+   },
+   {
+    "id": "rust",
+    "for": "guided",
+    "realWorld": "This slow chemical change creates reddish-brown flaky coatings on old bicycles left outside in the rain."
+   }
+  ],
+  "challengeTypes": [
+   "guided"
+  ],
+  "gradeBand": "6-7"
+ }
+}

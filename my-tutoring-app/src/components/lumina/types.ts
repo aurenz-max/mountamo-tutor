@@ -2351,7 +2351,7 @@ export type { TrainYardData } from './primitives/visual-primitives/engineering/T
 export type { AirplaneDioramaData } from './primitives/visual-primitives/engineering/AirplaneDiorama';
 export type { ConstructionSiteDioramaData } from './primitives/visual-primitives/engineering/ConstructionSiteDiorama';
 export type { OpenBuilderData } from './primitives/visual-primitives/creation/OpenBuilder';
-export type { ConstructionSequencePlannerData, ConstructionTask, ConstructionChallenge } from './primitives/visual-primitives/engineering/ConstructionSequencePlanner';
+export type { ConstructionSequencePlannerData } from './primitives/visual-primitives/engineering/ConstructionSequencePlanner';
 
 // Math Phase 2
 export type { TenFrameData } from './primitives/visual-primitives/math/TenFrame';

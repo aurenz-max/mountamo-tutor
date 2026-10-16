@@ -1,0 +1,319 @@
+{
+ "source": "qa/tutor-reports/planetary-explorer-runtime-apply-payload-2026-10-15.json",
+ "primitiveId": "planetary-explorer",
+ "evalMode": "apply",
+ "data": {
+  "title": "Cosmic Habitability and Planetary Diversity",
+  "description": "Explore the unique atmospheric chemistry, gravitational forces, and surface conditions that determine habitability across our solar system.",
+  "introduction": "Embark on an interplanetary expedition to investigate why worlds vary so dramatically in climate, geology, and atmospheric pressure. By analyzing physical properties and chemical compositions, we will uncover the complex factors that make planetary environments hostile or hospitable.",
+  "celebration": "Congratulations! You have successfully analyzed the intricate systems of our solar system and mastered the principles of planetary science.",
+  "gradeLevel": "6",
+  "planets": [
+   {
+    "planetId": "earth",
+    "focusTheme": "The Goldilocks Zone and Biosphere Mechanics",
+    "description": "Earth maintains a delicate balance of atmospheric greenhouse gases and liquid surface water, driven by an active plate tectonic cycle and a protective magnetic field. Its unique orbital distance allows for moderate temperatures that support complex biological ecosystems.",
+    "keyStats": [
+     {
+      "label": "Distance from Sun",
+      "value": "149.6 million",
+      "unit": "km",
+      "comparisonToEarth": "1 AU"
+     },
+     {
+      "label": "Diameter",
+      "value": "12,742",
+      "unit": "km",
+      "comparisonToEarth": "1x Earth's diameter"
+     },
+     {
+      "label": "Surface Temperature",
+      "value": "15",
+      "unit": "Celsius",
+      "comparisonToEarth": "Baseline"
+     },
+     {
+      "label": "Surface Gravity",
+      "value": "9.8",
+      "unit": "m/s^2",
+      "comparisonToEarth": "1x Earth's gravity"
+     }
+    ],
+    "funFact": "Earth is the only planet in our solar system not named after a Greek or Roman god or goddess.",
+    "transition": "Next, we will journey to a neighboring world where a runaway greenhouse effect drastically transformed the planetary climate.",
+    "questions": [
+     {
+      "question": "Why is Earth able to maintain liquid water on its surface while other rocky planets generally cannot?",
+      "questionType": "mc",
+      "options": [
+       "Its proximity to the Moon completely stabilizes the planet's atmospheric chemical composition.",
+       "Its atmospheric pressure and optimal distance from the Sun keep temperatures within the correct range.",
+       "It lacks any atmospheric greenhouse gases that would otherwise freeze the surface.",
+       "It absorbs all incoming solar radiation so no heat ever reaches the lower troposphere."
+      ],
+      "correctIndex": 1,
+      "explanation": "Earth's balanced atmospheric pressure and orbital position maintain a thermal equilibrium ideal for liquid water.",
+      "difficulty": "medium"
+     },
+     {
+      "question": "How does Earth's magnetic field contribute to the long-term stability of its atmosphere?",
+      "questionType": "mc",
+      "options": [
+       "It deflects harmful solar wind particles that could otherwise strip away atmospheric gases.",
+       "It creates a permanent thermal inversion layer that traps water vapor in the upper stratosphere.",
+       "It attracts high concentrations of nitrogen gas from passing comets and meteoroids.",
+       "It generates oxygen molecules through the movement of liquid iron in the outer core."
+      ],
+      "correctIndex": 0,
+      "explanation": "The magnetosphere acts as a shield against charged particles from the Sun, preventing atmospheric erosion.",
+      "difficulty": "hard"
+     }
+    ]
+   },
+   {
+    "planetId": "venus",
+    "focusTheme": "Runaway Greenhouse Effects",
+    "description": "Venus is shrouded in thick clouds of corrosive sulfuric acid and possesses a crushing carbon dioxide atmosphere. This extreme environment traps solar heat so efficiently that surface temperatures exceed those of Mercury.",
+    "keyStats": [
+     {
+      "label": "Distance from Sun",
+      "value": "108.2 million",
+      "unit": "km",
+      "comparisonToEarth": "0.72x farther than Earth"
+     },
+     {
+      "label": "Diameter",
+      "value": "12,104",
+      "unit": "km",
+      "comparisonToEarth": "0.95x Earth's diameter"
+     },
+     {
+      "label": "Surface Temperature",
+      "value": "465",
+      "unit": "Celsius",
+      "comparisonToEarth": "31x hotter than Earth"
+     },
+     {
+      "label": "Surface Gravity",
+      "value": "8.87",
+      "unit": "m/s^2",
+      "comparisonToEarth": "0.9x Earth's gravity"
+     }
+    ],
+    "funFact": "Venus rotates in the opposite direction to most other planets, meaning the Sun rises in the west and sets in the east.",
+    "transition": "We now travel outward to investigate a cold, rusty world that once held vast flowing rivers and ancient lakes.",
+    "questions": [
+     {
+      "question": "Why does Venus experience surface temperatures hotter than Mercury despite being further from the Sun?",
+      "questionType": "mc",
+      "options": [
+       "Its rapid rotational speed generates intense frictional heat within the troposphere.",
+       "Its dense carbon dioxide atmosphere traps thermal radiation through a massive runaway greenhouse effect.",
+       "It absorbs zero solar radiation, causing internal core heat to radiate outward unimpeded.",
+       "Its proximity to the asteroid belt exposes it to frequent friction-generating meteor impacts."
+      ],
+      "correctIndex": 1,
+      "explanation": "The thick carbon dioxide blanket traps heat relentlessly, preventing thermal energy from escaping into space.",
+      "difficulty": "hard"
+     },
+     {
+      "question": "How does the atmospheric pressure at the surface of Venus compare to that of Earth?",
+      "questionType": "compare",
+      "options": [
+       "It is vastly greater, roughly ninety times Earth's pressure, due to the sheer mass of the carbon dioxide overhead.",
+       "It is significantly lower because the sulfuric acid clouds block all gravitational pull from the planet.",
+       "It is identical to Earth because both planets formed from the same primitive solar nebula materials.",
+       "It fluctuates wildly between zero pressure at night and extreme pressure during the midday hours."
+      ],
+      "correctIndex": 0,
+      "explanation": "Venus has an extreme atmospheric weight that exerts crushing pressure equivalent to being nearly a kilometer deep in Earth's oceans.",
+      "difficulty": "medium"
+     }
+    ]
+   },
+   {
+    "planetId": "mars",
+    "focusTheme": "Atmospheric Thinness and Geological History",
+    "description": "Mars features giant volcanoes, deep canyon systems, and a thin, dusty atmosphere composed primarily of carbon dioxide. Geological evidence suggests that liquid water once flowed freely across its surface before the planet lost most of its atmosphere.",
+    "keyStats": [
+     {
+      "label": "Distance from Sun",
+      "value": "227.9 million",
+      "unit": "km",
+      "comparisonToEarth": "1.52x farther than Earth"
+     },
+     {
+      "label": "Diameter",
+      "value": "6,779",
+      "unit": "km",
+      "comparisonToEarth": "0.53x Earth's diameter"
+     },
+     {
+      "label": "Surface Temperature",
+      "value": "-65",
+      "unit": "Celsius",
+      "comparisonToEarth": "5.3x colder than Earth"
+     },
+     {
+      "label": "Surface Gravity",
+      "value": "3.72",
+      "unit": "m/s^2",
+      "comparisonToEarth": "0.38x Earth's gravity"
+     }
+    ],
+    "funFact": "Mars is home to Olympus Mons, a volcano that is nearly three times the height of Mount Everest.",
+    "transition": "Leaving the inner rocky worlds behind, we cross the asteroid belt to examine the massive lords of the outer solar system.",
+    "questions": [
+     {
+      "question": "Why can liquid water no longer persist stably on the surface of Mars for long periods?",
+      "questionType": "mc",
+      "options": [
+       "Sulfuric acid clouds constantly react with surface ice to destroy any potential moisture reserves.",
+       "The intense solar wind instantly splits all water molecules into toxic hydrogen peroxide.",
+       "The magnetic core is too cold to allow water molecules to retain their chemical bonds.",
+       "The atmospheric pressure is too low, causing water to quickly sublime or evaporate rather than pool."
+      ],
+      "correctIndex": 3,
+      "explanation": "Low atmospheric pressure on Mars means water cannot exist as a liquid on the surface without instantly turning into gas or ice.",
+      "difficulty": "hard"
+     },
+     {
+      "question": "What geological features indicate that liquid water was once abundant on Mars?",
+      "questionType": "mc",
+      "options": [
+       "Ancient dry riverbeds, outflow channels, and mineral deposits that form only in aqueous environments.",
+       "Smooth glass sheets formed by frequent lightning strikes across the desert plains.",
+       "Extensive salt crystal formations left behind by ongoing active plate tectonic subduction zones.",
+       "Deep sub-surface volcanic lava tubes filled with boiling hydrothermal geysers."
+      ],
+      "correctIndex": 0,
+      "explanation": "Orbital imagery and rover analysis have revealed carved river valleys and hydrated minerals indicative of past water.",
+      "difficulty": "medium"
+     }
+    ]
+   },
+   {
+    "planetId": "jupiter",
+    "focusTheme": "Gas Giant Dynamics and Extreme Pressure",
+    "description": "Jupiter is the largest planet in our solar system, composed mainly of hydrogen and helium with swirling banded cloud patterns and massive storm systems. Its immense gravitational field exerts profound tidal and orbital influences throughout interplanetary space.",
+    "keyStats": [
+     {
+      "label": "Distance from Sun",
+      "value": "778.5 million",
+      "unit": "km",
+      "comparisonToEarth": "5.2x farther than Earth"
+     },
+     {
+      "label": "Diameter",
+      "value": "139,820",
+      "unit": "km",
+      "comparisonToEarth": "11x Earth's diameter"
+     },
+     {
+      "label": "Surface Temperature",
+      "value": "-110",
+      "unit": "Celsius",
+      "comparisonToEarth": "8.6x colder than Earth"
+     },
+     {
+      "label": "Surface Gravity",
+      "value": "24.79",
+      "unit": "m/s^2",
+      "comparisonToEarth": "2.5x Earth's gravity"
+     }
+    ],
+    "funFact": "Jupiter's Great Red Spot is a gigantic storm that has been raging for hundreds of years and is larger than Earth.",
+    "transition": "We continue outward to explore the ringed lord of the outer system, famous for its icy adornments.",
+    "questions": [
+     {
+      "question": "Why does Jupiter lack a traditional solid surface like Earth or Mars?",
+      "questionType": "mc",
+      "options": [
+       "Its immense mass compressed hydrogen and helium into liquid and metallic fluid states rather than forming solid rock.",
+       "High solar wind speeds constantly melt and erode any solid material that attempts to accumulate.",
+       "It reflects all sunlight inward, generating an internal nuclear fusion reactor core.",
+       "It creates a complete vacuum around the planet that prevents any atmospheric gases from escaping."
+      ],
+      "correctIndex": 0,
+      "explanation": "As you descend into Jupiter, the extreme atmospheric pressure liquefies gases rather than encountering a solid crust.",
+      "difficulty": "hard"
+     },
+     {
+      "question": "How does Jupiter's strong magnetic field affect its surrounding space environment?",
+      "questionType": "compare",
+      "options": [
+       "It shields all of its moons from experiencing any gravitational tidal forces whatsoever.",
+       "It traps high-energy radiation particles, creating intense radiation belts that pose hazards to spacecraft.",
+       "It repels all asteroids so effectively that no debris can ever cross its orbital path.",
+       "It draws in water vapor from distant comets to replenish its upper cloud layers daily."
+      ],
+      "correctIndex": 1,
+      "explanation": "Jupiter's colossal magnetosphere accelerates charged particles to high speeds, generating powerful radiation zones.",
+      "difficulty": "medium"
+     }
+    ]
+   },
+   {
+    "planetId": "saturn",
+    "focusTheme": "Ring Systems and Low Density",
+    "description": "Saturn is distinguished by its magnificent, complex ring system composed of countless chunks of water ice and rocky debris. Despite being enormous in volume, its composition is so light that it has the lowest density of any planet in the solar system.",
+    "keyStats": [
+     {
+      "label": "Distance from Sun",
+      "value": "1.43 billion",
+      "unit": "km",
+      "comparisonToEarth": "9.5x farther than Earth"
+     },
+     {
+      "label": "Diameter",
+      "value": "116,460",
+      "unit": "km",
+      "comparisonToEarth": "9.1x Earth's diameter"
+     },
+     {
+      "label": "Surface Temperature",
+      "value": "-140",
+      "unit": "Celsius",
+      "comparisonToEarth": "10.3x colder than Earth"
+     },
+     {
+      "label": "Surface Gravity",
+      "value": "10.44",
+      "unit": "m/s^2",
+      "comparisonToEarth": "1.06x Earth's gravity"
+     }
+    ],
+    "funFact": "Saturn is so light that if you could find a bathtub large enough, the planet would float in water.",
+    "transition": "",
+    "questions": [
+     {
+      "question": "What is the primary composition of Saturn's expansive ring system?",
+      "questionType": "mc",
+      "options": [
+       "A solid, unbroken sheet of metallic hydrogen held together by rapid planetary rotation.",
+       "Billions of individual particles of water ice ranging from tiny dust grains to house-sized boulders.",
+       "Compressed carbon dioxide frost crystals frozen by extreme solar wind exposure.",
+       "Dense clouds of vaporized iron dust held in place by intense magnetic loops."
+      ],
+      "correctIndex": 1,
+      "explanation": "The rings are made primarily of water ice chunks orbiting the planet within its Roche limit.",
+      "difficulty": "medium"
+     },
+     {
+      "question": "Why does Saturn exhibit such a surprisingly low overall density compared to other gas giants?",
+      "questionType": "compare",
+      "options": [
+       "A massive internal cavity filled with vacuum pressure that offsets its planetary mass.",
+       "Constant volcanic outgassing from its moons that continuously fluffs up its upper layers.",
+       "It is composed overwhelmingly of lightweight hydrogen and helium gases, making it less dense than water.",
+       "Its rings absorb most of the heavy core minerals, leaving only light gases in the main body."
+      ],
+      "correctIndex": 2,
+      "explanation": "Saturn's high proportion of light elements gives it a bulk density lower than that of liquid water.",
+      "difficulty": "hard"
+     }
+    ]
+   }
+  ]
+ }
+}

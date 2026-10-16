@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/propulsion-lab-runtime-observe-payload-2026-10-16.json",
+ "primitiveId": "propulsion-lab",
+ "evalMode": "observe",
+ "data": {
+  "title": "Action and Reaction Lab",
+  "overview": "You will watch what comes out of the craft's engines and observe which way the craft goes when it is let go.",
+  "gradeBand": "3-5",
+  "challengeTypes": [
+   "observe"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "observe-1",
+    "mode": "observe",
+    "place": "space",
+    "thrusters": [
+     {
+      "engine": "jet",
+      "blast": "right",
+      "size": 3
+     }
+    ]
+   },
+   {
+    "id": "observe-2",
+    "mode": "observe",
+    "place": "air",
+    "thrusters": [
+     {
+      "engine": "propeller",
+      "blast": "left",
+      "size": 2
+     }
+    ]
+   },
+   {
+    "id": "observe-3",
+    "mode": "observe",
+    "place": "air",
+    "thrusters": [
+     {
+      "engine": "propeller",
+      "blast": "right",
+      "size": 2
+     }
+    ]
+   },
+   {
+    "id": "observe-4",
+    "mode": "observe",
+    "place": "air",
+    "thrusters": [
+     {
+      "engine": "propeller",
+      "blast": "left",
+      "size": 4
+     },
+     {
+      "engine": "propeller",
+      "blast": "right",
+      "size": 4
+     }
+    ]
+   }
+  ]
+ }
+}

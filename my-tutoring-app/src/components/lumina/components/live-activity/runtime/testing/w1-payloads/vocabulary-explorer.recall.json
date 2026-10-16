@@ -1,0 +1,164 @@
+{
+ "source": "qa/tutor-reports/vocabulary-explorer-runtime-recall-payload-2026-10-16.json",
+ "primitiveId": "vocabulary-explorer",
+ "evalMode": "recall",
+ "data": {
+  "title": "Journey of Water",
+  "topic": "The water cycle",
+  "introduction": "Explore how moisture moves all around our planet through these key terms.",
+  "terms": [
+   {
+    "id": "term1",
+    "word": "evaporation",
+    "pronunciation": "ee-vap-uh-REY-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "The process where liquid turns into invisible gas when heated by the sun.",
+    "exampleSentence": "Heat from the sun causes evaporation from the puddle on the sidewalk.",
+    "relatedWords": [
+     "vapor",
+     "sun",
+     "heat"
+    ],
+    "clozeSentence": "As the sun warmed the damp towel, slow evaporation made it dry again.",
+    "scenario": "A wet sidewalk slowly becomes completely dry on a warm and sunny afternoon."
+   },
+   {
+    "id": "term2",
+    "word": "condensation",
+    "pronunciation": "kon-den-SAY-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "The change of a gas back into liquid droplets when it cools down.",
+    "exampleSentence": "Cold soda cans develop condensation on their outside surface.",
+    "relatedWords": [
+     "cloud",
+     "cooling",
+     "drops"
+    ],
+    "clozeSentence": "Tiny droplets formed on the bathroom mirror due to cold condensation.",
+    "scenario": "Water droplets form on the outside of a cold glass of lemonade on a hot summer day."
+   },
+   {
+    "id": "term3",
+    "word": "precipitation",
+    "pronunciation": "pree-sip-uh-TAY-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "Any form of moisture that falls from the sky toward the ground.",
+    "exampleSentence": "Heavy rain and snow are common types of precipitation.",
+    "relatedWords": [
+     "rain",
+     "snow",
+     "storm"
+    ],
+    "clozeSentence": "Dark storm clouds brought sudden precipitation that ruined our picnic.",
+    "scenario": "Raindrops and snowflakes begin falling from the gray sky while you walk home."
+   },
+   {
+    "id": "term4",
+    "word": "collection",
+    "pronunciation": "kuh-LEK-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "The gathering of fallen liquid into large areas like lakes and oceans.",
+    "exampleSentence": "Rivers flow downhill to help with the collection of rainwater.",
+    "relatedWords": [
+     "ocean",
+     "lake",
+     "puddle"
+    ],
+    "clozeSentence": "Rainwater rushed down the street, ending in a large collection at the storm drain.",
+    "scenario": "Rainwater flows down the street and pools together into a big puddle."
+   },
+   {
+    "id": "term5",
+    "word": "vapor",
+    "pronunciation": "VAY-puhr",
+    "partOfSpeech": "noun",
+    "definition": "A substance in the form of a gas that is usually a liquid at normal temperatures.",
+    "exampleSentence": "Hot tea releases invisible vapor into the cold air.",
+    "relatedWords": [
+     "evaporation",
+     "gas",
+     "air"
+    ],
+    "clozeSentence": "Steaming soup sent warm vapor rising toward the ceiling.",
+    "scenario": "Steam rises up into the air from a pot of boiling spaghetti on the stove."
+   },
+   {
+    "id": "term6",
+    "word": "cloud",
+    "pronunciation": "kloud",
+    "partOfSpeech": "noun",
+    "definition": "A visible mass of tiny floating water droplets high in the sky.",
+    "exampleSentence": "A fluffy white cloud drifted slowly across the blue sky.",
+    "relatedWords": [
+     "condensation",
+     "sky",
+     "storm"
+    ],
+    "clozeSentence": "We looked up and saw a gray rain cloud blocking the sun.",
+    "scenario": "You look up and see a big, puffy, white shape floating high in the sky."
+   },
+   {
+    "id": "term7",
+    "word": "melt",
+    "pronunciation": "melt",
+    "partOfSpeech": "verb",
+    "definition": "To change from a solid state into a liquid by gaining heat.",
+    "exampleSentence": "The warm spring sun helps melt the remaining winter snow.",
+    "relatedWords": [
+     "solid",
+     "liquid",
+     "heat"
+    ],
+    "clozeSentence": "Hold the ice cube in your warm hand and watch it quickly melt.",
+    "scenario": "An ice cube left on the kitchen counter turns entirely into liquid water."
+   }
+  ],
+  "challengeTypes": [
+   "match",
+   "fill_blank"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "match-1",
+    "kind": "match",
+    "terms": [
+     "term1",
+     "term2",
+     "term5",
+     "term6"
+    ],
+    "defs": [
+     "term5",
+     "term1",
+     "term2",
+     "term6"
+    ]
+   },
+   {
+    "id": "fill_blank-2",
+    "kind": "fill_blank",
+    "term": "term4",
+    "options": [
+     "term5",
+     "term3",
+     "term4",
+     "term6"
+    ],
+    "clue": "sentence"
+   },
+   {
+    "id": "fill_blank-3",
+    "kind": "fill_blank",
+    "term": "term7",
+    "options": [
+     "term4",
+     "term7",
+     "term6",
+     "term3"
+    ],
+    "clue": "sentence"
+   }
+  ]
+ }
+}

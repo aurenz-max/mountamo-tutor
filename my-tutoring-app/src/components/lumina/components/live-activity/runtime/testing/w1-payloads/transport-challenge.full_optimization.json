@@ -1,0 +1,264 @@
+{
+ "source": "qa/tutor-reports/transport-challenge-runtime-full_optimization-payload-2026-10-16.json",
+ "primitiveId": "transport-challenge",
+ "evalMode": "full_optimization",
+ "data": {
+  "title": "Transport Job Budget and Limit Challenge",
+  "description": "Students select vehicles for various transport jobs while managing budget, time, and carbon limits.",
+  "challengeTypes": [
+   "full_optimization"
+  ],
+  "difficulty": "hard",
+  "frames": [
+   {
+    "title": "Morning Commute",
+    "origin": "Oak Creek Suburb",
+    "destination": "Central Station",
+    "kind": "people",
+    "loadName": "commuters",
+    "featured": "train"
+   },
+   {
+    "title": "Harvest Delivery",
+    "origin": "Green Valley Farm",
+    "destination": "City Market",
+    "kind": "cargo",
+    "loadName": "produce",
+    "featured": "delivery_truck"
+   },
+   {
+    "title": "Island Excursion",
+    "origin": "North Harbor",
+    "destination": "Sunset Island",
+    "kind": "people",
+    "loadName": "tourists",
+    "featured": "ferry"
+   },
+   {
+    "title": "Lumber Supply",
+    "origin": "Pine Forest Mill",
+    "destination": "Builder Yard",
+    "kind": "cargo",
+    "loadName": "timber",
+    "featured": "semi_truck"
+   },
+   {
+    "title": "Festival Shuttle",
+    "origin": "West End Terminal",
+    "destination": "Festival Grounds",
+    "kind": "people",
+    "loadName": "festival visitors",
+    "featured": "bus"
+   }
+  ],
+  "items": [
+   {
+    "id": "full_optimization-1",
+    "mode": "full_optimization",
+    "title": "Morning Commute",
+    "origin": "Oak Creek Suburb",
+    "destination": "Central Station",
+    "load": {
+     "kind": "people",
+     "amount": 144,
+     "name": "commuters"
+    },
+    "vehicles": [
+     {
+      "id": "car",
+      "name": "Car",
+      "emoji": "\ud83d\ude97",
+      "capacity": 4,
+      "cost": 30,
+      "hours": 2,
+      "co2": 10
+     },
+     {
+      "id": "train",
+      "name": "Train",
+      "emoji": "\ud83d\ude86",
+      "capacity": 300,
+      "cost": 1200,
+      "hours": 2,
+      "co2": 100
+     },
+     {
+      "id": "ferry",
+      "name": "Ferry",
+      "emoji": "\u26f4\ufe0f",
+      "capacity": 120,
+      "cost": 600,
+      "hours": 6,
+      "co2": 240
+     },
+     {
+      "id": "minivan",
+      "name": "Minivan",
+      "emoji": "\ud83d\ude90",
+      "capacity": 8,
+      "cost": 50,
+      "hours": 2,
+      "co2": 16
+     }
+    ],
+    "limits": [
+     {
+      "type": "budget",
+      "max": 1100
+     },
+     {
+      "type": "time",
+      "max": 25
+     },
+     {
+      "type": "co2",
+      "max": 200
+     }
+    ],
+    "shows": [
+     "budget",
+     "time",
+     "co2"
+    ]
+   },
+   {
+    "id": "full_optimization-2",
+    "mode": "full_optimization",
+    "title": "Harvest Delivery",
+    "origin": "Green Valley Farm",
+    "destination": "City Market",
+    "load": {
+     "kind": "cargo",
+     "amount": 440,
+     "name": "produce"
+    },
+    "vehicles": [
+     {
+      "id": "freight_train",
+      "name": "Freight train",
+      "emoji": "\ud83d\ude82",
+      "capacity": 400,
+      "cost": 3600,
+      "hours": 8,
+      "co2": 800
+     },
+     {
+      "id": "semi_truck",
+      "name": "Semi truck",
+      "emoji": "\ud83d\ude9b",
+      "capacity": 20,
+      "cost": 300,
+      "hours": 4,
+      "co2": 120
+     },
+     {
+      "id": "cargo_plane",
+      "name": "Cargo plane",
+      "emoji": "\ud83d\udee9\ufe0f",
+      "capacity": 100,
+      "cost": 10000,
+      "hours": 2,
+      "co2": 6000
+     },
+     {
+      "id": "cargo_ship",
+      "name": "Cargo ship",
+      "emoji": "\ud83d\udea2",
+      "capacity": 1000,
+      "cost": 8000,
+      "hours": 24,
+      "co2": 3000
+     }
+    ],
+    "limits": [
+     {
+      "type": "budget",
+      "max": 4000
+     },
+     {
+      "type": "time",
+      "max": 15
+     },
+     {
+      "type": "co2",
+      "max": 31000
+     }
+    ],
+    "shows": [
+     "budget",
+     "time",
+     "co2"
+    ]
+   },
+   {
+    "id": "full_optimization-3",
+    "mode": "full_optimization",
+    "title": "Island Excursion",
+    "origin": "North Harbor",
+    "destination": "Sunset Island",
+    "load": {
+     "kind": "people",
+     "amount": 140,
+     "name": "tourists"
+    },
+    "vehicles": [
+     {
+      "id": "plane",
+      "name": "Plane",
+      "emoji": "\u2708\ufe0f",
+      "capacity": 150,
+      "cost": 3000,
+      "hours": 2,
+      "co2": 1000
+     },
+     {
+      "id": "car",
+      "name": "Car",
+      "emoji": "\ud83d\ude97",
+      "capacity": 4,
+      "cost": 30,
+      "hours": 2,
+      "co2": 10
+     },
+     {
+      "id": "train",
+      "name": "Train",
+      "emoji": "\ud83d\ude86",
+      "capacity": 300,
+      "cost": 1200,
+      "hours": 2,
+      "co2": 100
+     },
+     {
+      "id": "ferry",
+      "name": "Ferry",
+      "emoji": "\u26f4\ufe0f",
+      "capacity": 120,
+      "cost": 600,
+      "hours": 6,
+      "co2": 240
+     }
+    ],
+    "limits": [
+     {
+      "type": "budget",
+      "max": 2000
+     },
+     {
+      "type": "time",
+      "max": 10
+     },
+     {
+      "type": "co2",
+      "max": 75
+     }
+    ],
+    "shows": [
+     "budget",
+     "time",
+     "co2"
+    ]
+   }
+  ]
+ }
+}

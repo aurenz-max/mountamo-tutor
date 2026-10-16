@@ -1,0 +1,134 @@
+{
+ "source": "qa/tutor-reports/cell-builder-runtime-cell_specialization-payload-2026-10-15.json",
+ "primitiveId": "cell-builder",
+ "evalMode": "cell_specialization",
+ "data": {
+  "challengeType": "cell_specialization",
+  "title": "Build a Plant Leaf Cell",
+  "description": "Design a plant leaf cell by picking the right parts and setting the correct amounts to help it make food from sunlight!",
+  "cellType": "plant",
+  "cellContext": "leaf cell",
+  "organelles": [
+   {
+    "id": "org_nucleus",
+    "name": "Nucleus",
+    "function": "Stores the cell's master instructions and controls everything.",
+    "analogy": "Like the principal's office of the cell.",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "center",
+    "expectedQuantity": "few",
+    "quantityReasoning": "This cell only needs one main control center to run its daily operations.",
+    "uniqueTo": "all eukaryotic cells"
+   },
+   {
+    "id": "org_mitochondria",
+    "name": "Mitochondria",
+    "function": "Turns food into energy the cell can use.",
+    "analogy": "Like a power plant for the cell.",
+    "belongsInCell": true,
+    "sizeRelative": "small",
+    "correctZone": "scattered",
+    "expectedQuantity": "some",
+    "quantityReasoning": "This cell needs enough power plants to keep its parts running, but relies mostly on chloroplasts for food.",
+    "uniqueTo": "all eukaryotic cells"
+   },
+   {
+    "id": "org_chloroplast",
+    "name": "Chloroplast",
+    "function": "Captures sunlight to make food for the plant.",
+    "analogy": "Like tiny solar panels making food.",
+    "belongsInCell": true,
+    "sizeRelative": "medium",
+    "correctZone": "scattered",
+    "expectedQuantity": "lots",
+    "quantityReasoning": "This leaf cell needs LOTS of solar panels to soak up enough sunlight to feed the whole plant.",
+    "uniqueTo": "plant cells only"
+   },
+   {
+    "id": "org_vacuole",
+    "name": "Large Central Vacuole",
+    "function": "Stores water and helps keep the plant upright.",
+    "analogy": "Like a giant water balloon inside the cell.",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "large-central",
+    "expectedQuantity": "few",
+    "quantityReasoning": "This cell uses one giant water storage tank to keep the leaf firm and filled with water.",
+    "uniqueTo": "plant cells"
+   },
+   {
+    "id": "org_cytoplasm",
+    "name": "Cytoplasm",
+    "function": "A jelly-like fluid that fills the cell and holds parts in place.",
+    "analogy": "Like thick fruit jelly filling up a clear jar.",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "scattered",
+    "expectedQuantity": "lots",
+    "quantityReasoning": "This cell needs enough jelly-like fluid to fill all empty space and cushion the inner parts.",
+    "uniqueTo": "all cells"
+   },
+   {
+    "id": "org_centriole",
+    "name": "Centrioles",
+    "function": "Help animal cells divide and make new cells.",
+    "analogy": "Like tiny construction anchors for cell division.",
+    "belongsInCell": false,
+    "sizeRelative": "small",
+    "correctZone": "near-nucleus",
+    "expectedQuantity": "few",
+    "quantityReasoning": "Centrioles are typically only found in animal cells, not plant leaf cells.",
+    "uniqueTo": "animal cells only"
+   },
+   {
+    "id": "org_lysosome",
+    "name": "Lysosome",
+    "function": "Cleans up waste and old cell parts.",
+    "analogy": "Like a recycling center and garbage truck.",
+    "belongsInCell": false,
+    "sizeRelative": "small",
+    "correctZone": "peripheral",
+    "expectedQuantity": "few",
+    "quantityReasoning": "Lysosomes are mostly found in animal cells and are rare in plant cells.",
+    "uniqueTo": "animal cells mostly"
+   }
+  ],
+  "functionMatches": [
+   {
+    "organelleId": "org_nucleus",
+    "functionDescription": "Acts as the brain of the cell by housing DNA and sending out directions for building important materials."
+   },
+   {
+    "organelleId": "org_mitochondria",
+    "functionDescription": "Takes sugars and breaks them down to release usable energy for the cell's daily activities."
+   },
+   {
+    "organelleId": "org_chloroplast",
+    "functionDescription": "Uses green pigment to trap sunlight and convert light energy into food energy through photosynthesis."
+   },
+   {
+    "organelleId": "org_vacuole",
+    "functionDescription": "Acts as a huge storage sack for water and nutrients, pushing outward to keep the plant rigid."
+   },
+   {
+    "organelleId": "org_cytoplasm",
+    "functionDescription": "Provides a watery, jelly environment where floating cell parts can move around easily."
+   }
+  ],
+  "cellMembrane": {
+   "description": "A flexible outer layer surrounding the cytoplasm.",
+   "function": "Controls what enters and leaves the cell, keeping the inside safe."
+  },
+  "cellWall": {
+   "present": true,
+   "description": "A tough outer box-like layer that surrounds the cell membrane and gives the plant extra support."
+  },
+  "gradeBand": "4-5",
+  "targetEvalMode": "cell_specialization",
+  "objectiveGrade": "6",
+  "challengeTypes": [
+   "cell_specialization"
+  ]
+ }
+}

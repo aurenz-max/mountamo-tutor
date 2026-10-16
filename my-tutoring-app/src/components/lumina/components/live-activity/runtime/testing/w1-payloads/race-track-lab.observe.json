@@ -1,0 +1,106 @@
+{
+ "source": "qa/tutor-reports/race-track-lab-runtime-observe-payload-2026-10-15.json",
+ "primitiveId": "race-track-lab",
+ "evalMode": "observe",
+ "data": {
+  "title": "Toy Car Race Track",
+  "description": "You will watch the toy cars race and see how far they go.",
+  "challengeTypes": [
+   "observe"
+  ],
+  "difficulty": "hard",
+  "grade": "K",
+  "items": [
+   {
+    "id": "observe-1",
+    "mode": "observe",
+    "ask": "fastest",
+    "racers": [
+     {
+      "name": "Blue car",
+      "color": "#3B82F6",
+      "speed": 3,
+      "start": 0
+     },
+     {
+      "name": "Orange car",
+      "color": "#F97316",
+      "speed": 2,
+      "start": 4
+     }
+    ],
+    "trackLength": 12,
+    "time": 2
+   },
+   {
+    "id": "observe-2",
+    "mode": "observe",
+    "ask": "fastest",
+    "racers": [
+     {
+      "name": "Purple car",
+      "color": "#A855F7",
+      "speed": 1,
+      "start": 2
+     },
+     {
+      "name": "Red car",
+      "color": "#EF4444",
+      "speed": 4,
+      "start": 0
+     }
+    ],
+    "trackLength": 12,
+    "time": 2
+   },
+   {
+    "id": "observe-3",
+    "mode": "observe",
+    "ask": "fastest",
+    "racers": [
+     {
+      "name": "Purple car",
+      "color": "#A855F7",
+      "speed": 2,
+      "start": 7
+     },
+     {
+      "name": "Red car",
+      "color": "#EF4444",
+      "speed": 3,
+      "start": 0
+     },
+     {
+      "name": "Green car",
+      "color": "#22C55E",
+      "speed": 4,
+      "start": 0
+     }
+    ],
+    "trackLength": 12,
+    "time": 2
+   },
+   {
+    "id": "observe-4",
+    "mode": "observe",
+    "ask": "fastest",
+    "racers": [
+     {
+      "name": "Orange car",
+      "color": "#F97316",
+      "speed": 3,
+      "start": 0
+     },
+     {
+      "name": "Yellow car",
+      "color": "#EAB308",
+      "speed": 2,
+      "start": 3
+     }
+    ],
+    "trackLength": 12,
+    "time": 2
+   }
+  ]
+ }
+}

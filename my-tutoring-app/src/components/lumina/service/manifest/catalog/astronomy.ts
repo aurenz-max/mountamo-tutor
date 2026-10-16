@@ -7,6 +7,8 @@
 import { ComponentDefinition } from '../../../types';
 import type { SpokenSolarMiss } from '../../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
 import type { ShadowMiss } from '../../../primitives/visual-primitives/astronomy/lightShadowWorkspace';
+import type { PlanetMiss } from '../../../primitives/visual-primitives/astronomy/planetaryExplorerWorkspace';
+import type { ConstellationMiss } from '../../../primitives/visual-primitives/astronomy/constellationWorkspace';
 import { missLists } from './missLists';
 
 export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
@@ -834,6 +836,31 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
       ],
     },
     supportsEvaluation: true,
+    // Shared teaching workspace (W1, plain shape): `constellationWorkspace.ts`. The scripted fallback still reads `tutoring`.
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'Guided trace and free connect are star taps: the activity checks every tap against the pattern, and you '
+        + 'are not told the stars. Guided trace: a pulsing ring marks the next star, and a tap on another star is a miss. '
+        + 'Free connect: the learner taps one star, then the star it joins to, for each line. Identify: the lines of one '
+        + 'constellation are drawn and no name is shown; the learner says a name or taps it. Seasonal: only a season and a list of '
+        + 'names; the learner says the one best seen then, or taps it and checks it. Before an attempt never say which star '
+        + 'is next, where a star is or which stars join, and on identify and seasonal never say the answer, its '
+        + 'shape, its figure (a hunter, a bear) or its story: not as a statement, a choice to try, or a yes-or-no question. '
+        + 'On identify ask what the lines look like; on seasonal ask what they remember about the night sky in that season. '
+        + 'A Kindergarten or Grade 1 learner cannot read: say the instruction and the names aloud, and give no star counts '
+        + 'or step numbers. After a wrong name, do not say which season or shape that name has: it rules out choices for '
+        + 'them. Once an answer is credited you may read the star story on screen. You cannot tap a star, draw a line, '
+        + 'choose or check for the learner.',
+      // In-item levers (`constellationLevers.ts`): spotlight, shape card, bright stars, an easier pattern.
+      levers: true,
+      // The activity's own checks (`guidedMiss`, `freeMiss`, `nameMiss`); identify and seasonal also list them spoken.
+      misses: missLists<ConstellationMiss>({
+        guided_trace: ['later_star', 'traced_star', 'other_star'],
+        free_connect: ['background_star', 'wrong_pair'],
+        identify: ['wrong_name'],
+        seasonal: ['other_name', 'several_names'],
+      }),
+    },
   },
   {
     id: 'planetary-explorer',
@@ -928,6 +955,34 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
             + 'From grade 2 up the numbers and the Earth comparisons ARE the objective — say them, and help the student compare them.',
         },
       ],
+    },
+    // Shared teaching workspace (W1, plain shape): `planetaryExplorerWorkspace.ts`. The scripted fallback still reads `tutoring`.
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'Every item is one question from a trip through the solar system: a few questions at each planet, and in '
+        + 'identify mode a quiz after the last planet. The learner answers by saying it, or by tapping one choice and '
+        + 'checking it; the activity checks the tap against the question\'s own key. Before a planet\'s first question its '
+        + 'card is on screen (a description, fact cards and a fun fact) until the learner presses Ready for Questions; then '
+        + 'the card is gone and the questions ask what the card said. Read the card aloud while it is on screen. During a '
+        + 'question, never say the fact that answers it, which fact card or number decides it, which choice is right, or '
+        + 'rule a choice out. A planet\'s nickname or best-known description ("the Red Planet", "the one with rings") '
+        + 'answers a question about it: never say one during a question, not even as a clue. On a why question, never '
+        + 'name the reason or the facts the right choice uses. Ask what the learner remembers instead. A quiz question describes a planet '
+        + 'without naming it, and the map shows no planet names during the quiz; never name or describe the planet it means. '
+        + 'For kindergarten and grade 1, read the question and every choice aloud, and say no units or decimals. You cannot '
+        + 'tap, check or point at a choice for the learner.',
+      levers: true,
+      // The activity's own check (`planetMiss`), a tap or a spoken choice, in every mode.
+      // The quiz's planet misses are identify's only; true-false statements are explore's only (the modes' schema enums).
+      misses: missLists<PlanetMiss>({
+        explore: ['true_false_flipped', 'other_planet', 'other_planet_fact', 'other_number', 'other_choice'],
+        identify: ['neighbour_planet', 'same_family_planet', 'other_family_planet', 'other_planet', 'other_planet_fact', 'other_number', 'other_choice'],
+        compare: ['other_planet', 'other_planet_fact', 'other_number', 'other_choice'],
+        apply: ['other_planet', 'other_planet_fact', 'other_number', 'other_choice'],
+      }),
+      // Unanswered by decision (`planetaryExplorerLevers.ts`): a true-false statement is already the smallest judgement
+      // and its truth is read off the cards, so no card may come back beside it.
+      unanswered: missLists<PlanetMiss>({ explore: ['true_false_flipped'] }),
     },
     supportsEvaluation: true,
   },

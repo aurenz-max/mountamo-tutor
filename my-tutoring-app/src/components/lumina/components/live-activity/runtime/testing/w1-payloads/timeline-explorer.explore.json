@@ -1,0 +1,154 @@
+{
+ "source": "qa/tutor-reports/timeline-explorer-runtime-explore-payload-2026-10-16.json",
+ "primitiveId": "timeline-explorer",
+ "evalMode": "explore",
+ "data": {
+  "title": "The Road to American Independence",
+  "subtitle": "How the Thirteen Colonies Became a New Nation",
+  "overview": "Explore the important events and protests that led the American colonies to break away from Great Britain and fight for their freedom.",
+  "timeSpan": {
+   "start": "1765",
+   "end": "1783"
+  },
+  "events": [
+   {
+    "id": "evt1",
+    "date": "1765",
+    "sortOrder": 1,
+    "title": "The Passage of Stamp Act",
+    "description": "The British government passed a law forcing colonists to buy special stamps for paper goods like newspapers and legal documents. Colonists got very angry because they had no voice in the parliament that created this tax.",
+    "imagePrompt": "A government tax stamp from colonial America on a piece of parchment paper.",
+    "impact": "This unfair tax united the colonists in anger and sparked the famous cry of no taxation without representation.",
+    "connection": "The deep anger caused by this new paper tax led the colonists to gather together and speak out against British rule.",
+    "clue": "The British government forced colonists to pay a new tax on everyday paper items like newspapers.",
+    "ledTo": "evt2"
+   },
+   {
+    "id": "evt2",
+    "date": "1770",
+    "sortOrder": 2,
+    "title": "The Boston Massacre Riot",
+    "description": "An angry crowd of colonists in Boston started shouting and throwing snowballs filled with rocks at British soldiers. The scared soldiers fired their muskets into the crowd, killing five people.",
+    "imagePrompt": "British soldiers firing their muskets in front of a snowy crowd in Boston at night.",
+    "impact": "The event was used by leaders to show how cruel British rule could be, turning more people against the king.",
+    "connection": "The growing violence in the streets created even more tension between the colonists and the king.",
+    "clue": "Frustrated colonists and frightened soldiers clashed in a snowy street, resulting in several tragic deaths.",
+    "ledTo": "evt4"
+   },
+   {
+    "id": "evt3",
+    "date": "1773",
+    "sortOrder": 3,
+    "title": "The Boston Tea Party",
+    "description": "To protest a tax on tea, angry colonists dressed up as Native Americans and snuck onto British ships in the harbor. They dumped hundreds of chests of valuable tea right into the ocean.",
+    "imagePrompt": "Colonists disguised as Native Americans throwing wooden chests of tea off a ship into the water.",
+    "impact": "This bold act of protest showed Great Britain that the colonists refused to obey unfair trade laws.",
+    "connection": "Destroying all that tea made the British government furious and ready to punish the colonies.",
+    "clue": "Disguised protestors boarded trade vessels at night and threw crates of a popular warm drink into the harbor.",
+    "ledTo": "evt4"
+   },
+   {
+    "id": "evt4",
+    "date": "1774",
+    "sortOrder": 4,
+    "title": "The First Continental Congress",
+    "description": "Leaders from twelve of the thirteen colonies met together in Philadelphia to figure out how to respond to British punishments. They decided to stop trading with Great Britain until the harsh laws were removed.",
+    "imagePrompt": "Colonial leaders sitting together at desks debating during a secret meeting.",
+    "impact": "It brought the separate colonies together as a united group ready to stand up for their rights.",
+    "connection": "As leaders organized their resistance, local militias began gathering weapons and preparing for possible fighting.",
+    "clue": "Delegates from almost all the colonies gathered in one room to organize a united boycott against British goods.",
+    "ledTo": "evt5"
+   },
+   {
+    "id": "evt5",
+    "date": "1775",
+    "sortOrder": 5,
+    "title": "Battles of Lexington Concord",
+    "description": "British soldiers marched out to capture hidden colonial weapons, but they met armed colonial farmers on the green. Someone fired a shot, leading to a battle that started a full war.",
+    "imagePrompt": "Colonial militia men holding muskets facing British redcoats on a village green.",
+    "impact": "These opening skirmishes proved that the colonies and Great Britain were officially at war.",
+    "connection": "Once the fighting started, the colonies realized there was no going back and decided to declare complete freedom.",
+    "clue": "Armed farmers and British troops exchanged gunfire at dawn in a Massachusetts village, starting the war.",
+    "ledTo": "evt6"
+   },
+   {
+    "id": "evt6",
+    "date": "1776",
+    "sortOrder": 6,
+    "title": "The Declaration of Independence",
+    "description": "Leaders in Congress signed a historic document written by Thomas Jefferson explaining why the colonies were breaking away. It stated that all people have rights to life, liberty, and the pursuit of happiness.",
+    "imagePrompt": "Colonial leaders gathered around a table proudly signing an important parchment document.",
+    "impact": "It created a brand new country called the United States of America based on freedom and democracy.",
+    "connection": "With freedom officially declared, the new nation had to fight a long and difficult war to win it.",
+    "clue": "Thomas Jefferson wrote a famous document announcing that the thirteen colonies were now a separate country.",
+    "ledTo": "evt7"
+   },
+   {
+    "id": "evt7",
+    "date": "1781",
+    "sortOrder": 7,
+    "title": "The Siege of Yorktown",
+    "description": "American and French forces trapped a large British army at Yorktown, Virginia, forcing them to surrender. This major battle effectively ended the fighting of the war.",
+    "imagePrompt": "Surrender ceremony with American, French, and British troops on a battlefield.",
+    "impact": "It secured military victory for the Americans and signaled the end of British control.",
+    "connection": "The military victory on the battlefield forced Great Britain to finally sit down and talk about peace.",
+    "clue": "Combined patriot and foreign armies trapped enemy troops on a peninsula, forcing a massive surrender.",
+    "ledTo": "evt8"
+   },
+   {
+    "id": "evt8",
+    "date": "1783",
+    "sortOrder": 8,
+    "title": "The Treaty of Paris",
+    "description": "Representatives from the United States and Great Britain signed a formal peace treaty. Great Britain officially recognized the United States as an independent nation.",
+    "imagePrompt": "Diplomats sitting around a table signing a peace treaty document.",
+    "impact": "The United States was officially recognized as a free and independent country on the world map.",
+    "connection": "The signing of this treaty marked the successful end of the long journey to American independence.",
+    "clue": "Leaders signed a final peace agreement confirming that the new nation was completely free."
+   }
+  ],
+  "summary": {
+   "text": "Through years of protests, battles, and brave choices, the thirteen colonies successfully fought for and won their independence from Great Britain.",
+   "keyTheme": "The journey from protesting unfair taxes to fighting a revolution and establishing a free nation."
+  },
+  "challengeTypes": [
+   "identify"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "identify-1",
+    "kind": "identify",
+    "eventId": "evt8",
+    "options": [
+     "evt1",
+     "evt2",
+     "evt5",
+     "evt8"
+    ]
+   },
+   {
+    "id": "identify-2",
+    "kind": "identify",
+    "eventId": "evt2",
+    "options": [
+     "evt2",
+     "evt3",
+     "evt7",
+     "evt4"
+    ]
+   },
+   {
+    "id": "identify-3",
+    "kind": "identify",
+    "eventId": "evt4",
+    "options": [
+     "evt7",
+     "evt6",
+     "evt1",
+     "evt4"
+    ]
+   }
+  ]
+ }
+}

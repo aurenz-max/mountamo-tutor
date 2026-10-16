@@ -1,0 +1,64 @@
+{
+ "source": "qa/tutor-reports/gravity-drop-tower-runtime-measure-payload-2026-10-15.json",
+ "primitiveId": "gravity-drop-tower",
+ "evalMode": "measure",
+ "data": {
+  "title": "The Tower Drop Investigation",
+  "description": "You will use a stopwatch to measure and record the fall time of different objects dropped from a new height.",
+  "challengeTypes": [
+   "measure"
+  ],
+  "difficulty": "medium",
+  "gradeLevel": "Grade 5",
+  "items": [
+   {
+    "id": "measure-1",
+    "mode": "measure",
+    "air": false,
+    "measured": [
+     2,
+     8
+    ],
+    "ask": "time",
+    "drops": [
+     {
+      "obj": "rock",
+      "height": 18
+     }
+    ]
+   },
+   {
+    "id": "measure-2",
+    "mode": "measure",
+    "air": false,
+    "measured": [
+     5,
+     20
+    ],
+    "ask": "time",
+    "drops": [
+     {
+      "obj": "rock",
+      "height": 45
+     }
+    ]
+   },
+   {
+    "id": "measure-3",
+    "mode": "measure",
+    "air": false,
+    "measured": [
+     1.25,
+     5
+    ],
+    "ask": "time",
+    "drops": [
+     {
+      "obj": "rock",
+      "height": 11.25
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,146 @@
+{
+ "source": "qa/tutor-reports/timeline-explorer-runtime-connect-payload-2026-10-16.json",
+ "primitiveId": "timeline-explorer",
+ "evalMode": "connect",
+ "data": {
+  "title": "The Road to American Independence",
+  "subtitle": "How the Thirteen Colonies Became a New Nation",
+  "overview": "Explore the important events and protests that led the American colonies to break away from British rule and start a brand new country.",
+  "timeSpan": {
+   "start": "1765",
+   "end": "1783"
+  },
+  "events": [
+   {
+    "id": "evt1",
+    "date": "1765",
+    "sortOrder": 1,
+    "title": "Passing the Stamp Act",
+    "description": "The British government placed a special tax on all paper items in the colonies, including newspapers and playing cards. Colonists were very angry because they had no voice in the British Parliament.",
+    "imagePrompt": "A government tax stamp and a printed newspaper from the eighteenth century on a wooden table.",
+    "impact": "This unfair tax united the colonists in anger and sparked early talks about freedom.",
+    "connection": "The anger over this paper tax quickly led colonists to gather together and demand their rights.",
+    "clue": "The government placed a special tax on all paper items, which made people very angry.",
+    "ledTo": "evt2"
+   },
+   {
+    "id": "evt2",
+    "date": "1770",
+    "sortOrder": 2,
+    "title": "The Boston Massacre",
+    "description": "An angry crowd of colonists threw snowballs and rocks at British soldiers in Boston. The frightened soldiers fired into the crowd, killing five people.",
+    "imagePrompt": "British soldiers standing in a snowy Boston street facing an angry colonial crowd.",
+    "impact": "It showed that British rule was becoming dangerous and violent, turning more people against the King.",
+    "connection": "Rising anger over the violence in the streets eventually resulted in a famous protest involving tea.",
+    "clue": "Frustrated citizens threw snowballs at soldiers in the snow, leading to a tragic shooting.",
+    "ledTo": "evt3"
+   },
+   {
+    "id": "evt3",
+    "date": "1773",
+    "sortOrder": 3,
+    "title": "The Boston Tea Party",
+    "description": "To protest another unfair tax on tea, colonists dressed up as Native Americans and boarded British ships. They dumped hundreds of chests of valuable tea into the harbor.",
+    "imagePrompt": "Colonists in disguises throwing wooden chests of tea from a sailing ship into the dark ocean water.",
+    "impact": "It proved to Britain that the colonists would bravely destroy property to fight for fair laws.",
+    "connection": "The destruction of the cargo caused the British government to punish the city, which united the other colonies to help.",
+    "clue": "Protesters dressed in disguises and threw cargo overboard into the harbor to protest a beverage tax.",
+    "ledTo": "evt4"
+   },
+   {
+    "id": "evt4",
+    "date": "1775",
+    "sortOrder": 4,
+    "title": "Battles of Lexington and Concord",
+    "description": "The first military battles of the American Revolution took place when British troops marched to seize hidden weapons. Minutemen met the soldiers, and the famous 'shot heard round the world' was fired.",
+    "imagePrompt": "Colonial minutemen with muskets standing on a green field facing British redcoat soldiers.",
+    "impact": "There was no turning back now, as fighting officially began between the colonies and Britain.",
+    "connection": "The start of actual warfare pushed colonial leaders to officially declare their permanent separation from Britain.",
+    "clue": "The very first military fights of the revolution broke out when troops tried to take hidden weapons.",
+    "ledTo": "evt5"
+   },
+   {
+    "id": "evt5",
+    "date": "1776",
+    "sortOrder": 5,
+    "title": "Signing the Declaration of Independence",
+    "description": "Leaders from the thirteen colonies met and adopted a brave document written mostly by Thomas Jefferson. It stated that the colonies were now free and independent states.",
+    "imagePrompt": "Colonial leaders gathered around a desk signing a historic parchment document with quill pens.",
+    "impact": "It created the United States of America and gave people around the world hope for self-government.",
+    "connection": "Declaring freedom meant the young nation now had to win a long war to protect it.",
+    "clue": "Leaders gathered to sign a historic document stating that the colonies were now a free nation.",
+    "ledTo": "evt6"
+   },
+   {
+    "id": "evt6",
+    "date": "1781",
+    "sortOrder": 6,
+    "title": "Battle of Yorktown",
+    "description": "American and French forces trapped the main British army at Yorktown, Virginia, forcing them to surrender. This was the last major battle of the Revolutionary War.",
+    "imagePrompt": "Surrender ceremony with American, French, and British troops on a battlefield.",
+    "impact": "It practically ended the fighting and guaranteed that America would win its freedom.",
+    "connection": "The major military victory on the battlefield led directly to a peace treaty recognizing the new country.",
+    "clue": "Combined forces trapped the main enemy army in Virginia, causing them to finally surrender.",
+    "ledTo": "evt7"
+   },
+   {
+    "id": "evt7",
+    "date": "1783",
+    "sortOrder": 7,
+    "title": "Signing the Treaty of Paris",
+    "description": "Representatives from Great Britain and the United States signed a peace treaty in Paris. Britain officially recognized the United States as a completely free and independent nation.",
+    "imagePrompt": "Diplomats sitting around a table shaking hands after signing a formal peace agreement.",
+    "impact": "The long struggle ended, and the United States began its journey as an independent country.",
+    "clue": "Leaders signed a formal peace agreement in Europe to officially end the war and recognize the new nation."
+   }
+  ],
+  "summary": {
+   "text": "Through protests, battles, and brave leadership, the thirteen colonies transformed from unhappy subjects of a king into citizens of a brand new, free nation.",
+   "keyTheme": "The fight for liberty and self-government through unity and resilience."
+  },
+  "challengeTypes": [
+   "date",
+   "cause_effect"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "cause_effect-1",
+    "kind": "cause_effect",
+    "causes": [
+     "evt6",
+     "evt4",
+     "evt2"
+    ],
+    "effects": [
+     "evt5",
+     "evt3",
+     "evt7",
+     "evt1"
+    ]
+   },
+   {
+    "id": "date-1",
+    "kind": "date",
+    "eventId": "evt1",
+    "options": [
+     "evt3",
+     "evt6",
+     "evt1",
+     "evt2"
+    ]
+   },
+   {
+    "id": "date-2",
+    "kind": "date",
+    "eventId": "evt3",
+    "options": [
+     "evt3",
+     "evt2",
+     "evt7",
+     "evt4"
+    ]
+   }
+  ]
+ }
+}

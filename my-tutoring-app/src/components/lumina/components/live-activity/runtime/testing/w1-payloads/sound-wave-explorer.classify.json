@@ -1,0 +1,85 @@
+{
+ "source": "qa/tutor-reports/sound-wave-explorer-runtime-classify-payload-2026-10-15.json",
+ "primitiveId": "sound-wave-explorer",
+ "evalMode": "classify",
+ "data": {
+  "title": "The Great Sound Studio",
+  "description": "Learners examine how different instruments and wave drawings relate to loudness and pitch.",
+  "soundFocus": "both",
+  "challengeTypes": [
+   "classify"
+  ],
+  "difficulty": "medium",
+  "gradeLevel": "3",
+  "items": [
+   {
+    "id": "classify-1",
+    "mode": "classify",
+    "maker": "drum",
+    "asked": "pitch",
+    "ask": "least",
+    "waves": [
+     {
+      "amp": 3,
+      "crests": 3
+     },
+     {
+      "amp": 1,
+      "crests": 4
+     }
+    ]
+   },
+   {
+    "id": "classify-2",
+    "mode": "classify",
+    "maker": "drum",
+    "asked": "pitch",
+    "ask": "most",
+    "waves": [
+     {
+      "amp": 1,
+      "crests": 4
+     },
+     {
+      "amp": 3,
+      "crests": 2
+     }
+    ]
+   },
+   {
+    "id": "classify-3",
+    "mode": "classify",
+    "maker": "drum",
+    "asked": "loudness",
+    "ask": "least",
+    "waves": [
+     {
+      "amp": 1,
+      "crests": 3
+     },
+     {
+      "amp": 5,
+      "crests": 1
+     }
+    ]
+   },
+   {
+    "id": "classify-4",
+    "mode": "classify",
+    "maker": "drum",
+    "asked": "loudness",
+    "ask": "most",
+    "waves": [
+     {
+      "amp": 4,
+      "crests": 1
+     },
+     {
+      "amp": 2,
+      "crests": 4
+     }
+    ]
+   }
+  ]
+ }
+}

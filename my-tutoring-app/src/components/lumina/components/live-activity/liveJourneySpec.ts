@@ -23,6 +23,8 @@ import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
 import type { ClassificationItem } from '../../primitives/visual-primitives/biology/ClassificationSorter';
 import { sortHarnessTargets } from '../../primitives/visual-primitives/biology/classificationSorterWorkspace';
+import { cellHarnessInputs, type CellMission } from '../../primitives/visual-primitives/biology/cellBuilderWorkspace';
+import { fewerStructures as cellFewerStructures, practiceParent as cellPracticeParent } from '../../primitives/visual-primitives/biology/cellBuilderLevers';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
 import { simplerFromId as simplerShapeFromId } from '../../primitives/visual-primitives/math/shapeSorterLevers';
 import { simplerItem } from '../../primitives/visual-primitives/math/numberLineLevers';
@@ -99,6 +101,8 @@ import { practiceItem as timePracticeItem, practiceParent as timePracticeParent 
 import { simplerLength } from '../../primitives/visual-primitives/math/lengthLabLevers';
 import { simplerShape } from '../../primitives/visual-primitives/math/shapeComposerLevers';
 import { fastFactMiss, isAnswerCorrect as isFactCorrect } from '../../primitives/visual-primitives/core/fastFactWorkspace';
+import { SECTION_LABEL as FACT_FILE_SECTION, factChecks, factFileHarnessAnswers, fileTabs as factFileTabs, fileText as factFileText }
+  from '../../primitives/visual-primitives/core/factFileWorkspace';
 import { arraysOf, gridFor } from '../../primitives/visual-primitives/math/arrayGridWorkspace';
 import { smallerArray } from '../../primitives/visual-primitives/math/arrayGridLevers';
 import type { ArrayGridChallenge } from '../../primitives/visual-primitives/math/ArrayGrid';
@@ -247,6 +251,9 @@ import { matterLeverSession, practiceItem as matterPracticeItem, practiceParent 
 import { moleculeHarnessInputs } from '../../primitives/visual-primitives/chemistry/moleculeConstructorWorkspace';
 import { simplerMolecule } from '../../primitives/visual-primitives/chemistry/moleculeConstructorLevers';
 import type { MoleculeConstructorChallenge } from '../../primitives/visual-primitives/chemistry/MoleculeConstructor';
+import { atomHarnessInputs } from '../../primitives/visual-primitives/chemistry/atomBuilderWorkspace';
+import { practiceById as atomPracticeById } from '../../primitives/visual-primitives/chemistry/atomBuilderLevers';
+import type { AtomBuilderChallenge } from '../../primitives/visual-primitives/chemistry/AtomBuilder';
 import { itemsFromPayload as genreItems } from '../../primitives/visual-primitives/literacy/genreExplorerScript';
 import { genreJourneyAnswers } from '../../primitives/visual-primitives/literacy/genreExplorerWorkspace';
 import { textStructureItems, textStructureJourneyAnswers } from '../../primitives/visual-primitives/literacy/textStructureAnalyzerWorkspace';
@@ -272,8 +279,32 @@ import { practiceItem as statesPracticeItem, practiceParent as statesPracticePar
 import { solarJourneyItem } from './adapters/solarSystemExplorerLive';
 import { solarJourneyAnswers } from '../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
 import { shadowHarnessAnswers } from '../../primitives/visual-primitives/astronomy/lightShadowWorkspace';
+import { planetHarnessAnswers, planetItems } from '../../primitives/visual-primitives/astronomy/planetaryExplorerWorkspace';
+import { reactionHarnessAnswers, reactionItems } from '../../primitives/visual-primitives/chemistry/reactionLabWorkspace';
+import { phHarnessAnswers, phItems } from '../../primitives/visual-primitives/chemistry/phExplorerWorkspace';
+import { fewerChoices as phFewerChoices, practiceParent as phPracticeParent } from '../../primitives/visual-primitives/chemistry/phExplorerLevers';
+import { BOTH as STOICH_BOTH, convertValue, fmt as stoichFmt, limitingOf, stoichHarnessAnswers, stoichItems, yieldOf as stoichYieldOf }
+  from '../../primitives/visual-primitives/chemistry/stoichiometryLabWorkspace';
+import { easierItem as stoichEasierItem, practiceParent as stoichPracticeParent } from '../../primitives/visual-primitives/chemistry/stoichiometryLabLevers';
+import { gasHarnessAnswers, gasItems } from '../../primitives/visual-primitives/chemistry/gasLawsWorkspace';
+import { practiceParent as gasPracticeParent, simplerItem as gasSimplerItem } from '../../primitives/visual-primitives/chemistry/gasLawsLevers';
+import { dropHarnessAnswers, dropItems } from '../../primitives/visual-primitives/physics/gravityDropWorkspace';
+import { practiceParent as dropPracticeParent, simplerItem as dropSimplerItem } from '../../primitives/visual-primitives/physics/gravityDropLevers';
+import { soundHarnessAnswers, soundItems } from '../../primitives/visual-primitives/physics/soundWaveWorkspace';
+import { practiceParent as soundPracticeParent, simplerItem as soundSimplerItem } from '../../primitives/visual-primitives/physics/soundWaveLevers';
+import { needsRun as raceNeedsRun, raceHarnessAnswers, raceItems } from '../../primitives/visual-primitives/physics/raceTrackWorkspace';
+import { practiceParent as racePracticeParent, simplerItem as raceSimplerItem } from '../../primitives/visual-primitives/physics/raceTrackLevers';
+import { balancerHarnessAnswers, balancerItems } from '../../primitives/visual-primitives/chemistry/equationBalancerWorkspace';
+import { practiceParent as balancerPracticeParent, simplerItem as balancerSimplerItem } from '../../primitives/visual-primitives/chemistry/equationBalancerLevers';
+import { energyHarnessAnswers, energyItems } from '../../primitives/visual-primitives/chemistry/energyOfReactionsWorkspace';
+import { practiceParent as energyPracticeParent, simplerItem as energySimplerItem } from '../../primitives/visual-primitives/chemistry/energyOfReactionsLevers';
+import { dissolvingHarnessAnswers } from '../../primitives/visual-primitives/chemistry/mixingAndDissolvingWorkspace';
 import { practiceItem as shadowPracticeItem, practiceParent as shadowPracticeParent }
   from '../../primitives/visual-primitives/astronomy/lightShadowLevers';
+import { nameHarnessAnswers as constellationNameAnswers, traceHarnessTaps as constellationTraceTaps }
+  from '../../primitives/visual-primitives/astronomy/constellationWorkspace';
+import { practiceItem as constellationPracticeItem, practiceParent as constellationPracticeParent }
+  from '../../primitives/visual-primitives/astronomy/constellationLevers';
 import { easierComparisonChoice, maxWorkableAngle, minimumPushSetting, rampConclusion } from '../../primitives/visual-primitives/engineering/rampLabWorkspace';
 import { practiceFromId as rampPracticeFromId } from '../../primitives/visual-primitives/engineering/rampLabLevers';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
@@ -321,6 +352,27 @@ import { strategyPickerHarnessInputs } from '../../primitives/visual-primitives/
 import { practiceItem as strategyPracticeItem, practiceParent as strategyPracticeParent }
   from '../../primitives/visual-primitives/math/strategyPickerLevers';
 import { tanksNeeded as airplaneTanksNeeded } from '../../primitives/visual-primitives/engineering/airplaneModel';
+import { askedAxes as flightAxes, flightHarnessAnswers, flightItems, pressesTo as flightPresses } from '../../primitives/visual-primitives/engineering/flightForcesWorkspace';
+import { practiceParent as flightPracticeParent, simplerItem as flightSimplerItem } from '../../primitives/visual-primitives/engineering/flightForcesLevers';
+import { cspHarnessAnswers, cspItems, cspTaps } from '../../primitives/visual-primitives/engineering/constructionSequenceWorkspace';
+import { practiceParent as cspPracticeParent, simplerItem as cspSimplerItem } from '../../primitives/visual-primitives/engineering/constructionSequenceLevers';
+import { deckOf as timelineDeck, emptyWork as timelineEmptyWork, movesTo as timelineMoves, optionLabel as timelineOptionLabel,
+  timelineHarnessAnswers, timelineItems, titleOf as timelineTitle } from '../../primitives/visual-primitives/core/timelineExplorerWorkspace';
+import { practiceParent as tlxPracticeParent, simplerItem as tlxSimplerItem } from '../../primitives/visual-primitives/core/timelineExplorerLevers';
+import { vocabHarnessAnswers as vocabExplorerAnswers, vocabItems as vocabExplorerItems } from '../../primitives/visual-primitives/core/vocabularyExplorerWorkspace';
+import { practiceParent as vocabPracticeParent, simplerMatch as vocabSimplerMatch } from '../../primitives/visual-primitives/core/vocabularyExplorerLevers';
+import { howHarnessAnswers, howItems, howPresses, isPictures as howPictures, processSteps as howSteps }
+  from '../../primitives/visual-primitives/core/howItWorksWorkspace';
+import { practiceParent as howPracticeParent, simplerItem as howSimplerItem } from '../../primitives/visual-primitives/core/howItWorksLevers';
+import { METRIC_LABEL as VEHICLE_METRIC_LABEL, rowById as vehicleRowById, vehicleHarnessAnswers, vehicleItems } from '../../primitives/visual-primitives/engineering/vehicleComparisonWorkspace';
+import { practiceParent as vehiclePracticeParent, simplerItem as vehicleSimplerItem } from '../../primitives/visual-primitives/engineering/vehicleComparisonLevers';
+import { propulsionHarnessAnswers, propulsionItems, pressesTo as propulsionPresses } from '../../primitives/visual-primitives/engineering/propulsionWorkspace';
+import { practiceParent as propulsionPracticeParent, simplerItem as propulsionSimplerItem } from '../../primitives/visual-primitives/engineering/propulsionLevers';
+import { transportHarnessAnswers, transportItems } from '../../primitives/visual-primitives/engineering/transportWorkspace';
+import { practiceParent as transportPracticeParent, simplerItem as transportSimplerItem } from '../../primitives/visual-primitives/engineering/transportLevers';
+import { keyLabel as digitalKeyLabel, skillHarnessAnswers as digitalHarnessAnswers, skillItems as digitalSkillItems, type Point as DigitalPoint }
+  from '../../primitives/visual-primitives/core/digitalSkillsWorkspace';
+import { practiceParent as digitalPracticeParent, simplerItem as digitalSimplerItem } from '../../primitives/visual-primitives/core/digitalSkillsLevers';
 import { carButtonName, carFor as trainCarFor, fewestCars as trainFewestCars, fewestEngines as trainFewestEngines } from '../../primitives/visual-primitives/engineering/trainYardModel';
 import { simplerJob as simplerTrainJob } from '../../primitives/visual-primitives/engineering/trainYardLevers';
 import { answerLabel as dnlAnswerLabel, ratioLineHarnessValues as dnlHarnessValues }
@@ -2666,6 +2718,241 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-construction-scene]' } },
   },
+  'timeline-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/core/TimelineExplorer.tsx',
+    instanceId: 'timeline-explorer',
+    defaults: { grade: 'Grade 4', mode: 'order', di: false, topic: 'The road to American independence, 1765-1783' },
+    leakTokens: ['EVENT_SELECTED', 'QUESTIONS_START', 'CHALLENGE_CORRECT', 'CHALLENGE_INCORRECT', 'ANSWER_REVEALED', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // While the timeline is being read (presentation not ready), open every event and press Begin the questions.
+    // identify and date tap one choice (its aria-label) and Check Answer; order presses Move <title> up from the
+    // starting order and Check Order; cause_effect taps each Cause: then its Effect: and Check Matches. A wrong answer
+    // is the nearest wrong choice, two neighbouring cards swapped, or two causes' effects swapped. The simpler practice
+    // item (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const data = ctx.data as never as { events: never[] };
+      const deck = timelineDeck(data.events ?? []);
+      const items = timelineItems(ctx.data as never);
+      const parent = tlxPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? tlxSimplerItem(deck, full, items) : full;
+      if (!item) throw new Error(`No current timeline-explorer item ${ctx.itemId}`);
+      const reading: DriverInput[] = ctx.demand?.presentation !== 'ready'
+        ? [...deck.events.map((_, i): DriverInput => ({ type: 'choose', label: `Event ${i + 1}` })), { type: 'choose', label: 'Begin the questions' }] : [];
+      const answers = timelineHarnessAnswers(deck, item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      if (item.kind === 'order') {
+        return [...reading, ...timelineMoves(deck, timelineEmptyWork(item).order, work.order).map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
+      }
+      if (item.kind === 'cause_effect') {
+        return [...reading, ...item.causes.flatMap((c): DriverInput[] => [{ type: 'choose', label: `Cause: ${timelineTitle(deck, c)}` },
+          { type: 'choose', label: `Effect: ${timelineTitle(deck, work.pairs[c])}` }]), { type: 'check' }];
+      }
+      return [...reading, { type: 'choose', label: timelineOptionLabel(deck, item, work.choice!) }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[aria-label="Event 1"], [data-pip-object="workspace"]' } },
+  },
+  'flight-forces-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/FlightForcesExplorer.tsx',
+    instanceId: 'flight-forces-explorer',
+    defaults: { grade: 'Grade 4', mode: 'predict', di: false, topic: 'The four forces of flight: lift, weight, thrust and drag' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // predict and observe tap one choice per asked row (its aria-label) and Check Answer; adjust presses the thrust and
+    // nose buttons from the start setting and Fly and check. A wrong answer shows the mode's first-listed miss the item
+    // can. The simpler practice item (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = flightItems(ctx.data as never);
+      const parent = flightPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? flightSimplerItem(full) : full;
+      if (!item) throw new Error(`No current flight-forces-explorer item ${ctx.itemId}`);
+      const answers = flightHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      if (item.mode === 'adjust') {
+        return [...flightPresses(item.start, work.setting).map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
+      }
+      return [...flightAxes(item).map((a): DriverInput => ({ type: 'choose', label: work[a]! })), { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'vocabulary-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/core/VocabularyExplorer.tsx',
+    instanceId: 'vocabulary-explorer',
+    defaults: { grade: 'Grade 4', mode: 'recall', di: false, topic: 'The water cycle' },
+    leakTokens: ['TERM_SELECTED', 'CHECK_STARTED', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // The word cards come first: Start the check while they are open (the scene is not ready). A match taps each word
+    // (`term-<n>`) then its meaning (`meaning-<n>`, by its place in the meaning column) and Check Matches; wrong swaps
+    // the first two words' meanings. A sentence or situation item chooses the word (its aria-label) and Check Answer;
+    // wrong is the most telling other word. The smaller practice match (`~simpler`) is rebuilt with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const bank = (ctx.data.terms ?? []) as never[];
+      const items = vocabExplorerItems(ctx.data as never);
+      const parent = vocabPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? vocabSimplerMatch(full, bank) : full;
+      if (!item) throw new Error(`No current vocabulary-explorer item ${ctx.itemId}`);
+      const start: DriverInput[] = ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Start the check' }] : [];
+      const answers = vocabExplorerAnswers(item, bank), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      if (item.kind === 'match') {
+        return [...start, ...item.terms.flatMap((t, i): DriverInput[] => [{ type: 'touch', target: `term-${i + 1}` },
+          { type: 'touch', target: `meaning-${item.defs.indexOf(work.pairs[t]) + 1}` }]), { type: 'check' }];
+      }
+      const word = (ctx.data.terms ?? []).find((t: { id: string }) => t.id === work.picked)?.word;
+      if (!word) throw new Error(`vocabulary-explorer ${item.id}: no word for choice ${work.picked}`);
+      return [...start, { type: 'choose', label: word }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-study="cards"], [data-pip-object="workspace"]' } },
+  },
+  'how-it-works': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/core/HowItWorks.tsx',
+    instanceId: 'how-it-works',
+    defaults: { grade: 'Grade 4', mode: 'sequence', di: false, topic: 'How a bicycle turns pedaling into motion' },
+    leakTokens: ['ACTIVITY_START', 'ACTIVITY_START_PRE', 'DETAIL_EXPANDED', 'READ_QUESTION', 'NEXT_QUESTION', 'CHALLENGE_CORRECT',
+      'CHALLENGE_INCORRECT', 'ANSWER_REVEALED', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // While the steps are being read (scene phase `reading`), press Start the questions. A choice item taps the choice
+    // (its aria-label) and Check Answer (a pre-reader's tap checks itself); a sequence taps each card into the next slot
+    // and Check Answer. A wrong answer is the item's first-listed miss: a neighbouring step, a later step, or the first
+    // two cards swapped. The easier practice item (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const steps = howSteps(ctx.data as never), pictures = howPictures(ctx.data as never);
+      const items = howItems(ctx.data as never);
+      const parent = howPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? howSimplerItem(steps, full, pictures) : full;
+      if (!item) throw new Error(`No current how-it-works item ${ctx.itemId}`);
+      const start: DriverInput[] = ctx.demand?.phase === 'reading' ? [{ type: 'choose', label: 'Start the questions' }] : [];
+      const answers = howHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      return [...start, ...howPresses(steps, item, work).map((label): DriverInput => ({ type: 'choose', label })),
+        ...(pictures ? [] : [{ type: 'check' } as DriverInput])];
+    },
+    probes: { mounted: { selector: '[data-how-it-works]' } },
+  },
+  'digital-skills-sim': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/core/DigitalSkillsSim.tsx',
+    instanceId: 'digital-skills-sim',
+    defaults: { grade: 'Grade 1', mode: 'click', di: false, topic: 'Using a mouse and keyboard on a farm' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // click is a press and release on the arena SVG at a picture's centre; drag a stroke from the picture's start to a
+    // box's centre (both `draw` on `arena`, in viewBox units); type presses the keys ("Tap M"). The wrong click lands on
+    // another picture, the wrong drop in another box, the wrong key far from the letter. The simpler practice item
+    // (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = digitalSkillItems(ctx.data as never);
+      const parent = digitalPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? digitalSimplerItem(full) : full;
+      if (!item) throw new Error(`No current digital-skills-sim item ${ctx.itemId}`);
+      const answers = digitalHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      if (item.mode === 'type') return (work as string[]).map((k): DriverInput => ({ type: 'choose', label: digitalKeyLabel(k) }));
+      return [{ type: 'draw', target: 'arena', strokes: [work as DigitalPoint[]] }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'transport-challenge': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/TransportChallenge.tsx',
+    instanceId: 'transport-challenge',
+    defaults: { grade: 'Grade 4', mode: 'single_constraint', di: false, topic: 'Choosing vehicles for a transport job under a budget, time and CO2 limits' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Tap the vehicle's card (its aria-label is the vehicle's name) and Check my pick. A wrong pick shows the mode's
+    // first-listed miss the job can. The smaller practice job (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = transportItems(ctx.data as never);
+      const parent = transportPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? transportSimplerItem(full) : full;
+      if (!item) throw new Error(`No current transport-challenge job ${ctx.itemId}`);
+      const answers = transportHarnessAnswers(item);
+      return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'propulsion-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/PropulsionLab.tsx',
+    instanceId: 'propulsion-lab',
+    defaults: { grade: 'Grade 4', mode: 'predict', di: false, topic: "Newton's third law: how engines push a craft forward" },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // predict and observe tap one choice (its aria-label) and Check Answer; experiment presses the test buttons
+    // ("Test B: Space") from the start setups and Run and check. A wrong answer shows the mode's first-listed miss the
+    // item can (experiment: one change too many). The simpler practice item (`~simpler`) is rebuilt with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = propulsionItems(ctx.data as never);
+      const parent = propulsionPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? propulsionSimplerItem(full) : full;
+      if (!item) throw new Error(`No current propulsion-lab item ${ctx.itemId}`);
+      const answers = propulsionHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      if (item.mode === 'experiment') {
+        return [...propulsionPresses(item.start, { a: work.a, b: work.b }).map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
+      }
+      return [{ type: 'choose', label: work.choice! }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'vehicle-comparison-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/VehicleComparisonLab.tsx',
+    instanceId: 'vehicle-comparison-lab',
+    defaults: { grade: 'Grade 4', mode: 'evidence_choice', di: false, topic: 'Comparing vehicles that move people and goods by speed, capacity and range' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item taps one vehicle row (its aria-label is the vehicle's name), evidence_choice also a column button
+    // (its label), then Check. A wrong answer shows the mode's first-listed miss the item can. The simpler practice
+    // item (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = vehicleItems(ctx.data as never);
+      const parent = vehiclePracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? vehicleSimplerItem(full) : full;
+      if (!item) throw new Error(`No current vehicle-comparison-lab item ${ctx.itemId}`);
+      const answers = vehicleHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      return [{ type: 'choose', label: vehicleRowById(item, work.vehicle)!.name },
+        ...(item.mode === 'evidence_choice' ? [{ type: 'choose' as const, label: VEHICLE_METRIC_LABEL[work.evidence!] }] : []),
+        { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-vehicle-table]' } },
+  },
+  'construction-sequence-planner': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/engineering/ConstructionSequencePlanner.tsx',
+    instanceId: 'construction-sequence-planner',
+    defaults: { grade: 'Grade 3', mode: 'dependency_chain', di: false, topic: 'Planning how to build a house: which jobs come first' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // sequence and dependency_chain tap the job cards into the plan in order; parallel taps a card, then "Put in week k",
+    // for every job; critical_path taps a total. Then the check. The wrong plan swaps the last two jobs (sequence), puts
+    // the job that needs two right after its first need (dependency_chain), moves a job into its need's week (parallel)
+    // or taps the total of every job added (critical_path). The practice item (`~simpler`) is rebuilt from its parent.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = cspItems(ctx.data as never);
+      const parent = cspPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? cspSimplerItem(full) : full;
+      if (!item) throw new Error(`No current construction-sequence-planner item ${ctx.itemId}`);
+      const answers = cspHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      return [...cspTaps(item, work).map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
   'airplane-diorama': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/engineering/AirplaneDiorama.tsx',
@@ -3449,6 +3736,52 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
+  'fact-file': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/core/FactFile.tsx',
+    instanceId: 'fact-file',
+    defaults: { grade: 'Grade 3', mode: 'recall', di: false, topic: 'Volcanoes' },
+    leakTokens: ['ACTIVITY_START', 'TAB_OPENED', 'STAT_TAPPED', 'ALL_SECTIONS_EXPLORED', 'CHECK_CORRECT', 'CHECK_INCORRECT',
+      'ALL_COMPLETE', 'FACTCHECK_READ_ALOUD', 'FACTCHECK_RETRY'],
+    prompts: WORKSPACE_PROMPTS,
+    // Warmup: while the file is being read (recall, apply), open every tab and press Start questions. Then every item
+    // is one tap on a choice (its text). A wrong tap is a choice the file states elsewhere when there is one.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') {
+        if (!String(ctx.demand?.phase ?? '').startsWith('reading')) return [];
+        return [...factFileTabs(ctx.data as never).map(t => ({ type: 'choose' as const, label: FACT_FILE_SECTION[t] })),
+          { type: 'choose', label: 'Start questions' }];
+      }
+      const c = factChecks(ctx.data as never).find(x => x.id === ctx.itemId);
+      if (!c) throw new Error('No current fact-file check');
+      const answers = factFileHarnessAnswers(c, factFileText(ctx.data as never));
+      return [{ type: 'choose', label: intent === 'wrong' ? answers.wrong : answers.correct }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'race-track-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/physics/RaceTrackLab.tsx',
+    instanceId: 'race-track-lab',
+    defaults: { grade: 'Grade 3', mode: 'measure', di: false, topic: 'Speed, distance and time on a race track' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one tapped choice (its aria-label) and Check Answer; observe and measure first press Run the race.
+    // A wrong answer is the mode's first-listed miss `raceMiss` can name on the item. The simpler practice race
+    // (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = raceItems(ctx.data as never);
+      const parent = racePracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? raceSimplerItem(full) : full;
+      if (!item) throw new Error(`No current race-track-lab item ${ctx.itemId}`);
+      const answers = raceHarnessAnswers(item);
+      const run: DriverInput[] = raceNeedsRun(item) && ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Run the race' }] : [];
+      return [...run, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
   'push-pull-arena': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/physics/PushPullArena.tsx',
@@ -3526,6 +3859,27 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       return [{ type: 'touch', target }];
     },
     probes: { mounted: { selector: '[data-pip-object="card"]' } },
+  },
+  'cell-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/biology/CellBuilder.tsx',
+    instanceId: 'cell-builder',
+    defaults: { grade: 'Grade 6', mode: 'cell_inventory', di: false, topic: 'Animal and plant cell structures' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // Each mission is one board: answer every card from the key and press Check mission (wrong: the first card
+    // answered wrong). The smaller practice board is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const parent = cellPracticeParent(ctx.itemId ?? '');
+      const phase = (parent ?? ctx.itemId) as CellMission['phase'];
+      const full: CellMission = { id: phase, phase };
+      const mission = parent ? cellFewerStructures(ctx.data as never, full) : full;
+      if (!mission || !['cell_inventory', 'organelle_placement', 'structure_function', 'cell_specialization'].includes(phase))
+        throw new Error(`No current cell-builder mission ${ctx.itemId}`);
+      return cellHarnessInputs(ctx.data as never, mission, intent === 'wrong');
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
   'food-web-builder': {
     execution: 'workspace',
@@ -3636,6 +3990,26 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
+  'atom-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/AtomBuilder.tsx',
+    instanceId: 'atoms',
+    defaults: { grade: 'Grade 7', mode: 'make_atom', di: false, topic: 'Atoms are made of protons, neutrons and electrons' },
+    leakTokens: ['CHALLENGE_CORRECT', 'CHALLENGE_INCORRECT', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item through the real tray (`atomHarnessInputs`): a classic item adds its target counts and presses Check
+    // Answer (wrong: one electron more, `electrons_off`); make_atom builds the smallest atom the ask's menu proves passes
+    // and presses "I'm done!" (wrong: one electron more, or an isotope pair kept unchanged). A practice item
+    // (`~first`, `~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const all: AtomBuilderChallenge[] = ctx.data.challenges ?? [];
+      const c = atomPracticeById(all, ctx.itemId) ?? all.find(x => x.id === ctx.itemId);
+      if (!c) throw new Error('No current atom-builder challenge');
+      return atomHarnessInputs(c, intent === 'wrong', ctx.data.constraints?.maxProtons ?? 20, ctx.demand);
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
   'states-of-matter': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/chemistry/StatesOfMatter.tsx',
@@ -3692,6 +4066,268 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       if (!c) throw new Error('No current light-shadow-lab challenge');
       const answers = shadowHarnessAnswers(c, ctx.data.sunPositions ?? []);
       return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'mixing-and-dissolving': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/MixingAndDissolving.tsx',
+    instanceId: 'dissolving',
+    defaults: { grade: 'Grade 4', mode: 'dissolve', di: false, topic: 'What dissolves in water' },
+    leakTokens: ['ACTIVITY_START', 'SUBSTANCE_ADDED', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'NEXT_ITEM', 'ALL_COMPLETE', 'PARTICLE_VIEW_ON'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every challenge is one tapped choice (its `aria-label` is the choice) and Submit Answer. A wrong answer is the
+    // choice that shows the most telling miss `dissolvingMiss` names.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const ch = (ctx.data.challenges ?? []).find((c: { id: string }) => c.id === ctx.itemId);
+      if (!ch) throw new Error('No current mixing-and-dissolving challenge');
+      const answers = dissolvingHarnessAnswers(ch);
+      return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'choose', label: 'Submit Answer' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'reaction-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/ReactionLab.tsx',
+    instanceId: 'reaction-lab',
+    defaults: { grade: 'Grade 4', mode: 'observe', di: false, topic: 'Signs of a chemical reaction' },
+    leakTokens: ['ACTIVITY_START', 'PREDICTION_MADE', 'REACTION_STARTED', 'REACTION_COMPLETE', 'ANSWER_CORRECT', 'ANSWER_INCORRECT',
+      'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one tapped choice (its aria-label) and Check Answer. A challenge asked after mixing first presses
+    // Mix Substances! (the response opens once the reaction has run). A wrong answer is the most telling miss
+    // `reactionMiss` names.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = reactionItems(ctx.data.challenges ?? [], { checkedOnly: true }).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error(`No current reaction-lab challenge ${ctx.itemId}`);
+      const answers = reactionHarnessAnswers(item);
+      const mix: DriverInput[] = ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Mix Substances!' }] : [];
+      return [...mix, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'planetary-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/astronomy/PlanetaryExplorer.tsx',
+    instanceId: 'planets',
+    defaults: { grade: 'Grade 3', mode: 'identify', di: false, topic: 'The planets of our solar system' },
+    leakTokens: ['QUESTION_SHOWN', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'QUIZ_HINT', 'PLANET_ARRIVE', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every question is one tapped choice (its `aria-label` is the choice) and Check Answer; a stop's first question
+    // first closes the stop's card (Ready for Questions). A wrong answer is the most telling miss `planetMiss` names.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const planets = ctx.data.planets ?? [];
+      const item = planetItems(planets, ctx.data.quizQuestions ?? []).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error('No current planetary-explorer question');
+      const answers = planetHarnessAnswers(item, planets);
+      const card: DriverInput[] = ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Ready for Questions →' }] : [];
+      return [...card, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'ph-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/PhExplorer.tsx',
+    instanceId: 'ph-explorer',
+    defaults: { grade: 'Grade 5', mode: 'test', di: false, topic: 'Acids, bases and the pH scale' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one tapped choice (its aria-label) and Check Answer (Mix and check); a test item first dips the
+    // litmus papers. A wrong answer is the most telling miss `phMiss` names. The simpler practice item
+    // (`~fewer`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = phItems(ctx.data as never);
+      const parent = phPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? phFewerChoices(full, ctx.data.substances ?? [], items) : full;
+      if (!item) throw new Error(`No current ph-explorer item ${ctx.itemId}`);
+      const answers = phHarnessAnswers(item);
+      const dip: DriverInput[] = item.mode === 'test' && /^Not dipped/.test(String(ctx.demand?.papers ?? 'Not dipped'))
+        ? [{ type: 'choose', label: 'Dip the litmus papers' }] : [];
+      return [...dip, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'energy-of-reactions': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/EnergyOfReactions.tsx',
+    instanceId: 'energy-of-reactions',
+    defaults: { grade: 'Grade 6', mode: 'classify', di: false, topic: 'Exothermic and endothermic reactions' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one tapped choice (its aria-label) and Check Answer; a classify item first runs the reaction. A wrong
+    // answer is the most telling miss `energyMiss` names. The simpler practice item (`~practice`) is rebuilt from its
+    // parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = energyItems(ctx.data as never);
+      const parent = energyPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? energySimplerItem(full) : full;
+      if (!item) throw new Error(`No current energy-of-reactions item ${ctx.itemId}`);
+      const answers = energyHarnessAnswers(item);
+      const run: DriverInput[] = item.mode === 'classify' && /Not run yet/.test(String(ctx.demand?.thermometer ?? 'Not run yet'))
+        ? [{ type: 'choose', label: 'Run the reaction' }] : [];
+      return [...run, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'equation-balancer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/EquationBalancer.tsx',
+    instanceId: 'equation-balancer',
+    defaults: { grade: 'Grade 7', mode: 'simple', di: false, topic: 'Balancing chemical equations' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // simple: one tapped number (its aria-label) and Check Answer. Balance: Start over when a number has moved, the
+    // "Add one <formula>" presses that take every number from 1 to the key, then Check Balance; a wrong set raises only
+    // the formula with the largest key.
+    // The smaller practice item (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = balancerItems(ctx.data as never);
+      const parent = balancerPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? balancerSimplerItem(full, items) : full;
+      if (!item) throw new Error(`No current equation-balancer item ${ctx.itemId}`);
+      const answers = balancerHarnessAnswers(item);
+      const presses = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      // Try again keeps the learner's numbers: a balance answer starts over from all ones when any number moved.
+      const moved = item.mode !== 'simple' && !/^Every number is still 1/.test(String(ctx.demand?.learnerWork ?? 'Every number is still 1'));
+      return [...(moved ? [{ type: 'choose', label: 'Start over' } as DriverInput] : []),
+        ...presses.map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'gas-laws-simulator': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/GasLawsSimulator.tsx',
+    instanceId: 'gas-laws-simulator',
+    defaults: { grade: 'Grade 10', mode: 'observe', di: false, topic: 'Gas laws: pressure, volume and temperature' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one tapped choice (its aria-label) and Check Answer. A wrong answer is the mode's first-listed miss
+    // `gasMiss` can name on the item. The simpler practice item (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = gasItems(ctx.data as never);
+      const parent = gasPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? gasSimplerItem(full) : full;
+      if (!item) throw new Error(`No current gas-laws-simulator item ${ctx.itemId}`);
+      const answers = gasHarnessAnswers(item);
+      return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'sound-wave-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/physics/SoundWaveExplorer.tsx',
+    instanceId: 'sound-wave-explorer',
+    defaults: { grade: 'Grade 2', mode: 'predict', di: false, topic: 'Sound: vibrations, loudness and pitch' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every item is one tapped choice (its aria-label) and Check Answer. A wrong answer is the mode's first-listed miss
+    // `soundMiss` can name on the item. The simpler practice item (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = soundItems(ctx.data as never);
+      const parent = soundPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? soundSimplerItem(full) : full;
+      if (!item) throw new Error(`No current sound-wave-explorer item ${ctx.itemId}`);
+      const answers = soundHarnessAnswers(item);
+      return [{ type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'gravity-drop-tower': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/physics/GravityDropTower.tsx',
+    instanceId: 'gravity-drop-tower',
+    defaults: { grade: 'Grade 2', mode: 'predict', di: false, topic: 'Gravity: do heavy things fall faster?' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // observe presses Drop first (the choices open after it); compare taps the three objects (their aria-labels) in
+    // order; every other item taps one choice. Then Check Answer. A wrong answer is the mode's first-listed miss the item
+    // can show. The simpler practice item (`~simpler`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = dropItems(ctx.data as never);
+      const parent = dropPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? dropSimplerItem(full) : full;
+      if (!item) throw new Error(`No current gravity-drop-tower item ${ctx.itemId}`);
+      const answers = dropHarnessAnswers(item);
+      const watched = !/^The learner has not dropped/.test(String(ctx.demand?.watched ?? 'The learner has not dropped'));
+      const drop: DriverInput[] = item.mode === 'observe' && !watched ? [{ type: 'choose', label: 'Drop' }] : [];
+      return [...drop, ...(intent === 'wrong' ? answers.plainWrong : answers.correct).map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'stoichiometry-lab': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/chemistry/StoichiometryLab.tsx',
+    instanceId: 'stoichiometry-lab',
+    defaults: { grade: 'Grade 10', mode: 'limiting', di: false, topic: 'Stoichiometry: limiting reactants and yield' },
+    leakTokens: ['ACTIVITY_START', 'ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // convert taps factor cards (their aria-labels) into the chain and presses Check chain; limiting taps one choice and
+    // Check Answer; yield types the grams and Check Answer. A wrong answer is the most telling miss of the item. The
+    // simpler practice item (`~easier`) is rebuilt from its parent with the same builder.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const items = stoichItems(ctx.data as never);
+      const parent = stoichPracticeParent(ctx.itemId ?? '');
+      const full = items.find(i => i.id === (parent ?? ctx.itemId));
+      const item = parent && full ? stoichEasierItem(full, items) : full;
+      if (!item) throw new Error(`No current stoichiometry-lab item ${ctx.itemId}`);
+      const answers = stoichHarnessAnswers(item), said = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      if (item.mode === 'yield') return [{ type: 'write', label: `Grams of ${item.product}`, text: said[0] }, { type: 'check' }];
+      return [...said.map((label): DriverInput => ({ type: 'choose', label })), { type: 'check' }];
+    },
+    // The key as a reply would say it: the chain's result, the reactant that runs out, the grams that form. Not the
+    // digits of a formula ("H2"), which every reply about the reaction reads.
+    replayKeys: ctx => {
+      const item = stoichItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) return [];
+      if (item.mode === 'convert') return [`${stoichFmt(convertValue(item))} ${item.target.unit}`];
+      if (item.mode === 'yield') return [stoichFmt(stoichYieldOf(item))];
+      const key = limitingOf(item.rx, item.a, item.b), name = item.rx.subs.find(s => s.formula === key)?.name;
+      return key === STOICH_BOTH ? ['both run out together', 'run out at the same time']
+        : [`${key} runs out first`, `${name} runs out first`, `${key} is the limiting`, `${name} is the limiting`];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'constellation-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/astronomy/ConstellationBuilder.tsx',
+    instanceId: 'constellation',
+    defaults: { grade: 'Grade 2', mode: 'free_connect', di: false, topic: 'Star patterns in the night sky' },
+    leakTokens: ['CONSTELLATION_ORIENT', 'CONSTELLATION_CHALLENGE_CHANGED', 'CONSTELLATION_COMPLETE', 'CONSTELLATION_WRONG_STAR',
+      'CONSTELLATION_READ_ALOUD'],
+    prompts: WORKSPACE_PROMPTS,
+    // Trace modes tap the real stars (`star-<id>`): every star in order, or both ends of every line; a wrong answer is
+    // the first tap on a later star (guided) or two pattern stars the pattern does not join (free). Identify taps one
+    // name; seasonal taps one name and Check Answer; a wrong one is another name on screen.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      // An easier item (`~easier`) is rebuilt from its parent with the same builder.
+      const all = ctx.data.challenges ?? [], parent = constellationPracticeParent(ctx.itemId, all);
+      const c: any = parent ? constellationPracticeItem(parent, all) : all.find((x: { id: string }) => x.id === ctx.itemId);
+      if (!c) throw new Error('No current constellation-builder challenge');
+      const wrong = intent === 'wrong';
+      if (c.type === 'guided_trace' || c.type === 'free_connect') {
+        const taps = constellationTraceTaps(c);
+        return (wrong ? taps.plainWrong : taps.correct).map((id): DriverInput => ({ type: 'touch', target: `star-${id}` }));
+      }
+      const answers = constellationNameAnswers(c, all);
+      const choose: DriverInput = { type: 'choose', label: wrong ? answers.plainWrong : answers.correct };
+      return c.type === 'seasonal' ? [choose, { type: 'check' }] : [choose];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

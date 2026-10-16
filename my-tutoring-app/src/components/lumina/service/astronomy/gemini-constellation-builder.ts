@@ -19,6 +19,7 @@ import {
   logEvalModeResolution,
   type ChallengeTypeDoc,
 } from '../evalMode';
+import { shownInstruction } from '../../primitives/visual-primitives/astronomy/constellationWorkspace';
 
 // ============================================================================
 // CHALLENGE TYPE DOCUMENTATION REGISTRY
@@ -579,7 +580,8 @@ Generate a complete, educationally sound activity configuration with real conste
       description: raw.description || 'Connect stars to discover constellations in the night sky!',
       gradeLevel: resolvedGrade,
       stars,
-      challenges,
+      // On identify and seasonal the name is the answer: an instruction that names it gets the mode's plain question.
+      challenges: challenges.map(c => ({ ...c, instruction: shownInstruction(c) })),
       // Support-tier stamp — the component's render levers key off this field
       // alone; absent = byte-identical legacy full-support output.
       ...(supportTier ? { supportTier } : {}),

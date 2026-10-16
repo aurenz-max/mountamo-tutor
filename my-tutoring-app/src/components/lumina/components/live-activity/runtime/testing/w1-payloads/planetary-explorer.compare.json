@@ -1,0 +1,258 @@
+{
+ "source": "generateComponentContent via the vite module runner (save_payload.py returned the Earth+Mars fallback for this mode, 3 of 3 calls)",
+ "primitiveId": "planetary-explorer",
+ "evalMode": "compare",
+ "data": {
+  "title": "Journey Through the Solar System",
+  "description": "Explore the unique characteristics, atmospheres, and sizes of our solar system's most fascinating planets.",
+  "introduction": "Welcome, space explorers! Today we will travel across the solar system to discover what makes different worlds unique.",
+  "celebration": "Fantastic job, cadet! You have successfully completed your mission across our solar system.",
+  "gradeLevel": "4",
+  "planets": [
+   {
+    "planetId": "earth",
+    "focusTheme": "Our Home Planet",
+    "description": "Earth is our home and the only known world with liquid water on its surface. It has a protective atmosphere that allows life to thrive.",
+    "keyStats": [
+     {
+      "label": "Distance from Sun",
+      "value": "150 million",
+      "unit": "km",
+      "comparisonToEarth": "1x Earth distance"
+     },
+     {
+      "label": "Diameter",
+      "value": "12,742",
+      "unit": "km",
+      "comparisonToEarth": "1x Earth diameter"
+     },
+     {
+      "label": "Length of Day",
+      "value": "24",
+      "unit": "hours",
+      "comparisonToEarth": "1x Earth day"
+     },
+     {
+      "label": "Number of Moons",
+      "value": "1",
+      "unit": "moon",
+      "comparisonToEarth": "1x Earth moons"
+     }
+    ],
+    "funFact": "Earth is the only planet not named after a Greek or Roman god or goddess.",
+    "transition": "Now, let us journey to our scorching neighbor closer to the Sun.",
+    "questions": [
+     {
+      "question": "Which of these is a unique feature of Earth compared to many other inner planets?",
+      "questionType": "mc",
+      "options": [
+       "Liquid water on the surface",
+       "A thick methane atmosphere",
+       "No atmosphere at all",
+       "Rings made of ice"
+      ],
+      "correctIndex": 0,
+      "explanation": "Earth is the only known planet with abundant liquid water on its surface.",
+      "difficulty": "easy"
+     },
+     {
+      "question": "What is the length of a day on Earth?",
+      "questionType": "mc",
+      "options": [
+       "365 hours",
+       "12 hours",
+       "24 hours",
+       "48 hours"
+      ],
+      "correctIndex": 2,
+      "explanation": "Earth rotates on its axis once every 24 hours.",
+      "difficulty": "easy"
+     }
+    ]
+   },
+   {
+    "planetId": "venus",
+    "focusTheme": "The Greenhouse World",
+    "description": "Venus is covered in thick clouds of sulfuric acid and has a runaway greenhouse effect. This traps heat and makes it the hottest planet.",
+    "keyStats": [
+     {
+      "label": "Distance from Sun",
+      "value": "108 million",
+      "unit": "km",
+      "comparisonToEarth": "0.72x Earth distance"
+     },
+     {
+      "label": "Diameter",
+      "value": "12,104",
+      "unit": "km",
+      "comparisonToEarth": "0.95x Earth diameter"
+     },
+     {
+      "label": "Surface Temperature",
+      "value": "465",
+      "unit": "Celsius",
+      "comparisonToEarth": "Much hotter than Earth"
+     },
+     {
+      "label": "Number of Moons",
+      "value": "0",
+      "unit": "moons",
+      "comparisonToEarth": "Fewer than Earth"
+     }
+    ],
+    "funFact": "Venus spins in the opposite direction of most other planets in the solar system.",
+    "transition": "Next, let us travel outward to the famous red world.",
+    "questions": [
+     {
+      "question": "Which planet has a higher surface temperature, Earth or Venus?",
+      "questionType": "compare",
+      "options": [
+       "Both have the same temperature",
+       "Venus",
+       "Neither has a temperature",
+       "Earth"
+      ],
+      "correctIndex": 1,
+      "explanation": "Venus has a thick atmosphere of carbon dioxide that traps heat, making it much hotter than Earth.",
+      "difficulty": "medium"
+     },
+     {
+      "question": "How does the number of moons on Venus compare to Earth?",
+      "questionType": "compare",
+      "options": [
+       "Venus has two moons",
+       "Venus has more moons than Earth",
+       "Both have the same number of moons",
+       "Venus has fewer moons than Earth"
+      ],
+      "correctIndex": 3,
+      "explanation": "Venus has zero moons, while Earth has one moon.",
+      "difficulty": "medium"
+     }
+    ]
+   },
+   {
+    "planetId": "mars",
+    "focusTheme": "The Red Planet",
+    "description": "Mars is a cold, rocky desert with a very thin atmosphere. Iron oxide on its surface gives it a distinct rusty red color.",
+    "keyStats": [
+     {
+      "label": "Distance from Sun",
+      "value": "228 million",
+      "unit": "km",
+      "comparisonToEarth": "1.52x Earth distance"
+     },
+     {
+      "label": "Diameter",
+      "value": "6,779",
+      "unit": "km",
+      "comparisonToEarth": "0.53x Earth diameter"
+     },
+     {
+      "label": "Length of Day",
+      "value": "24.6",
+      "unit": "hours",
+      "comparisonToEarth": "1.02x Earth day"
+     },
+     {
+      "label": "Number of Moons",
+      "value": "2",
+      "unit": "moons",
+      "comparisonToEarth": "More than Earth"
+     }
+    ],
+    "funFact": "Mars is home to Olympus Mons, the largest volcano in the solar system.",
+    "transition": "Let us journey further out to the giant of the solar system.",
+    "questions": [
+     {
+      "question": "Which planet has a longer day, Earth or Mars?",
+      "questionType": "compare",
+      "options": [
+       "Earth",
+       "Neither rotates",
+       "Both have the exact same day length",
+       "Mars"
+      ],
+      "correctIndex": 3,
+      "explanation": "Mars takes about 24.6 hours to complete one rotation, which is slightly longer than Earth's 24-hour day.",
+      "difficulty": "medium"
+     },
+     {
+      "question": "Comparing Mars and Venus, which planet has more moons?",
+      "questionType": "compare",
+      "options": [
+       "Mars",
+       "Venus has more moons",
+       "Both have the same number of moons",
+       "Venus"
+      ],
+      "correctIndex": 0,
+      "explanation": "Mars has 2 moons (Phobos and Deimos), while Venus has 0 moons.",
+      "difficulty": "medium"
+     }
+    ]
+   },
+   {
+    "planetId": "jupiter",
+    "focusTheme": "The Gas Giant",
+    "description": "Jupiter is the largest planet in our solar system, made mostly of swirling gases and liquids. It features the famous Great Red Spot, a giant storm.",
+    "keyStats": [
+     {
+      "label": "Distance from Sun",
+      "value": "778 million",
+      "unit": "km",
+      "comparisonToEarth": "5.2x Earth distance"
+     },
+     {
+      "label": "Diameter",
+      "value": "139,820",
+      "unit": "km",
+      "comparisonToEarth": "11x Earth diameter"
+     },
+     {
+      "label": "Length of Day",
+      "value": "9.9",
+      "unit": "hours",
+      "comparisonToEarth": "0.41x Earth day"
+     },
+     {
+      "label": "Number of Moons",
+      "value": "95",
+      "unit": "moons",
+      "comparisonToEarth": "Much more than Earth"
+     }
+    ],
+    "funFact": "Jupiter has dozens of moons, including Ganymede, which is bigger than the planet Mercury.",
+    "transition": "",
+    "questions": [
+     {
+      "question": "Which planet is much larger in diameter, Earth or Jupiter?",
+      "questionType": "compare",
+      "options": [
+       "Jupiter",
+       "Earth is larger",
+       "Both are the same size",
+       "Earth"
+      ],
+      "correctIndex": 0,
+      "explanation": "Jupiter is the largest planet in the solar system and is more than 11 times wider than Earth.",
+      "difficulty": "hard"
+     },
+     {
+      "question": "Comparing Jupiter and Mars, which planet has a shorter day length?",
+      "questionType": "compare",
+      "options": [
+       "Jupiter",
+       "Neither rotates",
+       "Both have the same day length",
+       "Mars"
+      ],
+      "correctIndex": 0,
+      "explanation": "Jupiter rotates extremely fast, completing a full day in only 9.9 hours compared to Mars' 24.6 hours.",
+      "difficulty": "hard"
+     }
+    ]
+   }
+  ]
+ }
+}

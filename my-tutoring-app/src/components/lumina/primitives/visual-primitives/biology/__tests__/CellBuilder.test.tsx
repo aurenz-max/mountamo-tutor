@@ -113,9 +113,10 @@ describe('CellBuilder mode contract', () => {
 
     const keepButtons = screen.getAllByRole('button', { name: 'Keep' });
     const rejectButtons = screen.getAllByRole('button', { name: 'Reject' });
-    fireEvent.click(keepButtons[0]);
+    // Cards are alphabetical (Chloroplast, Mitochondria, Nucleus), never needed-first as the generator lists them.
+    fireEvent.click(rejectButtons[0]);
     fireEvent.click(keepButtons[1]);
-    fireEvent.click(rejectButtons[2]);
+    fireEvent.click(keepButtons[2]);
     fireEvent.click(screen.getByRole('button', { name: 'Check mission' }));
 
     expect(screen.getByText('3 of 3 structures correctly identified.')).toBeTruthy();
@@ -147,7 +148,7 @@ describe('CellBuilder mode contract', () => {
     for (const region of [
       'Control center',
       'Inner membrane network',
-      'Central storage',
+      'Main storage',
       'Cytoplasm',
       'Distributed throughout',
       'Cell boundary',

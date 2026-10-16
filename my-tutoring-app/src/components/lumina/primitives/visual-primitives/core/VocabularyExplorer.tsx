@@ -1,63 +1,75 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import {
-  LuminaCard,
-  LuminaCardContent,
-  LuminaCardHeader,
-  LuminaCardTitle,
-  LuminaBadge,
-  LuminaButton,
-  LuminaPanel,
-  LuminaSectionLabel,
-  LuminaAnswerChoice,
-  LuminaActionButton,
-  LuminaFeedbackCard,
-  answerStateClasses,
-} from '../../../ui';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+/**
+ * Vocabulary Explorer: word cards to study, then a check built by code from those words.
+ * - Study: one card per word (what it means, a sentence using it, related words, where it comes from). The check
+ *   starts when the learner presses Start the check; the cards close then.
+ * - match: tap a word, then its meaning (hard: one extra meaning goes with none).
+ * - fill_blank: a sentence with the word blanked; choose the word.
+ * - context: a situation that never names the word; choose the word.
+ *
+ * Every item and key comes from `vocabularyExplorerWorkspace.ts`; Gemini writes only the word bank. Nothing on screen
+ * marks the answer before a check. Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor)
+ * has its own Next and two tries before a reveal; the workspace path (W1, plain shape) commits every check through
+ * `progress.commitCheck` with a named miss, takes a spoken word judged by the tutor, and lets the runtime move on.
+ * The levers live in `vocabularyExplorerLevers.ts`.
+ */
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { VocabularyExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaBadge,
+  LuminaButton,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  answerStateClasses,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askOf, clozeOf, clueText, describeVocabWork, emptyWork, extraMeaning, posOf, vocabCorrect, vocabItems, vocabMiss,
+  workComplete, workspaceAssignment, workspaceScene,
+  type ChoiceItem, type MatchItem, type VocabItem, type VocabKind, type VocabTerm, type VocabTier, type VocabWork,
+} from './vocabularyExplorerWorkspace';
+import {
+  DROP_LEVER, EXAMPLES_LEVER, examplesShown, farChoice, KINDS_LEVER, leverFacts, meaningsShown, MEANINGS_LEVER,
+  NO_LEVERS, simplerMatch, vocabLevers, type VocabLeverState,
+} from './vocabularyExplorerLevers';
 
 // ============================================================================
-// Data Types (Single Source of Truth)
+// Data Types (single source of truth; the generator imports them)
 // ============================================================================
+
+export type { VocabItem, VocabTerm, VocabTier };
 
 export interface VocabularyExplorerData {
   title: string;
   topic: string;
   introduction: string;
-
-  terms: Array<{
-    id: string;
-    word: string;
-    pronunciation?: string;
-    partOfSpeech: string;
-    definition: string;
-    exampleSentence: string;
-    relatedWords: string[];
-    wordOrigin?: string;
-  }>;
-
-  challenges?: Array<{
-    type: 'match' | 'fill_blank' | 'context' | 'identify';
-    question: string;
-    // For match: pairs to connect
-    matchPairs?: Array<{ term: string; definition: string }>;
-    // For fill_blank / context / identify: multiple choice
-    sentence?: string;
-    blankWord?: string;
-    options?: string[];
-    correctIndex?: number;
-    correctUsage?: string;
-    explanation: string;
-    relatedTermId: string;
-  }>;
+  terms: VocabTerm[];
+  /** The pinned eval mode's challenge types (`match`, `fill_blank`, `context`). */
+  challengeTypes?: VocabKind[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: VocabTier;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the bank. */
+  items?: VocabItem[];
+  /** Legacy generations (model-written challenges): read only for their types. */
+  challenges?: Array<{ type?: string }>;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -68,827 +80,537 @@ export interface VocabularyExplorerData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<VocabularyExplorerMetrics>) => void;
 }
 
-// ============================================================================
-// Props
-// ============================================================================
-
 interface VocabularyExplorerProps {
   data: VocabularyExplorerData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
+
+const KIND_LABEL: Record<VocabKind, string> = { match: 'Match the meanings', fill_blank: 'Complete the sentence', context: 'Which word fits?' };
+const letter = (i: number) => String.fromCharCode(65 + i);
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const VocabularyExplorer: React.FC<VocabularyExplorerProps> = ({ data, className }) => {
-  const {
-    title,
-    topic,
-    introduction,
-    terms = [],
-    challenges = [],
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
+const VocabularyExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  VocabularyExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<VocabItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, topic, introduction, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+  const bank: VocabTerm[] = useMemo(() => data.terms ?? [], [data.terms]);
 
-  // -------------------------------------------------------------------------
-  // State
-  // -------------------------------------------------------------------------
-  const [currentTermIndex, setCurrentTermIndex] = useState(0);
-  const [visitedTerms, setVisitedTerms] = useState<Set<string>>(new Set());
-  const [relatedWordClicks, setRelatedWordClicks] = useState(0);
-  const [showSummary, setShowSummary] = useState(false);
-
-  // Challenge state
-  const [showChallenges, setShowChallenges] = useState(false);
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [challengeAnswers, setChallengeAnswers] = useState<Array<{ correct: boolean; attempts: number }>>([]);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [showChallengeFeedback, setShowChallengeFeedback] = useState(false);
-  const [allChallengesComplete, setAllChallengesComplete] = useState(false);
-  const [currentAttempts, setCurrentAttempts] = useState(0);
-
-  // Match challenge state
-  const [selectedMatchTerm, setSelectedMatchTerm] = useState<number | null>(null);
-  const [matchedPairs, setMatchedPairs] = useState<Array<[number, number]>>([]);
-  const [matchChecked, setMatchChecked] = useState(false);
-  const [matchCorrect, setMatchCorrect] = useState(false);
-
-  // Timing
-  const [termEntryTime, setTermEntryTime] = useState(Date.now());
-  const [termTimes, setTermTimes] = useState<Record<string, number>>({});
-
-  // Stable instance ID
-  const stableInstanceIdRef = useRef(instanceId || `vocabulary-explorer-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  const totalTerms = terms.length;
-  const termsExplored = visitedTerms.size;
-  const allTermsExplored = termsExplored >= totalTerms;
-  const currentTerm = terms[currentTermIndex];
-
-  // Mark first term as visited on mount
-  useEffect(() => {
-    if (currentTerm && !visitedTerms.has(currentTerm.id)) {
-      setVisitedTerms(new Set([currentTerm.id]));
-    }
+  const items = useMemo(() => vocabItems(data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    [data.items, data.terms, data.challengeTypes, data.difficulty, data.title]);
+  const stableInstanceId = useRef(instanceId || `vocabulary-explorer-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // -------------------------------------------------------------------------
-  // Evaluation Hook
-  // -------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<VocabularyExplorerMetrics>({
+  // ── Study: the word cards, before the check ──
+  const [studying, setStudying] = useState(true);
+  const studyingRef = useRef(true);
+  studyingRef.current = studying;
+  const [card, setCard] = useState(0);
+  const [visited, setVisited] = useState<Set<string>>(() => new Set(bank[0] ? [bank[0].id] : []));
+  const [relatedWordClicks, setRelatedWordClicks] = useState(0);
+  const studyStarted = useRef(Date.now());
+  const [studyMs, setStudyMs] = useState(0);
+
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: item => workspaceAssignment(item, bank, studyingRef.current),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  const sessionItem: VocabItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<MatchItem | null>(null);
+  const item: VocabItem | undefined = practice ?? sessionItem;
+
+  const [work, setWork] = useState<VocabWork>(emptyWork);
+  /** match: the word tapped, waiting for its meaning. */
+  const [activeWord, setActiveWord] = useState<string | null>(null);
+  /** Workspace path: the checked wrong work, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverState, setLeverState] = useState<{ item: string } & VocabLeverState>({ item: '', ...NO_LEVERS });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
+
+  const levers: VocabLeverState = sessionItem && leverState.item === sessionItem.id && !practice ? leverState : NO_LEVERS;
+  const leverOn = (id: string) => levers.pulled.includes(id);
+  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<VocabularyExplorerMetrics>({
     primitiveType: 'vocabulary-explorer',
     instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
+    skillId, subskillId, objectiveId, exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
+  const currentCard = bank[Math.min(card, Math.max(bank.length - 1, 0))];
   const aiPrimitiveData = useMemo(() => ({
-    topic,
-    totalTerms,
-    currentWord: currentTerm?.word || '',
-    partOfSpeech: currentTerm?.partOfSpeech || '',
-    termsExplored,
-    challengesCompleted: challengeAnswers.length,
-    totalChallenges: challenges.length,
-  }), [topic, totalTerms, currentTerm, termsExplored, challengeAnswers.length, challenges.length]);
+    topic, totalTerms: bank.length, currentWord: studying ? currentCard?.word ?? '' : '',
+    partOfSpeech: studying ? currentCard?.partOfSpeech ?? '' : '', termsExplored: visited.size,
+    challengesCompleted: results.filter(r => r.correct).length, totalChallenges: items.length,
+    ask: !studying && item ? askOf(item, bank) : '',
+  }), [topic, bank, studying, currentCard, visited.size, results, items.length, item]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'vocabulary-explorer', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: 'Elementary', enabled: !tutorOwned,
+  });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'vocabulary-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'Elementary',
+  const clearItem = () => {
+    setWork(emptyWork()); setActiveWord(null); setWrongShown(false); setFeedback(null);
+    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+  };
+
+  openItem.current = (_index, retry) => {
+    if (retry) { setWork(emptyWork()); setActiveWord(null); setWrongShown(false); setFeedback(null); setPracticeSolved(false); return; }
+    setPractice(null); clearItem();
+  };
+
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || solved.kind === 'match' || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setWork({ pairs: {}, picked: solved.term }); setWrongShown(false);
+  };
+
+  // ── Study handlers ──
+  const openCard = (i: number) => {
+    if (i < 0 || i >= bank.length) return;
+    SoundManager.navigate();
+    setCard(i);
+    setVisited(prev => new Set(prev).add(bank[i].id));
+    say(`[TERM_SELECTED] Card ${i + 1} of ${bank.length}: "${bank[i].word}" (${bank[i].partOfSpeech}). Pronounce it and give a brief, friendly introduction.`);
+  };
+  const followRelated = (word: string) => {
+    const at = bank.findIndex(t => t.word.toLowerCase() === word.toLowerCase());
+    if (at < 0) return;
+    setRelatedWordClicks(n => n + 1);
+    openCard(at);
+  };
+  const startCheck = () => {
+    if (!studying || learnerBlocked()) return;
+    SoundManager.select();
+    setStudyMs(Date.now() - studyStarted.current);
+    setStudying(false);
+    if (item) say(`[CHECK_STARTED] The word cards are closed. First question: ${askOf(item, bank)}`);
+  };
+
+  // ── Check handlers ──
+  const closed = studying || revealed || wrongShown || learnerBlocked();
+  const tapWord = (id: string) => {
+    if (!item || item.kind !== 'match' || closed) return;
+    SoundManager.select();
+    if (work.pairs[id]) setWork(w => ({ ...w, pairs: Object.fromEntries(Object.entries(w.pairs).filter(([k]) => k !== id)) }));
+    setActiveWord(id); setFeedback(null);
+  };
+  const tapMeaning = (defId: string) => {
+    if (!item || item.kind !== 'match' || closed || !activeWord) return;
+    if (Object.values(work.pairs).includes(defId)) return;
+    SoundManager.snap();
+    setWork(w => ({ ...w, pairs: { ...w.pairs, [activeWord]: defId } }));
+    setActiveWord(null); setFeedback(null);
+  };
+  const pick = (id: string) => {
+    if (!item || item.kind === 'match' || closed || levers.dropped.includes(id)) return;
+    SoundManager.select();
+    setWork(w => ({ ...w, picked: id })); setFeedback(null);
+  };
+
+  const check = () => {
+    if (!item || closed || !workComplete(item, work)) return;
+    const correct = vocabCorrect(item, work);
+    progress.commitCheck(describeVocabWork(item, work, bank), correct, correct ? undefined : vocabMiss(item, work, bank));
+    if (correct) {
+      SoundManager.playCorrect();
+      if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item, bank)} Praise briefly and use the word in a new sentence.`);
+      return;
+    }
+    SoundManager.playIncorrect();
+    if (item.kind !== 'match' && work.picked && sessionItem && !practice) {
+      const picked = work.picked;
+      setLeverState(s => {
+        const base = s.item === sessionItem.id ? s : { item: sessionItem.id, ...NO_LEVERS };
+        return base.picked.includes(picked) ? base : { ...base, picked: [...base.picked, picked] };
+      });
+    }
+    if (tutorOwned) { setWrongShown(true); return; }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      setWork(item.kind === 'match' ? { pairs: Object.fromEntries(item.terms.map(t => [t, t])), picked: null } : { pairs: {}, picked: item.term });
+      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item, bank)} The answer is now on screen; explain it with the word's meaning.`);
+      return;
+    }
+    setWork(emptyWork()); setActiveWord(null);
+    setFeedback(item.kind === 'match' ? 'Not every word is with its meaning yet. Read each meaning again and try once more.'
+      : 'Not quite. Read the sentence again with each word in it, and try once more.');
+    say(`[ANSWER_INCORRECT] ${describeVocabWork(item, work, bank)} for: ${askOf(item, bank)} It is wrong. You are not told the answer: give a hint about the meaning without naming a word.`);
+  };
+
+  const metrics = (): VocabularyExplorerMetrics => {
+    const firstTry = (kind: VocabKind) => {
+      const its = items.filter(i => i.kind === kind);
+      if (!its.length) return 0;
+      return Math.round((its.filter(i => results.some(r => r.challengeId === i.id && r.correct && (r.attempts ?? 1) <= 1)).length / its.length) * 100);
+    };
+    return {
+      type: 'vocabulary-explorer',
+      termsExplored: visited.size,
+      totalTerms: bank.length,
+      matchAccuracy: firstTry('match'),
+      fillBlankAccuracy: firstTry('fill_blank'),
+      contextAccuracy: firstTry('context'),
+      challengeAttempts: currentAttempts,
+      averageTimePerTerm: bank.length ? Math.round(studyMs / bank.length) : 0,
+      relatedWordClicks,
+    };
+  };
+
+  /** Scripted path: Next, and on the last item the session report. */
+  const next = () => {
+    if (progress.advance()) {
+      clearItem();
+      say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1], bank)}`);
+      return;
+    }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 70, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} vocabulary items. Celebrate briefly.`);
+  };
+
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), challengeAttempts: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const scene = workspaceScene(item, { studying, card, viewed: visited.size, work, solved: revealed }, bank);
+    const available = practice || studying ? [] : vocabLevers(sessionItem, bank, levers);
+    const onScreen = practice || studying ? {} : leverFacts(sessionItem, bank, levers);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'A smaller match of other words from the cards, before the full item comes back.' } : {}),
+        ...onScreen },
+      // Before Start the check the cards are open and nothing can be answered.
+      readyForResponse: !studying,
+      levers: available,
+      pullLever: (id) => {
+        const l = available.find(x => x.id === id);
+        if (studying) return 'The check has not started: the learner is still reading the word cards.';
+        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        const base = { ...levers, item: sessionItem.id };
+        if (id === DROP_LEVER) {
+          if (sessionItem.kind === 'match') return `No lever ${id} on this item.`;
+          const drop = farChoice(sessionItem, bank, levers);
+          if (!drop) return 'No choice can be greyed out: too few untried choices would remain.';
+          setLeverState({ ...base, pulled: [...levers.pulled, id], dropped: [...levers.dropped, drop] });
+          if (work.picked === drop) setWork(w => ({ ...w, picked: null }));
+          return true;
+        }
+        if (l.kind === 'simplify') {
+          const simpler = simplerMatch(sessionItem, bank);
+          if (!simpler) return 'There is no smaller match here; try a help lever.';
+          setLeverState({ ...base, pulled: [...levers.pulled, id] }); clearItem(); setPractice(simpler);
+          return { practice: workspaceAssignment(simpler, bank) };
+        }
+        setLeverState({ ...base, pulled: [...levers.pulled, id] });
+        return true;
+      },
+      endPractice: () => { clearItem(); setPractice(null); },
+    };
   });
 
-  // Introduce on connect
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Vocabulary Explorer: "${title}" — Topic: ${topic}. `
-      + `${totalTerms} terms to learn. ${challenges.length > 0 ? `${challenges.length} challenges after exploration.` : ''} `
-      + `${introduction}. Introduce the vocabulary warmly and encourage exploration.`,
-      { silent: true }
-    );
-  }, [isConnected, title, topic, introduction, totalTerms, challenges.length, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Term Navigation
-  // -------------------------------------------------------------------------
-  const recordTermTime = useCallback(() => {
-    if (!currentTerm) return;
-    const elapsed = Date.now() - termEntryTime;
-    setTermTimes(prev => ({
-      ...prev,
-      [currentTerm.id]: (prev[currentTerm.id] || 0) + elapsed,
-    }));
-  }, [currentTerm, termEntryTime]);
-
-  const handleTermChange = useCallback((newIndex: number) => {
-    if (newIndex < 0 || newIndex >= totalTerms) return;
-
-    SoundManager.navigate();   // ← soft whoosh on term-to-term movement
-    recordTermTime();
-    setTermEntryTime(Date.now());
-    setCurrentTermIndex(newIndex);
-
-    const term = terms[newIndex];
-    setVisitedTerms(prev => {
-      const next = new Set(prev);
-      next.add(term.id);
-      return next;
-    });
-
-    if (isConnected) {
-      sendText(
-        `[TERM_SELECTED] Student selected term ${newIndex + 1} of ${totalTerms}: `
-        + `"${term.word}" (${term.partOfSpeech}). `
-        + `Terms explored: ${visitedTerms.has(term.id) ? termsExplored : termsExplored + 1}/${totalTerms}. `
-        + `Pronounce "${term.word}" and give a brief introduction. Connect to something familiar.`,
-        { silent: true }
-      );
-    }
-  }, [totalTerms, terms, recordTermTime, visitedTerms, termsExplored, isConnected, sendText]);
-
-  // Related word click
-  const handleRelatedWordClick = useCallback((relatedWord: string) => {
-    setRelatedWordClicks(prev => prev + 1);
-    const targetIndex = terms.findIndex(
-      t => t.word.toLowerCase() === relatedWord.toLowerCase()
-    );
-    if (targetIndex >= 0) {
-      if (isConnected) {
-        sendText(
-          `[RELATED_WORD_CLICKED] Student clicked related word "${relatedWord}" from "${currentTerm?.word}". `
-          + `Briefly explain how these two terms connect.`,
-          { silent: true }
-        );
-      }
-      handleTermChange(targetIndex);
-    }
-  }, [terms, currentTerm, isConnected, sendText, handleTermChange]);
-
-  // Track all terms explored
-  const hasNotifiedAllExploredRef = useRef(false);
-  useEffect(() => {
-    if (allTermsExplored && !hasNotifiedAllExploredRef.current && isConnected) {
-      hasNotifiedAllExploredRef.current = true;
-      sendText(
-        `[ALL_TERMS_EXPLORED] Student explored all ${totalTerms} terms! `
-        + `${challenges.length > 0 ? `${challenges.length} vocabulary challenges coming up.` : 'Vocabulary complete!'} `
-        + `Congratulate and challenge them to use a new word in their own sentence.`,
-        { silent: true }
-      );
-    }
-  }, [allTermsExplored, totalTerms, challenges.length, isConnected, sendText]);
-
-  useEffect(() => {
-    if (allTermsExplored && !showSummary) {
-      setShowSummary(true);
-    }
-  }, [allTermsExplored, showSummary]);
-
-  // -------------------------------------------------------------------------
-  // Challenge Handling
-  // -------------------------------------------------------------------------
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
-
-  // VE-2: shuffle the Definitions column so matches can't be solved by row alignment.
-  // The shuffled values are ORIGINAL pair indices — grading still compares term i to
-  // definition i (matchPairs[i].term ↔ matchPairs[i].definition); only the visual
-  // order of definitions changes.
-  const shuffledDefOrder = useMemo(() => {
-    if (currentChallenge?.type !== 'match') return [];
-    const n = currentChallenge.matchPairs?.length || 0;
-    const order = Array.from({ length: n }, (_, i) => i);
-    for (let i = order.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
-    }
-    // Avoid the degenerate identity permutation (would re-expose row alignment).
-    if (n > 1 && order.every((v, i) => v === i)) {
-      [order[0], order[1]] = [order[1], order[0]];
-    }
-    return order;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChallengeIndex]);
-
-  const handleStartChallenges = useCallback(() => {
-    setShowChallenges(true);
-    setCurrentChallengeIndex(0);
-    setCurrentAttempts(0);
-  }, []);
-
-  // MC answer (fill_blank / context / identify)
-  const handleMCAnswer = useCallback((optionIndex: number) => {
-    if (!currentChallenge || showChallengeFeedback) return;
-    if (currentChallenge.type === 'match') return;
-
-    setSelectedOption(optionIndex);
-    setShowChallengeFeedback(true);
-
-    const correct = optionIndex === currentChallenge.correctIndex;
-    const attempts = currentAttempts + 1;
-    setCurrentAttempts(attempts);
-
-    if (correct) {
-      SoundManager.playCorrect();
-    } else {
-      SoundManager.playIncorrect();
-    }
-
-    if (correct || attempts >= 2) {
-      setChallengeAnswers(prev => [...prev, { correct, attempts }]);
-    }
-
-    if (isConnected) {
-      const tag = correct ? '[CHALLENGE_CORRECT]' : '[CHALLENGE_INCORRECT]';
-      sendText(
-        `${tag} Challenge ${currentChallengeIndex + 1}/${challenges.length} (${currentChallenge.type}): `
-        + `"${currentChallenge.question}" — Student chose "${currentChallenge.options?.[optionIndex]}". `
-        + `${correct
-          ? 'Correct! Use the word in a new sentence to reinforce.'
-          : 'Incorrect. Give a contextual hint using the word\'s definition without revealing the answer.'
-        }`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, currentChallengeIndex, challenges, showChallengeFeedback, currentAttempts, isConnected, sendText]);
-
-  // Match challenge
-  const handleMatchTermSelect = useCallback((termIdx: number) => {
-    if (matchChecked) return;
-    if (matchedPairs.some(([t]) => t === termIdx)) return;
-    SoundManager.select();   // ← choosing a term to match
-    setSelectedMatchTerm(termIdx);
-  }, [matchChecked, matchedPairs]);
-
-  const handleMatchDefSelect = useCallback((defIdx: number) => {
-    if (matchChecked || selectedMatchTerm === null) return;
-    if (matchedPairs.some(([, d]) => d === defIdx)) return;
-    SoundManager.snap();     // ← pair lands in place
-    setMatchedPairs(prev => [...prev, [selectedMatchTerm, defIdx]]);
-    setSelectedMatchTerm(null);
-  }, [matchChecked, selectedMatchTerm, matchedPairs]);
-
-  const handleMatchCheck = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'match') return;
-    const pairs = currentChallenge.matchPairs || [];
-
-    // Correct if each term index maps to the same definition index
-    const correct = pairs.length === matchedPairs.length &&
-      matchedPairs.every(([t, d]) => t === d); // terms and defs are in matching order from generator
-
-    const attempts = currentAttempts + 1;
-    setCurrentAttempts(attempts);
-    setMatchChecked(true);
-    setMatchCorrect(correct);
-
-    if (correct) {
-      SoundManager.playCorrect();
-    } else {
-      SoundManager.playIncorrect();
-    }
-
-    if (correct || attempts >= 2) {
-      setChallengeAnswers(prev => [...prev, { correct, attempts }]);
-      setShowChallengeFeedback(true);
-    }
-
-    if (isConnected) {
-      const tag = correct ? '[CHALLENGE_CORRECT]' : '[CHALLENGE_INCORRECT]';
-      sendText(
-        `${tag} Match challenge: "${currentChallenge.question}" — `
-        + `${correct ? 'All terms matched correctly!' : 'Some matches are wrong. Re-read the definitions carefully.'}`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, matchedPairs, currentAttempts, isConnected, sendText]);
-
-  // Next challenge
-  const handleNextChallenge = useCallback(() => {
-    setSelectedOption(null);
-    setShowChallengeFeedback(false);
-    setSelectedMatchTerm(null);
-    setMatchedPairs([]);
-    setMatchChecked(false);
-    setMatchCorrect(false);
-    setCurrentAttempts(0);
-
-    if (currentChallengeIndex + 1 >= challenges.length) {
-      setAllChallengesComplete(true);
-      recordTermTime();
-
-      const correctCount = challengeAnswers.filter(a => a.correct).length;
-      const totalAttempts = challengeAnswers.reduce((sum, a) => sum + a.attempts, 0);
-      const accuracy = challenges.length > 0 ? Math.round((correctCount / challenges.length) * 100) : 0;
-
-      if (isConnected) {
-        sendText(
-          `[ALL_COMPLETE] Student finished all ${challenges.length} vocabulary challenges. `
-          + `Accuracy: ${accuracy}%. Terms explored: ${termsExplored}/${totalTerms}. `
-          + `Related word clicks: ${relatedWordClicks}. `
-          + `Celebrate vocabulary mastery and encourage using the words.`,
-          { silent: true }
-        );
-      }
-
-      if (!hasSubmittedEvaluation) {
-        const avgTimePerTerm = totalTerms > 0
-          ? Math.round(Object.values(termTimes).reduce((a, b) => a + b, 0) / totalTerms)
-          : 0;
-
-        const byType = (type: string) => {
-          const relevant = challenges
-            .map((c, i) => ({ ...c, answer: challengeAnswers[i] }))
-            .filter(c => c.type === type && c.answer);
-          if (relevant.length === 0) return 0;
-          return Math.round((relevant.filter(c => c.answer?.correct).length / relevant.length) * 100);
-        };
-
-        const metrics: VocabularyExplorerMetrics = {
-          type: 'vocabulary-explorer',
-          termsExplored,
-          totalTerms,
-          matchAccuracy: byType('match'),
-          fillBlankAccuracy: byType('fill_blank'),
-          contextAccuracy: byType('context'),
-          challengeAttempts: totalAttempts,
-          averageTimePerTerm: avgTimePerTerm,
-          relatedWordClicks,
-        };
-
-        const overallScore = Math.round(
-          (termsExplored / Math.max(totalTerms, 1)) * 30 + accuracy * 0.7
-        );
-
-        submitEvaluation(
-          accuracy >= 70 && termsExplored >= totalTerms,
-          overallScore,
-          metrics,
-          { challengeAnswers: [...challengeAnswers] }
-        );
-      }
-    } else {
-      setCurrentChallengeIndex(prev => prev + 1);
-    }
-  }, [
-    currentChallengeIndex, challenges, challengeAnswers, termsExplored, totalTerms,
-    termTimes, relatedWordClicks, isConnected, sendText, hasSubmittedEvaluation,
-    submitEvaluation, recordTermTime,
-  ]);
-
-  // Auto-submit for display-only
-  const hasAutoSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (challenges.length === 0 && allTermsExplored && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      const avgTimePerTerm = totalTerms > 0
-        ? Math.round(Object.values(termTimes).reduce((a, b) => a + b, 0) / totalTerms)
-        : 0;
-
-      const metrics: VocabularyExplorerMetrics = {
-        type: 'vocabulary-explorer',
-        termsExplored,
-        totalTerms,
-        matchAccuracy: 0,
-        fillBlankAccuracy: 0,
-        contextAccuracy: 0,
-        challengeAttempts: 0,
-        averageTimePerTerm: avgTimePerTerm,
-        relatedWordClicks,
-      };
-
-      submitEvaluation(true, 100, metrics, {});
-    }
-  }, [challenges.length, allTermsExplored, hasSubmittedEvaluation, termsExplored, totalTerms, termTimes, relatedWordClicks, submitEvaluation]);
-
-  // -------------------------------------------------------------------------
-  // Render: Term Card
-  // -------------------------------------------------------------------------
-  const renderTermCard = () => {
-    if (!currentTerm) return null;
-
-    return (
-      <div className="space-y-4">
-        {/* Term header */}
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-slate-100 text-lg font-bold">{currentTerm.word}</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <LuminaBadge accent="blue" className="text-[10px]">
-                {currentTerm.partOfSpeech}
-              </LuminaBadge>
-              {currentTerm.pronunciation && (
-                <span className="text-slate-500 text-xs italic">/{currentTerm.pronunciation}/</span>
-              )}
-            </div>
-          </div>
-          <span className="text-slate-600 text-xs shrink-0">
-            {currentTermIndex + 1} of {totalTerms}
-          </span>
-        </div>
-
-        {/* Definition */}
-        <LuminaPanel className="p-3">
-          <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium mb-1">Definition</p>
-          <p className="text-slate-200 text-sm leading-relaxed">{currentTerm.definition}</p>
-        </LuminaPanel>
-
-        {/* Example sentence */}
-        <LuminaPanel accent="cyan" className="p-3">
-          <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium mb-1">In a Sentence</p>
-          <p className="text-slate-300 text-sm leading-relaxed italic">&ldquo;{currentTerm.exampleSentence}&rdquo;</p>
-        </LuminaPanel>
-
-        {/* Related words */}
-        {currentTerm.relatedWords && currentTerm.relatedWords.length > 0 && (
-          <div>
-            <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium mb-2">Related Words</p>
-            <div className="flex flex-wrap gap-2">
-              {currentTerm.relatedWords.map((rw, i) => {
-                const hasLink = terms.some(t => t.word.toLowerCase() === rw.toLowerCase());
-                return hasLink ? (
-                  <button
-                    key={i}
-                    onClick={() => handleRelatedWordClick(rw)}
-                    className="px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-400/20 text-purple-300 text-xs hover:bg-purple-500/20 transition-all"
-                  >
-                    {rw}
-                  </button>
-                ) : (
-                  <span
-                    key={i}
-                    className="px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-slate-400 text-xs"
-                  >
-                    {rw}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Word origin */}
-        {currentTerm.wordOrigin && (
-          <LuminaPanel accent="amber" className="p-3">
-            <div className="flex items-start gap-2">
-              <LuminaBadge accent="amber" className="text-[10px] shrink-0">
-                Word Origin
-              </LuminaBadge>
-              <p className="text-slate-300 text-xs leading-relaxed">{currentTerm.wordOrigin}</p>
-            </div>
-          </LuminaPanel>
-        )}
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-2">
-          <LuminaButton
-            tone="subtle"
-            className="text-xs h-8"
-            onClick={() => handleTermChange(currentTermIndex - 1)}
-            disabled={currentTermIndex === 0}
-          >
-            Previous
-          </LuminaButton>
-          <span className="text-slate-500 text-xs">
-            Term {currentTermIndex + 1} of {totalTerms}
-          </span>
-          {currentTermIndex < totalTerms - 1 ? (
-            <LuminaButton
-              tone="primary"
-              className="text-xs h-8"
-              onClick={() => handleTermChange(currentTermIndex + 1)}
-            >
-              Next
-            </LuminaButton>
-          ) : (
-            <div className="w-[72px]" />
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // -------------------------------------------------------------------------
-  // Render: Challenge
-  // -------------------------------------------------------------------------
-  const renderChallenge = () => {
-    if (!currentChallenge) return null;
-
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-slate-400 text-xs">
-            Challenge {currentChallengeIndex + 1} of {challenges.length}
-          </p>
-          <LuminaBadge className="text-xs">
-            {currentChallenge.type.replace('_', ' ')}
-          </LuminaBadge>
-        </div>
-
-        <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
-
-        {/* Fill-in-blank sentence display */}
-        {currentChallenge.type === 'fill_blank' && currentChallenge.sentence && (
-          <LuminaPanel className="p-3">
-            <p className="text-slate-300 text-sm italic">
-              &ldquo;{currentChallenge.sentence}&rdquo;
-            </p>
-          </LuminaPanel>
-        )}
-
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace}>
-        {/* MC options (fill_blank / context / identify) */}
-        {currentChallenge.type !== 'match' && currentChallenge.options && (
-          <div className="space-y-2">
-            {currentChallenge.options.map((opt, i) => {
-              const isSelected = selectedOption === i;
-              const isCorrectOption = i === currentChallenge.correctIndex;
-
-              const state = !showChallengeFeedback
-                ? (isSelected ? 'selected' : 'idle')
-                : isCorrectOption
-                  ? 'correct'
-                  : isSelected
-                    ? 'incorrect'
-                    : 'dimmed';
-
-              return (
-                <LuminaAnswerChoice
-                  key={i}
-                  state={state}
-                  className="p-3 text-sm rounded-xl"
-                  onClick={() => handleMCAnswer(i)}
-                  disabled={showChallengeFeedback}
-                >
-                  {opt}
-                </LuminaAnswerChoice>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Match challenge */}
-        {currentChallenge.type === 'match' && currentChallenge.matchPairs && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              {/* Terms column */}
-              <div className="space-y-2">
-                <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium">Terms</p>
-                {currentChallenge.matchPairs.map((pair, i) => {
-                  const isMatched = matchedPairs.some(([t]) => t === i);
-                  const isActive = selectedMatchTerm === i;
-                  const pairIdx = matchedPairs.findIndex(([t]) => t === i);
-                  const isCorrectPair = matchChecked && matchedPairs.some(([t, d]) => t === i && t === d);
-                  const isWrongPair = matchChecked && !matchCorrect && isMatched && !isCorrectPair;
-
-                  // Graded states use the shared answer-state color language;
-                  // transient active/pre-submit pairing colors stay bespoke.
-                  const gradedClass = isCorrectPair
-                    ? answerStateClasses.correct
-                    : isWrongPair
-                      ? answerStateClasses.incorrect
-                      : isActive
-                        ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
-                        : isMatched
-                          ? 'bg-purple-500/10 border-purple-400/30 text-purple-300'
-                          : 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-200';
-
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => handleMatchTermSelect(i)}
-                      disabled={matchChecked || isMatched}
-                      className={`w-full text-left p-2.5 rounded-lg border text-xs font-medium transition-all duration-200 ${gradedClass}`}
-                    >
-                      {isMatched && <span className="text-purple-400 mr-1">{pairIdx + 1}.</span>}
-                      {pair.term}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Definitions column */}
-              <div className="space-y-2">
-                <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium">Definitions</p>
-                {shuffledDefOrder.map((origIdx) => {
-                  const pair = currentChallenge.matchPairs![origIdx];
-                  const isMatched = matchedPairs.some(([, d]) => d === origIdx);
-                  const pairIdx = matchedPairs.findIndex(([, d]) => d === origIdx);
-                  const isCorrectPair = matchChecked && matchedPairs.some(([t, d]) => d === origIdx && t === d);
-                  const isWrongPair = matchChecked && !matchCorrect && isMatched && !isCorrectPair;
-
-                  // Graded states use the shared answer-state color language;
-                  // transient pre-submit pairing colors stay bespoke.
-                  const gradedClass = isCorrectPair
-                    ? answerStateClasses.correct
-                    : isWrongPair
-                      ? answerStateClasses.incorrect
-                      : isMatched
-                        ? 'bg-purple-500/10 border-purple-400/30 text-purple-300'
-                        : selectedMatchTerm !== null
-                          ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-200 ring-1 ring-blue-400/20'
-                          : 'bg-white/5 border-white/10 text-slate-400';
-
-                  return (
-                    <button
-                      key={origIdx}
-                      onClick={() => handleMatchDefSelect(origIdx)}
-                      disabled={matchChecked || isMatched || selectedMatchTerm === null}
-                      className={`w-full text-left p-2.5 rounded-lg border text-xs transition-all duration-200 ${gradedClass}`}
-                    >
-                      {isMatched && <span className="text-purple-400 mr-1">{pairIdx + 1}.</span>}
-                      {pair.definition}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {selectedMatchTerm !== null && !matchChecked && (
-              <p className="text-blue-400 text-xs text-center">Now select the matching definition</p>
-            )}
-
-            {!showChallengeFeedback && matchedPairs.length >= (currentChallenge.matchPairs?.length || 0) && (
-              <div className="flex justify-center pt-2">
-                <LuminaActionButton action="check" onClick={handleMatchCheck}>
-                  Check Matches
-                </LuminaActionButton>
-              </div>
-            )}
-            {matchChecked && !matchCorrect && !showChallengeFeedback && (
-              <p className="text-amber-400 text-xs text-center">Some matches are wrong — re-read the definitions!</p>
-            )}
-          </div>
-        )}
-
-        </div>
-
-        {/* Feedback */}
-        {showChallengeFeedback && (
-          <div className="space-y-3">
-            <LuminaFeedbackCard
-              status={challengeAnswers[challengeAnswers.length - 1]?.correct ? 'correct' : 'insight'}
-              label={challengeAnswers[challengeAnswers.length - 1]?.correct ? 'Correct!' : 'Not quite, but let\'s keep going.'}
-            >
-              {currentChallenge.explanation}
-            </LuminaFeedbackCard>
-            <div className="flex justify-center">
-              <LuminaActionButton action="next" onClick={handleNextChallenge}>
-                {currentChallengeIndex + 1 >= challenges.length ? 'See Results' : 'Next Challenge'}
-              </LuminaActionButton>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // -------------------------------------------------------------------------
-  // Render: Results
-  // -------------------------------------------------------------------------
-  const renderResults = () => {
-    const correctCount = challengeAnswers.filter(a => a.correct).length;
-    const accuracy = challenges.length > 0 ? Math.round((correctCount / challenges.length) * 100) : 0;
-    const score = submittedResult?.score ?? accuracy;
-
-    return (
-      <div className="text-center space-y-4 py-4">
-        <div className="text-3xl font-bold text-emerald-400">{score}%</div>
-        <p className="text-slate-200 text-sm font-medium">Vocabulary Mastered!</p>
-        <div className="flex justify-center gap-4 text-xs text-slate-400">
-          <span>{termsExplored}/{totalTerms} terms learned</span>
-          <span>{correctCount}/{challenges.length} challenges correct</span>
-          <span>{relatedWordClicks} related words explored</span>
-          {elapsedMs > 0 && <span>{Math.round(elapsedMs / 1000)}s total</span>}
-        </div>
-      </div>
-    );
-  };
-
-  // -------------------------------------------------------------------------
-  // Main Render
-  // -------------------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation || !showChallenges || !currentChallenge ? null : `challenge-${currentChallengeIndex}`,
-    label: 'The challenge answers',
-    solved: currentChallenge?.type === 'match' ? matchChecked && matchCorrect : showChallengeFeedback && selectedOption === currentChallenge?.correctIndex,
+    scopeId: done || studying || !item ? null : item.id,
+    label: 'The check: the words and your answer',
+    solved: revealed,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
-  return (
-    <LuminaCard className={`shadow-2xl ${className || ''}`}>
-      <LuminaCardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">&#128218;</span>
-            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          </div>
-          <LuminaBadge accent="cyan" className="text-xs">
-            {totalTerms} Terms
-          </LuminaBadge>
+  if (!bank.length || !items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This word set has no words to check.</p></LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  // ── Render: the word cards ──
+  const renderStudy = () => {
+    const t = currentCard;
+    return (
+      <div className="space-y-4" data-study="cards">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {bank.map((term, i) => (
+            <LuminaButton key={term.id} tone={i === card ? 'ghost' : 'subtle'} aria-label={`Card ${i + 1}`}
+              className={`shrink-0 text-xs px-3 py-2 h-auto ${i === card ? 'text-slate-100' : visited.has(term.id) ? 'text-slate-300' : 'text-slate-500'}`}
+              onClick={() => openCard(i)}>
+              {term.word}
+            </LuminaButton>
+          ))}
         </div>
-        <p className="text-slate-400 text-sm mt-1">{introduction}</p>
+        {t && (
+          <div className="min-h-[200px] space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-slate-100 text-lg font-bold">{t.word}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <LuminaBadge accent="blue" className="text-[10px]">{t.partOfSpeech}</LuminaBadge>
+                  {t.pronunciation && <span className="text-slate-500 text-xs italic">/{t.pronunciation}/</span>}
+                </div>
+              </div>
+              <span className="text-slate-600 text-xs shrink-0">{card + 1} of {bank.length}</span>
+            </div>
+            <LuminaPanel className="p-3">
+              <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium mb-1">What it means</p>
+              <p className="text-slate-200 text-sm leading-relaxed">{t.definition}</p>
+            </LuminaPanel>
+            <LuminaPanel accent="cyan" className="p-3">
+              <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium mb-1">In a sentence</p>
+              <p className="text-slate-300 text-sm leading-relaxed italic">&ldquo;{t.exampleSentence}&rdquo;</p>
+            </LuminaPanel>
+            {(t.relatedWords ?? []).length > 0 && (
+              <div>
+                <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium mb-2">Related words</p>
+                <div className="flex flex-wrap gap-2">
+                  {t.relatedWords.map((rw, i) => bank.some(x => x.word.toLowerCase() === rw.toLowerCase()) ? (
+                    <button key={i} type="button" onClick={() => followRelated(rw)} aria-label={`Open the card for ${rw}`}
+                      className="px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-400/20 text-purple-300 text-xs hover:bg-purple-500/20 transition-all">
+                      {rw}
+                    </button>
+                  ) : (
+                    <span key={i} className="px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-slate-400 text-xs">{rw}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {t.wordOrigin && (
+              <LuminaPanel accent="amber" className="p-3">
+                <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium mb-1">Where the word comes from</p>
+                <p className="text-slate-300 text-xs leading-relaxed">{t.wordOrigin}</p>
+              </LuminaPanel>
+            )}
+            <div className="flex items-center justify-between pt-2">
+              <LuminaButton tone="subtle" className="text-xs h-8" aria-label="Previous card" onClick={() => openCard(card - 1)} disabled={card === 0}>Previous</LuminaButton>
+              <span className="text-slate-500 text-xs">{visited.size} of {bank.length} cards opened</span>
+              <LuminaButton tone="subtle" className="text-xs h-8" aria-label="Next card" onClick={() => openCard(card + 1)} disabled={card >= bank.length - 1}>Next card</LuminaButton>
+            </div>
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+          <p className="text-slate-400 text-xs">The cards close when the check starts.</p>
+          <LuminaButton tone="primary" className="text-xs h-8" aria-label="Start the check" onClick={startCheck} disabled={learnerBlocked()}>
+            Start the check
+          </LuminaButton>
+        </div>
+      </div>
+    );
+  };
+
+  // ── Render: a match ──
+  const renderMatch = (m: MatchItem) => {
+    const pairNo = (termId: string) => m.terms.filter(t => work.pairs[t]).indexOf(termId) + 1;
+    const examples = leverOn(EXAMPLES_LEVER) && !practice ? examplesShown(m, bank) : [];
+    const termClass = (id: string) => revealed ? answerStateClasses.correct
+      : wrongShown && work.pairs[id] ? 'bg-white/5 border-white/10 text-slate-300'
+        : activeWord === id ? 'bg-blue-500/20 border-blue-400/50 text-blue-300'
+          : work.pairs[id] ? 'bg-purple-500/10 border-purple-400/30 text-purple-300'
+            : 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-200';
+    return (
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium">Words</p>
+          {m.terms.map((id, i) => {
+            const t = bank.find(x => x.id === id);
+            const ex = examples.find(e => e.id === id);
+            return (
+              <div key={id} className="space-y-1">
+                <button type="button" data-pip-object={`term-${i + 1}`} aria-label={t?.word} disabled={closed}
+                  onClick={() => tapWord(id)}
+                  className={`w-full text-left p-2.5 rounded-lg border text-sm font-medium transition-all duration-200 ${termClass(id)}`}>
+                  {work.pairs[id] && <span className="text-purple-400 mr-1">{pairNo(id)}.</span>}
+                  {t?.word}
+                </button>
+                {ex && <p data-lever="examples" className="text-xs italic text-slate-400 pl-1">&ldquo;{ex.example}&rdquo;</p>}
+              </div>
+            );
+          })}
+        </div>
+        <div className="space-y-2">
+          <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium">Meanings</p>
+          {m.defs.map((d, i) => {
+            const owner = m.terms.find(t => work.pairs[t] === d);
+            const isExtra = d === extraMeaning(m);
+            const cls = revealed ? (isExtra ? 'bg-white/5 border-white/10 text-slate-500' : answerStateClasses.correct)
+              : owner && !wrongShown ? 'bg-purple-500/10 border-purple-400/30 text-purple-300'
+                : activeWord ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-200 ring-1 ring-blue-400/20'
+                  : 'bg-white/5 border-white/10 text-slate-300';
+            return (
+              <button key={d} type="button" data-pip-object={`meaning-${i + 1}`} disabled={closed || !activeWord || !!owner}
+                onClick={() => tapMeaning(d)}
+                className={`w-full text-left p-2.5 rounded-lg border text-xs transition-all duration-200 ${cls}`}>
+                <span className="text-slate-500 mr-1">{letter(i)}.</span>
+                {owner && <span className="text-purple-400 mr-1">{pairNo(owner)}.</span>}
+                {bank.find(x => x.id === d)?.definition}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // ── Render: a choice ──
+  const renderChoice = (c: ChoiceItem) => {
+    const meanings = leverOn(MEANINGS_LEVER) ? meaningsShown(c, bank) : [];
+    const state = (id: string): AnswerChoiceState => {
+      if (revealed) return id === c.term ? 'correct' : id === work.picked ? 'incorrect' : 'dimmed';
+      if (levers.dropped.includes(id)) return 'dimmed';
+      if (wrongShown && work.picked === id) return 'incorrect';
+      return work.picked === id ? 'selected' : 'idle';
+    };
+    return (
+      <div className="space-y-3">
+        <LuminaPanel className="p-3">
+          <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium mb-1">
+            {c.kind === 'fill_blank' ? 'The sentence' : c.clue === 'scenario' ? 'What is happening' : 'The meaning'}
+          </p>
+          <p className="text-slate-200 text-sm leading-relaxed">&ldquo;{clueText(c, bank)}&rdquo;</p>
+        </LuminaPanel>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {c.options.map(id => {
+            const t = bank.find(x => x.id === id);
+            const meaning = meanings.find(x => x.id === id);
+            return (
+              <LuminaAnswerChoice key={id} aria-label={t?.word} state={state(id)} className="p-3 text-sm rounded-xl"
+                disabled={closed || levers.dropped.includes(id)} onClick={() => pick(id)}>
+                <span className="font-semibold">{t?.word}</span>
+                {leverOn(KINDS_LEVER) && t && <span data-lever="kinds" className="ml-2 text-xs text-sky-300">({posOf(t) || 'word'})</span>}
+                {meaning && !levers.dropped.includes(id) && <span data-lever="meanings" className="mt-1 block text-xs font-normal text-slate-400">{meaning.meaning}</span>}
+              </LuminaAnswerChoice>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const revealText = (): string => {
+    if (!item) return '';
+    if (item.kind === 'match') return 'Every word is with its meaning.';
+    const t = bank.find(x => x.id === item.term);
+    if (!t) return '';
+    if (item.kind === 'fill_blank') {
+      const cloze = clozeOf(t);
+      return cloze ? `"${cloze.text.replace('_____', t.word)}" ${t.word} means: ${t.definition}` : `${t.word} means: ${t.definition}`;
+    }
+    return `${t.word} means: ${t.definition}`;
+  };
+
+  const kindLabel = practice ? 'A smaller match first' : item ? KIND_LABEL[item.kind] : '';
+
+  return (
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <div className="flex items-center justify-between">
+          <LuminaCardTitle>{title}</LuminaCardTitle>
+          <LuminaBadge accent="cyan" className="text-xs">{bank.length} words</LuminaBadge>
+        </div>
+        {introduction && !done && <p className="text-slate-400 text-sm mt-1">{introduction}</p>}
       </LuminaCardHeader>
 
-      <LuminaCardContent className="space-y-5">
-        {allChallengesComplete ? (
-          renderResults()
-        ) : showChallenges ? (
-          <div className="border-t border-white/10 pt-4">
-            <LuminaSectionLabel accent="cyan" size="sm" className="mb-3">
-              Vocabulary Check
-            </LuminaSectionLabel>
-            {renderChallenge()}
-          </div>
-        ) : (
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Words checked">
+            {`${results.filter(r => r.correct).length} of ${items.length} items answered.`}
+          </LuminaFeedbackCard>
+        ) : studying ? renderStudy() : item && (
           <>
-            {/* Term tabs */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1">
-              {terms.map((term, i) => {
-                const isActive = currentTermIndex === i;
-                const isVisited = visitedTerms.has(term.id);
+            <LuminaSectionLabel accent="cyan" size="sm">
+              {practice ? kindLabel : `${kindLabel} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+            </LuminaSectionLabel>
+            <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>
+              {item.kind === 'match' ? askOf(item, bank)
+                : item.kind === 'fill_blank' ? 'Which word completes the sentence?'
+                  : item.clue === 'scenario' ? 'Which word fits what is happening here?' : 'Which word means this?'}
+            </LuminaPrompt>
 
-                return (
-                  <LuminaButton
-                    key={term.id}
-                    tone={isActive ? 'ghost' : isVisited ? 'subtle' : 'subtle'}
-                    className={`shrink-0 text-xs px-3 py-2 h-auto ${
-                      isActive
-                        ? 'text-slate-100'
-                        : isVisited
-                          ? 'text-slate-300'
-                          : 'border-transparent bg-transparent text-slate-500 hover:text-slate-300'
-                    }`}
-                    onClick={() => handleTermChange(i)}
-                  >
-                    {term.word}
-                    {isVisited && !isActive && <span className="ml-1 text-emerald-400">&#10003;</span>}
-                  </LuminaButton>
-                );
-              })}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-3">
+              {item.kind === 'match' ? renderMatch(item) : renderChoice(item)}
+              {item.kind === 'match' && activeWord && !closed && (
+                <p className="text-blue-400 text-xs text-center">Now tap the meaning that goes with it.</p>
+              )}
             </div>
 
-            {/* Term content */}
-            <div className="min-h-[200px]">{renderTermCard()}</div>
-
-            {/* Summary (after all explored) */}
-            {showSummary && (
-              <div className="border-t border-white/10 pt-3">
-                <p className="text-emerald-400 text-xs font-medium">
-                  All {totalTerms} terms explored!
-                </p>
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={closed || !workComplete(item, work)} onClick={check}>
+                  {item.kind === 'match' ? 'Check Matches' : 'Check Answer'}
+                </LuminaActionButton>
               </div>
             )}
 
-            {/* Progress */}
-            <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-white/5">
-              <span>{termsExplored} of {totalTerms} terms explored</span>
-              {allTermsExplored && challenges.length > 0 && !showChallenges && (
-                <LuminaButton
-                  tone="primary"
-                  className="text-xs h-8"
-                  onClick={handleStartChallenges}
-                >
-                  Start Challenges ({challenges.length})
-                </LuminaButton>
-              )}
-              {!allTermsExplored && (
-                <span className="text-slate-600">Explore all terms to unlock challenges</span>
-              )}
-            </div>
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {revealText()}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongShown && (
+              <LuminaFeedbackCard status="incorrect">
+                {item.kind === 'match' ? 'Not every word is with its meaning.' : 'That is not it.'}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
+
+            {!tutorOwned && revealed && !practice && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
+              </div>
+            )}
           </>
         )}
       </LuminaCardContent>
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const VocabularyExplorer = withWorkspaceController<VocabularyExplorerProps, ProgressOptions<VocabItem>, Progress>(
+  'vocabulary-explorer', VocabularyExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('vocabulary-explorer'));
 
 export default VocabularyExplorer;

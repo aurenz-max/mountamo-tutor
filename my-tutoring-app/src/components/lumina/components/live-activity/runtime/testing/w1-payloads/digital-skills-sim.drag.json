@@ -1,0 +1,156 @@
+{
+ "source": "qa/tutor-reports/digital-skills-sim-runtime-drag-payload-2026-10-16.json",
+ "primitiveId": "digital-skills-sim",
+ "evalMode": "drag",
+ "data": {
+  "title": "Fun Farm Dragging",
+  "description": "Practice dragging fun farm pictures into the right boxes!",
+  "theme": "farm",
+  "challengeTypes": [
+   "drag"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "mode": "drag",
+    "theme": "farm",
+    "thing": {
+     "name": "hen",
+     "emoji": "\ud83d\udc14"
+    },
+    "homes": [
+     {
+      "name": "bucket",
+      "emoji": "\ud83e\udea3"
+     },
+     {
+      "name": "cart",
+      "emoji": "\ud83d\uded2"
+     },
+     {
+      "name": "box",
+      "emoji": "\ud83d\udce6"
+     },
+     {
+      "name": "bowl",
+      "emoji": "\ud83e\udd63"
+     }
+    ],
+    "target": 0,
+    "id": "drag-1"
+   },
+   {
+    "mode": "drag",
+    "theme": "farm",
+    "thing": {
+     "name": "tractor",
+     "emoji": "\ud83d\ude9c"
+    },
+    "homes": [
+     {
+      "name": "cart",
+      "emoji": "\ud83d\uded2"
+     },
+     {
+      "name": "bowl",
+      "emoji": "\ud83e\udd63"
+     },
+     {
+      "name": "box",
+      "emoji": "\ud83d\udce6"
+     },
+     {
+      "name": "basket",
+      "emoji": "\ud83e\uddfa"
+     }
+    ],
+    "target": 3,
+    "id": "drag-2"
+   },
+   {
+    "mode": "drag",
+    "theme": "farm",
+    "thing": {
+     "name": "duck",
+     "emoji": "\ud83e\udd86"
+    },
+    "homes": [
+     {
+      "name": "box",
+      "emoji": "\ud83d\udce6"
+     },
+     {
+      "name": "bucket",
+      "emoji": "\ud83e\udea3"
+     },
+     {
+      "name": "bowl",
+      "emoji": "\ud83e\udd63"
+     },
+     {
+      "name": "basket",
+      "emoji": "\ud83e\uddfa"
+     }
+    ],
+    "target": 1,
+    "id": "drag-3"
+   },
+   {
+    "mode": "drag",
+    "theme": "farm",
+    "thing": {
+     "name": "horse",
+     "emoji": "\ud83d\udc34"
+    },
+    "homes": [
+     {
+      "name": "bucket",
+      "emoji": "\ud83e\udea3"
+     },
+     {
+      "name": "basket",
+      "emoji": "\ud83e\uddfa"
+     },
+     {
+      "name": "box",
+      "emoji": "\ud83d\udce6"
+     },
+     {
+      "name": "cart",
+      "emoji": "\ud83d\uded2"
+     }
+    ],
+    "target": 0,
+    "id": "drag-4"
+   },
+   {
+    "mode": "drag",
+    "theme": "farm",
+    "thing": {
+     "name": "horse",
+     "emoji": "\ud83d\udc34"
+    },
+    "homes": [
+     {
+      "name": "bucket",
+      "emoji": "\ud83e\udea3"
+     },
+     {
+      "name": "cart",
+      "emoji": "\ud83d\uded2"
+     },
+     {
+      "name": "basket",
+      "emoji": "\ud83e\uddfa"
+     },
+     {
+      "name": "bowl",
+      "emoji": "\ud83e\udd63"
+     }
+    ],
+    "target": 2,
+    "id": "drag-5"
+   }
+  ]
+ }
+}

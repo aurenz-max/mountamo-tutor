@@ -5,8 +5,8 @@
  * The tier is scaffold WITHDRAWAL only — it never changes the journey structure,
  * the questions, the options, the correctIndex, the 2-attempt allowance, or the
  * post-answer explanations. What it does change (hard tier only; easy = legacy):
- *   L1 canvas planet-name labels — hidden ONLY while viewMode === 'quiz'
- *      (legitimate scaffold in every other view — untouched there)
+ *   L1 canvas planet-name labels — hidden while viewMode === 'quiz' (since
+ *      2026-10-15 at EVERY tier: a leak fix, not a tier); kept in every other view
  *   L2 comparisonToEarth captions — hidden; raw value + unit remain
  *   L3 first-miss tutor hint — silent retry (the hint sendText is skipped;
  *      the 2-attempt allowance itself is UNCHANGED)
@@ -157,22 +157,13 @@ describe('planetary-explorer tier · L1: canvas labels in quiz view', () => {
     expect(screen.getByText('Earth', { selector: 'span' })).toBeTruthy();
   });
 
-  it('medium keeps labels in the quiz view', () => {
-    render(<PlanetaryExplorer data={makeData(MEDIUM)} />);
+  // 2026-10-15 (W1 binding): the quiz map wears no names at EVERY tier. A labelled map in order from the Sun answers
+  // the distance and size clues ("closest to the Sun"), so it was an answer on screen at easy, medium and legacy.
+  it.each([['medium', MEDIUM], ['easy', EASY], ['legacy (no tier)', {}]] as const)('%s also hides the labels in the quiz view', (_name, tier) => {
+    render(<PlanetaryExplorer data={makeData(tier)} />);
     toQuiz();
-    expect(screen.getByText('Earth')).toBeTruthy();
-  });
-
-  it('easy keeps labels in the quiz view (easy = legacy)', () => {
-    render(<PlanetaryExplorer data={makeData(EASY)} />);
-    toQuiz();
-    expect(screen.getByText('Earth')).toBeTruthy();
-  });
-
-  it('legacy (no tier) keeps labels in the quiz view', () => {
-    render(<PlanetaryExplorer data={makeData()} />);
-    toQuiz();
-    expect(screen.getByText('Earth')).toBeTruthy();
+    expect(screen.getByText('Identification Quiz')).toBeTruthy();
+    expect(screen.queryByText('Earth')).toBeNull();
   });
 });
 

@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/flight-forces-explorer-runtime-observe-payload-2026-10-15.json",
+ "primitiveId": "flight-forces-explorer",
+ "evalMode": "observe",
+ "data": {
+  "title": "Four Forces Flight Lab",
+  "overview": "Learners will examine a plane's four force arrows to observe height and speed.",
+  "aircraftType": "cessna",
+  "gradeBand": "3-5",
+  "challengeTypes": [
+   "observe"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "observe-1",
+    "mode": "observe",
+    "aircraft": "cessna",
+    "forces": {
+     "lift": 5,
+     "weight": 5,
+     "thrust": 5,
+     "drag": 7
+    },
+    "asked": "both",
+    "noseUp": false
+   },
+   {
+    "id": "observe-2",
+    "mode": "observe",
+    "aircraft": "cessna",
+    "forces": {
+     "lift": 3,
+     "weight": 3,
+     "thrust": 7,
+     "drag": 5
+    },
+    "asked": "both",
+    "noseUp": false
+   },
+   {
+    "id": "observe-3",
+    "mode": "observe",
+    "aircraft": "cessna",
+    "forces": {
+     "lift": 4,
+     "weight": 6,
+     "thrust": 5,
+     "drag": 5
+    },
+    "asked": "speed",
+    "noseUp": false
+   },
+   {
+    "id": "observe-4",
+    "mode": "observe",
+    "aircraft": "cessna",
+    "forces": {
+     "lift": 5,
+     "weight": 3,
+     "thrust": 6,
+     "drag": 6
+    },
+    "asked": "both",
+    "noseUp": false
+   }
+  ]
+ }
+}

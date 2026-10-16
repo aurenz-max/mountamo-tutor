@@ -178,3 +178,19 @@ def test_naming_the_cards_left_is_not_a_fix(text, fix):
 ])
 def test_the_wire_tags_are_upper_case_words(text, leak):
     assert (check(text, 'miss')['checks']['no_protocol_leak'] is False) is leak
+
+
+def test_two_levers_in_one_turn():
+    # equation-balancer guided stuck replay (10-15): atom_tally then molecule_view, and the reply described only the second.
+    second = {'name': 'perform_runtime_action', 'args': {'actionId': 'e/4/0', 'lever': 'molecule_view'}}
+    two = check('Each formula now shows its molecules drawn out as lettered balls.', 'stuck', calls=[PULL, second])
+    assert two['checks']['one_lever_per_turn'] is False and two['evidence']['one_lever_per_turn'] == 'five_frame, molecule_view'
+    assert check('Look at the frame.', 'stuck', calls=[PULL])['checks']['one_lever_per_turn'] is True
+    assert check('What do you notice?', 'stuck')['checks']['one_lever_per_turn'] is None
+
+
+def test_an_api_error_is_not_an_empty_reply():
+    # 10-16: nine concurrent replays hit 429; 154 errored samples had scored as empty tutor replies.
+    result = score({'text': '', 'calls': [], 'error': "HTTPStatusError('429 Too Many Requests')"}, {'kind': 'miss'},
+                   {'keys': [], 'ask': '', 'leakTokens': []})
+    assert result['checks'] == {'no_api_error': False}

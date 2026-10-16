@@ -1,380 +1,111 @@
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
-import type { GenerationContext } from "../generation/generationContext";
-
-// Import data types from component (single source of truth)
-import type {
-  SoundWaveExplorerData,
-  VibrationSource,
-  SoundMedium,
-  SoundDistance,
-  SoundChallengeType,
-  SoundLabTheme,
-  VibrationObject,
-  SoundChallenge,
-} from '../../primitives/visual-primitives/physics/SoundWaveExplorer';
-
+import type { GenerationContext } from '../generation/generationContext';
+import type { SoundWaveExplorerData } from '../../primitives/visual-primitives/physics/SoundWaveExplorer';
 import {
-  resolveEvalModeConstraint,
-  constrainChallengeTypeEnum,
-  buildChallengeTypePromptSection,
-  logEvalModeResolution,
-  type ChallengeTypeDoc,
-} from '../evalMode';
+  buildSoundItems, DEFAULT_MODES, SOUND_MODES, type SoundFocus, type SoundMode, type SoundTier,
+} from '../../primitives/visual-primitives/physics/soundWaveWorkspace';
+import { resolveEvalModeConstraint, logEvalModeResolution, type ChallengeTypeDoc } from '../evalMode';
 
-// Re-export for convenience
-export type {
-  SoundWaveExplorerData,
-  VibrationSource,
-  SoundMedium,
-  SoundDistance,
-  SoundChallengeType,
-  SoundLabTheme,
-  VibrationObject,
-  SoundChallenge,
+export type { SoundWaveExplorerData };
+
+/**
+ * Sound Wave Explorer generator. Gemini reads the topic and writes only the frame: a title, a neutral description and
+ * which part of sound the lesson is about (`soundFocus`). Every item, wave, choice and key is built by code
+ * (`soundWaveWorkspace.ts`, `buildSoundItems`): the model's old challenges stated their answers in the instruction,
+ * named keys the screen could not show (one object drawn, "which is lower?" asked about two), and carried no wave
+ * settings, so the schema carries no challenge, value or answer. `config.difficulty` picks the structural band (easy:
+ * shaking words, one feature differs; medium: physical changes, crossed waves; hard: the unchanged feature asked,
+ * three waves, two changes).
+ */
+const CHALLENGE_TYPE_DOCS: Record<SoundMode, ChallengeTypeDoc> = {
+  observe: { promptDoc: 'observe: a sound maker starts or stops shaking; say what happens to the sound (or the reverse)', schemaDescription: 'Vibration and sound' },
+  predict: { promptDoc: 'predict: one change to how a sound maker is played; predict the loudness or the pitch', schemaDescription: 'Predict a change' },
+  classify: { promptDoc: 'classify: read drawn waves; which sound is louder or higher', schemaDescription: 'Read the waves' },
+  apply: { promptDoc: 'apply: from a before and an after wave, say what was done to the sound maker', schemaDescription: 'Reverse reasoning' },
 };
 
-// ============================================================================
-// CHALLENGE TYPE DOCUMENTATION REGISTRY
-// ============================================================================
+const FOCI: SoundFocus[] = ['vibration', 'loudness', 'pitch', 'both'];
 
-const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
-  observe: {
-    promptDoc:
-      `"observe": Exploration + MC. Student taps different objects and observes what happens. `
-      + `Questions like "Which object makes the lowest sound?" or "What happens when you pluck harder?" `
-      + `Include 2-3 distractors. Easiest difficulty. Good for K-1.`,
-    schemaDescription: "'observe' (exploration + multiple choice)",
-  },
-  predict: {
-    promptDoc:
-      `"predict": Interactive prediction. Given a vibration source and settings (force, speed, medium), `
-      + `student predicts the resulting sound characteristics BEFORE hearing/seeing the result. `
-      + `Include distractor options. Medium difficulty. Good for grades 1-2.`,
-    schemaDescription: "'predict' (predict sound from vibration settings)",
-  },
-  classify: {
-    promptDoc:
-      `"classify": Categorization. Student classifies sounds or vibration sources by pitch (high/medium/low), `
-      + `loudness (quiet/medium/loud), or medium (travels/doesn't travel). `
-      + `Include distractors. Medium-high difficulty. Good for grades 2-3.`,
-    schemaDescription: "'classify' (categorize sounds by properties)",
-  },
-  apply: {
-    promptDoc:
-      `"apply": Reverse reasoning. Given a description of a sound (e.g., "loud and high-pitched"), `
-      + `student determines which object, force level, or speed level would produce it. `
-      + `Requires understanding the full vibration-to-sound model. Highest difficulty. Good for grade 3.`,
-    schemaDescription: "'apply' (determine settings from sound description)",
-  },
-};
-
-// ============================================================================
-// DETERMINISTIC OBJECTS — science facts, not creative content
-// ============================================================================
-
-const OBJECT_LIBRARY: Record<VibrationSource, VibrationObject> = {
-  guitar_string: { type: 'guitar_string', label: 'Guitar String', basePitch: 'medium', baseLoudness: 'medium' },
-  drum:          { type: 'drum',          label: 'Big Drum',      basePitch: 'low',    baseLoudness: 'loud' },
-  tuning_fork:   { type: 'tuning_fork',  label: 'Tuning Fork',   basePitch: 'high',   baseLoudness: 'quiet' },
-  rubber_band:   { type: 'rubber_band',  label: 'Rubber Band',   basePitch: 'medium', baseLoudness: 'quiet' },
-  bell:          { type: 'bell',          label: 'Bell',          basePitch: 'high',   baseLoudness: 'medium' },
-  whistle:       { type: 'whistle',       label: 'Whistle',       basePitch: 'high',   baseLoudness: 'loud' },
-};
-
-/** Pick contrasting objects by grade — low+high pitch pair, expanding set for higher grades */
-// TODO: intent steers prompt text only; the object set is code-picked here (Tier-2).
-function objectsForGrade(grade: string): VibrationObject[] {
-  switch (grade) {
-    case 'K':  return [OBJECT_LIBRARY.drum, OBJECT_LIBRARY.bell];
-    case '1':  return [OBJECT_LIBRARY.drum, OBJECT_LIBRARY.tuning_fork];
-    case '2':  return [OBJECT_LIBRARY.drum, OBJECT_LIBRARY.tuning_fork, OBJECT_LIBRARY.guitar_string];
-    case '3':  return [OBJECT_LIBRARY.drum, OBJECT_LIBRARY.tuning_fork, OBJECT_LIBRARY.guitar_string, OBJECT_LIBRARY.whistle];
-    default:   return [OBJECT_LIBRARY.drum, OBJECT_LIBRARY.tuning_fork];
-  }
-}
-
-// ============================================================================
-// SIMPLIFIED GEMINI SCHEMA — objects removed, challenges trimmed
-// ============================================================================
-
-const soundWaveExplorerResponseSchema: Schema = {
+const schema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: {
+    title: { type: Type.STRING, description: "Short, friendly title for the sound lab, e.g. 'Shake, Rattle and Hum'. Never states a result." },
+    description: { type: Type.STRING, description: 'One neutral sentence about what the learner investigates. Never says which sound is louder or higher.' },
+    soundFocus: {
       type: Type.STRING,
-      description: 'Engaging, age-appropriate title for the sound wave exploration activity',
-    },
-    description: {
-      type: Type.STRING,
-      description: 'Clear description explaining what students will learn about sound and vibrations',
-    },
-    challenges: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: {
-            type: Type.STRING,
-            description: 'Unique challenge identifier (e.g., "c1", "c2")',
-          },
-          type: {
-            type: Type.STRING,
-            enum: ['observe', 'predict', 'classify', 'apply'],
-            description: 'Challenge type',
-          },
-          instruction: {
-            type: Type.STRING,
-            description: 'Clear instruction text for the student. Do NOT reveal the answer.',
-          },
-          vibrationObject: {
-            type: Type.STRING,
-            enum: ['guitar_string', 'drum', 'tuning_fork', 'rubber_band', 'bell', 'whistle'],
-            description: 'Which vibration source this challenge uses',
-          },
-          correctAnswer: {
-            type: Type.STRING,
-            description: 'The correct answer to the challenge question',
-          },
-          distractor0: {
-            type: Type.STRING,
-            description: 'First wrong answer option',
-          },
-          distractor1: {
-            type: Type.STRING,
-            description: 'Second wrong answer option',
-          },
-          hint: {
-            type: Type.STRING,
-            description: 'Pedagogical hint that guides without giving away the answer',
-          },
-        },
-        required: ['id', 'type', 'instruction', 'vibrationObject', 'correctAnswer', 'distractor0', 'distractor1', 'hint'],
-      },
-      description: 'Array of challenges progressing in difficulty',
+      enum: FOCI,
+      description: "What the topic is about: 'vibration' (vibrations make sound), 'loudness' (loud and soft, volume, amplitude), "
+        + "'pitch' (high and low, frequency), 'both' (sound in general, or loudness and pitch together).",
     },
   },
-  required: ['title', 'description', 'challenges'],
+  required: ['title', 'description', 'soundFocus'],
 };
 
-// ============================================================================
-// GRADE-APPROPRIATE CONFIGURATION
-// ============================================================================
-
-const GRADE_CONFIGURATIONS: Record<string, { theme: SoundLabTheme; numChallenges: number; guidance: string }> = {
-  K: {
-    theme: 'music_room',
-    numChallenges: 4,
-    guidance: 'Focus on observation. "Tap the drum! Can you feel it shake?" Simple cause-and-effect. Very simple vocabulary.',
-  },
-  '1': {
-    theme: 'music_room',
-    numChallenges: 4,
-    guidance: 'Observation + simple predictions. "What happens when you pluck harder?" Compare loud vs quiet, high vs low pitch.',
-  },
-  '2': {
-    theme: 'playground',
-    numChallenges: 5,
-    guidance: 'Prediction + classification. Compare different objects. Introduce the idea that vibrations make sound, faster vibrations = higher pitch.',
-  },
-  '3': {
-    theme: 'science_lab',
-    numChallenges: 6,
-    guidance: 'Full range including apply. Sound travel through materials (air vs water vs solid vs vacuum). Distance affects volume. Reverse reasoning.',
-  },
+const normalizeTier = (d?: string): SoundTier => {
+  const t = (d ?? '').toLowerCase().trim();
+  return t === 'easy' || t === 'hard' ? t : 'medium';
 };
 
-// ============================================================================
-// WITHIN-MODE SUPPORT TIER (config.difficulty) — display/hint withdrawal ONLY
-// ============================================================================
-
-type SupportTier = 'easy' | 'medium' | 'hard';
-const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
-
-/** STRICT lookup — the manifest enum-constrains config.difficulty to these.
- *  Unknown/absent → null → NO tier applied (byte-identical legacy payload). */
-function normalizeSupportTier(difficulty?: string): SupportTier | null {
-  const d = difficulty?.toLowerCase().trim() ?? '';
-  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+/** K, 1, 2 or 3 from the canonical grade, else the normalized grade key; above grade 3 reads as 3, unknown as 1. */
+function resolveGrade(grade: string | undefined, gradeLevel: string): 'K' | '1' | '2' | '3' {
+  const g = (grade ?? '').trim().toUpperCase() || (/kinder/i.test(gradeLevel) ? 'K' : gradeLevel.match(/\d+/)?.[0] ?? '');
+  if (g === 'K') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return '1';
+  return n <= 1 ? '1' : n === 2 ? '2' : '3';
 }
 
-// ============================================================================
-// GENERATOR FUNCTION
-// ============================================================================
-
-type SoundWaveExplorerConfig = {
-    targetEvalMode?: string;
-    /**
-     * Per-component support tier from the manifest ('easy' | 'medium' | 'hard').
-     * Second axis of the two-field contract: targetEvalMode = which skill,
-     * difficulty = how much on-screen support within it. NEVER changes content
-     * (objects, challenges, counts, answers) — the component withdraws text
-     * overlays / hint timing only; tap-to-vibrate, the Web Audio tone, and the
-     * observe-only slider unlock are task identity and are never tier-gated.
-     */
-    difficulty?: string;
-  };
-
-export const generateSoundWaveExplorer = async (
-  ctx: GenerationContext,
-): Promise<SoundWaveExplorerData> => {
+export const generateSoundWaveExplorer = async (ctx: GenerationContext): Promise<SoundWaveExplorerData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
-  const config = ctx.raw as SoundWaveExplorerConfig;
-  // ── Within-mode support tier: resolved from config.difficulty, stamped IN CODE
-  //    post-parse on EVERY exit path (happy + fallback). Never steers the prompt
-  //    or schema — content is identical across tiers. ──
-  const supportTier = normalizeSupportTier(config?.difficulty);
-  if (supportTier) {
-    console.log(`[SoundWaveExplorer] Support tier "${supportTier}" resolved — overlay/hint withdrawal only, content unchanged.`);
-  }
-  // Per-primitive intent: the broad subject is the topic, but THIS activity targets a
-  // specific objective. Intent steers the LLM-authored text (title/description/challenge
-  // wording); the object set itself stays code-picked (see TODO at objectsForGrade).
-  const intent = ctx.intent || "";
-  const intentFocus = intent
-    ? `\nThis activity must specifically target: "${intent}". Foreground that objective in the title, description, and challenge wording. Do not reveal the answer to any challenge the student will be asked.`
-    : "";
-  const resolvedGrade = (gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '1') as
-    'K' | '1' | '2' | '3';
-  const validGrades = ['K', '1', '2', '3'];
-  const finalGrade = validGrades.includes(resolvedGrade) ? resolvedGrade : '1';
-  const gradeConfig = GRADE_CONFIGURATIONS[finalGrade] || GRADE_CONFIGURATIONS['1'];
+  const config = (ctx.raw ?? {}) as { difficulty?: string; targetEvalMode?: string; soundFocus?: SoundFocus };
+  const gradeLevel = resolveGrade(ctx.grade, ctx.gradeLevel ?? '');
+  const targetEvalMode = ctx.targetEvalMode ?? config.targetEvalMode;
+  const constraint = resolveEvalModeConstraint('sound-wave-explorer', targetEvalMode, CHALLENGE_TYPE_DOCS);
+  logEvalModeResolution('SoundWaveExplorer', targetEvalMode, constraint);
+  const modes: SoundMode[] = constraint ? SOUND_MODES.filter(m => constraint.allowedTypes.includes(m)) : DEFAULT_MODES[gradeLevel];
+  const tier = normalizeTier(ctx.supportTier ?? config.difficulty);
 
-  // ── Deterministic objects (science facts, not LLM content) ──
-  const objects = objectsForGrade(finalGrade);
-  const objectNames = objects.map(o => o.type).join(', ');
+  const intent = ctx.intent ? `\nLEARNING FOCUS: "${ctx.intent}".` : '';
+  const prompt = `Frame a sound lab about "${topic}" for grade ${gradeLevel}.${intent}
 
-  // ── Resolve eval mode from the catalog (single source of truth) ──
-  const evalConstraint = resolveEvalModeConstraint(
-    'sound-wave-explorer',
-    config?.targetEvalMode,
-    CHALLENGE_TYPE_DOCS,
-  );
+Code builds every question (drums, guitar strings, rubber bands, bells, tuning forks, and drawn sound waves).
+The learner will: ${modes.map(m => CHALLENGE_TYPE_DOCS[m].promptDoc).join('; ')}.
 
-  // ── Build mode-constrained schema ──
-  const activeSchema = evalConstraint
-    ? constrainChallengeTypeEnum(
-        soundWaveExplorerResponseSchema,
-        evalConstraint.allowedTypes,
-        CHALLENGE_TYPE_DOCS,
-      )
-    : soundWaveExplorerResponseSchema;
+Return only:
+1. title: short, friendly and neutral.
+2. description: one neutral sentence about what the learner investigates. Never say which sound is louder, quieter,
+   higher or lower, or what a change does.
+3. soundFocus: what the topic and learning focus are about. Use 'both' when the topic is sound in general.`;
 
-  // ── Build prompt ──
-  const challengeTypeSection = buildChallengeTypePromptSection(evalConstraint, CHALLENGE_TYPE_DOCS);
-
-  const prompt = `
-Create a Sound Wave Exploration Lab activity for Grade ${finalGrade} students.
-
-Topic: ${topic}${intentFocus}
-Grade Guidance: ${gradeConfig.guidance}
-
-Available objects: ${objectNames}
-Object properties:
-${objects.map(o => `- ${o.type}: ${o.basePitch} pitch, ${o.baseLoudness} loudness`).join('\n')}
-
-Core science:
-- FORCE (1-5) = VOLUME. Harder hit = bigger vibrations = louder.
-- SPEED (1-5) = PITCH. Faster vibrations = higher pitch.
-- Medium: air (normal), water (muffled), solid_wall (very well), vacuum (no sound).
-- Distance: close = loud, far = quiet.
-
-${challengeTypeSection}
-
-Generate ${gradeConfig.numChallenges} challenges. Each challenge must use one of: ${objectNames}.
-Include 2 distractor answers and a pedagogical hint per challenge.
-NEVER reveal the answer in the instruction text.
-Use warm, age-appropriate language for Grade ${finalGrade}.
-`;
-
-  logEvalModeResolution('SoundWaveExplorer', config?.targetEvalMode, evalConstraint);
-
+  let raw: { title?: string; description?: string; soundFocus?: string } = {};
   try {
-    const result = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
       model: 'gemini-flash-lite-latest',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
-        responseSchema: activeSchema,
+        responseSchema: schema,
+        systemInstruction: 'You are a primary science teacher framing a sound lab. You choose what the lesson is about; you never state results.',
       },
     });
-
-    const raw = JSON.parse(result.text || '{}');
-
-    // ── Post-process challenges ──
-    const allowedTypes = evalConstraint?.allowedTypes;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const challenges: SoundChallenge[] = (raw.challenges || []).map((c: any, i: number) => {
-      let type = c.type as SoundChallengeType;
-
-      // SP-9 safety net: force type to match eval constraint
-      if (allowedTypes && !allowedTypes.includes(type)) {
-        type = allowedTypes[0] as SoundChallengeType;
-      }
-
-      const challenge: SoundChallenge = {
-        id: c.id || `c${i + 1}`,
-        type,
-        instruction: c.instruction || 'Explore the sound!',
-        vibrationObject: c.vibrationObject as VibrationSource,
-        correctAnswer: c.correctAnswer || '',
-      };
-
-      if (c.distractor0) challenge.distractor0 = c.distractor0;
-      if (c.distractor1) challenge.distractor1 = c.distractor1;
-      if (c.distractor2) challenge.distractor2 = c.distractor2;
-      if (c.hint) challenge.hint = c.hint;
-
-      return challenge;
-    });
-
-    return {
-      title: raw.title || 'Sound Wave Explorer',
-      description: raw.description || 'Explore how vibrations make sound!',
-      theme: gradeConfig.theme,
-      gradeLevel: finalGrade as 'K' | '1' | '2' | '3',
-      objects,
-      challenges,
-      // Support tier stamped in code — component render gates + the tutor reveal
-      // policy key off this field. Omitted when absent (legacy byte-compatible).
-      ...(supportTier ? { supportTier } : {}),
-    };
+    raw = JSON.parse(response.text || '{}');
   } catch (error) {
-    console.error('Error generating SoundWaveExplorer content:', error);
-
-    // ── Fallback default ──
-    return {
-      title: 'Sound Wave Explorer',
-      description: 'Explore how vibrations make sound!',
-      theme: gradeConfig.theme,
-      gradeLevel: finalGrade as 'K' | '1' | '2' | '3',
-      objects,
-      challenges: [
-        {
-          id: 'c1',
-          type: 'observe',
-          instruction: 'Tap the drum and the tuning fork. Which one makes a lower sound?',
-          vibrationObject: 'drum',
-          correctAnswer: 'The drum makes a lower sound',
-          distractor0: 'The tuning fork makes a lower sound',
-          distractor1: 'They sound the same',
-          hint: 'Listen carefully to how deep or high each sound is.',
-        },
-        {
-          id: 'c2',
-          type: 'predict',
-          instruction: 'If you hit the drum very gently, what will happen to the sound?',
-          vibrationObject: 'drum',
-          forceLevel: 1,
-          correctAnswer: 'The sound will be quiet',
-          distractor0: 'The sound will be loud',
-          distractor1: 'The pitch will change',
-          hint: 'Think about what happens when you tap something softly versus hard.',
-        },
-      ],
-      // Same stamp on the fallback exit path — the tier must survive LLM failure.
-      ...(supportTier ? { supportTier } : {}),
-    };
+    console.error('[sound-wave-explorer] framing call failed; using the topic-neutral frame', error);
   }
+
+  const soundFocus: SoundFocus = config.soundFocus ?? ((FOCI as string[]).includes(raw.soundFocus ?? '') ? raw.soundFocus as SoundFocus : 'both');
+  const items = buildSoundItems({ modes, tier, focus: soundFocus, rng: Math.random });
+
+  const data: SoundWaveExplorerData = {
+    title: raw.title?.trim() || 'Sound Lab',
+    description: raw.description?.trim() || 'Find out how shaking makes sound, and what a drawn wave says about it.',
+    soundFocus,
+    challengeTypes: modes,
+    difficulty: tier,
+    gradeLevel,
+    items,
+  };
+  console.log('[SoundWaveExplorer] generated', { title: data.title, gradeLevel, soundFocus, tier, modes, items: items.map(i => i.id) });
+  return data;
 };

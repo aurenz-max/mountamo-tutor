@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -29,14 +29,50 @@ import {
 } from '../../../evaluation';
 import type { FactFileMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { practiceScore } from '../../../hooks/usePhaseResults';
 import { SoundManager } from '../../../utils/SoundManager';
 import { isPreReaderGrade } from '../../../utils/kindergartenMode';
 import { PreReaderSelfCheck, buildSelfCheckReadAloud } from '../../shared/PreReaderSelfCheck';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import { SECTION_ICON, SECTION_LABEL, describeCheckWork, factChecks, factFileMiss, fileTabs, fileText, isCheckCorrect,
+  workspaceAssignment, workspaceScene } from './factFileWorkspace';
+import { DROP_LEVER, NO_LEVERS, SECTION_LEVER, factFileLevers, farChoice, hintShown, leversOnScreen,
+  type FactFileLeverState } from './factFileLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
+
+/** Where a self-check's fact lives in the file. `keyStats` is the stat row at the top, not a tab. */
+export type FactFileSection = 'keyStats' | 'quickFacts' | 'deepDive' | 'records' | 'didYouKnow';
+
+/** One self-check question: one item. */
+export interface FactFileCheck {
+  /** Stamped by the generator; a legacy payload gets `check-N` (`factChecks`). */
+  id?: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  relatedSection: FactFileSection;
+  /** Pre-reader (K): one depicting emoji per option — the answer surface. */
+  optionEmojis?: string[];
+  /** The eval mode's challenge type the question was written as. */
+  challengeType?: 'recall_easy' | 'recall_medium' | 'recall_hard';
+  /**
+   * The mode's defining property, stamped by the generator from the eval-mode pin: true (explore) keeps the file open
+   * beside the question; false (recall, apply) closes it, key stats included, while the questions are asked.
+   */
+  fileOpen?: boolean;
+  /** Starting position (easy tier): the section note is on screen from the start. Not a lever pull. */
+  sectionHint?: boolean;
+}
 
 export interface FactFileData {
   title: string;
@@ -76,16 +112,7 @@ export interface FactFileData {
   }>;
 
   /** Self-check questions (for eval modes). */
-  selfChecks?: Array<{
-    question: string;
-    options: string[];
-    correctIndex: number;
-    explanation: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-    relatedSection: 'quickFacts' | 'deepDive' | 'records' | 'didYouKnow';
-    /** Pre-reader (K): one depicting emoji per option — the answer surface. */
-    optionEmojis?: string[];
-  }>;
+  selfChecks?: FactFileCheck[];
 
   /** Canonical grade key ('K'|'1'…) stamped by the generator for band-gating. */
   gradeLevel?: string;
@@ -105,13 +132,6 @@ export interface FactFileData {
 
 type TabKey = 'quickFacts' | 'deepDive' | 'records' | 'didYouKnow';
 
-const TAB_CONFIG: Array<{ key: TabKey; label: string; icon: string }> = [
-  { key: 'quickFacts', label: 'Quick Facts', icon: '⚡' },
-  { key: 'deepDive', label: 'Deep Dive', icon: '🔍' },
-  { key: 'records', label: 'Records', icon: '🏆' },
-  { key: 'didYouKnow', label: 'Did You Know?', icon: '💡' },
-];
-
 // ============================================================================
 // Props
 // ============================================================================
@@ -119,13 +139,19 @@ const TAB_CONFIG: Array<{ key: TabKey; label: string; icon: string }> = [
 interface FactFileProps {
   data: FactFileData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
+const FactFileSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  FactFileProps & { tutorOwned: boolean; useController: (options: ProgressOptions<FactFileCheck>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     category,
@@ -135,7 +161,6 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
     deepDive = [],
     records = [],
     didYouKnow = [],
-    selfChecks = [],
     gradeLevel: dataGradeLevel,
     instanceId,
     skillId,
@@ -149,6 +174,37 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   // the text-heavy tab exploration (unreadable to a non-reader) is bypassed.
   const preReader = isPreReaderGrade(dataGradeLevel);
 
+  /** The self-checks as items, each with an id; memoized so the progress controller never sees a new list. */
+  const selfChecks = useMemo(() => factChecks(data), [data]);
+  const text = useMemo(() => fileText(data), [data]);
+  /** explore: every check is answered with the file open, so there is no reading phase first. */
+  const lookup = selfChecks.length > 0 && selfChecks.every(c => c.fileOpen);
+
+  // -------------------------------------------------------------------------
+  // Progress. On the workspace path the runtime moves the index.
+  // -------------------------------------------------------------------------
+  const stableInstanceIdRef = useRef(instanceId || `fact-file-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  // Bound below, once the setters and the evaluation exist.
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const progress = useController({
+    challenges: selfChecks,
+    getChallengeId: (c) => c.id!,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: c => workspaceAssignment(c, text),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: result => finish.current(result),
+    onSolved: index => solvedAloud.current(index),
+  });
+  const currentCheckIndex = progress.currentIndex;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const workspaceClosed = useRef(false);
+  workspaceClosed.current = tutorOwned && progress.canAttempt === false;
+  const commitCheck = useRef(progress.commitCheck);
+  commitCheck.current = progress.commitCheck;
+
   // -------------------------------------------------------------------------
   // State
   // -------------------------------------------------------------------------
@@ -156,13 +212,18 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   const [visitedTabs, setVisitedTabs] = useState<Set<TabKey>>(new Set<TabKey>(['quickFacts']));
   const [tappedStats, setTappedStats] = useState<Set<number>>(new Set());
 
-  // Self-check state
-  const [showSelfChecks, setShowSelfChecks] = useState(false);
-  const [currentCheckIndex, setCurrentCheckIndex] = useState(0);
-  const [checkAnswers, setCheckAnswers] = useState<Array<{ selected: number; correct: boolean }>>([]);
+  // Self-check state. A look-it-up file opens its questions at once, beside the file.
+  const [questionsStarted, setQuestionsStarted] = useState(false);
+  const showSelfChecks = questionsStarted || lookup;
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showCheckFeedback, setShowCheckFeedback] = useState(false);
-  const [allChecksComplete, setAllChecksComplete] = useState(false);
+  const [scriptedDone, setScriptedDone] = useState(false);
+
+  /** In-item levers (`factFileLevers.ts`), keyed by the check they belong to; a new check starts from none. */
+  const [leverState, setLeverState] = useState<{ item: string } & FactFileLeverState>({ item: '', ...NO_LEVERS });
+  const leversFor = (id: string | undefined): FactFileLeverState => (id && leverState.item === id ? leverState : NO_LEVERS);
+  const updateLevers = (id: string, change: (s: FactFileLeverState) => Partial<FactFileLeverState>) =>
+    setLeverState(prev => { const base = prev.item === id ? prev : { item: id, ...NO_LEVERS }; return { ...base, ...change(base) }; });
 
   // Timing
   const [tabVisitTimes, setTabVisitTimes] = useState<Record<TabKey, number>>({
@@ -173,26 +234,17 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   });
   const tabEntryTimeRef = useRef(Date.now());
 
-  // Stable instance ID
-  const stableInstanceIdRef = useRef(instanceId || `fact-file-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
   // All tabs (only those with content)
-  const availableTabs = useMemo(() => {
-    return TAB_CONFIG.filter(t => {
-      switch (t.key) {
-        case 'quickFacts': return quickFacts.length > 0;
-        case 'deepDive': return deepDive.length > 0;
-        case 'records': return records.length > 0;
-        case 'didYouKnow': return didYouKnow.length > 0;
-        default: return false;
-      }
-    });
-  }, [quickFacts, deepDive, records, didYouKnow]);
+  const availableTabs = useMemo(() => fileTabs({ quickFacts, deepDive, records, didYouKnow }),
+    [quickFacts, deepDive, records, didYouKnow]);
 
   const totalSections = availableTabs.length;
-  const sectionsExplored = availableTabs.filter(t => visitedTabs.has(t.key)).length;
+  const sectionsExplored = availableTabs.filter(t => visitedTabs.has(t)).length;
   const allSectionsExplored = sectionsExplored >= totalSections;
+
+  const allChecksComplete = tutorOwned ? progress.isComplete : scriptedDone;
+  const reading = !preReader && !showSelfChecks && !allChecksComplete;
+  const currentCheck = selfChecks[currentCheckIndex] ?? null;
 
   // -------------------------------------------------------------------------
   // Evaluation Hook
@@ -213,25 +265,30 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring Integration
+  // AI Tutoring Integration (scripted path only: its context and cues carry the answers)
   // -------------------------------------------------------------------------
+  const checksDone = progress.results.length;
   const aiPrimitiveData = useMemo(() => ({
     title,
     category,
     activeTab,
     sectionsExplored,
     totalSections,
-    checksCompleted: checkAnswers.length,
+    checksCompleted: checksDone,
     totalChecks: selfChecks.length,
     currentKeyStats: keyStats.map(s => `${s.label}: ${s.value} ${s.unit}`).join(', '),
-  }), [title, category, activeTab, sectionsExplored, totalSections, checkAnswers.length, selfChecks.length, keyStats]);
+  }), [title, category, activeTab, sectionsExplored, totalSections, checksDone, selfChecks.length, keyStats]);
 
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+  const { sendText: sendLegacyText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'fact-file',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
     gradeLevel: 'Elementary',
+    enabled: !tutorOwned,
   });
+  const sendText = useCallback((message: string, options?: Parameters<typeof sendLegacyText>[1]) => {
+    if (!tutorOwned) sendLegacyText(message, options);
+  }, [tutorOwned, sendLegacyText]);
 
   // Introduce on connect
   const hasIntroducedRef = useRef(false);
@@ -252,7 +309,6 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   // -------------------------------------------------------------------------
   const handleTabChange = useCallback((tab: TabKey) => {
     SoundManager.tap();
-    // Record time on previous tab
     const now = Date.now();
     const elapsed = now - tabEntryTimeRef.current;
     setTabVisitTimes(prev => ({
@@ -270,7 +326,7 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
 
     if (isConnected) {
       sendText(
-        `[TAB_OPENED] Student opened the "${TAB_CONFIG.find(t => t.key === tab)?.label}" section. `
+        `[TAB_OPENED] Student opened the "${SECTION_LABEL[tab]}" section. `
         + `Sections explored: ${visitedTabs.has(tab) ? sectionsExplored : sectionsExplored + 1} of ${totalSections}. `
         + `Briefly introduce this section and highlight one interesting detail to look for.`,
         { silent: true }
@@ -317,25 +373,45 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   // Self-check handling
   // -------------------------------------------------------------------------
   const handleStartChecks = useCallback(() => {
-    setShowSelfChecks(true);
-    setCurrentCheckIndex(0);
+    SoundManager.tap();
+    setQuestionsStarted(true);
   }, []);
 
-  const currentCheck = selfChecks[currentCheckIndex] ?? null;
+  const metricsFor = useCallback((accuracy: number, explored = sectionsExplored): FactFileMetrics => ({
+    type: 'fact-file',
+    sectionsExplored: explored,
+    totalSections,
+    explorationCompleteness: totalSections > 0 ? Math.round((explored / totalSections) * 100) : 0,
+    selfCheckAccuracy: accuracy,
+    selfCheckAttempts: selfChecks.length,
+    averageTimePerSection: totalSections > 0
+      ? Math.round(Object.values(tabVisitTimes).reduce((a, b) => a + b, 0) / totalSections) : 0,
+    tabsVisitedOrder: Array.from(visitedTabs),
+  }), [sectionsExplored, totalSections, selfChecks.length, tabVisitTimes, visitedTabs]);
 
+  // Workspace path: a fresh check and Try again both open with no choice tapped and no feedback.
+  openItem.current = () => {
+    setSelectedOption(null);
+    setShowCheckFeedback(false);
+  };
+
+  const tappedCorrect = useRef<string | null>(null);
   const handleCheckAnswer = useCallback((optionIndex: number) => {
-    if (!currentCheck || showCheckFeedback) return;
-
+    if (!currentCheck || showCheckFeedback || workspaceClosed.current || reading) return;
+    if (tutorOwned && leversFor(currentCheck.id).dropped.includes(optionIndex)) return;
     setSelectedOption(optionIndex);
     setShowCheckFeedback(true);
 
-    const correct = optionIndex === currentCheck.correctIndex;
+    const correct = isCheckCorrect(currentCheck, optionIndex);
     if (correct) {
+      tappedCorrect.current = currentCheck.id!;
       SoundManager.playCorrect();
     } else {
       SoundManager.playIncorrect();
+      if (tutorOwned) updateLevers(currentCheck.id!, prev => (prev.picked.includes(optionIndex) ? {} : { picked: [...prev.picked, optionIndex] }));
+      // Scripted path: one try per question; the wrong answer is its record.
+      else progress.recordResult({ challengeId: currentCheck.id!, correct: false, attempts: 1 });
     }
-    setCheckAnswers(prev => [...prev, { selected: optionIndex, correct }]);
 
     if (isConnected) {
       const tag = correct ? '[CHECK_CORRECT]' : '[CHECK_INCORRECT]';
@@ -349,78 +425,56 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
         { silent: true }
       );
     }
-  }, [currentCheck, currentCheckIndex, selfChecks, showCheckFeedback, isConnected, sendText]);
+    // Counts the attempt and records a correct result on both paths; on the workspace path it is the checked gesture.
+    commitCheck.current(describeCheckWork(currentCheck, { picked: optionIndex }), correct,
+      correct ? undefined : factFileMiss(currentCheck, optionIndex, text));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCheck, currentCheckIndex, selfChecks, showCheckFeedback, isConnected, sendText, tutorOwned, reading, text, leverState]);
+
+  // A spoken answer the observer credited (`onSolved` fires once per check, for a tap too): the key shown as picked.
+  solvedAloud.current = (index) => {
+    const solved = selfChecks[index];
+    if (!solved || tappedCorrect.current === solved.id) return;
+    setSelectedOption(solved.correctIndex);
+    setShowCheckFeedback(true);
+  };
+
+  /** Scripted path: the accuracy over every check's single try. */
+  const scriptedAccuracy = (results = progress.results) => selfChecks.length > 0
+    ? Math.round((results.filter(r => r.correct).length / selfChecks.length) * 100) : 0;
 
   const handleNextCheck = useCallback(() => {
     setSelectedOption(null);
     setShowCheckFeedback(false);
-
-    if (currentCheckIndex + 1 >= selfChecks.length) {
-      // All checks done
-      setAllChecksComplete(true);
-
-      const correctCount = checkAnswers.filter(a => a.correct).length + (
-        // Include the answer we just recorded (the last one might not be in state yet)
-        0
+    if (progress.advance()) return;
+    setScriptedDone(true);
+    const accuracy = scriptedAccuracy();
+    if (isConnected) {
+      sendText(
+        `[ALL_COMPLETE] Student finished all ${selfChecks.length} self-checks. `
+        + `Accuracy: ${accuracy}%. Sections explored: ${sectionsExplored}/${totalSections}. `
+        + `Celebrate and give section-specific feedback.`,
+        { silent: true }
       );
-      const accuracy = selfChecks.length > 0 ? Math.round((correctCount / selfChecks.length) * 100) : 0;
-
-      if (isConnected) {
-        sendText(
-          `[ALL_COMPLETE] Student finished all ${selfChecks.length} self-checks. `
-          + `Accuracy: ${accuracy}%. Sections explored: ${sectionsExplored}/${totalSections}. `
-          + `Celebrate and give section-specific feedback.`,
-          { silent: true }
-        );
-      }
-
-      // Submit evaluation
-      if (!hasSubmittedEvaluation) {
-        const avgTimePerSection = totalSections > 0
-          ? Math.round(Object.values(tabVisitTimes).reduce((a, b) => a + b, 0) / totalSections)
-          : 0;
-
-        const metrics: FactFileMetrics = {
-          type: 'fact-file',
-          sectionsExplored,
-          totalSections,
-          explorationCompleteness: totalSections > 0 ? Math.round((sectionsExplored / totalSections) * 100) : 0,
-          selfCheckAccuracy: accuracy,
-          selfCheckAttempts: selfChecks.length,
-          averageTimePerSection: avgTimePerSection,
-          tabsVisitedOrder: Array.from(visitedTabs),
-        };
-
-        const overallScore = Math.round(
-          (sectionsExplored / Math.max(totalSections, 1)) * 40 + accuracy * 0.6
-        );
-
-        submitEvaluation(
-          accuracy >= 70 && sectionsExplored >= totalSections,
-          overallScore,
-          metrics,
-          { checkAnswers: [...checkAnswers] }
-        );
-      }
-    } else {
-      setCurrentCheckIndex(prev => prev + 1);
     }
-  }, [
-    currentCheckIndex, selfChecks, checkAnswers, sectionsExplored, totalSections,
-    tabVisitTimes, visitedTabs, isConnected, sendText, hasSubmittedEvaluation, submitEvaluation,
-  ]);
+    // The score is the questions answered right; reading the tabs is how the learner gets there, not credit.
+    if (!hasSubmittedEvaluation) {
+      submitEvaluation(accuracy >= 70, accuracy, metricsFor(accuracy),
+        { checkAnswers: progress.results.map(r => ({ challengeId: r.challengeId, correct: r.correct })) });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progress, selfChecks.length, isConnected, sendText, sectionsExplored, totalSections, hasSubmittedEvaluation, submitEvaluation, metricsFor]);
 
-  // Pre-reader self-check completion. PreReaderSelfCheck is eliminate-until-correct
+  // Pre-reader self-check completion (scripted path). PreReaderSelfCheck is eliminate-until-correct
   // (it owns the wrong-tap RECOVER beat), so onResult fires once, correct, per check;
-  // first-try is the mastery signal. Advances to the next check or finishes. Exploration
-  // is delivered by the tutor's read-aloud at K (no tab-visits), so it is credited full
-  // rather than penalizing the intentional bypass.
+  // first-try is the mastery signal. Exploration is delivered by the tutor's read-aloud at K.
   const handlePreCheckPass = useCallback((attempts: number) => {
     const check = selfChecks[currentCheckIndex];
     if (!check) return;
     const firstTry = attempts <= 1;
-    const nextAnswers = [...checkAnswers, { selected: check.correctIndex, correct: firstTry }];
-    setCheckAnswers(nextAnswers);
+    const result = { challengeId: check.id!, correct: firstTry, attempts };
+    const nextResults = [...progress.results.filter(r => r.challengeId !== check.id), result];
+    progress.recordResult(result);
 
     if (isConnected) {
       sendText(
@@ -430,14 +484,10 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
       );
     }
 
-    if (currentCheckIndex + 1 < selfChecks.length) {
-      setCurrentCheckIndex(i => i + 1);
-      return;
-    }
+    if (progress.advance()) return;
 
-    setAllChecksComplete(true);
-    const correctCount = nextAnswers.filter(a => a.correct).length;
-    const accuracy = selfChecks.length > 0 ? Math.round((correctCount / selfChecks.length) * 100) : 0;
+    setScriptedDone(true);
+    const accuracy = scriptedAccuracy(nextResults);
     if (isConnected) {
       sendText(
         `[ALL_COMPLETE] Pre-reader finished all ${selfChecks.length} picture self-checks. `
@@ -446,46 +496,76 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
       );
     }
     if (!hasSubmittedEvaluation) {
-      const metrics: FactFileMetrics = {
-        type: 'fact-file',
-        sectionsExplored: totalSections,
-        totalSections,
-        explorationCompleteness: 100,
-        selfCheckAccuracy: accuracy,
-        selfCheckAttempts: selfChecks.length,
-        averageTimePerSection: 0,
-        tabsVisitedOrder: [],
-      };
-      submitEvaluation(accuracy >= 70, accuracy, metrics, { checkAnswers: nextAnswers });
+      submitEvaluation(accuracy >= 70, accuracy, { ...metricsFor(accuracy, totalSections), averageTimePerSection: 0, tabsVisitedOrder: [] },
+        { checkAnswers: nextResults.map(r => ({ challengeId: r.challengeId, correct: r.correct })) });
     }
-  }, [
-    selfChecks, currentCheckIndex, checkAnswers, isConnected, sendText,
-    totalSections, hasSubmittedEvaluation, submitEvaluation,
-  ]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selfChecks, currentCheckIndex, progress, isConnected, sendText, totalSections, hasSubmittedEvaluation, submitEvaluation, metricsFor]);
 
-  // Auto-submit for display-only mode (no self-checks)
+  // Workspace path, under a lesson's evaluation provider only: the scored session, whose item scores count
+  // corrections and whose evidence carries each wrong tap's named miss.
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation) return;
+    submitEvaluation(result.passed, result.accuracy, metricsFor(result.accuracy),
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // Auto-submit for display-only mode (no self-checks), scripted path only.
   const hasAutoSubmittedRef = useRef(false);
   useEffect(() => {
+    if (tutorOwned) return;
     if (selfChecks.length === 0 && allSectionsExplored && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
       hasAutoSubmittedRef.current = true;
-      const avgTimePerSection = totalSections > 0
-        ? Math.round(Object.values(tabVisitTimes).reduce((a, b) => a + b, 0) / totalSections)
-        : 0;
-
-      const metrics: FactFileMetrics = {
-        type: 'fact-file',
-        sectionsExplored,
-        totalSections,
-        explorationCompleteness: 100,
-        selfCheckAccuracy: 100,
-        selfCheckAttempts: 0,
-        averageTimePerSection: avgTimePerSection,
-        tabsVisitedOrder: Array.from(visitedTabs),
-      };
-
-      submitEvaluation(true, 100, metrics, {});
+      submitEvaluation(true, 100, { ...metricsFor(100), explorationCompleteness: 100 }, {});
     }
-  }, [selfChecks.length, allSectionsExplored, hasSubmittedEvaluation, sectionsExplored, totalSections, tabVisitTimes, visitedTabs, submitEvaluation]);
+  }, [tutorOwned, selfChecks.length, allSectionsExplored, hasSubmittedEvaluation, submitEvaluation, metricsFor]);
+
+  // -------------------------------------------------------------------------
+  // Workspace path: what the tutor and the observer are shown, republished every render. No demonstration targets.
+  // -------------------------------------------------------------------------
+  useLayoutEffect(() => {
+    if (!tutorOwned || !currentCheck) return;
+    const scene = workspaceScene(data, currentCheck, { reading, picked: selectedOption, preReader });
+    const s = leversFor(currentCheck.id);
+    const levers = factFileLevers(currentCheck, s, text, preReader);
+    const onScreen = leversOnScreen(currentCheck, s);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      // The questions are hidden while the learner reads, so nothing can be answered yet.
+      ...(reading ? { readyForResponse: false } : {}),
+      levers: reading ? [] : levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        if (reading) return 'The learner is still reading the fact file; the question is not open yet.';
+        const lever = levers.find(l => l.id === id);
+        if (!lever) return `No lever ${id} on this item.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        if (id === DROP_LEVER) {
+          const drop = farChoice(currentCheck, s, text);
+          if (drop === null) return 'No choice can be greyed out: too few untried choices would remain.';
+          updateLevers(currentCheck.id!, prev => ({ pulled: [...prev.pulled, id], dropped: [...prev.dropped, drop] }));
+          return true;
+        }
+        updateLevers(currentCheck.id!, prev => ({ pulled: [...prev.pulled, id] }));
+        return true;
+      },
+    };
+  });
+
+  // ── Pip shared surface ───────────────────────────────────────────
+  // A projection of this item's check state, the tutor's speech on it, and
+  // the child's touches; Pip points only at the workspace as a whole and never
+  // chooses, checks, or advances.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: allChecksComplete || hasSubmittedEvaluation || !(showSelfChecks || preReader) || !currentCheck ? null : `check-${currentCheckIndex}`,
+    label: 'The answer choices',
+    solved: showCheckFeedback && selectedOption === currentCheck?.correctIndex,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
 
   // -------------------------------------------------------------------------
   // Render: Tab Content
@@ -497,7 +577,7 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
           <div className="space-y-3">
             {quickFacts.map((item, i) => (
               <LuminaPanel key={i} className="flex items-start gap-3 p-3">
-                {item.icon && <span className="text-lg shrink-0 mt-0.5">{item.icon}</span>}
+                {item.icon && <span className="text-lg shrink-0 mt-0.5" aria-hidden>{item.icon}</span>}
                 <p className="text-slate-200 text-sm leading-relaxed">{item.fact}</p>
               </LuminaPanel>
             ))}
@@ -558,9 +638,84 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
     }
   };
 
+  const currentLevers = leversFor(currentCheck?.id);
+  const ringedTab = tutorOwned && currentCheck?.fileOpen && showSelfChecks && hintShown(currentCheck, currentLevers)
+    ? currentCheck.relatedSection : null;
+
+  const renderKeyStats = () => keyStats.length > 0 && (
+    <div className="grid grid-cols-3 gap-3">
+      {keyStats.map((stat, i) => (
+        <button
+          key={i}
+          onClick={() => handleStatTap(i)}
+          className={`p-3 rounded-xl text-center transition-all duration-200 cursor-pointer
+            ${tappedStats.has(i)
+              ? 'bg-blue-500/10 border border-blue-400/20 scale-[1.02]'
+              : `${interactive.ghost} hover:scale-[1.02]`
+            } ${ringedTab === 'keyStats' ? 'ring-2 ring-cyan-400/60' : ''}`}
+        >
+          <div className="text-xl font-bold text-slate-100">{stat.value}</div>
+          <div className="text-xs text-slate-400">{stat.unit}</div>
+          <div className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider">{stat.label}</div>
+        </button>
+      ))}
+    </div>
+  );
+
+  const renderTabs = () => (
+    <>
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {availableTabs.map((tab) => {
+          const isActive = activeTab === tab;
+          const isVisited = visitedTabs.has(tab);
+          return (
+            <LuminaButton
+              key={tab}
+              aria-label={SECTION_LABEL[tab]}
+              tone={isActive ? 'ghost' : 'subtle'}
+              className={`shrink-0 text-xs px-3 py-2 h-auto ${
+                isActive ? 'text-slate-100' : isVisited ? 'text-slate-300' : 'text-slate-500'
+              } ${ringedTab === tab ? 'ring-2 ring-cyan-400/60' : ''}`}
+              data-lever={ringedTab === tab ? 'point-to-section' : undefined}
+              onClick={() => handleTabChange(tab)}
+            >
+              <span className="mr-1" aria-hidden>{SECTION_ICON[tab]}</span>
+              {SECTION_LABEL[tab]}
+              {isVisited && !isActive && <span className="ml-1 text-emerald-400" aria-hidden>✓</span>}
+            </LuminaButton>
+          );
+        })}
+      </div>
+      <div className="min-h-[120px]">{renderTabContent()}</div>
+    </>
+  );
+
   // -------------------------------------------------------------------------
   // Render: Self-Check
   // -------------------------------------------------------------------------
+  const choiceState = (i: number): AnswerChoiceState => {
+    if (!currentCheck) return 'idle';
+    const isSelected = selectedOption === i;
+    if (!showCheckFeedback) return isSelected ? 'selected' : 'idle';
+    // Scripted path: one try, so the key is revealed with the verdict.
+    if (!tutorOwned) return i === currentCheck.correctIndex ? 'correct' : isSelected ? 'incorrect' : 'dimmed';
+    // With the tutor a wrong try reveals nothing: only the learner's own choice is marked.
+    if (!isSelected) return selectedOption === currentCheck.correctIndex ? 'dimmed' : 'idle';
+    return i === currentCheck.correctIndex ? 'correct' : 'incorrect';
+  };
+  const choicesClosed = showCheckFeedback || allChecksComplete || (tutorOwned && progress.canAttempt === false);
+  const solvedNow = showCheckFeedback && selectedOption !== null && selectedOption === currentCheck?.correctIndex;
+
+  const renderSectionHint = () => {
+    if (!currentCheck || !hintShown(currentCheck, currentLevers) || !currentCheck.relatedSection) return null;
+    const section = currentCheck.relatedSection;
+    return (
+      <p className="text-xs text-cyan-300" data-lever={currentLevers.pulled.includes(SECTION_LEVER) ? 'point-to-section' : undefined}>
+        <span aria-hidden>{SECTION_ICON[section]}</span> This is in: {SECTION_LABEL[section]}
+      </p>
+    );
+  };
+
   const renderSelfCheck = () => {
     if (!currentCheck) return null;
 
@@ -570,51 +725,37 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
           <p className="text-slate-400 text-xs">
             Question {currentCheckIndex + 1} of {selfChecks.length}
           </p>
-          <LuminaBadge className="text-xs">
-            {currentCheck.difficulty}
-          </LuminaBadge>
         </div>
 
         <p className="text-slate-100 text-sm font-medium">{currentCheck.question}</p>
+        {tutorOwned && renderSectionHint()}
 
         {/* Pip's dock sits above the workspace, which it outlines as a region. */}
         {pip.store && <div {...pip.dock} />}
         <div {...pip.workspace}>
-        <div className="space-y-2">
-          {currentCheck.options.map((opt, i) => {
-            const isSelected = selectedOption === i;
-            const isCorrectOption = i === currentCheck.correctIndex;
-
-            let state: AnswerChoiceState;
-            if (showCheckFeedback) {
-              if (isCorrectOption) state = 'correct';
-              else if (isSelected) state = 'incorrect';
-              else state = 'dimmed';
-            } else {
-              state = isSelected ? 'selected' : 'idle';
-            }
-
-            return (
-              <LuminaAnswerChoice
-                key={i}
-                state={state}
-                className="p-3 text-sm"
-                onClick={() => handleCheckAnswer(i)}
-                disabled={showCheckFeedback}
-              >
-                {opt}
-              </LuminaAnswerChoice>
-            );
-          })}
+          <div className="space-y-2">
+            {currentCheck.options.map((opt, i) => {
+              const dropped = tutorOwned && currentLevers.dropped.includes(i);
+              return (
+                <LuminaAnswerChoice
+                  key={i}
+                  state={choiceState(i)}
+                  className={`p-3 text-sm ${dropped ? 'opacity-30 line-through' : ''}`}
+                  onClick={() => handleCheckAnswer(i)}
+                  disabled={choicesClosed || dropped}
+                  data-dropped={dropped || undefined}
+                  data-lever={dropped ? 'drop-far-choice' : undefined}
+                >
+                  {opt}
+                </LuminaAnswerChoice>
+              );
+            })}
+          </div>
         </div>
 
-        </div>
-
-        {showCheckFeedback && (
+        {showCheckFeedback && !tutorOwned && (
           <div className="space-y-3">
-            <LuminaFeedbackCard
-              status={selectedOption === currentCheck.correctIndex ? 'correct' : 'incorrect'}
-            >
+            <LuminaFeedbackCard status={selectedOption === currentCheck.correctIndex ? 'correct' : 'incorrect'}>
               {currentCheck.explanation}
             </LuminaFeedbackCard>
             <div className="flex justify-center">
@@ -624,6 +765,10 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
             </div>
           </div>
         )}
+        {/* With the tutor: the explanation only once the answer is right; a wrong try says no more than that. */}
+        {showCheckFeedback && tutorOwned && (solvedNow
+          ? <LuminaFeedbackCard status="correct">{currentCheck.explanation}</LuminaFeedbackCard>
+          : <LuminaFeedbackCard status="incorrect">Not quite.</LuminaFeedbackCard>)}
       </div>
     );
   };
@@ -632,17 +777,17 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   // Render: Results Summary
   // -------------------------------------------------------------------------
   const renderResults = () => {
-    const correctCount = checkAnswers.filter(a => a.correct).length;
+    const correctCount = progress.results.filter(r => r.correct).length;
     const accuracy = selfChecks.length > 0 ? Math.round((correctCount / selfChecks.length) * 100) : 0;
-    const score = submittedResult?.score ?? accuracy;
+    const score = practiceScore(progress.practiceSummary) ?? submittedResult?.score ?? accuracy;
 
     return (
       <div className="flex flex-col items-center text-center space-y-4 py-4">
         <LuminaScoreRing score={score} />
         <p className="text-slate-200 text-sm font-medium">Fact File Complete!</p>
         <div className="flex justify-center gap-4 text-xs text-slate-400">
-          <span>{sectionsExplored}/{totalSections} sections explored</span>
-          <span>{correctCount}/{selfChecks.length} questions correct</span>
+          {!preReader && <span>{sectionsExplored}/{totalSections} sections explored</span>}
+          {!tutorOwned && <span>{correctCount}/{selfChecks.length} questions correct</span>}
           {elapsedMs > 0 && <span>{Math.round(elapsedMs / 1000)}s total</span>}
         </div>
       </div>
@@ -654,24 +799,39 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
   // reads each self-check aloud and the child answers by tapping a picture. Adult
   // chrome (title/category/tabs/counters/stat labels) is hidden.
   // -------------------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChecksComplete || hasSubmittedEvaluation || !(showSelfChecks || preReader) || !currentCheck ? null : `check-${currentCheckIndex}`,
-    label: 'The answer choices',
-    solved: showCheckFeedback && selectedOption === currentCheck?.correctIndex,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
-
   if (preReader) {
     return (
       <LuminaCard className={className} topAccent="cyan">
         <LuminaCardContent className="space-y-5 pt-5">
           {allChecksComplete ? (
             renderResults()
+          ) : currentCheck && tutorOwned ? (
+            // With the tutor: the tutor reads the question and every choice; a tap is checked; retries are the runtime's.
+            <div className="space-y-4">
+              <p className="text-slate-100 text-base font-medium text-center">{currentCheck.question}</p>
+              {pip.store && <div {...pip.dock} />}
+              <div {...pip.workspace}>
+                <div className="grid grid-cols-2 gap-3">
+                  {currentCheck.options.map((opt, i) => {
+                    const dropped = currentLevers.dropped.includes(i);
+                    return (
+                      <LuminaAnswerChoice
+                        key={i}
+                        state={choiceState(i)}
+                        className={`flex flex-col items-center gap-1 p-3 text-center ${dropped ? 'opacity-30' : ''}`}
+                        onClick={() => handleCheckAnswer(i)}
+                        disabled={choicesClosed || dropped}
+                        data-dropped={dropped || undefined}
+                        data-lever={dropped ? 'drop-far-choice' : undefined}
+                      >
+                        <span className="text-4xl" aria-hidden>{currentCheck.optionEmojis?.[i] ?? '⭐'}</span>
+                        <span className="text-xs text-slate-300">{opt}</span>
+                      </LuminaAnswerChoice>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           ) : currentCheck ? (
             <>
             {pip.store && <div {...pip.dock} />}
@@ -712,7 +872,7 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
       <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg">🗂️</span>
+            <span className="text-lg" aria-hidden>🗂️</span>
             <LuminaCardTitle className="text-lg">Fact File: {title}</LuminaCardTitle>
           </div>
           <LuminaBadge accent="blue" className="text-xs">
@@ -723,32 +883,17 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-5">
-        {/* Key Stats */}
-        {keyStats.length > 0 && (
-          <div className="grid grid-cols-3 gap-3">
-            {keyStats.map((stat, i) => (
-              <button
-                key={i}
-                onClick={() => handleStatTap(i)}
-                className={`p-3 rounded-xl text-center transition-all duration-200 cursor-pointer
-                  ${tappedStats.has(i)
-                    ? 'bg-blue-500/10 border border-blue-400/20 scale-[1.02]'
-                    : `${interactive.ghost} hover:scale-[1.02]`
-                  }`}
-              >
-                <div className="text-xl font-bold text-slate-100">{stat.value}</div>
-                <div className="text-xs text-slate-400">{stat.unit}</div>
-                <div className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider">{stat.label}</div>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Show self-check phase or exploration phase */}
         {allChecksComplete ? (
           renderResults()
         ) : showSelfChecks ? (
           <>
+            {/* Look it up (explore): the file stays open above the question. From memory: it is closed. */}
+            {currentCheck?.fileOpen && (
+              <>
+                {renderKeyStats()}
+                {renderTabs()}
+              </>
+            )}
             <div className="border-t border-white/10 pt-4">
               <LuminaSectionLabel accent="cyan" size="sm" className="mb-3">
                 Self-Check
@@ -758,50 +903,23 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
           </>
         ) : (
           <>
-            {/* Tab Bar */}
-            <div className="flex gap-1 overflow-x-auto pb-1">
-              {availableTabs.map((tab) => {
-                const isActive = activeTab === tab.key;
-                const isVisited = visitedTabs.has(tab.key);
-
-                return (
-                  <LuminaButton
-                    key={tab.key}
-                    tone={isActive ? 'ghost' : 'subtle'}
-                    className={`shrink-0 text-xs px-3 py-2 h-auto ${
-                      isActive
-                        ? 'text-slate-100'
-                        : isVisited
-                          ? 'text-slate-300'
-                          : 'text-slate-500'
-                    }`}
-                    onClick={() => handleTabChange(tab.key)}
-                  >
-                    <span className="mr-1">{tab.icon}</span>
-                    {tab.label}
-                    {isVisited && !isActive && <span className="ml-1 text-emerald-400">✓</span>}
-                  </LuminaButton>
-                );
-              })}
-            </div>
-
-            {/* Tab Content */}
-            <div className="min-h-[120px]">{renderTabContent()}</div>
+            {renderKeyStats()}
+            {renderTabs()}
 
             {/* Exploration Progress */}
             <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-white/5">
               <span>{sectionsExplored} of {totalSections} sections explored</span>
-              {allSectionsExplored && selfChecks.length > 0 && !showSelfChecks && (
+              {allSectionsExplored && selfChecks.length > 0 && (
                 <LuminaButton
                   tone="primary"
                   className="text-xs h-8"
                   onClick={handleStartChecks}
                 >
-                  Start Self-Check ({selfChecks.length} questions)
+                  Start questions
                 </LuminaButton>
               )}
               {!allSectionsExplored && (
-                <span className="text-slate-600">Explore all sections to unlock self-check</span>
+                <span className="text-slate-600">Open every section to unlock the questions</span>
               )}
             </div>
           </>
@@ -810,5 +928,9 @@ const FactFile: React.FC<FactFileProps> = ({ data, className }) => {
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const FactFile = withWorkspaceController<FactFileProps, ProgressOptions<FactFileCheck>, Progress>(
+  'fact-file', FactFileSurface, useScriptedProgress, useWorkspaceProgressFor('fact-file'));
 
 export default FactFile;

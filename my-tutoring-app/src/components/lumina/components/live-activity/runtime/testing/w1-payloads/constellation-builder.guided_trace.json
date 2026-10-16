@@ -1,0 +1,228 @@
+{
+ "source": "qa/tutor-reports/constellation-builder-runtime-guided_trace-payload-2026-10-15.json",
+ "primitiveId": "constellation-builder",
+ "evalMode": "guided_trace",
+ "data": {
+  "title": "Star Pictures",
+  "description": "Tap the bright stars to make fun shapes in the sky.",
+  "gradeLevel": "K",
+  "stars": [
+   {
+    "id": "s1",
+    "x": 10,
+    "y": 20,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s2",
+    "x": 25,
+    "y": 25,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s3",
+    "x": 40,
+    "y": 30,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s4",
+    "x": 55,
+    "y": 45,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s5",
+    "x": 50,
+    "y": 65,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s6",
+    "x": 70,
+    "y": 70,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s7",
+    "x": 85,
+    "y": 80,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s8",
+    "x": 20,
+    "y": 80,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s9",
+    "x": 35,
+    "y": 75,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s10",
+    "x": 45,
+    "y": 85,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s11",
+    "x": 60,
+    "y": 80,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s12",
+    "x": 15,
+    "y": 50,
+    "magnitude": 4,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s13",
+    "x": 80,
+    "y": 20,
+    "magnitude": 5,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s14",
+    "x": 90,
+    "y": 40,
+    "magnitude": 6,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s15",
+    "x": 5,
+    "y": 90,
+    "magnitude": 4,
+    "isPartOfConstellation": false
+   }
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "guided_trace",
+    "constellationName": "Big Dipper",
+    "instruction": "Tap the stars to make the Big Dipper.",
+    "starOrder": [
+     "s1",
+     "s2",
+     "s3",
+     "s4",
+     "s5",
+     "s6",
+     "s7"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s1",
+      "toStarId": "s2"
+     },
+     {
+      "fromStarId": "s2",
+      "toStarId": "s3"
+     },
+     {
+      "fromStarId": "s3",
+      "toStarId": "s4"
+     },
+     {
+      "fromStarId": "s4",
+      "toStarId": "s5"
+     },
+     {
+      "fromStarId": "s5",
+      "toStarId": "s6"
+     },
+     {
+      "fromStarId": "s6",
+      "toStarId": "s7"
+     }
+    ],
+    "mythologyFact": "The Big Dipper looks like a big soup spoon in the sky.",
+    "season": "spring"
+   },
+   {
+    "id": "c2",
+    "type": "guided_trace",
+    "constellationName": "Cassiopeia",
+    "instruction": "Connect the stars to draw a big letter W.",
+    "starOrder": [
+     "s1",
+     "s8",
+     "s3",
+     "s9",
+     "s7"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s1",
+      "toStarId": "s8"
+     },
+     {
+      "fromStarId": "s8",
+      "toStarId": "s3"
+     },
+     {
+      "fromStarId": "s3",
+      "toStarId": "s9"
+     },
+     {
+      "fromStarId": "s9",
+      "toStarId": "s7"
+     }
+    ],
+    "mythologyFact": "This star group looks like a cozy chair in the sky.",
+    "season": "fall"
+   },
+   {
+    "id": "c3",
+    "type": "guided_trace",
+    "constellationName": "Orion",
+    "instruction": "Follow the stars to trace the giant hunter.",
+    "starOrder": [
+     "s1",
+     "s3",
+     "s5",
+     "s10",
+     "s11"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s1",
+      "toStarId": "s3"
+     },
+     {
+      "fromStarId": "s3",
+      "toStarId": "s5"
+     },
+     {
+      "fromStarId": "s5",
+      "toStarId": "s10"
+     },
+     {
+      "fromStarId": "s10",
+      "toStarId": "s11"
+     }
+    ],
+    "mythologyFact": "Orion wears a shiny belt made of three bright stars.",
+    "season": "winter"
+   }
+  ]
+ }
+}

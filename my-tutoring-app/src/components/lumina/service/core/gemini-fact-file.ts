@@ -4,13 +4,24 @@
  *
  * Uses a FLAT Gemini schema to avoid malformed nested JSON.
  * Supports eval modes with recall_easy, recall_medium, recall_hard challenge types.
+ *
+ * Gemini writes the file and a POOL of self-check questions (6-8); code picks which ship (`pickSelfChecks`) and stamps
+ * what the eval-mode pin and `config.difficulty` decide (workspace rollout C33, 2026-10-16):
+ * - mode: `fileOpen` (explore keeps the file open beside the question; recall and apply close it), the question count
+ *   (explore 3, recall 4, apply 4) and the challenge types allowed;
+ * - tier: easy shows the section note from the start (`sectionHint`); hard prefers questions whose wrong choices are
+ *   facts stated elsewhere in the file. Every tier keeps four choices, so `drop_far_choice` still has one to drop
+ *   after a wrong tap.
+ * Code drops a question whose key is printed in its own stem, repeats a choice, or uses "all/none of the above", and
+ * ranks down a key that is plainly the longest choice or that the file does not state.
  */
 
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection, gradeToBand, buildGradeLine } from "../scopeContext";
-import { FactFileData } from '../../primitives/visual-primitives/core/FactFile';
+import type { FactFileCheck, FactFileData, FactFileSection } from '../../primitives/visual-primitives/core/FactFile';
+import { fileText, normText, statedInFile } from '../../primitives/visual-primitives/core/factFileWorkspace';
 import { shuffleIndexedChoices } from '../../utils/choiceOrder';
 import {
   resolveEvalModeConstraint,
@@ -42,13 +53,28 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
   recall_hard: {
     promptDoc:
-      `"recall_hard": Advanced recall requiring inference or synthesis across sections. `
-      + `Questions may combine information from multiple sections or require understanding `
-      + `relationships between facts. All 4 options should be plausible. `
-      + `May reference didYouKnow details or require comparing records with quickFacts.`,
+      `"recall_hard": Inference, comparison or application, NOT lookup. The answer is not printed anywhere in the file: `
+      + `the learner must combine two facts (which is bigger, which came first), explain why something happens from a `
+      + `fact the file gives, or apply a fact to a new situation ("A town is downwind of the eruption. What will it most `
+      + `likely see?"). A question answered by finding one number or one sentence is recall_medium, not recall_hard. `
+      + `All 4 options should be plausible.`,
     schemaDescription: "'recall_hard' (advanced inference recall)",
   },
 };
+
+type ChallengeType = 'recall_easy' | 'recall_medium' | 'recall_hard';
+const CHALLENGE_TYPES: readonly string[] = ['recall_easy', 'recall_medium', 'recall_hard'];
+const TYPE_DIFFICULTY: Record<ChallengeType, 'easy' | 'medium' | 'hard'> = { recall_easy: 'easy', recall_medium: 'medium', recall_hard: 'hard' };
+
+type SupportTier = 'easy' | 'medium' | 'hard';
+const SUPPORT_TIERS: readonly SupportTier[] = ['easy', 'medium', 'hard'];
+function normalizeSupportTier(difficulty?: string): SupportTier | null {
+  const d = difficulty?.toLowerCase().trim() ?? '';
+  return (SUPPORT_TIERS as readonly string[]).includes(d) ? (d as SupportTier) : null;
+}
+
+/** How many questions each mode asks (the catalog's eval-mode descriptions). */
+const MODE_COUNT: Record<string, number> = { explore: 3, recall: 4, apply: 4 };
 
 // ---------------------------------------------------------------------------
 // Grade-Level Context Helper
@@ -117,24 +143,24 @@ const selfCheckSchema: Schema = {
       type: Type.NUMBER,
       description: "Index of correct option (0-3)",
     },
+    challengeType: {
+      type: Type.STRING,
+      enum: ["recall_easy", "recall_medium", "recall_hard"],
+      description: "Which kind of question this is",
+    },
     explanation: {
       type: Type.STRING,
       description: "Brief explanation shown after answering (1-2 sentences)",
     },
-    difficulty: {
-      type: Type.STRING,
-      enum: ["easy", "medium", "hard"],
-      description: "Question difficulty level",
-    },
     relatedSection: {
       type: Type.STRING,
-      enum: ["quickFacts", "deepDive", "records", "didYouKnow"],
-      description: "Which section the question relates to",
+      enum: ["keyStats", "quickFacts", "deepDive", "records", "didYouKnow"],
+      description: "Which section of the file states the fact the question asks about",
     },
   },
   required: [
     "question", "option0", "option1", "option2", "option3",
-    "correctIndex", "explanation", "difficulty", "relatedSection",
+    "correctIndex", "explanation", "challengeType", "relatedSection",
   ],
 };
 
@@ -228,7 +254,7 @@ const factFileSchema: Schema = {
     selfChecks: {
       type: Type.ARRAY,
       items: selfCheckSchema,
-      description: "3-4 self-check multiple-choice questions about the content",
+      description: "6-8 self-check multiple-choice questions about the content (code picks which ones are asked)",
     },
   },
   required: [
@@ -325,25 +351,21 @@ function validateFactFileData(
     }
   }
 
-  // --- selfChecks (3-4) ---
-  let selfChecks: NonNullable<FactFileData['selfChecks']> = [];
+  // --- selfChecks: the whole pool, parsed; `pickSelfChecks` chooses which ship ---
+  let selfChecks: FactFileCheck[] = [];
   if (Array.isArray(raw.selfChecks)) {
-    selfChecks = raw.selfChecks.slice(0, 4).map((c: any) => {
+    selfChecks = raw.selfChecks.slice(0, 10).map((c: any): FactFileCheck => {
       // Reconstruct options from flat option0-option3 fields
-      const options = [
-        String(c.option0 || c.options?.[0] || 'Option A'),
-        String(c.option1 || c.options?.[1] || 'Option B'),
-        String(c.option2 || c.options?.[2] || 'Option C'),
-        String(c.option3 || c.options?.[3] || 'Option D'),
-      ];
+      const options = [c.option0 ?? c.options?.[0], c.option1 ?? c.options?.[1], c.option2 ?? c.options?.[2], c.option3 ?? c.options?.[3]]
+        .map(o => (typeof o === 'string' ? o.trim() : ''));
 
-      let correctIndex = typeof c.correctIndex === 'number' ? c.correctIndex : 0;
-      if (correctIndex < 0 || correctIndex > 3) correctIndex = 0;
+      let correctIndex = typeof c.correctIndex === 'number' ? c.correctIndex : -1;
+      if (!Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex > 3) correctIndex = -1;
 
-      const validDifficulties = ['easy', 'medium', 'hard'];
-      const difficulty = validDifficulties.includes(c.difficulty) ? c.difficulty : 'medium';
+      const challengeType = CHALLENGE_TYPES.includes(c.challengeType) ? c.challengeType : undefined;
+      const difficulty = challengeType ? TYPE_DIFFICULTY[challengeType as ChallengeType] : 'medium';
 
-      const validSections = ['quickFacts', 'deepDive', 'records', 'didYouKnow'];
+      const validSections = ['keyStats', 'quickFacts', 'deepDive', 'records', 'didYouKnow'];
       const relatedSection = validSections.includes(c.relatedSection) ? c.relatedSection : 'quickFacts';
 
       // Pre-reader picture answer surface: keep optionEmojis only when EVERY option
@@ -356,32 +378,17 @@ function validateFactFileData(
         rawEmojis.every((e) => e.length > 0) &&
         new Set(rawEmojis).size === rawEmojis.length;
 
-      const question = String(c.question || 'Question');
-      const shuffled = shuffleIndexedChoices(options, correctIndex, `fact-file|${question}`);
       return {
-        question,
-        options: shuffled.options,
-        correctIndex: shuffled.correctIndex,
+        question: String(c.question || '').trim(),
+        options,
+        correctIndex,
         explanation: String(c.explanation || ''),
-        difficulty: difficulty as 'easy' | 'medium' | 'hard',
-        relatedSection: relatedSection as 'quickFacts' | 'deepDive' | 'records' | 'didYouKnow',
-        ...(emojisComplete
-          ? { optionEmojis: shuffled.order.map((index) => rawEmojis[index]) }
-          : {}),
+        difficulty,
+        relatedSection: relatedSection as FactFileSection,
+        ...(challengeType ? { challengeType } : {}),
+        ...(emojisComplete ? { optionEmojis: rawEmojis } : {}),
       };
     });
-  }
-  if (selfChecks.length < 3) {
-    while (selfChecks.length < 3) {
-      selfChecks.push({
-        question: 'What is one key fact from this profile?',
-        options: ['Option A', 'Option B', 'Option C', 'Option D'],
-        correctIndex: 0,
-        explanation: 'Review the quick facts section for the answer.',
-        difficulty: 'easy',
-        relatedSection: 'quickFacts',
-      });
-    }
   }
 
   return {
@@ -400,11 +407,81 @@ function validateFactFileData(
 
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+/** A stem that asks for one stated fact, not for reasoning with it. */
+const LOOKUP_STEM = /^\s*(about |approximately |roughly )?(how (many|much|tall|long|big|far|old|hot|fast)|what (is|was|are) the (name|number|percentage|amount|height|length|size)|what percentage|which .* holds? the record)\b/i;
+const ABOVE = /\b(all|none|both) of (the )?(above|these)\b/i;
+
+/** Why a generated check cannot be asked, or null when it can. */
+export function checkDefect(c: FactFileCheck): string | null {
+  if (!c.question) return 'no question';
+  if (c.correctIndex < 0 || c.correctIndex >= c.options.length) return 'no key';
+  if (c.options.length !== 4 || c.options.some(o => !o)) return 'not four choices';
+  if (new Set(c.options.map(o => normText(o))).size !== c.options.length) return 'a repeated choice';
+  if (c.options.some(o => ABOVE.test(o))) return '"all/none of the above"';
+  const key = normText(c.options[c.correctIndex]);
+  if (key.trim().length >= 4 && normText(c.question).includes(key)) return 'the key is printed in the question';
+  return null;
+}
+
+/** The key is plainly the longest choice: at least 40% and 8 characters longer than every other. */
+export function keyLongest(c: FactFileCheck): boolean {
+  const key = c.options[c.correctIndex]?.length ?? 0;
+  const other = Math.max(...c.options.filter((_, i) => i !== c.correctIndex).map(o => o.length));
+  return key >= other * 1.4 && key - other >= 8;
+}
+
+/**
+ * The checks that ship, from Gemini's pool: defective ones dropped; the mode's challenge types first; then ranked
+ * (a key the file states, a key that is not plainly the longest, and on hard, wrong choices the file states elsewhere);
+ * then stamped with an id, the mode's `fileOpen`, the tier's starting position, and a shuffled choice order.
+ */
+export function pickSelfChecks(pool: FactFileCheck[], data: Omit<FactFileData, 'selfChecks'>, opts: {
+  mode?: string; allowedTypes?: readonly string[]; tier: SupportTier | null; preReader: boolean;
+}): FactFileCheck[] {
+  const text = fileText(data);
+  const count = (opts.mode && MODE_COUNT[opts.mode]) || 4;
+  const sound = pool.filter(c => !checkDefect(c));
+  const inMode = opts.allowedTypes ? sound.filter(c => c.challengeType && opts.allowedTypes!.includes(c.challengeType)) : sound;
+  const usable = inMode.length >= Math.min(count, 3) ? inMode : sound;
+  const score = (c: FactFileCheck) => {
+    const foilsInFile = c.options.filter((o, i) => i !== c.correctIndex && statedInFile(o, text)).length;
+    // apply asks for reasoning: a stem that only looks a fact up ("How many...", "What is the name of...") ranks last.
+    const lookupInApply = opts.mode === 'apply' && LOOKUP_STEM.test(c.question);
+    return (statedInFile(c.options[c.correctIndex], text) ? 4 : 0) + (keyLongest(c) ? 0 : 2)
+      + (opts.tier === 'hard' ? foilsInFile : 0) - (lookupInApply ? 8 : 0);
+  };
+  // One question's key must not be printed in another shipped question's stem or choices: it would answer it
+  // (or the two share an answer).
+  const answers = (a: FactFileCheck, b: FactFileCheck) =>
+    statedInFile(a.options[a.correctIndex], normText(`${b.question} ${b.options.join(' ')}`));
+  const accepted: Array<{ c: FactFileCheck; i: number }> = [];
+  for (const x of usable.map((c, i) => ({ c, i, s: score(c) })).sort((a, b) => b.s - a.s || a.i - b.i)) {
+    if (accepted.length >= count) break;
+    if (accepted.some(y => answers(x.c, y.c) || answers(y.c, x.c))) continue;
+    accepted.push(x);
+  }
+  const ranked = accepted.sort((a, b) => a.i - b.i).map(x => x.c);
+  const fileOpen = opts.mode === 'explore';
+  return ranked.map((c, n) => {
+    const emojis = c.optionEmojis;
+    const shuffled = shuffleIndexedChoices(c.options, c.correctIndex, `fact-file|${c.question}`);
+    return {
+      ...c,
+      id: `check-${n + 1}`,
+      options: shuffled.options,
+      correctIndex: shuffled.correctIndex,
+      ...(emojis ? { optionEmojis: shuffled.order.map(i => emojis![i]) } : {}),
+      fileOpen,
+      ...(opts.tier === 'easy' && !opts.preReader ? { sectionHint: true } : {}),
+    };
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Generator
 // ---------------------------------------------------------------------------
 
-type FactFileConfig = Partial<{ targetEvalMode?: string }>;
+type FactFileConfig = Partial<{ targetEvalMode?: string; difficulty?: string }>;
 
 /**
  * Generate a FactFile magazine-style profile card.
@@ -437,11 +514,13 @@ PRE-READER SELF-CHECKS (kindergarten — the child CANNOT read; a tutor reads ea
 - option0Emoji-option3Emoji: REQUIRED — one DISTINCT emoji per option, same order, that clearly depicts it. This is the answer surface; it must stand alone without the text.` : '';
 
   // ── Resolve eval mode from the catalog (single source of truth) ──
+  const targetEvalMode = config?.targetEvalMode ?? ctx.targetEvalMode;
   const evalConstraint = resolveEvalModeConstraint(
     'fact-file',
-    config?.targetEvalMode,
+    targetEvalMode,
     CHALLENGE_TYPE_DOCS,
   );
+  const tier = normalizeSupportTier(config?.difficulty);
 
   // ── Build mode-constrained schema ──
   const activeSchema = evalConstraint
@@ -449,7 +528,7 @@ PRE-READER SELF-CHECKS (kindergarten — the child CANNOT read; a tutor reads ea
         factFileSchema,
         evalConstraint.allowedTypes,
         CHALLENGE_TYPE_DOCS,
-        { arrayName: 'selfChecks', fieldName: 'difficulty' },
+        { arrayName: 'selfChecks', fieldName: 'challengeType' },
       )
     : factFileSchema;
 
@@ -467,7 +546,11 @@ ${gradeLine ? gradeLine + '\n' : ''}
 Create a rich, informative Fact File about "${topic}" that reads like a page from a children's encyclopedia or magazine.
 
 ${challengeTypeSection}
-
+${evalConstraint?.definition.evalMode === 'apply' ? `
+APPLY MODE: every question needs reasoning with the facts, not finding one. Ask why something happens, what would most
+likely happen in a new situation, or which of two facts is bigger or came first. Never ask "how many", "what is the
+name of" or "what percentage": those are lookups.
+` : ''}
 ## Content Guidelines:
 
 ### Key Stats (3-5 items)
@@ -497,13 +580,13 @@ ${challengeTypeSection}
 - The kind of facts students would want to share with friends
 - Optional source attribution
 
-### Self-Check Questions (3-4 items)
-- Multiple-choice questions that test recall of the content above
+### Self-Check Questions (6-8 items; some are set aside, so write each to stand alone)
+- Multiple-choice questions that test the content above
 - Each question has exactly 4 options with one correct answer
-- NEVER reveal answers in the question text
-- Vary difficulty: include easy, medium, and hard questions
-- Each question should reference a specific section (quickFacts, deepDive, records, or didYouKnow)
-- Distractors should be plausible but clearly wrong
+- NEVER reveal answers in the question text, and never use "all of the above" or "none of the above"
+- Keep the four options the same kind of thing and about the same length; the correct one must not be the longest or most detailed
+- relatedSection names the section that states the fact (keyStats, quickFacts, deepDive, records, or didYouKnow); the question text itself never names a section ("according to the key stats") — the file may be closed while it is asked
+- Distractors should be plausible but clearly wrong${tier === 'hard' ? '; prefer distractors that are real facts from ELSEWHERE in this file (another stat, record or fact), so only a learner who remembers which fact goes with the question gets it' : ''}
 - Explanation should reinforce the correct answer without just restating it
 ${preReaderSelfCheckRules}
 
@@ -521,7 +604,7 @@ ${preReaderSelfCheckRules}
 
 Now generate the Fact File.`;
 
-  logEvalModeResolution('FactFile', config?.targetEvalMode, evalConstraint);
+  logEvalModeResolution('FactFile', targetEvalMode, evalConstraint);
 
   try {
     const response = await ai.models.generateContent({
@@ -536,7 +619,12 @@ Now generate the Fact File.`;
     if (!response.text) throw new Error("No content generated for fact-file");
 
     const raw = JSON.parse(response.text);
-    const data = validateFactFileData(raw, { isPreReader, gradeLevel: preReaderKey });
+    const parsed = validateFactFileData(raw, { isPreReader, gradeLevel: preReaderKey });
+    const selfChecks = pickSelfChecks(parsed.selfChecks ?? [], parsed, {
+      mode: evalConstraint?.definition.evalMode, allowedTypes: evalConstraint?.allowedTypes, tier, preReader: isPreReader,
+    });
+    if (selfChecks.length < 2) throw new Error(`fact-file: only ${selfChecks.length} usable self-check question(s) were generated`);
+    const data: FactFileData = { ...parsed, selfChecks };
 
     console.log('[FactFile] Generated:', {
       topic,

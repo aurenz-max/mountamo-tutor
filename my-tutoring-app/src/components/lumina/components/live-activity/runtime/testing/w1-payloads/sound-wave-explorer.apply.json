@@ -1,0 +1,59 @@
+{
+ "source": "qa/tutor-reports/sound-wave-explorer-runtime-apply-payload-2026-10-15.json",
+ "primitiveId": "sound-wave-explorer",
+ "evalMode": "apply",
+ "data": {
+  "title": "Wave Catchers and Sound Makers",
+  "description": "Learners investigate how changes to instruments relate to the wave patterns they make.",
+  "soundFocus": "both",
+  "challengeTypes": [
+   "apply"
+  ],
+  "difficulty": "hard",
+  "gradeLevel": "3",
+  "items": [
+   {
+    "id": "apply-1",
+    "mode": "apply",
+    "maker": "drum",
+    "before": {
+     "amp": 4,
+     "crests": 3
+    },
+    "changes": [
+     "force_down",
+     "speed_up"
+    ],
+    "wording": "physical"
+   },
+   {
+    "id": "apply-2",
+    "mode": "apply",
+    "maker": "rubber_band",
+    "before": {
+     "amp": 3,
+     "crests": 4
+    },
+    "changes": [
+     "force_down",
+     "speed_down"
+    ],
+    "wording": "physical"
+   },
+   {
+    "id": "apply-3",
+    "mode": "apply",
+    "maker": "guitar_string",
+    "before": {
+     "amp": 2,
+     "crests": 2
+    },
+    "changes": [
+     "force_up",
+     "speed_up"
+    ],
+    "wording": "physical"
+   }
+  ]
+ }
+}

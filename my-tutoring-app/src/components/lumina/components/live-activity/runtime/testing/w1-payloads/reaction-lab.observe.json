@@ -1,0 +1,171 @@
+{
+ "source": "qa/tutor-reports/reaction-lab-runtime-observe-payload-2026-10-15.json",
+ "primitiveId": "reaction-lab",
+ "evalMode": "observe",
+ "data": {
+  "title": "Fizzing Volcano Lab",
+  "description": "Discover the signs of a chemical reaction by mixing baking soda and vinegar to create bubbling fizz!",
+  "experiment": {
+   "name": "Baking Soda and Vinegar Reaction",
+   "category": "acid_base",
+   "safetyLevel": "safe",
+   "realWorldConnection": "This is similar to how baking powder helps cakes rise in the oven and how antacid tablets fizz in your stomach to relieve indigestion!"
+  },
+  "substances": [
+   {
+    "id": "sub-baking-soda",
+    "name": "Baking Soda",
+    "state": "solid",
+    "color": "white",
+    "safetyInfo": "Do not taste or get in eyes. Wash hands after use.",
+    "amount": "2 tablespoons",
+    "formula": "NaHCO\u2083",
+    "imagePrompt": "White powder in a small glass bowl"
+   },
+   {
+    "id": "sub-vinegar",
+    "name": "Vinegar",
+    "state": "liquid",
+    "color": "clear",
+    "safetyInfo": "Avoid contact with eyes. Keep away from nose directly.",
+    "amount": "100 mL",
+    "formula": "CH\u2083COOH",
+    "imagePrompt": "Clear liquid in a measuring beaker"
+   }
+  ],
+  "reaction": {
+   "type": "chemical",
+   "signs": [
+    "fizzing",
+    "gas_produced",
+    "temperature_change"
+   ],
+   "isReversible": false,
+   "energyChange": "endothermic",
+   "particleDescription": "When vinegar (acid) mixes with baking soda (base), their molecules break apart and rearrange, creating invisible carbon dioxide gas bubbles that rush upward and cause rapid fizzing!",
+   "equation": "NaHCO\u2083 + CH\u2083COOH \u2192 NaCH\u2083COO + H\u2082O + CO\u2082"
+  },
+  "animation": {
+   "realView": {
+    "duration": 4,
+    "effects": [
+     "bubbles",
+     "foam",
+     "steamRise"
+    ],
+    "temperatureChange": -3
+   },
+   "particleView": {
+    "reactantMolecules": [
+     "NaHCO\u2083",
+     "CH\u2083COOH"
+    ],
+    "productMolecules": [
+     "NaCH\u2083COO",
+     "H\u2082O",
+     "CO\u2082"
+    ],
+    "bondBreaking": true,
+    "bondForming": true
+   }
+  },
+  "challenges": [
+   {
+    "id": "chal-observe-1",
+    "type": "observe",
+    "instruction": "Look closely at the reaction. What happened right after mixing the baking soda and vinegar?",
+    "targetAnswer": "Bubbles formed rapidly and the mixture fizzed up",
+    "hint": "Watch the beaker closely for escaping gas and foam.",
+    "narration": "Fantastic observation! Those rushing bubbles are a telltale sign that new substances are being born!",
+    "correctOptionId": "B",
+    "options": [
+     {
+      "id": "A",
+      "text": "The liquid turned bright neon green and turned solid"
+     },
+     {
+      "id": "B",
+      "text": "Bubbles formed rapidly and the mixture fizzed up"
+     },
+     {
+      "id": "C",
+      "text": "Nothing happened at all"
+     },
+     {
+      "id": "D",
+      "text": "The mixture caught fire and glowed in the dark"
+     }
+    ]
+   },
+   {
+    "id": "chal-signs-1",
+    "type": "identify_signs",
+    "instruction": "Which specific signs told you that a chemical reaction took place?",
+    "targetAnswer": "Fizzing, gas produced, and a slight temperature drop",
+    "hint": "Think about what your eyes and thermometer told you.",
+    "narration": "Spot on! Fizzing and gas production are absolute proof that chemical bonds rearranged into something completely new.",
+    "correctOptionId": "A",
+    "options": [
+     {
+      "id": "A",
+      "text": "Fizzing, gas produced, and a slight temperature drop"
+     },
+     {
+      "id": "B",
+      "text": "Only a physical color shift with no bubbles"
+     },
+     {
+      "id": "C",
+      "text": "Loud music playing and a sweet smell"
+     }
+    ]
+   },
+   {
+    "id": "chal-classify-1",
+    "type": "classify",
+    "instruction": "Is mixing baking soda and vinegar a chemical change or a physical change?",
+    "targetAnswer": "chemical",
+    "hint": "Did it make brand new gas molecules that can't easily turn back into vinegar and baking soda?",
+    "narration": "Brilliant work! This is a classic chemical change because the original reactants transformed into entirely new products like carbon dioxide gas!"
+   }
+  ],
+  "notebook": {
+   "predictPrompt": "What do you think will happen when we pour vinegar into the baking soda?",
+   "predictionOptions": [
+    {
+     "id": "A",
+     "text": "Bubbles will form and it will fizz vigorously"
+    },
+    {
+     "id": "B",
+     "text": "The powder will turn into solid gold"
+    },
+    {
+     "id": "C",
+     "text": "The liquid will freeze into ice cubes"
+    },
+    {
+     "id": "D",
+     "text": "Nothing will happen at all"
+    }
+   ],
+   "correctPredictionId": "A",
+   "observePrompts": [
+    "What did you see happen immediately after mixing?",
+    "Did you hear any sounds during the experiment?",
+    "Did the temperature gauge go up or down?"
+   ],
+   "explainPrompt": "Why do you think mixing these two substances created so many bubbles? What gas was released?"
+  },
+  "showOptions": {
+   "showParticleView": true,
+   "showEquation": false,
+   "showSafetyBadge": true,
+   "showTemperatureGauge": true,
+   "showObservationNotebook": true,
+   "showConservationCounter": false
+  },
+  "gradeBand": "3-5",
+  "imagePrompt": "A beaker of bubbling and fizzing white foam overflowing with a kid-friendly science lab background"
+ }
+}

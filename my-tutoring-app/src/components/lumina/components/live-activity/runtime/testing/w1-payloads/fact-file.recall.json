@@ -1,0 +1,146 @@
+{
+ "source": "qa/tutor-reports/fact-file-runtime-recall-payload-2026-10-16.json",
+ "primitiveId": "fact-file",
+ "evalMode": "recall",
+ "data": {
+  "title": "Volcanoes",
+  "category": "Landmark",
+  "description": "Volcanoes are openings in the Earth's crust that allow hot magma, ash, and gases to escape from deep underground.",
+  "keyStats": [
+   {
+    "value": "1,500",
+    "unit": "active volcanoes",
+    "label": "Active Count"
+   },
+   {
+    "value": "2,000",
+    "unit": "degrees Fahrenheit",
+    "label": "Magma Heat"
+   },
+   {
+    "value": "75",
+    "unit": "percent",
+    "label": "Ring of Fire"
+   }
+  ],
+  "quickFacts": [
+   {
+    "fact": "Magma is molten rock that stays underground, but once it breaks the surface, it is called lava.",
+    "icon": "\ud83c\udf0b"
+   },
+   {
+    "fact": "The Ring of Fire is a major area in the basin of the Pacific Ocean where many earthquakes and volcanic eruptions occur.",
+    "icon": "\ud83c\udf0d"
+   },
+   {
+    "fact": "Volcanic ash is made of tiny jagged pieces of rock and glass, making it very dangerous to breathe.",
+    "icon": "\u2601\ufe0f"
+   },
+   {
+    "fact": "Underwater volcanoes, also known as submarine volcanoes, create new islands as hot lava cools in the ocean.",
+    "icon": "\ud83c\udfdd\ufe0f"
+   }
+  ],
+  "deepDive": [
+   {
+    "heading": "How Volcanoes Form",
+    "body": "Deep beneath the Earth's surface, extreme heat melts rock into a thick, glowing substance called magma. Because magma is lighter than the solid rock around it, it rises up through cracks and weaknesses in the Earth's crust. When the pressure builds up too much, it bursts out in an eruption.",
+    "detail": "Tectonic plates crashing together or pulling apart create the pathways for magma to rise."
+   },
+   {
+    "heading": "Types of Volcano Eruptions",
+    "body": "Not all volcanic eruptions are the same. Some eruptions are gentle, with rivers of runny lava slowly oozing down the sides of the mountain. Other eruptions are explosive and violent, blasting ash, rock, and gas high up into the sky.",
+    "detail": "The thickness of the magma and the amount of trapped gas determine how explosive an eruption will be."
+   }
+  ],
+  "records": [
+   {
+    "label": "Largest Active Volcano",
+    "value": "Mauna Loa in Hawaii is the largest active volcano on Earth, rising over 30,000 feet from the ocean floor."
+   },
+   {
+    "label": "Most Active Volcano",
+    "value": "Kilauea, also located in Hawaii, is one of the most active volcanoes in the world with frequent eruptions."
+   }
+  ],
+  "didYouKnow": [
+   {
+    "text": "Jupiter's moon Io has over 400 active volcanoes, making it the most volcanically active object in our solar system!",
+    "source": "NASA"
+   },
+   {
+    "text": "Volcanoes can grow very quickly; Paricutin in Mexico suddenly appeared in a farmer's cornfield in 1943 and grew 1,200 feet tall in just one year."
+   }
+  ],
+  "selfChecks": [
+   {
+    "question": "What is molten rock called once it breaks through the Earth's surface?",
+    "options": [
+     "Lava",
+     "Granite",
+     "Ash",
+     "Magma"
+    ],
+    "correctIndex": 0,
+    "explanation": "Magma becomes known as lava only after it reaches the surface of the Earth.",
+    "difficulty": "easy",
+    "relatedSection": "quickFacts",
+    "challengeType": "recall_easy",
+    "id": "check-1",
+    "fileOpen": false,
+    "sectionHint": true
+   },
+   {
+    "question": "Approximately what percentage of the world's active volcanoes are found in the Ring of Fire?",
+    "options": [
+     "25 percent",
+     "75 percent",
+     "99 percent",
+     "50 percent"
+    ],
+    "correctIndex": 1,
+    "explanation": "The Ring of Fire contains about 75 percent of all active volcanoes on Earth.",
+    "difficulty": "easy",
+    "relatedSection": "keyStats",
+    "challengeType": "recall_easy",
+    "id": "check-2",
+    "fileOpen": false,
+    "sectionHint": true
+   },
+   {
+    "question": "Which volcano is recognized as the largest active volcano on Earth?",
+    "options": [
+     "Kilauea",
+     "Paricutin",
+     "Mount St. Helens",
+     "Mauna Loa"
+    ],
+    "correctIndex": 3,
+    "explanation": "Mauna Loa in Hawaii holds the record for the largest active volcano on Earth.",
+    "difficulty": "medium",
+    "relatedSection": "records",
+    "challengeType": "recall_medium",
+    "id": "check-3",
+    "fileOpen": false,
+    "sectionHint": true
+   },
+   {
+    "question": "What causes magma to rise toward the Earth's surface?",
+    "options": [
+     "It is pulled by the moon's gravity",
+     "It is pushed by underground rivers",
+     "It is heavier than the surrounding rock",
+     "It is lighter than the solid rock around it"
+    ],
+    "correctIndex": 3,
+    "explanation": "Magma rises because it is lighter than the solid rock surrounding it deep underground.",
+    "difficulty": "medium",
+    "relatedSection": "deepDive",
+    "challengeType": "recall_medium",
+    "id": "check-4",
+    "fileOpen": false,
+    "sectionHint": true
+   }
+  ]
+ }
+}

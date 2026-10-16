@@ -1,0 +1,116 @@
+{
+ "source": "qa/tutor-reports/digital-skills-sim-runtime-click-payload-2026-10-16.json",
+ "primitiveId": "digital-skills-sim",
+ "evalMode": "click",
+ "data": {
+  "title": "Fun Farm Clicker",
+  "description": "Practice your clicking skills by finding the friendly farm animals.",
+  "theme": "farm",
+  "challengeTypes": [
+   "click"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "mode": "click",
+    "theme": "farm",
+    "things": [
+     {
+      "name": "hen",
+      "emoji": "\ud83d\udc14"
+     },
+     {
+      "name": "duck",
+      "emoji": "\ud83e\udd86"
+     },
+     {
+      "name": "cow",
+      "emoji": "\ud83d\udc04"
+     }
+    ],
+    "target": 1,
+    "id": "click-1"
+   },
+   {
+    "mode": "click",
+    "theme": "farm",
+    "things": [
+     {
+      "name": "cow",
+      "emoji": "\ud83d\udc04"
+     },
+     {
+      "name": "duck",
+      "emoji": "\ud83e\udd86"
+     },
+     {
+      "name": "hen",
+      "emoji": "\ud83d\udc14"
+     }
+    ],
+    "target": 0,
+    "id": "click-2"
+   },
+   {
+    "mode": "click",
+    "theme": "farm",
+    "things": [
+     {
+      "name": "horse",
+      "emoji": "\ud83d\udc34"
+     },
+     {
+      "name": "pig",
+      "emoji": "\ud83d\udc16"
+     },
+     {
+      "name": "duck",
+      "emoji": "\ud83e\udd86"
+     }
+    ],
+    "target": 0,
+    "id": "click-3"
+   },
+   {
+    "mode": "click",
+    "theme": "farm",
+    "things": [
+     {
+      "name": "hen",
+      "emoji": "\ud83d\udc14"
+     },
+     {
+      "name": "tractor",
+      "emoji": "\ud83d\ude9c"
+     },
+     {
+      "name": "sheep",
+      "emoji": "\ud83d\udc11"
+     }
+    ],
+    "target": 2,
+    "id": "click-4"
+   },
+   {
+    "mode": "click",
+    "theme": "farm",
+    "things": [
+     {
+      "name": "cow",
+      "emoji": "\ud83d\udc04"
+     },
+     {
+      "name": "tractor",
+      "emoji": "\ud83d\ude9c"
+     },
+     {
+      "name": "sheep",
+      "emoji": "\ud83d\udc11"
+     }
+    ],
+    "target": 1,
+    "id": "click-5"
+   }
+  ]
+ }
+}

@@ -1,0 +1,84 @@
+{
+ "source": "qa/tutor-reports/atom-builder-runtime-build-payload-2026-10-15.json",
+ "primitiveId": "atom-builder",
+ "evalMode": "build",
+ "data": {
+  "title": "Build Neon: The Glowing Element",
+  "description": "Discover how protons, neutrons, and electrons build the glowing neon gas found in bright city signs.",
+  "targetElement": {
+   "atomicNumber": 10,
+   "massNumber": 20,
+   "charge": 0,
+   "name": "Neon"
+  },
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "build_element",
+    "instruction": "Add 10 protons to the nucleus to create the element Neon. Don't forget to balance it with 10 neutrons and 10 electrons!",
+    "targetProtons": 10,
+    "targetNeutrons": 10,
+    "targetElectrons": 10,
+    "hint": "Check the atomic number of Neon on the periodic table\u2014it is 10!",
+    "narration": "Amazing! 10 protons defines Neon, the noble gas that makes brilliant red and orange signs glow!"
+   },
+   {
+    "id": "ch2",
+    "type": "identify",
+    "instruction": "Examine this mysterious atom with 8 protons, 8 neutrons, and 8 electrons. What element have we built?",
+    "targetProtons": 8,
+    "targetNeutrons": 8,
+    "targetElectrons": 8,
+    "hint": "Look at the atomic number. Which element has 8 protons?",
+    "narration": "Spot on! That is Oxygen, the vital gas you breathe every second to keep your body moving."
+   },
+   {
+    "id": "ch3",
+    "type": "fill_shells",
+    "instruction": "Fill the electron shells for Neon following the rules: 2 electrons in the first shell, and the remaining 8 in the second shell.",
+    "targetProtons": 10,
+    "targetNeutrons": 10,
+    "targetElectrons": 10,
+    "hint": "The first shell holds a maximum of 2, and the second shell can hold up to 8.",
+    "narration": "See how its outer valence shell is completely full? That stable electron configuration is why neon doesn't like to react with other elements!"
+   },
+   {
+    "id": "ch4",
+    "type": "make_ion",
+    "instruction": "Start with a neutral Sodium atom (11 protons, 12 neutrons, 11 electrons) and remove 1 electron to form a sodium ion.",
+    "targetProtons": 11,
+    "targetNeutrons": 12,
+    "targetElectrons": 10,
+    "hint": "Sodium has 11 protons. To make an ion with a +1 charge, you need one fewer electron than protons.",
+    "narration": "You removed an electron and created a sodium cation with a positive charge! That is exactly what happens when table salt dissolves in water."
+   },
+   {
+    "id": "ch5",
+    "type": "make_isotope",
+    "instruction": "Build Carbon-14! Start with standard carbon (6 protons, 6 electrons), but adjust the neutrons to make this famous radioactive isotope used in archaeology.",
+    "targetProtons": 6,
+    "targetNeutrons": 8,
+    "targetElectrons": 6,
+    "hint": "Carbon always has 6 protons, but carbon-14 has a mass number of 14.",
+    "narration": "Brilliant! You built Carbon-14, an isotope with extra neutrons that scientists use to date ancient artifacts and fossils."
+   }
+  ],
+  "showOptions": {
+   "showMiniPeriodicTable": true,
+   "showIdentityCard": true,
+   "showShellCapacity": true,
+   "showCharge": true,
+   "showMassNumber": true,
+   "showElectronConfiguration": true,
+   "showNucleusDetail": true
+  },
+  "constraints": {
+   "maxProtons": 36,
+   "maxShells": 4,
+   "allowIons": true,
+   "allowIsotopes": true
+  },
+  "gradeBand": "6-8",
+  "imagePrompt": "Colorful glowing neon signs lighting up a bustling city street at night"
+ }
+}

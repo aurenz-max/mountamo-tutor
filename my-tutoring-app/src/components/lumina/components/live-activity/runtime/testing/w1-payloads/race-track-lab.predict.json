@@ -1,0 +1,116 @@
+{
+ "source": "qa/tutor-reports/race-track-lab-runtime-predict-payload-2026-10-15.json",
+ "primitiveId": "race-track-lab",
+ "evalMode": "predict",
+ "data": {
+  "title": "Toy Car Race Track Lab",
+  "description": "You will look at the speed of different cars to see how distance and time work on the track.",
+  "challengeTypes": [
+   "predict"
+  ],
+  "difficulty": "hard",
+  "grade": "2",
+  "items": [
+   {
+    "id": "predict-1",
+    "mode": "predict",
+    "ask": "winner",
+    "racers": [
+     {
+      "name": "Red car",
+      "color": "#EF4444",
+      "speed": 3,
+      "start": 7
+     },
+     {
+      "name": "Blue car",
+      "color": "#3B82F6",
+      "speed": 4,
+      "start": 0
+     },
+     {
+      "name": "Green car",
+      "color": "#22C55E",
+      "speed": 1,
+      "start": 0
+     }
+    ],
+    "trackLength": 12,
+    "time": 0,
+    "given": "per_second"
+   },
+   {
+    "id": "predict-2",
+    "mode": "predict",
+    "ask": "winner",
+    "racers": [
+     {
+      "name": "Orange car",
+      "color": "#F97316",
+      "speed": 4,
+      "start": 0
+     },
+     {
+      "name": "Purple car",
+      "color": "#A855F7",
+      "speed": 1,
+      "start": 5
+     },
+     {
+      "name": "Red car",
+      "color": "#EF4444",
+      "speed": 2,
+      "start": 0
+     }
+    ],
+    "trackLength": 12,
+    "time": 0,
+    "given": "per_second"
+   },
+   {
+    "id": "predict-3",
+    "mode": "predict",
+    "ask": "winner",
+    "racers": [
+     {
+      "name": "Red car",
+      "color": "#EF4444",
+      "speed": 1,
+      "start": 9
+     },
+     {
+      "name": "Purple car",
+      "color": "#A855F7",
+      "speed": 2,
+      "start": 0
+     }
+    ],
+    "trackLength": 12,
+    "time": 0,
+    "given": "per_second"
+   },
+   {
+    "id": "predict-4",
+    "mode": "predict",
+    "ask": "winner",
+    "racers": [
+     {
+      "name": "Green car",
+      "color": "#22C55E",
+      "speed": 4,
+      "start": 0
+     },
+     {
+      "name": "Blue car",
+      "color": "#3B82F6",
+      "speed": 1,
+      "start": 7
+     }
+    ],
+    "trackLength": 12,
+    "time": 0,
+    "given": "per_second"
+   }
+  ]
+ }
+}

@@ -1,0 +1,149 @@
+{
+ "source": "qa/tutor-reports/mixing-and-dissolving-runtime-dissolve-payload-2026-10-15.json",
+ "primitiveId": "mixing-and-dissolving",
+ "evalMode": "dissolve",
+ "data": {
+  "title": "Kitchen Dissolving Lab",
+  "description": "Discover what happens when everyday kitchen items meet water and how to get them back out again.",
+  "solvent": {
+   "name": "Water",
+   "formula": "H2O",
+   "volume": 200,
+   "temperature": 20
+  },
+  "substances": [
+   {
+    "id": "salt",
+    "name": "Table Salt",
+    "formula": "NaCl",
+    "type": "soluble",
+    "maxSolubility": 36,
+    "solubilityVsTemp": "unchanged",
+    "color": "#ffffff",
+    "particleColor": "#4a90e2"
+   },
+   {
+    "id": "sugar",
+    "name": "Sugar",
+    "formula": "C12H22O11",
+    "type": "soluble",
+    "maxSolubility": 200,
+    "solubilityVsTemp": "increases",
+    "color": "#f5f5f5",
+    "particleColor": "#f5a623"
+   },
+   {
+    "id": "sand",
+    "name": "Sand",
+    "formula": "SiO2",
+    "type": "insoluble",
+    "maxSolubility": null,
+    "solubilityVsTemp": "unchanged",
+    "color": "#d0a85c",
+    "particleColor": "#8b572a"
+   },
+   {
+    "id": "oil",
+    "name": "Cooking Oil",
+    "formula": null,
+    "type": "immiscible_liquid",
+    "maxSolubility": null,
+    "solubilityVsTemp": "unchanged",
+    "color": "rgba(255, 200, 0, 0.6)",
+    "particleColor": "#f8e71c"
+   }
+  ],
+  "separationMethods": [
+   {
+    "method": "filtration",
+    "worksFor": [
+     "Sand"
+    ],
+    "description": "Pour the mixture through a paper filter to trap solid pieces that did not dissolve.",
+    "animation": "liquid passes through while solid particles stay on the filter paper"
+   },
+   {
+    "method": "evaporation",
+    "worksFor": [
+     "Table Salt",
+     "Sugar"
+    ],
+    "description": "Heat the liquid until the water turns to gas and floats away, leaving the solid crystals behind.",
+    "animation": "water boils away leaving solid crystals behind"
+   },
+   {
+    "method": "decanting",
+    "worksFor": [
+     "Cooking Oil"
+    ],
+    "description": "Carefully pour off the top liquid layer because it does not mix with the water below.",
+    "animation": "top liquid layer is carefully poured off into another container"
+   }
+  ],
+  "challenges": [
+   {
+    "id": "sort-oil",
+    "type": "dissolve_sort",
+    "answerType": "true_false",
+    "instruction": "Add the cooking oil to the water and stir. Does it dissolve?",
+    "options": [
+     "Dissolves",
+     "Doesn't dissolve"
+    ],
+    "correctOptionIndex": 1,
+    "hint": "Look at the beaker after you stir: is the substance still there to see, or has it spread through the liquid?",
+    "narration": ""
+   },
+   {
+    "id": "sort-sugar",
+    "type": "dissolve_sort",
+    "answerType": "true_false",
+    "instruction": "Add the sugar to the water and stir. Does it dissolve?",
+    "options": [
+     "Dissolves",
+     "Doesn't dissolve"
+    ],
+    "correctOptionIndex": 0,
+    "hint": "Look at the beaker after you stir: is the substance still there to see, or has it spread through the liquid?",
+    "narration": ""
+   },
+   {
+    "id": "sort-salt",
+    "type": "dissolve_sort",
+    "answerType": "true_false",
+    "instruction": "Add the table salt to the water and stir. Does it dissolve?",
+    "options": [
+     "Dissolves",
+     "Doesn't dissolve"
+    ],
+    "correctOptionIndex": 0,
+    "hint": "Look at the beaker after you stir: is the substance still there to see, or has it spread through the liquid?",
+    "narration": ""
+   },
+   {
+    "id": "ch1",
+    "type": "particle_explain",
+    "answerType": "multiple_choice",
+    "instruction": "What happened to the table salt particles when it dissolved in the water?",
+    "options": [
+     "They sank and turned into sand",
+     "They spread out among water molecules",
+     "They disappeared completely",
+     "They floated to the very top"
+    ],
+    "correctOptionIndex": 1,
+    "hint": "Look closely at the particle view. Are the tiny pieces gone forever, or are they just hiding between the water?",
+    "narration": "Salt disappears in water but it's still there\u2014that's why the ocean tastes salty!"
+   }
+  ],
+  "showOptions": {
+   "showParticleView": true,
+   "showConcentrationMeter": false,
+   "showTemperatureControl": false,
+   "showSaturationIndicator": true,
+   "showSeparationTools": true,
+   "showSolubilityCurve": false
+  },
+  "gradeBand": "3-5"
+ }
+}

@@ -1,0 +1,68 @@
+{
+ "source": "qa/tutor-reports/stoichiometry-lab-runtime-limiting-payload-2026-10-15.json",
+ "primitiveId": "stoichiometry-lab",
+ "evalMode": "limiting",
+ "data": {
+  "title": "Hydrogen Fuel Cells",
+  "description": "Hydrogen gas reacts with oxygen gas inside a fuel cell to generate clean electrical power and water vapor.",
+  "gradeBand": "9-10",
+  "reaction": {
+   "id": "water",
+   "equation": "2H2 + O2 -> 2H2O",
+   "reactants": [
+    {
+     "formula": "H2",
+     "coefficient": 2,
+     "molarMass": 2,
+     "name": "hydrogen"
+    },
+    {
+     "formula": "O2",
+     "coefficient": 1,
+     "molarMass": 32,
+     "name": "oxygen"
+    }
+   ],
+   "products": [
+    {
+     "formula": "H2O",
+     "coefficient": 2,
+     "molarMass": 18,
+     "name": "water"
+    }
+   ]
+  },
+  "challenges": [
+   {
+    "id": "limiting-1",
+    "type": "limiting",
+    "tier": "easy",
+    "givenFormulaA": "H2",
+    "givenMassA": 5,
+    "givenFormulaB": "O2",
+    "givenMassB": 96
+   },
+   {
+    "id": "limiting-2",
+    "type": "limiting",
+    "tier": "medium",
+    "givenFormulaA": "H2",
+    "givenMassA": 4,
+    "givenFormulaB": "O2",
+    "givenMassB": 32
+   },
+   {
+    "id": "limiting-3",
+    "type": "limiting",
+    "tier": "hard",
+    "givenFormulaA": "H2",
+    "givenMassA": 5,
+    "givenFormulaB": "O2",
+    "givenMassB": 64
+   }
+  ],
+  "challengeTypes": [
+   "limiting"
+  ]
+ }
+}

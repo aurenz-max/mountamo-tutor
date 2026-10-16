@@ -1,0 +1,65 @@
+{
+ "source": "qa/tutor-reports/sound-wave-explorer-runtime-predict-payload-2026-10-15.json",
+ "primitiveId": "sound-wave-explorer",
+ "evalMode": "predict",
+ "data": {
+  "title": "Making Noise",
+  "description": "Learners investigate how different ways of playing instruments affect the sounds they create.",
+  "soundFocus": "both",
+  "challengeTypes": [
+   "predict"
+  ],
+  "difficulty": "hard",
+  "gradeLevel": "2",
+  "items": [
+   {
+    "id": "predict-1",
+    "mode": "predict",
+    "maker": "bell",
+    "before": {
+     "amp": 4,
+     "crests": 4
+    },
+    "change": "farther",
+    "asked": "pitch",
+    "wording": "physical"
+   },
+   {
+    "id": "predict-2",
+    "mode": "predict",
+    "maker": "guitar_string",
+    "before": {
+     "amp": 3,
+     "crests": 4
+    },
+    "change": "speed_down",
+    "asked": "pitch",
+    "wording": "physical"
+   },
+   {
+    "id": "predict-3",
+    "mode": "predict",
+    "maker": "drum",
+    "before": {
+     "amp": 2,
+     "crests": 3
+    },
+    "change": "speed_up",
+    "asked": "loudness",
+    "wording": "physical"
+   },
+   {
+    "id": "predict-4",
+    "mode": "predict",
+    "maker": "rubber_band",
+    "before": {
+     "amp": 2,
+     "crests": 2
+    },
+    "change": "force_up",
+    "asked": "loudness",
+    "wording": "physical"
+   }
+  ]
+ }
+}

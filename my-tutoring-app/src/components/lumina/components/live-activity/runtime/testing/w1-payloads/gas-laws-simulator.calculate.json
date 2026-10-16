@@ -1,0 +1,93 @@
+{
+ "source": "qa/tutor-reports/gas-laws-simulator-runtime-calculate-payload-2026-10-15.json",
+ "primitiveId": "gas-laws-simulator",
+ "evalMode": "calculate",
+ "data": {
+  "title": "Combined Gas Dynamics: A Multi-Variable Analysis",
+  "description": "Students investigate the mathematical relationships between pressure, volume, and temperature of nitrogen gas across varying conditions.",
+  "lawFocus": "combined",
+  "gas": "nitrogen",
+  "challengeTypes": [
+   "calculate"
+  ],
+  "difficulty": "medium",
+  "gradeBand": "11-12",
+  "items": [
+   {
+    "id": "calculate-1",
+    "mode": "calculate",
+    "gas": "nitrogen",
+    "apparatus": "cylinder",
+    "before": {
+     "P": 2,
+     "V": 2,
+     "T": 600,
+     "n": 1
+    },
+    "asked": "V",
+    "celsius": false,
+    "heldNamed": true,
+    "changes": [
+     {
+      "v": "P",
+      "to": 4
+     },
+     {
+      "v": "T",
+      "to": 450
+     }
+    ]
+   },
+   {
+    "id": "calculate-2",
+    "mode": "calculate",
+    "gas": "nitrogen",
+    "apparatus": "cylinder",
+    "before": {
+     "P": 4,
+     "V": 6,
+     "T": 300,
+     "n": 1
+    },
+    "asked": "T",
+    "celsius": false,
+    "heldNamed": true,
+    "changes": [
+     {
+      "v": "P",
+      "to": 3
+     },
+     {
+      "v": "V",
+      "to": 9
+     }
+    ]
+   },
+   {
+    "id": "calculate-3",
+    "mode": "calculate",
+    "gas": "nitrogen",
+    "apparatus": "cylinder",
+    "before": {
+     "P": 1,
+     "V": 12,
+     "T": 450,
+     "n": 1
+    },
+    "asked": "V",
+    "celsius": false,
+    "heldNamed": true,
+    "changes": [
+     {
+      "v": "P",
+      "to": 2
+     },
+     {
+      "v": "T",
+      "to": 675
+     }
+    ]
+   }
+  ]
+ }
+}

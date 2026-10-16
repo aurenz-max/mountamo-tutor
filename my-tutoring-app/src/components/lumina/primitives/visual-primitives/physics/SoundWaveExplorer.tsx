@@ -1,67 +1,77 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
-import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
+/**
+ * Sound Wave Explorer: sound makers, their drawn waves and real tones, one closed question per item (one eval mode each).
+ * - observe: a sound maker starts or stops shaking (or a sound starts or stops); what happens to the other half?
+ * - predict: a sound maker is played once; one change; predict the loudness or the pitch before it plays.
+ * - classify: two or three drawn waves; which sound is louder, quieter, higher or lower?
+ * - apply: a Before wave and an After wave; which change made the After sound?
+ *
+ * Every item is built and keyed by code (`soundWaveWorkspace.ts`). Nothing that answers the item is drawn or played
+ * before the answer is credited (or, on the scripted path, shown after two misses): the After wave is "?", the observe
+ * picture shows the moment before the change, and the classify sounds do not play. Two paths, chosen by
+ * `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries before a reveal; the
+ * workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a named miss, takes a
+ * spoken answer judged against the key, and lets the runtime move on. The levers live in `soundWaveLevers.ts`.
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { SoundWaveExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaButton,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  afterWave, AMP_PX, askOf, choicesOf, CREST_COUNT, CREST_HZ, describeSoundWork, keyChoice, MAKER_NAME, soundCorrect,
+  soundItems, soundMiss, WAVE_LABELS, workspaceAssignment, workspaceScene, type Maker, type ObserveEvent, type ObserveItem,
+  type SoundFocus, type SoundItem, type SoundMode, type SoundTier, type Wave,
+} from './soundWaveWorkspace';
+import {
+  changeLines, CHANGE_LEVER, CREST_LEVER, FEATURE_LEVER, FEATURE_LINES, leverFact, shakeLines, SHAKE_LEVER, simplerItem,
+  soundLevers,
+} from './soundWaveLevers';
 
-// =============================================================================
-// Data Interface — Single Source of Truth
-// =============================================================================
+// ============================================================================
+// Data Types (single source of truth; the generator imports them)
+// ============================================================================
 
-export type VibrationSource = 'guitar_string' | 'drum' | 'tuning_fork' | 'rubber_band' | 'bell' | 'whistle';
-export type SoundMedium = 'air' | 'water' | 'solid_wall' | 'vacuum';
-export type SoundDistance = 'close' | 'medium' | 'far';
-export type SoundChallengeType = 'observe' | 'predict' | 'classify' | 'apply';
-export type SoundLabTheme = 'music_room' | 'playground' | 'science_lab';
-
-export interface VibrationObject {
-  type: VibrationSource;
-  label: string;
-  basePitch: 'low' | 'medium' | 'high';
-  baseLoudness: 'quiet' | 'medium' | 'loud';
-}
-
-export interface SoundChallenge {
-  id: string;
-  type: SoundChallengeType;
-  instruction: string;
-  vibrationObject: VibrationSource;
-  forceLevel?: number;    // 1-5, affects amplitude/volume
-  speedLevel?: number;    // 1-5, affects frequency/pitch
-  medium?: SoundMedium;
-  distance?: SoundDistance;
-  correctAnswer: string;
-  distractor0?: string;
-  distractor1?: string;
-  distractor2?: string;
-  hint?: string;
-}
+export type { SoundFocus, SoundItem, SoundMode, SoundTier };
 
 export interface SoundWaveExplorerData {
   title: string;
-  description: string;
-  theme: SoundLabTheme;
-  gradeLevel: 'K' | '1' | '2' | '3';
-  objects: VibrationObject[];
-  challenges: SoundChallenge[];
-
-  /**
-   * Within-mode support tier stamped by the generator (config.difficulty).
-   * Withdrawal is text-overlay + hint-timing ONLY — tap-to-vibrate, the Web Audio
-   * tone, and the observe-only slider unlock are the phenomenon/task identity and
-   * are NEVER tier-gated. Absent → full-support legacy rendering (byte-identical).
-   */
-  supportTier?: 'easy' | 'medium' | 'hard';
+  description?: string;
+  /** What the lesson is about (the model's reading of the topic); code picks the asked feature from it. */
+  soundFocus?: SoundFocus;
+  /** The eval modes this session asks, in order (`resolveSoundModes`). */
+  challengeTypes?: SoundMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: SoundTier;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: SoundItem[];
+  gradeLevel?: 'K' | '1' | '2' | '3';
+  /** Legacy generations (before 2026-10-15): read only for the modes and the tier. */
+  challenges?: Array<{ type?: string }>;
+  supportTier?: string;
+  theme?: string;
+  objects?: unknown[];
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -75,912 +85,504 @@ export interface SoundWaveExplorerData {
 interface SoundWaveExplorerProps {
   data: SoundWaveExplorerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-// =============================================================================
-// Constants
-// =============================================================================
-
-const SVG_WIDTH = 700;
-const SVG_HEIGHT = 220;
-const WAVE_Y = SVG_HEIGHT / 2;
-const WAVE_START_X = 40;
-const WAVE_END_X = SVG_WIDTH - 40;
-
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  observe:  { label: 'Observe',  icon: '👀', accentColor: 'blue' },
-  predict:  { label: 'Predict',  icon: '🔮', accentColor: 'purple' },
-  classify: { label: 'Classify', icon: '📊', accentColor: 'emerald' },
-  apply:    { label: 'Apply',    icon: '🧠', accentColor: 'amber' },
+const MODE_LABEL: Record<SoundMode, string> = {
+  observe: 'Shaking and sound', predict: 'Predict the sound', classify: 'Read the waves', apply: 'What was done?',
 };
 
-const OBJECT_LABELS: Record<VibrationSource, string> = {
-  guitar_string: 'Guitar String',
-  drum: 'Drum',
-  tuning_fork: 'Tuning Fork',
-  rubber_band: 'Rubber Band',
-  bell: 'Bell',
-  whistle: 'Whistle',
-};
-
-const OBJECT_ICONS: Record<VibrationSource, string> = {
-  guitar_string: '🎸',
-  drum: '🥁',
-  tuning_fork: '🎵',
-  rubber_band: '〰️',
-  bell: '🔔',
-  whistle: '📯',
-};
-
-const MEDIUM_LABELS: Record<SoundMedium, string> = {
-  air: 'Air',
-  water: 'Water',
-  solid_wall: 'Solid Wall',
-  vacuum: 'Vacuum (Space)',
-};
-
-const DISTANCE_LABELS: Record<SoundDistance, string> = {
-  close: 'Close',
-  medium: 'Medium',
-  far: 'Far Away',
-};
-
-// Frequency ranges (Hz) mapped from speedLevel 1-5
-const FREQ_MIN = 200;
-const FREQ_MAX = 800;
-
-// =============================================================================
-// Audio helpers — Web Audio API
-// =============================================================================
+// ============================================================================
+// Audio: a short sine tone (Web Audio), silent where audio is unavailable
+// ============================================================================
 
 let audioCtx: AudioContext | null = null;
-
-function getAudioContext(): AudioContext {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-  }
-  return audioCtx;
-}
-
-function playTone(
-  frequency: number,
-  volume: number,
-  medium: SoundMedium,
-  distance: SoundDistance,
-  durationMs: number = 500,
-) {
+function playTone(wave: Wave, ms = 700) {
+  if (wave.amp <= 0) return;
   try {
-    const ctx = getAudioContext();
-    if (ctx.state === 'suspended') ctx.resume();
-
-    // Vacuum = silence
-    if (medium === 'vacuum') return;
-
+    const W = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+    const Ctor = W.AudioContext ?? W.webkitAudioContext;
+    if (!Ctor) return;
+    audioCtx ??= new Ctor();
+    const ctx = audioCtx;
+    if (ctx.state === 'suspended') void ctx.resume();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-
     osc.type = 'sine';
-    osc.frequency.value = frequency;
-
-    // Medium filtering
-    switch (medium) {
-      case 'water':
-        filter.type = 'lowpass';
-        filter.frequency.value = 400;
-        break;
-      case 'solid_wall':
-        filter.type = 'highpass';
-        filter.frequency.value = 300;
-        filter.Q.value = 2;
-        break;
-      default:
-        filter.type = 'allpass';
-        break;
-    }
-
-    // Distance attenuation
-    const distanceFactor = distance === 'close' ? 1.0 : distance === 'medium' ? 0.5 : 0.2;
-    gain.gain.value = Math.min(volume * distanceFactor, 0.4);
-
-    // Fade out
-    gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationMs / 1000);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + durationMs / 1000);
-  } catch {
-    // Audio not available — silent fallback
-  }
+    osc.frequency.value = CREST_HZ[wave.crests];
+    gain.gain.setValueAtTime(0.06 * wave.amp, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + ms / 1000);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + ms / 1000);
+  } catch { /* no audio */ }
 }
 
-// =============================================================================
-// SVG Wave path generator
-// =============================================================================
+// ============================================================================
+// Drawings
+// ============================================================================
 
-function generateWavePath(
-  amplitude: number,
-  wavelength: number,
-  medium: SoundMedium,
-  distance: SoundDistance,
-): string {
-  // Vacuum = flat line
-  if (medium === 'vacuum') {
-    return `M ${WAVE_START_X} ${WAVE_Y} L ${WAVE_END_X} ${WAVE_Y}`;
-  }
+const WAVE_W = 640;
+const WAVE_H = 140;
+const MID = WAVE_H / 2;
 
-  const distanceFactor = distance === 'close' ? 1.0 : distance === 'medium' ? 0.6 : 0.25;
-  const mediumFactor = medium === 'water' ? 0.7 : medium === 'solid_wall' ? 0.85 : 1.0;
-  const effectiveAmplitude = amplitude * distanceFactor * mediumFactor;
-  const totalWidth = WAVE_END_X - WAVE_START_X;
-
-  const points: string[] = [`M ${WAVE_START_X} ${WAVE_Y}`];
-  const step = 2;
-  for (let x = 0; x <= totalWidth; x += step) {
-    const y = WAVE_Y - effectiveAmplitude * Math.sin((2 * Math.PI * x) / wavelength);
-    points.push(`L ${WAVE_START_X + x} ${y}`);
-  }
-  return points.join(' ');
-}
-
-// =============================================================================
-// Object Stage SVG — vibrating objects
-// =============================================================================
-
-const OBJECT_STAGE_WIDTH = 240;
-const OBJECT_STAGE_HEIGHT = 200;
-
-interface ObjectStageProps {
-  objectType: VibrationSource;
-  isVibrating: boolean;
-  forceLevel: number;
-  speedLevel: number;
-  onTap: () => void;
-}
-
-function ObjectStage({ objectType, isVibrating, forceLevel, speedLevel, onTap }: ObjectStageProps) {
-  const vibOffset = isVibrating ? forceLevel * 1.5 : 0;
-  const vibSpeed = 100 + (6 - speedLevel) * 40; // faster speed = shorter duration
-
+/** One wave at the shared scale; with `marks`, its crests numbered and a line at its top. */
+const WavePanel = ({ wave, label, marks }: { wave: Wave | null; label: string; marks: boolean }) => {
+  const amp = wave ? AMP_PX[wave.amp] : 0;
+  const n = wave ? CREST_COUNT[wave.crests] : 0;
+  const x0 = 30, x1 = WAVE_W - 20, len = x1 - x0;
+  const path = wave && amp > 0
+    ? Array.from({ length: 241 }, (_, k) => {
+      const x = x0 + (k / 240) * len;
+      return `${k === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${(MID - amp * Math.sin((2 * Math.PI * n * k) / 240)).toFixed(1)}`;
+    }).join(' ')
+    : `M ${x0} ${MID} L ${x1} ${MID}`;
+  const crests = marks && wave && amp > 0 ? Array.from({ length: n }, (_, i) => x0 + ((i + 0.25) / n) * len) : [];
   return (
-    <svg
-      viewBox={`0 0 ${OBJECT_STAGE_WIDTH} ${OBJECT_STAGE_HEIGHT}`}
-      className="w-full cursor-pointer"
-      onClick={onTap}
-      role="button"
-      aria-label={`Tap to ${isVibrating ? 'stop' : 'play'} ${OBJECT_LABELS[objectType]}`}
-    >
-      <rect x={0} y={0} width={OBJECT_STAGE_WIDTH} height={OBJECT_STAGE_HEIGHT} fill="transparent" />
-
-      {/* Object label */}
-      <text x={OBJECT_STAGE_WIDTH / 2} y={20} textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize={12} fontFamily="sans-serif">
-        {OBJECT_ICONS[objectType]} {OBJECT_LABELS[objectType]}
-      </text>
-
-      {/* Vibrating object */}
-      <g
-        style={isVibrating ? {
-          animation: `vibrate ${vibSpeed}ms linear infinite`,
-        } : undefined}
-      >
-        {objectType === 'guitar_string' && (
-          <g>
-            <rect x={30} y={60} width={8} height={120} fill="#92400E" rx={2} />
-            <rect x={OBJECT_STAGE_WIDTH - 38} y={60} width={8} height={120} fill="#92400E" rx={2} />
-            {[0, 1, 2, 3].map(i => {
-              const y = 80 + i * 25;
-              const waveMid = isVibrating
-                ? Math.sin(Date.now() / vibSpeed + i) * vibOffset
-                : 0;
-              return (
-                <path
-                  key={i}
-                  d={`M 38 ${y} Q ${OBJECT_STAGE_WIDTH / 2} ${y + waveMid} ${OBJECT_STAGE_WIDTH - 38} ${y}`}
-                  stroke={['#EAB308', '#F59E0B', '#D97706', '#B45309'][i]}
-                  strokeWidth={2.5 - i * 0.3}
-                  fill="none"
-                />
-              );
-            })}
-          </g>
-        )}
-
-        {objectType === 'drum' && (
-          <g>
-            <ellipse cx={OBJECT_STAGE_WIDTH / 2} cy={130} rx={70} ry={20} fill="#78350F" />
-            <rect x={OBJECT_STAGE_WIDTH / 2 - 70} y={90} width={140} height={40} fill="#92400E" />
-            <ellipse
-              cx={OBJECT_STAGE_WIDTH / 2}
-              cy={90}
-              rx={70}
-              ry={20}
-              fill="#F5F5DC"
-              stroke="#D4A574"
-              strokeWidth={2}
-            />
-            {isVibrating && (
-              <>
-                <ellipse cx={OBJECT_STAGE_WIDTH / 2} cy={90} rx={50} ry={14} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
-                <ellipse cx={OBJECT_STAGE_WIDTH / 2} cy={90} rx={30} ry={8} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
-              </>
-            )}
-          </g>
-        )}
-
-        {objectType === 'tuning_fork' && (
-          <g>
-            <rect x={OBJECT_STAGE_WIDTH / 2 - 3} y={120} width={6} height={60} fill="#94A3B8" rx={2} />
-            <rect x={OBJECT_STAGE_WIDTH / 2 - 20} y={60} width={6} height={65} fill="#CBD5E1" rx={3} />
-            <rect x={OBJECT_STAGE_WIDTH / 2 + 14} y={60} width={6} height={65} fill="#CBD5E1" rx={3} />
-            <path d={`M ${OBJECT_STAGE_WIDTH / 2 - 17} 125 Q ${OBJECT_STAGE_WIDTH / 2} 135 ${OBJECT_STAGE_WIDTH / 2 + 17} 125`} fill="none" stroke="#CBD5E1" strokeWidth={5} />
-          </g>
-        )}
-
-        {objectType === 'rubber_band' && (
-          <g>
-            <rect x={40} y={80} width={20} height={80} fill="#64748B" rx={3} />
-            <rect x={OBJECT_STAGE_WIDTH - 60} y={80} width={20} height={80} fill="#64748B" rx={3} />
-            <path
-              d={`M 60 120 Q ${OBJECT_STAGE_WIDTH / 2} ${120 + (isVibrating ? vibOffset * 2 : 0)} ${OBJECT_STAGE_WIDTH - 60} 120`}
-              stroke="#EF4444"
-              strokeWidth={4}
-              fill="none"
-            />
-          </g>
-        )}
-
-        {objectType === 'bell' && (
-          <g>
-            <path
-              d={`M ${OBJECT_STAGE_WIDTH / 2 - 35} 140 Q ${OBJECT_STAGE_WIDTH / 2 - 40} 90 ${OBJECT_STAGE_WIDTH / 2} 70 Q ${OBJECT_STAGE_WIDTH / 2 + 40} 90 ${OBJECT_STAGE_WIDTH / 2 + 35} 140`}
-              fill="#FFD700"
-              stroke="#DAA520"
-              strokeWidth={2}
-            />
-            <circle cx={OBJECT_STAGE_WIDTH / 2} cy={145} r={5} fill="#B8860B" />
-            <line x1={OBJECT_STAGE_WIDTH / 2} y1={65} x2={OBJECT_STAGE_WIDTH / 2} y2={50} stroke="#94A3B8" strokeWidth={2} />
-          </g>
-        )}
-
-        {objectType === 'whistle' && (
-          <g>
-            <rect x={60} y={100} width={100} height={30} fill="#3B82F6" rx={15} />
-            <rect x={150} y={95} width={30} height={15} fill="#3B82F6" rx={3} />
-            <circle cx={90} cy={115} r={8} fill="#1E40AF" />
-            {isVibrating && (
-              <g>
-                <circle cx={185} cy={102} r={3} fill="rgba(255,255,255,0.3)" />
-                <circle cx={195} cy={97} r={2} fill="rgba(255,255,255,0.2)" />
-                <circle cx={200} cy={105} r={2} fill="rgba(255,255,255,0.2)" />
-              </g>
-            )}
-          </g>
-        )}
-      </g>
-
-      {/* Vibration indicator rings (when vibrating) */}
-      {isVibrating && (
-        <g opacity={0.3}>
-          <circle cx={OBJECT_STAGE_WIDTH / 2} cy={OBJECT_STAGE_HEIGHT / 2 + 10} r={80} fill="none" stroke="#60A5FA" strokeWidth={1} strokeDasharray="4 4">
-            <animate attributeName="r" from="60" to="95" dur={`${vibSpeed * 3}ms`} repeatCount="indefinite" />
-            <animate attributeName="opacity" from="0.4" to="0" dur={`${vibSpeed * 3}ms`} repeatCount="indefinite" />
-          </circle>
-        </g>
+    <svg viewBox={`0 0 ${WAVE_W} ${WAVE_H}`} className="w-full" role="img" aria-label={label} data-wave={label}>
+      <text x={8} y={18} fill="rgba(226,232,240,0.8)" fontSize={14} fontFamily="sans-serif">{label}</text>
+      <line x1={x0} y1={MID} x2={x1} y2={MID} stroke="rgba(255,255,255,0.12)" strokeDasharray="4 6" />
+      {wave === null ? (
+        <text x={WAVE_W / 2} y={MID + 10} textAnchor="middle" fill="rgba(148,163,184,0.9)" fontSize={34} fontFamily="sans-serif">?</text>
+      ) : (
+        <path d={path} fill="none" stroke={amp > 0 ? '#60A5FA' : 'rgba(148,163,184,0.5)'} strokeWidth={2.5} />
       )}
-
-      {/* Tap hint */}
-      {!isVibrating && (
-        <text x={OBJECT_STAGE_WIDTH / 2} y={OBJECT_STAGE_HEIGHT - 10} textAnchor="middle" fill="rgba(255,255,255,0.35)" fontSize={11} fontFamily="sans-serif">
-          Tap to play!
-        </text>
+      {marks && wave && amp > 0 && (
+        <g data-lever="crest-marks">
+          <line x1={x0} y1={MID - amp} x2={x1} y2={MID - amp} stroke="rgba(250,204,21,0.6)" strokeDasharray="3 4" />
+          {crests.map((x, i) => (
+            <text key={i} x={x} y={MID - amp - 6} textAnchor="middle" fill="rgba(250,204,21,0.9)" fontSize={12} fontFamily="sans-serif">{i + 1}</text>
+          ))}
+        </g>
       )}
     </svg>
   );
-}
-
-// =============================================================================
-// CSS keyframes (injected once)
-// =============================================================================
+};
 
 const VIBRATE_STYLE_ID = 'sound-wave-explorer-vibrate-keyframes';
-
 function ensureVibrateKeyframes() {
-  if (typeof document === 'undefined') return;
-  if (document.getElementById(VIBRATE_STYLE_ID)) return;
+  if (typeof document === 'undefined' || document.getElementById(VIBRATE_STYLE_ID)) return;
   const style = document.createElement('style');
   style.id = VIBRATE_STYLE_ID;
-  style.textContent = `
-    @keyframes vibrate {
-      0% { transform: translateX(-1.5px); }
-      25% { transform: translateX(1.5px); }
-      50% { transform: translateX(-1.5px); }
-      75% { transform: translateX(1.5px); }
-      100% { transform: translateX(-1.5px); }
-    }
-  `;
+  style.textContent = '@keyframes swe-vibrate { 0%,100% { transform: translateX(-2px); } 50% { transform: translateX(2px); } }';
   document.head.appendChild(style);
 }
 
-// =============================================================================
-// Main Component
-// =============================================================================
+/** The observe picture: what is shaking and what is sounding, before the change until credit. */
+function observeState(event: ObserveEvent, after: boolean): { shaking: boolean; sounding: boolean } {
+  switch (event) {
+    case 'struck': case 'heard_start': return { shaking: after, sounding: after };
+    case 'held': case 'heard_stop': return { shaking: !after, sounding: !after };
+    case 'speaker_on': return { shaking: after, sounding: after };
+    case 'speaker_off': return { shaking: !after, sounding: !after };
+    case 'fork_water': return { shaking: after, sounding: true };
+  }
+}
 
-export default function SoundWaveExplorer({ data, className = '' }: SoundWaveExplorerProps) {
-  const {
-    title,
-    description,
-    theme,
-    gradeLevel,
-    objects,
-    challenges,
-    supportTier,
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-  } = data;
+const MakerShape = ({ maker }: { maker: Maker }) => {
+  switch (maker) {
+    case 'drum': return (<g><ellipse cx={120} cy={130} rx={60} ry={16} fill="#78350F" /><rect x={60} y={96} width={120} height={34} fill="#92400E" /><ellipse cx={120} cy={96} rx={60} ry={16} fill="#F5F5DC" stroke="#D4A574" strokeWidth={2} /></g>);
+    case 'guitar_string': return (<g><rect x={30} y={60} width={8} height={90} fill="#92400E" rx={2} /><rect x={202} y={60} width={8} height={90} fill="#92400E" rx={2} /><line x1={38} y1={105} x2={202} y2={105} stroke="#EAB308" strokeWidth={3} /></g>);
+    case 'rubber_band': return (<g><rect x={40} y={80} width={18} height={60} fill="#64748B" rx={3} /><rect x={182} y={80} width={18} height={60} fill="#64748B" rx={3} /><line x1={58} y1={110} x2={182} y2={110} stroke="#EF4444" strokeWidth={4} /></g>);
+    case 'bell': return (<g><path d="M 85 135 Q 80 85 120 65 Q 160 85 155 135 Z" fill="#FFD700" stroke="#DAA520" strokeWidth={2} /><circle cx={120} cy={140} r={5} fill="#B8860B" /></g>);
+    case 'tuning_fork': return (<g><rect x={117} y={110} width={6} height={50} fill="#94A3B8" rx={2} /><rect x={100} y={50} width={6} height={64} fill="#CBD5E1" rx={3} /><rect x={134} y={50} width={6} height={64} fill="#CBD5E1" rx={3} /><path d="M 103 114 Q 120 124 137 114" fill="none" stroke="#CBD5E1" strokeWidth={5} /></g>);
+  }
+};
 
-  const resolvedInstanceId = instanceId || 'sound-wave-explorer-default';
+const SoundMarks = ({ x, y }: { x: number; y: number }) => (
+  <g stroke="rgba(96,165,250,0.8)" fill="none" strokeWidth={2} data-sound-mark="on">
+    <path d={`M ${x} ${y - 14} Q ${x + 10} ${y} ${x} ${y + 14}`} />
+    <path d={`M ${x + 10} ${y - 22} Q ${x + 24} ${y} ${x + 10} ${y + 22}`} />
+  </g>
+);
 
-  // Inject keyframes
+const ObservePicture = ({ item, after }: { item: ObserveItem; after: boolean }) => {
+  const { shaking, sounding } = observeState(item.event, after);
+  const shake = shaking ? { animation: 'swe-vibrate 120ms linear infinite' } : undefined;
+  const label = `${after ? 'After' : 'Before'}: ${item.event.startsWith('speaker') ? 'the drum with rice and the speaker' : item.event === 'fork_water' ? 'the tuning fork and the bowl of water' : `the ${MAKER_NAME[item.maker]}`}`;
+  return (
+    <svg viewBox="0 0 260 180" className="w-full max-w-[320px]" role="img" aria-label={label}>
+      {item.event === 'speaker_on' || item.event === 'speaker_off' ? (
+        <g>
+          <MakerShape maker="drum" />
+          <g style={shake}>{[96, 108, 120, 132, 144].map((x, i) => <circle key={x} cx={x} cy={shaking ? 80 - (i % 2) * 6 : 92} r={3} fill="#FEF3C7" />)}</g>
+          <rect x={196} y={70} width={44} height={66} rx={6} fill="#334155" stroke="#94A3B8" />
+          <circle cx={218} cy={103} r={14} fill="#1E293B" stroke="#64748B" />
+          {sounding && <SoundMarks x={186} y={103} />}
+        </g>
+      ) : item.event === 'fork_water' ? (
+        <g>
+          <g style={{ animation: 'swe-vibrate 120ms linear infinite' }} transform="translate(0,-30)"><MakerShape maker="tuning_fork" /></g>
+          <path d="M 60 140 Q 120 175 180 140 Z" fill="#1E3A8A" stroke="#60A5FA" />
+          {shaking
+            ? <g stroke="#93C5FD" fill="none">{[10, 22, 34].map(r => <ellipse key={r} cx={120} cy={142} rx={r * 1.4} ry={r / 4} />)}</g>
+            : <line x1={64} y1={141} x2={176} y2={141} stroke="#93C5FD" />}
+        </g>
+      ) : (
+        <g>
+          <g style={shake}><MakerShape maker={item.maker} /></g>
+          {sounding && <SoundMarks x={214} y={70} />}
+        </g>
+      )}
+    </svg>
+  );
+};
+
+const FeatureCard = () => (
+  <LuminaPanel accent="cyan" data-lever="feature-card" className="space-y-2 text-sm text-slate-300">
+    <div className="grid grid-cols-2 gap-2">
+      <WavePanel wave={{ amp: 5, crests: 2 }} label="Bigger shakes" marks={false} />
+      <WavePanel wave={{ amp: 2, crests: 2 }} label="Smaller shakes" marks={false} />
+      <WavePanel wave={{ amp: 3, crests: 5 }} label="Faster shakes" marks={false} />
+      <WavePanel wave={{ amp: 3, crests: 1 }} label="Slower shakes" marks={false} />
+    </div>
+    {FEATURE_LINES.map(l => <p key={l}>{l}</p>)}
+  </LuminaPanel>
+);
+
+const ShakeCard = ({ item }: { item: ObserveItem }) => (
+  <LuminaPanel accent="cyan" data-lever="shake-card" className="flex items-center gap-3 text-sm text-slate-300">
+    <svg viewBox="0 0 80 80" className="h-16 w-16 shrink-0" aria-hidden="true">
+      {item.event === 'speaker_on' || item.event === 'speaker_off' || item.event === 'fork_water' ? (
+        <g><rect x={6} y={10} width={30} height={34} fill="#93C5FD" stroke="#E2E8F0" /><rect x={40} y={46} width={34} height={20} fill="#F59E0B" /><circle cx={48} cy={68} r={5} fill="#334155" /><circle cx={68} cy={68} r={5} fill="#334155" /></g>
+      ) : (
+        <g><circle cx={40} cy={26} r={16} fill="#FCD34D" /><rect x={34} y={42} width={12} height={14} fill="#FCD34D" /><path d="M 28 48 L 24 46 M 28 52 L 24 54 M 52 48 L 56 46 M 52 52 L 56 54" stroke="#60A5FA" strokeWidth={2} /></g>
+      )}
+    </svg>
+    <div className="space-y-1">{shakeLines(item).map(l => <p key={l}>{l}</p>)}</div>
+  </LuminaPanel>
+);
+
+// ============================================================================
+// Component
+// ============================================================================
+
+const SoundWaveExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  SoundWaveExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<SoundItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, gradeLevel = '1', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
   useEffect(() => { ensureVibrateKeyframes(); }, []);
 
-  // ── Evaluation hook ──────────────────────────────────────────────
-  const { submitResult, elapsedMs } = usePrimitiveEvaluation<SoundWaveExplorerMetrics>({
+  const items = useMemo(() => soundItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.soundFocus, data.title, data.challenges, data.supportTier]);
+  const stableInstanceId = useRef(instanceId || `sound-wave-explorer-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  const sessionItem: SoundItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<SoundItem | null>(null);
+  const item = practice ?? sessionItem;
+
+  const [choice, setChoice] = useState<string | null>(null);
+  /** Workspace path: the wrong choice just checked, shown until Try again. */
+  const [wrongPick, setWrongPick] = useState<string | null>(null);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
+
+  const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
+  const leverOn = (id: string) => pulled.includes(id);
+  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+
+  // The run: once credited, play what the change made (observe's sound, predict's and apply's After sound).
+  const playedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!revealed || !item || playedFor.current === item.id) return;
+    playedFor.current = item.id;
+    if (item.mode === 'predict' || item.mode === 'apply') playTone(afterWave(item));
+    if (item.mode === 'observe' && observeState(item.event, true).sounding) playTone({ amp: 3, crests: 3 });
+  }, [revealed, item]);
+
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<SoundWaveExplorerMetrics>({
     primitiveType: 'sound-wave-explorer',
     instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
+    skillId, subskillId, objectiveId, exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ── AI tutoring ──────────────────────────────────────────────────
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
   const aiPrimitiveData = useMemo(() => ({
-    theme,
-    gradeLevel,
-    challengeCount: challenges.length,
-    // Thread the support tier to the live tutor — the catalog reveal policy keys
-    // off it (easy may name the produced pitch/volume category; medium/hard must
-    // not for graded items). Omitted entirely when absent.
-    ...(supportTier ? { supportTier } : {}),
-  }), [theme, gradeLevel, challenges.length, supportTier]);
-
+    gradeLevel, mode: item?.mode ?? 'observe', itemIndex: currentIndex + 1, totalItems: items.length,
+    ask: item ? askOf(item) : title, choices: item ? choicesOf(item).join(', ') : '', attemptNumber: currentAttempts + 1,
+  }), [gradeLevel, item, currentIndex, items.length, title, currentAttempts]);
   const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'sound-wave-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel,
+    primitiveType: 'sound-wave-explorer', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: gradeLevel === 'K' ? 'Kindergarten' : `Grade ${gradeLevel}`, enabled: !tutorOwned,
   });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
-  // ── Challenge progress (shared hooks) ────────────────────────────
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
+  const clearItem = () => {
+    setChoice(null); setWrongPick(null); setFeedback(null);
+    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+  };
 
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
+  openItem.current = (_index, retry) => {
+    if (retry) { setChoice(null); setWrongPick(null); setFeedback(null); setPracticeSolved(false); return; }
+    setPractice(null); clearItem();
+  };
 
-  // ── Interactive state ────────────────────────────────────────────
-  const currentChallenge = challenges[currentChallengeIndex] ?? challenges[0];
-  const [forceLevel, setForceLevel] = useState(currentChallenge?.forceLevel ?? 3);
-  const [speedLevel, setSpeedLevel] = useState(currentChallenge?.speedLevel ?? 3);
-  const [medium, setMedium] = useState<SoundMedium>(currentChallenge?.medium ?? 'air');
-  const [distance, setDistance] = useState<SoundDistance>(currentChallenge?.distance ?? 'close');
-  const [isVibrating, setIsVibrating] = useState(false);
-  const [selectedMcAnswer, setSelectedMcAnswer] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
-  const [showingAnswer, setShowingAnswer] = useState(false);
-  const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setChoice(keyChoice(solved)); setWrongPick(null);
+  };
 
-  // Synchronous score for the summary panel. submittedResult is set in the
-  // auto-submit effect, which runs *after* the panel first mounts — without this
-  // fallback the panel mounts at score 0 ('needs-work' tier) and the once-only
-  // celebration (sound + confetti) fires silently, then its guard blocks re-firing.
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challengeResults.length === 0) return 0;
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    return Math.round((correctCount / challengeResults.length) * 100);
-  }, [allChallengesComplete, challengeResults]);
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    setPracticeSolved(true);
+    setChoice(keyChoice(practice)); setWrongPick(null);
+  };
 
-  // ── Auto-submit evaluation when all challenges complete ──────────
-  const hasAutoSubmitted = useRef(false);
-  useEffect(() => {
-    if (!allChallengesComplete || hasAutoSubmitted.current) return;
-    hasAutoSubmitted.current = true;
+  // ── Handlers ──
+  const pick = (c: string) => {
+    if (!item || revealed || wrongPick !== null || learnerBlocked()) return;
+    SoundManager.select();
+    setChoice(c); setFeedback(null);
+  };
 
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const overallScore = Math.round((correctCount / Math.max(challengeResults.length, 1)) * 100);
-
-    const metrics: SoundWaveExplorerMetrics = {
-      type: 'sound-wave-explorer',
-      evalMode: currentChallenge?.type,
-      challengesCompleted: challengeResults.length,
-      challengesCorrect: correctCount,
-      totalAttempts,
-      accuracy: overallScore,
-      averageAttemptsPerChallenge: totalAttempts / Math.max(challengeResults.length, 1),
-    };
-
-    submitResult(overallScore >= 70, overallScore, metrics);
-    setSubmittedResult({ score: overallScore });
-
-    const phaseScoreStr = phaseResults.map(
-      p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
-    ).join(', ');
-    sendText(
-      `[ALL_COMPLETE] Student finished all sound challenges! Phase scores: ${phaseScoreStr || `Overall ${overallScore}%`}. Overall: ${overallScore}%. Give encouraging feedback about sound and vibrations.`,
-      { silent: true },
-    );
-  }, [allChallengesComplete, challengeResults, currentChallenge, submitResult, phaseResults, sendText]);
-
-  const vibrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Active object from challenge or first in list
-  const activeObject = useMemo(() => {
-    const targetType = currentChallenge?.vibrationObject ?? objects[0]?.type ?? 'guitar_string';
-    return objects.find(o => o.type === targetType) ?? objects[0] ?? { type: 'guitar_string' as const, label: 'Guitar String', basePitch: 'medium' as const, baseLoudness: 'medium' as const };
-  }, [currentChallenge, objects]);
-
-  // ── Derived wave parameters ──────────────────────────────────────
-  const amplitude = forceLevel * 16; // 16-80px
-  const wavelength = 40 + (6 - speedLevel) * 20; // faster speed = shorter wavelength
-  const frequency = FREQ_MIN + ((speedLevel - 1) / 4) * (FREQ_MAX - FREQ_MIN);
-  const volume = forceLevel / 5 * 0.35;
-
-  const pitchLabel = speedLevel <= 2 ? 'Low' : speedLevel <= 3 ? 'Medium' : 'High';
-  const volumeLabel = forceLevel <= 2 ? 'Quiet' : forceLevel <= 3 ? 'Medium' : 'Loud';
-
-  // ── Support-tier render gates (text/overlay withdrawal ONLY) ─────
-  // LIVING-SIM RULE: tap-to-vibrate, the Web Audio tone, and the observe-only
-  // slider unlock are the phenomenon/task identity — never gated by tier.
-  // Absent tier (or 'easy') = byte-identical legacy full support.
-  //
-  // L1 — live "Pitch/Volume" readout + "No sound in vacuum!": at medium/hard they
-  // show ONLY during observe challenges (and post-completion free play, where no
-  // graded item remains); in graded predict/classify/apply items the wave shape
-  // and the real audio remain the perceptual channel.
-  const waveReadoutVisible =
-    supportTier == null ||
-    supportTier === 'easy' ||
-    currentChallenge?.type === 'observe' ||
-    allChallengesComplete;
-  // L2 — slider mapping labels: medium drops the live Quiet/Loud/High/Low word,
-  // hard also drops the "(Volume)" / "(Pitch)" mapping parentheticals.
-  const forceSliderLabel = supportTier === 'hard' ? 'Force' : 'Force (Volume)';
-  const speedSliderLabel = supportTier === 'hard' ? 'Speed' : 'Speed (Pitch)';
-  const showLiveCategoryWord = supportTier == null || supportTier === 'easy';
-  // L3 — amplitude guide tick-marks: hidden at hard (pure overlay).
-  const showAmplitudeGuide = supportTier !== 'hard';
-
-  // Wave-display overlay text. The idle "Tap the object to see the wave" prompt
-  // is never withdrawn; only the answer-bearing readout / vacuum fact is gated.
-  const waveOverlayText: string | null = medium === 'vacuum'
-    ? (waveReadoutVisible ? 'No sound in vacuum!' : (isVibrating ? null : 'Tap the object to see the wave'))
-    : isVibrating
-      ? (waveReadoutVisible ? `Pitch: ${pitchLabel}  •  Volume: ${volumeLabel}` : null)
-      : 'Tap the object to see the wave';
-
-  const wavePath = useMemo(
-    () => generateWavePath(isVibrating ? amplitude : 0, wavelength, medium, distance),
-    [isVibrating, amplitude, wavelength, medium, distance],
-  );
-
-  // ── Sync state to challenge ──────────────────────────────────────
-  useEffect(() => {
-    if (currentChallenge && !allChallengesComplete) {
-      if (currentChallenge.forceLevel != null) setForceLevel(currentChallenge.forceLevel);
-      if (currentChallenge.speedLevel != null) setSpeedLevel(currentChallenge.speedLevel);
-      if (currentChallenge.medium) setMedium(currentChallenge.medium);
-      if (currentChallenge.distance) setDistance(currentChallenge.distance);
-      setSelectedMcAnswer(null);
-      setFeedback(null);
-      setShowingAnswer(false);
-      setIsVibrating(false);
-    }
-  }, [currentChallengeIndex, currentChallenge, allChallengesComplete]);
-
-  // ── Tap to vibrate / play sound ──────────────────────────────────
-  const handleTapObject = useCallback(() => {
-    if (isVibrating) {
-      setIsVibrating(false);
-      if (vibrationTimerRef.current) clearTimeout(vibrationTimerRef.current);
-      return;
-    }
-
-    setIsVibrating(true);
-    playTone(frequency, volume, medium, distance, 600);
-
-    vibrationTimerRef.current = setTimeout(() => {
-      setIsVibrating(false);
-    }, 1200);
-  }, [isVibrating, frequency, volume, medium, distance]);
-
-  // Cleanup timer
-  useEffect(() => {
-    return () => {
-      if (vibrationTimerRef.current) clearTimeout(vibrationTimerRef.current);
-    };
-  }, []);
-
-  // ── MC options ───────────────────────────────────────────────────
-  const mcOptions = useMemo(() => {
-    if (!currentChallenge) return [];
-    const correct = currentChallenge.correctAnswer;
-    const distractors = [
-      currentChallenge.distractor0,
-      currentChallenge.distractor1,
-      currentChallenge.distractor2,
-    ].filter(Boolean) as string[];
-
-    if (distractors.length === 0) {
-      // Generate default distractors based on challenge type
-      const defaults = ['Gets higher', 'Gets lower', 'Stays the same', 'Disappears']
-        .filter(d => d !== correct)
-        .slice(0, 3);
-      return [correct, ...defaults].sort(() => Math.random() - 0.5);
-    }
-
-    return [correct, ...distractors].sort(() => Math.random() - 0.5);
-  }, [currentChallenge]);
-
-  // ── Answer checking ──────────────────────────────────────────────
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge || !selectedMcAnswer) return;
-
-    incrementAttempts();
-    const isCorrect = selectedMcAnswer === currentChallenge.correctAnswer;
-
-    if (isCorrect) {
+  const check = () => {
+    if (!item || choice === null || revealed || wrongPick !== null || learnerBlocked()) return;
+    const correct = soundCorrect(item, choice);
+    progress.commitCheck(describeSoundWork(item, { choice }), correct, correct ? undefined : soundMiss(item, choice));
+    if (correct) {
       SoundManager.playCorrect();
-      setFeedback({ correct: true, message: 'Correct! Great listening!' });
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-        timeMs: 5000,
-      });
-
-      sendText(
-        `[ANSWER_CORRECT] Student correctly answered "${currentChallenge.correctAnswer}" for challenge "${currentChallenge.instruction}". Attempt ${currentAttempts + 1}. Congratulate briefly and explain the sound science.`,
-        { silent: true },
-      );
-    } else {
-      SoundManager.playIncorrect();
-      // L4 — hint escalation by support tier: medium holds the authored hint back
-      // until the 2nd wrong attempt; hard never surfaces it. The 3rd-attempt
-      // answer reveal below is KEPT at every tier — it closes the challenge for
-      // scoring.
-      const attemptNumber = currentAttempts + 1; // this wrong attempt, 1-based
-      const authoredHint = currentChallenge.hint ?? 'Not quite — try tapping the object and listening carefully!';
-      const genericRetry = 'Not quite — try again.';
-      setFeedback({
-        correct: false,
-        message: supportTier === 'hard'
-          ? genericRetry
-          : supportTier === 'medium' && attemptNumber < 2
-            ? genericRetry
-            : authoredHint,
-      });
-
-      if (currentAttempts >= 2) {
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: false,
-          attempts: currentAttempts + 1,
-        });
-        setShowingAnswer(true);
-      }
-
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedMcAnswer}" but correct is "${currentChallenge.correctAnswer}". Challenge: "${currentChallenge.instruction}". Attempt ${currentAttempts + 1}. Give a hint without revealing the answer.`,
-        { silent: true },
-      );
-    }
-  }, [currentChallenge, selectedMcAnswer, currentAttempts, supportTier, incrementAttempts, recordResult, sendText]);
-
-  // ── Advance to next challenge ────────────────────────────────────
-  const handleNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All done — evaluation auto-submitted via useEffect above
+      if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner chose "${choice}" for: ${askOf(item)} The result now shows and plays. Praise briefly.`);
       return;
     }
+    SoundManager.playIncorrect();
+    if (tutorOwned) { setWrongPick(choice); return; }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer is on screen ("${keyChoice(item)}"); explain it plainly with the shaking.`);
+      return;
+    }
+    setChoice(null);
+    setFeedback('Not quite. Look again at the shaking and the waves, and try once more.');
+    say(`[ANSWER_INCORRECT] The learner chose "${choice}" for: ${askOf(item)} It is wrong. You are not told the answer: ask what `
+      + 'the shaking does, without naming a choice.');
+  };
 
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. Introduce it briefly.`,
-      { silent: true },
-    );
-  }, [advanceProgress, sendText, currentChallengeIndex, challenges.length]);
+  const metrics = (): SoundWaveExplorerMetrics => {
+    const correct = items.filter(i => results.some(r => r.challengeId === i.id && r.correct)).length;
+    const attempts = results.reduce((s, r) => s + (r.attempts ?? 1), 0) || currentAttempts;
+    return {
+      type: 'sound-wave-explorer',
+      evalMode: items[0]?.mode,
+      challengesCompleted: results.length,
+      challengesCorrect: correct,
+      totalAttempts: attempts,
+      accuracy: items.length ? Math.round((correct / items.length) * 100) : 0,
+      averageAttemptsPerChallenge: attempts / Math.max(results.length, 1),
+    };
+  };
 
-  // Whether sliders should be interactive (observe mode lets you explore)
-  const slidersInteractive = currentChallenge?.type === 'observe' || allChallengesComplete;
+  /** Scripted path: Next, and on the last item the session report. */
+  const next = () => {
+    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 70, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} sound items. Celebrate briefly.`);
+  };
 
-  // ── Render ───────────────────────────────────────────────────────
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), totalAttempts: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const scene = workspaceScene(item, { choice: wrongPick ?? choice, solved: revealed });
+    const levers = practice ? [] : soundLevers(sessionItem, pulled);
+    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
+        ...(onScreen ? { onScreen } : {}) },
+      levers,
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (l.kind === 'simplify') {
+          const simpler = simplerItem(sessionItem);
+          if (!simpler) return 'There is no simpler item here; try a help lever.';
+          setLeverState(nextState); clearItem(); setPractice(simpler);
+          return { practice: workspaceAssignment(simpler) };
+        }
+        setLeverState(nextState);
+        return true;
+      },
+      endPractice: () => { clearItem(); setPractice(null); },
+    };
+  });
+
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete ? null : currentChallenge?.id ?? null,
-    label: 'The sound maker, the wave, and your answer',
-    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    scopeId: done || !item ? null : item.id,
+    label: 'The sound maker, the waves, and your answer',
+    solved: revealed,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
+  if (!items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This sound lab has no questions to ask.</p></LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  const key = item ? keyChoice(item) : '';
+  const choiceState = (c: string): AnswerChoiceState => revealed ? (c === key ? 'correct' : c === choice ? 'incorrect' : 'dimmed')
+    : wrongPick === c ? 'incorrect' : choice === c ? 'selected' : 'idle';
+  const closed = revealed || wrongPick !== null || learnerBlocked();
+  const marks = leverOn(CREST_LEVER);
+  const choices = item ? choicesOf(item) : [];
+
+  const stage = (): React.ReactNode => {
+    if (!item) return null;
+    if (item.mode === 'observe') return <div className="flex justify-center"><ObservePicture key={`${item.id}:${revealed}`} item={item} after={revealed} /></div>;
+    if (item.mode === 'classify') {
+      return (
+        <div className="space-y-2">
+          {item.waves.map((w, i) => (
+            <LuminaPanel key={i} className="space-y-1">
+              <WavePanel wave={w} label={WAVE_LABELS[i]} marks={marks} />
+              {revealed && <LuminaButton size="sm" aria-label={`Hear ${WAVE_LABELS[i]}`} onClick={() => playTone(w)}>{`Hear ${WAVE_LABELS[i]}`}</LuminaButton>}
+            </LuminaPanel>
+          ))}
+        </div>
+      );
+    }
+    const after = afterWave(item);
+    const showAfter = item.mode === 'apply' || revealed;
+    return (
+      <div className="space-y-2">
+        <LuminaPanel className="space-y-1">
+          <WavePanel wave={item.before} label="Before" marks={marks} />
+          <LuminaButton size="sm" aria-label="Hear before" onClick={() => playTone(item.before)}>Hear before</LuminaButton>
+        </LuminaPanel>
+        <LuminaPanel className="space-y-1">
+          <WavePanel wave={showAfter ? after : null} label="After" marks={marks} />
+          {revealed && <LuminaButton size="sm" aria-label="Hear after" onClick={() => playTone(after)}>Hear after</LuminaButton>}
+        </LuminaPanel>
+      </div>
+    );
+  };
+
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-slate-100">{title}</CardTitle>
-            <CardDescription className="text-slate-400">{description}</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Badge variant="outline" className="border-white/20 text-slate-300">
-              {theme === 'music_room' ? '🎵 Music Room' : theme === 'playground' ? '🏫 Playground' : '🔬 Science Lab'}
-            </Badge>
-            {!allChallengesComplete && (
-              <Badge variant="outline" className="border-white/20 text-slate-300">
-                {currentChallengeIndex + 1}/{challenges.length}
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{title}</LuminaCardTitle>
+        {!done && item && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {practice ? 'A simpler item first' : `${MODE_LABEL[item.mode]} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
+        )}
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
-        {/* ── Object Stage + Wave Display ─────────────────────── */}
-        <div className="grid grid-cols-[240px_1fr] gap-3">
-          {/* Left: Object stage */}
-          <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-800/50">
-            <ObjectStage
-              objectType={activeObject.type}
-              isVibrating={isVibrating}
-              forceLevel={forceLevel}
-              speedLevel={speedLevel}
-              onTap={handleTapObject}
-            />
-          </div>
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Sound lab complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} items answered.`}
+          </LuminaFeedbackCard>
+        ) : item && (
+          <>
+            <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-          {/* Right: Wave display */}
-          <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-800/50 relative">
-            <svg
-              viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-              className="w-full"
-            >
-              {/* Center line (rest position) */}
-              <line
-                x1={WAVE_START_X}
-                y1={WAVE_Y}
-                x2={WAVE_END_X}
-                y2={WAVE_Y}
-                stroke="rgba(255,255,255,0.08)"
-                strokeWidth={1}
-                strokeDasharray="4 6"
-              />
-
-              {/* Amplitude guide — L3: withdrawn at the hard tier (pure overlay) */}
-              {showAmplitudeGuide && isVibrating && medium !== 'vacuum' && (
-                <>
-                  <line x1={WAVE_START_X - 15} y1={WAVE_Y - amplitude * (distance === 'close' ? 1 : distance === 'medium' ? 0.6 : 0.25)} x2={WAVE_START_X - 5} y2={WAVE_Y - amplitude * (distance === 'close' ? 1 : distance === 'medium' ? 0.6 : 0.25)} stroke="rgba(255,255,255,0.2)" strokeWidth={1} />
-                  <line x1={WAVE_START_X - 15} y1={WAVE_Y + amplitude * (distance === 'close' ? 1 : distance === 'medium' ? 0.6 : 0.25)} x2={WAVE_START_X - 5} y2={WAVE_Y + amplitude * (distance === 'close' ? 1 : distance === 'medium' ? 0.6 : 0.25)} stroke="rgba(255,255,255,0.2)" strokeWidth={1} />
-                  <line x1={WAVE_START_X - 10} y1={WAVE_Y - amplitude * (distance === 'close' ? 1 : distance === 'medium' ? 0.6 : 0.25)} x2={WAVE_START_X - 10} y2={WAVE_Y + amplitude * (distance === 'close' ? 1 : distance === 'medium' ? 0.6 : 0.25)} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
-                </>
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
+              {stage()}
+              {item.mode === 'observe' && leverOn(SHAKE_LEVER) && !practice && <ShakeCard item={item} />}
+              {(item.mode === 'predict' || item.mode === 'apply') && leverOn(CHANGE_LEVER) && !practice && (
+                <LuminaPanel accent="cyan" data-lever="change-card" className="space-y-1 text-sm text-slate-300">
+                  {changeLines(item).map(l => <p key={l}>{l}</p>)}
+                </LuminaPanel>
               )}
+              {leverOn(FEATURE_LEVER) && !practice && <FeatureCard />}
 
-              {/* Sound wave */}
-              <path
-                d={wavePath}
-                fill="none"
-                stroke={medium === 'vacuum' ? 'rgba(255,255,255,0.15)' : '#60A5FA'}
-                strokeWidth={isVibrating ? 2.5 : 1}
-                opacity={isVibrating ? 1 : 0.3}
-              />
-
-              {/* Labels — L1: the live pitch/volume readout and the vacuum fact
-                  withdraw outside observe challenges at medium/hard; the idle
-                  "Tap the object to see the wave" prompt is never withdrawn. */}
-              {waveOverlayText !== null && (
-                <text x={SVG_WIDTH / 2} y={20} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize={12} fontFamily="sans-serif">
-                  {waveOverlayText}
-                </text>
-              )}
-
-              {/* Medium label */}
-              <text x={SVG_WIDTH - 50} y={SVG_HEIGHT - 10} textAnchor="end" fill="rgba(255,255,255,0.3)" fontSize={11} fontFamily="sans-serif">
-                Medium: {MEDIUM_LABELS[medium]}
-              </text>
-            </svg>
-          </div>
-        </div>
-
-        {/* ── Controls ───────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Force slider (volume) */}
-          <div className="space-y-1">
-            <label className="text-slate-400 text-xs font-medium flex justify-between">
-              {/* L2: hard drops the (Volume) mapping; medium+ drops the live word */}
-              <span>{forceSliderLabel}</span>
-              {showLiveCategoryWord && <span className="text-slate-500">{volumeLabel}</span>}
-            </label>
-            <Slider
-              value={[forceLevel]}
-              onValueChange={([v]) => { setForceLevel(v); if (slidersInteractive && isVibrating) playTone(frequency, v / 5 * 0.35, medium, distance, 300); }}
-              min={1}
-              max={5}
-              step={1}
-              disabled={!slidersInteractive}
-              className="w-full"
-            />
-          </div>
-
-          {/* Speed slider (pitch) */}
-          <div className="space-y-1">
-            <label className="text-slate-400 text-xs font-medium flex justify-between">
-              {/* L2: hard drops the (Pitch) mapping; medium+ drops the live word */}
-              <span>{speedSliderLabel}</span>
-              {showLiveCategoryWord && <span className="text-slate-500">{pitchLabel}</span>}
-            </label>
-            <Slider
-              value={[speedLevel]}
-              onValueChange={([v]) => { setSpeedLevel(v); if (slidersInteractive && isVibrating) playTone(FREQ_MIN + ((v - 1) / 4) * (FREQ_MAX - FREQ_MIN), volume, medium, distance, 300); }}
-              min={1}
-              max={5}
-              step={1}
-              disabled={!slidersInteractive}
-              className="w-full"
-            />
-          </div>
-
-          {/* Medium selector */}
-          <div className="space-y-1">
-            <label className="text-slate-400 text-xs font-medium">Medium</label>
-            <div className="flex gap-1">
-              {(['air', 'water', 'solid_wall', 'vacuum'] as SoundMedium[]).map(m => (
-                <Button
-                  key={m}
-                  variant="ghost"
-                  size="sm"
-                  className={`text-xs px-2 py-1 h-auto ${medium === m
-                    ? 'bg-blue-500/20 border border-blue-400/30 text-blue-200'
-                    : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400'
-                  }`}
-                  onClick={() => slidersInteractive && setMedium(m)}
-                  disabled={!slidersInteractive}
-                >
-                  {MEDIUM_LABELS[m]}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Distance selector */}
-          <div className="space-y-1">
-            <label className="text-slate-400 text-xs font-medium">Distance</label>
-            <div className="flex gap-1">
-              {(['close', 'medium', 'far'] as SoundDistance[]).map(d => (
-                <Button
-                  key={d}
-                  variant="ghost"
-                  size="sm"
-                  className={`text-xs px-2 py-1 h-auto ${distance === d
-                    ? 'bg-blue-500/20 border border-blue-400/30 text-blue-200'
-                    : 'bg-white/5 border border-white/20 hover:bg-white/10 text-slate-400'
-                  }`}
-                  onClick={() => slidersInteractive && setDistance(d)}
-                  disabled={!slidersInteractive}
-                >
-                  {DISTANCE_LABELS[d]}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Challenge / Question Area ──────────────────────────── */}
-        {!allChallengesComplete && currentChallenge && (
-          <div className="space-y-3">
-            <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline" className="border-white/20 text-slate-300 text-xs">
-                  {PHASE_TYPE_CONFIG[currentChallenge.type]?.icon} {PHASE_TYPE_CONFIG[currentChallenge.type]?.label}
-                </Badge>
-              </div>
-              <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-            </div>
-
-            {/* MC options */}
-            {!feedback?.correct && !showingAnswer && (
-              <div className="grid grid-cols-2 gap-2">
-                {mcOptions.map((option, i) => (
-                  <Button
-                    key={i}
-                    variant="ghost"
-                    className={`bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200 text-sm h-auto py-2 px-3 text-left justify-start ${
-                      selectedMcAnswer === option ? 'ring-2 ring-blue-400 bg-blue-500/10' : ''
-                    }`}
-                    onClick={() => { SoundManager.select(); setSelectedMcAnswer(option); }}
-                  >
-                    {option}
-                  </Button>
+              <div className={`grid gap-2 ${choices.length > 3 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                {choices.map(c => (
+                  <LuminaAnswerChoice key={c} aria-label={c} state={choiceState(c)} disabled={closed}
+                    className="p-3 text-center font-semibold" onClick={() => pick(c)}>
+                    {c}
+                  </LuminaAnswerChoice>
                 ))}
               </div>
-            )}
-
-            {/* Check / Next buttons */}
-            <div className="flex gap-2">
-              {!feedback?.correct && !showingAnswer && (
-                <Button
-                  variant="ghost"
-                  className="bg-blue-500/20 border border-blue-400/30 hover:bg-blue-500/30 text-blue-200"
-                  onClick={handleCheckAnswer}
-                  disabled={!selectedMcAnswer}
-                >
-                  Check Answer
-                </Button>
-              )}
-              {(feedback?.correct || showingAnswer) && (
-                <Button
-                  variant="ghost"
-                  className="bg-emerald-500/20 border border-emerald-400/30 hover:bg-emerald-500/30 text-emerald-200"
-                  onClick={handleNextChallenge}
-                >
-                  {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'See Results'}
-                </Button>
-              )}
             </div>
 
-            {/* Feedback */}
-            {feedback && (
-              <div className={`rounded-lg p-3 text-sm ${
-                feedback.correct
-                  ? 'bg-emerald-500/10 border border-emerald-400/20 text-emerald-200'
-                  : 'bg-amber-500/10 border border-amber-400/20 text-amber-200'
-              }`}>
-                {feedback.message}
-                {showingAnswer && (
-                  <p className="mt-1 text-slate-300">The answer was: <strong>{currentChallenge.correctAnswer}</strong></p>
-                )}
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={choice === null || closed} onClick={check}>Check Answer</LuminaActionButton>
               </div>
             )}
-          </div>
-        )}
 
-        </div>
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {`${key}.${item.mode === 'observe' ? ' The shaking and the sound go together.' : ''}`}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongPick !== null && <LuminaFeedbackCard status="incorrect">{`"${wrongPick}" is not it.`}</LuminaFeedbackCard>}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
 
-        {/* ── Phase Summary ──────────────────────────────────────── */}
-        {allChallengesComplete && phaseResults.length > 0 && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
-            heading="Sound Lab Complete!"
-            celebrationMessage="You explored how sound and vibrations work!"
-            className="mb-6"
-          />
+            {!tutorOwned && revealed && !practice && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
+              </div>
+            )}
+          </>
         )}
-      </CardContent>
-    </Card>
+      </LuminaCardContent>
+    </LuminaCard>
   );
-}
+};
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const SoundWaveExplorer = withWorkspaceController<SoundWaveExplorerProps, ProgressOptions<SoundItem>, Progress>(
+  'sound-wave-explorer', SoundWaveExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('sound-wave-explorer'));
+
+export default SoundWaveExplorer;

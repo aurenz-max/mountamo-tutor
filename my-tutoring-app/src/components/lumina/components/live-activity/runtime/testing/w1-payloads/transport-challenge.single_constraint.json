@@ -1,0 +1,207 @@
+{
+ "source": "qa/tutor-reports/transport-challenge-runtime-single_constraint-payload-2026-10-16.json",
+ "primitiveId": "transport-challenge",
+ "evalMode": "single_constraint",
+ "data": {
+  "title": "Transport Choices Under Limits",
+  "description": "The learner evaluates different transport options to complete each job while staying within budget, time, and CO2 limits.",
+  "challengeTypes": [
+   "single_constraint"
+  ],
+  "difficulty": "easy",
+  "frames": [
+   {
+    "title": "Morning Commute",
+    "origin": "Oak Creek Suburb",
+    "destination": "Downtown Station",
+    "kind": "people",
+    "loadName": "commuters",
+    "featured": "train"
+   },
+   {
+    "title": "Festival Day",
+    "origin": "Maple Park",
+    "destination": "River Square",
+    "kind": "people",
+    "loadName": "visitors",
+    "featured": "bus"
+   },
+   {
+    "title": "Lumber Run",
+    "origin": "Pine Forest Mill",
+    "destination": "City Construction Yard",
+    "kind": "cargo",
+    "loadName": "lumber",
+    "featured": "semi_truck"
+   },
+   {
+    "title": "Harvest Delivery",
+    "origin": "Valley Grain Farm",
+    "destination": "Port Warehouse",
+    "kind": "cargo",
+    "loadName": "grain",
+    "featured": "freight_train"
+   },
+   {
+    "title": "Island Supply",
+    "origin": "Coastal Harbor",
+    "destination": "North Bay Island",
+    "kind": "cargo",
+    "loadName": "supplies",
+    "featured": "cargo_ship"
+   }
+  ],
+  "items": [
+   {
+    "id": "single_constraint-1",
+    "mode": "single_constraint",
+    "title": "Morning Commute",
+    "origin": "Oak Creek Suburb",
+    "destination": "Downtown Station",
+    "load": {
+     "kind": "people",
+     "amount": 96,
+     "name": "commuters"
+    },
+    "vehicles": [
+     {
+      "id": "train",
+      "name": "Train",
+      "emoji": "\ud83d\ude86",
+      "capacity": 300,
+      "cost": 600,
+      "hours": 1,
+      "co2": 50
+     },
+     {
+      "id": "plane",
+      "name": "Plane",
+      "emoji": "\u2708\ufe0f",
+      "capacity": 150,
+      "cost": 1500,
+      "hours": 1,
+      "co2": 500
+     },
+     {
+      "id": "minivan",
+      "name": "Minivan",
+      "emoji": "\ud83d\ude90",
+      "capacity": 8,
+      "cost": 25,
+      "hours": 1,
+      "co2": 8
+     }
+    ],
+    "limits": [
+     {
+      "type": "budget",
+      "max": 500
+     }
+    ],
+    "shows": [
+     "budget"
+    ]
+   },
+   {
+    "id": "single_constraint-2",
+    "mode": "single_constraint",
+    "title": "Festival Day",
+    "origin": "Maple Park",
+    "destination": "River Square",
+    "load": {
+     "kind": "people",
+     "amount": 12,
+     "name": "visitors"
+    },
+    "vehicles": [
+     {
+      "id": "plane",
+      "name": "Plane",
+      "emoji": "\u2708\ufe0f",
+      "capacity": 150,
+      "cost": 3000,
+      "hours": 2,
+      "co2": 1000
+     },
+     {
+      "id": "car",
+      "name": "Car",
+      "emoji": "\ud83d\ude97",
+      "capacity": 4,
+      "cost": 30,
+      "hours": 2,
+      "co2": 10
+     },
+     {
+      "id": "bus",
+      "name": "Bus",
+      "emoji": "\ud83d\ude8c",
+      "capacity": 40,
+      "cost": 180,
+      "hours": 4,
+      "co2": 60
+     }
+    ],
+    "limits": [
+     {
+      "type": "budget",
+      "max": 100
+     }
+    ],
+    "shows": [
+     "budget"
+    ]
+   },
+   {
+    "id": "single_constraint-3",
+    "mode": "single_constraint",
+    "title": "Lumber Run",
+    "origin": "Pine Forest Mill",
+    "destination": "City Construction Yard",
+    "load": {
+     "kind": "cargo",
+     "amount": 80,
+     "name": "lumber"
+    },
+    "vehicles": [
+     {
+      "id": "cargo_ship",
+      "name": "Cargo ship",
+      "emoji": "\ud83d\udea2",
+      "capacity": 1000,
+      "cost": 4000,
+      "hours": 12,
+      "co2": 1500
+     },
+     {
+      "id": "delivery_truck",
+      "name": "Delivery truck",
+      "emoji": "\ud83d\ude9a",
+      "capacity": 5,
+      "cost": 40,
+      "hours": 2,
+      "co2": 15
+     },
+     {
+      "id": "semi_truck",
+      "name": "Semi truck",
+      "emoji": "\ud83d\ude9b",
+      "capacity": 20,
+      "cost": 150,
+      "hours": 2,
+      "co2": 60
+     }
+    ],
+    "limits": [
+     {
+      "type": "time",
+      "max": 10
+     }
+    ],
+    "shows": [
+     "time"
+    ]
+   }
+  ]
+ }
+}

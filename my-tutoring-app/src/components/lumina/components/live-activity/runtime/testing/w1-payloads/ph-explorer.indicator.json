@@ -1,0 +1,64 @@
+{
+ "source": "qa/tutor-reports/ph-explorer-runtime-indicator-payload-2026-10-15.json",
+ "primitiveId": "ph-explorer",
+ "evalMode": "indicator",
+ "data": {
+  "title": "Kitchen Science pH Lab",
+  "description": "Discover how different everyday liquids change color with cabbage juice to unlock their secret pH numbers!",
+  "substances": [
+   {
+    "id": "lemon_juice",
+    "name": "Lemon Juice",
+    "pH": 2,
+    "category": "food",
+    "realWorldInfo": "Lemon juice turns bright red with cabbage indicator because it is packed with citric acid, which gives it that yummy sour taste."
+   },
+   {
+    "id": "vinegar",
+    "name": "Vinegar",
+    "pH": 3,
+    "category": "food",
+    "realWorldInfo": "Vinegar is great for cooking and salad dressings, and people have used it for thousands of years as a natural helper around the house."
+   },
+   {
+    "id": "orange_juice",
+    "name": "Orange Juice",
+    "pH": 3.5,
+    "category": "food",
+    "realWorldInfo": "Oranges are loaded with vitamin C, helping your body stay strong and healthy while tasting super sweet and tangy."
+   },
+   {
+    "id": "pure_water",
+    "name": "Pure Water",
+    "pH": 7,
+    "category": "nature",
+    "realWorldInfo": "Pure water is totally neutral, meaning it is right in the middle of the scale and is the most important drink for living things."
+   },
+   {
+    "id": "baking_soda",
+    "name": "Baking Soda Solution",
+    "pH": 8.5,
+    "category": "food",
+    "realWorldInfo": "Baking soda helps cakes rise nice and fluffy in the oven by creating tiny bubbles of gas when mixed with other ingredients."
+   },
+   {
+    "id": "hand_soap",
+    "name": "Hand Soap",
+    "pH": 10,
+    "category": "cleaning",
+    "realWorldInfo": "Hand soap helps trap dirt and germs in tiny bubbles so they easily wash right down the drain with water."
+   },
+   {
+    "id": "drain_cleaner",
+    "name": "Drain Cleaner",
+    "pH": 13,
+    "category": "cleaning",
+    "realWorldInfo": "Drain cleaner is a powerful helper used by grown-ups to clear out clogged sinks, and it is very high up on the opposite end of the scale from lemon juice."
+   }
+  ],
+  "challengeTypes": [
+   "indicator"
+  ],
+  "gradeBand": "4-6"
+ }
+}

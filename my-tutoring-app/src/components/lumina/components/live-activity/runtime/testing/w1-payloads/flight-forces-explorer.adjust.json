@@ -1,0 +1,86 @@
+{
+ "source": "qa/tutor-reports/flight-forces-explorer-runtime-adjust-payload-2026-10-15.json",
+ "primitiveId": "flight-forces-explorer",
+ "evalMode": "adjust",
+ "data": {
+  "title": "Four Forces Flight Lab",
+  "overview": "You will set the thrust and the nose angle of the aircraft to investigate the four forces of flight.",
+  "aircraftType": "cessna",
+  "gradeBand": "3-5",
+  "challengeTypes": [
+   "adjust"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "adjust-1",
+    "mode": "adjust",
+    "aircraft": "cessna",
+    "weight": 5,
+    "lift0": 3,
+    "drag0": 3,
+    "start": {
+     "thrust": 3,
+     "nose": 0
+    },
+    "goal": {
+     "height": "Climbs",
+     "speed": "Keeps its speed"
+    },
+    "controls": [
+     "thrust",
+     "nose"
+    ],
+    "coupled": true,
+    "stall": true,
+    "story": "The plane must climb over a ridge ahead."
+   },
+   {
+    "id": "adjust-2",
+    "mode": "adjust",
+    "aircraft": "cessna",
+    "weight": 7,
+    "lift0": 4,
+    "drag0": 3,
+    "start": {
+     "thrust": 3,
+     "nose": 0
+    },
+    "goal": {
+     "height": "Stays level",
+     "speed": "Keeps its speed"
+    },
+    "controls": [
+     "thrust",
+     "nose"
+    ],
+    "coupled": true,
+    "stall": true,
+    "story": "The plane has just taken on a heavy load of water."
+   },
+   {
+    "id": "adjust-3",
+    "mode": "adjust",
+    "aircraft": "cessna",
+    "weight": 7,
+    "lift0": 3,
+    "drag0": 3,
+    "start": {
+     "thrust": 3,
+     "nose": 0
+    },
+    "goal": {
+     "height": "Stays level",
+     "speed": "Keeps its speed"
+    },
+    "controls": [
+     "thrust",
+     "nose"
+    ],
+    "coupled": true,
+    "stall": true,
+    "story": "The plane has just taken on a heavy load of water."
+   }
+  ]
+ }
+}

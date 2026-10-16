@@ -1,0 +1,46 @@
+{
+ "source": "qa/tutor-reports/digital-skills-sim-runtime-type-payload-2026-10-16.json",
+ "primitiveId": "digital-skills-sim",
+ "evalMode": "type",
+ "data": {
+  "title": "Farm Keyboard Fun",
+  "description": "You will practice finding and typing letters on the keyboard.",
+  "theme": "farm",
+  "challengeTypes": [
+   "type"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "mode": "type",
+    "text": "A",
+    "lower": true,
+    "id": "type-1"
+   },
+   {
+    "mode": "type",
+    "text": "F",
+    "lower": true,
+    "id": "type-2"
+   },
+   {
+    "mode": "type",
+    "text": "I",
+    "lower": true,
+    "id": "type-3"
+   },
+   {
+    "mode": "type",
+    "text": "H",
+    "lower": true,
+    "id": "type-4"
+   },
+   {
+    "mode": "type",
+    "text": "Y",
+    "lower": true,
+    "id": "type-5"
+   }
+  ]
+ }
+}

@@ -1,0 +1,517 @@
+{
+ "source": "qa/tutor-reports/vehicle-comparison-lab-runtime-metric_leader-payload-2026-10-16.json",
+ "primitiveId": "vehicle-comparison-lab",
+ "evalMode": "metric_leader",
+ "data": {
+  "title": "Transportation Speed, Capacity, and Range",
+  "instructions": "Read the vehicle data table to answer questions about speed, capacity, and range.",
+  "topicFocus": "Comparing vehicles that move people and goods by speed, capacity and range",
+  "vehicles": [
+   {
+    "id": "boeing-747",
+    "name": "Boeing 747",
+    "category": "air",
+    "visualKind": "airplane",
+    "imagePrompt": "A large wide-body commercial airliner flying through the blue sky.",
+    "metrics": {
+     "topSpeed": {
+      "value": 988,
+      "unit": "km/h",
+      "display": "988 km/h"
+     },
+     "weight": {
+      "value": 183500,
+      "unit": "kg",
+      "display": "183,500 kg"
+     },
+     "passengerCapacity": {
+      "value": 416,
+      "unit": "passengers",
+      "display": "416 passengers"
+     },
+     "cargoCapacity": {
+      "value": 140,
+      "unit": "tons",
+      "display": "140 tons"
+     },
+     "range": {
+      "value": 13445,
+      "unit": "km",
+      "display": "13,445 km"
+     },
+     "fuelType": "Jet Fuel",
+     "yearIntroduced": 1970,
+     "co2PerPassengerKm": 85,
+     "costPerTrip": "$150,000"
+    },
+    "funFact": "The Boeing 747 is often called the Queen of the Skies.",
+    "imageUrl": null
+   },
+   {
+    "id": "container-ship",
+    "name": "Container Ship",
+    "category": "sea",
+    "visualKind": "ship",
+    "imagePrompt": "A massive cargo ship loaded with colorful shipping containers on the ocean.",
+    "metrics": {
+     "topSpeed": {
+      "value": 46,
+      "unit": "km/h",
+      "display": "46 km/h"
+     },
+     "weight": {
+      "value": 200000,
+      "unit": "kg",
+      "display": "200,000 kg"
+     },
+     "passengerCapacity": {
+      "value": 30,
+      "unit": "passengers",
+      "display": "30 passengers"
+     },
+     "cargoCapacity": {
+      "value": 220000,
+      "unit": "tons",
+      "display": "220,000 tons"
+     },
+     "range": {
+      "value": 25000,
+      "unit": "km",
+      "display": "25,000 km"
+     },
+     "fuelType": "Heavy Fuel Oil",
+     "yearIntroduced": 2006,
+     "co2PerPassengerKm": 15,
+     "costPerTrip": "$500,000"
+    },
+    "funFact": "Modern container ships can carry over twenty thousand metal boxes filled with goods.",
+    "imageUrl": null
+   },
+   {
+    "id": "bullet-train",
+    "name": "Bullet Train",
+    "category": "land",
+    "visualKind": "train",
+    "imagePrompt": "A sleek white high-speed bullet train moving fast along the tracks.",
+    "metrics": {
+     "topSpeed": {
+      "value": 320,
+      "unit": "km/h",
+      "display": "320 km/h"
+     },
+     "weight": {
+      "value": 444000,
+      "unit": "kg",
+      "display": "444,000 kg"
+     },
+     "passengerCapacity": {
+      "value": 1323,
+      "unit": "passengers",
+      "display": "1,323 passengers"
+     },
+     "cargoCapacity": {
+      "value": 0,
+      "unit": "tons",
+      "display": "0 tons"
+     },
+     "range": {
+      "value": 1000,
+      "unit": "km",
+      "display": "1,000 km"
+     },
+     "fuelType": "Electricity",
+     "yearIntroduced": 2007,
+     "co2PerPassengerKm": 20,
+     "costPerTrip": "$20,000"
+    },
+    "funFact": "Bullet trains can travel between major cities with incredible punctuality, often arriving on time to the exact second.",
+    "imageUrl": null
+   },
+   {
+    "id": "semi-truck",
+    "name": "Semi Truck",
+    "category": "land",
+    "visualKind": "truck",
+    "imagePrompt": "A large semi-truck hauling a long trailer down a highway.",
+    "metrics": {
+     "topSpeed": {
+      "value": 110,
+      "unit": "km/h",
+      "display": "110 km/h"
+     },
+     "weight": {
+      "value": 16000,
+      "unit": "kg",
+      "display": "16,000 kg"
+     },
+     "passengerCapacity": {
+      "value": 2,
+      "unit": "passengers",
+      "display": "2 passengers"
+     },
+     "cargoCapacity": {
+      "value": 20,
+      "unit": "tons",
+      "display": "20 tons"
+     },
+     "range": {
+      "value": 2000,
+      "unit": "km",
+      "display": "2,000 km"
+     },
+     "fuelType": "Diesel",
+     "yearIntroduced": 2018,
+     "co2PerPassengerKm": 110,
+     "costPerTrip": "$2,500"
+    },
+    "funFact": "Semi-trucks deliver everyday goods like food and clothes to stores across the country.",
+    "imageUrl": null
+   },
+   {
+    "id": "tour-bus",
+    "name": "Tour Bus",
+    "category": "land",
+    "visualKind": "bus",
+    "imagePrompt": "A modern passenger tour bus driving on a winding road.",
+    "metrics": {
+     "topSpeed": {
+      "value": 120,
+      "unit": "km/h",
+      "display": "120 km/h"
+     },
+     "weight": {
+      "value": 13000,
+      "unit": "kg",
+      "display": "13,000 kg"
+     },
+     "passengerCapacity": {
+      "value": 55,
+      "unit": "passengers",
+      "display": "55 passengers"
+     },
+     "cargoCapacity": {
+      "value": 5,
+      "unit": "tons",
+      "display": "5 tons"
+     },
+     "range": {
+      "value": 900,
+      "unit": "km",
+      "display": "900 km"
+     },
+     "fuelType": "Diesel",
+     "yearIntroduced": 2015,
+     "co2PerPassengerKm": 35,
+     "costPerTrip": "$1,200"
+    },
+    "funFact": "Tour buses allow large groups of people to travel together comfortably on long road trips.",
+    "imageUrl": null
+   }
+  ],
+  "comparisonMetrics": [
+   "topSpeed",
+   "weight",
+   "passengerCapacity",
+   "cargoCapacity",
+   "range"
+  ],
+  "surprisingFacts": [
+   {
+    "fact": "Although container ships are among the slowest vehicles, they have the largest cargo capacity and range of all.",
+    "vehicleIds": [
+     "container-ship"
+    ]
+   },
+   {
+    "fact": "The bullet train can carry more than three times as many passengers as a Boeing 747, but stays much closer to the ground.",
+    "vehicleIds": [
+     "bullet-train",
+     "boeing-747"
+    ]
+   }
+  ],
+  "gradeBand": "3-5",
+  "challengeTypes": [
+   "metric_leader"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "metric_leader-1",
+    "mode": "metric_leader",
+    "rows": [
+     {
+      "id": "bullet-train",
+      "name": "Bullet Train",
+      "category": "land",
+      "visualKind": "train",
+      "values": {
+       "topSpeed": 320,
+       "weight": 444000,
+       "passengerCapacity": 1323,
+       "cargoCapacity": 0,
+       "range": 1000,
+       "yearIntroduced": 2007,
+       "co2PerPassengerKm": 20
+      }
+     },
+     {
+      "id": "container-ship",
+      "name": "Container Ship",
+      "category": "sea",
+      "visualKind": "ship",
+      "values": {
+       "topSpeed": 46,
+       "weight": 200000,
+       "passengerCapacity": 30,
+       "cargoCapacity": 220000,
+       "range": 25000,
+       "yearIntroduced": 2006,
+       "co2PerPassengerKm": 15
+      }
+     },
+     {
+      "id": "boeing-747",
+      "name": "Boeing 747",
+      "category": "air",
+      "visualKind": "airplane",
+      "values": {
+       "topSpeed": 988,
+       "weight": 183500,
+       "passengerCapacity": 416,
+       "cargoCapacity": 140,
+       "range": 13445,
+       "yearIntroduced": 1970,
+       "co2PerPassengerKm": 85
+      }
+     },
+     {
+      "id": "semi-truck",
+      "name": "Semi Truck",
+      "category": "land",
+      "visualKind": "truck",
+      "values": {
+       "topSpeed": 110,
+       "weight": 16000,
+       "passengerCapacity": 2,
+       "cargoCapacity": 20,
+       "range": 2000,
+       "yearIntroduced": 2018,
+       "co2PerPassengerKm": 110
+      }
+     },
+     {
+      "id": "tour-bus",
+      "name": "Tour Bus",
+      "category": "land",
+      "visualKind": "bus",
+      "values": {
+       "topSpeed": 120,
+       "weight": 13000,
+       "passengerCapacity": 55,
+       "cargoCapacity": 5,
+       "range": 900,
+       "yearIntroduced": 2015,
+       "co2PerPassengerKm": 35
+      }
+     }
+    ],
+    "columns": [
+     "passengerCapacity",
+     "topSpeed",
+     "cargoCapacity"
+    ],
+    "units": {
+     "topSpeed": "km/h",
+     "weight": "kg",
+     "range": "km"
+    },
+    "metric": "passengerCapacity"
+   },
+   {
+    "id": "metric_leader-2",
+    "mode": "metric_leader",
+    "rows": [
+     {
+      "id": "boeing-747",
+      "name": "Boeing 747",
+      "category": "air",
+      "visualKind": "airplane",
+      "values": {
+       "topSpeed": 988,
+       "weight": 183500,
+       "passengerCapacity": 416,
+       "cargoCapacity": 140,
+       "range": 13445,
+       "yearIntroduced": 1970,
+       "co2PerPassengerKm": 85
+      }
+     },
+     {
+      "id": "semi-truck",
+      "name": "Semi Truck",
+      "category": "land",
+      "visualKind": "truck",
+      "values": {
+       "topSpeed": 110,
+       "weight": 16000,
+       "passengerCapacity": 2,
+       "cargoCapacity": 20,
+       "range": 2000,
+       "yearIntroduced": 2018,
+       "co2PerPassengerKm": 110
+      }
+     },
+     {
+      "id": "bullet-train",
+      "name": "Bullet Train",
+      "category": "land",
+      "visualKind": "train",
+      "values": {
+       "topSpeed": 320,
+       "weight": 444000,
+       "passengerCapacity": 1323,
+       "cargoCapacity": 0,
+       "range": 1000,
+       "yearIntroduced": 2007,
+       "co2PerPassengerKm": 20
+      }
+     },
+     {
+      "id": "container-ship",
+      "name": "Container Ship",
+      "category": "sea",
+      "visualKind": "ship",
+      "values": {
+       "topSpeed": 46,
+       "weight": 200000,
+       "passengerCapacity": 30,
+       "cargoCapacity": 220000,
+       "range": 25000,
+       "yearIntroduced": 2006,
+       "co2PerPassengerKm": 15
+      }
+     },
+     {
+      "id": "tour-bus",
+      "name": "Tour Bus",
+      "category": "land",
+      "visualKind": "bus",
+      "values": {
+       "topSpeed": 120,
+       "weight": 13000,
+       "passengerCapacity": 55,
+       "cargoCapacity": 5,
+       "range": 900,
+       "yearIntroduced": 2015,
+       "co2PerPassengerKm": 35
+      }
+     }
+    ],
+    "columns": [
+     "cargoCapacity",
+     "passengerCapacity",
+     "weight"
+    ],
+    "units": {
+     "topSpeed": "km/h",
+     "weight": "kg",
+     "range": "km"
+    },
+    "metric": "cargoCapacity"
+   },
+   {
+    "id": "metric_leader-3",
+    "mode": "metric_leader",
+    "rows": [
+     {
+      "id": "tour-bus",
+      "name": "Tour Bus",
+      "category": "land",
+      "visualKind": "bus",
+      "values": {
+       "topSpeed": 120,
+       "weight": 13000,
+       "passengerCapacity": 55,
+       "cargoCapacity": 5,
+       "range": 900,
+       "yearIntroduced": 2015,
+       "co2PerPassengerKm": 35
+      }
+     },
+     {
+      "id": "bullet-train",
+      "name": "Bullet Train",
+      "category": "land",
+      "visualKind": "train",
+      "values": {
+       "topSpeed": 320,
+       "weight": 444000,
+       "passengerCapacity": 1323,
+       "cargoCapacity": 0,
+       "range": 1000,
+       "yearIntroduced": 2007,
+       "co2PerPassengerKm": 20
+      }
+     },
+     {
+      "id": "boeing-747",
+      "name": "Boeing 747",
+      "category": "air",
+      "visualKind": "airplane",
+      "values": {
+       "topSpeed": 988,
+       "weight": 183500,
+       "passengerCapacity": 416,
+       "cargoCapacity": 140,
+       "range": 13445,
+       "yearIntroduced": 1970,
+       "co2PerPassengerKm": 85
+      }
+     },
+     {
+      "id": "semi-truck",
+      "name": "Semi Truck",
+      "category": "land",
+      "visualKind": "truck",
+      "values": {
+       "topSpeed": 110,
+       "weight": 16000,
+       "passengerCapacity": 2,
+       "cargoCapacity": 20,
+       "range": 2000,
+       "yearIntroduced": 2018,
+       "co2PerPassengerKm": 110
+      }
+     },
+     {
+      "id": "container-ship",
+      "name": "Container Ship",
+      "category": "sea",
+      "visualKind": "ship",
+      "values": {
+       "topSpeed": 46,
+       "weight": 200000,
+       "passengerCapacity": 30,
+       "cargoCapacity": 220000,
+       "range": 25000,
+       "yearIntroduced": 2006,
+       "co2PerPassengerKm": 15
+      }
+     }
+    ],
+    "columns": [
+     "topSpeed",
+     "weight",
+     "range"
+    ],
+    "units": {
+     "topSpeed": "km/h",
+     "weight": "kg",
+     "range": "km"
+    },
+    "metric": "range"
+   }
+  ]
+ }
+}

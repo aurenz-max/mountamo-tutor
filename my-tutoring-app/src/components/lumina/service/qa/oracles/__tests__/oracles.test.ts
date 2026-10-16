@@ -219,65 +219,55 @@ const veCtx = { componentId: 'vocabulary-explorer', evalMode: 'recall', topic: '
 
 const vocabClean = {
   terms: [
-    { id: 'term1', word: 'season', definition: 'A time of year with a special kind of weather.' },
-    { id: 'term2', word: 'sunny', definition: 'When the sky is bright because the sun is shining.' },
+    { id: 'term1', word: 'season', definition: 'A time of year with a special kind of weather.', clozeSentence: 'Winter is the coldest season of the year.' },
+    { id: 'term2', word: 'sunny', definition: 'When the sky is bright because the sun is out.', clozeSentence: 'The sky is bright and blue because it is a sunny day.' },
+    { id: 'term3', word: 'stormy', definition: 'Windy and wet, with dark clouds.', clozeSentence: 'We stayed inside on the stormy night.' },
+    { id: 'term4', word: 'puddle', definition: 'A small pool of rainwater on the ground.', clozeSentence: 'I jumped in a puddle after the rain.' },
   ],
-  challenges: [
-    {
-      type: 'match',
-      matchPairs: [
-        { term: 'season', definition: 'A time of year with a special kind of weather.' },
-        { term: 'sunny', definition: 'When the sky is bright because the sun is shining.' },
-      ],
-    },
-    {
-      type: 'fill_blank',
-      relatedTermId: 'term2',
-      options: ['sunny', 'season', 'stormy'],
-      correctIndex: 0,
-      sentence: 'The sky is bright and blue because it is a _____ day.',
-    },
+  items: [
+    { id: 'match-1', kind: 'match', terms: ['term1', 'term2', 'term3'], defs: ['term2', 'term3', 'term1'] },
+    { id: 'fill_blank-2', kind: 'fill_blank', term: 'term2', options: ['term3', 'term2', 'term4'], clue: 'sentence' },
   ],
 };
 
 describe('vocabulary-explorer oracle', () => {
+  const copy = () => JSON.parse(JSON.stringify(vocabClean));
+
   it('passes clean data', () => {
     expect(vocabularyExplorerOracle.verify(vocabClean, veCtx).violations).toEqual([]);
   });
 
-  it('flags answer-key desync — correctIndex points at the wrong option (the 2026-07-04 bug class)', () => {
-    const data = JSON.parse(JSON.stringify(vocabClean));
-    data.challenges[1].correctIndex = 1; // key says "season"; oracle solves to "sunny"
-    const v = vocabularyExplorerOracle.verify(data, veCtx).violations;
-    expect(v.some((x) => x.check === 'answer-key-desync')).toBe(true);
+  it('flags answer-key desync: the answer is not among the choices', () => {
+    const data = copy();
+    data.items[1].options = ['term3', 'term1', 'term4'];
+    expect(vocabularyExplorerOracle.verify(data, veCtx).violations.some((x) => x.check === 'answer-key-desync')).toBe(true);
   });
 
-  it('flags answer-key desync — expected answer missing from the options entirely', () => {
-    const data = JSON.parse(JSON.stringify(vocabClean));
-    data.challenges[1].options = ['cloudy', 'season', 'stormy'];
-    const v = vocabularyExplorerOracle.verify(data, veCtx).violations;
-    expect(v.some((x) => x.check === 'answer-key-desync')).toBe(true);
+  it('flags a match whose word has no meaning in the column', () => {
+    const data = copy();
+    data.items[0].defs = ['term2', 'term3', 'term4'];
+    expect(vocabularyExplorerOracle.verify(data, veCtx).violations.some((x) => x.check === 'answer-key-desync')).toBe(true);
   });
 
-  it('flags definition desync in match pairs', () => {
-    const data = JSON.parse(JSON.stringify(vocabClean));
-    data.challenges[0].matchPairs[0].definition = 'A completely different definition.';
-    const v = vocabularyExplorerOracle.verify(data, veCtx).violations;
-    expect(v.some((x) => x.check === 'answer-key-desync')).toBe(true);
+  it('flags answer leak: the sentence shows the answer word outside the blank', () => {
+    const data = copy();
+    data.terms[1].clozeSentence = 'It is sunny today, so it is a sunny day.';
+    expect(vocabularyExplorerOracle.verify(data, veCtx).violations.some((x) => x.check === 'answer-leak' || x.check === 'schema')).toBe(true);
   });
 
-  it('flags answer leak — the sentence contains the answer word', () => {
-    const data = JSON.parse(JSON.stringify(vocabClean));
-    data.challenges[1].sentence = 'It is sunny today, so it is a _____ day.';
-    const v = vocabularyExplorerOracle.verify(data, veCtx).violations;
-    expect(v.some((x) => x.check === 'answer-leak')).toBe(true);
+  it('flags answer leak: a meaning names a word of the match, or the column is aligned', () => {
+    const named = copy();
+    named.terms[2].definition = 'Not sunny: windy and wet.';
+    expect(vocabularyExplorerOracle.verify(named, veCtx).violations.some((x) => x.check === 'answer-leak')).toBe(true);
+    const aligned = copy();
+    aligned.items[0].defs = ['term1', 'term2', 'term3'];
+    expect(vocabularyExplorerOracle.verify(aligned, veCtx).violations.some((x) => x.check === 'answer-leak')).toBe(true);
   });
 
-  it('flags out-of-range correctIndex', () => {
-    const data = JSON.parse(JSON.stringify(vocabClean));
-    data.challenges[1].correctIndex = 9;
-    const v = vocabularyExplorerOracle.verify(data, veCtx).violations;
-    expect(v.some((x) => x.check === 'schema')).toBe(true);
+  it('flags a mode missing one of its tasks', () => {
+    const data = copy();
+    data.items = data.items.slice(0, 1);
+    expect(vocabularyExplorerOracle.verify(data, veCtx).violations.some((x) => x.check === 'schema')).toBe(true);
   });
 });
 

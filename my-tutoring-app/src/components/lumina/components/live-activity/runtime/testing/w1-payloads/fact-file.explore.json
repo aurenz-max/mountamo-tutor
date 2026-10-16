@@ -1,0 +1,125 @@
+{
+ "source": "qa/tutor-reports/fact-file-runtime-explore-payload-2026-10-16.json",
+ "primitiveId": "fact-file",
+ "evalMode": "explore",
+ "data": {
+  "title": "Volcanoes",
+  "category": "Planet",
+  "description": "Volcanoes are incredible openings in the Earth's crust that allow hot magma, ash, and gases to escape from deep underground.",
+  "keyStats": [
+   {
+    "value": "1,500",
+    "unit": "active volcanoes",
+    "label": "Active Count"
+   },
+   {
+    "value": "2,000",
+    "unit": "degrees Fahrenheit",
+    "label": "Magma Heat"
+   },
+   {
+    "value": "75",
+    "unit": "percent",
+    "label": "Ring of Fire"
+   }
+  ],
+  "quickFacts": [
+   {
+    "fact": "Magma is called lava once it finally reaches the Earth's surface during an eruption.",
+    "icon": "\ud83c\udf0b"
+   },
+   {
+    "fact": "Underwater volcanoes can create brand new islands in the middle of the ocean over time.",
+    "icon": "\ud83c\udfdd\ufe0f"
+   },
+   {
+    "fact": "Volcanic ash is actually made of tiny, sharp pieces of broken glass and rock.",
+    "icon": "\u2601\ufe0f"
+   },
+   {
+    "fact": "The Ring of Fire is a giant horseshoe-shaped area in the Pacific Ocean with many volcanoes.",
+    "icon": "\u2b55"
+   }
+  ],
+  "deepDive": [
+   {
+    "heading": "How Volcanoes Form",
+    "body": "The Earth's outer shell is broken into giant pieces called tectonic plates that slowly float around. When these plates crash together or pull apart, molten rock from deep inside the Earth squeezes up through weak spots. This melted rock builds up over hundreds of years until it finally bursts out as a volcanic eruption.",
+    "detail": "Most volcanoes form right along the edges where these massive tectonic plates meet."
+   },
+   {
+    "heading": "Types of Eruptions",
+    "body": "Not all volcanic eruptions are the same. Some volcanoes produce gentle, flowing rivers of glowing red lava that move slowly enough for people to walk away from. Other volcanoes explode violently, blasting enormous clouds of ash, rock, and gas high up into the sky.",
+    "detail": "The thickness of the magma and the amount of trapped gas determine how explosive an eruption will be."
+   }
+  ],
+  "records": [
+   {
+    "label": "Tallest Volcano",
+    "value": "Mauna Kea in Hawaii is the tallest volcano on Earth when measured from its underwater base."
+   },
+   {
+    "label": "Most Active",
+    "value": "Kilauea in Hawaii is one of the most active volcanoes in the entire world."
+   }
+  ],
+  "didYouKnow": [
+   {
+    "text": "Volcanoes do not just exist on Earth! The largest known volcano in our solar system is Olympus Mons, and it is located on the planet Mars."
+   },
+   {
+    "text": "Even though volcanic eruptions are dangerous, volcanic ash makes the surrounding soil exceptionally rich and great for growing crops."
+   }
+  ],
+  "selfChecks": [
+   {
+    "question": "What is magma called once it reaches the Earth's surface?",
+    "options": [
+     "Lava",
+     "Rock",
+     "Magma",
+     "Ash"
+    ],
+    "correctIndex": 0,
+    "explanation": "Magma is referred to as lava after it successfully breaks through the Earth's surface.",
+    "difficulty": "easy",
+    "relatedSection": "quickFacts",
+    "challengeType": "recall_easy",
+    "id": "check-1",
+    "fileOpen": true
+   },
+   {
+    "question": "What are the giant pieces of the Earth's outer shell called?",
+    "options": [
+     "Rock layers",
+     "Ocean floors",
+     "Surface crusts",
+     "Tectonic plates"
+    ],
+    "correctIndex": 3,
+    "explanation": "The Earth's outer shell is divided into massive sections known as tectonic plates.",
+    "difficulty": "easy",
+    "relatedSection": "deepDive",
+    "challengeType": "recall_easy",
+    "id": "check-2",
+    "fileOpen": true
+   },
+   {
+    "question": "What is the name of the tallest volcano on Earth when measured from its underwater base?",
+    "options": [
+     "Kilauea",
+     "Mauna Kea",
+     "Olympus Mons",
+     "Mount Fuji"
+    ],
+    "correctIndex": 1,
+    "explanation": "Mauna Kea in Hawaii holds the record for being the tallest volcano from its underwater base.",
+    "difficulty": "easy",
+    "relatedSection": "records",
+    "challengeType": "recall_easy",
+    "id": "check-3",
+    "fileOpen": true
+   }
+  ]
+ }
+}

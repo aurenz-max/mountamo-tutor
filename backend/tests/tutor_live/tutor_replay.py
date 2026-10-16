@@ -97,10 +97,21 @@ def reply_of(body):
 
 
 def packet_after(record, call, packet):
-    """What the bridge would answer a call with. A lever the sweep also pulled answers with the packet it recorded."""
+    """What the bridge would answer a call with. A lever the sweep also pulled answers with the packet it recorded.
+    Any other lever answers with this packet, that lever marked pulled: answering "visible" with a packet in which
+    nothing was pulled read as a pull that did nothing, and the tutor pulled again (10-15: every two-lever reply in the
+    equation-balancer, stoichiometry-lab and gas-laws replays had first pulled a lever the sweep had not recorded)."""
     lever = (call.get('args') or {}).get('lever')
+    if not lever or not packet:
+        return packet
     pulled = next((m['packet'] for m in (record or {}).get('moments', []) if m['kind'] == 'lever' and (m.get('lever') or {}).get('id') == lever), None)
-    return pulled if lever and pulled else packet
+    if pulled:
+        return pulled
+    marked = json.loads(json.dumps(packet))
+    for declared in ((marked.get('task') or {}).get('workspace') or {}).get('levers') or []:
+        if declared.get('id') == lever:
+            declared['pulled'] = True
+    return marked
 
 
 async def sample(api, config, contents, n, gate, record=None, packet=None):
@@ -108,32 +119,51 @@ async def sample(api, config, contents, n, gate, record=None, packet=None):
     tutor speaks after the receipt: `text` is then the spoken line after it, `before` what it said before it.
     Up to two tool rounds: the lesson start is observe_runtime, then possibly an action."""
     async def generate(body):
-        for attempt in range(4):
+        # Several replays at once hit the per-minute quota (10-16: 154 samples came back 429 and read as empty
+        # replies). Back off long enough to clear a minute window; a sample that still fails is an error, not a reply.
+        last = 6
+        for attempt in range(last + 1):
             try:
                 response = await api.post(f'/models/{MODEL}:generateContent', json={**config, 'contents': body})
-                if response.status_code in (429, 500, 503) and attempt < 3:
-                    await asyncio.sleep(3 * (attempt + 1))
+                if response.status_code in (429, 500, 503) and attempt < last:
+                    wait = response.headers.get('retry-after')
+                    await asyncio.sleep(float(wait) if wait and wait.isdigit() else min(60, 4 * 2 ** attempt))
                     continue
                 response.raise_for_status()
                 return reply_of(response.json())
             except Exception as error:
-                if attempt == 3:
+                if attempt == last:
                     detail = getattr(getattr(error, 'response', None), 'text', '')
                     return {'text': '', 'calls': [], 'error': (repr(error) + ' ' + detail)[:400]}, None
-                await asyncio.sleep(3 * (attempt + 1))
+                await asyncio.sleep(min(60, 4 * 2 ** attempt))
+
+    def answers(calls, current):
+        """The bridge's answers to one round of calls (live_runtime_tools.py): one action at a time, so a second
+        action in the same round is refused while the first awaits its receipt; each answer carries the state
+        after the actions before it, so a lever pulled in an earlier round stays pulled."""
+        out, acted = [], False
+        for c in calls:
+            if c['name'] == 'observe_runtime':
+                out.append({'status': 'observing', 'liveRuntime': current})
+            elif acted:
+                out.append({'status': 'blocked', 'reason': 'Another action is awaiting its browser receipt', 'liveRuntime': current})
+            else:
+                acted, current = True, packet_after(record, c, current)
+                out.append({'status': 'visible', 'liveRuntime': current})
+        return out, current
 
     async def one():
         async with gate:
-            body, before, calls = list(contents), '', []
+            body, before, calls, current = list(contents), '', [], packet
             for _ in range(3):
                 reply, content = await generate(body)
                 calls += reply['calls']
                 if reply.get('error') or reply['text'].strip() or not reply['calls'] or content is None:
                     return {**reply, 'calls': calls, **({'before': before} if calls != reply['calls'] else {})}
                 before += reply['text']
-                body += [content, {'role': 'user', 'parts': [{'functionResponse': {'name': c['name'], 'response': (
-                    {'status': 'observing', 'liveRuntime': packet} if c['name'] == 'observe_runtime'
-                    else {'status': 'visible', 'liveRuntime': packet_after(record, c, packet)})}} for c in reply['calls']]}]
+                responses, current = answers(reply['calls'], current)
+                body += [content, {'role': 'user', 'parts': [{'functionResponse': {'name': c['name'], 'response': r}}
+                                                               for c, r in zip(reply['calls'], responses)]}]
             return {'text': '', 'before': before, 'calls': calls}
     return await asyncio.gather(*(one() for _ in range(n)))
 

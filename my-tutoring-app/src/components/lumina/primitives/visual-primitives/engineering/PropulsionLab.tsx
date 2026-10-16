@@ -1,51 +1,78 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import {
-  LuminaCard,
-  LuminaCardHeader,
-  LuminaCardTitle,
-  LuminaCardContent,
-  LuminaButton,
-  LuminaBadge,
-  LuminaPanel,
-  LuminaCallout,
-  LuminaAnswerChoice,
-  LuminaFeedbackCard,
-  LuminaReadAloud,
-  type AnswerChoiceState,
-} from '../../../ui';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+/**
+ * Propulsion Lab: a small craft with one or two engines (jet engine, rocket engine, propeller, or a sail), on a track
+ * on Earth or in space, and one task per eval mode (Newton's third law: an engine pushes the craft the opposite way from
+ * its blast; a jet engine, a propeller and a sail need air, a rocket engine does not).
+ * - predict: the craft drawn with its engines off; predict what it does when they start, then they run.
+ * - observe: the craft held by a clamp with its engines running; read the streams and say what it does when let go.
+ * - experiment: a question; set up Test A and Test B and run them. The check is a fair test.
+ *
+ * Every item is built and keyed by code (`propulsionWorkspace.ts`). No label, badge or readout names what the craft
+ * does, and it moves only after a credited answer (predict, observe) or a run (experiment). Two paths, chosen by
+ * `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries before a reveal; the
+ * workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a named miss, takes a spoken
+ * answer judged by the tutor, and lets the runtime move on. The levers live in `propulsionLevers.ts`.
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { PropulsionLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { ReadMeButton } from '../../shared/ReadMeButton';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaButton,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askOf, describePropulsionWork, emptyWork, ENGINES, fairSetups, keyOf, MOTIONS, PLACE_TEXT, propulsionCorrect,
+  propulsionItems, propulsionMiss, pushOf, TEST_ENGINES, testButton, testResult, THROTTLE_SIZE, THROTTLE_TEXT, varyOf, works,
+  workComplete, workspaceAssignment, workspaceScene,
+  type ChoiceItem, type Motion, type Place, type PropulsionItem, type PropulsionMode, type PropulsionTier,
+  type PropulsionWork, type Setup, type Thruster,
+} from './propulsionWorkspace';
+import {
+  AIR_MARKS_LEVER, airLine, BLAST_ARROWS_LEVER, CAN_PUSH_LEVER, canPushLine, COMPARE_TESTS_LEVER, compareLines,
+  HOW_IT_WORKS_LEVER, howLines, LABEL_STREAMS_LEVER, leverFact, propulsionLevers, simplerItem, STREAM_UNITS_LEVER,
+  streamLines, unitLines,
+} from './propulsionLevers';
 
 // ============================================================================
-// Data Types (Single Source of Truth)
+// Data Types (single source of truth; the generator imports them)
 // ============================================================================
 
-export interface PropulsionChallenge {
-  id: string;
-  type: 'predict' | 'observe' | 'experiment';
-  instruction: string;
-  options: { id: string; text: string }[];
-  correctOptionId: string;
-  hint: string;
-}
+export type { PropulsionItem, PropulsionMode, PropulsionTier };
 
 export interface PropulsionLabData {
   title: string;
-  description: string;
-  overview: string;
-  gradeBand: '1-2' | '3-5';
-  challenges?: PropulsionChallenge[];
-  propulsionFacts?: Record<string, { name: string; description: string; analogy: string }>;
-  mediumFacts?: Record<string, { name: string; description: string }>;
+  description?: string;
+  /** One sentence shown under the title; never states an outcome. */
+  overview?: string;
+  gradeBand?: '1-2' | '3-5';
+  /** The eval modes this session asks, in order (`resolvePropulsionModes`). */
+  challengeTypes?: PropulsionMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: PropulsionTier;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: PropulsionItem[];
+  /** Legacy generations (model-written multiple choice): read only for their modes. */
+  challenges?: Array<{ type?: string }>;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -56,1105 +83,563 @@ export interface PropulsionLabData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<PropulsionLabMetrics>) => void;
 }
 
+interface PropulsionLabProps {
+  data: PropulsionLabData;
+  className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
+}
+
+const MODE_LABEL: Record<PropulsionMode, string> = { predict: 'Predict, then watch', observe: 'Read the streams', experiment: 'Set up a fair test' };
+
 // ============================================================================
-// Physics Constants — Component owns ALL geometry and physics
+// The scene (canvas). Draws what it is given; the craft moves only when `motion` is set.
 // ============================================================================
 
-const CW = 700;
-const CH = 400;
+const CW = 640;
+const CH = 200;
+const UNIT = 16;
+const ENGINE_COLOR: Record<string, string> = { jet: '#f97316', rocket: '#a855f7', propeller: '#3b82f6', sail: '#14b8a6' };
 
-type PropulsionType = 'jet' | 'rocket' | 'propeller' | 'sail';
-type MediumType = 'air' | 'water' | 'vacuum';
-
-interface PropulsionDef {
+interface SceneProps {
+  place: Place;
+  thrusters: Thruster[];
+  /** Draw what comes out of each working engine. */
+  streams: boolean;
+  /** The craft's motion, once run; null while it holds still. */
+  motion: Motion | null;
+  /** Pixels per frame when moving. */
+  speed: number;
+  clamp: boolean;
+  /** blast_arrows: an arrow at each engine, the way it is aimed. */
+  arrows: boolean;
+  /** air_marks: ring the specks of air. */
+  ringAir: boolean;
   label: string;
-  emoji: string;
-  color: string;
-  exhaustColor: string;
-  /** Does this type carry its own propellant? (true = works in vacuum) */
-  selfContained: boolean;
-  /** Base thrust multiplier */
-  thrustPower: number;
-  /** Exhaust particle speed */
-  exhaustSpeed: number;
-  /** Description of what it pushes against */
-  pushesAgainst: string;
 }
 
-const PROPULSION_DEFS: Record<PropulsionType, PropulsionDef> = {
-  jet: {
-    label: 'Jet Engine',
-    emoji: '✈️',
-    color: '#f97316',
-    exhaustColor: '#fdba74',
-    selfContained: false,
-    thrustPower: 1.2,
-    exhaustSpeed: 5,
-    pushesAgainst: 'Sucks in air, burns it, blasts it out faster',
-  },
-  rocket: {
-    label: 'Rocket',
-    emoji: '🚀',
-    color: '#a855f7',
-    exhaustColor: '#c084fc',
-    selfContained: true,
-    thrustPower: 1.5,
-    exhaustSpeed: 7,
-    pushesAgainst: 'Carries its own fuel — ejects propellant backward',
-  },
-  propeller: {
-    label: 'Propeller',
-    emoji: '🛩️',
-    color: '#3b82f6',
-    exhaustColor: '#93c5fd',
-    selfContained: false,
-    thrustPower: 0.8,
-    exhaustSpeed: 3,
-    pushesAgainst: 'Spins to push air (or water) backward',
-  },
-  sail: {
-    label: 'Sail',
-    emoji: '⛵',
-    color: '#14b8a6',
-    exhaustColor: '#5eead4',
-    selfContained: false,
-    thrustPower: 0.5,
-    exhaustSpeed: 2,
-    pushesAgainst: 'Catches wind particles — redirects them',
-  },
-};
-
-interface MediumDef {
-  label: string;
-  particleDensity: number; // ambient particles on screen
-  particleColor: string;
-  dragFactor: number;
-  bgGradient: [string, string];
-}
-
-const MEDIUM_DEFS: Record<MediumType, MediumDef> = {
-  air: {
-    label: 'Air',
-    particleDensity: 40,
-    particleColor: '#94a3b8',
-    dragFactor: 0.005,
-    bgGradient: ['#0c1a2e', '#1a2d4a'],
-  },
-  water: {
-    label: 'Water',
-    particleDensity: 80,
-    particleColor: '#38bdf8',
-    dragFactor: 0.02,
-    bgGradient: ['#0c2440', '#0e3a5e'],
-  },
-  vacuum: {
-    label: 'Vacuum (Space!)',
-    particleDensity: 0,
-    particleColor: '#475569',
-    dragFactor: 0,
-    bgGradient: ['#020617', '#0f172a'],
-  },
-};
-
-const DEFAULT_CHALLENGES: PropulsionChallenge[] = [
-  {
-    id: 'ch1', type: 'predict',
-    instruction: 'Set the propeller in vacuum (space). What do you think will happen when you increase throttle?',
-    options: [
-      { id: 'a', text: 'It pushes the vehicle forward normally' },
-      { id: 'b', text: 'Nothing happens — there are no air particles to push!' },
-      { id: 'c', text: 'The vehicle goes backward' },
-      { id: 'd', text: 'The propeller spins but the vehicle explodes' },
-    ],
-    correctOptionId: 'b',
-    hint: 'A propeller works by pushing air backward. What happens when there is no air?',
-  },
-  {
-    id: 'ch2', type: 'observe',
-    instruction: 'Now try the rocket in vacuum. Watch the particles carefully. Why does the rocket still work?',
-    options: [
-      { id: 'a', text: 'It pushes against the stars' },
-      { id: 'b', text: 'It carries its own propellant — it ejects particles backward even in vacuum' },
-      { id: 'c', text: 'Rockets don\'t actually work in space' },
-      { id: 'd', text: 'The vacuum pulls it forward' },
-    ],
-    correctOptionId: 'b',
-    hint: 'Watch the exhaust particles. Where do they come from? The rocket or the environment?',
-  },
-  {
-    id: 'ch3', type: 'experiment',
-    instruction: 'Compare the propeller in air vs water. In which medium does it produce more thrust? (Watch the speed gauge!)',
-    options: [
-      { id: 'a', text: 'Air — less resistance means more speed' },
-      { id: 'b', text: 'Water — denser medium means more particles to push = more thrust' },
-      { id: 'c', text: 'Exactly the same in both' },
-      { id: 'd', text: 'It doesn\'t work in water' },
-    ],
-    correctOptionId: 'b',
-    hint: 'Look at how many medium particles are in water vs air. More particles to push against means...',
-  },
-  {
-    id: 'ch4', type: 'predict',
-    instruction: 'A sail catches wind to move a boat. Can a sail work in vacuum?',
-    options: [
-      { id: 'a', text: 'Yes — sails work everywhere' },
-      { id: 'b', text: 'No — there are no wind particles to catch in vacuum' },
-      { id: 'c', text: 'Only if you blow really hard' },
-      { id: 'd', text: 'Yes, but only backward' },
-    ],
-    correctOptionId: 'b',
-    hint: 'A sail doesn\'t make its own force. It redirects particles that hit it. What if nothing hits it?',
-  },
-];
-
-// ============================================================================
-// Particle Types
-// ============================================================================
-
-interface SimParticle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number; // 0..1 — fades as it ages
-  kind: 'exhaust' | 'medium' | 'intake';
-}
-
-// ============================================================================
-// Canvas Sub-component: PropulsionSimulation
-// ============================================================================
-
-interface SimCallbacks {
-  onSpeed: (speed: number) => void;
-  onThrust: (thrust: number) => void;
-  onNoThrust: () => void;
-}
-
-const PropulsionSimulation: React.FC<{
-  propulsion: PropulsionType;
-  medium: MediumType;
-  throttle: number;
-  callbacks: SimCallbacks;
-}> = ({ propulsion, medium, throttle, callbacks }) => {
+const PropulsionScene = ({ place, thrusters, streams, motion, speed, clamp, arrows, ringAir, label }: SceneProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<SimParticle[]>([]);
-  const simRef = useRef({ vehicleX: CW * 0.45, vehicleVx: 0, noThrustFired: false });
-  const animRef = useRef<number>(0);
+  const live = useRef({ place, thrusters, streams, motion, speed, clamp, arrows, ringAir });
+  live.current = { place, thrusters, streams, motion, speed, clamp, arrows, ringAir };
+  const sim = useRef({ x: CW / 2, t: 0 });
 
-  // Refs for frame-rate-independent reads
-  const propRef = useRef(propulsion);
-  const medRef = useRef(medium);
-  const throttleRef = useRef(throttle);
-  const cbRef = useRef(callbacks);
-  useEffect(() => { propRef.current = propulsion; }, [propulsion]);
-  useEffect(() => { medRef.current = medium; }, [medium]);
-  useEffect(() => { throttleRef.current = throttle; }, [throttle]);
-  useEffect(() => { cbRef.current = callbacks; }, [callbacks]);
+  // A new run starts from the middle.
+  useEffect(() => { sim.current = { x: CW / 2, t: sim.current.t }; }, [motion]);
 
-  // Reset particles when propulsion or medium changes
   useEffect(() => {
-    const mDef = MEDIUM_DEFS[medium];
-    const ambient: SimParticle[] = [];
-    for (let i = 0; i < mDef.particleDensity; i++) {
-      ambient.push({
-        x: Math.random() * CW,
-        y: 60 + Math.random() * (CH - 120),
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        life: 1,
-        kind: 'medium',
-      });
-    }
-    particlesRef.current = ambient;
-    simRef.current = { vehicleX: CW * 0.45, vehicleVx: 0, noThrustFired: false };
-  }, [propulsion, medium]);
-
-  // Main animation loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvasRef.current?.getContext?.('2d');
     if (!ctx) return;
-
-    const VEHICLE_Y = CH * 0.48;
-    const VEHICLE_W = 80;
-    const VEHICLE_H = 36;
-
-    const animate = () => {
-      const sim = simRef.current;
-      const particles = particlesRef.current;
-      const prop = propRef.current;
-      const med = medRef.current;
-      const thr = throttleRef.current / 100;
-      const cbs = cbRef.current;
-
-      const pDef = PROPULSION_DEFS[prop];
-      const mDef = MEDIUM_DEFS[med];
-
-      // ======== PHYSICS ========
-      const hasMedium = mDef.particleDensity > 0;
-      const canThrust = pDef.selfContained || hasMedium;
-      const effectiveThrust = canThrust ? thr * pDef.thrustPower : 0;
-
-      // Detect no-thrust situation
-      if (!canThrust && thr > 0.3 && !sim.noThrustFired) {
-        sim.noThrustFired = true;
-        cbs.onNoThrust();
+    let frame = 0;
+    const specks = Array.from({ length: 36 }, (_, i) => ({ x: (i * 97) % CW, y: 20 + (i * 53) % (CH - 40) }));
+    const stars = Array.from({ length: 50 }, (_, i) => ({ x: (i * 137.5) % CW, y: (i * 71.3) % CH, r: i % 3 === 0 ? 1.4 : 0.7 }));
+    const draw = () => {
+      const { place: p, thrusters: ts, streams: st, motion: m, speed: sp, clamp: cl, arrows: ar, ringAir: ring } = live.current;
+      const s = sim.current;
+      s.t += 1;
+      if (m && m !== 'Stays still') {
+        s.x += (m === 'Moves right' ? 1 : -1) * sp;
+        if (s.x > CW + 80) s.x = -80;
+        if (s.x < -80) s.x = CW + 80;
       }
-      if (canThrust || thr < 0.1) sim.noThrustFired = false;
-
-      // Emit exhaust particles
-      if (effectiveThrust > 0.05) {
-        const emitCount = Math.floor(1 + effectiveThrust * 3);
-        for (let i = 0; i < emitCount; i++) {
-          particles.push({
-            x: sim.vehicleX - VEHICLE_W * 0.4,
-            y: VEHICLE_Y + (Math.random() - 0.5) * VEHICLE_H * 0.5,
-            vx: -(pDef.exhaustSpeed * (0.6 + effectiveThrust * 0.4) + Math.random() * 1.5),
-            vy: (Math.random() - 0.5) * 1.2,
-            life: 1,
-            kind: 'exhaust',
-          });
-        }
-      }
-
-      // Intake particles (jet/propeller suck in medium)
-      if (!pDef.selfContained && hasMedium && effectiveThrust > 0.1) {
-        if (Math.random() < effectiveThrust * 0.5) {
-          particles.push({
-            x: sim.vehicleX + VEHICLE_W * 0.5 + 20 + Math.random() * 40,
-            y: VEHICLE_Y + (Math.random() - 0.5) * VEHICLE_H * 0.8,
-            vx: -(1 + effectiveThrust * 2),
-            vy: (Math.random() - 0.5) * 0.5,
-            life: 0.8,
-            kind: 'intake',
-          });
-        }
-      }
-
-      // Sail: deflect medium particles (wind pushes from right)
-      if (prop === 'sail' && hasMedium && thr > 0.1) {
-        // Add wind particles from the right
-        if (Math.random() < 0.3 + thr * 0.3) {
-          particles.push({
-            x: CW + 5,
-            y: VEHICLE_Y + (Math.random() - 0.5) * CH * 0.6,
-            vx: -(2 + Math.random() * 2),
-            vy: (Math.random() - 0.5) * 0.5,
-            life: 1,
-            kind: 'medium',
-          });
-        }
-      }
-
-      // Update vehicle
-      sim.vehicleVx += effectiveThrust * 0.06;
-      sim.vehicleVx -= sim.vehicleVx * mDef.dragFactor; // drag
-      sim.vehicleVx *= 0.995; // friction
-      sim.vehicleX += sim.vehicleVx;
-
-      // Wrap vehicle position
-      if (sim.vehicleX > CW + VEHICLE_W) sim.vehicleX = -VEHICLE_W;
-      if (sim.vehicleX < -VEHICLE_W * 2) sim.vehicleX = CW + VEHICLE_W;
-
-      const speed = Math.round(Math.abs(sim.vehicleVx) * 50);
-      const thrustDisplay = Math.round(effectiveThrust * 100);
-      cbs.onSpeed(speed);
-      cbs.onThrust(thrustDisplay);
-
-      // Update particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-
-        if (p.kind === 'exhaust') {
-          p.life -= 0.012;
-          p.vx *= 0.98;
-          p.vy *= 0.97;
-        } else if (p.kind === 'intake') {
-          p.life -= 0.03;
-        } else {
-          // medium particles drift slowly
-          p.vx += (Math.random() - 0.5) * 0.05;
-          p.vy += (Math.random() - 0.5) * 0.05;
-          p.vx *= 0.99;
-          p.vy *= 0.99;
-
-          // Sail deflection: medium particles near vehicle bounce off
-          if (prop === 'sail' && effectiveThrust > 0.05) {
-            const dx = p.x - sim.vehicleX;
-            const dy = p.y - VEHICLE_Y;
-            if (Math.abs(dx) < VEHICLE_W * 0.6 && Math.abs(dy) < VEHICLE_H * 0.8) {
-              // Bounce diagonally
-              p.vx = 1 + Math.random() * 2;
-              p.vy = (Math.random() - 0.5) * 3;
-              p.life = 0.6;
-            }
-          }
-
-          // Keep medium particles on screen
-          if (p.x < 0) { p.x = 0; p.vx = Math.abs(p.vx); }
-          if (p.x > CW) { p.x = CW; p.vx = -Math.abs(p.vx); }
-          if (p.y < 60) { p.y = 60; p.vy = Math.abs(p.vy); }
-          if (p.y > CH - 60) { p.y = CH - 60; p.vy = -Math.abs(p.vy); }
-        }
-
-        // Remove dead particles
-        if (p.life <= 0 || p.x < -50 || p.x > CW + 50 || p.y < -20 || p.y > CH + 20) {
-          particles.splice(i, 1);
-        }
-      }
-
-      // Replenish medium particles
-      while (particles.filter(p => p.kind === 'medium').length < mDef.particleDensity) {
-        particles.push({
-          x: Math.random() * CW,
-          y: 60 + Math.random() * (CH - 120),
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: (Math.random() - 0.5) * 0.3,
-          life: 1,
-          kind: 'medium',
-        });
-      }
-
-      // ======== DRAW ========
-      ctx.clearRect(0, 0, CW, CH);
-
-      // Background
+      const cy = CH / 2;
       const bg = ctx.createLinearGradient(0, 0, 0, CH);
-      bg.addColorStop(0, mDef.bgGradient[0]);
-      bg.addColorStop(1, mDef.bgGradient[1]);
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, CW, CH);
-
-      // Stars in vacuum
-      if (med === 'vacuum') {
+      if (p === 'space') { bg.addColorStop(0, '#020617'); bg.addColorStop(1, '#0f172a'); } else { bg.addColorStop(0, '#0c1a2e'); bg.addColorStop(1, '#1a2d4a'); }
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, CW, CH);
+      if (p === 'space') {
         ctx.fillStyle = '#ffffff';
-        for (let i = 0; i < 60; i++) {
-          const sx = (i * 137.5) % CW;
-          const sy = (i * 97.3) % CH;
-          const sr = (i % 3 === 0) ? 1.5 : 0.8;
-          ctx.beginPath();
-          ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-          ctx.fill();
+        for (const star of stars) { ctx.beginPath(); ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2); ctx.fill(); }
+      } else {
+        for (const k of specks) {
+          const x = (k.x + Math.sin((s.t + k.y) * 0.02) * 4 + CW) % CW;
+          ctx.beginPath(); ctx.arc(x, k.y, 2.5, 0, Math.PI * 2); ctx.fillStyle = 'rgba(148,163,184,0.55)'; ctx.fill();
+          if (ring) { ctx.beginPath(); ctx.arc(x, k.y, 7, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(250,204,21,0.7)'; ctx.lineWidth = 1.5; ctx.stroke(); }
+        }
+        ctx.strokeStyle = 'rgba(148,163,184,0.35)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, cy + 34); ctx.lineTo(CW, cy + 34); ctx.stroke();
+      }
+      // Wind for a sail on Earth.
+      const sail = ts.find(t => t.engine === 'sail');
+      if (sail && p === 'air') {
+        ctx.strokeStyle = 'rgba(94,234,212,0.5)'; ctx.lineWidth = 2;
+        for (let i = 0; i < 6; i++) {
+          const x = ((s.t * 3 + i * 120) % (CW + 60)) - 60, y = 30 + i * 12;
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 40, y); ctx.stroke();
         }
       }
-
-      // Water surface hint
-      if (med === 'water') {
-        ctx.strokeStyle = 'rgba(56,189,248,0.15)';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 8; i++) {
-          const wy = 70 + i * 40;
-          ctx.beginPath();
-          for (let x = 0; x < CW; x += 10) {
-            const y = wy + Math.sin((x + Date.now() * 0.001 + i * 30) * 0.03) * 3;
-            x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      const x = s.x, bw = 120, bh = 36;
+      // Streams: a band of the engine's colour, one tick per unit, with particles flowing out.
+      if (st) {
+        for (const t of ts) {
+          if (t.engine === 'sail' || !works(t.engine, p)) continue;
+          const dir = t.blast === 'left' ? -1 : 1;
+          const x0 = x + dir * (bw / 2 + 14), len = t.size * UNIT;
+          const g = ctx.createLinearGradient(x0, 0, x0 + dir * len, 0);
+          g.addColorStop(0, `${ENGINE_COLOR[t.engine]}cc`); g.addColorStop(1, `${ENGINE_COLOR[t.engine]}22`);
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.moveTo(x0, cy - 9); ctx.lineTo(x0 + dir * len, cy - 14); ctx.lineTo(x0 + dir * len, cy + 14); ctx.lineTo(x0, cy + 9); ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
+          for (let u = 1; u <= t.size; u++) { const tx = x0 + dir * u * UNIT; ctx.beginPath(); ctx.moveTo(tx, cy - 16); ctx.lineTo(tx, cy - 11); ctx.stroke(); }
+          for (let k = 0; k < 6; k++) {
+            const f = ((s.t * 0.04 + k / 6) % 1);
+            ctx.beginPath(); ctx.arc(x0 + dir * f * len, cy + Math.sin(k * 3 + s.t * 0.1) * 6, 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fill();
           }
-          ctx.stroke();
         }
       }
-
-      // Medium label
-      ctx.fillStyle = 'rgba(148,163,184,0.4)';
-      ctx.font = '11px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`Medium: ${mDef.label}`, 10, 20);
-      ctx.fillText(`Particles: ${mDef.particleDensity === 0 ? 'NONE' : mDef.particleDensity}`, 10, 34);
-
-      // Draw medium particles
-      for (const p of particles) {
-        if (p.kind === 'medium') {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-          ctx.fillStyle = mDef.particleColor + Math.round(p.life * 80).toString(16).padStart(2, '0');
-          ctx.fill();
+      // Craft body, nose to the right.
+      ctx.fillStyle = '#475569';
+      ctx.beginPath(); ctx.moveTo(x - bw / 2, cy - bh / 2); ctx.lineTo(x + bw / 2 - 10, cy - bh / 2);
+      ctx.quadraticCurveTo(x + bw / 2 + 14, cy, x + bw / 2 - 10, cy + bh / 2); ctx.lineTo(x - bw / 2, cy + bh / 2); ctx.closePath(); ctx.fill();
+      // Engines.
+      for (const t of ts) {
+        const c = ENGINE_COLOR[t.engine];
+        if (t.engine === 'sail') {
+          ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(x, cy - bh / 2); ctx.lineTo(x, cy - bh / 2 - 50); ctx.stroke();
+          ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x + 2, cy - bh / 2 - 48); ctx.lineTo(x + 2, cy - bh / 2 - 4); ctx.lineTo(x + 38, cy - bh / 2 - 6); ctx.closePath(); ctx.fill();
+          continue;
+        }
+        const dir = t.blast === 'left' ? -1 : 1;
+        const ex = x + dir * (bw / 2);
+        ctx.fillStyle = c;
+        if (t.engine === 'rocket') {
+          ctx.beginPath(); ctx.moveTo(ex, cy - 8); ctx.lineTo(ex + dir * 14, cy - 13); ctx.lineTo(ex + dir * 14, cy + 13); ctx.lineTo(ex, cy + 8); ctx.closePath(); ctx.fill();
+        } else if (t.engine === 'jet') {
+          ctx.fillRect(Math.min(ex, ex + dir * 14), cy - 10, 14, 20);
+          ctx.fillStyle = '#1e293b'; ctx.fillRect(Math.min(ex + dir * 10, ex + dir * 14), cy - 6, 4, 12);
+        } else {
+          // The blades spin whenever the engine is switched on, with or without air to push.
+          const spin = st ? Math.sin(s.t * 0.6) : 1;
+          ctx.fillRect(Math.min(ex, ex + dir * 8), cy - 4, 8, 8);
+          ctx.strokeStyle = c; ctx.lineWidth = 5;
+          ctx.beginPath(); ctx.moveTo(ex + dir * 10, cy - 22 * spin); ctx.lineTo(ex + dir * 10, cy + 22 * spin); ctx.stroke();
+        }
+        if (ar) {
+          ctx.setLineDash([5, 4]); ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 2;
+          const ax = ex + dir * 20;
+          ctx.beginPath(); ctx.moveTo(ax, cy + 26); ctx.lineTo(ax + dir * 40, cy + 26); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = '#fde68a'; ctx.beginPath(); ctx.moveTo(ax + dir * 48, cy + 26); ctx.lineTo(ax + dir * 40, cy + 21); ctx.lineTo(ax + dir * 40, cy + 31); ctx.closePath(); ctx.fill();
         }
       }
-
-      // Draw intake particles
-      for (const p of particles) {
-        if (p.kind === 'intake') {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(200,220,255,${p.life * 0.5})`;
-          ctx.fill();
-        }
+      if (cl) {
+        ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(x - 20, 0); ctx.lineTo(x - 20, cy - bh / 2); ctx.moveTo(x + 20, 0); ctx.lineTo(x + 20, cy - bh / 2); ctx.stroke();
       }
-
-      // Draw exhaust particles (with glow)
-      for (const p of particles) {
-        if (p.kind === 'exhaust') {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 3.5 + (1 - p.life) * 2, 0, Math.PI * 2);
-          if (p.life > 0.5) {
-            ctx.shadowColor = pDef.exhaustColor;
-            ctx.shadowBlur = 6;
-          }
-          ctx.fillStyle = pDef.color + Math.round(p.life * 200).toString(16).padStart(2, '0');
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-      }
-
-      // Draw vehicle body
-      const vx = sim.vehicleX - VEHICLE_W / 2;
-      const vy = VEHICLE_Y - VEHICLE_H / 2;
-      const r = 8;
-
-      // Vehicle shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
-      ctx.beginPath();
-      ctx.ellipse(sim.vehicleX, VEHICLE_Y + VEHICLE_H * 0.7, VEHICLE_W * 0.45, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Vehicle body
-      const vGrad = ctx.createLinearGradient(vx, vy, vx, vy + VEHICLE_H);
-      vGrad.addColorStop(0, '#334155');
-      vGrad.addColorStop(0.5, '#475569');
-      vGrad.addColorStop(1, '#334155');
-      ctx.fillStyle = vGrad;
-      ctx.beginPath();
-      ctx.moveTo(vx + r, vy);
-      // Nose (right side)
-      ctx.lineTo(vx + VEHICLE_W - 5, vy);
-      ctx.quadraticCurveTo(vx + VEHICLE_W + 12, VEHICLE_Y, vx + VEHICLE_W - 5, vy + VEHICLE_H);
-      // Bottom
-      ctx.lineTo(vx + r, vy + VEHICLE_H);
-      ctx.arcTo(vx, vy + VEHICLE_H, vx, vy + VEHICLE_H - r, r);
-      ctx.lineTo(vx, vy + r);
-      ctx.arcTo(vx, vy, vx + r, vy, r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = pDef.color + '80';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Engine glow at rear
-      if (effectiveThrust > 0.05) {
-        const glowR = 8 + effectiveThrust * 12;
-        const glow = ctx.createRadialGradient(
-          vx + 2, VEHICLE_Y, 2,
-          vx + 2, VEHICLE_Y, glowR,
-        );
-        glow.addColorStop(0, pDef.exhaustColor + 'cc');
-        glow.addColorStop(1, pDef.exhaustColor + '00');
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(vx + 2, VEHICLE_Y, glowR, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Propulsion type icon on vehicle
-      ctx.font = '18px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(pDef.emoji, sim.vehicleX + 5, VEHICLE_Y + 6);
-
-      // Force arrows
-      if (effectiveThrust > 0.05 || thr > 0.1) {
-        const arrowLen = effectiveThrust * 60 + 15;
-
-        // Action arrow (backward — exhaust direction)
-        ctx.strokeStyle = '#f97316';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(vx, VEHICLE_Y);
-        ctx.lineTo(vx - arrowLen, VEHICLE_Y);
-        ctx.stroke();
-        // Arrowhead
-        ctx.fillStyle = '#f97316';
-        ctx.beginPath();
-        ctx.moveTo(vx - arrowLen - 8, VEHICLE_Y);
-        ctx.lineTo(vx - arrowLen, VEHICLE_Y - 5);
-        ctx.lineTo(vx - arrowLen, VEHICLE_Y + 5);
-        ctx.closePath();
-        ctx.fill();
-        ctx.font = '10px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#fdba74';
-        ctx.fillText('ACTION', vx - arrowLen / 2, VEHICLE_Y - 10);
-
-        // Reaction arrow (forward — vehicle direction)
-        const reactionLen = canThrust ? arrowLen : 0;
-        if (reactionLen > 0) {
-          ctx.strokeStyle = '#22c55e';
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.moveTo(vx + VEHICLE_W, VEHICLE_Y);
-          ctx.lineTo(vx + VEHICLE_W + reactionLen, VEHICLE_Y);
-          ctx.stroke();
-          ctx.fillStyle = '#22c55e';
-          ctx.beginPath();
-          ctx.moveTo(vx + VEHICLE_W + reactionLen + 8, VEHICLE_Y);
-          ctx.lineTo(vx + VEHICLE_W + reactionLen, VEHICLE_Y - 5);
-          ctx.lineTo(vx + VEHICLE_W + reactionLen, VEHICLE_Y + 5);
-          ctx.closePath();
-          ctx.fill();
-          ctx.fillStyle = '#86efac';
-          ctx.fillText('REACTION', vx + VEHICLE_W + reactionLen / 2, VEHICLE_Y - 10);
-        }
-
-        // "NO THRUST" warning when propulsion can't work
-        if (!canThrust && thr > 0.1) {
-          ctx.fillStyle = '#ef4444';
-          ctx.font = 'bold 14px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText('NO THRUST!', sim.vehicleX, VEHICLE_Y - 35);
-          ctx.font = '10px monospace';
-          ctx.fillStyle = '#fca5a5';
-          ctx.fillText(`${pDef.label} needs a medium to push against!`, sim.vehicleX, VEHICLE_Y - 22);
-        }
-      }
-
-      // Speed gauge (bottom right)
-      const gx = CW - 120, gy = CH - 50;
-      ctx.fillStyle = 'rgba(30,41,59,0.6)';
-      ctx.fillRect(gx, gy, 110, 40);
-      ctx.strokeStyle = 'rgba(148,163,184,0.2)';
-      ctx.strokeRect(gx, gy, 110, 40);
-      ctx.fillStyle = speed > 50 ? '#22d3ee' : '#94a3b8';
-      ctx.font = 'bold 16px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${speed}`, gx + 40, gy + 26);
-      ctx.font = '9px monospace';
-      ctx.fillStyle = '#64748b';
-      ctx.fillText('km/h', gx + 40, gy + 37);
-
-      // Thrust gauge
-      ctx.fillStyle = thrustDisplay > 0 ? pDef.color : '#475569';
-      ctx.font = 'bold 16px monospace';
-      ctx.fillText(`${thrustDisplay}%`, gx + 85, gy + 26);
-      ctx.font = '9px monospace';
-      ctx.fillStyle = '#64748b';
-      ctx.fillText('thrust', gx + 85, gy + 37);
-
-      ctx.textAlign = 'start';
-
-      animRef.current = requestAnimationFrame(animate);
+      frame = requestAnimationFrame(draw);
     };
+    draw();
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
-    animRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animRef.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propulsion, medium]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={CW}
-      height={CH}
-      className="rounded-xl w-full"
-      style={{ maxWidth: CW, imageRendering: 'auto' }}
-    />
-  );
+  return <canvas ref={canvasRef} width={CW} height={CH} className="w-full rounded-xl border border-white/10" style={{ maxWidth: CW }} aria-label={label} />;
 };
 
+/** Pixels per frame for a craft's net push. */
+const speedOf = (place: Place, ts: Thruster[]) => {
+  let net = 0;
+  for (const t of ts) if (works(t.engine, place)) net += (pushOf(t) === 'right' ? 1 : -1) * t.size;
+  return Math.min(4, 0.6 + Math.abs(net) * 0.5);
+};
+const testThrusters = (s: Setup): Thruster[] => [{ engine: s.engine, blast: 'left', size: THROTTLE_SIZE[s.throttle] }];
+
+/** The worked explanation once an item is solved or revealed. */
+function revealText(item: PropulsionItem, w: PropulsionWork, ran: { a: Setup; b: Setup } | null): string {
+  if (item.mode === 'experiment') {
+    const r = ran ?? { a: w.a, b: w.b };
+    const vary = item.question.vary === 'place' ? 'place' : item.question.vary === 'engine' ? 'engine' : 'throttle';
+    return `These two tests differ only in the ${vary}, so they can answer the question. Test A: ${testResult(r.a)}. Test B: ${testResult(r.b)}.`;
+  }
+  const lines = item.thrusters.map(t => {
+    const e = ENGINES[t.engine].label;
+    if (t.engine === 'sail') return works('sail', item.place) ? 'The wind pushes on the sail, toward the right.' : 'In space there is no wind to catch, so the sail pushes nothing.';
+    if (!works(t.engine, item.place)) return `In space the ${e} has no air to push, so it pushes nothing.`;
+    return `The ${e} blasts out to the ${t.blast}, so it pushes the craft the other way, to the ${pushOf(t)}.`;
+  });
+  const live = item.thrusters.filter(t => works(t.engine, item.place));
+  const cancel = live.length > 1 && keyOf(item) === 'Stays still' ? ' The two pushes are equally strong and opposite, so they cancel.' : '';
+  return `${lines.join(' ')}${cancel} The craft ${keyOf(item).toLowerCase()}.`;
+}
+
 // ============================================================================
-// Main Component: PropulsionLab
+// Component
 // ============================================================================
 
-const PROPULSION_TYPES: PropulsionType[] = ['jet', 'rocket', 'propeller', 'sail'];
-const MEDIUM_TYPES: MediumType[] = ['air', 'water', 'vacuum'];
+const PropulsionLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  PropulsionLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<PropulsionItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, overview, gradeBand = '3-5', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
-const PropulsionLab: React.FC<{ data: PropulsionLabData; className?: string }> = ({ data, className }) => {
-  const {
-    title, description, overview, gradeBand = '1-2',
-    challenges: dataChallenges, propulsionFacts, mediumFacts,
-    instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
-  } = data;
+  const items = useMemo(() => propulsionItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.title, data.gradeBand]);
+  const stableInstanceId = useRef(instanceId || `propulsion-lab-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  const challenges = dataChallenges && dataChallenges.length > 0 ? dataChallenges : DEFAULT_CHALLENGES;
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  // ---- State ----
-  const [propulsion, setPropulsion] = useState<PropulsionType>('jet');
-  const [medium, setMedium] = useState<MediumType>('air');
-  const [throttle, setThrottle] = useState(30);
-  const [speed, setSpeed] = useState(0);
-  const [thrustDisplay, setThrustDisplay] = useState(0);
-  const [exploredCombos, setExploredCombos] = useState<Set<string>>(new Set(['jet-air']));
-  const [noThrustMoments, setNoThrustMoments] = useState(0);
+  const sessionItem: PropulsionItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<PropulsionItem | null>(null);
+  const item = practice ?? sessionItem;
 
-  // Challenge state
-  const [showChallenges, setShowChallenges] = useState(false);
-  const [currentChallengeIdx, setCurrentChallengeIdx] = useState(0);
-  const [challengeResults, setChallengeResults] = useState<{ id: string; correct: boolean }[]>([]);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [answerFeedback, setAnswerFeedback] = useState<'correct' | 'incorrect' | null>(null);
-  const [showHint, setShowHint] = useState(false);
+  const [work, setWork] = useState<PropulsionWork>(() => emptyWork(sessionItem));
+  /** Workspace path: the checked wrong work, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  /** Experiment: the two tests last run. */
+  const [ran, setRan] = useState<{ a: Setup; b: Setup } | null>(null);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
 
-  const resolvedInstanceId = instanceId ?? `propulsion-lab-${Date.now()}`;
-  const allChallengesDone = challengeResults.length >= challenges.length;
-  const pDef = PROPULSION_DEFS[propulsion];
+  const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
+  const leverOn = (id: string) => pulled.includes(id);
+  const solvedNow = practice ? practiceSolved || !!progress.practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
 
-  // ---- Evaluation ----
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<PropulsionLabMetrics>({
-    primitiveType: 'propulsion-lab' as any,
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<PropulsionLabMetrics>({
+    primitiveType: 'propulsion-lab',
     instanceId: resolvedInstanceId,
     skillId, subskillId, objectiveId, exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ---- AI Tutoring ----
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
   const aiPrimitiveData = useMemo(() => ({
-    propulsion, medium, throttle, speed,
-    exploredCombos: exploredCombos.size,
-    noThrustMoments,
-    challengeProgress: `${challengeResults.length}/${challenges.length}`,
-  }), [propulsion, medium, throttle, speed, exploredCombos.size, noThrustMoments, challengeResults.length, challenges.length]);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'propulsion-lab' as any,
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '1-2' ? 'K-2' : '3-5',
+    gradeBand, mode: item?.mode ?? 'predict', itemIndex: currentIndex + 1, totalItems: items.length,
+    ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
+  }), [gradeBand, item, currentIndex, items.length, title, currentAttempts]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'propulsion-lab', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: gradeBand === '1-2' ? 'Grade 1-2' : 'Grade 3-5', enabled: !tutorOwned,
   });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
-  // ── Read-aloud for young learners ─────────────────────────────────────────
-  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
-  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
-  const readBlockAloud = useCallback((text: string, tag: string) => {
-    if (!text) return;
-    SoundManager.tap();
-    sendText?.(
-      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
-    );
-  }, [sendText]);
+  const clearItem = (next?: PropulsionItem) => {
+    setWork(emptyWork(next ?? item)); setWrongShown(false); setRan(null); setFeedback(null);
+    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+  };
 
-  // AI: Activity start
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Student is exploring a living propulsion simulation. `
-      + `They can try jet, rocket, propeller, and sail in air, water, or vacuum. `
-      + `${overview}. Welcome them and suggest they start by watching what happens when they increase the throttle.`,
-      { silent: true },
-    );
-  }, [isConnected, overview, sendText]);
+  openItem.current = (index, retry) => {
+    if (retry) { setWork(emptyWork(item)); setWrongShown(false); setRan(null); setFeedback(null); setPracticeSolved(false); return; }
+    setPractice(null); clearItem(items[index]);
+  };
 
-  // Track combos explored
-  const trackCombo = useCallback((p: PropulsionType, m: MediumType) => {
-    const key = `${p}-${m}`;
-    setExploredCombos(prev => {
-      if (prev.has(key)) return prev;
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-  }, []);
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || solved.mode === 'experiment' || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setWork(w => ({ ...w, choice: keyOf(solved) })); setWrongShown(false);
+  };
 
-  // ---- Handlers ----
-  const handlePropulsionChange = useCallback((p: PropulsionType) => {
+  // ── Handlers ──
+  const closed = revealed || wrongShown || learnerBlocked();
+  const pick = (c: Motion) => {
+    if (!item || closed) return;
     SoundManager.select();
-    setPropulsion(p);
-    trackCombo(p, medium);
-    const def = PROPULSION_DEFS[p];
-    if (isConnected) {
-      sendText(
-        `[PROPULSION_CHANGED] Student switched to ${def.label}. `
-        + `Self-contained: ${def.selfContained}. ${def.pushesAgainst}. `
-        + `Ask what they expect to see differently.`,
-        { silent: true },
-      );
-    }
-  }, [medium, isConnected, sendText, trackCombo]);
-
-  const handleMediumChange = useCallback((m: MediumType) => {
+    setWork(w => ({ ...w, choice: c })); setFeedback(null);
+  };
+  const setTest = (test: 'a' | 'b', patch: Partial<Setup>) => {
+    if (!item || item.mode !== 'experiment' || closed || (test === 'a' && item.lockA)) return;
     SoundManager.select();
-    setMedium(m);
-    trackCombo(propulsion, m);
-    const mDef = MEDIUM_DEFS[m];
-    if (isConnected) {
-      sendText(
-        `[MEDIUM_CHANGED] Student switched to ${mDef.label} (${mDef.particleDensity} particles). `
-        + `Current propulsion: ${pDef.label} (self-contained: ${pDef.selfContained}). `
-        + `${m === 'vacuum' && !pDef.selfContained ? 'THIS WON\'T WORK — guide them to discover why!' : 'Ask them to watch the particles.'}`,
-        { silent: true },
-      );
-    }
-  }, [propulsion, pDef, isConnected, sendText, trackCombo]);
+    setWork(w => ({ ...w, [test]: { ...w[test], ...patch } }));
+    setRan(null); setFeedback(null);
+  };
 
-  const throttleTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const throttleHighSpokenRef = useRef(false);
-  const handleThrottleChange = useCallback((val: number) => {
-    setThrottle(val);
-    if (throttleTimeoutRef.current) clearTimeout(throttleTimeoutRef.current);
-    throttleTimeoutRef.current = setTimeout(() => {
-      // Announce entering the high-throttle zone once; reset when they drop back
-      // below 50% so a later climb can re-announce. Prevents re-narration while
-      // the student nudges the throttle around above the threshold.
-      if (val <= 50) { throttleHighSpokenRef.current = false; return; }
-      if (!isConnected || throttleHighSpokenRef.current) return;
-      throttleHighSpokenRef.current = true;
-      sendText(
-        `[THROTTLE_HIGH] Throttle at ${val}%. Watch the exhaust particles and force arrows!`,
-        { silent: true },
-      );
-    }, 1000);
-  }, [isConnected, sendText]);
-
-  const simCallbacks = useMemo<SimCallbacks>(() => ({
-    onSpeed: setSpeed,
-    onThrust: setThrustDisplay,
-    onNoThrust: () => {
-      setNoThrustMoments(c => c + 1);
-      if (isConnected) {
-        sendText(
-          `[NO_THRUST] ${pDef.label} can't produce thrust in ${MEDIUM_DEFS[medium].label}! `
-          + `It needs a medium to push against, but there are no particles. `
-          + `Ask the student: "Why do you think nothing is happening? What's missing?"`,
-          { silent: true },
-        );
-      }
-    },
-  }), [isConnected, sendText, pDef.label, medium]);
-
-  // Challenge handler
-  const handleAnswer = useCallback((optionId: string) => {
-    if (answerFeedback) return;
-    setSelectedAnswer(optionId);
-    const challenge = challenges[currentChallengeIdx];
-    const correct = optionId === challenge.correctOptionId;
-    setAnswerFeedback(correct ? 'correct' : 'incorrect');
-
+  const check = () => {
+    if (!item || closed || !workComplete(item, work)) return;
+    const correct = propulsionCorrect(item, work);
+    progress.commitCheck(describePropulsionWork(item, work), correct, correct ? undefined : propulsionMiss(item, work));
+    if (item.mode === 'experiment') setRan({ a: { ...work.a }, b: { ...work.b } });
     if (correct) {
       SoundManager.playCorrect();
-      setChallengeResults(prev => [...prev, { id: challenge.id, correct: true }]);
-      if (isConnected) {
-        sendText(
-          `[CHALLENGE_CORRECT] "${challenge.instruction}" — correct! Celebrate and connect to the simulation.`,
-          { silent: true },
-        );
-      }
-      setTimeout(() => {
-        setCurrentChallengeIdx(i => i + 1);
-        setSelectedAnswer(null);
-        setAnswerFeedback(null);
-        setShowHint(false);
-      }, 1500);
-    } else {
-      SoundManager.playIncorrect();
-      setShowHint(true);
-      if (isConnected) {
-        sendText(
-          `[CHALLENGE_INCORRECT] Student got "${challenge.instruction}" wrong. Hint: ${challenge.hint}. Guide gently.`,
-          { silent: true },
-        );
-      }
-      setTimeout(() => {
-        setSelectedAnswer(null);
-        setAnswerFeedback(null);
-      }, 2000);
+      if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} The craft now runs on screen. Praise briefly.`);
+      return;
     }
-  }, [answerFeedback, challenges, currentChallengeIdx, isConnected, sendText]);
+    SoundManager.playIncorrect();
+    if (tutorOwned) { setWrongShown(true); return; }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      if (item.mode === 'experiment') {
+        const fair = item.lockA ? { a: item.start.a, b: varyOf(item.question, item.start.a) } : fairSetups(item.question);
+        setWork(w => ({ ...w, ...fair })); setRan(fair);
+      }
+      else setWork(w => ({ ...w, choice: keyOf(item) }));
+      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer is now on screen; explain it.`);
+      return;
+    }
+    if (item.mode === 'experiment') setFeedback('These two tests cannot answer the question yet. Look at what is different between them, and try again.');
+    else { setWork(emptyWork(item)); setFeedback('Not quite. Look at which way each engine is aimed, and what it has to push. Try once more.'); }
+    say(`[ANSWER_INCORRECT] ${describePropulsionWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask what the learner noticed, without naming a choice.`);
+  };
 
-  // Submit evaluation
-  const handleSubmitEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    const combosExplored = exploredCombos.size;
-    const triedVacuumNoThrust = noThrustMoments > 0;
-
-    const metrics: PropulsionLabMetrics = {
+  const metrics = (): PropulsionLabMetrics => {
+    const right = items.filter(i => results.some(r => r.challengeId === i.id && r.correct));
+    const combos = new Set<string>();
+    for (const i of items) {
+      if (i.mode === 'experiment') { combos.add(`${i.start.a.engine}-${i.start.a.place}`); combos.add(`${i.start.b.engine}-${i.start.b.place}`); }
+      else for (const t of i.thrusters) combos.add(`${t.engine}-${i.place}`);
+    }
+    const dead = (i: PropulsionItem) => (i.mode === 'experiment' ? false : i.thrusters.some(t => !works(t.engine, i.place)));
+    return {
       type: 'propulsion-lab',
-      combinationsExplored: combosExplored,
-      combinationsTotal: PROPULSION_TYPES.length * MEDIUM_TYPES.length,
-      challengesCompleted: challengeResults.length,
-      challengesCorrect: correctCount,
-      challengesTotal: challenges.length,
-      noThrustDiscoveries: noThrustMoments,
-      vacuumExperimentDone: triedVacuumNoThrust,
-      attemptsCount: 1,
+      combinationsExplored: combos.size,
+      combinationsTotal: 8,
+      challengesCompleted: results.length,
+      challengesCorrect: right.length,
+      challengesTotal: items.length,
+      noThrustDiscoveries: right.filter(dead).length,
+      vacuumExperimentDone: right.some(i => (i.mode === 'experiment' ? i.question.vary === 'place' : i.place === 'space')),
+      attemptsCount: currentAttempts,
     };
+  };
 
-    const score =
-      (combosExplored / (PROPULSION_TYPES.length * MEDIUM_TYPES.length)) * 25 +
-      (triedVacuumNoThrust ? 25 : 5) +
-      (correctCount / Math.max(challenges.length, 1)) * 50;
+  /** Scripted path: Next, and on the last item the session report. */
+  const next = () => {
+    if (progress.advance()) { clearItem(items[currentIndex + 1]); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 50, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
+  };
 
-    submitEvaluation(score >= 40, Math.round(score), metrics, { propulsion });
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), attemptsCount: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
-    if (isConnected) {
-      sendText(
-        `[ALL_COMPLETE] Score: ${Math.round(score)}%. Combos explored: ${combosExplored}. `
-        + `Challenges: ${correctCount}/${challenges.length}. Vacuum discovery: ${triedVacuumNoThrust}. `
-        + `Celebrate and summarize Newton's Third Law — every action has an equal and opposite reaction!`,
-        { silent: true },
-      );
-    }
-  }, [hasSubmittedEvaluation, challengeResults, exploredCombos.size, noThrustMoments, challenges.length, propulsion, submitEvaluation, isConnected, sendText]);
-
-  const currentChallenge = challenges[currentChallengeIdx];
-
-  // ---- Render ----
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: (instanceId || 'propulsion-lab'),
-    scopeId: hasSubmittedEvaluation ? null : showChallenges && currentChallenge ? currentChallenge.id : 'explore',
-    label: 'The propulsion simulator and the challenge',
-    solved: answerFeedback === 'correct',
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'propulsion-lab'),
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const scene = workspaceScene(item, { work, solved: revealed, ran });
+    const levers = practice ? [] : propulsionLevers(sessionItem, pulled);
+    const onScreen = practice ? '' : leverFact(sessionItem, pulled, work);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
+        ...(onScreen ? { onScreen } : {}) },
+      levers,
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (l.kind === 'simplify') {
+          const simpler = simplerItem(sessionItem);
+          if (!simpler) return 'There is no simpler item here; try a help lever.';
+          setLeverState(nextState); clearItem(simpler); setPractice(simpler);
+          return { practice: workspaceAssignment(simpler) };
+        }
+        setLeverState(nextState);
+        return true;
+      },
+      endPractice: () => { clearItem(sessionItem); setPractice(null); },
+    };
   });
 
-  return (
-    <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8 justify-center">
-        <div className="w-12 h-12 rounded-xl bg-slate-800/60 flex items-center justify-center border border-violet-500/30 shadow-lg">
-          <span className="text-2xl">{pDef.emoji}</span>
-        </div>
-        <div className="text-left">
-          <h2 className="text-2xl font-bold text-white tracking-tight">{title}</h2>
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-            <p className="text-xs text-violet-400 font-mono uppercase tracking-wider">
-              Living Newton&apos;s Third Law
-            </p>
-          </div>
-        </div>
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: done || !item ? null : item.id,
+    label: 'The craft, its engines and your answer',
+    solved: revealed,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
+  if (!items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This lab has no questions to ask.</p></LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  const choiceState = (c: Motion): AnswerChoiceState => {
+    if (!item || item.mode === 'experiment') return 'idle';
+    const key = keyOf(item);
+    if (revealed) return c === key ? 'correct' : c === work.choice ? 'incorrect' : 'dimmed';
+    if (wrongShown && work.choice === c) return 'incorrect';
+    return work.choice === c ? 'selected' : 'idle';
+  };
+
+  const choiceItem: ChoiceItem | null = item && item.mode !== 'experiment' ? item : null;
+  const expItem = item?.mode === 'experiment' ? item : null;
+
+  const testPanel = (test: 'a' | 'b') => {
+    if (!expItem) return null;
+    const s = work[test], name = test === 'a' ? 'A' : 'B';
+    const locked = test === 'a' && expItem.lockA;
+    const row = <K extends keyof Setup>(field: K, values: Setup[K][], text: (v: Setup[K]) => string) => (
+      <div className="flex flex-wrap gap-2">
+        {values.map(v => (
+          <LuminaButton key={String(v)} size="sm" aria-label={testButton(name, text(v))} aria-pressed={s[field] === v}
+            disabled={closed || locked} onClick={() => setTest(test, { [field]: v } as Partial<Setup>)}
+            className={s[field] === v ? 'bg-white/15 ring-1 ring-white/30 text-white' : 'text-slate-400'}>
+            {text(v)}
+          </LuminaButton>
+        ))}
       </div>
+    );
+    const shownRun = ran ? ran[test] : null;
+    return (
+      <LuminaPanel key={name} className="space-y-2" data-test={name}>
+        <p className="text-xs uppercase tracking-wider text-slate-400">{`Test ${name}${locked ? ' (set)' : ''}`}</p>
+        <PropulsionScene place={s.place} thrusters={testThrusters(s)} streams={!!shownRun} motion={shownRun ? (works(shownRun.engine, shownRun.place) ? 'Moves right' : 'Stays still') : null}
+          speed={shownRun ? 0.5 + THROTTLE_SIZE[shownRun.throttle] * 0.5 : 0} clamp={false} arrows={false} ringAir={false} label={`Test ${name}: the craft`} />
+        {row('engine', TEST_ENGINES, v => ENGINES[v].button)}
+        {row('place', ['air', 'space'] as Place[], v => PLACE_TEXT[v].button)}
+        {row('throttle', ['low', 'high'] as Setup['throttle'][], v => THROTTLE_TEXT[v])}
+        {leverOn(CAN_PUSH_LEVER) && <p data-lever="can-push" className="text-xs text-amber-200">{canPushLine(s)}</p>}
+        {shownRun && <p className="text-xs text-slate-300">{`Ran: ${testResult(shownRun)}.`}</p>}
+      </LuminaPanel>
+    );
+  };
 
-      <LuminaCard className="overflow-hidden">
-        <LuminaCardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <LuminaCardTitle className="text-lg">Propulsion Lab</LuminaCardTitle>
-              <div className="flex items-start gap-2 mt-1">
-                <p className="text-slate-400 text-sm flex-1">{overview}</p>
-                <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
-                  aria-label="Read the overview to me" className="flex-shrink-0"
-                  onClick={() => readBlockAloud(overview, '[READ_OVERVIEW]')} />
-              </div>
+  return (
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{title}</LuminaCardTitle>
+        {!done && item && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {practice ? 'A simpler item first' : `${MODE_LABEL[item.mode]} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
+        )}
+        {overview && !done && <p className="text-sm text-slate-400">{overview}</p>}
+      </LuminaCardHeader>
+
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Lab complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} items answered.`}
+          </LuminaFeedbackCard>
+        ) : item && (
+          <>
+            <div className="flex items-start gap-2">
+              <LuminaPrompt accent="cyan" className="flex-1" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
+              {!tutorOwned && (
+                <ReadMeButton instruction={askOf(item)} ask="Look at the craft and its engines, then answer."
+                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
+                  className="flex-shrink-0" aria-label="Read the question to me" />
+              )}
             </div>
-            <LuminaBadge>Grades {gradeBand}</LuminaBadge>
-          </div>
-        </LuminaCardHeader>
 
-        <LuminaCardContent className="space-y-5">
-          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-          {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
-          <div {...pip.workspace} className="space-y-5">
-          {/* Simulation Canvas — bespoke interaction surface, left untouched */}
-          <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
-            <PropulsionSimulation
-              propulsion={propulsion}
-              medium={medium}
-              throttle={throttle}
-              callbacks={simCallbacks}
-            />
-            {exploredCombos.size <= 1 && (
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/80 px-4 py-1.5 rounded-full border border-white/10">
-                <p className="text-slate-400 text-xs">Try different propulsion types and mediums!</p>
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
+              {choiceItem && (
+                <PropulsionScene place={choiceItem.place} thrusters={choiceItem.thrusters}
+                  streams={choiceItem.mode === 'observe' || revealed} motion={revealed ? keyOf(choiceItem) : null}
+                  speed={speedOf(choiceItem.place, choiceItem.thrusters)} clamp={choiceItem.mode === 'observe' && !revealed}
+                  arrows={leverOn(BLAST_ARROWS_LEVER) && !revealed} ringAir={leverOn(AIR_MARKS_LEVER)}
+                  label={choiceItem.mode === 'observe' ? 'The craft in its clamp, its engines running' : 'The craft and its engines, switched off'} />
+              )}
+
+              {choiceItem?.mode === 'predict' && leverOn(HOW_IT_WORKS_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="how-it-works" className="text-sm text-slate-300">
+                  {howLines(choiceItem).map(l => <p key={l}>{l}</p>)}
+                </LuminaPanel>
+              )}
+              {choiceItem?.mode === 'predict' && leverOn(AIR_MARKS_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="air-marks" className="text-sm font-semibold text-amber-200">{airLine(choiceItem)}</LuminaPanel>
+              )}
+              {choiceItem?.mode === 'predict' && leverOn(BLAST_ARROWS_LEVER) && !revealed && (
+                <LuminaPanel accent="cyan" data-lever="blast-arrows" className="text-sm text-slate-300">
+                  A dashed arrow at each engine shows the way it is aimed to blast. Nothing is switched on yet.
+                </LuminaPanel>
+              )}
+              {choiceItem?.mode === 'observe' && (leverOn(LABEL_STREAMS_LEVER) || leverOn(STREAM_UNITS_LEVER)) && (
+                <LuminaPanel accent="cyan" data-lever={leverOn(LABEL_STREAMS_LEVER) ? 'label-streams' : 'stream-units'} className="space-y-1 text-sm text-slate-300">
+                  {leverOn(LABEL_STREAMS_LEVER) && streamLines(choiceItem).map(l => <p key={l}>{l}</p>)}
+                  {leverOn(STREAM_UNITS_LEVER) && <p data-lever="stream-units" className="font-mono">{unitLines(choiceItem).join('   ')}</p>}
+                </LuminaPanel>
+              )}
+
+              {choiceItem && (
+                <div className="grid grid-cols-3 gap-2">
+                  {MOTIONS.map(c => (
+                    <LuminaAnswerChoice key={c} aria-label={c} state={choiceState(c)} disabled={closed}
+                      className="p-3 text-center font-semibold" onClick={() => pick(c)}>
+                      {c}
+                    </LuminaAnswerChoice>
+                  ))}
+                </div>
+              )}
+
+              {expItem && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {testPanel('a')}
+                    {testPanel('b')}
+                  </div>
+                  {leverOn(COMPARE_TESTS_LEVER) && (
+                    <LuminaPanel accent="cyan" data-lever="compare-tests" className="space-y-1 text-sm text-slate-300">
+                      {compareLines(work.a, work.b).map(l => <p key={l}>{l}</p>)}
+                    </LuminaPanel>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={closed || !workComplete(item, work)} onClick={check}>
+                  {item.mode === 'experiment' ? 'Run and check' : 'Check Answer'}
+                </LuminaActionButton>
               </div>
             )}
-          </div>
 
-          {/* Controls: Propulsion Type */}
-          <div className="space-y-3">
-            <label className="text-slate-400 text-xs font-mono uppercase tracking-wider block">
-              Propulsion Type
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              {PROPULSION_TYPES.map(p => {
-                const def = PROPULSION_DEFS[p];
-                return (
-                  <LuminaButton key={p} size="sm"
-                    onClick={() => handlePropulsionChange(p)}
-                    className={propulsion === p
-                      ? 'bg-white/15 ring-1 ring-white/30 text-white'
-                      : 'text-slate-400'
-                    }
-                  >
-                    <span className="mr-1.5">{def.emoji}</span> {def.label}
-                  </LuminaButton>
-                );
-              })}
-            </div>
-            <div className="flex items-start gap-2">
-              <p className="text-xs text-slate-500 italic flex-1">{pDef.pushesAgainst}</p>
-              <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
-                aria-label="Read how this propulsion works to me" className="flex-shrink-0"
-                onClick={() => readBlockAloud(`${pDef.label}. ${pDef.pushesAgainst}`, '[READ_PROPULSION]')} />
-            </div>
-          </div>
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {revealText(item, work, ran)}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongShown && (
+              <LuminaFeedbackCard status="incorrect">
+                {item.mode === 'experiment' ? 'These two tests cannot answer the question.' : 'That is not it.'}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
 
-          {/* Controls: Medium */}
-          <div className="space-y-3">
-            <label className="text-slate-400 text-xs font-mono uppercase tracking-wider block">
-              Environment
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              {MEDIUM_TYPES.map(m => {
-                const def = MEDIUM_DEFS[m];
-                return (
-                  <LuminaButton key={m} size="sm"
-                    onClick={() => handleMediumChange(m)}
-                    className={medium === m
-                      ? 'bg-white/15 ring-1 ring-white/30 text-white'
-                      : 'text-slate-400'
-                    }
-                  >
-                    {def.label}
-                    <span className="ml-1.5 text-xs opacity-50">
-                      ({def.particleDensity === 0 ? 'empty' : `${def.particleDensity} particles`})
-                    </span>
-                  </LuminaButton>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Throttle Slider — direct-manipulation control, range input kept bespoke */}
-          <LuminaPanel>
-            <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 block">
-              Throttle
-            </label>
-            <input
-              type="range" min={0} max={100} value={throttle}
-              onChange={e => handleThrottleChange(Number(e.target.value))}
-              className="w-full accent-violet-500"
-            />
-            <div className="flex justify-between mt-1">
-              <span className="text-slate-500 text-xs">Off</span>
-              <div className="flex gap-4">
-                <span className="text-violet-300 text-sm font-mono font-bold">{throttle}%</span>
-                <span className="text-slate-500 text-xs">
-                  Speed: <span className={speed > 50 ? 'text-cyan-300' : 'text-slate-300'}>{speed} km/h</span>
-                </span>
-                <span className="text-slate-500 text-xs">
-                  Thrust: <span className={thrustDisplay > 0 ? 'text-green-300' : 'text-red-300'}>{thrustDisplay}%</span>
-                </span>
+            {!tutorOwned && revealed && !practice && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
               </div>
-              <span className="text-slate-500 text-xs">Max</span>
-            </div>
-          </LuminaPanel>
-
-          {/* Key Insight Cards */}
-          {noThrustMoments > 0 && (
-            <LuminaCallout accent="amber" label="Key Discovery!" icon={<span>&#x1F4A1;</span>} className="animate-fade-in">
-              <div className="flex items-start gap-2">
-                <p className="flex-1">
-                  Some propulsion types need a <span className="text-amber-300 font-medium">medium</span> (air, water) to push against.
-                  Rockets carry their own propellant, so they work even in vacuum!
-                </p>
-                <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
-                  aria-label="Read the discovery to me" className="flex-shrink-0"
-                  onClick={() => readBlockAloud(
-                    'Some propulsion types need a medium, like air or water, to push against. '
-                    + 'Rockets carry their own propellant, so they work even in vacuum!',
-                    '[READ_DISCOVERY]',
-                  )} />
-              </div>
-            </LuminaCallout>
-          )}
-
-          {/* Challenges Section */}
-          {!showChallenges && !allChallengesDone && (
-            <div className="flex justify-center">
-              <LuminaButton tone="primary"
-                onClick={() => setShowChallenges(true)}
-              >
-                &#x1F9EA; Ready for a Challenge?
-              </LuminaButton>
-            </div>
-          )}
-
-          {showChallenges && !allChallengesDone && currentChallenge && (
-            <LuminaPanel accent="purple" className="animate-fade-in space-y-4">
-              <div className="flex items-center justify-between">
-                <LuminaBadge accent="purple">
-                  Challenge {currentChallengeIdx + 1} of {challenges.length}
-                </LuminaBadge>
-                <LuminaBadge className="text-xs">
-                  {currentChallenge.type}
-                </LuminaBadge>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <p className="text-slate-200 text-sm font-medium flex-1">{currentChallenge.instruction}</p>
-                <ReadMeButton instruction={currentChallenge.instruction}
-                  ask="Watch the simulation, then tap the choice you think is right."
-                  speaking={isAudioPlaying} onAskTutor={(m) => sendText?.(m)} tag="[READ_CHALLENGE]"
-                  className="flex-shrink-0" aria-label="Read the question to me" />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {currentChallenge.options.map(opt => {
-                  const isSelected = selectedAnswer === opt.id;
-                  const isCorrectOpt = opt.id === currentChallenge.correctOptionId;
-                  let state: AnswerChoiceState = 'idle';
-                  if (answerFeedback === 'correct') {
-                    state = isCorrectOpt ? 'correct' : 'dimmed';
-                  } else if (answerFeedback === 'incorrect') {
-                    state = isSelected ? 'incorrect' : 'idle';
-                  } else if (isSelected) {
-                    state = 'selected';
-                  }
-
-                  return (
-                    <LuminaAnswerChoice key={opt.id}
-                      state={state}
-                      className="flex items-start gap-2 p-4 min-h-[3rem]"
-                      disabled={!!answerFeedback}
-                      onClick={() => handleAnswer(opt.id)}
-                    >
-                      <span className="mr-1 text-xs font-mono opacity-50 shrink-0">{opt.id.toUpperCase()}</span>
-                      <span className="text-sm leading-snug">{opt.text}</span>
-                    </LuminaAnswerChoice>
-                  );
-                })}
-              </div>
-
-              {showHint && (
-                <LuminaCallout accent="amber" label="Hint" className="animate-fade-in">
-                  <div className="flex items-start gap-2">
-                    <p className="flex-1">{currentChallenge.hint}</p>
-                    <LuminaReadAloud iconOnly size="sm" accent="cyan" speaking={isAudioPlaying}
-                      aria-label="Read the hint to me" className="flex-shrink-0"
-                      onClick={() => readBlockAloud(currentChallenge.hint, '[READ_HINT]')} />
-                  </div>
-                </LuminaCallout>
-              )}
-            </LuminaPanel>
-          )}
-
-          </div>
-
-          {allChallengesDone && showChallenges && (
-            <LuminaFeedbackCard status="correct" label="All challenges complete!">
-              {challengeResults.filter(r => r.correct).length}/{challenges.length} correct
-            </LuminaFeedbackCard>
-          )}
-
-          {/* Submit */}
-          {!hasSubmittedEvaluation && (exploredCombos.size > 1 || challengeResults.length > 0) && (
-            <div className="flex justify-center pt-2">
-              <LuminaButton tone="primary"
-                onClick={handleSubmitEvaluation}
-              >
-                &#x2713; I&apos;m Done Exploring
-              </LuminaButton>
-            </div>
-          )}
-
-          {hasSubmittedEvaluation && (
-            <LuminaFeedbackCard status="correct" label="Exploration complete!">
-              You discovered how propulsion works through Newton&apos;s Third Law!
-            </LuminaFeedbackCard>
-          )}
-        </LuminaCardContent>
-      </LuminaCard>
-    </div>
+            )}
+          </>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const PropulsionLab = withWorkspaceController<PropulsionLabProps, ProgressOptions<PropulsionItem>, Progress>(
+  'propulsion-lab', PropulsionLabSurface, useScriptedProgress, useWorkspaceProgressFor('propulsion-lab'));
 
 export default PropulsionLab;

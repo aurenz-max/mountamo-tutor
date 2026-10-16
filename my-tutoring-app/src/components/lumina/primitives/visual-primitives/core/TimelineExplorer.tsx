@@ -1,77 +1,74 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * Timeline Explorer: the learner reads a timeline of 5-8 events (opening each one), then answers check items built
+ * and keyed by code from the events' time order (`timelineExplorerWorkspace.ts`):
+ * - identify: a clue; which event is it? (said or tapped)
+ * - date: when did this event happen? (said or tapped)
+ * - order: move event cards into time order, earliest at the top
+ * - cause_effect: match each cause to the event it led to
+ * The timeline is hidden while the check is open, and no card shows a date. Two paths, chosen by
+ * `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries before a reveal; the
+ * workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a named miss, takes a
+ * spoken answer judged by the tutor, and lets the runtime move on. The levers live in `timelineExplorerLevers.ts`.
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaBadge,
+  LuminaButton,
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
-  LuminaPanel,
-  LuminaBadge,
-  LuminaButton,
-  LuminaActionButton,
-  LuminaAnswerChoice,
   LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
   LuminaSectionLabel,
-  answerStateClass,
   type AnswerChoiceState,
 } from '../../../ui';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TimelineExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askOf, dateOf, deckOf, describeTimelineWork, emptyWork, optionLabel, solvedText, timelineCorrect,
+  timelineItems, timelineMiss, titleOf, workComplete, workspaceAssignment, workspaceScene,
+  type TimelineEvent, type TimelineItem, type TimelineKind, type TimelineTier, type TimelineWork,
+} from './timelineExplorerWorkspace';
+import {
+  BEFORE_AFTER_LEVER, beforeAfterLines, cardLines, DATE_LINE_LEVER, dateLine, LED_TO_LEVER, ledToArrows, leverFact,
+  READ_CARDS_LEVER, SHOW_DATES_LEVER, SHOW_TIMELINE_LEVER, simplerItem, timelineLevers,
+} from './timelineExplorerLevers';
 
 // ============================================================================
-// Data Types (Single Source of Truth)
+// Data Types (single source of truth; the generator imports them)
 // ============================================================================
+
+export type { TimelineEvent, TimelineItem, TimelineKind, TimelineTier };
 
 export interface TimelineExplorerData {
   title: string;
   subtitle: string;
   overview: string;
-
-  timeSpan: {
-    start: string;
-    end: string;
-  };
-
-  events: Array<{
-    id: string;
-    date: string;
-    sortOrder: number;
-    title: string;
-    description: string;
-    imagePrompt: string;
-    impact?: string;
-    connection?: string;
-  }>;
-
-  summary: {
-    text: string;
-    keyTheme: string;
-    lookingForward?: string;
-  };
-
-  challenges?: Array<{
-    type: 'order' | 'date' | 'cause_effect' | 'identify';
-    question: string;
-    // For order: events to sort
-    orderItems?: Array<{ id: string; text: string }>;
-    correctOrder?: string[];
-    // For date/identify: multiple choice
-    options?: string[];
-    correctIndex?: number;
-    // For cause_effect: match pairs
-    causes?: string[];
-    effects?: string[];
-    correctPairs?: Array<[number, number]>;
-    explanation: string;
-    relatedEventId: string;
-  }>;
+  timeSpan: { start: string; end: string };
+  events: TimelineEvent[];
+  summary: { text: string; keyTheme: string; lookingForward?: string };
+  /** The kinds of check item this session asks (the eval mode's `challengeTypes`). */
+  challengeTypes?: TimelineKind[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: TimelineTier;
+  /** The check items, built and keyed by code at generation; absent or invalid: rebuilt from the events. */
+  items?: TimelineItem[];
+  /** Legacy generations (model-written questions and keys): read only for their kinds. */
+  challenges?: Array<{ type?: string }>;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -82,497 +79,304 @@ export interface TimelineExplorerData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<TimelineExplorerMetrics>) => void;
 }
 
-// ============================================================================
-// Props
-// ============================================================================
-
 interface TimelineExplorerProps {
   data: TimelineExplorerData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
+
+const KIND_LABEL: Record<TimelineKind, string> = {
+  identify: 'Which event?', date: 'When did it happen?', order: 'Put them in order', cause_effect: 'Cause and effect',
+};
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) => {
-  const {
-    title,
-    subtitle,
-    overview,
-    timeSpan,
-    events = [],
-    summary,
-    challenges = [],
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
+const TimelineExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  TimelineExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TimelineItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, subtitle, overview, timeSpan, events = [], summary, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
-  // Sort events chronologically
-  const sortedEvents = useMemo(
-    () => [...events].sort((a, b) => a.sortOrder - b.sortOrder),
-    [events]
-  );
+  const deck = useMemo(() => deckOf(events), [events]);
+  const items = useMemo(() => timelineItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.events, data.challengeTypes, data.difficulty, data.title]);
+  const stableInstanceId = useRef(instanceId || `timeline-explorer-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+  const span = `${timeSpan?.start || '?'} to ${timeSpan?.end || '?'}`;
 
-  // -------------------------------------------------------------------------
-  // State
-  // -------------------------------------------------------------------------
-  const [selectedEventIndex, setSelectedEventIndex] = useState<number | null>(null);
-  const [visitedEvents, setVisitedEvents] = useState<Set<string>>(new Set());
-  const [explorationOrder, setExplorationOrder] = useState<string[]>([]);
-  const [showSummary, setShowSummary] = useState(false);
+  // ── Reading: open every event, then begin the questions ──
+  const [reading, setReading] = useState(true);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openedOrder, setOpenedOrder] = useState<string[]>([]);
+  const readStart = useRef(Date.now());
+  const readMs = useRef(0);
+  const opened = new Set(openedOrder);
+  const allOpened = deck.events.every(e => opened.has(e.id));
 
-  // Challenge state
-  const [showChallenges, setShowChallenges] = useState(false);
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [challengeAnswers, setChallengeAnswers] = useState<Array<{ correct: boolean; attempts: number }>>([]);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [showChallengeFeedback, setShowChallengeFeedback] = useState(false);
-  const [allChallengesComplete, setAllChallengesComplete] = useState(false);
-  const [currentAttempts, setCurrentAttempts] = useState(0);
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const practiceAloud = useRef<() => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: item => workspaceAssignment(deck, item),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: () => practiceAloud.current(),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  // Order challenge state
-  const [orderSequence, setOrderSequence] = useState<string[]>([]);
-  const [orderChecked, setOrderChecked] = useState(false);
-  const [orderCorrect, setOrderCorrect] = useState(false);
+  const sessionItem: TimelineItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<TimelineItem | null>(null);
+  const item = practice ?? sessionItem;
 
-  // Cause-effect challenge state
-  const [selectedCause, setSelectedCause] = useState<number | null>(null);
-  const [matchedPairs, setMatchedPairs] = useState<Array<[number, number]>>([]);
-  const [ceChecked, setCeChecked] = useState(false);
-  const [ceCorrect, setCeCorrect] = useState(false);
+  const [work, setWork] = useState<TimelineWork>(() => emptyWork(sessionItem));
+  const [activeCause, setActiveCause] = useState<string | null>(null);
+  /** Workspace path: the checked wrong work, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
 
-  // Timing
-  const [eventEntryTime, setEventEntryTime] = useState(Date.now());
-  const [eventTimes, setEventTimes] = useState<Record<string, number>>({});
+  const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
+  const leverOn = (id: string) => pulled.includes(id);
+  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
 
-  // Stable instance ID
-  const stableInstanceIdRef = useRef(instanceId || `timeline-explorer-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-
-  const totalEvents = sortedEvents.length;
-  const eventsExplored = visitedEvents.size;
-  const allEventsExplored = eventsExplored >= totalEvents;
-  const selectedEvent = selectedEventIndex !== null ? sortedEvents[selectedEventIndex] : null;
-
-  // Determine exploration pattern
-  const explorationPattern = useMemo((): 'sequential' | 'random' | 'reverse' => {
-    if (explorationOrder.length < 3) return 'sequential';
-    const indices = explorationOrder.map(id => sortedEvents.findIndex(e => e.id === id));
-    let forward = 0, backward = 0;
-    for (let i = 1; i < indices.length; i++) {
-      if (indices[i] > indices[i - 1]) forward++;
-      else if (indices[i] < indices[i - 1]) backward++;
-    }
-    if (forward >= indices.length * 0.6) return 'sequential';
-    if (backward >= indices.length * 0.6) return 'reverse';
-    return 'random';
-  }, [explorationOrder, sortedEvents]);
-
-  // -------------------------------------------------------------------------
-  // Evaluation Hook
-  // -------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<TimelineExplorerMetrics>({
+  const { submitResult, hasSubmitted, submittedResult } = usePrimitiveEvaluation<TimelineExplorerMetrics>({
     primitiveType: 'timeline-explorer',
     instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
+    skillId, subskillId, objectiveId, exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
+  const openEvent = openIndex !== null ? deck.events[openIndex] : undefined;
   const aiPrimitiveData = useMemo(() => ({
-    title,
-    timeSpan: `${timeSpan?.start || '?'} — ${timeSpan?.end || '?'}`,
-    totalEvents,
-    currentEventIndex: selectedEventIndex !== null ? selectedEventIndex + 1 : 0,
-    currentEventTitle: selectedEvent?.title || '',
-    currentEventDate: selectedEvent?.date || '',
-    eventsExplored,
-    challengesCompleted: challengeAnswers.length,
-    totalChallenges: challenges.length,
-  }), [title, timeSpan, totalEvents, selectedEventIndex, selectedEvent, eventsExplored, challengeAnswers.length, challenges.length]);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'timeline-explorer',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'Elementary',
+    title, timeSpan: span, totalEvents: deck.events.length,
+    currentEventIndex: reading && openIndex !== null ? openIndex + 1 : 0,
+    currentEventTitle: reading ? openEvent?.title ?? '' : '', currentEventDate: reading ? openEvent?.date ?? '' : '',
+    eventsExplored: opened.size, challengesCompleted: results.length, totalChallenges: items.length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [title, span, deck, reading, openIndex, openEvent, opened.size, results.length, items.length]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'timeline-explorer', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: 'Elementary', enabled: !tutorOwned,
   });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
-  // Introduce on connect
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Timeline Explorer: "${title}" — ${subtitle}. `
-      + `Spanning ${timeSpan?.start} to ${timeSpan?.end}. ${totalEvents} events to explore. `
-      + `${challenges.length > 0 ? `${challenges.length} challenges after exploration.` : ''} `
-      + `Overview: ${overview}. Introduce the timeline warmly and encourage exploration.`,
-      { silent: true }
-    );
-  }, [isConnected, title, subtitle, timeSpan, overview, totalEvents, challenges.length, sendText]);
+  const clearItem = (next?: TimelineItem) => {
+    setWork(emptyWork(next ?? item)); setActiveCause(null); setWrongShown(false); setFeedback(null);
+    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+  };
 
-  // -------------------------------------------------------------------------
-  // Event Selection
-  // -------------------------------------------------------------------------
-  const handleEventSelect = useCallback((index: number) => {
+  openItem.current = (index, retry) => {
+    if (retry) { setWork(emptyWork(item)); setActiveCause(null); setWrongShown(false); setFeedback(null); return; }
+    setPractice(null); clearItem(items[index]);
+  };
+
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || (solved.kind !== 'identify' && solved.kind !== 'date') || tappedCorrect.current === solved.id
+      || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setWork(w => ({ ...w, choice: solved.eventId })); setWrongShown(false);
+  };
+  practiceAloud.current = () => {
+    if (!practice) return;
+    setPracticeSolved(true);
+    if (practice.kind === 'identify' || practice.kind === 'date') setWork(w => ({ ...w, choice: practice.eventId }));
+  };
+
+  // ── Reading handlers ──
+  const openAt = (index: number) => {
+    const e = deck.events[index];
+    if (!e) return;
     SoundManager.tap();
-    // Record time on previous event
-    if (selectedEvent) {
-      const elapsed = Date.now() - eventEntryTime;
-      setEventTimes(prev => ({
-        ...prev,
-        [selectedEvent.id]: (prev[selectedEvent.id] || 0) + elapsed,
-      }));
-    }
-    setEventEntryTime(Date.now());
+    setOpenIndex(index);
+    setOpenedOrder(prev => (prev[prev.length - 1] === e.id ? prev : [...prev, e.id]));
+    say(`[EVENT_SELECTED] The learner opened event ${index + 1} of ${deck.events.length}: "${e.title}" (${e.date}). Talk about it in one or two sentences.`);
+  };
+  const begin = () => {
+    if (!allOpened || !items.length) return;
+    readMs.current = Date.now() - readStart.current;
+    setReading(false); clearItem(items[0]);
+    say(`[QUESTIONS_START] The learner read all ${deck.events.length} events and begins ${items.length} questions. The timeline is now hidden.`);
+  };
 
-    const event = sortedEvents[index];
-    setSelectedEventIndex(index);
-
-    setVisitedEvents(prev => {
-      const next = new Set(prev);
-      next.add(event.id);
-      return next;
-    });
-
-    setExplorationOrder(prev => {
-      if (prev[prev.length - 1] === event.id) return prev;
-      return [...prev, event.id];
-    });
-
-    if (isConnected) {
-      const prevEvent = selectedEventIndex !== null ? sortedEvents[selectedEventIndex] : null;
-      sendText(
-        `[EVENT_SELECTED] Student selected event ${index + 1} of ${totalEvents}: `
-        + `"${event.title}" (${event.date}). `
-        + `${prevEvent ? `Previous: "${prevEvent.title}" (${prevEvent.date}). ` : ''}`
-        + `Events explored: ${visitedEvents.has(event.id) ? eventsExplored : eventsExplored + 1}/${totalEvents}. `
-        + `${event.impact ? `Impact: ${event.impact}. ` : ''}`
-        + `Introduce with historical context and connect to the previous event.`,
-        { silent: true }
-      );
-    }
-  }, [sortedEvents, selectedEvent, selectedEventIndex, eventEntryTime, visitedEvents, eventsExplored, totalEvents, isConnected, sendText]);
-
-  // Track all events explored
-  const hasNotifiedAllExploredRef = useRef(false);
-  useEffect(() => {
-    if (allEventsExplored && !hasNotifiedAllExploredRef.current && isConnected) {
-      hasNotifiedAllExploredRef.current = true;
-      sendText(
-        `[ALL_EVENTS_EXPLORED] Student explored all ${totalEvents} events! `
-        + `Key theme: ${summary?.keyTheme || 'progression'}. `
-        + `${challenges.length > 0 ? `${challenges.length} challenges coming up.` : 'Timeline complete!'} `
-        + `Summarize the arc of the timeline and celebrate.`,
-        { silent: true }
-      );
-    }
-  }, [allEventsExplored, totalEvents, summary, challenges.length, isConnected, sendText]);
-
-  // Show summary when all events explored
-  useEffect(() => {
-    if (allEventsExplored && !showSummary) {
-      setShowSummary(true);
-    }
-  }, [allEventsExplored, showSummary]);
-
-  // -------------------------------------------------------------------------
-  // Challenge Handling
-  // -------------------------------------------------------------------------
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
-
-  const handleStartChallenges = useCallback(() => {
-    setShowChallenges(true);
-    setCurrentChallengeIndex(0);
-    setCurrentAttempts(0);
-    if (challenges[0]?.type === 'order' && challenges[0].orderItems) {
-      setOrderSequence(shuffleArray(challenges[0].orderItems.map(i => i.id)));
-    }
-  }, [challenges]);
-
-  // MC answer (identify / date)
-  const handleMCAnswer = useCallback((optionIndex: number) => {
-    if (!currentChallenge || showChallengeFeedback) return;
-    if (currentChallenge.type !== 'identify' && currentChallenge.type !== 'date') return;
-
-    setSelectedOption(optionIndex);
-    setShowChallengeFeedback(true);
-
-    const correct = optionIndex === currentChallenge.correctIndex;
-    const attempts = currentAttempts + 1;
-    setCurrentAttempts(attempts);
-
-    if (correct) SoundManager.playCorrect();
-    else SoundManager.playIncorrect();
-
-    if (correct || attempts >= 2) {
-      setChallengeAnswers(prev => [...prev, { correct, attempts }]);
-    }
-
-    if (isConnected) {
-      const tag = correct ? '[CHALLENGE_CORRECT]' : '[CHALLENGE_INCORRECT]';
-      sendText(
-        `${tag} Challenge ${currentChallengeIndex + 1}/${challenges.length} (${currentChallenge.type}): `
-        + `"${currentChallenge.question}" — Student chose "${currentChallenge.options?.[optionIndex]}". `
-        + `${correct ? 'Correct! Reinforce the chronological connection.' : 'Incorrect. Ask about cause-and-effect to guide thinking.'}`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, currentChallengeIndex, challenges, showChallengeFeedback, currentAttempts, isConnected, sendText]);
-
-  // Order check
-  const handleOrderCheck = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'order') return;
-
-    const correct = JSON.stringify(orderSequence) === JSON.stringify(currentChallenge.correctOrder);
-    const attempts = currentAttempts + 1;
-    setCurrentAttempts(attempts);
-    setOrderChecked(true);
-    setOrderCorrect(correct);
-
-    if (correct) SoundManager.playCorrect();
-    else SoundManager.playIncorrect();
-
-    if (correct || attempts >= 2) {
-      setChallengeAnswers(prev => [...prev, { correct, attempts }]);
-      setShowChallengeFeedback(true);
-    }
-
-    if (isConnected) {
-      const tag = correct ? '[CHALLENGE_CORRECT]' : '[CHALLENGE_INCORRECT]';
-      sendText(
-        `${tag} Order challenge: "${currentChallenge.question}" — `
-        + `${correct ? 'Correct chronological order!' : 'Wrong order. Think about what had to happen first.'}`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, orderSequence, currentAttempts, isConnected, sendText]);
-
-  // Cause-effect matching
-  const handleCauseSelect = useCallback((causeIdx: number) => {
-    if (ceChecked) return;
+  // ── Check handlers ──
+  const closed = reading || revealed || wrongShown || learnerBlocked();
+  const choose = (id: string) => {
+    if (!item || closed) return;
     SoundManager.select();
-    setSelectedCause(causeIdx);
-  }, [ceChecked]);
+    setWork(w => ({ ...w, choice: id })); setFeedback(null);
+  };
+  const move = (from: number, by: number) => {
+    if (!item || item.kind !== 'order' || closed) return;
+    const to = from + by;
+    if (to < 0 || to >= work.order.length) return;
+    SoundManager.tick();
+    setWork(w => { const order = [...w.order]; [order[from], order[to]] = [order[to], order[from]]; return { ...w, order }; });
+    setFeedback(null);
+  };
+  const tapCause = (id: string) => {
+    if (closed) return;
+    SoundManager.select();
+    setActiveCause(c => (c === id ? null : id)); setFeedback(null);
+  };
+  const tapEffect = (id: string) => {
+    if (closed || !activeCause) return;
+    SoundManager.snap();
+    setWork(w => {
+      const pairs = Object.fromEntries(Object.entries(w.pairs).filter(([c, e]) => c !== activeCause && e !== id));
+      return { ...w, pairs: { ...pairs, [activeCause]: id } };
+    });
+    setActiveCause(null);
+  };
 
-  const handleEffectSelect = useCallback((effectIdx: number) => {
-    if (ceChecked || selectedCause === null) return;
-    // Check if this cause is already matched
-    if (matchedPairs.some(([c]) => c === selectedCause)) {
-      setSelectedCause(null);
+  const check = () => {
+    if (!item || closed || !workComplete(item, work)) return;
+    const correct = timelineCorrect(deck, item, work);
+    progress.commitCheck(describeTimelineWork(deck, item, work), correct, correct ? undefined : timelineMiss(deck, item, work));
+    if (correct) {
+      SoundManager.playCorrect();
+      if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
+      say(`[CHALLENGE_CORRECT] ${askOf(deck, item)} The learner got it. ${solvedText(deck, item)} Reinforce the connection in time briefly.`);
       return;
     }
-    SoundManager.snap();
-    setMatchedPairs(prev => [...prev, [selectedCause, effectIdx]]);
-    setSelectedCause(null);
-  }, [ceChecked, selectedCause, matchedPairs]);
-
-  const handleCECheck = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'cause_effect') return;
-    const correctPairs = currentChallenge.correctPairs || [];
-
-    // Check if all pairs match
-    const correct = correctPairs.length === matchedPairs.length &&
-      correctPairs.every(([c, e]) => matchedPairs.some(([mc, me]) => mc === c && me === e));
-
-    const attempts = currentAttempts + 1;
-    setCurrentAttempts(attempts);
-    setCeChecked(true);
-    setCeCorrect(correct);
-
-    if (correct) SoundManager.playCorrect();
-    else SoundManager.playIncorrect();
-
-    if (correct || attempts >= 2) {
-      setChallengeAnswers(prev => [...prev, { correct, attempts }]);
-      setShowChallengeFeedback(true);
+    SoundManager.playIncorrect();
+    if (tutorOwned) { setWrongShown(true); return; }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(deck, item)} The answer is now on screen: ${solvedText(deck, item)}`);
+      return;
     }
+    if (item.kind === 'identify' || item.kind === 'date') setWork(w => ({ ...w, choice: null }));
+    setFeedback(item.kind === 'order' ? 'Not quite. Think about what had to happen first, and try once more.'
+      : item.kind === 'cause_effect' ? 'Not quite. A cause always comes before what it leads to. Try once more.'
+        : 'Not quite. Try once more.');
+    say(`[CHALLENGE_INCORRECT] ${describeTimelineWork(deck, item, work)} for: ${askOf(deck, item)} It is wrong. You are not told the answer: ask what the learner remembers, without naming a choice.`);
+  };
 
-    if (isConnected) {
-      const tag = correct ? '[CHALLENGE_CORRECT]' : '[CHALLENGE_INCORRECT]';
-      sendText(
-        `${tag} Cause-effect challenge: "${currentChallenge.question}" — `
-        + `${correct ? 'All pairs matched correctly!' : 'Some pairs are wrong. Think about which cause leads to which effect.'}`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, matchedPairs, currentAttempts, isConnected, sendText]);
+  const accuracy = (kinds: TimelineKind[]) => {
+    const asked = items.filter(i => kinds.includes(i.kind));
+    return asked.length ? Math.round((asked.filter(i => results.some(r => r.challengeId === i.id && r.correct)).length / asked.length) * 100) : 0;
+  };
+  const metrics = (): TimelineExplorerMetrics => {
+    const idx = openedOrder.map(id => deck.rank.get(id) ?? 0);
+    let fwd = 0, back = 0;
+    for (let i = 1; i < idx.length; i++) { if (idx[i] > idx[i - 1]) fwd++; else if (idx[i] < idx[i - 1]) back++; }
+    return {
+      type: 'timeline-explorer',
+      eventsExplored: opened.size,
+      totalEvents: deck.events.length,
+      orderingAccuracy: accuracy(['order']),
+      identifyAccuracy: accuracy(['identify', 'date']),
+      causeEffectAccuracy: accuracy(['cause_effect']),
+      challengeAttempts: currentAttempts,
+      averageTimePerEvent: deck.events.length ? Math.round(readMs.current / deck.events.length) : 0,
+      explorationPattern: idx.length < 3 || fwd >= (idx.length - 1) * 0.6 ? 'sequential' : back >= (idx.length - 1) * 0.6 ? 'reverse' : 'random',
+    };
+  };
 
-  // Next challenge
-  const handleNextChallenge = useCallback(() => {
-    setSelectedOption(null);
-    setShowChallengeFeedback(false);
-    setOrderChecked(false);
-    setOrderCorrect(false);
-    setMatchedPairs([]);
-    setCeChecked(false);
-    setCeCorrect(false);
-    setSelectedCause(null);
-    setCurrentAttempts(0);
+  /** Scripted path: Next, and on the last item the session report. */
+  const next = () => {
+    if (progress.advance()) { clearItem(items[currentIndex + 1]); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 70, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} questions. Key theme: ${summary?.keyTheme ?? ''}. Celebrate briefly.`);
+  };
 
-    if (currentChallengeIndex + 1 >= challenges.length) {
-      setAllChallengesComplete(true);
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), challengeAttempts: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
-      const correctCount = challengeAnswers.filter(a => a.correct).length;
-      const totalAttempts = challengeAnswers.reduce((sum, a) => sum + a.attempts, 0);
-      const accuracy = challenges.length > 0 ? Math.round((correctCount / challenges.length) * 100) : 0;
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const scene = workspaceScene(deck, item, { reading, opened: opened.size, openEvent: openEvent?.id ?? null, work, solved: revealed },
+      { title, span });
+    if (reading) { workspace.current = { ...scene, readyForResponse: false, levers: [] }; return; }
+    const levers = practice ? [] : timelineLevers(deck, sessionItem, pulled, items);
+    const onScreen = practice ? '' : leverFact(deck, sessionItem, pulled);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
+        ...(onScreen ? { onScreen } : {}) },
+      levers,
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (l.kind === 'simplify') {
+          const simpler = simplerItem(deck, sessionItem, items);
+          if (!simpler) return 'There is no simpler item here; try a help lever.';
+          setLeverState(nextState); clearItem(simpler); setPractice(simpler);
+          return { practice: workspaceAssignment(deck, simpler) };
+        }
+        setLeverState(nextState);
+        return true;
+      },
+      endPractice: () => { clearItem(sessionItem); setPractice(null); },
+    };
+  });
 
-      if (isConnected) {
-        sendText(
-          `[ALL_COMPLETE] Student finished all ${challenges.length} challenges. `
-          + `Accuracy: ${accuracy}%. Events explored: ${eventsExplored}/${totalEvents}. `
-          + `Key theme: ${summary?.keyTheme || 'progression'}. `
-          + `Summarize the timeline arc and highlight the key theme.`,
-          { silent: true }
-        );
-      }
-
-      if (!hasSubmittedEvaluation) {
-        const avgTimePerEvent = totalEvents > 0
-          ? Math.round(Object.values(eventTimes).reduce((a, b) => a + b, 0) / totalEvents)
-          : 0;
-
-        const byType = (type: string) => {
-          const relevant = challenges
-            .map((c, i) => ({ ...c, answer: challengeAnswers[i] }))
-            .filter(c => c.type === type && c.answer);
-          if (relevant.length === 0) return 0;
-          return Math.round((relevant.filter(c => c.answer?.correct).length / relevant.length) * 100);
-        };
-
-        const metrics: TimelineExplorerMetrics = {
-          type: 'timeline-explorer',
-          eventsExplored,
-          totalEvents,
-          orderingAccuracy: byType('order'),
-          identifyAccuracy: byType('identify'),
-          causeEffectAccuracy: byType('cause_effect'),
-          challengeAttempts: totalAttempts,
-          averageTimePerEvent: avgTimePerEvent,
-          explorationPattern,
-        };
-
-        const overallScore = Math.round(
-          (eventsExplored / Math.max(totalEvents, 1)) * 30 + accuracy * 0.7
-        );
-
-        submitEvaluation(
-          accuracy >= 70 && eventsExplored >= totalEvents,
-          overallScore,
-          metrics,
-          { challengeAnswers: [...challengeAnswers] }
-        );
-      }
-    } else {
-      const nextIdx = currentChallengeIndex + 1;
-      setCurrentChallengeIndex(nextIdx);
-      if (challenges[nextIdx]?.type === 'order' && challenges[nextIdx].orderItems) {
-        setOrderSequence(shuffleArray(challenges[nextIdx].orderItems!.map(i => i.id)));
-      }
-    }
-  }, [
-    currentChallengeIndex, challenges, challengeAnswers, eventsExplored, totalEvents,
-    eventTimes, explorationPattern, summary, isConnected, sendText,
-    hasSubmittedEvaluation, submitEvaluation,
-  ]);
-
-  // Auto-submit for display-only (no challenges)
-  const hasAutoSubmittedRef = useRef(false);
+  // A timeline with no check item (too few events) stays a display: reading it all is its whole task, as before.
   useEffect(() => {
-    if (challenges.length === 0 && allEventsExplored && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current) {
-      hasAutoSubmittedRef.current = true;
-      const avgTimePerEvent = totalEvents > 0
-        ? Math.round(Object.values(eventTimes).reduce((a, b) => a + b, 0) / totalEvents)
-        : 0;
+    if (tutorOwned || items.length || !allOpened || hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    setSubmitted(true);
+    submitResult(true, 100, metrics(), {});
+  });
 
-      const metrics: TimelineExplorerMetrics = {
-        type: 'timeline-explorer',
-        eventsExplored,
-        totalEvents,
-        orderingAccuracy: 0,
-        identifyAccuracy: 0,
-        causeEffectAccuracy: 0,
-        challengeAttempts: 0,
-        averageTimePerEvent: avgTimePerEvent,
-        explorationPattern,
-      };
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: done || reading || !item ? null : item.id,
+    label: 'The question and your answer',
+    solved: revealed,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
 
-      submitEvaluation(true, 100, metrics, {});
-    }
-  }, [challenges.length, allEventsExplored, hasSubmittedEvaluation, eventsExplored, totalEvents, eventTimes, explorationPattern, submitEvaluation]);
-
-  // -------------------------------------------------------------------------
-  // Sequence reorder helper
-  // -------------------------------------------------------------------------
-  const moveOrderItem = useCallback((fromIndex: number, direction: number) => {
-    const toIndex = fromIndex + direction;
-    if (toIndex < 0 || toIndex >= orderSequence.length) return;
-    SoundManager.tick();
-    setOrderSequence(prev => {
-      const next = [...prev];
-      [next[fromIndex], next[toIndex]] = [next[toIndex], next[fromIndex]];
-      return next;
-    });
-    setOrderChecked(false);
-  }, [orderSequence.length]);
-
-  // -------------------------------------------------------------------------
-  // Render: Timeline
-  // -------------------------------------------------------------------------
-  const renderTimeline = () => (
+  // ── Render: the timeline (reading) ──
+  const renderReading = () => (
     <div className="space-y-4">
-      {/* Timeline track */}
       <div className="relative">
-        {/* Horizontal line */}
-        <div className="absolute top-4 left-0 right-0 h-0.5 bg-white/10" />
-
-        {/* Event nodes */}
-        <div className="flex justify-between relative">
-          {sortedEvents.map((event, i) => {
-            const isSelected = selectedEventIndex === i;
-            const isVisited = visitedEvents.has(event.id);
-
+        <div className="absolute left-0 right-0 top-4 h-0.5 bg-white/10" />
+        <div className="relative flex justify-between">
+          {deck.events.map((e, i) => {
+            const isOpen = openIndex === i, seen = opened.has(e.id);
             return (
-              <button
-                key={event.id}
-                onClick={() => handleEventSelect(i)}
-                className="flex flex-col items-center group relative z-10"
-                title={`${event.date}: ${event.title}`}
-              >
-                {/* Node */}
-                <div
-                  className={`w-8 h-8 rounded-full border-2 transition-all duration-200 flex items-center justify-center text-xs font-bold ${
-                    isSelected
-                      ? 'bg-blue-500/30 border-blue-400 text-blue-300 scale-125 ring-2 ring-blue-400/30'
-                      : isVisited
-                        ? 'bg-emerald-500/20 border-emerald-400/60 text-emerald-300'
-                        : 'bg-white/5 border-white/20 text-slate-500 hover:bg-white/10 hover:border-white/40'
-                  }`}
-                >
-                  {i + 1}
-                </div>
-
-                {/* Date label */}
-                <span className={`text-[10px] mt-1.5 max-w-[60px] text-center leading-tight ${
-                  isSelected ? 'text-blue-300' : isVisited ? 'text-slate-400' : 'text-slate-600'
-                }`}>
-                  {event.date}
+              <button key={e.id} type="button" aria-label={`Event ${i + 1}`} onClick={() => openAt(i)}
+                className="group relative z-10 flex flex-col items-center">
+                <span className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-200 ${
+                  isOpen ? 'scale-125 border-blue-400 bg-blue-500/30 text-blue-300 ring-2 ring-blue-400/30'
+                    : seen ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-300'
+                      : 'border-white/20 bg-white/5 text-slate-500 hover:border-white/40 hover:bg-white/10'}`}>{i + 1}</span>
+                <span className={`mt-1.5 max-w-[60px] text-center text-[10px] leading-tight ${isOpen ? 'text-blue-300' : seen ? 'text-slate-400' : 'text-slate-600'}`}>
+                  {e.date}
                 </span>
               </button>
             );
@@ -580,431 +384,247 @@ const TimelineExplorer: React.FC<TimelineExplorerProps> = ({ data, className }) 
         </div>
       </div>
 
-      {/* Time span labels */}
-      {timeSpan && (
-        <div className="flex justify-between text-[10px] text-slate-600 px-1">
-          <span>{timeSpan.start}</span>
-          <span>{timeSpan.end}</span>
-        </div>
-      )}
-
-      {/* Selected event detail card */}
-      {selectedEvent ? (
-        <LuminaPanel className="space-y-3 transition-all duration-200">
+      {openEvent ? (
+        <LuminaPanel className="space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="text-slate-100 text-sm font-semibold">{selectedEvent.title}</h3>
-              <LuminaBadge accent="blue" className="text-[10px] mt-1">
-                {selectedEvent.date}
-              </LuminaBadge>
+              <h3 className="text-sm font-semibold text-slate-100">{openEvent.title}</h3>
+              <LuminaBadge accent="blue" className="mt-1 text-[10px]">{openEvent.date}</LuminaBadge>
             </div>
-            <span className="text-slate-600 text-xs shrink-0">
-              {(selectedEventIndex ?? 0) + 1} of {totalEvents}
-            </span>
+            <span className="shrink-0 text-xs text-slate-500">{(openIndex ?? 0) + 1} of {deck.events.length}</span>
           </div>
-
-          <p className="text-slate-300 text-sm leading-relaxed">{selectedEvent.description}</p>
-
-          {selectedEvent.impact && (
+          <p className="text-sm leading-relaxed text-slate-300">{openEvent.description}</p>
+          {openEvent.impact && (
             <LuminaPanel accent="amber" className="p-2.5">
               <div className="flex items-start gap-2">
-                <LuminaBadge accent="amber" className="text-[10px] shrink-0">
-                  Impact
-                </LuminaBadge>
-                <p className="text-slate-300 text-xs leading-relaxed">{selectedEvent.impact}</p>
+                <LuminaBadge accent="amber" className="shrink-0 text-[10px]">Impact</LuminaBadge>
+                <p className="text-xs leading-relaxed text-slate-300">{openEvent.impact}</p>
               </div>
             </LuminaPanel>
           )}
-
-          {selectedEvent.connection && (
-            <p className="text-slate-500 text-xs italic border-l-2 border-white/10 pl-3">
-              {selectedEvent.connection}
-            </p>
-          )}
-
-          {/* Prev/Next navigation */}
+          {openEvent.connection && <p className="border-l-2 border-white/10 pl-3 text-xs italic text-slate-500">{openEvent.connection}</p>}
           <div className="flex justify-between pt-1">
-            <LuminaButton
-              className="text-slate-400 text-xs h-7 px-3"
-              onClick={() => handleEventSelect((selectedEventIndex ?? 0) - 1)}
-              disabled={selectedEventIndex === 0}
-            >
-              Previous
-            </LuminaButton>
-            <LuminaButton
-              className="text-slate-400 text-xs h-7 px-3"
-              onClick={() => handleEventSelect((selectedEventIndex ?? 0) + 1)}
-              disabled={selectedEventIndex === totalEvents - 1}
-            >
-              Next
-            </LuminaButton>
+            <LuminaButton className="h-7 px-3 text-xs text-slate-400" disabled={openIndex === 0} onClick={() => openAt((openIndex ?? 0) - 1)}>Previous</LuminaButton>
+            <LuminaButton className="h-7 px-3 text-xs text-slate-400" disabled={openIndex === deck.events.length - 1} onClick={() => openAt((openIndex ?? 0) + 1)}>Next</LuminaButton>
           </div>
         </LuminaPanel>
       ) : (
-        <LuminaPanel className="p-6 text-center">
-          <p className="text-slate-500 text-sm">Click an event on the timeline to explore it</p>
+        <LuminaPanel className="p-6 text-center"><p className="text-sm text-slate-500">Tap an event on the timeline to read about it</p></LuminaPanel>
+      )}
+
+      {allOpened && summary && (
+        <div className="space-y-2 border-t border-white/10 pt-4">
+          <LuminaSectionLabel accent="cyan" size="sm">Timeline Summary</LuminaSectionLabel>
+          <p className="text-sm leading-relaxed text-slate-200">{summary.text}</p>
+          <div className="flex items-center gap-2">
+            <LuminaBadge accent="cyan" className="text-xs">Theme</LuminaBadge>
+            <span className="text-xs text-slate-300">{summary.keyTheme}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between border-t border-white/5 pt-2 text-xs text-slate-500">
+        <span>{opened.size} of {deck.events.length} events read</span>
+        {items.length > 0 && (allOpened
+          ? <LuminaButton className="h-8 text-xs" onClick={begin}>Begin the questions</LuminaButton>
+          : <span className="text-slate-600">Read every event to begin the questions</span>)}
+      </div>
+    </div>
+  );
+
+  // ── Render: one check item ──
+  const choiceState = (id: string): AnswerChoiceState => {
+    if (!item || (item.kind !== 'identify' && item.kind !== 'date')) return 'idle';
+    if (revealed) return id === item.eventId ? 'correct' : id === work.choice ? 'incorrect' : 'dimmed';
+    if (wrongShown && work.choice === id) return 'incorrect';
+    return work.choice === id ? 'selected' : 'idle';
+  };
+
+  const lines = item && (item.kind === 'order' || item.kind === 'cause_effect') && leverOn(READ_CARDS_LEVER) ? cardLines(deck, item) : {};
+  const datesOn = item?.kind === 'cause_effect' && leverOn(SHOW_DATES_LEVER);
+  const pairIndex = (c: string) => (item?.kind === 'cause_effect' ? item.causes.filter(x => work.pairs[x]).indexOf(c) : -1);
+
+  const renderItem = (it: TimelineItem) => (
+    <div className="space-y-3">
+      {it.kind === 'identify' && leverOn(SHOW_TIMELINE_LEVER) && (
+        <LuminaPanel accent="cyan" data-lever="show-timeline" className="space-y-1 text-xs text-slate-300">
+          {deck.events.map(e => <p key={e.id}><span className="font-mono text-slate-400">{e.date}</span> · {e.title}</p>)}
         </LuminaPanel>
+      )}
+      {it.kind === 'date' && leverOn(BEFORE_AFTER_LEVER) && (
+        <LuminaPanel accent="cyan" data-lever="before-after" className="space-y-1 text-sm text-slate-300">
+          {beforeAfterLines(deck, it).map(l => <p key={l}>{l}</p>)}
+        </LuminaPanel>
+      )}
+      {it.kind === 'date' && leverOn(DATE_LINE_LEVER) && (
+        <LuminaPanel accent="cyan" data-lever="date-line" className="text-xs text-slate-300">
+          <div className="flex items-center justify-between gap-2">
+            {dateLine(deck, it).map((d, i, all) => (
+              <React.Fragment key={d}>
+                <span className="rounded border border-white/10 px-2 py-1 font-mono">{d}</span>
+                {i < all.length - 1 && <span className="h-px flex-1 bg-white/20" aria-hidden="true" />}
+              </React.Fragment>
+            ))}
+          </div>
+          <p className="mt-1 text-[10px] text-slate-500">earlier → later</p>
+        </LuminaPanel>
+      )}
+
+      {(it.kind === 'identify' || it.kind === 'date') && (
+        <div className="space-y-2">
+          {it.options.map(id => {
+            const label = optionLabel(deck, it, id);
+            return (
+              <LuminaAnswerChoice key={id} aria-label={label} state={choiceState(id)} disabled={closed}
+                className="p-3 text-sm" onClick={() => choose(id)}>
+                {label}
+              </LuminaAnswerChoice>
+            );
+          })}
+        </div>
+      )}
+
+      {it.kind === 'order' && (
+        <div className="space-y-2">
+          <p className="text-[10px] uppercase tracking-wider text-slate-500">Earliest</p>
+          {work.order.map((id, position) => (
+            <div key={id} data-card={id} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
+              <span className="w-4 font-mono text-xs text-slate-500">{position + 1}.</span>
+              <div className="flex-1">
+                <p className="text-sm text-slate-200">{titleOf(deck, id)}</p>
+                {lines[id] && <p data-lever="read-cards" className="mt-1 text-xs text-slate-400">{lines[id]}</p>}
+              </div>
+              <div className="flex gap-1">
+                <button type="button" aria-label={`Move ${titleOf(deck, id)} up`} disabled={closed || position === 0}
+                  onClick={() => move(position, -1)} className="p-1 text-slate-500 hover:text-slate-300 disabled:opacity-30">▲</button>
+                <button type="button" aria-label={`Move ${titleOf(deck, id)} down`} disabled={closed || position === work.order.length - 1}
+                  onClick={() => move(position, 1)} className="p-1 text-slate-500 hover:text-slate-300 disabled:opacity-30">▼</button>
+              </div>
+            </div>
+          ))}
+          <p className="text-[10px] uppercase tracking-wider text-slate-500">Latest</p>
+          {leverOn(LED_TO_LEVER) && (
+            <LuminaPanel accent="cyan" data-lever="led-to" className="space-y-1 text-sm text-slate-300">
+              {ledToArrows(deck, it).map(([a, b]) => <p key={a}>{titleOf(deck, a)} → led to → {titleOf(deck, b)}</p>)}
+            </LuminaPanel>
+          )}
+        </div>
+      )}
+
+      {it.kind === 'cause_effect' && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Causes</p>
+            {it.causes.map(c => {
+              const n = pairIndex(c);
+              return (
+                <button key={c} type="button" aria-label={`Cause: ${titleOf(deck, c)}`} disabled={closed} onClick={() => tapCause(c)}
+                  className={`w-full rounded-lg p-2.5 text-left text-xs transition-all duration-200 ${activeCause === c
+                    ? 'border border-blue-400/50 bg-blue-500/20 text-blue-300'
+                    : n >= 0 ? 'border border-purple-400/30 bg-purple-500/10 text-purple-200' : 'border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10'}`}>
+                  {n >= 0 && <span className="mr-1 text-purple-400" aria-hidden="true">{n + 1}.</span>}
+                  {titleOf(deck, c)}
+                  {datesOn && <span data-lever="show-dates" className="block font-mono text-[10px] text-slate-400">{dateOf(deck, c)}</span>}
+                  {lines[c] && <span data-lever="read-cards" className="mt-1 block text-[11px] text-slate-400">{lines[c]}</span>}
+                </button>
+              );
+            })}
+          </div>
+          <div className="space-y-2">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Effects</p>
+            {it.effects.map(e => {
+              const cause = Object.keys(work.pairs).find(c => work.pairs[c] === e);
+              const n = cause ? pairIndex(cause) : -1;
+              return (
+                <button key={e} type="button" aria-label={`Effect: ${titleOf(deck, e)}`} disabled={closed || !activeCause} onClick={() => tapEffect(e)}
+                  className={`w-full rounded-lg p-2.5 text-left text-xs transition-all duration-200 ${n >= 0
+                    ? 'border border-purple-400/30 bg-purple-500/10 text-purple-200'
+                    : activeCause ? 'border border-white/10 bg-white/5 text-slate-200 ring-1 ring-blue-400/20 hover:bg-white/10' : 'border border-white/10 bg-white/5 text-slate-400'}`}>
+                  {n >= 0 && <span className="mr-1 text-purple-400" aria-hidden="true">{n + 1}.</span>}
+                  {titleOf(deck, e)}
+                  {datesOn && <span data-lever="show-dates" className="block font-mono text-[10px] text-slate-400">{dateOf(deck, e)}</span>}
+                  {lines[e] && <span data-lever="read-cards" className="mt-1 block text-[11px] text-slate-400">{lines[e]}</span>}
+                </button>
+              );
+            })}
+          </div>
+          {activeCause && !closed && <p className="col-span-2 text-center text-xs text-blue-400">Now tap the event it led to</p>}
+        </div>
       )}
     </div>
   );
 
-  // -------------------------------------------------------------------------
-  // Render: Challenge
-  // -------------------------------------------------------------------------
-  const renderChallenge = () => {
-    if (!currentChallenge) return null;
-
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-slate-400 text-xs">
-            Challenge {currentChallengeIndex + 1} of {challenges.length}
-          </p>
-          <LuminaBadge className="text-xs">
-            {currentChallenge.type.replace('_', ' ')}
-          </LuminaBadge>
-        </div>
-
-        <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
-
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace}>
-        {/* Multiple choice (identify / date) */}
-        {(currentChallenge.type === 'identify' || currentChallenge.type === 'date') && currentChallenge.options && (
-          <div className="space-y-2">
-            {currentChallenge.options.map((opt, i) => {
-              const isSelected = selectedOption === i;
-              const isCorrectOption = i === currentChallenge.correctIndex;
-              let state: AnswerChoiceState = 'idle';
-              if (showChallengeFeedback) {
-                if (isCorrectOption) state = 'correct';
-                else if (isSelected) state = 'incorrect';
-                else state = 'dimmed';
-              } else if (isSelected) {
-                state = 'selected';
-              }
-
-              return (
-                <LuminaAnswerChoice
-                  key={i}
-                  state={state}
-                  className="p-3 text-sm"
-                  onClick={() => handleMCAnswer(i)}
-                  disabled={showChallengeFeedback}
-                >
-                  {opt}
-                </LuminaAnswerChoice>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Order challenge — graded sort surface (bespoke reorder mechanics) */}
-        {currentChallenge.type === 'order' && currentChallenge.orderItems && (
-          <div className="space-y-2">
-            {orderSequence.map((id, position) => {
-              const item = currentChallenge.orderItems!.find(oi => oi.id === id);
-              if (!item) return null;
-
-              const isCorrectPos = orderChecked && currentChallenge.correctOrder?.[position] === id;
-              const isWrongPos = orderChecked && !orderCorrect && currentChallenge.correctOrder?.[position] !== id;
-              const gradedState: AnswerChoiceState | null = isCorrectPos
-                ? 'correct'
-                : isWrongPos
-                  ? 'incorrect'
-                  : null;
-
-              return (
-                <div
-                  key={id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
-                    gradedState ? answerStateClass(gradedState) : 'bg-white/5 border-white/10'
-                  }`}
-                >
-                  <span className="text-slate-500 text-xs font-mono w-4">{position + 1}.</span>
-                  <span className="text-slate-200 text-sm flex-1">{item.text}</span>
-                  {!orderChecked && (
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => moveOrderItem(position, -1)}
-                        disabled={position === 0}
-                        className="p-1 text-slate-500 hover:text-slate-300 disabled:opacity-30"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        onClick={() => moveOrderItem(position, 1)}
-                        disabled={position === orderSequence.length - 1}
-                        className="p-1 text-slate-500 hover:text-slate-300 disabled:opacity-30"
-                      >
-                        ▼
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {!showChallengeFeedback && (
-              <div className="flex justify-center pt-2">
-                <LuminaActionButton action="check" onClick={handleOrderCheck}>
-                  Check Order
-                </LuminaActionButton>
-              </div>
-            )}
-            {orderChecked && !orderCorrect && !showChallengeFeedback && (
-              <p className="text-amber-400 text-xs text-center">Not quite — think about what had to happen first!</p>
-            )}
-          </div>
-        )}
-
-        {/* Cause-effect challenge — graded match surface (bespoke pairing mechanics) */}
-        {currentChallenge.type === 'cause_effect' && currentChallenge.causes && currentChallenge.effects && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              {/* Causes column */}
-              <div className="space-y-2">
-                <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium">Causes</p>
-                {currentChallenge.causes.map((cause, i) => {
-                  const isMatched = matchedPairs.some(([c]) => c === i);
-                  const isActive = selectedCause === i;
-                  const pairIdx = matchedPairs.findIndex(([c]) => c === i);
-                  const isCorrectPair = ceChecked && currentChallenge.correctPairs?.some(([c, e]) =>
-                    c === i && matchedPairs.some(([mc, me]) => mc === c && me === e)
-                  );
-                  const isWrongPair = ceChecked && !ceCorrect && isMatched && !isCorrectPair;
-
-                  // Graded states use the system color language; transient
-                  // selection/matched pairing colors stay bespoke.
-                  const gradedClass = isCorrectPair
-                    ? answerStateClass('correct')
-                    : isWrongPair
-                      ? answerStateClass('incorrect')
-                      : isActive
-                        ? 'bg-blue-500/20 border border-blue-400/50 text-blue-300'
-                        : isMatched
-                          ? 'bg-purple-500/10 border border-purple-400/30 text-purple-300'
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200';
-
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => handleCauseSelect(i)}
-                      disabled={ceChecked || isMatched}
-                      className={`w-full text-left p-2.5 rounded-lg text-xs transition-all duration-200 ${gradedClass}`}
-                    >
-                      {isMatched && <span className="text-purple-400 mr-1">{pairIdx + 1}.</span>}
-                      {cause}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Effects column */}
-              <div className="space-y-2">
-                <p className="text-slate-500 text-[10px] uppercase tracking-wider font-medium">Effects</p>
-                {currentChallenge.effects.map((effect, i) => {
-                  const isMatched = matchedPairs.some(([, e]) => e === i);
-                  const pairIdx = matchedPairs.findIndex(([, e]) => e === i);
-                  const isCorrectPair = ceChecked && currentChallenge.correctPairs?.some(([c, e]) =>
-                    e === i && matchedPairs.some(([mc, me]) => mc === c && me === e)
-                  );
-                  const isWrongPair = ceChecked && !ceCorrect && isMatched && !isCorrectPair;
-
-                  const gradedClass = isCorrectPair
-                    ? answerStateClass('correct')
-                    : isWrongPair
-                      ? answerStateClass('incorrect')
-                      : isMatched
-                        ? 'bg-purple-500/10 border border-purple-400/30 text-purple-300'
-                        : selectedCause !== null
-                          ? 'bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 ring-1 ring-blue-400/20'
-                          : 'bg-white/5 border border-white/10 text-slate-400';
-
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => handleEffectSelect(i)}
-                      disabled={ceChecked || isMatched || selectedCause === null}
-                      className={`w-full text-left p-2.5 rounded-lg text-xs transition-all duration-200 ${gradedClass}`}
-                    >
-                      {isMatched && <span className="text-purple-400 mr-1">{pairIdx + 1}.</span>}
-                      {effect}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {selectedCause !== null && !ceChecked && (
-              <p className="text-blue-400 text-xs text-center">Now select the matching effect</p>
-            )}
-
-            {!showChallengeFeedback && matchedPairs.length > 0 && matchedPairs.length >= (currentChallenge.correctPairs?.length || 0) && (
-              <div className="flex justify-center pt-2">
-                <LuminaActionButton action="check" onClick={handleCECheck}>
-                  Check Matches
-                </LuminaActionButton>
-              </div>
-            )}
-            {ceChecked && !ceCorrect && !showChallengeFeedback && (
-              <p className="text-amber-400 text-xs text-center">Some pairs are wrong — think about which cause leads to which effect!</p>
-            )}
-          </div>
-        )}
-
-        </div>
-
-        {/* Feedback */}
-        {showChallengeFeedback && (
-          <div className="space-y-3">
-            <LuminaFeedbackCard
-              status={challengeAnswers[challengeAnswers.length - 1]?.correct ? 'correct' : 'insight'}
-              label={challengeAnswers[challengeAnswers.length - 1]?.correct ? 'Correct!' : 'Not quite, but let\'s keep going.'}
-            >
-              {currentChallenge.explanation}
-            </LuminaFeedbackCard>
-            <div className="flex justify-center">
-              <LuminaActionButton action="next" onClick={handleNextChallenge}>
-                {currentChallengeIndex + 1 >= challenges.length ? 'See Results' : 'Next Challenge'}
-              </LuminaActionButton>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // -------------------------------------------------------------------------
-  // Render: Results
-  // -------------------------------------------------------------------------
-  const renderResults = () => {
-    const correctCount = challengeAnswers.filter(a => a.correct).length;
-    const accuracy = challenges.length > 0 ? Math.round((correctCount / challenges.length) * 100) : 0;
-    const score = submittedResult?.score ?? accuracy;
-
-    return (
-      <div className="text-center space-y-4 py-4">
-        <div className="text-3xl font-bold text-emerald-400">{score}%</div>
-        <p className="text-slate-200 text-sm font-medium">Timeline Mastered!</p>
-        <div className="flex justify-center gap-4 text-xs text-slate-400">
-          <span>{eventsExplored}/{totalEvents} events explored</span>
-          <span>{correctCount}/{challenges.length} challenges correct</span>
-          {elapsedMs > 0 && <span>{Math.round(elapsedMs / 1000)}s total</span>}
-        </div>
-        {summary && (
-          <LuminaPanel accent="emerald" className="mt-4 text-left space-y-2">
-            <p className="text-slate-200 text-sm">{summary.text}</p>
-            <LuminaBadge accent="emerald" className="text-xs">
-              Theme: {summary.keyTheme}
-            </LuminaBadge>
-            {summary.lookingForward && (
-              <p className="text-slate-400 text-xs italic">{summary.lookingForward}</p>
-            )}
-          </LuminaPanel>
-        )}
-      </div>
-    );
-  };
-
-  // -------------------------------------------------------------------------
-  // Main Render
-  // -------------------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation || !showChallenges || !currentChallenge ? null : `challenge-${currentChallengeIndex}`,
-    label: 'The challenge answers',
-    solved: currentChallenge?.type === 'order' ? orderChecked && orderCorrect : currentChallenge?.type === 'cause_effect' ? ceChecked && ceCorrect : showChallengeFeedback && selectedOption === currentChallenge?.correctIndex,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const CHECK_LABEL: Record<TimelineKind, string> = { identify: 'Check Answer', date: 'Check Answer', order: 'Check Order', cause_effect: 'Check Matches' };
+  const correctCount = results.filter(r => r.correct).length;
 
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
       <LuminaCardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg">&#128336;</span>
+            <span className="text-lg" aria-hidden="true">&#128336;</span>
             <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
           </div>
-          {timeSpan && (
-            <LuminaBadge accent="cyan" className="text-xs">
-              {timeSpan.start} — {timeSpan.end}
-            </LuminaBadge>
-          )}
+          {timeSpan && reading && <LuminaBadge accent="cyan" className="text-xs">{timeSpan.start} — {timeSpan.end}</LuminaBadge>}
         </div>
-        {subtitle && <p className="text-slate-400 text-sm mt-1">{subtitle}</p>}
-        <p className="text-slate-500 text-xs mt-1">{overview}</p>
+        {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
+        {reading && <p className="mt-1 text-xs text-slate-500">{overview}</p>}
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-5">
-        {allChallengesComplete ? (
-          renderResults()
-        ) : showChallenges ? (
-          <div className="border-t border-white/10 pt-4 space-y-3">
-            <LuminaSectionLabel accent="cyan" size="sm">Chronology Check</LuminaSectionLabel>
-            {renderChallenge()}
+        {done ? (
+          <div className="space-y-4 py-2 text-center">
+            {!tutorOwned && <div className="text-3xl font-bold text-emerald-400">{submittedResult?.score ?? Math.round((correctCount / Math.max(items.length, 1)) * 100)}%</div>}
+            <LuminaFeedbackCard status="insight" label="Timeline check complete">
+              {`${correctCount} of ${items.length} questions answered.`}
+            </LuminaFeedbackCard>
+            {summary && (
+              <LuminaPanel accent="emerald" className="space-y-2 text-left">
+                <p className="text-sm text-slate-200">{summary.text}</p>
+                <LuminaBadge accent="emerald" className="text-xs">Theme: {summary.keyTheme}</LuminaBadge>
+                {summary.lookingForward && <p className="text-xs italic text-slate-400">{summary.lookingForward}</p>}
+              </LuminaPanel>
+            )}
           </div>
-        ) : (
-          <>
-            {/* Timeline */}
-            {renderTimeline()}
+        ) : reading || !item ? renderReading() : (
+          <div className="space-y-3 border-t border-white/10 pt-4">
+            <LuminaSectionLabel accent="cyan" size="sm">
+              {practice ? 'A simpler question first' : `${KIND_LABEL[item.kind]} · question ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+            </LuminaSectionLabel>
+            <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(deck, item)}</LuminaPrompt>
 
-            {/* Summary (shown after all events explored) */}
-            {showSummary && summary && (
-              <div className="border-t border-white/10 pt-4 space-y-3">
-                <LuminaSectionLabel accent="cyan" size="sm">Timeline Summary</LuminaSectionLabel>
-                <p className="text-slate-200 text-sm leading-relaxed">{summary.text}</p>
-                <div className="flex items-center gap-2">
-                  <LuminaBadge accent="cyan" className="text-xs">
-                    Theme
-                  </LuminaBadge>
-                  <span className="text-slate-300 text-xs">{summary.keyTheme}</span>
-                </div>
-                {summary.lookingForward && (
-                  <p className="text-slate-500 text-xs italic border-l-2 border-white/10 pl-3">
-                    {summary.lookingForward}
-                  </p>
-                )}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace}>{renderItem(item)}</div>
+
+            {!revealed && (
+              <div className="flex justify-center pt-1">
+                <LuminaActionButton action="check" disabled={closed || !workComplete(item, work)} onClick={check}>
+                  {CHECK_LABEL[item.kind]}
+                </LuminaActionButton>
               </div>
             )}
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? 'Correct!' : 'The answer'}>
+                {solvedText(deck, item)}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
 
-            {/* Exploration Progress */}
-            <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-white/5">
-              <span>{eventsExplored} of {totalEvents} events explored</span>
-              {allEventsExplored && challenges.length > 0 && !showChallenges && (
-                <LuminaButton
-                  className="text-xs h-8"
-                  onClick={handleStartChallenges}
-                >
-                  Start Challenges ({challenges.length})
-                </LuminaButton>
-              )}
-              {!allEventsExplored && (
-                <span className="text-slate-600">Explore all events to unlock challenges</span>
-              )}
-            </div>
-          </>
+            {!tutorOwned && revealed && !practice && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next Question' : 'See Results'}</LuminaActionButton>
+              </div>
+            )}
+          </div>
         )}
       </LuminaCardContent>
     </LuminaCard>
   );
 };
 
-// ============================================================================
-// Utility
-// ============================================================================
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const shuffled = [...arr];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const TimelineExplorer = withWorkspaceController<TimelineExplorerProps, ProgressOptions<TimelineItem>, Progress>(
+  'timeline-explorer', TimelineExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('timeline-explorer'));
 
 export default TimelineExplorer;

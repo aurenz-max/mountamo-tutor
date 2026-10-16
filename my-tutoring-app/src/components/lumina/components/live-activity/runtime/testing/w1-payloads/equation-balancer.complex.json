@@ -1,0 +1,30 @@
+{
+ "source": "qa/tutor-reports/equation-balancer-runtime-complex-payload-2026-10-15.json",
+ "primitiveId": "equation-balancer",
+ "evalMode": "complex",
+ "data": {
+  "title": "Kitchen and Backyard Chemistry",
+  "description": "Explore amazing chemical reactions that happen around your home and in your everyday life.",
+  "equations": [
+   {
+    "id": "methane",
+    "for": "complex",
+    "realWorld": "Natural gas burns on a kitchen stove to cook dinner."
+   },
+   {
+    "id": "propane",
+    "for": "complex",
+    "realWorld": "Propane burns inside a backyard gas grill while cooking hamburgers."
+   },
+   {
+    "id": "respiration",
+    "for": "complex",
+    "realWorld": "Living cells use this reaction to release energy from sugar inside your body."
+   }
+  ],
+  "challengeTypes": [
+   "complex"
+  ],
+  "gradeBand": "6-7"
+ }
+}

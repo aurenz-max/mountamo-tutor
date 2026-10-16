@@ -1,0 +1,274 @@
+{
+ "source": "qa/tutor-reports/constellation-builder-runtime-free_connect-payload-2026-10-15.json",
+ "primitiveId": "constellation-builder",
+ "evalMode": "free_connect",
+ "data": {
+  "title": "Stargazer's Secret Sky",
+  "description": "Explore the night sky by finding and connecting the brightest stars to form famous ancient constellations!",
+  "gradeLevel": "2",
+  "stars": [
+   {
+    "id": "s1",
+    "x": 10,
+    "y": 20,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s2",
+    "x": 25,
+    "y": 25,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s3",
+    "x": 40,
+    "y": 30,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s4",
+    "x": 50,
+    "y": 45,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s5",
+    "x": 45,
+    "y": 60,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s6",
+    "x": 30,
+    "y": 65,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s7",
+    "x": 15,
+    "y": 60,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s8",
+    "x": 70,
+    "y": 20,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s9",
+    "x": 80,
+    "y": 25,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s10",
+    "x": 90,
+    "y": 30,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s11",
+    "x": 75,
+    "y": 40,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s12",
+    "x": 85,
+    "y": 55,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s13",
+    "x": 65,
+    "y": 60,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s14",
+    "x": 20,
+    "y": 85,
+    "magnitude": 5,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s15",
+    "x": 55,
+    "y": 15,
+    "magnitude": 6,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s16",
+    "x": 35,
+    "y": 80,
+    "magnitude": 5,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s17",
+    "x": 60,
+    "y": 85,
+    "magnitude": 6,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s18",
+    "x": 5,
+    "y": 45,
+    "magnitude": 5,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s19",
+    "x": 95,
+    "y": 80,
+    "magnitude": 6,
+    "isPartOfConstellation": false
+   }
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "free_connect",
+    "constellationName": "Big Dipper",
+    "instruction": "Find the seven bright stars that form a giant spoon or water scoop in the night sky and connect them together.",
+    "starOrder": [
+     "s1",
+     "s2",
+     "s3",
+     "s4",
+     "s5",
+     "s6",
+     "s7"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s1",
+      "toStarId": "s2"
+     },
+     {
+      "fromStarId": "s2",
+      "toStarId": "s3"
+     },
+     {
+      "fromStarId": "s3",
+      "toStarId": "s4"
+     },
+     {
+      "fromStarId": "s4",
+      "toStarId": "s5"
+     },
+     {
+      "fromStarId": "s5",
+      "toStarId": "s6"
+     },
+     {
+      "fromStarId": "s6",
+      "toStarId": "s7"
+     }
+    ],
+    "mythologyFact": "Long ago, people saw this group of stars as a giant bear walking across the northern sky!",
+    "season": "spring"
+   },
+   {
+    "id": "c2",
+    "type": "free_connect",
+    "constellationName": "Cassiopeia",
+    "instruction": "Look for five bright stars that zig-zag across the sky to make the shape of the letter W.",
+    "starOrder": [
+     "s8",
+     "s9",
+     "s11",
+     "s10",
+     "s12"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s8",
+      "toStarId": "s9"
+     },
+     {
+      "fromStarId": "s9",
+      "toStarId": "s11"
+     },
+     {
+      "fromStarId": "s11",
+      "toStarId": "s10"
+     },
+     {
+      "fromStarId": "s10",
+      "toStarId": "s12"
+     }
+    ],
+    "mythologyFact": "In ancient stories, Cassiopeia was a proud queen who sits among the stars.",
+    "season": "fall"
+   },
+   {
+    "id": "c3",
+    "type": "free_connect",
+    "constellationName": "Orion's Belt",
+    "instruction": "Locate the three bright stars that line up in a neat row right next to each other.",
+    "starOrder": [
+     "s3",
+     "s4",
+     "s5"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s3",
+      "toStarId": "s4"
+     },
+     {
+      "fromStarId": "s4",
+      "toStarId": "s5"
+     }
+    ],
+    "mythologyFact": "Orion was known as a mighty hunter in Greek myths, and his belt is one of the easiest star lines to spot!",
+    "season": "winter"
+   },
+   {
+    "id": "c4",
+    "type": "free_connect",
+    "constellationName": "Little Dipper",
+    "instruction": "Connect the bright stars that form a smaller spoon shape in the northern sky.",
+    "starOrder": [
+     "s8",
+     "s11",
+     "s13",
+     "s10"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s8",
+      "toStarId": "s11"
+     },
+     {
+      "fromStarId": "s11",
+      "toStarId": "s13"
+     },
+     {
+      "fromStarId": "s13",
+      "toStarId": "s10"
+     }
+    ],
+    "mythologyFact": "The very end star of this handle is Polaris, the North Star, which helps travelers find which way is north!",
+    "season": "year-round"
+   }
+  ]
+ }
+}

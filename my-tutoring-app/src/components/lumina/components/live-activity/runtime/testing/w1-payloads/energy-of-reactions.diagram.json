@@ -1,0 +1,19 @@
+{
+ "source": "qa/tutor-reports/energy-of-reactions-runtime-diagram-payload-2026-10-15.json",
+ "primitiveId": "energy-of-reactions",
+ "evalMode": "diagram",
+ "data": {
+  "title": "Reading Energy Diagrams",
+  "description": "Explore how chemical processes interact with thermal energy by examining temperature changes and energy diagrams.",
+  "reactionIds": [
+   "citric_acid_baking_soda",
+   "magnesium_hcl",
+   "barium_hydroxide_ammonium_chloride",
+   "hcl_naoh"
+  ],
+  "challengeTypes": [
+   "diagram"
+  ],
+  "gradeBand": "7-8"
+ }
+}

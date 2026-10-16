@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 /**
- * Behavioral test for the how-it-works PRE (K) picture-order render — reader-fit
- * 2026-07-21. At K the generator emits a `preReader` payload (emoji steps authored
- * in order) and the component drops the reading-heavy magazine + text quiz for a
- * picture-primary tap-to-order task: tap tray cards into the slots, it auto-checks
- * when full (no Check button), a correct order submits success + shows 🎉, a wrong
- * order does NOT submit and can be recovered by tapping a placed card back out.
+ * Behavioral test for the how-it-works PRE (K) picture path — reader-fit 2026-07-21, re-based 2026-10-16 (W1 rebuild).
+ * At K the generator emits a `preReader` payload (emoji steps authored in order) and the component drops the
+ * reading-heavy magazine for picture cards: the story first (the pictures in order, read aloud by the tutor), then a
+ * big play button, then the picture question (here the default, the picture order): tap tray cards into the slots, it
+ * auto-checks when full (no Check button), a correct order celebrates and, after See Results, submits success; a wrong
+ * order does NOT submit, its hint names no order, and a placed card can be tapped back out.
  */
 import React from 'react';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
@@ -34,19 +34,12 @@ vi.mock('../../../utils/SoundManager', () => ({
 
 import HowItWorks, { type HowItWorksData } from './HowItWorks';
 
-// jsdom has no IntersectionObserver; the PRE path doesn't use it, but the
-// component wires one for the magazine path — stub it so mount doesn't throw.
-class NoopIO { observe() {} unobserve() {} disconnect() {} }
-// @ts-expect-error test shim
-global.IntersectionObserver = NoopIO;
-
 const makeData = (): HowItWorksData => ({
   title: 'How a Tow Truck Works',
   subtitle: '',
   overview: 'Let us learn how a tow truck helps a car.',
   steps: [],
   summary: { text: 'x', keyTakeaway: 'x' },
-  challenges: [],
   preReader: {
     question: 'Put the tow truck steps in order.',
     steps: [
@@ -57,6 +50,7 @@ const makeData = (): HowItWorksData => ({
   },
 });
 
+const start = () => act(() => { fireEvent.click(screen.getByLabelText('Start the questions')); });
 const placeTray = (id: string) => {
   const btn = document.querySelector(`[data-step-id="${id}"]`) as HTMLButtonElement | null;
   expect(btn, `tray card ${id} should be present`).toBeTruthy();
@@ -66,51 +60,54 @@ const placeTray = (id: string) => {
 beforeEach(() => { submitEvaluation.mockClear(); sendText.mockClear(); });
 afterEach(() => cleanup());
 
-describe('how-it-works PRE picture-order', () => {
-  it('renders emoji cards and NO magazine chrome', () => {
+describe('how-it-works PRE picture path', () => {
+  it('shows the picture story, then the picture question, with NO magazine chrome', () => {
     render(<HowItWorks data={makeData()} />);
-    // Picture cards present (labels are captions)
     expect(screen.getByText('Car stops')).toBeTruthy();
     expect(screen.getByText('Tow away')).toBeTruthy();
-    // The spoken prompt shows; adult chrome does not
+    expect(screen.queryByText(/Steps explored|Glossary|Quick Facts/i)).toBeNull();
+    start();
     expect(screen.getByText('Put the tow truck steps in order.')).toBeTruthy();
-    expect(screen.queryByText(/Comprehension Check/i)).toBeNull();
-    expect(screen.queryByText(/Check Order/i)).toBeNull();
-    expect(screen.queryByText(/Challenge \d/i)).toBeNull();
+    expect(screen.queryByText(/Check Answer|Check Order/i)).toBeNull();
+    expect(document.querySelectorAll('[data-step-id]').length).toBe(3);
   });
 
-  it('reads the steps aloud on connect (ORIENT/STIMULUS), unprompted', () => {
+  it('reads the story aloud on connect (ORIENT/STIMULUS), unprompted, and the question when it opens', () => {
     render(<HowItWorks data={makeData()} />);
     const orient = sendText.mock.calls.find(c => String(c[0]).includes('[ACTIVITY_START_PRE]'));
     expect(orient, 'ORIENT beat should fire').toBeTruthy();
-    // every step's spoken line is in the script
     expect(String(orient![0])).toContain('The car stops.');
     expect(String(orient![0])).toContain('The truck tows the car away.');
+    start();
+    const ask = sendText.mock.calls.find(c => String(c[0]).includes('[READ_QUESTION]'));
+    expect(String(ask![0])).toContain('Put the tow truck steps in order.');
   });
 
-  it('a correct order auto-submits success + celebrates (no Check button)', () => {
+  it('a correct order auto-checks and celebrates (no Check button), and submits success once the child moves on', () => {
     render(<HowItWorks data={makeData()} />);
+    start();
     placeTray('p0'); placeTray('p1'); placeTray('p2'); // authored = correct order
+    expect(screen.getByText('🎉')).toBeTruthy();
+    act(() => { fireEvent.click(screen.getByText('See Results')); });
     expect(submitEvaluation).toHaveBeenCalledTimes(1);
     const [passed, score] = submitEvaluation.mock.calls[0];
     expect(passed).toBe(true);
     expect(score).toBe(100);
-    expect(screen.getByText('🎉')).toBeTruthy();
   });
 
-  it('a wrong order does NOT submit, and a placed card can be tapped back out (undo)', () => {
+  it('a wrong order does NOT submit and its hint names no order; a placed card can be tapped back out (undo)', () => {
     render(<HowItWorks data={makeData()} />);
+    start();
     placeTray('p2'); placeTray('p1'); placeTray('p0'); // reversed = wrong
     expect(submitEvaluation).not.toHaveBeenCalled();
-    const wrong = sendText.mock.calls.find(c => String(c[0]).includes('[PRE_WRONG]'));
+    const wrong = sendText.mock.calls.find(c => String(c[0]).includes('[CHALLENGE_INCORRECT]'));
     expect(wrong, 'wrong-order hint should fire').toBeTruthy();
-    // No answer leak: the hint must not spell out the full ordered list.
     expect(String(wrong![0])).not.toContain('The truck tows the car away.');
-    // Tray is empty once all three are placed.
+    // The cards go back to the tray for another try.
+    expect(document.querySelector('[data-step-id="p0"]')).toBeTruthy();
+    placeTray('p0');
     expect(document.querySelector('[data-step-id="p0"]')).toBeNull();
-    // Undo: tap the placed "Car stops" card → it returns to the tray.
-    const placed = screen.getByText('Car stops').closest('button')!;
-    act(() => { fireEvent.click(placed); });
+    act(() => { fireEvent.click(screen.getByLabelText('Take back Car stops')); });
     expect(document.querySelector('[data-step-id="p0"]'), 'card returns to tray after undo').toBeTruthy();
   });
 });

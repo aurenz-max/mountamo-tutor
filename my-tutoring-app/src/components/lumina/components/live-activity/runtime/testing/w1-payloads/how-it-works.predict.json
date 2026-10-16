@@ -1,0 +1,127 @@
+{
+ "source": "qa/tutor-reports/how-it-works-runtime-predict-payload-2026-10-16.json",
+ "primitiveId": "how-it-works",
+ "evalMode": "predict",
+ "data": {
+  "title": "How a Bicycle Moves",
+  "subtitle": "From a simple foot push to rolling down the street",
+  "overview": "Have you ever wondered how pushing your feet down makes a heavy bicycle roll forward so fast? It is all about a clever chain reaction of simple machines working together.",
+  "category": "engineering",
+  "steps": [
+   {
+    "stepNumber": 1,
+    "title": "Stepping on the Footrests",
+    "description": "Your leg muscles push downward against a metal lever attached to the bike frame. This downward force starts the entire mechanism moving by converting your muscle strength into a spinning action.",
+    "imagePrompt": "Close-up shot of a child shoe pressing down on a metal bicycle pedal with textured rubber grip, photographed outdoors in bright afternoon sunlight.",
+    "whatsHappening": "Your foot applies leverage, creating rotational force called torque around a central axis.",
+    "funFact": "Your leg muscles are among the strongest tissues in your entire body, generating enough power to lift heavy weights.",
+    "purpose": "It starts the turning motion that the rest of the bicycle passes along to the back wheel."
+   },
+   {
+    "stepNumber": 2,
+    "title": "Turning the Toothed Wheel",
+    "description": "As your leg pushes the lever down, it rotates a large metal circle with sharp metal points along its edge. This large wheel spins smoothly because it is attached to a central metal rod that turns inside the bike frame.",
+    "imagePrompt": "Detailed view of a shiny metal bicycle chainring with pointed teeth reflecting sunlight, mounted on a red bike frame outdoors.",
+    "funFact": "A standard bicycle chainring can have anywhere from 32 to 52 individual teeth gripping the chain.",
+    "purpose": "This large rotating wheel multiplies the force from your legs before sending it onward."
+   },
+   {
+    "stepNumber": 3,
+    "title": "Pulling the Metal Links",
+    "description": "A continuous loop made of dozens of small interlocking metal pieces hooks onto the teeth of the big wheel. When the big wheel spins, its sharp points catch the loop and drag it forward in a continuous circle.",
+    "imagePrompt": "Macro photograph of a greasy steel bicycle chain wrapped tightly around a gear cog, showing individual metal links and pins.",
+    "funFact": "A typical bicycle chain contains over 100 tiny moving metal links that bend thousands of times per minute.",
+    "purpose": "It acts as a flexible bridge that carries the turning force from the middle of the bike to the back."
+   },
+   {
+    "stepNumber": 4,
+    "title": "Spinning the Rear Gear",
+    "description": "The moving metal loop wraps around a much smaller circle of teeth attached directly to the center of the back wheel. Because this back gear is tiny, it spins much faster than the big wheel your feet are pushing.",
+    "imagePrompt": "Close-up of a bicycle cassette gear cluster and derailleur on the rear wheel of a mountain bike, photographed in daylight.",
+    "funFact": "For every one turn of your feet, the back wheel can spin up to three full times.",
+    "purpose": "This size difference lets the back wheel spin rapidly with every single push of your foot."
+   },
+   {
+    "stepNumber": 5,
+    "title": "Rolling Down the Road",
+    "description": "The fast-spinning gear turns the entire rubber-wrapped wheel of the bicycle. As the rubber tire grips the pavement, it pushes backward against the ground, which sends the whole bicycle and rider moving forward.",
+    "imagePrompt": "Ground-level action shot of a bicycle tire rolling across asphalt pavement, kicked up with a few small pebbles in bright sunlight.",
+    "funFact": "Rubber bicycle tires can roll smoothly over thousands of miles of rough pavement before wearing out.",
+    "purpose": "It converts the spinning energy of the gears into forward travel across the ground."
+   }
+  ],
+  "summary": {
+   "text": "By connecting your leg strength through a series of spinning wheels and metal links, a bicycle turns simple up-and-down pushes into fast forward travel.",
+   "keyTakeaway": "Gears of different sizes allow a bicycle to multiply your leg power into higher speeds and smoother motion.",
+   "totalTime": "Instantaneous during riding"
+  },
+  "quickFacts": {
+   "duration": "A fraction of a second per rotation",
+   "whereItHappens": "Between the pedals and the rear wheel",
+   "funComparison": "Faster than walking three times your normal speed!",
+   "energySource": "Human muscle power"
+  },
+  "realWorldExamples": [
+   "A motorcycle chain and sprocket",
+   "The gears inside a mechanical clock",
+   "An electric scooter drive system"
+  ],
+  "relatedProcesses": [
+   "How Pulley Systems Work",
+   "Friction and Traction",
+   "How Car Engines Generate Power"
+  ],
+  "modes": [
+   "predict"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "predict-1",
+    "mode": "predict",
+    "kind": "predict",
+    "shown": 1,
+    "options": [
+     2,
+     1,
+     3
+    ]
+   },
+   {
+    "id": "predict-2",
+    "mode": "predict",
+    "kind": "predict",
+    "shown": 2,
+    "options": [
+     3,
+     2,
+     4
+    ]
+   },
+   {
+    "id": "explain-3",
+    "mode": "predict",
+    "kind": "explain",
+    "target": 2,
+    "options": [
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   {
+    "id": "explain-4",
+    "mode": "predict",
+    "kind": "explain",
+    "target": 3,
+    "options": [
+     2,
+     4,
+     0,
+     3
+    ]
+   }
+  ]
+ }
+}

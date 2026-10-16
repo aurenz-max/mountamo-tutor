@@ -1,71 +1,65 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { usePrimitiveEvaluation } from '../../../evaluation';
+/**
+ * Gravity Drop Tower: objects dropped from a tower, with or without air, one eval mode each.
+ * - observe: drop and watch, then report what happened (which landed first, or whether it sped up).
+ * - predict: which of two lands first (hard: and why), said or tapped before the drop.
+ * - compare: three objects from different heights; tap them in landing order.
+ * - measure: a stopwatch table of measured drops; the fall time for a new height (hard: the height for a new time).
+ * - calculate: h = 1/2 g t^2; fall time, drop height, or impact speed.
+ *
+ * Every item is built and keyed by code (`gravityDropWorkspace.ts`). Nothing on screen states the answer first: the
+ * tower prints no speed or landing time before credit, the asked drop runs only once the answer is credited (observe
+ * is the exception: watching is its task, and the choices open after the first drop), and a hidden height is drawn
+ * with no ruler. Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next
+ * and two tries before a reveal; the workspace path (W1, plain shape) commits every check through
+ * `progress.commitCheck` with a named miss, takes a spoken answer judged by the tutor, and lets the runtime move on.
+ * The levers live in `gravityDropLevers.ts`.
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { GravityDropTowerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import {
+  LuminaActionButton, LuminaAnswerChoice, LuminaButton, LuminaCard, LuminaCardContent, LuminaCardHeader, LuminaCardTitle,
+  LuminaFeedbackCard, LuminaPanel, LuminaPrompt, LuminaSectionLabel, type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askOf, choicesOf, describeDropWork, dropCorrect, dropItems, dropMiss, fallen, fallTime, FALLERS, fmt, keyChoice,
+  keyOrder, landingOrder, landTogether, massText, measuredTime, nameOf, speedAt, tapLabel, workspaceAssignment,
+  workspaceScene, type Drop, type DropItem, type DropMode, type DropTier,
+} from './gravityDropWorkspace';
+import {
+  AIR_LEVER, airLines, dropLevers, FALL_LEVER, fallLines, FILL_LEVER, fillLines, FORMULA_LEVER, formulaLines, leverFact,
+  MOON_LEVER, MOON_LINES, PATTERN_LEVER, patternLines, SAME_LOOK_LEVER, simplerItem, SLOW_LEVER,
+} from './gravityDropLevers';
 
-// =============================================================================
-// Data Interface — Single Source of Truth
-// =============================================================================
+// ============================================================================
+// Data Types (single source of truth; the generator imports them)
+// ============================================================================
 
-export type DropChallengeType = 'observe' | 'predict' | 'compare' | 'measure' | 'calculate';
-
-export interface DropObject {
-  name: string;
-  emoji: string;
-  mass: number;       // kg
-  dragCoeff: number;  // 0 = no drag, higher = more air resistance
-}
-
-export interface DropChallenge {
-  id: string;
-  type: DropChallengeType;
-  instruction: string;
-  objects: DropObject[];
-  height: number;        // meters (drop height)
-  airResistance: boolean;
-  question: string;
-  correctAnswer: string;
-  distractor0: string;
-  distractor1: string;
-  distractor2?: string;
-  hint: string;
-
-  // ── Within-mode support tier scaffolds (config.difficulty) ──────────────────
-  // Display-only levers. NEVER change the objects, height, airResistance, the
-  // question, or the answer — they only withdraw on-screen self-check help.
-  // Absent → default ON (full readouts), preserving legacy/no-tier behavior.
-  /**
-   * Perception lever (#1): show the live numeric readouts the student would
-   * otherwise read the answer off of — per-object fall speed (m/s), the land-time
-   * stamp, and the running timer. easy/medium = shown (self-check); hard =
-   * withdrawn so the student estimates/computes the time/speed unaided.
-   */
-  showReadouts?: boolean;
-}
+export type { DropItem, DropMode, DropTier };
 
 export interface GravityDropTowerData {
   title: string;
-  description: string;
-  challenges: DropChallenge[];
-
-  /**
-   * Within-mode support tier ('easy' | 'medium' | 'hard') from the manifest.
-   * Threaded to the live tutor so its reveal policy is scaffolding-aware: at hard
-   * the tutor must NOT name the strategy the instruction withheld. Display state
-   * itself is driven per-challenge by showReadouts; this is the tutor channel.
-   */
-  supportTier?: 'easy' | 'medium' | 'hard';
+  description?: string;
+  /** The eval modes this session asks, in order (`resolveDropModes`). */
+  challengeTypes?: DropMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: DropTier;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: DropItem[];
+  gradeLevel?: string;
+  /** Legacy generations (before 2026-10-15): read only for the modes. */
+  challenges?: Array<{ type?: string }>;
+  supportTier?: string;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -73,819 +67,602 @@ export interface GravityDropTowerData {
   subskillId?: string;
   objectiveId?: string;
   exhibitId?: string;
-  onEvaluationSubmit?: (result: unknown) => void;
+  onEvaluationSubmit?: (result: PrimitiveEvaluationResult<GravityDropTowerMetrics>) => void;
 }
 
 interface GravityDropTowerProps {
   data: GravityDropTowerData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-// =============================================================================
-// Constants
-// =============================================================================
-
-const CANVAS_W = 700;
-const CANVAS_H = 420;
-const TOWER_TOP = 40;
-const GROUND_Y = CANVAS_H - 50;
-const DROP_ZONE_HEIGHT = GROUND_Y - TOWER_TOP;
-const G = 9.8; // m/s² (real gravity)
-const TIME_SCALE = 0.7; // slow down for visual clarity
-const AIR_DENSITY = 1.2; // kg/m³
-
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  observe:   { label: 'Observe',   icon: '👀', accentColor: 'blue' },
-  predict:   { label: 'Predict',   icon: '🔮', accentColor: 'purple' },
-  compare:   { label: 'Compare',   icon: '⚖️', accentColor: 'emerald' },
-  measure:   { label: 'Measure',   icon: '📏', accentColor: 'amber' },
-  calculate: { label: 'Calculate', icon: '🧮', accentColor: 'pink' },
+const MODE_LABEL: Record<DropMode, string> = {
+  observe: 'Watch and tell', predict: 'Predict, then drop', compare: 'Landing order', measure: 'Read the stopwatch', calculate: 'Use h = ½gt²',
 };
 
-// Object visual sizing by mass
-function objectRadius(mass: number): number {
-  return 14 + Math.min(mass, 20) * 1.5;
+// ============================================================================
+// The tower (canvas). Draws the drops it is given at physical time t; no speed or time label unless `stopwatch`.
+// ============================================================================
+
+const CANVAS_W = 700;
+const CANVAS_H = 400;
+const TOP = 40;
+const GROUND = CANVAS_H - 56;
+
+interface TowerPicture {
+  drops: Drop[];
+  air: boolean;
+  /** Physical seconds since release (0 = on the platforms). */
+  t: number;
+  /** Drop heights drawn as "? m" with no ruler. */
+  hideHeight: boolean;
+  stopwatch: boolean;
+  ghosts: boolean;
+  levelLine: boolean;
+  airArrows: boolean;
+  sameLook: boolean;
+  fallBars: boolean;
 }
 
-function objectColor(mass: number): string {
-  const hue = Math.max(0, 220 - mass * 12);
-  return `hsl(${hue}, 60%, 55%)`;
-}
-
-// =============================================================================
-// Physics Engine
-// =============================================================================
-
-interface FallingObject {
-  name: string;
-  emoji: string;
-  mass: number;
-  dragCoeff: number;
-  y: number;        // current position (pixels from TOWER_TOP)
-  vy: number;       // velocity (pixels/frame)
-  landed: boolean;
-  landTime: number; // time when landed (seconds)
-  splatFrame: number; // for splat animation
-  crossSection: number; // derived from mass for drag
-}
-
-interface DropState {
-  objects: FallingObject[];
-  isRunning: boolean;
-  elapsed: number; // seconds
-  airResistance: boolean;
-  heightMeters: number;
-  pixelsPerMeter: number;
-  slowMo: boolean;
-  showReadouts: boolean; // support-tier lever: numeric speed/time overlays
-}
-
-function createDropState(challenge: DropChallenge, slowMo: boolean): DropState {
-  const pixelsPerMeter = DROP_ZONE_HEIGHT / challenge.height;
-  const spacing = CANVAS_W / (challenge.objects.length + 1);
-
-  return {
-    objects: challenge.objects.map((obj, i) => ({
-      name: obj.name,
-      emoji: obj.emoji,
-      mass: obj.mass,
-      dragCoeff: obj.dragCoeff,
-      y: 0,
-      vy: 0,
-      landed: false,
-      landTime: 0,
-      splatFrame: 0,
-      crossSection: 0.01 + obj.dragCoeff * 0.05, // m² effective cross-section
-      x: spacing * (i + 1), // store x position
-    })) as (FallingObject & { x: number })[],
-    isRunning: false,
-    elapsed: 0,
-    airResistance: challenge.airResistance,
-    heightMeters: challenge.height,
-    pixelsPerMeter,
-    slowMo,
-    // Default ON when unset (legacy / no-tier sessions keep full readouts).
-    showReadouts: challenge.showReadouts !== false,
-  };
-}
-
-function stepDrop(state: DropState, dt: number): DropState {
-  const timeStep = state.slowMo ? dt * 0.3 : dt * TIME_SCALE;
-  const next: DropState = {
-    ...state,
-    objects: state.objects.map(o => ({ ...o })),
-    elapsed: state.elapsed + timeStep,
-  };
-
-  let allLanded = true;
-
-  for (const obj of next.objects) {
-    if (obj.landed) {
-      obj.splatFrame = Math.min(obj.splatFrame + 1, 20);
-      continue;
-    }
-
-    allLanded = false;
-
-    // Gravity force (in m/s²)
-    let accel = G;
-
-    // Air resistance: F_drag = 0.5 * rho * Cd * A * v²
-    if (state.airResistance && obj.dragCoeff > 0) {
-      const vyMeters = obj.vy / state.pixelsPerMeter;
-      const dragForce = 0.5 * AIR_DENSITY * obj.dragCoeff * obj.crossSection * vyMeters * vyMeters;
-      const dragAccel = dragForce / obj.mass;
-      accel = Math.max(0.1, accel - dragAccel);
-    }
-
-    // Convert accel to pixels
-    const accelPx = accel * state.pixelsPerMeter;
-    obj.vy += accelPx * timeStep;
-    obj.y += obj.vy * timeStep;
-
-    // Check landing
-    if (obj.y >= DROP_ZONE_HEIGHT) {
-      obj.y = DROP_ZONE_HEIGHT;
-      obj.vy = 0;
-      obj.landed = true;
-      obj.landTime = next.elapsed;
-      obj.splatFrame = 1;
-    }
-  }
-
-  if (allLanded) {
-    next.isRunning = false;
-  }
-
-  return next;
-}
-
-// =============================================================================
-// Canvas Drawing
-// =============================================================================
-
-function drawDropTower(
-  ctx: CanvasRenderingContext2D,
-  state: DropState,
-  dpr: number,
-) {
-  const w = CANVAS_W;
-  const h = CANVAS_H;
-
+function drawTower(ctx: CanvasRenderingContext2D, p: TowerPicture, dpr: number) {
   ctx.save();
   ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, w, h);
-
-  // Sky gradient
-  const skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
-  skyGrad.addColorStop(0, '#0B1426');
-  skyGrad.addColorStop(0.5, '#0F172A');
-  skyGrad.addColorStop(1, '#1E293B');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(0, 0, w, GROUND_Y);
-
-  // Ground
-  ctx.fillStyle = '#78716C';
-  ctx.fillRect(0, GROUND_Y, w, h - GROUND_Y);
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, GROUND_Y);
-  ctx.lineTo(w, GROUND_Y);
-  ctx.stroke();
-
-  // Height markers on left side
-  const numMarkers = Math.min(10, Math.ceil(state.heightMeters));
-  ctx.fillStyle = 'rgba(255,255,255,0.2)';
-  ctx.font = '10px sans-serif';
-  ctx.textAlign = 'left';
-  for (let i = 0; i <= numMarkers; i++) {
-    const fraction = i / numMarkers;
-    const y = TOWER_TOP + fraction * DROP_ZONE_HEIGHT;
-    const heightLabel = (state.heightMeters * (1 - fraction)).toFixed(1);
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.beginPath();
-    ctx.moveTo(30, y);
-    ctx.lineTo(w - 10, y);
-    ctx.stroke();
-
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillText(`${heightLabel}m`, 4, y + 4);
-  }
-
-  // Tower frame (subtle vertical lines)
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(35, TOWER_TOP);
-  ctx.lineTo(35, GROUND_Y);
-  ctx.stroke();
-
-  // Drop platform at top
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.fillRect(30, TOWER_TOP - 4, w - 40, 4);
-
-  // Air resistance indicator
-  if (state.airResistance) {
-    // Draw subtle air current lines
-    ctx.strokeStyle = 'rgba(147, 197, 253, 0.1)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 6; i++) {
-      const x = 80 + i * 100;
-      const offset = (state.elapsed * 20 + i * 30) % 60;
-      ctx.beginPath();
-      ctx.moveTo(x, TOWER_TOP + offset);
-      ctx.quadraticCurveTo(x + 15, TOWER_TOP + offset + 30, x, TOWER_TOP + offset + 60);
-      ctx.stroke();
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+  const sky = ctx.createLinearGradient(0, 0, 0, GROUND);
+  sky.addColorStop(0, '#0B1426'); sky.addColorStop(1, '#1E293B');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, CANVAS_W, GROUND);
+  ctx.fillStyle = '#57534E'; ctx.fillRect(0, GROUND, CANVAS_W, CANVAS_H - GROUND);
+  const maxH = Math.max(...p.drops.map(d => d.height));
+  const pxPerM = (GROUND - TOP) / maxH;
+  if (!p.hideHeight) {
+    ctx.font = '10px sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    const step = maxH > 40 ? 10 : maxH > 15 ? 5 : maxH > 6 ? 2 : 1;
+    for (let m = 0; m <= maxH + 1e-9; m += step) {
+      const y = GROUND - m * pxPerM;
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(34, y); ctx.lineTo(CANVAS_W - 10, y); ctx.stroke();
+      ctx.fillText(`${m} m`, 4, y + 3);
     }
   }
-
-  // Objects
-  const spacing = w / (state.objects.length + 1);
-  for (let i = 0; i < state.objects.length; i++) {
-    const obj = state.objects[i];
-    const cx = (obj as unknown as { x?: number }).x ?? spacing * (i + 1);
-    const cy = TOWER_TOP + obj.y;
-    const r = objectRadius(obj.mass);
-
-    // Shadow on ground
-    if (!obj.landed) {
-      const shadowSize = Math.max(4, r * 0.6 * (1 - (DROP_ZONE_HEIGHT - obj.y) / DROP_ZONE_HEIGHT));
-      ctx.fillStyle = `rgba(0,0,0,${0.1 + 0.2 * (obj.y / DROP_ZONE_HEIGHT)})`;
-      ctx.beginPath();
-      ctx.ellipse(cx, GROUND_Y + 3, shadowSize, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
+  if (p.air) {
+    ctx.strokeStyle = 'rgba(147,197,253,0.12)';
+    for (let i = 0; i < 7; i++) {
+      const x = 70 + i * 90, o = (i * 37) % 60;
+      for (let y = TOP + o; y < GROUND - 40; y += 90) { ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 14, y + 25, x, y + 50); ctx.stroke(); }
     }
-
-    // Splat effect
-    if (obj.landed && obj.splatFrame > 0 && obj.splatFrame < 15) {
-      const splatR = r + obj.splatFrame * 2;
-      const alpha = Math.max(0, 0.4 - obj.splatFrame * 0.03);
-      ctx.fillStyle = `rgba(255, 200, 50, ${alpha})`;
-      ctx.beginPath();
-      ctx.ellipse(cx, GROUND_Y - 2, splatR, splatR * 0.3, 0, 0, Math.PI * 2);
-      ctx.fill();
+  }
+  const spacing = CANVAS_W / (p.drops.length + 1);
+  const centers: Array<{ x: number; y: number }> = [];
+  p.drops.forEach((d, i) => {
+    const f = FALLERS[d.obj], x = spacing * (i + 1), r = p.sameLook ? 18 : 14 + Math.min(4, Math.log10(f.mass * 1000 + 1) * 2) * 2;
+    const top = GROUND - d.height * pxPerM;
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(x - 34, top - 4, 68, 4);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(p.hideHeight ? '? m' : `${d.height} m`, x, top - 10);
+    const total = fallTime(d.obj, d.height, p.air);
+    // The object's centre: resting on its platform at t = 0, on the ground once it has fallen the whole height.
+    const y0 = top - r, y1 = GROUND - r;
+    const at = (tt: number) => y0 + (y1 - y0) * Math.min(1, fallen(d.obj, Math.min(tt, total), p.air) / d.height);
+    if (p.fallBars) {
+      ctx.fillStyle = 'rgba(56,189,248,0.35)'; ctx.fillRect(x + 40, top, 6, GROUND - top);
+      ctx.fillStyle = 'rgba(186,230,253,0.9)'; ctx.textAlign = 'left'; ctx.fillText(`${d.height} m`, x + 50, (top + GROUND) / 2);
     }
-
-    // Squash on landing
-    let scaleX = 1;
-    let scaleY = 1;
-    if (obj.landed && obj.splatFrame < 10) {
-      scaleX = 1 + obj.splatFrame * 0.03;
-      scaleY = 1 - obj.splatFrame * 0.02;
-    }
-
-    // Object body
-    const bodyY = obj.landed ? GROUND_Y - r * scaleY : cy;
-    ctx.fillStyle = objectColor(obj.mass);
-    ctx.beginPath();
-    ctx.ellipse(cx, bodyY, r * scaleX, r * scaleY, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.beginPath();
-    ctx.arc(cx - r * 0.2, bodyY - r * 0.2, r * 0.35, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Emoji
-    ctx.font = `${Math.max(14, r * 0.9)}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(obj.emoji, cx, bodyY);
-
-    // Label below ground
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = 'bold 10px sans-serif';
-    ctx.textBaseline = 'top';
-    ctx.fillText(`${obj.name}`, cx, GROUND_Y + 8);
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = '9px sans-serif';
-    ctx.fillText(`${obj.mass}kg`, cx, GROUND_Y + 20);
-
-    // Speed indicator while falling (numeric readout — support-tier gated)
-    if (!obj.landed && obj.vy > 0) {
-      if (state.showReadouts) {
-        const speedMs = obj.vy / state.pixelsPerMeter;
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.font = '10px sans-serif';
-        ctx.textBaseline = 'bottom';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${speedMs.toFixed(1)} m/s`, cx, cy - r - 4);
-      }
-
-      // Motion lines
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctx.lineWidth = 1;
-      for (let l = 1; l <= 3; l++) {
-        const ly = cy - r - 8 - l * 8;
-        if (ly > TOWER_TOP) {
-          ctx.beginPath();
-          ctx.moveTo(cx - 6, ly);
-          ctx.lineTo(cx + 6, ly);
-          ctx.stroke();
-        }
+    if (p.ghosts && p.t > 0) {
+      for (let k = 1; k < 10; k++) {
+        const gt = (total * k) / 10;
+        if (gt > p.t) break;
+        ctx.globalAlpha = 0.25; ctx.beginPath(); ctx.arc(x, at(gt), r * 0.8, 0, Math.PI * 2); ctx.fillStyle = '#93C5FD'; ctx.fill(); ctx.globalAlpha = 1;
       }
     }
-
-    // Land time display (numeric readout — support-tier gated)
-    if (obj.landed && state.showReadouts) {
-      ctx.fillStyle = 'rgba(52, 211, 153, 0.8)';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.textBaseline = 'bottom';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${obj.landTime.toFixed(2)}s`, cx, TOWER_TOP - 8);
+    const yy = at(Math.max(0, p.t));
+    centers.push({ x, y: yy });
+    ctx.fillStyle = p.sameLook ? '#94A3B8' : `hsl(${200 - Math.min(160, f.mass * 25)}, 55%, 55%)`;
+    ctx.beginPath(); ctx.arc(x, yy, r, 0, Math.PI * 2); ctx.fill();
+    if (!p.sameLook) { ctx.font = `${Math.round(r)}px sans-serif`; ctx.textBaseline = 'middle'; ctx.fillText(f.emoji, x, yy); ctx.textBaseline = 'alphabetic'; }
+    if (p.airArrows && p.air) {
+      const len = f.vt <= 2 ? 46 : f.vt < 30 ? 18 : 6;
+      ctx.strokeStyle = 'rgba(147,197,253,0.95)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + r + 10, yy + 10); ctx.lineTo(x + r + 10, yy + 10 - len); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + r + 4, yy + 16 - len); ctx.lineTo(x + r + 10, yy + 10 - len); ctx.lineTo(x + r + 16, yy + 16 - len); ctx.stroke(); ctx.lineWidth = 1;
     }
+    ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(p.sameLook ? 'ball' : f.name, x, GROUND + 18);
+    if (!p.sameLook) { ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '10px sans-serif'; ctx.fillText(massText(d.obj), x, GROUND + 32); }
+  });
+  if (p.levelLine && p.t > 0 && centers.length === 2) {
+    ctx.setLineDash([6, 4]); ctx.strokeStyle = 'rgba(251,191,36,0.8)';
+    ctx.beginPath(); ctx.moveTo(centers[0].x, centers[0].y); ctx.lineTo(centers[1].x, centers[1].y); ctx.stroke(); ctx.setLineDash([]);
   }
-
-  // Timer (numeric readout — support-tier gated)
-  if (state.isRunning || state.elapsed > 0) {
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    // When readouts are withdrawn (hard tier) the student estimates the time
-    // themselves — show a masked clock so the affordance is clear, not the value.
-    ctx.fillText(state.showReadouts ? `t = ${state.elapsed.toFixed(2)}s` : 't = ? s', w - 10, 8);
+  if (p.stopwatch) {
+    const end = Math.max(...p.drops.map(d => fallTime(d.obj, d.height, p.air)));
+    ctx.fillStyle = 'rgba(52,211,153,0.95)'; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(`⏱ ${fmt(Math.min(p.t, end))} s`, CANVAS_W - 12, 22);
   }
-
-  // Slow-mo indicator
-  if (state.slowMo && state.isRunning) {
-    ctx.fillStyle = 'rgba(251, 191, 36, 0.6)';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('⏱ SLOW-MO', w - 10, 24);
-  }
-
   ctx.restore();
 }
 
-// =============================================================================
-// Main Component
-// =============================================================================
+interface Run { key: number; drops: Drop[]; air: boolean; rate: number; stopwatch: boolean }
 
-export default function GravityDropTower({ data, className = '' }: GravityDropTowerProps) {
-  const {
-    title,
-    description,
-    challenges,
-    supportTier,
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-  } = data;
+/** Physical seconds per wall second: the whole drop plays in 1.2-4 s of wall time, a quarter as fast when slowed. */
+const playRate = (drops: Drop[], air: boolean, slow: number) => {
+  const end = Math.max(...drops.map(d => fallTime(d.obj, d.height, air)));
+  return end / Math.min(4, Math.max(1.2, end / 0.7)) / slow;
+};
 
-  // Mode-aware tutor reveal clause keyed to the support tier. At hard the
-  // instruction withheld the strategy and the on-screen readouts are gone, so the
-  // tutor must NOT hand either back — it asks what the student observes instead.
-  // NEVER reveals the correct answer at any tier.
-  const tierTutorClause =
-    supportTier === 'easy'
-      ? 'SUPPORT TIER easy: you may name the gravity idea at play (e.g. without air all objects fall together; time grows with the square root of height) and walk the setup, but never state which option is correct.'
-      : supportTier === 'hard'
-        ? 'SUPPORT TIER hard: the on-screen timer/speed readouts are hidden and the strategy is NOT named for the student. Do NOT name the rule or read off a number for them — ask what they SAW the objects do and let them reason. Never reveal the correct option.'
-        : supportTier === 'medium'
-          ? 'SUPPORT TIER medium: nudge their execution only — do not name the full strategy up front, and never reveal the correct option.'
-          : '';
-
-  const resolvedInstanceId = instanceId || 'gravity-drop-tower-default';
-
-  // ── Evaluation hook ──────────────────────────────────────────────
-  const { submitResult, elapsedMs } = usePrimitiveEvaluation<GravityDropTowerMetrics>({
-    primitiveType: 'gravity-drop-tower',
-    instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-  });
-
-  // ── AI tutoring ──────────────────────────────────────────────────
-  const aiPrimitiveData = useMemo(() => ({
-    challengeCount: challenges.length,
-    supportTier,
-  }), [challenges.length, supportTier]);
-
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'gravity-drop-tower',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'K',
-  });
-
-  // ── Challenge progress (shared hooks) ────────────────────────────
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
-
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
-
-  // ── Canvas & physics state ───────────────────────────────────────
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dropStateRef = useRef<DropState>(createDropState(challenges[0], false));
-  const animFrameRef = useRef<number>(0);
-
-  // ── UI state ─────────────────────────────────────────────────────
-  const currentChallenge = challenges[currentChallengeIndex] ?? challenges[0];
-  const [simRunning, setSimRunning] = useState(false);
-  const [simComplete, setSimComplete] = useState(false);
-  const [slowMo, setSlowMo] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
-  const [showingAnswer, setShowingAnswer] = useState(false);
-  const [submittedResult, setSubmittedResult] = useState<{ score: number } | null>(null);
-
-  // Synchronous score for the summary panel. submittedResult is set in the
-  // auto-submit effect, which runs *after* the panel first mounts — without this
-  // fallback the panel mounts at score 0 ('needs-work' tier) and the once-only
-  // celebration (sound + confetti) fires silently, then its guard blocks re-firing.
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challengeResults.length === 0) return 0;
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    return Math.round((correctCount / challengeResults.length) * 100);
-  }, [allChallengesComplete, challengeResults]);
-
-  // ── Auto-submit evaluation when all challenges complete ──────────
-  const hasAutoSubmitted = useRef(false);
+const DropCanvas = ({ picture, run, onDone }: { picture: Omit<TowerPicture, 't'>; run: Run | null; onDone: () => void }) => {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const t = useRef(0);
+  const pic = useRef(picture); pic.current = picture;
+  const done = useRef(onDone); done.current = onDone;
+  const paint = () => {
+    const c = ref.current, ctx = c?.getContext?.('2d');
+    if (c && ctx) drawTower(ctx, { ...pic.current, ...(run ? { drops: run.drops, air: run.air, stopwatch: run.stopwatch } : {}), t: t.current }, window.devicePixelRatio || 1);
+  };
   useEffect(() => {
-    if (!allChallengesComplete || hasAutoSubmitted.current) return;
-    hasAutoSubmitted.current = true;
-
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    const totalAttempts = challengeResults.reduce((s, r) => s + r.attempts, 0);
-    const overallScore = Math.round((correctCount / Math.max(challengeResults.length, 1)) * 100);
-
-    const metrics: GravityDropTowerMetrics = {
-      type: 'gravity-drop-tower',
-      evalMode: currentChallenge?.type,
-      challengesCompleted: challengeResults.length,
-      challengesCorrect: correctCount,
-      totalAttempts,
-      accuracy: overallScore,
-      averageAttemptsPerChallenge: totalAttempts / Math.max(challengeResults.length, 1),
-    };
-
-    submitResult(overallScore >= 70, overallScore, metrics);
-    setSubmittedResult({ score: overallScore });
-
-    const phaseScoreStr = phaseResults.map(
-      p => `${p.label} ${p.score}% (${p.attempts} attempts)`,
-    ).join(', ');
-    sendText(
-      `[ALL_COMPLETE] Student finished all gravity drop challenges! Phase scores: ${phaseScoreStr || `Overall ${overallScore}%`}. Overall: ${overallScore}%. Give encouraging feedback about gravity.`,
-      { silent: true },
-    );
-  }, [allChallengesComplete, challengeResults, currentChallenge, submitResult, phaseResults, sendText]);
-
-  // ── Initialize drop state for current challenge ──────────────────
-  const initDrop = useCallback((challenge: DropChallenge) => {
-    dropStateRef.current = createDropState(challenge, slowMo);
-  }, [slowMo]);
-
-  // ── Sync to current challenge ────────────────────────────────────
-  useEffect(() => {
-    if (currentChallenge && !allChallengesComplete) {
-      initDrop(currentChallenge);
-      setSimRunning(false);
-      setSimComplete(false);
-      setSelectedAnswer(null);
-      setFeedback(null);
-      setShowingAnswer(false);
-      // Redraw
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) drawDropTower(ctx, dropStateRef.current, window.devicePixelRatio || 1);
-      }
-    }
-  }, [currentChallengeIndex, currentChallenge, allChallengesComplete, initDrop]);
-
-  // ── Canvas setup ─────────────────────────────────────────────────
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const c = ref.current;
+    if (!c) return;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = CANVAS_W * dpr;
-    canvas.height = CANVAS_H * dpr;
-    canvas.style.width = `${CANVAS_W}px`;
-    canvas.style.height = `${CANVAS_H}px`;
-    const ctx = canvas.getContext('2d');
-    if (ctx) drawDropTower(ctx, dropStateRef.current, dpr);
+    c.width = CANVAS_W * dpr; c.height = CANVAS_H * dpr;
   }, []);
-
-  // ── Animation loop ───────────────────────────────────────────────
   useEffect(() => {
-    if (!simRunning) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-
-    let running = true;
-    const loop = () => {
-      if (!running) return;
-      dropStateRef.current = stepDrop(dropStateRef.current, 1 / 60);
-      drawDropTower(ctx, dropStateRef.current, dpr);
-
-      if (!dropStateRef.current.isRunning) {
-        setSimRunning(false);
-        setSimComplete(true);
-      } else {
-        animFrameRef.current = requestAnimationFrame(loop);
-      }
+    if (!run) { t.current = 0; paint(); return; }
+    t.current = 0;
+    const end = Math.max(...run.drops.map(d => fallTime(d.obj, d.height, run.air)));
+    let frame = 0;
+    const step = () => {
+      t.current = Math.min(end, t.current + run.rate / 60);
+      paint();
+      if (t.current >= end) { done.current(); return; }
+      frame = requestAnimationFrame(step);
     };
-    animFrameRef.current = requestAnimationFrame(loop);
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run?.key]);
+  // Lever pictures and a new item repaint without restarting a run.
+  useEffect(() => { paint(); });
+  return <canvas ref={ref} className="w-full rounded-lg border border-white/10" style={{ maxWidth: CANVAS_W, aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}
+    aria-label="The drop tower" />;
+};
 
-    return () => {
-      running = false;
-      cancelAnimationFrame(animFrameRef.current);
-    };
-  }, [simRunning]);
+// ============================================================================
+// Component
+// ============================================================================
 
-  // ── Drop button handler ──────────────────────────────────────────
-  const handleDrop = useCallback(() => {
-    if (simRunning) return;
+const GravityDropTowerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  GravityDropTowerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<DropItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+
+  const items = useMemo(() => dropItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.title, data.challenges]);
+  const stableInstanceId = useRef(instanceId || `gravity-drop-tower-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  const sessionItem: DropItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<DropItem | null>(null);
+  const item = practice ?? sessionItem;
+
+  const [choice, setChoice] = useState<string | null>(null);
+  const [order, setOrder] = useState<number[]>([]);
+  /** Workspace path: the wrong answer just checked, shown until Try again. */
+  const [wrongPick, setWrongPick] = useState<{ choice: string | null; order: number[] } | null>(null);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [submitted, setSubmitted] = useState(false);
+  const [watched, setWatched] = useState(0);
+  const [slowMo, setSlowMo] = useState(false);
+  const [run, setRun] = useState<Run | null>(null);
+  const [running, setRunning] = useState(false);
+  const runKey = useRef(0);
+  const tappedCorrect = useRef<string | null>(null);
+
+  const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
+  const leverOn = (id: string) => pulled.includes(id);
+  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<GravityDropTowerMetrics>({
+    primitiveType: 'gravity-drop-tower',
+    instanceId: resolvedInstanceId,
+    skillId, subskillId, objectiveId, exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
+  const aiPrimitiveData = useMemo(() => ({
+    mode: item?.mode ?? 'predict', itemIndex: currentIndex + 1, totalItems: items.length,
+    ask: item ? askOf(item) : title, choices: item ? choicesOf(item).join(', ') : '', attemptNumber: currentAttempts + 1,
+  }), [item, currentIndex, items.length, title, currentAttempts]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'gravity-drop-tower', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: data.gradeLevel ?? 'Grade 3', enabled: !tutorOwned,
+  });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
+
+  const startRun = (drops: Drop[], air: boolean, opts: { slow?: number; stopwatch?: boolean } = {}) => {
+    runKey.current += 1;
+    setRun({ key: runKey.current, drops, air, rate: playRate(drops, air, opts.slow ?? (slowMo ? 3 : 1)), stopwatch: !!opts.stopwatch });
+    setRunning(true);
+  };
+  const clearWork = () => { setChoice(null); setOrder([]); setWrongPick(null); setFeedback(null); };
+  const clearItem = () => {
+    clearWork(); setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false); setWatched(0); setRun(null); setRunning(false);
+  };
+
+  openItem.current = (_index, retry) => {
+    if (retry) { clearWork(); setPracticeSolved(false); return; }
+    setPractice(null); clearItem();
+  };
+
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    if (solved.ask !== 'order') setChoice(keyChoice(solved));
+    setWrongPick(null);
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    setPracticeSolved(true);
+    if (practice.ask !== 'order') setChoice(keyChoice(practice));
+    setWrongPick(null);
+  };
+
+  // Once credited (or revealed), the asked drop runs: the test of the prediction. Observe is run by the learner.
+  const revealedFor = revealed && item ? item.id : null;
+  useEffect(() => {
+    if (!revealedFor || !item || item.mode === 'observe') return;
+    startRun(item.drops, item.air, { stopwatch: item.mode === 'measure' || item.mode === 'calculate', slow: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealedFor]);
+
+  // ── Handlers ──
+  const closed = revealed || wrongPick !== null || learnerBlocked();
+  const mustWatch = item?.mode === 'observe' && watched === 0;
+
+  const drop = () => {
+    if (!item || running || learnerBlocked()) return;
     SoundManager.tap();
-    initDrop(currentChallenge);
-    dropStateRef.current.isRunning = true;
-    dropStateRef.current.slowMo = slowMo;
-    setSimRunning(true);
-    setSimComplete(false);
-  }, [simRunning, currentChallenge, initDrop, slowMo]);
+    setWatched(w => w + 1);
+    startRun(item.drops, item.air);
+  };
+  const replayMeasured = (height: number) => {
+    if (running) return;
+    SoundManager.tap();
+    startRun([{ obj: 'rock', height }], false, { stopwatch: true });
+  };
+  const pick = (c: string) => {
+    if (!item || closed || mustWatch) return;
+    SoundManager.select();
+    setChoice(c); setFeedback(null);
+  };
+  const tapObject = (i: number) => {
+    if (!item || closed || order.includes(i)) return;
+    SoundManager.select();
+    setOrder(o => [...o, i]); setFeedback(null);
+  };
+  const work = { choice, order };
+  const ready = item ? (item.ask === 'order' ? order.length === item.drops.length : choice !== null) : false;
 
-  // ── MC options ───────────────────────────────────────────────────
-  const mcOptions = useMemo(() => {
-    if (!currentChallenge) return [];
-    const correct = currentChallenge.correctAnswer;
-    const distractors = [
-      currentChallenge.distractor0,
-      currentChallenge.distractor1,
-      currentChallenge.distractor2,
-    ].filter(Boolean) as string[];
-    return [correct, ...distractors].sort(() => Math.random() - 0.5);
-  }, [currentChallenge]);
-
-  // ── Answer checking ──────────────────────────────────────────────
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge || !selectedAnswer) return;
-
-    incrementAttempts();
-    const isCorrect = selectedAnswer === currentChallenge.correctAnswer;
-
-    if (isCorrect) {
+  const check = () => {
+    if (!item || !ready || closed || mustWatch) return;
+    const correct = dropCorrect(item, work);
+    progress.commitCheck(describeDropWork(item, work), correct, correct ? undefined : dropMiss(item, work));
+    if (correct) {
       SoundManager.playCorrect();
-      setFeedback({ correct: true, message: 'Correct! Great thinking!' });
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student correctly answered "${currentChallenge.correctAnswer}" for "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Congratulate and explain the gravity concept. ${tierTutorClause}`,
-        { silent: true },
-      );
-    } else {
-      SoundManager.playIncorrect();
-      setFeedback({
-        correct: false,
-        message: currentChallenge.hint,
-      });
-
-      if (currentAttempts >= 2) {
-        recordResult({
-          challengeId: currentChallenge.id,
-          correct: false,
-          attempts: currentAttempts + 1,
-        });
-        setShowingAnswer(true);
-      }
-
-      sendText(
-        `[ANSWER_INCORRECT] Student chose "${selectedAnswer}" but correct is "${currentChallenge.correctAnswer}". Question: "${currentChallenge.question}". Attempt ${currentAttempts + 1}. Give a hint about gravity. ${tierTutorClause}`,
-        { silent: true },
-      );
-    }
-  }, [currentChallenge, selectedAnswer, currentAttempts, incrementAttempts, recordResult, sendText, tierTutorClause]);
-
-  // ── Advance to next challenge ────────────────────────────────────
-  const handleNextChallenge = useCallback(() => {
-    if (!advanceProgress()) {
-      // All done — evaluation auto-submitted via useEffect above
+      if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner answered "${describeDropWork(item, work)}" for: ${askOf(item)} The drop now runs on screen. Praise briefly.`);
       return;
     }
+    SoundManager.playIncorrect();
+    if (tutorOwned) { setWrongPick({ choice, order }); return; }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The drop has run and the answer is on screen ("${keyChoice(item)}"); explain it plainly.`);
+      return;
+    }
+    clearWork();
+    setFeedback(item.mode === 'observe' ? 'Not quite. Drop again and watch closely.' : 'Not quite. Think about what pulls the objects down and what pushes back, and try once more.');
+    say(`[ANSWER_INCORRECT] The learner answered "${describeDropWork(item, work)}" for: ${askOf(item)} It is wrong. You are not told the answer: ask what they notice, without naming a choice.`);
+  };
 
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. Introduce it briefly.`,
-      { silent: true },
-    );
-  }, [advanceProgress, sendText, currentChallengeIndex, challenges.length]);
+  const metrics = (): GravityDropTowerMetrics => {
+    const correct = items.filter(i => results.some(r => r.challengeId === i.id && r.correct)).length;
+    const attempts = results.reduce((s, r) => s + (r.attempts ?? 0), 0);
+    return {
+      type: 'gravity-drop-tower', evalMode: items[0]?.mode, challengesCompleted: results.length, challengesCorrect: correct,
+      totalAttempts: attempts, accuracy: items.length ? Math.round((correct / items.length) * 100) : 0,
+      averageAttemptsPerChallenge: attempts / Math.max(results.length, 1),
+    };
+  };
 
-  // For predict mode: answer BEFORE dropping
-  const isPredictMode = currentChallenge?.type === 'predict';
-  const needsAnswerFirst = isPredictMode && !simComplete && !feedback?.correct;
+  /** Scripted path: Next, and on the last item the session report. */
+  const next = () => {
+    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const m = metrics();
+    setSubmitted(true);
+    submitResult(m.accuracy >= 70, m.accuracy, m, { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} drop challenges. Celebrate briefly.`);
+  };
 
-  // ── Render ───────────────────────────────────────────────────────
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), totalAttempts: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const shownWork = wrongPick ?? work;
+    const scene = workspaceScene(item, { ...shownWork, drops: watched, solved: revealed });
+    const levers = practice ? [] : dropLevers(sessionItem, pulled);
+    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
+        ...(onScreen ? { onScreen } : {}) },
+      ...(item.mode === 'observe' && watched === 0 ? { readyForResponse: false } : {}),
+      levers,
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (l.kind === 'simplify') {
+          const simpler = simplerItem(sessionItem);
+          if (!simpler) return 'There is no simpler item here; try a help lever.';
+          setLeverState(nextState); clearItem(); setPractice(simpler);
+          return { practice: workspaceAssignment(simpler) };
+        }
+        setLeverState(nextState);
+        if (id === SLOW_LEVER) { setWatched(w => w + 1); startRun(sessionItem.drops, sessionItem.air, { slow: 4 }); }
+        return true;
+      },
+      endPractice: () => { clearItem(); setPractice(null); },
+    };
+  });
+
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete ? null : currentChallenge?.id ?? null,
+    scopeId: done || !item ? null : item.id,
     label: 'The drop tower and your answer',
-    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    solved: revealed,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
+  if (!items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This tower has no drops to ask about.</p></LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  const key = item && item.ask !== 'order' ? keyChoice(item) : '';
+  const shownChoice = wrongPick?.choice ?? choice;
+  const choiceState = (c: string): AnswerChoiceState => revealed ? (c === key ? 'correct' : c === choice ? 'incorrect' : 'dimmed')
+    : wrongPick?.choice === c ? 'incorrect' : shownChoice === c ? 'selected' : 'idle';
+  const shownOrder = wrongPick?.order ?? order;
+  const hidden = !!item && !revealed && (item.ask === 'height');
+
+  const revealText = (): string => {
+    if (!item) return '';
+    if (item.mode === 'measure' || item.mode === 'calculate') {
+      const h = item.drops[0].height, t = fallTime('rock', h, false);
+      return item.ask === 'impact' ? `From ${h} m the fall takes ${fmt(t)} s, and the rock hits the ground at ${fmt(speedAt('rock', t, false))} m/s.`
+        : `From ${h} m the stopwatch reads ${fmt(t)} s.`;
+    }
+    if (item.ask === 'speed') return 'It sped up the whole way down: gravity keeps adding speed as it falls.';
+    if (item.ask === 'order') return `They land ${keyOrder(item).map(i => nameOf(item.drops[i])).join(', then ')}.`;
+    if (landTogether(item)) return 'They land together: with no air, gravity speeds every object up the same amount, heavy or light.';
+    const first = item.drops[landingOrder(item)[0]], other = item.drops.find(d => d !== first)!;
+    return `The ${nameOf(first)} lands first: air pushes back much harder on the ${nameOf(other)} for its weight.`;
+  };
+
+  const picture: Omit<TowerPicture, 't'> | null = item ? {
+    drops: item.drops, air: item.air, hideHeight: hidden, stopwatch: false,
+    ghosts: leverOn(SLOW_LEVER) && item.ask === 'speed', levelLine: leverOn(SLOW_LEVER) && item.drops.length === 2,
+    airArrows: leverOn(AIR_LEVER), sameLook: leverOn(SAME_LOOK_LEVER), fallBars: leverOn(FALL_LEVER),
+  } : null;
+
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-slate-100">{title}</CardTitle>
-            <CardDescription className="text-slate-400">{description}</CardDescription>
-          </div>
-          {!allChallengesComplete && challenges.length > 0 && (
-            <Badge variant="outline" className="border-white/20 text-slate-300">
-              {currentChallengeIndex + 1} / {challenges.length}
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Summary panel when complete */}
-        {allChallengesComplete && phaseResults.length > 0 && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
-            heading="Challenge Complete!"
-            celebrationMessage="You explored gravity and falling objects!"
-            className="mb-6"
-          />
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{title}</LuminaCardTitle>
+        {!done && item && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {practice ? 'A simpler item first' : `${MODE_LABEL[item.mode]} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
         )}
+      </LuminaCardHeader>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
-        {/* Canvas drop tower */}
-        <div className="rounded-lg overflow-hidden border border-white/10">
-          <canvas
-            ref={canvasRef}
-            className="w-full"
-            style={{ maxWidth: CANVAS_W, aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}
-          />
-        </div>
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Tower complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} drops answered.`}
+          </LuminaFeedbackCard>
+        ) : item && picture && (
+          <>
+            <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
 
-        {/* Challenge instruction & question */}
-        {currentChallenge && !allChallengesComplete && (
-          <div className="rounded-lg bg-white/5 border border-white/10 p-3">
-            <p className="text-slate-200 text-sm font-medium">{currentChallenge.instruction}</p>
-            <p className="text-slate-300 text-sm mt-1">{currentChallenge.question}</p>
-            {currentChallenge.objects.length > 1 && (
-              <p className="text-slate-400 text-xs mt-1">
-                Dropping: {currentChallenge.objects.map(o => `${o.emoji} ${o.name} (${o.mass}kg)`).join(' vs ')}
-                {' '}from {currentChallenge.height}m
-                {currentChallenge.airResistance ? ' (with air resistance)' : ''}
-              </p>
-            )}
-            {currentChallenge.objects.length === 1 && (
-              <p className="text-slate-400 text-xs mt-1">
-                {currentChallenge.objects[0].emoji} {currentChallenge.objects[0].name} ({currentChallenge.objects[0].mass}kg)
-                — Drop height: {currentChallenge.height}m
-                {currentChallenge.airResistance ? ' (with air resistance)' : ''}
-              </p>
-            )}
-          </div>
-        )}
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
+              <DropCanvas picture={picture} run={run} onDone={() => setRunning(false)} />
 
-        {/* Controls row */}
-        {!allChallengesComplete && (
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Slow-mo toggle */}
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={slowMo}
-                onCheckedChange={setSlowMo}
-                disabled={simRunning}
-              />
-              <span className="text-xs text-slate-400">Slow-mo</span>
-            </div>
-
-            {/* Air resistance indicator */}
-            {currentChallenge?.airResistance && (
-              <Badge variant="outline" className="border-blue-400/30 text-blue-300 text-xs">
-                Air Resistance ON
-              </Badge>
-            )}
-
-            {/* Drop button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-              onClick={handleDrop}
-              disabled={simRunning || allChallengesComplete || needsAnswerFirst}
-            >
-              {simRunning ? 'Dropping...' : needsAnswerFirst ? 'Predict first!' : simComplete ? 'Drop Again' : 'Drop!'}
-            </Button>
-          </div>
-        )}
-
-        {/* MC answer options */}
-        {currentChallenge && !allChallengesComplete && mcOptions.length > 0 && (
-          <div className="space-y-2">
-            {isPredictMode && !simComplete && (
-              <p className="text-xs text-amber-400/70">Make your prediction first, then drop to check!</p>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {mcOptions.map((opt, i) => {
-                const isSelected = selectedAnswer === opt;
-                const isCorrectAnswer = opt === currentChallenge.correctAnswer;
-                const showCorrect = showingAnswer && isCorrectAnswer;
-
-                return (
-                  <Button
-                    key={`${currentChallenge.id}-${i}`}
-                    variant="ghost"
-                    className={`text-left text-sm justify-start h-auto py-2 px-3 whitespace-normal ${
-                      showCorrect
-                        ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
-                        : isSelected
-                          ? 'bg-blue-500/20 border border-blue-400/40 text-blue-300'
-                          : 'bg-white/5 border border-white/20 text-slate-300 hover:bg-white/10'
-                    }`}
-                    onClick={() => {
-                      if (feedback?.correct || showingAnswer) return;
-                      SoundManager.select();
-                      setSelectedAnswer(opt);
-                    }}
-                    disabled={!!feedback?.correct || showingAnswer}
-                  >
-                    {opt}
-                  </Button>
-                );
-              })}
-            </div>
-
-            {/* Check / Next buttons */}
-            <div className="flex gap-2">
-              {!feedback?.correct && !showingAnswer && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-                  onClick={handleCheckAnswer}
-                  disabled={!selectedAnswer}
-                >
-                  Check Answer
-                </Button>
+              {item.mode === 'observe' && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <LuminaButton tone="primary" aria-label="Drop" disabled={running || learnerBlocked()} onClick={drop}>
+                    {running ? 'Falling…' : watched ? 'Drop again' : 'Drop'}
+                  </LuminaButton>
+                  <LuminaButton tone="subtle" aria-label={slowMo ? 'Slow motion on' : 'Slow motion off'} disabled={running}
+                    onClick={() => setSlowMo(s => !s)}>{slowMo ? 'Slow motion: on' : 'Slow motion: off'}</LuminaButton>
+                  {mustWatch && <span className="text-xs text-slate-400">Drop them and watch before you answer.</span>}
+                </div>
               )}
-              {(feedback?.correct || showingAnswer) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-emerald-500/20 border border-emerald-400/40 hover:bg-emerald-500/30 text-emerald-300"
-                  onClick={handleNextChallenge}
-                >
-                  {currentChallengeIndex + 1 >= challenges.length ? 'Finish' : 'Next Challenge'}
-                </Button>
+
+              {item.mode === 'measure' && (
+                <LuminaPanel>
+                  <table className="w-full text-sm" aria-label="Stopwatch table">
+                    <thead><tr className="text-left text-xs text-slate-400"><th className="py-1">Height</th><th className="py-1">Fall time</th><th /></tr></thead>
+                    <tbody>
+                      {(item.measured ?? []).map(m => (
+                        <tr key={m} className="text-slate-200">
+                          <td className="py-1 font-mono">{m} m</td><td className="py-1 font-mono">{fmt(measuredTime(m))} s</td>
+                          <td className="py-1 text-right">
+                            <LuminaButton tone="subtle" size="sm" aria-label={`Replay the ${m} m drop`} disabled={running} onClick={() => replayMeasured(m)}>Replay</LuminaButton>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="text-cyan-200">
+                        <td className="py-1 font-mono">{item.ask === 'height' && !revealed ? '?' : `${item.drops[0].height} m`}</td>
+                        <td className="py-1 font-mono">{item.ask === 'time' && !revealed ? '?' : `${fmt(item.ask === 'height' ? item.time! : measuredTime(item.drops[0].height))} s`}</td>
+                        <td />
+                      </tr>
+                    </tbody>
+                  </table>
+                  {leverOn(PATTERN_LEVER) && (
+                    <p data-lever="pattern-line" className="mt-2 text-sm text-slate-300">{patternLines(item).join(' ')}</p>
+                  )}
+                </LuminaPanel>
+              )}
+
+              {leverOn(MOON_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="moon-card" className="space-y-1 text-sm text-slate-300">
+                  <p className="text-lg" aria-hidden="true">🌕 🔨 🪶</p>
+                  {MOON_LINES.map(l => <p key={l}>{l}</p>)}
+                </LuminaPanel>
+              )}
+              {leverOn(AIR_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="air-arrows" className="space-y-1 text-sm text-slate-300">
+                  {airLines(item).map(l => <p key={l}>{l}</p>)}
+                </LuminaPanel>
+              )}
+              {leverOn(FALL_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="fall-lines" className="text-sm text-slate-300">{fallLines(item).join(' · ')}</LuminaPanel>
+              )}
+              {leverOn(SAME_LOOK_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="same-look" className="text-sm text-slate-300">The three are drawn as the same grey ball; only the heights differ.</LuminaPanel>
+              )}
+              {leverOn(SLOW_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="slow-replay" className="text-sm text-slate-300">
+                  {item.ask === 'speed' ? 'Slow replay with a ghost picture at equal moments of the fall.' : 'Slow replay with a line joining the two objects.'}
+                </LuminaPanel>
+              )}
+              {leverOn(FORMULA_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="formula-card" className="space-y-1 font-mono text-sm text-slate-300">
+                  {formulaLines(item).map(l => <p key={l}>{l}</p>)}
+                </LuminaPanel>
+              )}
+              {leverOn(FILL_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="fill-in" className="space-y-1 font-mono text-sm text-slate-300">
+                  {fillLines(item).map(l => <p key={l}>{l}</p>)}
+                </LuminaPanel>
+              )}
+
+              {item.ask === 'order' ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    {item.drops.map((d, i) => {
+                      const at = shownOrder.indexOf(i);
+                      return (
+                        <LuminaAnswerChoice key={i} aria-label={tapLabel(item, i)} disabled={closed || at >= 0}
+                          state={revealed ? 'dimmed' : wrongPick ? 'incorrect' : at >= 0 ? 'selected' : 'idle'}
+                          className="p-3 text-center text-sm" onClick={() => tapObject(i)}>
+                          <span aria-hidden="true">{at >= 0 ? `${at + 1}. ` : ''}{FALLERS[d.obj].emoji} </span>
+                          {tapLabel(item, i)}
+                        </LuminaAnswerChoice>
+                      );
+                    })}
+                  </div>
+                  {!closed && order.length > 0 && (
+                    <LuminaButton tone="subtle" size="sm" onClick={() => setOrder([])}>Start over</LuminaButton>
+                  )}
+                </div>
+              ) : (
+                <div className={`grid gap-2 ${choicesOf(item).length > 3 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-3'}`}>
+                  {choicesOf(item).map(c => (
+                    <LuminaAnswerChoice key={c} aria-label={c} state={choiceState(c)} disabled={closed || mustWatch}
+                      className="p-3 text-center text-sm font-semibold" onClick={() => pick(c)}>
+                      {c}
+                    </LuminaAnswerChoice>
+                  ))}
+                </div>
               )}
             </div>
 
-            {/* Feedback */}
-            {feedback && (
-              <div className={`text-sm px-3 py-2 rounded-lg ${
-                feedback.correct
-                  ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-400/20'
-                  : 'bg-amber-500/10 text-amber-300 border border-amber-400/20'
-              }`}>
-                {feedback.message}
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={!ready || closed || mustWatch} onClick={check}>Check Answer</LuminaActionButton>
               </div>
             )}
-          </div>
-        )}
-        </div>
 
-      </CardContent>
-    </Card>
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {revealText()}
+              </LuminaFeedbackCard>
+            )}
+            {revealed && item.mode !== 'observe' && (
+              <div className="flex justify-center">
+                <LuminaButton tone="subtle" size="sm" disabled={running}
+                  onClick={() => startRun(item.drops, item.air, { stopwatch: item.mode === 'measure' || item.mode === 'calculate' })}>Watch the drop again</LuminaButton>
+              </div>
+            )}
+            {!revealed && wrongPick !== null && <LuminaFeedbackCard status="incorrect">{wrongPick.choice ? `"${wrongPick.choice}" is not it.` : 'That order is not it.'}</LuminaFeedbackCard>}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
+
+            {!tutorOwned && revealed && !practice && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
+              </div>
+            )}
+          </>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
-}
+};
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const GravityDropTower = withWorkspaceController<GravityDropTowerProps, ProgressOptions<DropItem>, Progress>(
+  'gravity-drop-tower', GravityDropTowerSurface, useScriptedProgress, useWorkspaceProgressFor('gravity-drop-tower'));
+
+export default GravityDropTower;

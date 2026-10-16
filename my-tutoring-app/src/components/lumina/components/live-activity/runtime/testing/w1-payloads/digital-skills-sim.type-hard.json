@@ -1,0 +1,46 @@
+{
+ "source": "qa/tutor-reports/digital-skills-sim-runtime-type-hard-payload-2026-10-16.json",
+ "primitiveId": "digital-skills-sim",
+ "evalMode": "type",
+ "data": {
+  "title": "Fun Farm Typing",
+  "description": "You will practice finding and pressing letters on your keyboard.",
+  "theme": "farm",
+  "challengeTypes": [
+   "type"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "mode": "type",
+    "text": "VAN",
+    "lower": false,
+    "id": "type-1"
+   },
+   {
+    "mode": "type",
+    "text": "JAM",
+    "lower": false,
+    "id": "type-2"
+   },
+   {
+    "mode": "type",
+    "text": "HEN",
+    "lower": false,
+    "id": "type-3"
+   },
+   {
+    "mode": "type",
+    "text": "BOX",
+    "lower": false,
+    "id": "type-4"
+   },
+   {
+    "mode": "type",
+    "text": "LOG",
+    "lower": false,
+    "id": "type-5"
+   }
+  ]
+ }
+}

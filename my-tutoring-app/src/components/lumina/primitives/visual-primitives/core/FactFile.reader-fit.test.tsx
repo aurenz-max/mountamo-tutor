@@ -27,7 +27,7 @@ vi.mock('../../../evaluation', () => ({
 
 vi.mock('../../../utils/SoundManager', () => ({
   SoundManager: {
-    tap: vi.fn(), select: vi.fn(), pop: vi.fn(),
+    tap: vi.fn(), select: vi.fn(), pop: vi.fn(), navigate: vi.fn(),
     playCorrect: vi.fn(), playIncorrect: vi.fn(), playStreak: vi.fn(),
     isEnabled: () => false, getVolume: () => 1, play: vi.fn(),
   },

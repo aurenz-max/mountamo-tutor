@@ -1,0 +1,80 @@
+{
+ "source": "qa/tutor-reports/gravity-drop-tower-runtime-predict-payload-2026-10-15.json",
+ "primitiveId": "gravity-drop-tower",
+ "evalMode": "predict",
+ "data": {
+  "title": "The Tower Drop Investigation",
+  "description": "You will investigate what happens when different objects are dropped from the top of the tower.",
+  "challengeTypes": [
+   "predict"
+  ],
+  "difficulty": "hard",
+  "gradeLevel": "Grade 2",
+  "items": [
+   {
+    "id": "predict-1",
+    "mode": "predict",
+    "ask": "reason",
+    "air": true,
+    "drops": [
+     {
+      "obj": "feather",
+      "height": 5
+     },
+     {
+      "obj": "hammer",
+      "height": 5
+     }
+    ]
+   },
+   {
+    "id": "predict-2",
+    "mode": "predict",
+    "ask": "reason",
+    "air": false,
+    "drops": [
+     {
+      "obj": "marble",
+      "height": 12
+     },
+     {
+      "obj": "hammer",
+      "height": 12
+     }
+    ]
+   },
+   {
+    "id": "predict-3",
+    "mode": "predict",
+    "ask": "reason",
+    "air": false,
+    "drops": [
+     {
+      "obj": "brick",
+      "height": 12
+     },
+     {
+      "obj": "feather",
+      "height": 12
+     }
+    ]
+   },
+   {
+    "id": "predict-4",
+    "mode": "predict",
+    "ask": "reason",
+    "air": false,
+    "drops": [
+     {
+      "obj": "hammer",
+      "height": 5
+     },
+     {
+      "obj": "paper_sheet",
+      "height": 5
+     }
+    ]
+   }
+  ]
+ }
+}

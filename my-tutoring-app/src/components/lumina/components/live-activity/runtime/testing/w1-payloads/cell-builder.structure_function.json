@@ -1,0 +1,139 @@
+{
+ "source": "qa/tutor-reports/cell-builder-runtime-structure_function-payload-2026-10-15.json",
+ "primitiveId": "cell-builder",
+ "evalMode": "structure_function",
+ "data": {
+  "challengeType": "structure_function",
+  "title": "Plant Power: Leaf Cell Builder",
+  "description": "Build a working plant cell by placing the correct parts in the right places and matching their jobs!",
+  "cellType": "plant",
+  "cellContext": "leaf cell",
+  "organelles": [
+   {
+    "id": "nucleus",
+    "name": "Nucleus",
+    "function": "Acts as the brain of the cell and holds the instruction manual.",
+    "analogy": "Like the principal's office of a school.",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "center",
+    "expectedQuantity": "few",
+    "quantityReasoning": "A plant cell only needs one main control center to direct all its daily activities.",
+    "uniqueTo": "all eukaryotic cells"
+   },
+   {
+    "id": "mitochondria",
+    "name": "Mitochondria",
+    "function": "Turns food into energy the cell can use.",
+    "analogy": "Like a power plant for the cell.",
+    "belongsInCell": true,
+    "sizeRelative": "medium",
+    "correctZone": "scattered",
+    "expectedQuantity": "some",
+    "quantityReasoning": "Leaf cells need some energy to run their processes, but they also get energy from sunlight.",
+    "uniqueTo": "all eukaryotic cells"
+   },
+   {
+    "id": "chloroplast",
+    "name": "Chloroplast",
+    "function": "Captures sunlight to make food for the plant.",
+    "analogy": "Like tiny solar panels.",
+    "belongsInCell": true,
+    "sizeRelative": "medium",
+    "correctZone": "scattered",
+    "expectedQuantity": "lots",
+    "quantityReasoning": "Leaf cells need lots of chloroplasts because their main job is to capture sunlight for making food.",
+    "uniqueTo": "plant cells only"
+   },
+   {
+    "id": "vacuole",
+    "name": "Large Central Vacuole",
+    "function": "Stores water and helps keep the plant crisp and firm.",
+    "analogy": "Like a giant water storage tank.",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "large-central",
+    "expectedQuantity": "few",
+    "quantityReasoning": "Plant cells use one giant storage tank to hold water and keep the plant from wilting.",
+    "uniqueTo": "plant cells"
+   },
+   {
+    "id": "cytoplasm",
+    "name": "Cytoplasm",
+    "function": "Fills the cell and keeps all the parts floating in place.",
+    "analogy": "Like a thick, jelly-like soup.",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "peripheral",
+    "expectedQuantity": "lots",
+    "quantityReasoning": "The cell needs enough jelly-like filling throughout to cushion and support all internal parts.",
+    "uniqueTo": "all cells"
+   },
+   {
+    "id": "cell_membrane",
+    "name": "Cell Membrane",
+    "function": "Controls what goes in and out of the cell.",
+    "analogy": "Like a security guard at the door.",
+    "belongsInCell": true,
+    "sizeRelative": "medium",
+    "correctZone": "membrane-associated",
+    "expectedQuantity": "few",
+    "quantityReasoning": "One continuous boundary is needed to wrap around the entire cell.",
+    "uniqueTo": "all cells"
+   },
+   {
+    "id": "centrioles",
+    "name": "Centrioles",
+    "function": "Help organize cell division in animal cells.",
+    "analogy": "Like construction workers setting up scaffolding.",
+    "belongsInCell": false,
+    "sizeRelative": "small",
+    "correctZone": "near-nucleus",
+    "distractorExplanation": "Centrioles are mostly found in animal cells, not plant cells.",
+    "expectedQuantity": "few",
+    "quantityReasoning": "Not applicable",
+    "uniqueTo": "animal cells only"
+   }
+  ],
+  "functionMatches": [
+   {
+    "organelleId": "nucleus",
+    "functionDescription": "Stores the genetic blueprint and directs all cellular activities."
+   },
+   {
+    "organelleId": "mitochondria",
+    "functionDescription": "Breaks down nutrients to supply usable power for cellular tasks."
+   },
+   {
+    "organelleId": "chloroplast",
+    "functionDescription": "Absorbs light energy to convert carbon dioxide and water into sugars."
+   },
+   {
+    "organelleId": "vacuole",
+    "functionDescription": "Maintains internal pressure by holding water and dissolved materials."
+   },
+   {
+    "organelleId": "cytoplasm",
+    "functionDescription": "Provides a fluid medium where organelles are suspended and protected."
+   },
+   {
+    "organelleId": "cell_membrane",
+    "functionDescription": "Selectively lets helpful substances pass through while blocking unwanted items."
+   }
+  ],
+  "cellMembrane": {
+   "description": "A flexible outer layer surrounding the cell contents.",
+   "function": "Regulates the movement of water, nutrients, and waste into and out of the cell."
+  },
+  "cellWall": {
+   "present": true,
+   "description": "A tough, rigid outer layer made of cellulose that sits outside the cell membrane."
+  },
+  "gradeBand": "4-5",
+  "targetEvalMode": "structure_function",
+  "objectiveGrade": "6",
+  "challengeTypes": [
+   "structure_function"
+  ]
+ }
+}

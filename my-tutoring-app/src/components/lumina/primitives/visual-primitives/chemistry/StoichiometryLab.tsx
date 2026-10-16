@@ -1,84 +1,108 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+/**
+ * Stoichiometry Lab: one balanced reaction, three task identities (one eval mode each).
+ * - convert: build the chain of conversion-factor cards that turns a given mass into the asked amount.
+ * - limiting: two reactant jars; say which runs out first, or that both run out together.
+ * - yield: two reactant jars; how many grams of a product can form.
+ *
+ * Every item is built and keyed by code from the reaction (`stoichiometryLabWorkspace.ts`); molar masses come from the
+ * formulas. Nothing on screen computes the answer before credit: no mole counts, no running units, no "run the
+ * reaction" panel, and the jars are the same size whatever they hold. Two paths, chosen by `withWorkspaceController`:
+ * the scripted path (tester, no tutor) has its own Next and two tries before the worked answer; the workspace path (W1,
+ * plain shape) commits every check through `progress.commitCheck` with a named miss, takes a spoken answer on limiting
+ * and yield, and lets the runtime move on. The levers live in `stoichiometryLabLevers.ts`.
+ */
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { StoichiometryLabMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
-import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
-import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaButton,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaInput,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askOf, BOTH, cardLabel, convertKey, convertValue, describeStoichWork, factorOf, fmt, limitingOf, NO_WORK, parseGrams,
+  runningUnits, stoichCorrect, stoichItems, stoichMiss, subOf, workspaceAssignment, workspaceScene, yieldOf,
+  type Amount, type Qty, type Rx, type StoichItem, type StoichMode, type StoichTier, type StoichWork,
+} from './stoichiometryLabWorkspace';
+import {
+  EASIER_LEVER, easierItem, leverFact, MAP_LEVER, mapStations, moleLine, MOLES_LEVER, RECIPE_LEVER, revealLine,
+  stoichLevers, UNITS_LEVER,
+} from './stoichiometryLabLevers';
 
 // ============================================================================
-// Data Types (Single Source of Truth)
+// Data Types (single source of truth; the generator imports them)
 // ============================================================================
 
 export interface StoichSubstance {
   formula: string;
+  /** Recomputed from the formula wherever code can read it. */
   molarMass: number;
   coefficient: number;
+  name?: string;
 }
 
 export interface StoichReaction {
+  /** The library reaction's id (`REACTIONS`), when the generator picked one. */
+  id?: string;
   equation: string;
   reactants: StoichSubstance[];
   products: StoichSubstance[];
 }
 
-export type StoichChallengeType = 'convert' | 'limiting' | 'yield';
+export type StoichChallengeType = StoichMode;
 
+/** One item as the generator writes it. Keys are never stored: code computes them from these givens. */
 export interface StoichChallenge {
   id: string;
   type: StoichChallengeType;
-  instruction: string;
-  hint: string;
-  narration: string;
-  askFor: string;
-
+  /** The structure the item was built at (`buildConvert`, `buildPair`). */
+  tier?: StoichTier;
   givenFormulaA: string;
   givenMassA: number;
-  givenFormulaB: string | null;
-  givenMassB: number | null;
-
-  /** For convert/yield: numeric answer (g or mol). For limiting: ignored. */
-  targetAnswer: number;
-  /** For convert/yield: which substance the numeric answer refers to. */
-  answerFormula: string | null;
-  /** For convert/yield: 'g' or 'mol'. */
-  answerUnit: 'g' | 'mol' | null;
-  /** Acceptable +/- range on numeric answer. */
-  tolerance: number;
-  /** For limiting: which formula is the limiting reagent. */
-  targetAnswerFormula: string | null;
-  /** For yield: actual experimental yield in grams. If present, student computes percent yield. */
-  actualYield: number | null;
+  givenFormulaB?: string | null;
+  givenMassB?: number | null;
+  /** convert: the goal substance; yield: the product. */
+  answerFormula?: string | null;
+  answerUnit?: 'g' | 'mol' | null;
+  /** convert: the factor cards on the tray, in order. */
+  tray?: string[];
+  /** Legacy generations carry these; none is read (every key is recomputed, and the old text named the strategy). */
+  instruction?: string;
+  hint?: string;
+  narration?: string;
+  askFor?: string;
+  targetAnswer?: number;
+  tolerance?: number;
+  targetAnswerFormula?: string | null;
+  actualYield?: number | null;
 }
 
+/** Legacy panel toggles; the rebuilt lab has no pre-computed panels, so none is read. */
 export interface StoichShowOptions {
   showMoleLadder: boolean;
   showLeftovers: boolean;
   showRatioStrip: boolean;
   showPercentYield: boolean;
-  /**
-   * Show the "Run the reaction" output panel (computed limiting reagent + product
-   * yields + leftovers). This is a self-check overlay: it surfaces the very values
-   * the student is being asked to find. Withdrawn at the hard support tier so the
-   * student works unaided. Defaults true (the no-tier / easy behavior).
-   */
   showReactionOutput: boolean;
 }
 
@@ -87,15 +111,12 @@ export interface StoichiometryLabData {
   description?: string;
   reaction: StoichReaction;
   challenges: StoichChallenge[];
+  /** The eval modes this session asks, in order (`resolveStoichModes`). */
+  challengeTypes?: StoichMode[];
   showOptions?: Partial<StoichShowOptions>;
   gradeBand?: '8' | '9-10' | '11-12';
-  /**
-   * Within-mode support tier from the manifest ('easy' | 'medium' | 'hard').
-   * Scaffolding level only — never changes numbers. Threaded to the live tutor so
-   * its reveal policy is tier-aware (easy: name the mole-map step; hard: ask what
-   * the student sees, never name the strategy the instruction hid).
-   */
-  supportTier?: 'easy' | 'medium' | 'hard';
+  /** The structure tier the items were built at (`config.difficulty`). */
+  supportTier?: StoichTier;
 
   instanceId?: string;
   skillId?: string;
@@ -105,925 +126,481 @@ export interface StoichiometryLabData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<StoichiometryLabMetrics>) => void;
 }
 
-// ============================================================================
-// Phase config (shared challenge progression)
-// ============================================================================
-
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  convert:  { label: 'Convert',         icon: '⚖️', accentColor: 'blue' },
-  limiting: { label: 'Limiting Reagent', icon: '🧪', accentColor: 'amber' },
-  yield:    { label: 'Yield',            icon: '📈', accentColor: 'emerald' },
-};
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function formatNum(n: number, digits = 2): string {
-  if (!Number.isFinite(n)) return '—';
-  if (Math.abs(n) >= 100) return n.toFixed(1);
-  return n.toFixed(digits);
+interface StoichiometryLabProps {
+  data: StoichiometryLabData;
+  className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
-/** Render chemical formula with subscripts. */
-function renderFormula(formula: string): React.ReactNode {
-  if (!formula) return null;
-  const parts: React.ReactNode[] = [];
-  let i = 0;
-  while (i < formula.length) {
-    const char = formula[i];
-    if (/\d/.test(char) && i > 0 && /[a-zA-Z)]/.test(formula[i - 1])) {
-      parts.push(<sub key={i} className="text-[0.75em]">{char}</sub>);
-    } else {
-      parts.push(<span key={i}>{char}</span>);
-    }
-    i++;
-  }
-  return <span className="font-mono">{parts}</span>;
-}
-
-/** Find a substance by formula across reactants and products. */
-function findSubstance(reaction: StoichReaction, formula: string): StoichSubstance | null {
-  return [...reaction.reactants, ...reaction.products].find(s => s.formula === formula) ?? null;
-}
-
-/** Compute moles from grams given molar mass. */
-function gramsToMoles(grams: number, molarMass: number): number {
-  if (!molarMass) return 0;
-  return grams / molarMass;
-}
-
-/** Compute grams from moles given molar mass. */
-function molesToGrams(moles: number, molarMass: number): number {
-  return moles * molarMass;
-}
-
-/** Determine the limiting reagent and how many moles of each product can form. */
-interface ReactionResult {
-  limitingFormula: string;
-  excessFormula: string;
-  productMoles: Record<string, number>;
-  productGrams: Record<string, number>;
-  leftoverMolesByFormula: Record<string, number>;
-  leftoverGramsByFormula: Record<string, number>;
-}
-
-function computeReactionOutcome(
-  reaction: StoichReaction,
-  reactantMasses: Record<string, number>,
-): ReactionResult | null {
-  if (reaction.reactants.length < 1) return null;
-
-  // Compute moles per reactant and "extents" (moles available / coefficient)
-  const extents: { formula: string; moles: number; extent: number; coefficient: number }[] = [];
-  for (const r of reaction.reactants) {
-    const mass = reactantMasses[r.formula] ?? 0;
-    const moles = gramsToMoles(mass, r.molarMass);
-    const extent = r.coefficient > 0 ? moles / r.coefficient : 0;
-    extents.push({ formula: r.formula, moles, extent, coefficient: r.coefficient });
-  }
-
-  // Limiting reagent has the smallest extent
-  const limiting = extents.reduce((a, b) => (a.extent <= b.extent ? a : b));
-  const excess = extents.reduce((a, b) => (a.extent >= b.extent ? a : b));
-  const reactionExtent = limiting.extent;
-
-  // Products formed
-  const productMoles: Record<string, number> = {};
-  const productGrams: Record<string, number> = {};
-  for (const p of reaction.products) {
-    const moles = reactionExtent * p.coefficient;
-    productMoles[p.formula] = moles;
-    productGrams[p.formula] = molesToGrams(moles, p.molarMass);
-  }
-
-  // Leftovers
-  const leftoverMolesByFormula: Record<string, number> = {};
-  const leftoverGramsByFormula: Record<string, number> = {};
-  for (const r of extents) {
-    const consumed = reactionExtent * r.coefficient;
-    const leftoverMoles = Math.max(0, r.moles - consumed);
-    const sub = reaction.reactants.find(x => x.formula === r.formula);
-    leftoverMolesByFormula[r.formula] = leftoverMoles;
-    leftoverGramsByFormula[r.formula] = sub ? molesToGrams(leftoverMoles, sub.molarMass) : 0;
-  }
-
-  return {
-    limitingFormula: limiting.formula,
-    excessFormula: excess.formula,
-    productMoles,
-    productGrams,
-    leftoverMolesByFormula,
-    leftoverGramsByFormula,
-  };
-}
+const MODE_LABEL: Record<StoichMode, string> = { convert: 'Conversion chain', limiting: 'Which runs out first', yield: 'How much forms' };
 
 // ============================================================================
-// Sub-components
+// Bespoke lab pieces
 // ============================================================================
 
-const EquationStrip: React.FC<{ reaction: StoichReaction }> = ({ reaction }) => (
-  <div className="bg-slate-800/40 rounded-xl p-4 border border-white/5">
-    <div className="flex items-center justify-center flex-wrap gap-3 text-slate-100 text-lg">
-      {reaction.reactants.map((r, i) => (
-        <React.Fragment key={`r-${i}`}>
-          {i > 0 && <span className="text-slate-500 text-xl font-light">+</span>}
-          <div className="flex flex-col items-center">
-            <span className="text-amber-300 font-bold text-base">{r.coefficient}</span>
-            <span>{renderFormula(r.formula)}</span>
-            <span className="text-slate-500 text-xs">{r.molarMass} g/mol</span>
-          </div>
-        </React.Fragment>
-      ))}
-      <span className="text-slate-300 text-2xl mx-2">→</span>
-      {reaction.products.map((p, i) => (
-        <React.Fragment key={`p-${i}`}>
-          {i > 0 && <span className="text-slate-500 text-xl font-light">+</span>}
-          <div className="flex flex-col items-center">
-            <span className="text-emerald-300 font-bold text-base">{p.coefficient}</span>
-            <span>{renderFormula(p.formula)}</span>
-            <span className="text-slate-500 text-xs">{p.molarMass} g/mol</span>
-          </div>
-        </React.Fragment>
-      ))}
-    </div>
-  </div>
+/** A formula with its digits as subscripts. */
+const Formula = ({ f }: { f: string }) => (
+  <span className="font-mono">
+    {Array.from(f).map((ch, i) => (/\d/.test(ch) && i > 0 && /[a-zA-Z)]/.test(f[i - 1])
+      ? <sub key={i} className="text-[0.75em]">{ch}</sub> : <span key={i}>{ch}</span>))}
+  </span>
 );
 
-const MoleLadder: React.FC<{
-  formula: string;
-  grams: number;
-  molarMass: number;
-}> = ({ formula, grams, molarMass }) => {
-  const moles = gramsToMoles(grams, molarMass);
-  return (
-    <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-sm">📐</span>
-        <span className="text-slate-300 text-sm font-medium">
-          Mole Ladder · {renderFormula(formula)}
-        </span>
-      </div>
-      <div className="flex items-center justify-between text-sm gap-2">
-        <div className="flex flex-col items-center bg-slate-900/40 rounded-md px-3 py-2 flex-1 border border-white/5">
-          <span className="text-slate-500 text-[10px] uppercase tracking-wider">Mass</span>
-          <span className="text-slate-100 font-mono font-bold">{formatNum(grams)} g</span>
-        </div>
-        <div className="text-slate-500 text-xs flex flex-col items-center">
-          <span>÷ {molarMass}</span>
-          <span className="text-slate-600">g/mol</span>
-        </div>
-        <div className="flex flex-col items-center bg-slate-900/40 rounded-md px-3 py-2 flex-1 border border-white/5">
-          <span className="text-slate-500 text-[10px] uppercase tracking-wider">Moles</span>
-          <span className="text-emerald-300 font-mono font-bold">{formatNum(moles, 3)} mol</span>
-        </div>
-      </div>
+const QtyText = ({ q }: { q: Qty }) => <span>{fmt(q.n)} {q.unit} <Formula f={q.formula} /></span>;
+
+const EquationStrip = ({ rx }: { rx: Rx }) => {
+  const side = (s: 'reactant' | 'product') => rx.subs.filter(x => x.side === s);
+  const term = (x: Rx['subs'][number]) => (
+    <div key={x.formula} className="flex flex-col items-center">
+      <span className="text-lg text-slate-100">{x.c > 1 ? x.c : ''}<Formula f={x.formula} /></span>
+      <span className="text-[10px] text-slate-500">{fmt(x.M)} g/mol</span>
     </div>
+  );
+  const join = (xs: Rx['subs']) => xs.flatMap((x, i) => [...(i ? [<span key={`p${i}`} className="text-slate-500">+</span>] : []), term(x)]);
+  return (
+    <LuminaPanel className="flex flex-wrap items-center justify-center gap-3">
+      {join(side('reactant'))}
+      <span className="mx-1 text-2xl text-slate-300">→</span>
+      {join(side('product'))}
+    </LuminaPanel>
   );
 };
 
-const RatioStrip: React.FC<{ reaction: StoichReaction }> = ({ reaction }) => (
-  <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5">
-    <div className="flex items-center gap-2 mb-2">
-      <span className="text-sm">🔢</span>
-      <span className="text-slate-300 text-sm font-medium">Mole Ratios from Coefficients</span>
+/** A reactant jar. Every jar is drawn the same size: its fill never shows how much it holds. */
+const Jar = ({ rx, amount, note }: { rx: Rx; amount: Amount; note?: string }) => (
+  <div className="flex flex-col items-center gap-1">
+    <div className="relative h-24 w-20 overflow-hidden rounded-b-2xl rounded-t-md border-2 border-white/20 bg-slate-800/30">
+      <div className="absolute bottom-0 left-0 right-0 h-[60%] bg-cyan-400/20" />
     </div>
-    <div className="flex flex-wrap items-center gap-2 text-slate-200 text-sm font-mono">
-      {[...reaction.reactants, ...reaction.products].map((s, i, arr) => (
-        <React.Fragment key={`ratio-${i}`}>
-          <span className="bg-slate-900/40 rounded px-2 py-1 border border-white/5">
-            {s.coefficient} {renderFormula(s.formula)}
-          </span>
-          {i < arr.length - 1 && <span className="text-slate-500">:</span>}
-        </React.Fragment>
-      ))}
-    </div>
+    <span className="text-sm font-semibold text-slate-100">{fmt(amount.grams)} g <Formula f={amount.formula} /></span>
+    <span className="text-[10px] text-slate-400">{subOf(rx, amount.formula)?.name}</span>
+    {note && <span className="text-xs text-cyan-300" data-lever="mole-count">{note}</span>}
   </div>
 );
+
+/** A conversion factor drawn as a fraction. */
+const FactorFace = ({ rx, id }: { rx: Rx; id: string }) => {
+  const f = factorOf(rx, id);
+  if (!f) return null;
+  return (
+    <span className="flex flex-col items-center text-xs leading-tight">
+      <span><QtyText q={f.top} /></span>
+      <span className="my-0.5 h-px w-full bg-slate-400/60" />
+      <span><QtyText q={f.bottom} /></span>
+    </span>
+  );
+};
+
+/** One run of the reaction: a dot per mole of each coefficient. */
+const RecipeCard = ({ rx }: { rx: Rx }) => {
+  const group = (s: 'reactant' | 'product') => rx.subs.filter(x => x.side === s).map(x => (
+    <div key={x.formula} className="flex flex-col items-center gap-1">
+      <div className="flex max-w-24 flex-wrap justify-center gap-1">
+        {Array.from({ length: x.c }).map((_, i) => <span key={i} className="inline-block h-3 w-3 rounded-full bg-amber-300/80" />)}
+      </div>
+      <span className="text-xs text-slate-300">{x.c} mol <Formula f={x.formula} /></span>
+    </div>
+  ));
+  return (
+    <LuminaPanel accent="cyan" data-lever="recipe-card" className="space-y-2">
+      <p className="text-center text-xs text-slate-400">One run of the reaction</p>
+      <div className="flex flex-wrap items-end justify-center gap-4">
+        {group('reactant')}<span className="text-slate-400">→</span>{group('product')}
+      </div>
+    </LuminaPanel>
+  );
+};
 
 // ============================================================================
 // Component
 // ============================================================================
 
-interface StoichiometryLabProps {
-  data: StoichiometryLabData;
-  className?: string;
-}
+const StoichiometryLabSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  StoichiometryLabProps & { tutorOwned: boolean; useController: (options: ProgressOptions<StoichItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, gradeBand = '9-10', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
-const StoichiometryLab: React.FC<StoichiometryLabProps> = ({ data, className }) => {
-  const {
-    title,
-    description,
-    reaction,
-    challenges = [],
-    showOptions: showOptionsProp = {},
-    gradeBand = '9-10',
-    supportTier,
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
+  const items = useMemo(() => stoichItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.reaction, data.challenges, data.challengeTypes, data.gradeBand, data.supportTier, data.title]);
+  const stableInstanceId = useRef(instanceId || `stoichiometry-lab-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  const {
-    showMoleLadder = true,
-    showLeftovers = true,
-    showRatioStrip = true,
-    showPercentYield = gradeBand === '11-12',
-    showReactionOutput = true,
-  } = showOptionsProp;
-
-  // -------------------------------------------------------------------------
-  // Shared progression hooks
-  // -------------------------------------------------------------------------
-
-  const {
-    currentIndex: currentChallengeIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress<StoichChallenge>({
-    challenges,
-    getChallengeId: (ch) => ch.id,
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
+    onFinished: result => finish.current(result),
   });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  /** Workspace path: a checked answer stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  const phaseResults = usePhaseResults<StoichChallenge>({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
-  });
+  const sessionItem: StoichItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<StoichItem | null>(null);
+  const item = practice ?? sessionItem;
 
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  const [work, setWork] = useState<StoichWork>(NO_WORK);
+  /** Workspace path: the wrong answer just checked stays on screen, marked, until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  /** Scripted path: wrong tries on the current item, and whether its answer has been shown after two. */
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [submitted, setSubmitted] = useState(false);
+  /** The item a correct check already recorded, so its `onSolved` records nothing twice. */
+  const checkedCorrect = useRef<string | null>(null);
 
-  // -------------------------------------------------------------------------
-  // Per-challenge UI state
-  // -------------------------------------------------------------------------
+  const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
+  const leverOn = (id: string) => pulled.includes(id);
+  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
 
-  type Phase = 'stage' | 'reconcile';
-  const [phase, setPhase] = useState<Phase>('stage');
-  const [openAccordions, setOpenAccordions] = useState<string[]>([]);
-  const [studentAnswer, setStudentAnswer] = useState<string>('');
-  const [studentLimitingChoice, setStudentLimitingChoice] = useState<string>('');
-  const [feedback, setFeedback] = useState('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'error' | ''>('');
-  const [submittedResult, setSubmittedResult] = useState<PrimitiveEvaluationResult | null>(null);
-
-  // Reset per-challenge state when challenge changes
-  const prevChallengeIdRef = useRef(currentChallenge?.id);
-  useEffect(() => {
-    if (prevChallengeIdRef.current !== currentChallenge?.id) {
-      prevChallengeIdRef.current = currentChallenge?.id;
-      setPhase('stage');
-      setStudentAnswer('');
-      setStudentLimitingChoice('');
-      setFeedback('');
-      setFeedbackType('');
-      setOpenAccordions([]);
-    }
-  }, [currentChallenge?.id]);
-
-  // -------------------------------------------------------------------------
-  // Computed reaction outcome from given masses
-  // -------------------------------------------------------------------------
-
-  const givenMasses = useMemo<Record<string, number>>(() => {
-    if (!currentChallenge) return {};
-    const m: Record<string, number> = {};
-    if (currentChallenge.givenFormulaA) m[currentChallenge.givenFormulaA] = currentChallenge.givenMassA;
-    if (currentChallenge.givenFormulaB) m[currentChallenge.givenFormulaB] = currentChallenge.givenMassB ?? 0;
-    return m;
-  }, [currentChallenge]);
-
-  // For "convert" challenges with only one given mass, we need a sensible
-  // default for the other reactant when computing the reaction outcome
-  // (we use a stoichiometric excess so the given reactant is limiting).
-  const reactionOutcome = useMemo(() => {
-    if (!currentChallenge) return null;
-    const masses: Record<string, number> = { ...givenMasses };
-    // For challenges with only one mass, fill in stoichiometric excess for others
-    if (currentChallenge.type === 'convert') {
-      const givenSub = findSubstance(reaction, currentChallenge.givenFormulaA);
-      if (givenSub) {
-        const givenMoles = gramsToMoles(currentChallenge.givenMassA, givenSub.molarMass);
-        for (const r of reaction.reactants) {
-          if (r.formula !== currentChallenge.givenFormulaA && masses[r.formula] === undefined) {
-            // Excess: use 10x stoichiometric requirement
-            const requiredMoles = (givenMoles / (givenSub.coefficient || 1)) * r.coefficient;
-            masses[r.formula] = molesToGrams(requiredMoles * 10, r.molarMass);
-          }
-        }
-      }
-    }
-    return computeReactionOutcome(reaction, masses);
-  }, [reaction, currentChallenge, givenMasses]);
-
-  // -------------------------------------------------------------------------
-  // Refs / evaluation hook
-  // -------------------------------------------------------------------------
-
-  const stableInstanceIdRef = useRef(instanceId || `stoichiometry-lab-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
-  const startedAtRef = useRef(Date.now());
-
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<StoichiometryLabMetrics>({
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<StoichiometryLabMetrics>({
     primitiveType: 'stoichiometry-lab',
     instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
+    skillId, subskillId, objectiveId, exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI tutoring
-  // -------------------------------------------------------------------------
-
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
   const aiPrimitiveData = useMemo(() => ({
-    gradeBand,
-    supportTier: supportTier ?? null,
-    title,
-    equation: reaction.equation,
-    challengeType: currentChallenge?.type ?? 'convert',
-    challengeIndex: currentChallengeIndex,
-    totalChallenges: challenges.length,
-    instruction: currentChallenge?.instruction ?? '',
-    askFor: currentChallenge?.askFor ?? '',
-    givenFormulaA: currentChallenge?.givenFormulaA ?? '',
-    givenMassA: currentChallenge?.givenMassA ?? 0,
-    givenFormulaB: currentChallenge?.givenFormulaB ?? null,
-    givenMassB: currentChallenge?.givenMassB ?? null,
-    answerFormula: currentChallenge?.answerFormula ?? null,
-    answerUnit: currentChallenge?.answerUnit ?? null,
-    targetAnswer: currentChallenge?.targetAnswer ?? null,
-    targetAnswerFormula: currentChallenge?.targetAnswerFormula ?? null,
-    limitingReagent: reactionOutcome?.limitingFormula ?? null,
-    productYieldGrams: reactionOutcome?.productGrams ?? {},
-    leftoversGrams: reactionOutcome?.leftoverGramsByFormula ?? {},
-    studentAnswer,
-    studentLimitingChoice,
-    phase,
-    openAccordions,
-    hasOpenedReactionOutput: openAccordions.includes('reaction-output'),
-    attemptNumber: currentAttempts + 1,
-  }), [
-    gradeBand, supportTier, title, reaction.equation, currentChallenge, currentChallengeIndex,
-    challenges.length, reactionOutcome, studentAnswer, studentLimitingChoice, phase,
-    openAccordions, currentAttempts,
-  ]);
-
-  /**
-   * Tier-aware reveal clause appended to tutor prompts. The tier is a SECOND
-   * scaffold channel that must stay in lockstep with the on-screen withdrawal:
-   * - easy: name the mole-map step / strategy and walk the setup.
-   * - medium: nudge execution only; don't restate the whole strategy.
-   * - hard: the instruction hid the strategy and the reaction-output overlay is
-   *   gone — do NOT name the strategy, ask what the student reads off the figure,
-   *   never reveal the limiting reagent or the numeric answer.
-   * For 'limiting' the answer IS the relationship, so the tutor never names the
-   * limiting reagent at any tier.
-   */
-  const tutorTierClause = useCallback((): string => {
-    const isLimiting = currentChallenge?.type === 'limiting';
-    if (supportTier === 'hard') {
-      return isLimiting
-        ? ' [SUPPORT_TIER=hard] The reaction-output panel is hidden and the instruction does not name a strategy. Do NOT tell the student which reactant is limiting and do NOT name the moles÷coefficient rule — ask what they computed for each reactant and let them decide. Never reveal the answer.'
-        : ' [SUPPORT_TIER=hard] The reaction-output panel is hidden and the instruction does not name the mole-map step. Do NOT name the strategy or hand a formula — ask what the student can read from the equation and givens, then let them work it unaided. Never reveal the numeric answer.';
-    }
-    if (supportTier === 'medium') {
-      return ' [SUPPORT_TIER=medium] The strategy is named but the formula/self-check tools are thinned. Nudge the next execution step only — do not re-walk the whole mole-map or reveal the answer.';
-    }
-    if (supportTier === 'easy') {
-      return ' [SUPPORT_TIER=easy] Full scaffolding is on screen. Name the relevant mole-map step explicitly and walk the student through the setup, but still let them state the final number.';
-    }
-    return '';
-  }, [supportTier, currentChallenge?.type]);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'stoichiometry-lab',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '8' ? 'Grade 8' : gradeBand === '9-10' ? 'Grade 9-10' : 'Grade 11-12',
+    gradeBand, mode: item?.mode ?? 'convert', equation: item?.rx.equation ?? '', itemIndex: currentIndex + 1, totalItems: items.length,
+    ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
+  }), [gradeBand, item, currentIndex, items.length, title, currentAttempts]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'stoichiometry-lab', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: gradeBand === '8' ? 'Grade 8' : gradeBand === '9-10' ? 'Grade 9-10' : 'Grade 11-12', enabled: !tutorOwned,
   });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current || !currentChallenge) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Stoichiometry Lab "${title}" for ${gradeBand}. `
-      + `Reaction: ${reaction.equation}. The student is on challenge ${currentChallengeIndex + 1} of ${challenges.length} `
-      + `(type: ${currentChallenge.type}). Walk them through the mole-map approach: grams → moles → ratio → moles → grams.`
-      + tutorTierClause(),
-      { silent: true }
-    );
-  }, [isConnected, title, gradeBand, reaction.equation, currentChallenge, currentChallengeIndex, challenges.length, sendText, tutorTierClause]);
+  const clearItem = () => {
+    setWork(NO_WORK); setWrongShown(false); setFeedback(null);
+    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+  };
 
-  // -------------------------------------------------------------------------
-  // Answer handling
-  // -------------------------------------------------------------------------
+  // Workspace path: a fresh item (or the full item back after practice) and Try again both open blank.
+  openItem.current = (_index, retry) => {
+    if (retry) { setWork(NO_WORK); setWrongShown(false); setFeedback(null); setPracticeSolved(false); return; }
+    setPractice(null); clearItem();
+  };
 
-  const handleAccordionChange = useCallback((values: string[]) => {
-    const wasReactionOpen = openAccordions.includes('reaction-output');
-    const isReactionOpen = values.includes('reaction-output');
-    setOpenAccordions(values);
-    if (!wasReactionOpen && isReactionOpen) {
-      sendText(
-        `[REACTION_VIEW] Student opened the reaction output view. `
-        + `Limiting reagent (computed): ${reactionOutcome?.limitingFormula ?? '—'}. `
-        + `Help them interpret the products and leftovers.`,
-        { silent: true }
-      );
-    }
-  }, [openAccordions, reactionOutcome, sendText]);
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || checkedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setWrongShown(false);
+    if (solved.mode === 'limiting') setWork({ ...NO_WORK, choice: limitingOf(solved.rx, solved.a, solved.b) });
+    if (solved.mode === 'yield') setWork({ ...NO_WORK, typed: fmt(yieldOf(solved)) });
+  };
 
-  const handleCheckAnswer = useCallback(() => {
-    if (!currentChallenge) return;
-    incrementAttempts();
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice) return;
+    setPracticeSolved(true);
+    setWrongShown(false);
+    if (practice.mode === 'limiting') setWork({ ...NO_WORK, choice: limitingOf(practice.rx, practice.a, practice.b) });
+    if (practice.mode === 'yield') setWork({ ...NO_WORK, typed: fmt(yieldOf(practice)) });
+  };
 
-    let correct = false;
-    let feedbackMsg = '';
+  // ── Handlers ──
+  const closed = revealed || wrongShown || learnerBlocked();
+  const edit = (next: StoichWork) => { if (!item || closed) return; setWork(next); setFeedback(null); };
+  const place = (id: string) => { if (work.chain.length >= 4 || work.chain.includes(id)) return; SoundManager.select(); edit({ ...work, chain: [...work.chain, id] }); };
+  const takeBack = (at: number) => { SoundManager.select(); edit({ ...work, chain: work.chain.filter((_, i) => i !== at) }); };
+  const choose = (c: string) => { SoundManager.select(); edit({ ...work, choice: c }); };
 
-    if (currentChallenge.type === 'limiting') {
-      const choice = studentLimitingChoice.trim();
-      const expected = (currentChallenge.targetAnswerFormula ?? '').trim();
-      correct = choice !== '' && choice === expected;
-      feedbackMsg = correct
-        ? `Yes — ${expected} is the limiting reagent. It runs out first and caps the products formed.`
-        : `Not quite. The limiting reagent is the one whose moles ÷ coefficient is smallest. Try the mole math again.`;
-    } else {
-      const num = parseFloat(studentAnswer);
-      if (!Number.isFinite(num)) {
-        setFeedback('Type a numeric answer first.');
-        setFeedbackType('error');
-        return;
-      }
-      const target = currentChallenge.targetAnswer;
-      const tol = currentChallenge.tolerance > 0 ? currentChallenge.tolerance : Math.max(0.05 * Math.abs(target), 0.01);
-      correct = Math.abs(num - target) <= tol;
-      const unitLabel = currentChallenge.answerUnit === 'mol' ? 'mol' : currentChallenge.type === 'yield' && currentChallenge.actualYield != null ? '%' : 'g';
-      feedbackMsg = correct
-        ? `Correct! ${formatNum(target)} ${unitLabel}. ${currentChallenge.narration}`
-        : `Not quite. Expected about ${formatNum(target)} ${unitLabel} (±${formatNum(tol)}). ${currentChallenge.hint}`;
-    }
+  const ready = !!item && (item.mode === 'convert' ? work.chain.length > 0 : item.mode === 'limiting' ? work.choice !== null : work.typed.trim() !== '');
 
-    setFeedback(feedbackMsg);
-    setFeedbackType(correct ? 'success' : 'error');
-    setPhase('reconcile');
-
-    if (correct) SoundManager.playCorrect();
-    else SoundManager.playIncorrect();
-
+  const check = () => {
+    if (!item || !ready || closed) return;
+    if (item.mode === 'yield' && parseGrams(work.typed) === null) { setFeedback('Type a number of grams.'); return; }
+    const correct = stoichCorrect(item, work);
+    progress.commitCheck(describeStoichWork(item, work), correct, correct ? undefined : stoichMiss(item, work));
     if (correct) {
-      setOpenAccordions(['mole-ladder', 'ratios', 'reaction-output']);
-      recordResult({
-        challengeId: currentChallenge.id,
-        correct: true,
-        attempts: currentAttempts + 1,
-      });
-      sendText(
-        `[ANSWER_CORRECT] Student got challenge ${currentChallenge.id} (${currentChallenge.type}) on attempt ${currentAttempts + 1}. `
-        + `Reinforce the mole-map reasoning briefly.`,
-        { silent: true }
-      );
-    } else {
-      sendText(
-        `[ANSWER_INCORRECT] Student answered "${studentAnswer || studentLimitingChoice}" for ${currentChallenge.type} challenge. `
-        + `(For your reference only — do NOT state it outright; the correct value is ${currentChallenge.type === 'limiting' ? currentChallenge.targetAnswerFormula : currentChallenge.targetAnswer}.) `
-        + `Attempt ${currentAttempts + 1}. Give a hint that walks one step of the mole-map: "${currentChallenge.hint}"`
-        + tutorTierClause(),
-        { silent: true }
-      );
-    }
-  }, [
-    currentChallenge, studentAnswer, studentLimitingChoice, currentAttempts,
-    incrementAttempts, recordResult, sendText, tutorTierClause,
-  ]);
-
-  const handleAdvance = useCallback(() => {
-    if (!advanceProgress()) {
-      // All challenges done — submit evaluation
-      const correctCount = challengeResults.filter(r => r.correct).length;
-      const total = challenges.length;
-      const score = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-
-      const convertResults = challengeResults.filter(r =>
-        challenges.find(c => c.id === r.challengeId)?.type === 'convert'
-      );
-      const limitingResults = challengeResults.filter(r =>
-        challenges.find(c => c.id === r.challengeId)?.type === 'limiting'
-      );
-      const yieldResults = challengeResults.filter(r =>
-        challenges.find(c => c.id === r.challengeId)?.type === 'yield'
-      );
-
-      const phaseScoreStr = phaseResults
-        .map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`)
-        .join(', ');
-
-      sendText(
-        `[ALL_COMPLETE] Stoichiometry Lab finished. Phase scores: ${phaseScoreStr}. Overall: ${score}%. `
-        + `Celebrate progress and call out which step of the mole-map (grams→moles, ratio, moles→grams) the student handled best.`,
-        { silent: true }
-      );
-
-      if (!hasSubmittedEvaluation) {
-        const result = submitEvaluation(
-          score >= 50,
-          score,
-          {
-            type: 'stoichiometry-lab',
-            challengesCorrect: correctCount,
-            challengesTotal: total,
-            convertCorrect: convertResults.filter(r => r.correct).length,
-            convertTotal: challenges.filter(c => c.type === 'convert').length,
-            limitingReagentCorrect: limitingResults.filter(r => r.correct).length,
-            limitingReagentTotal: challenges.filter(c => c.type === 'limiting').length,
-            yieldWithinTolerance: yieldResults.filter(r => r.correct).length,
-            yieldTotal: challenges.filter(c => c.type === 'yield').length,
-            attemptsCount: challengeResults.reduce((s, r) => s + r.attempts, 0),
-          },
-          { challengeResults },
-        );
-        if (result) setSubmittedResult(result);
-      }
+      SoundManager.playCorrect();
+      if (practice) setPracticeSolved(true); else checkedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} Praise briefly.`);
       return;
     }
+    SoundManager.playIncorrect();
+    if (tutorOwned) { setWrongShown(true); return; }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The worked answer is now on screen; explain it plainly.`);
+      return;
+    }
+    setWork(NO_WORK);
+    setFeedback('Not quite. Look again and try once more.');
+    say(`[ANSWER_INCORRECT] The learner's try (${describeStoichWork(item, work)}) is wrong for: ${askOf(item)} You are not told the answer: `
+      + 'ask what the units, the moles and the coefficients tell them, without naming a card, a reactant or an amount.');
+  };
 
-    // Reset per-challenge state for next challenge
-    setPhase('stage');
-    setStudentAnswer('');
-    setStudentLimitingChoice('');
-    setFeedback('');
-    setFeedbackType('');
+  const metrics = (): StoichiometryLabMetrics => {
+    const right = (mode: StoichMode) => items.filter(i => i.mode === mode && results.some(r => r.challengeId === i.id && r.correct)).length;
+    const total = (mode: StoichMode) => items.filter(i => i.mode === mode).length;
+    return {
+      type: 'stoichiometry-lab',
+      challengesCorrect: results.filter(r => r.correct).length, challengesTotal: items.length,
+      convertCorrect: right('convert'), convertTotal: total('convert'),
+      limitingReagentCorrect: right('limiting'), limitingReagentTotal: total('limiting'),
+      yieldWithinTolerance: right('yield'), yieldTotal: total('yield'),
+      attemptsCount: results.reduce((s, r) => s + r.attempts, 0),
+    };
+  };
 
-    sendText(
-      `[NEXT_ITEM] Moving to challenge ${currentChallengeIndex + 2} of ${challenges.length}. `
-      + `Type: ${challenges[currentChallengeIndex + 1]?.type}. Set the stage briefly.`,
-      { silent: true }
-    );
-  }, [
-    advanceProgress, challengeResults, challenges, hasSubmittedEvaluation, submitEvaluation,
-    phaseResults, sendText, currentChallengeIndex,
-  ]);
+  /** Scripted path: Next, and on the last item the session report. */
+  const next = () => {
+    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 50, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
+  };
 
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
+  // Workspace path, under a lesson's evaluation provider only: the scored session.
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), attemptsCount: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
-  const elapsedMs = Date.now() - startedAtRef.current;
-  const localOverallScore = challenges.length > 0
-    ? Math.round((challengeResults.filter(r => r.correct).length / challenges.length) * 100)
-    : 0;
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const scene = workspaceScene(item, work);
+    const levers = practice ? [] : stoichLevers(sessionItem, pulled, items);
+    const onScreen = practice ? '' : leverFact(sessionItem, pulled);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
+        ...(onScreen ? { onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (l.kind === 'simplify') {
+          const simpler = easierItem(sessionItem, items);
+          if (!simpler) return 'There is no simpler item to practise on here; try a help lever.';
+          setLeverState(nextState); clearItem(); setPractice(simpler);
+          return { practice: workspaceAssignment(simpler) };
+        }
+        setLeverState(nextState);
+        return true;
+      },
+      endPractice: () => { clearItem(); setPractice(null); },
+    };
+  });
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
+  // ── Pip shared surface: the item's check state, the tutor's speech on it, and the child's touches ──
+  // The workspace path ends when the runtime completes the lesson, not at the last credit (its worked result stays up).
+  const done = hasSubmitted || submitted || (tutorOwned && !!progress.practiceSummary);
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The mole tools and your answer',
-    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
+    scopeId: done || !item ? null : item.id,
+    label: 'The stoichiometry lab and your answer',
+    solved: revealed,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
-  if (!currentChallenge) {
+  if (!items.length || !item) {
     return (
-      <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-        <CardHeader>
-          <CardTitle className="text-slate-100">{title}</CardTitle>
-          {description && <CardDescription className="text-slate-400">{description}</CardDescription>}
-        </CardHeader>
-        <CardContent>
-          <p className="text-slate-400 text-sm">No challenges available.</p>
-        </CardContent>
-      </Card>
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This lab has no reaction to work with.</p></LuminaCardContent>
+      </LuminaCard>
     );
   }
 
-  const reactantA = findSubstance(reaction, currentChallenge.givenFormulaA);
-  const reactantB = currentChallenge.givenFormulaB
-    ? findSubstance(reaction, currentChallenge.givenFormulaB)
-    : null;
-  const isLimitingType = currentChallenge.type === 'limiting';
-  const limitingOptions = isLimitingType
-    ? [currentChallenge.givenFormulaA, currentChallenge.givenFormulaB].filter(
-        (f): f is string => typeof f === 'string' && f.length > 0,
-      )
-    : [];
+  const rx = item.rx;
+
+  const renderConvert = () => {
+    if (item.mode !== 'convert') return null;
+    const units = leverOn(UNITS_LEVER) ? runningUnits(item, work.chain) : [];
+    const shownChain = revealed ? convertKey(item) : work.chain;
+    return (
+      <div className="space-y-3">
+        {leverOn(MAP_LEVER) && (
+          <LuminaPanel accent="cyan" data-lever="mole-map" className="flex flex-wrap items-center justify-center gap-2 text-xs">
+            {mapStations(item).map((s, i) => (
+              <React.Fragment key={s.label}>
+                {i > 0 && <span className="text-slate-500">→</span>}
+                <span className={`rounded-full border px-3 py-1 ${s.mark ? 'border-cyan-400/50 text-cyan-200' : 'border-white/10 text-slate-300'}`}>
+                  {s.label}{s.mark ? ` (${s.mark})` : ''}
+                </span>
+              </React.Fragment>
+            ))}
+          </LuminaPanel>
+        )}
+        <LuminaPanel className="flex flex-wrap items-center gap-2">
+          <span className="rounded-lg border border-white/15 bg-slate-900/50 px-3 py-2 text-sm font-semibold text-slate-100">
+            {fmt(item.given.grams)} g <Formula f={item.given.formula} />
+          </span>
+          {shownChain.map((id, i) => (
+            <div key={`${id}-${i}`} className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500">×</span>
+                <button type="button" aria-label={`Take back ${cardLabel(item, id)}`} disabled={closed}
+                  onClick={() => takeBack(i)}
+                  className={`rounded-lg border px-2 py-1 text-slate-100 ${wrongShown ? 'border-red-400/50 bg-red-500/10' : 'border-white/20 bg-white/5 hover:bg-white/10'}`}>
+                  <FactorFace rx={rx} id={id} />
+                </button>
+              </div>
+              {units[i] && (
+                <span className="text-[10px] text-cyan-300" data-lever="unit-track">
+                  {units[i].after ? `→ ${units[i].after!.unit} ${units[i].after!.formula}` : 'does not cancel'}
+                </span>
+              )}
+            </div>
+          ))}
+          <span className="text-slate-500">=</span>
+          <span className="rounded-lg border border-dashed border-white/25 px-3 py-2 text-sm text-slate-200">
+            {revealed ? fmt(convertValue(item)) : '?'} {item.target.unit} <Formula f={item.target.formula} />
+          </span>
+        </LuminaPanel>
+        {!revealed && (
+          <div>
+            <p className="mb-2 text-xs text-slate-400">Conversion factors: tap one to add it to the chain.</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {item.tray.map(id => (
+                <button key={id} type="button" aria-label={cardLabel(item, id)} disabled={closed || work.chain.includes(id) || work.chain.length >= 4}
+                  onClick={() => place(id)}
+                  className="flex justify-center rounded-lg border border-white/15 bg-slate-800/40 px-2 py-2 text-slate-100 transition-colors hover:bg-white/10 disabled:opacity-30">
+                  <FactorFace rx={rx} id={id} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPair = () => {
+    if (item.mode === 'convert') return null;
+    const note = (a: Amount) => (leverOn(MOLES_LEVER) ? `= ${moleLine(rx, a).split(' = ')[1]}` : undefined);
+    return (
+      <div className="space-y-3">
+        <LuminaPanel className="flex flex-wrap items-end justify-center gap-8">
+          <Jar rx={rx} amount={item.a} note={note(item.a)} />
+          <Jar rx={rx} amount={item.b} note={note(item.b)} />
+        </LuminaPanel>
+        {leverOn(RECIPE_LEVER) && <RecipeCard rx={rx} />}
+        {item.mode === 'limiting' ? (
+          <div className="grid grid-cols-3 gap-2">
+            {item.choices.map(c => {
+              const key = limitingOf(rx, item.a, item.b);
+              const state: AnswerChoiceState = revealed ? (c === key ? 'correct' : c === work.choice ? 'incorrect' : 'dimmed')
+                : wrongShown && c === work.choice ? 'incorrect' : work.choice === c ? 'selected' : 'idle';
+              return (
+                <LuminaAnswerChoice key={c} aria-label={c} state={state} disabled={closed} className="p-3 text-center font-semibold" onClick={() => choose(c)}>
+                  {c === BOTH ? 'Both run out together' : <span><Formula f={c} /> runs out first</span>}
+                </LuminaAnswerChoice>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2">
+            <LuminaInput type="number" inputMode="decimal" aria-label={`Grams of ${item.product}`} value={work.typed} disabled={closed}
+              onChange={e => edit({ ...work, typed: e.target.value })} className={`w-32 ${wrongShown ? 'border-red-400' : ''}`} />
+            <span className="text-sm text-slate-300">g of <Formula f={item.product} /></span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const revealText = () => {
+    if (item.mode === 'convert') {
+      const steps = runningUnits(item, convertKey(item)).map(u => `${fmt(u.after!.n)} ${u.after!.unit} ${u.after!.formula}`);
+      return `${fmt(item.given.grams)} g ${item.given.formula} = ${steps.join(' = ')}.`;
+    }
+    return revealLine(item);
+  };
 
   return (
-    <Card className={`backdrop-blur-xl bg-slate-900/40 border-white/10 ${className || ''}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <CardTitle className="text-slate-100 text-xl flex items-center gap-2">
-              <span className="text-2xl">⚗️</span>
-              {title}
-            </CardTitle>
-            {description && (
-              <CardDescription className="text-slate-400 text-sm mt-1">{description}</CardDescription>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-purple-500/20 text-purple-300 border-purple-400/30 text-xs">
-              Grade {gradeBand}
-            </Badge>
-            <Badge className="bg-slate-700/40 text-slate-300 border-white/10 text-xs">
-              {PHASE_TYPE_CONFIG[currentChallenge.type]?.label ?? currentChallenge.type}
-            </Badge>
-          </div>
-        </div>
-
-        {challenges.length > 0 && (
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-slate-500 text-xs">Challenge</span>
-            {challenges.map((ch, i) => (
-              <div
-                key={ch.id}
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium border ${
-                  challengeResults.some(r => r.challengeId === ch.id && r.correct)
-                    ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-400'
-                    : i === currentChallengeIndex
-                      ? 'bg-amber-500/20 border-amber-400/30 text-amber-400'
-                      : 'bg-slate-800/30 border-white/10 text-slate-600'
-                }`}
-              >
-                {i + 1}
-              </div>
-            ))}
-          </div>
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{title}</LuminaCardTitle>
+        {!done && (
+          <LuminaSectionLabel accent="purple" size="sm">
+            {practice ? 'A simpler item first' : `${MODE_LABEL[item.mode]} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
         )}
-      </CardHeader>
+      </LuminaCardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Equation strip — always-visible reference */}
-        <EquationStrip reaction={reaction} />
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Lab complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} items answered.`}
+          </LuminaFeedbackCard>
+        ) : (
+          <>
+            <LuminaPrompt accent="purple" {...(practice ? { 'data-practice': 'easier-item' } : {})}>{askOf(item)}</LuminaPrompt>
+            <EquationStrip rx={rx} />
 
-        {/* Instruction + ask */}
-        <div className="bg-indigo-500/10 rounded-lg p-3 border border-indigo-400/20">
-          <p className="text-indigo-200 text-sm font-medium">{currentChallenge.instruction}</p>
-          <p className="text-indigo-300/80 text-xs mt-1">
-            <span className="text-indigo-400 font-semibold">Find: </span>
-            {currentChallenge.askFor}
-          </p>
-        </div>
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
+              {renderConvert()}
+              {renderPair()}
+            </div>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !allChallengesComplete && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-4">
-        {/* Given — compact chips (no conversion shown yet) */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-slate-400 text-[10px] uppercase tracking-wider">Given</span>
-          {reactantA && (
-            <Badge className="bg-blue-500/15 text-blue-200 border-blue-400/30 text-sm font-mono">
-              {currentChallenge.givenMassA} g {renderFormula(reactantA.formula)}
-            </Badge>
-          )}
-          {reactantB && currentChallenge.givenMassB != null && (
-            <Badge className="bg-blue-500/15 text-blue-200 border-blue-400/30 text-sm font-mono">
-              {currentChallenge.givenMassB} g {renderFormula(reactantB.formula)}
-            </Badge>
-          )}
-          {showPercentYield && currentChallenge.type === 'yield' && currentChallenge.actualYield != null && (
-            <Badge className="bg-amber-500/15 text-amber-200 border-amber-400/30 text-sm font-mono">
-              Actual yield: {formatNum(currentChallenge.actualYield)} g
-            </Badge>
-          )}
-        </div>
-
-        {/* Scaffolding tools — progressive disclosure */}
-        <Accordion
-          type="multiple"
-          value={openAccordions}
-          onValueChange={handleAccordionChange}
-          className="space-y-2"
-        >
-          {showMoleLadder && (
-            <AccordionItem value="mole-ladder" className="border border-white/10 rounded-lg bg-slate-800/30 px-3">
-              <AccordionTrigger className="text-slate-300 text-sm hover:text-slate-100 hover:no-underline py-3">
-                <span className="flex items-center gap-2">
-                  <span>📐</span>
-                  <span>Step 1 · Convert mass to moles</span>
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="pb-3">
-                <div className="space-y-2">
-                  {reactantA && (
-                    <MoleLadder
-                      formula={reactantA.formula}
-                      grams={currentChallenge.givenMassA}
-                      molarMass={reactantA.molarMass}
-                    />
-                  )}
-                  {reactantB && currentChallenge.givenMassB != null && (
-                    <MoleLadder
-                      formula={reactantB.formula}
-                      grams={currentChallenge.givenMassB}
-                      molarMass={reactantB.molarMass}
-                    />
-                  )}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          )}
-
-          {showRatioStrip && (
-            <AccordionItem value="ratios" className="border border-white/10 rounded-lg bg-slate-800/30 px-3">
-              <AccordionTrigger className="text-slate-300 text-sm hover:text-slate-100 hover:no-underline py-3">
-                <span className="flex items-center gap-2">
-                  <span>🔢</span>
-                  <span>Step 2 · Mole ratios from coefficients</span>
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="pb-3">
-                <RatioStrip reaction={reaction} />
-              </AccordionContent>
-            </AccordionItem>
-          )}
-
-          {reactionOutcome && showReactionOutput && (
-            <AccordionItem value="reaction-output" className="border border-white/10 rounded-lg bg-slate-800/30 px-3">
-              <AccordionTrigger className="text-slate-300 text-sm hover:text-slate-100 hover:no-underline py-3">
-                <span className="flex items-center gap-2">
-                  <span>🧪</span>
-                  <span>Step 3 · Run the reaction</span>
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="pb-3 space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-slate-400 text-xs">Limiting reagent:</span>
-                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-400/30 text-[10px]">
-                    {renderFormula(reactionOutcome.limitingFormula)}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  {reaction.products.map(p => (
-                    <div key={p.formula} className="bg-slate-900/40 rounded px-3 py-2 border border-white/5">
-                      <div className="text-slate-400 text-xs">Product {renderFormula(p.formula)}</div>
-                      <div className="text-emerald-300 font-mono font-bold">
-                        {formatNum(reactionOutcome.productGrams[p.formula] ?? 0)} g
-                      </div>
-                      <div className="text-slate-500 text-xs">
-                        ({formatNum(reactionOutcome.productMoles[p.formula] ?? 0, 3)} mol)
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {showLeftovers && (
-                  <div className="text-xs text-slate-400">
-                    Leftover reactants:{' '}
-                    {Object.entries(reactionOutcome.leftoverGramsByFormula)
-                      .filter(([, g]) => g > 0.001)
-                      .map(([f, g]) => `${formatNum(g)} g of ${f}`)
-                      .join(', ') || 'none — all consumed!'}
-                  </div>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          )}
-        </Accordion>
-
-        {/* Answer input — visible while attempting */}
-        {phase === 'stage' && (
-          <div className="bg-slate-800/30 rounded-lg p-3 border border-white/5 space-y-2">
-            <div className="text-slate-300 text-sm font-medium">Your answer:</div>
-            {isLimitingType ? (
-              <div className="flex flex-wrap gap-2">
-                {limitingOptions.map(formula => (
-                  <Button
-                    key={formula}
-                    variant="ghost"
-                    className={`bg-white/5 border hover:bg-white/10 ${
-                      studentLimitingChoice === formula
-                        ? 'border-amber-400/50 text-amber-300'
-                        : 'border-white/20 text-slate-200'
-                    }`}
-                    onClick={() => { SoundManager.select(); setStudentLimitingChoice(formula); }}
-                  >
-                    {renderFormula(formula)}
-                  </Button>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  value={studentAnswer}
-                  onChange={(e) => setStudentAnswer(e.target.value)}
-                  placeholder="Enter a number"
-                  className="bg-slate-900/60 border-white/10 text-slate-100 max-w-xs"
-                />
-                <span className="text-slate-400 text-sm">
-                  {currentChallenge.answerUnit === 'mol' ? 'mol' :
-                    currentChallenge.type === 'yield' && currentChallenge.actualYield != null ? '%' : 'g'}
-                  {currentChallenge.answerFormula && (
-                    <> of {renderFormula(currentChallenge.answerFormula)}</>
-                  )}
-                </span>
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={!ready || closed} onClick={check}>
+                  {item.mode === 'convert' ? 'Check chain' : 'Check Answer'}
+                </LuminaActionButton>
               </div>
             )}
-            <Button
-              variant="ghost"
-              className="bg-indigo-500/20 border border-indigo-400/30 hover:bg-indigo-500/30 text-indigo-300"
-              onClick={handleCheckAnswer}
-            >
-              Check Answer
-            </Button>
-          </div>
-        )}
 
-        </div>
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {revealText()}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">Not quite.</LuminaFeedbackCard>}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
 
-        {/* Feedback */}
-        {feedback && (
-          <div className={`rounded-lg p-3 border text-sm ${
-            feedbackType === 'success'
-              ? 'bg-emerald-500/10 border-emerald-400/20 text-emerald-300'
-              : 'bg-red-500/10 border-red-400/20 text-red-300'
-          }`}>
-            {feedback}
-          </div>
-        )}
-
-        {/* Advance */}
-        {phase === 'reconcile' && feedbackType === 'success' && !allChallengesComplete && (
-          <div className="flex justify-end">
-            <Button
-              variant="ghost"
-              className="bg-emerald-500/20 border border-emerald-400/30 hover:bg-emerald-500/30 text-emerald-300"
-              onClick={handleAdvance}
-            >
-              {currentChallengeIndex < challenges.length - 1 ? 'Next Challenge' : 'Finish'}
-            </Button>
-          </div>
-        )}
-
-        {/* Try again on incorrect */}
-        {phase === 'reconcile' && feedbackType === 'error' && (
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="ghost"
-              className="bg-white/5 border border-white/20 hover:bg-white/10 text-slate-200"
-              onClick={() => {
-                setPhase('stage');
-                setFeedback('');
-                setFeedbackType('');
-              }}
-            >
-              Try Again
-            </Button>
-          </div>
-        )}
-
-        {/* Phase summary */}
-        {allChallengesComplete && phaseResults.length > 0 && (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
-            heading="Stoichiometry Lab Complete!"
-            celebrationMessage="You walked the mole-map across every challenge."
-            className="mb-2"
-          />
-        )}
-
-        {/* Mole map info */}
-        <Accordion type="single" collapsible>
-          <AccordionItem value="mole-map" className="border-white/10">
-            <AccordionTrigger className="text-slate-300 text-sm hover:text-slate-100">
-              Why we use the mole map
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-2 text-slate-400 text-sm">
-                <p>
-                  <span className="text-slate-200 font-medium">grams → moles → moles → grams.</span>{' '}
-                  Mass alone can't tell you how a reaction will run — you need to count particles.
-                  Convert mass to moles using molar mass, use the balanced equation's coefficients
-                  as a mole-to-mole ratio, then convert back to mass.
-                </p>
-                <p>
-                  The <span className="text-amber-300">limiting reagent</span> is whichever reactant runs out first
-                  (smallest moles ÷ coefficient). The other reactant has leftovers and is "in excess".
-                </p>
+            {!tutorOwned && revealed && !practice && (
+              <div className="flex justify-end">
+                <LuminaButton onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaButton>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </CardContent>
-    </Card>
+            )}
+          </>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const StoichiometryLab = withWorkspaceController<StoichiometryLabProps, ProgressOptions<StoichItem>, Progress>(
+  'stoichiometry-lab', StoichiometryLabSurface, useScriptedProgress, useWorkspaceProgressFor('stoichiometry-lab'));
 
 export default StoichiometryLab;

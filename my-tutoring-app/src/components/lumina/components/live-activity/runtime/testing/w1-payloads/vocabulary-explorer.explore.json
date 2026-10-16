@@ -1,0 +1,142 @@
+{
+ "source": "qa/tutor-reports/vocabulary-explorer-runtime-explore-payload-2026-10-16.json",
+ "primitiveId": "vocabulary-explorer",
+ "evalMode": "explore",
+ "data": {
+  "title": "Journey of Rain and Clouds",
+  "topic": "The water cycle",
+  "introduction": "Explore how liquid travels from the ground to the sky and back again through these key terms.",
+  "terms": [
+   {
+    "id": "term1",
+    "word": "evaporation",
+    "pronunciation": "ih-vap-uh-REY-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "The process where liquid becomes a gas and rises into the air after getting warm.",
+    "exampleSentence": "Sunlight heated the puddle until evaporation made it disappear.",
+    "relatedWords": [
+     "vapor",
+     "heat",
+     "sun"
+    ],
+    "clozeSentence": "Sunlight heated the puddle until evaporation made it disappear.",
+    "scenario": "A wet sidewalk slowly dries up in the bright afternoon sun without anyone wiping it."
+   },
+   {
+    "id": "term2",
+    "word": "condensation",
+    "pronunciation": "kon-den-SEY-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "The change of a gas back into tiny liquid droplets when it cools down.",
+    "exampleSentence": "Cold water droplets formed condensation on the outside of the glass.",
+    "relatedWords": [
+     "cloud",
+     "cool",
+     "droplet"
+    ],
+    "clozeSentence": "Cold water droplets formed condensation on the outside of the glass.",
+    "scenario": "Tiny water drops appear on the outside of a cold glass of lemonade on a hot summer day."
+   },
+   {
+    "id": "term3",
+    "word": "precipitation",
+    "pronunciation": "pri-sip-uh-TEY-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "Any form of moisture that falls from the sky toward the ground.",
+    "exampleSentence": "Heavy precipitation forced the baseball game to be canceled.",
+    "relatedWords": [
+     "rain",
+     "snow",
+     "storm"
+    ],
+    "clozeSentence": "Heavy precipitation forced the baseball game to be canceled.",
+    "scenario": "Children put on their rain boots and open colorful umbrellas as heavy drops begin hitting the pavement."
+   },
+   {
+    "id": "term4",
+    "word": "collection",
+    "pronunciation": "kuh-LEK-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "The gathering of fallen moisture into large bodies like lakes, rivers, and oceans.",
+    "exampleSentence": "The heavy rain led to the collection of water in the low-lying valley.",
+    "relatedWords": [
+     "ocean",
+     "river",
+     "puddle"
+    ],
+    "clozeSentence": "The heavy rain led to the collection of water in the low-lying valley.",
+    "scenario": "Streams of runoff water flow steadily down a hill to fill up a large blue lake at the bottom."
+   },
+   {
+    "id": "term5",
+    "word": "vapor",
+    "pronunciation": "VAY-puhr",
+    "partOfSpeech": "noun",
+    "definition": "A substance in the form of a gas that floats invisibly in the air.",
+    "exampleSentence": "Hot steam rose from the kettle as invisible vapor.",
+    "relatedWords": [
+     "evaporation",
+     "gas",
+     "air"
+    ],
+    "clozeSentence": "Hot steam rose from the kettle as invisible vapor.",
+    "scenario": "An invisible gas rises into the sky from a warm cup of hot cocoa on a winter morning."
+   },
+   {
+    "id": "term6",
+    "word": "cloud",
+    "pronunciation": "kloud",
+    "partOfSpeech": "noun",
+    "definition": "A large visible mass of tiny floating moisture drops high in the sky.",
+    "exampleSentence": "A fluffy white cloud drifted slowly across the blue sky.",
+    "relatedWords": [
+     "condensation",
+     "sky",
+     "droplet"
+    ],
+    "clozeSentence": "A fluffy white cloud drifted slowly across the blue sky.",
+    "scenario": "Looking up, you see a giant, cotton-like gray shape blocking the sun before a storm."
+   }
+  ],
+  "challengeTypes": [
+   "match"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "match-1",
+    "kind": "match",
+    "terms": [
+     "term6",
+     "term1",
+     "term4",
+     "term2"
+    ],
+    "defs": [
+     "term6",
+     "term2",
+     "term3",
+     "term4",
+     "term1"
+    ]
+   },
+   {
+    "id": "match-2",
+    "kind": "match",
+    "terms": [
+     "term2",
+     "term5",
+     "term3",
+     "term4"
+    ],
+    "defs": [
+     "term3",
+     "term4",
+     "term6",
+     "term2",
+     "term5"
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,128 @@
+{
+ "source": "qa/tutor-reports/cell-builder-runtime-cell_inventory-payload-2026-10-15.json",
+ "primitiveId": "cell-builder",
+ "evalMode": "cell_inventory",
+ "data": {
+  "challengeType": "cell_inventory",
+  "title": "Power Up the Plant Cell!",
+  "description": "Help build a working plant leaf cell by picking the correct parts and leaving out the animal cell parts.",
+  "cellType": "plant",
+  "cellContext": "leaf cell",
+  "organelles": [
+   {
+    "id": "nucleus",
+    "name": "Nucleus",
+    "function": "Controls all activities of the cell like a brain.",
+    "analogy": "Like the principal's office of a school",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "center",
+    "distractorExplanation": "",
+    "expectedQuantity": "few",
+    "quantityReasoning": "A plant cell only needs one main control center to manage its daily instructions.",
+    "uniqueTo": ""
+   },
+   {
+    "id": "mitochondria",
+    "name": "Mitochondria",
+    "function": "Turns food into energy the cell can use.",
+    "analogy": "Like a power plant",
+    "belongsInCell": true,
+    "sizeRelative": "small",
+    "correctZone": "scattered",
+    "distractorExplanation": "",
+    "expectedQuantity": "some",
+    "quantityReasoning": "Leaf cells need energy to run their normal living processes alongside making food.",
+    "uniqueTo": ""
+   },
+   {
+    "id": "chloroplast",
+    "name": "Chloroplast",
+    "function": "Captures sunlight to make food for the plant.",
+    "analogy": "Like a tiny solar panel",
+    "belongsInCell": true,
+    "sizeRelative": "medium",
+    "correctZone": "scattered",
+    "distractorExplanation": "",
+    "expectedQuantity": "lots",
+    "quantityReasoning": "Leaf cells need lots of chloroplasts because their main job is to capture sunlight for photosynthesis.",
+    "uniqueTo": "plant cells only"
+   },
+   {
+    "id": "vacuole",
+    "name": "Large Central Vacuole",
+    "function": "Stores water and helps keep the plant upright.",
+    "analogy": "Like a giant water storage tank",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "large-central",
+    "distractorExplanation": "",
+    "expectedQuantity": "few",
+    "quantityReasoning": "Plant cells use one large central water tank to stay firm and store hydration.",
+    "uniqueTo": "plant cells"
+   },
+   {
+    "id": "cytoplasm",
+    "name": "Cytoplasm",
+    "function": "The jelly-like fluid that holds everything in place.",
+    "analogy": "Like fruit jelly in a bowl",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "peripheral",
+    "distractorExplanation": "",
+    "expectedQuantity": "lots",
+    "quantityReasoning": "Fills the whole cell space to keep all the other parts afloat and connected.",
+    "uniqueTo": ""
+   },
+   {
+    "id": "centrioles",
+    "name": "Centrioles",
+    "function": "Help animal cells divide and make copies.",
+    "analogy": "Like construction workers building new rooms",
+    "belongsInCell": false,
+    "sizeRelative": "small",
+    "correctZone": "near-nucleus",
+    "distractorExplanation": "Centrioles are typically found in animal cells, not plant cells.",
+    "expectedQuantity": "few",
+    "quantityReasoning": "",
+    "uniqueTo": "animal cells"
+   }
+  ],
+  "functionMatches": [
+   {
+    "organelleId": "nucleus",
+    "functionDescription": "Acts as the command center, holding the DNA blueprints that tell the cell what to do."
+   },
+   {
+    "organelleId": "mitochondria",
+    "functionDescription": "Breaks down nutrients to release usable energy for the cell's daily tasks."
+   },
+   {
+    "organelleId": "chloroplast",
+    "functionDescription": "Traps energy from the sun to build sugar molecules through photosynthesis."
+   },
+   {
+    "organelleId": "vacuole",
+    "functionDescription": "Maintains water pressure inside the cell to keep leaves crisp and upright."
+   },
+   {
+    "organelleId": "cytoplasm",
+    "functionDescription": "Provides a slippery, gel-like pathway for materials to move around inside."
+   }
+  ],
+  "cellMembrane": {
+   "description": "A flexible outer wrapping surrounding the cell.",
+   "function": "Controls what enters and leaves the cell, acting like a security gate."
+  },
+  "cellWall": {
+   "present": true,
+   "description": "A tough, rigid outer layer that surrounds the cell membrane and gives the plant extra support."
+  },
+  "gradeBand": "4-5",
+  "targetEvalMode": "cell_inventory",
+  "objectiveGrade": "6",
+  "challengeTypes": [
+   "cell_inventory"
+  ]
+ }
+}

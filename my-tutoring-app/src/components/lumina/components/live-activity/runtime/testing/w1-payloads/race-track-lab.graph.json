@@ -1,0 +1,97 @@
+{
+ "source": "qa/tutor-reports/race-track-lab-runtime-graph-payload-2026-10-15.json",
+ "primitiveId": "race-track-lab",
+ "evalMode": "graph",
+ "data": {
+  "title": "Toy Car Track: Speed, Distance and Time",
+  "description": "You will investigate how to use a position-time graph to analyze the motion of different colored toy cars on a numbered track.",
+  "challengeTypes": [
+   "graph"
+  ],
+  "difficulty": "medium",
+  "grade": "7",
+  "items": [
+   {
+    "id": "graph-1",
+    "mode": "graph",
+    "ask": "fastest",
+    "racers": [
+     {
+      "name": "Blue car",
+      "color": "#3B82F6",
+      "speed": 4,
+      "start": 0
+     },
+     {
+      "name": "Red car",
+      "color": "#EF4444",
+      "speed": 3,
+      "start": 6
+     },
+     {
+      "name": "Yellow car",
+      "color": "#EAB308",
+      "speed": 1,
+      "start": 0
+     }
+    ],
+    "trackLength": 20,
+    "time": 4
+   },
+   {
+    "id": "graph-2",
+    "mode": "graph",
+    "ask": "fastest",
+    "racers": [
+     {
+      "name": "Purple car",
+      "color": "#A855F7",
+      "speed": 3,
+      "start": 0
+     },
+     {
+      "name": "Orange car",
+      "color": "#F97316",
+      "speed": 1,
+      "start": 0
+     },
+     {
+      "name": "Blue car",
+      "color": "#3B82F6",
+      "speed": 2,
+      "start": 3
+     }
+    ],
+    "trackLength": 20,
+    "time": 4
+   },
+   {
+    "id": "graph-3",
+    "mode": "graph",
+    "ask": "fastest",
+    "racers": [
+     {
+      "name": "Blue car",
+      "color": "#3B82F6",
+      "speed": 1,
+      "start": 10
+     },
+     {
+      "name": "Orange car",
+      "color": "#F97316",
+      "speed": 3,
+      "start": 0
+     },
+     {
+      "name": "Green car",
+      "color": "#22C55E",
+      "speed": 2,
+      "start": 0
+     }
+    ],
+    "trackLength": 20,
+    "time": 4
+   }
+  ]
+ }
+}

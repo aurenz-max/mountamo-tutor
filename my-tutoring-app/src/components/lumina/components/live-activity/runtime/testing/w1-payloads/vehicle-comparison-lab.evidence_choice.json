@@ -1,0 +1,464 @@
+{
+ "source": "qa/tutor-reports/vehicle-comparison-lab-runtime-evidence_choice-payload-2026-10-16.json",
+ "primitiveId": "vehicle-comparison-lab",
+ "evalMode": "evidence_choice",
+ "data": {
+  "title": "Transportation by the Numbers",
+  "instructions": "Read the vehicle data table to answer questions about speed, capacity, and range.",
+  "topicFocus": "Vehicles that move people and goods",
+  "vehicles": [
+   {
+    "id": "boston-whaler-boat",
+    "name": "Speedboat",
+    "category": "sea",
+    "visualKind": "boat",
+    "imagePrompt": "A small white motorboat speeding across blue water leaving a white wake.",
+    "metrics": {
+     "topSpeed": {
+      "value": 75,
+      "unit": "km/h",
+      "display": "75 km/h"
+     },
+     "weight": {
+      "value": 1200,
+      "unit": "kg",
+      "display": "1,200 kg"
+     },
+     "passengerCapacity": {
+      "value": 6,
+      "unit": "passengers",
+      "display": "6 passengers"
+     },
+     "cargoCapacity": {
+      "value": 0.5,
+      "unit": "tons",
+      "display": "0.5 tons"
+     },
+     "range": {
+      "value": 250,
+      "unit": "km",
+      "display": "250 km"
+     },
+     "fuelType": "Gasoline",
+     "yearIntroduced": 1958,
+     "co2PerPassengerKm": null,
+     "costPerTrip": null
+    },
+    "funFact": "It was originally designed as a sturdy recreational fishing boat that could plane easily over waves.",
+    "imageUrl": null
+   },
+   {
+    "id": "city-bus",
+    "name": "City Bus",
+    "category": "land",
+    "visualKind": "bus",
+    "imagePrompt": "A large urban transit bus painted brightly on a city street.",
+    "metrics": {
+     "topSpeed": {
+      "value": 90,
+      "unit": "km/h",
+      "display": "90 km/h"
+     },
+     "weight": {
+      "value": 14000,
+      "unit": "kg",
+      "display": "14,000 kg"
+     },
+     "passengerCapacity": {
+      "value": 70,
+      "unit": "passengers",
+      "display": "70 passengers"
+     },
+     "cargoCapacity": {
+      "value": 0,
+      "unit": "tons",
+      "display": "0 tons"
+     },
+     "range": {
+      "value": 500,
+      "unit": "km",
+      "display": "500 km"
+     },
+     "fuelType": "Diesel",
+     "yearIntroduced": 2005,
+     "co2PerPassengerKm": 68,
+     "costPerTrip": null
+    },
+    "funFact": "Modern city buses often feature low floors and ramps to help passengers board quickly.",
+    "imageUrl": null
+   },
+   {
+    "id": "freight-train",
+    "name": "Freight Train",
+    "category": "land",
+    "visualKind": "train",
+    "imagePrompt": "A long diesel locomotive pulling heavy cargo cars along railroad tracks.",
+    "metrics": {
+     "topSpeed": {
+      "value": 110,
+      "unit": "km/h",
+      "display": "110 km/h"
+     },
+     "weight": {
+      "value": 180000,
+      "unit": "kg",
+      "display": "180,000 kg"
+     },
+     "passengerCapacity": {
+      "value": 0,
+      "unit": "passengers",
+      "display": "0 passengers"
+     },
+     "cargoCapacity": {
+      "value": 8500,
+      "unit": "tons",
+      "display": "8,500 tons"
+     },
+     "range": {
+      "value": 1200,
+      "unit": "km",
+      "display": "1,200 km"
+     },
+     "fuelType": "Diesel",
+     "yearIntroduced": 1970,
+     "co2PerPassengerKm": null,
+     "costPerTrip": null
+    },
+    "funFact": "A single freight train can carry the load of hundreds of semi-trucks at once.",
+    "imageUrl": null
+   },
+   {
+    "id": "cargo-plane",
+    "name": "Cargo Plane",
+    "category": "air",
+    "visualKind": "airplane",
+    "imagePrompt": "A large transport airplane flying in the sky with its cargo door open.",
+    "metrics": {
+     "topSpeed": {
+      "value": 850,
+      "unit": "km/h",
+      "display": "850 km/h"
+     },
+     "weight": {
+      "value": 175000,
+      "unit": "kg",
+      "display": "175,000 kg"
+     },
+     "passengerCapacity": {
+      "value": 10,
+      "unit": "passengers",
+      "display": "10 passengers"
+     },
+     "cargoCapacity": {
+      "value": 120,
+      "unit": "tons",
+      "display": "120 tons"
+     },
+     "range": {
+      "value": 4500,
+      "unit": "km",
+      "display": "4,500 km"
+     },
+     "fuelType": "Jet Fuel",
+     "yearIntroduced": 1982,
+     "co2PerPassengerKm": null,
+     "costPerTrip": null
+    },
+    "funFact": "Large cargo planes can load bulky items like trucks and other aircraft directly through their nose cones.",
+    "imageUrl": null
+   },
+   {
+    "id": "delivery-truck",
+    "name": "Delivery Truck",
+    "category": "land",
+    "visualKind": "truck",
+    "imagePrompt": "A boxy delivery truck driving down a suburban street.",
+    "metrics": {
+     "topSpeed": {
+      "value": 120,
+      "unit": "km/h",
+      "display": "120 km/h"
+     },
+     "weight": {
+      "value": 6000,
+      "unit": "kg",
+      "display": "6,000 kg"
+     },
+     "passengerCapacity": {
+      "value": 3,
+      "unit": "passengers",
+      "display": "3 passengers"
+     },
+     "cargoCapacity": {
+      "value": 5,
+      "unit": "tons",
+      "display": "5 tons"
+     },
+     "range": {
+      "value": 600,
+      "unit": "km",
+      "display": "600 km"
+     },
+     "fuelType": "Diesel",
+     "yearIntroduced": 2010,
+     "co2PerPassengerKm": null,
+     "costPerTrip": null
+    },
+    "funFact": "Delivery trucks are optimized for frequent stops and quick package unloading.",
+    "imageUrl": null
+   }
+  ],
+  "comparisonMetrics": [
+   "topSpeed",
+   "passengerCapacity",
+   "cargoCapacity",
+   "range"
+  ],
+  "surprisingFacts": [
+   {
+    "fact": "Even though the cargo plane travels much faster than any train, the freight train can haul thousands of tons more cargo in a single trip.",
+    "vehicleIds": [
+     "cargo-plane",
+     "freight-train"
+    ]
+   },
+   {
+    "fact": "A city bus carries far more people than a speedboat, yet the speedboat travels over water rather than paved roads.",
+    "vehicleIds": [
+     "city-bus",
+     "boston-whaler-boat"
+    ]
+   }
+  ],
+  "gradeBand": "3-5",
+  "challengeTypes": [
+   "evidence_choice"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "evidence_choice-1",
+    "mode": "evidence_choice",
+    "rows": [
+     {
+      "id": "freight-train",
+      "name": "Freight Train",
+      "category": "land",
+      "visualKind": "train",
+      "values": {
+       "topSpeed": 110,
+       "weight": 180000,
+       "passengerCapacity": 0,
+       "cargoCapacity": 8500,
+       "range": 1200,
+       "yearIntroduced": 1970
+      }
+     },
+     {
+      "id": "delivery-truck",
+      "name": "Delivery Truck",
+      "category": "land",
+      "visualKind": "truck",
+      "values": {
+       "topSpeed": 120,
+       "weight": 6000,
+       "passengerCapacity": 3,
+       "cargoCapacity": 5,
+       "range": 600,
+       "yearIntroduced": 2010
+      }
+     },
+     {
+      "id": "cargo-plane",
+      "name": "Cargo Plane",
+      "category": "air",
+      "visualKind": "airplane",
+      "values": {
+       "topSpeed": 850,
+       "weight": 175000,
+       "passengerCapacity": 10,
+       "cargoCapacity": 120,
+       "range": 4500,
+       "yearIntroduced": 1982
+      }
+     },
+     {
+      "id": "boston-whaler-boat",
+      "name": "Speedboat",
+      "category": "sea",
+      "visualKind": "boat",
+      "values": {
+       "topSpeed": 75,
+       "weight": 1200,
+       "passengerCapacity": 6,
+       "cargoCapacity": 0.5,
+       "range": 250,
+       "yearIntroduced": 1958
+      }
+     }
+    ],
+    "columns": [
+     "topSpeed",
+     "weight",
+     "cargoCapacity"
+    ],
+    "units": {
+     "topSpeed": "km/h",
+     "weight": "kg",
+     "range": "km"
+    },
+    "metric": "topSpeed",
+    "job": "A doctor has to reach a sick patient as soon as possible."
+   },
+   {
+    "id": "evidence_choice-2",
+    "mode": "evidence_choice",
+    "rows": [
+     {
+      "id": "delivery-truck",
+      "name": "Delivery Truck",
+      "category": "land",
+      "visualKind": "truck",
+      "values": {
+       "topSpeed": 120,
+       "weight": 6000,
+       "passengerCapacity": 3,
+       "cargoCapacity": 5,
+       "range": 600,
+       "yearIntroduced": 2010
+      }
+     },
+     {
+      "id": "freight-train",
+      "name": "Freight Train",
+      "category": "land",
+      "visualKind": "train",
+      "values": {
+       "topSpeed": 110,
+       "weight": 180000,
+       "passengerCapacity": 0,
+       "cargoCapacity": 8500,
+       "range": 1200,
+       "yearIntroduced": 1970
+      }
+     },
+     {
+      "id": "city-bus",
+      "name": "City Bus",
+      "category": "land",
+      "visualKind": "bus",
+      "values": {
+       "topSpeed": 90,
+       "weight": 14000,
+       "passengerCapacity": 70,
+       "cargoCapacity": 0,
+       "range": 500,
+       "yearIntroduced": 2005,
+       "co2PerPassengerKm": 68
+      }
+     },
+     {
+      "id": "cargo-plane",
+      "name": "Cargo Plane",
+      "category": "air",
+      "visualKind": "airplane",
+      "values": {
+       "topSpeed": 850,
+       "weight": 175000,
+       "passengerCapacity": 10,
+       "cargoCapacity": 120,
+       "range": 4500,
+       "yearIntroduced": 1982
+      }
+     }
+    ],
+    "columns": [
+     "passengerCapacity",
+     "cargoCapacity",
+     "range"
+    ],
+    "units": {
+     "topSpeed": "km/h",
+     "weight": "kg",
+     "range": "km"
+    },
+    "metric": "range",
+    "job": "The trip is very long, with nowhere on the way to stop and refuel."
+   },
+   {
+    "id": "evidence_choice-3",
+    "mode": "evidence_choice",
+    "rows": [
+     {
+      "id": "delivery-truck",
+      "name": "Delivery Truck",
+      "category": "land",
+      "visualKind": "truck",
+      "values": {
+       "topSpeed": 120,
+       "weight": 6000,
+       "passengerCapacity": 3,
+       "cargoCapacity": 5,
+       "range": 600,
+       "yearIntroduced": 2010
+      }
+     },
+     {
+      "id": "freight-train",
+      "name": "Freight Train",
+      "category": "land",
+      "visualKind": "train",
+      "values": {
+       "topSpeed": 110,
+       "weight": 180000,
+       "passengerCapacity": 0,
+       "cargoCapacity": 8500,
+       "range": 1200,
+       "yearIntroduced": 1970
+      }
+     },
+     {
+      "id": "boston-whaler-boat",
+      "name": "Speedboat",
+      "category": "sea",
+      "visualKind": "boat",
+      "values": {
+       "topSpeed": 75,
+       "weight": 1200,
+       "passengerCapacity": 6,
+       "cargoCapacity": 0.5,
+       "range": 250,
+       "yearIntroduced": 1958
+      }
+     },
+     {
+      "id": "cargo-plane",
+      "name": "Cargo Plane",
+      "category": "air",
+      "visualKind": "airplane",
+      "values": {
+       "topSpeed": 850,
+       "weight": 175000,
+       "passengerCapacity": 10,
+       "cargoCapacity": 120,
+       "range": 4500,
+       "yearIntroduced": 1982
+      }
+     }
+    ],
+    "columns": [
+     "cargoCapacity",
+     "yearIntroduced",
+     "passengerCapacity"
+    ],
+    "units": {
+     "topSpeed": "km/h",
+     "weight": "kg",
+     "range": "km"
+    },
+    "metric": "passengerCapacity",
+    "job": "A whole crowd has to travel together, all in one trip."
+   }
+  ]
+ }
+}

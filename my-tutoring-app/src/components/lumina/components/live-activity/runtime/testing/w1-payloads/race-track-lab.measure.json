@@ -1,0 +1,108 @@
+{
+ "source": "qa/tutor-reports/race-track-lab-runtime-measure-payload-2026-10-15.json",
+ "primitiveId": "race-track-lab",
+ "evalMode": "measure",
+ "data": {
+  "title": "Toy Car Race: Speed, Distance and Time",
+  "description": "You will measure how far each colored car travels and how long it takes to reach the finish line.",
+  "challengeTypes": [
+   "measure"
+  ],
+  "difficulty": "medium",
+  "grade": "3",
+  "items": [
+   {
+    "id": "measure-1",
+    "mode": "measure",
+    "ask": "farther_by",
+    "racers": [
+     {
+      "name": "Green car",
+      "color": "#22C55E",
+      "speed": 1,
+      "start": 0
+     },
+     {
+      "name": "Blue car",
+      "color": "#3B82F6",
+      "speed": 3,
+      "start": 0
+     }
+    ],
+    "trackLength": 16,
+    "time": 3,
+    "target": 1,
+    "other": 0
+   },
+   {
+    "id": "measure-2",
+    "mode": "measure",
+    "ask": "farther_by",
+    "racers": [
+     {
+      "name": "Yellow car",
+      "color": "#EAB308",
+      "speed": 3,
+      "start": 0
+     },
+     {
+      "name": "Red car",
+      "color": "#EF4444",
+      "speed": 4,
+      "start": 0
+     }
+    ],
+    "trackLength": 16,
+    "time": 2,
+    "target": 1,
+    "other": 0
+   },
+   {
+    "id": "measure-3",
+    "mode": "measure",
+    "ask": "farther_by",
+    "racers": [
+     {
+      "name": "Yellow car",
+      "color": "#EAB308",
+      "speed": 2,
+      "start": 0
+     },
+     {
+      "name": "Orange car",
+      "color": "#F97316",
+      "speed": 3,
+      "start": 0
+     }
+    ],
+    "trackLength": 16,
+    "time": 4,
+    "target": 1,
+    "other": 0
+   },
+   {
+    "id": "measure-4",
+    "mode": "measure",
+    "ask": "farther_by",
+    "racers": [
+     {
+      "name": "Purple car",
+      "color": "#A855F7",
+      "speed": 2,
+      "start": 0
+     },
+     {
+      "name": "Green car",
+      "color": "#22C55E",
+      "speed": 3,
+      "start": 0
+     }
+    ],
+    "trackLength": 16,
+    "time": 3,
+    "target": 1,
+    "other": 0
+   }
+  ]
+ }
+}

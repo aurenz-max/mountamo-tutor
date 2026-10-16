@@ -1,0 +1,144 @@
+{
+ "source": "qa/tutor-reports/mixing-and-dissolving-runtime-separate-payload-2026-10-15.json",
+ "primitiveId": "mixing-and-dissolving",
+ "evalMode": "separate",
+ "data": {
+  "title": "Kitchen Dissolving Lab",
+  "description": "Explore what happens when you mix different kitchen items in water and discover how to get them back.",
+  "solvent": {
+   "name": "Water",
+   "formula": "H2O",
+   "volume": 200,
+   "temperature": 20
+  },
+  "substances": [
+   {
+    "id": "salt",
+    "name": "Table Salt",
+    "formula": "NaCl",
+    "type": "soluble",
+    "maxSolubility": 36,
+    "solubilityVsTemp": "unchanged",
+    "color": "rgba(255, 255, 255, 0.4)",
+    "particleColor": "#ffffff",
+    "imagePrompt": "A small bowl of white table salt crystals"
+   },
+   {
+    "id": "sugar",
+    "name": "Sugar",
+    "formula": "C12H22O11",
+    "type": "soluble",
+    "maxSolubility": 200,
+    "solubilityVsTemp": "increases",
+    "color": "rgba(240, 240, 240, 0.4)",
+    "particleColor": "#f0f0f0",
+    "imagePrompt": "A scoop of granulated white sugar"
+   },
+   {
+    "id": "sand",
+    "name": "Sand",
+    "formula": "SiO2",
+    "type": "insoluble",
+    "maxSolubility": null,
+    "solubilityVsTemp": "unchanged",
+    "color": "rgba(194, 178, 128, 0.8)",
+    "particleColor": "#c2b280",
+    "imagePrompt": "A small pile of golden beach sand"
+   },
+   {
+    "id": "oil",
+    "name": "Cooking Oil",
+    "formula": null,
+    "type": "immiscible_liquid",
+    "maxSolubility": null,
+    "solubilityVsTemp": "unchanged",
+    "color": "rgba(255, 204, 0, 0.6)",
+    "particleColor": "#ffcc00",
+    "imagePrompt": "Golden cooking oil in a glass"
+   }
+  ],
+  "separationMethods": [
+   {
+    "method": "evaporation",
+    "worksFor": [
+     "Table Salt",
+     "Sugar"
+    ],
+    "description": "Heat the mixture so the liquid turns into gas and escapes into the air, leaving the solid behind.",
+    "animation": "liquid boils away leaving solid crystals"
+   },
+   {
+    "method": "filtration",
+    "worksFor": [
+     "Sand"
+    ],
+    "description": "Pour the mixture through a paper filter that traps solid pieces while letting liquid pass through.",
+    "animation": "liquid passes through paper trap while solid stays behind"
+   },
+   {
+    "method": "decanting",
+    "worksFor": [
+     "Cooking Oil"
+    ],
+    "description": "Carefully pour the top liquid layer off the bottom liquid layer when they do not mix together.",
+    "animation": "top liquid layer pours off gently"
+   }
+  ],
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "separate",
+    "answerType": "multiple_choice",
+    "instruction": "How would you recover Table Salt from a mixture where it has been stirred into water?",
+    "options": [
+     "Filtration",
+     "Evaporation",
+     "Using a magnet",
+     "Decanting"
+    ],
+    "correctOptionIndex": 1,
+    "hint": "Think about what happens to the liquid when heat is applied over time.",
+    "narration": "Heat makes the liquid turn into vapor, leaving the solid behind just like salt crystals forming on a beach!"
+   },
+   {
+    "id": "ch2",
+    "type": "separate",
+    "answerType": "multiple_choice",
+    "instruction": "How would you separate a mixture of Sand and water?",
+    "options": [
+     "Evaporation",
+     "Using a magnet",
+     "Filtration",
+     "Distillation"
+    ],
+    "correctOptionIndex": 2,
+    "hint": "Use a barrier with tiny holes that catches solid bits while letting liquid flow through.",
+    "narration": "Great job! The barrier traps the solid pieces while letting the liquid pass right through."
+   },
+   {
+    "id": "ch3",
+    "type": "separate",
+    "answerType": "multiple_choice",
+    "instruction": "How would you separate a mixture of Cooking Oil and water?",
+    "options": [
+     "Evaporation",
+     "Filtration",
+     "Chromatography",
+     "Decanting"
+    ],
+    "correctOptionIndex": 3,
+    "hint": "Since these two liquids form separate layers, you can carefully pour the top one off.",
+    "narration": "You got it! Because the liquids form distinct layers, pouring off the top layer separates them neatly."
+   }
+  ],
+  "showOptions": {
+   "showParticleView": true,
+   "showConcentrationMeter": false,
+   "showTemperatureControl": false,
+   "showSaturationIndicator": true,
+   "showSeparationTools": true,
+   "showSolubilityCurve": false
+  },
+  "gradeBand": "3-5"
+ }
+}

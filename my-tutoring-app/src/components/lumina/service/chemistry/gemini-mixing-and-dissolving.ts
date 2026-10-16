@@ -4,6 +4,12 @@ import type { GenerationContext } from "../generation/generationContext";
 import {
   MixingAndDissolvingData,
 } from "../../primitives/visual-primitives/chemistry/MixingAndDissolving";
+import {
+  buildClassifyItems,
+  buildSortItems,
+  shuffledChallenge,
+} from "../../primitives/visual-primitives/chemistry/mixingAndDissolvingWorkspace";
+import { resolveEvalMode } from "../evalMode";
 
 // Re-export type for convenience (no redefinition — sourced from the component)
 export type { MixingAndDissolvingData };
@@ -30,7 +36,7 @@ const mixingAndDissolvingSchema: Schema = {
     description: {
       type: Type.STRING,
       description:
-        "One-sentence activity description in kid-friendly language",
+        "One-sentence activity description in kid-friendly language. Never say what any substance or its particles do in water, or how to separate them: the challenges ask that.",
     },
     solvent: {
       type: Type.OBJECT,
@@ -351,8 +357,34 @@ export function mixingAndDissolvingGradeBandFromGrade(grade?: string): "3-5" | "
  * @param config - Optional partial MixingAndDissolvingData for overrides
  * @returns MixingAndDissolvingData ready for the MixingAndDissolving component
  */
+/**
+ * What a pinned eval mode asks of the generator (catalog `challengeTypes`). The sort and classify items are built in
+ * code from each substance's own `type`, the field the beaker draws from, so the key and the experiment agree:
+ * - dissolve: code-built "does it dissolve?" items, then the model's one particle question;
+ * - classify: code-built "solution, suspension or two layers?" items; the model writes only the lab;
+ * - separate: the model's separation-method questions.
+ * Unpinned, every type stays open as before.
+ */
+const MODE_PROMPTS: Record<string, { types: string[]; prompt: string }> = {
+  dissolve: { types: ["particle_explain"], prompt: "Write exactly ONE challenge, of type particle_explain, about a soluble substance from your list: " +
+    "what happened to its particles when it dissolved (see the particle_explain example). The dissolve/doesn't-dissolve questions are added by code." },
+  classify: { types: ["dissolve_sort"], prompt: "Write exactly ONE challenge (it is replaced by code). The substances MUST include at least one soluble solid, " +
+    "one insoluble solid that stays as visible bits (sand, chalk, flour), and one immiscible liquid (oil)." },
+  separate: { types: ["separate"], prompt: "Write 3 challenges, ALL of type separate, each about a DIFFERENT substance from your list and a mixture it is in " +
+    "(a dissolved solid, an undissolved solid, a liquid that floats). Options are separation methods; the right one must be in separationMethods and " +
+    "list that substance in worksFor. Never name the method, or say whether the substance dissolved, in the instruction or hint." },
+};
+
 export const generateMixingAndDissolving = async (ctx: GenerationContext): Promise<MixingAndDissolvingData> => {
   const { topic } = ctx;
+  const targetEvalMode = ctx.targetEvalMode ?? (ctx.raw as { targetEvalMode?: string } | undefined)?.targetEvalMode;
+  const pinnedMode = resolveEvalMode("mixing-and-dissolving", targetEvalMode)?.evalMode ?? null;
+  const modePrompt = pinnedMode ? MODE_PROMPTS[pinnedMode] : undefined;
+  const schema: Schema = modePrompt ? JSON.parse(JSON.stringify(mixingAndDissolvingSchema)) : mixingAndDissolvingSchema;
+  if (modePrompt) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (schema as any).properties.challenges.items.properties.type.enum = modePrompt.types;
+  }
   const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<MixingAndDissolvingData>;
   // Canonical objective grade wins; the prose parser is only the fallback (14m).
@@ -464,7 +496,10 @@ CRITICAL REQUIREMENTS:
 
 10. Provide 3-5 challenges for grade 3-5, 4-6 challenges for grade 6-7.
 
-11. Include 2-4 separation methods relevant to the substances provided.`;
+11. Include 2-4 separation methods relevant to the substances provided.
+${modePrompt ? `
+THIS LESSON'S CHALLENGES (eval mode "${pinnedMode}", overrides 6 and 10):
+${modePrompt.prompt}` : ""}`;
 
   try {
     const response = await ai.models.generateContent({
@@ -472,7 +507,7 @@ CRITICAL REQUIREMENTS:
       contents: generationPrompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: mixingAndDissolvingSchema,
+        responseSchema: schema,
         systemInstruction:
           "You are an expert primary/middle-school science educator creating interactive " +
           "dissolving and mixing activities. Design engaging explorations where students " +
@@ -721,6 +756,23 @@ CRITICAL REQUIREMENTS:
         },
       ];
     }
+
+    // A pinned mode keeps only its own items; sort and classify items are built from the substances.
+    if (pinnedMode === "dissolve") {
+      result.challenges = [
+        ...buildSortItems(result.substances, result.solvent.name),
+        ...result.challenges.filter((c) => c.type === "particle_explain").slice(0, 1),
+      ];
+    } else if (pinnedMode === "classify") {
+      result.challenges = buildClassifyItems(result.substances, result.solvent.name);
+    } else if (pinnedMode === "separate") {
+      result.challenges = result.challenges.filter((c) => c.type === "separate");
+    }
+    if (pinnedMode && result.challenges.length === 0) {
+      throw new Error(`mixing-and-dissolving: no ${pinnedMode} challenge could be built from the generated lab`);
+    }
+    // The model lists the right option first more often than not: a fixed order from the challenge's id.
+    result.challenges = result.challenges.map(shuffledChallenge);
 
     // Apply config overrides if provided
     if (config) {

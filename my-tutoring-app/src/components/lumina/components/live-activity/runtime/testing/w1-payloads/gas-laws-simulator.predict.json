@@ -1,0 +1,102 @@
+{
+ "source": "qa/tutor-reports/gas-laws-simulator-runtime-predict-payload-2026-10-15.json",
+ "primitiveId": "gas-laws-simulator",
+ "evalMode": "predict",
+ "data": {
+  "title": "Exploring the Interplay of Pressure, Volume, and Temperature",
+  "description": "Students investigate how altering one property of a confined gas sample affects the other state variables.",
+  "lawFocus": "combined",
+  "gas": "air",
+  "challengeTypes": [
+   "predict"
+  ],
+  "difficulty": "hard",
+  "gradeBand": "9-10",
+  "items": [
+   {
+    "id": "predict-1",
+    "mode": "predict",
+    "gas": "air",
+    "apparatus": "tank",
+    "before": {
+     "P": 1,
+     "V": 8,
+     "T": 400,
+     "n": 1
+    },
+    "asked": "P",
+    "celsius": true,
+    "heldNamed": true,
+    "changes": [
+     {
+      "v": "T",
+      "to": 600
+     }
+    ]
+   },
+   {
+    "id": "predict-2",
+    "mode": "predict",
+    "gas": "air",
+    "apparatus": "piston",
+    "before": {
+     "P": 4,
+     "V": 4,
+     "T": 450,
+     "n": 1
+    },
+    "asked": "V",
+    "celsius": false,
+    "heldNamed": false,
+    "changes": [
+     {
+      "v": "n",
+      "to": 2
+     }
+    ]
+   },
+   {
+    "id": "predict-3",
+    "mode": "predict",
+    "gas": "air",
+    "apparatus": "syringe",
+    "before": {
+     "P": 4,
+     "V": 3,
+     "T": 450,
+     "n": 1
+    },
+    "asked": "P",
+    "celsius": false,
+    "heldNamed": false,
+    "changes": [
+     {
+      "v": "V",
+      "to": 6
+     }
+    ]
+   },
+   {
+    "id": "predict-4",
+    "mode": "predict",
+    "gas": "air",
+    "apparatus": "tank",
+    "before": {
+     "P": 2,
+     "V": 3,
+     "T": 400,
+     "n": 1
+    },
+    "asked": "P",
+    "celsius": false,
+    "heldNamed": false,
+    "changes": [
+     {
+      "v": "n",
+      "to": 3
+     }
+    ]
+   }
+  ]
+ }
+}

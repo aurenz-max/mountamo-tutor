@@ -1,0 +1,52 @@
+{
+ "source": "qa/tutor-reports/gravity-drop-tower-runtime-calculate-payload-2026-10-15.json",
+ "primitiveId": "gravity-drop-tower",
+ "evalMode": "calculate",
+ "data": {
+  "title": "The Tower Drop Investigation",
+  "description": "Students use kinematic equations to analyze the relationship between fall times, heights, and impact speeds for objects released from the drop-tower.",
+  "challengeTypes": [
+   "calculate"
+  ],
+  "difficulty": "hard",
+  "gradeLevel": "Grade 7",
+  "items": [
+   {
+    "id": "calculate-1",
+    "mode": "calculate",
+    "air": false,
+    "ask": "impact",
+    "drops": [
+     {
+      "obj": "rock",
+      "height": 78.4
+     }
+    ]
+   },
+   {
+    "id": "calculate-2",
+    "mode": "calculate",
+    "air": false,
+    "ask": "impact",
+    "drops": [
+     {
+      "obj": "rock",
+      "height": 19.6
+     }
+    ]
+   },
+   {
+    "id": "calculate-3",
+    "mode": "calculate",
+    "air": false,
+    "ask": "impact",
+    "drops": [
+     {
+      "obj": "rock",
+      "height": 44.1
+     }
+    ]
+   }
+  ]
+ }
+}

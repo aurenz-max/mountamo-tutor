@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { CellBuilderMetrics, CellZone, QuantityLevel } from '../../../evaluation/types';
 import {
@@ -34,6 +34,20 @@ import {
   Zap,
 } from 'lucide-react';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  boardCards, boardComplete, boardJobs, boardScore, cardRight, cellMiss, describeCellWork, EMPTY_WORK, jobCardText, jobTarget,
+  QUANTITY_LABELS, QUANTITY_OPTIONS, resolveCellBuilderPhases, workspaceAssignment, workspaceScene, ZONE_LABELS, ZONE_NOTES, ZONE_ORDER,
+  type CellMission, type CellWork,
+} from './cellBuilderWorkspace';
+import {
+  blankCellKinds, cellLevers, fewerStructures, HINTS_LEVER, hintLine, JOBS_LEVER, jobLine, leverFact,
+  levelLegend, LEVELS_LEVER,
+} from './cellBuilderLevers';
 
 /**
  * A routable set of cell-biology missions, not a mandatory three-page
@@ -41,6 +55,11 @@ import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
  * blend missions. Placement uses discrete model relationships because real
  * organelles move in 3D and overlapping pixel rectangles are neither honest
  * biology nor discriminating evidence.
+ *
+ * On the shared teaching workspace (W1, plain shape; `cellBuilderWorkspace.ts`) each mission is one checked board:
+ * Check mission commits through `progress.commitCheck` with a named miss, a wrong board shows only how many are
+ * right (no per-card marks or reveals, which would hand over the key before Try again), Try again keeps the work,
+ * and the runtime moves to the next mission. The levers live in `cellBuilderLevers.ts`.
  */
 
 export type { CellZone } from '../../../evaluation/types';
@@ -103,16 +122,13 @@ export interface CellBuilderData {
 interface CellBuilderProps {
   data: CellBuilderData;
   className?: string;
+  /** Carried onto the runtime mount so the live host keeps its resolved plan metadata. */
+  runtimePlanItemId?: string;
+  /** The RESOLVED plan mode, kept exactly as mounted rather than rebuilt from the item. */
+  runtimeEvalMode?: string;
 }
 
 type Phase = CellBuilderChallengeType;
-
-const ALL_PHASES: Phase[] = [
-  'cell_inventory',
-  'organelle_placement',
-  'structure_function',
-  'cell_specialization',
-];
 
 const PHASE_LABELS: Record<Phase, string> = {
   cell_inventory: 'Stock the cell',
@@ -127,42 +143,6 @@ const PHASE_PROMPTS: Record<Phase, string> = {
   structure_function: 'Connect each organelle to the job it performs.',
   cell_specialization: 'Tune organelle abundance so this cell can carry out its specialized mission.',
 };
-
-const ZONE_LABELS: Record<CellZone, string> = {
-  center: 'Control center',
-  'near-nucleus': 'Inner membrane network',
-  'large-central': 'Central storage',
-  peripheral: 'Cytoplasm',
-  scattered: 'Distributed throughout',
-  'membrane-associated': 'Cell boundary',
-};
-
-const ZONE_NOTES: Record<CellZone, string> = {
-  center: 'The information-holding core of the model',
-  'near-nucleus': 'Structures that work closely with the nucleus',
-  'large-central': 'A dominant storage compartment',
-  peripheral: 'In the fluid interior, away from the core',
-  scattered: 'Many copies spread across the interior',
-  'membrane-associated': 'Attached to or acting at the outer boundary',
-};
-
-const ZONE_ORDER: CellZone[] = [
-  'membrane-associated',
-  'peripheral',
-  'center',
-  'near-nucleus',
-  'large-central',
-  'scattered',
-];
-
-const QUANTITY_LABELS: Record<QuantityLevel, string> = {
-  few: 'Few',
-  some: 'Some',
-  many: 'Many',
-  lots: 'Abundant',
-};
-
-const QUANTITY_OPTIONS: QuantityLevel[] = ['few', 'some', 'many', 'lots'];
 
 function organelleColor(name: string): string {
   const value = name.toLowerCase();
@@ -200,16 +180,14 @@ function OrganelleGlyph({ organelle, small = false }: { organelle: OrganelleInfo
   );
 }
 
-export function resolveCellBuilderPhases(data: Pick<CellBuilderData, 'challengeType' | 'challengeTypes'>): Phase[] {
-  const requested = data.challengeTypes?.length
-    ? data.challengeTypes
-    : data.challengeType
-      ? [data.challengeType]
-      : ALL_PHASES;
-  return ALL_PHASES.filter((phase) => requested.includes(phase));
-}
+export { resolveCellBuilderPhases };
 
-const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
+type Checked = Record<Phase, boolean>;
+const NONE_CHECKED: Checked = { cell_inventory: false, organelle_placement: false, structure_function: false, cell_specialization: false };
+
+const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  CellBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<CellMission>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     description,
@@ -226,10 +204,10 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     exhibitId,
     onEvaluationSubmit,
   } = data;
+  const board = data;
 
   const phases = useMemo(() => resolveCellBuilderPhases(data), [data.challengeType, data.challengeTypes]);
-  const [phaseIndex, setPhaseIndex] = useState(0);
-  const currentPhase = phases[Math.min(phaseIndex, phases.length - 1)] ?? 'cell_inventory';
+  const missions = useMemo<CellMission[]>(() => phases.map(phase => ({ id: phase, phase })), [phases]);
   const validOrganelles = useMemo(() => organelles.filter((item) => item.belongsInCell), [organelles]);
   const distractors = useMemo(() => organelles.filter((item) => !item.belongsInCell), [organelles]);
   const quantityOrganelles = useMemo(
@@ -238,6 +216,32 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
   );
 
   const stableInstanceId = useRef(instanceId ?? `cell-builder-${Date.now()}`);
+
+  // ── Mission progress. On the workspace path the runtime moves the index. ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: missions,
+    getChallengeId: m => m.id,
+    instanceId: stableInstanceId.current, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: m => workspaceAssignment(board, m),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: result => finish.current(result),
+  });
+  const phaseIndex = Math.min(progress.currentIndex, Math.max(missions.length - 1, 0));
+  const sessionMission = missions[phaseIndex] ?? { id: 'cell_inventory', phase: 'cell_inventory' as const };
+  /** Workspace path: a checked board stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  // Levers (`cellBuilderLevers.ts`), keyed by the session mission they were pulled on, and the smaller practice board.
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [practice, setPractice] = useState<CellMission | null>(null);
+  const mission = practice ?? sessionMission;
+  const currentPhase = mission.phase;
+  const pulledLevers = leverState.item === sessionMission.id ? leverState.pulled : [];
+  const leverOn = (id: string) => !practice && pulledLevers.includes(id);
+  const cards = boardCards(board, mission);
+
   const { submitResult, hasSubmitted, resetAttempt } = usePrimitiveEvaluation<CellBuilderMetrics>({
     primitiveType: 'cell-builder',
     instanceId: stableInstanceId.current,
@@ -249,18 +253,25 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
   });
 
   const [sortDecisions, setSortDecisions] = useState<Record<string, boolean>>({});
-  const [sortChecked, setSortChecked] = useState(false);
   const [placements, setPlacements] = useState<Record<string, CellZone>>({});
   const [selectedOrganelle, setSelectedOrganelle] = useState<string | null>(null);
   const [dragOverZone, setDragOverZone] = useState<CellZone | null>(null);
-  const [placeChecked, setPlaceChecked] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [selectedMatchOrganelle, setSelectedMatchOrganelle] = useState<string | null>(null);
   const [matchConnections, setMatchConnections] = useState<Record<string, string>>({});
-  const [matchChecked, setMatchChecked] = useState(false);
   const [quantityAnswers, setQuantityAnswers] = useState<Record<string, QuantityLevel>>({});
-  const [quantityChecked, setQuantityChecked] = useState(false);
+  const [phaseChecked, setPhaseChecked] = useState<Checked>(NONE_CHECKED);
+  /** Whether the last check of a board was right (the workspace path marks cards only on a right one). */
+  const [checkedRight, setCheckedRight] = useState<Checked>(NONE_CHECKED);
   const [feedback, setFeedback] = useState<string | null>(null);
+  /** The first committed answer on each mission: the evidence the report scores (contract 6). */
+  const firstWork = useRef<Partial<Record<Phase, CellWork>>>({});
+
+  const work: CellWork = { sortDecisions, placements, matchConnections, quantityAnswers };
+  const sortChecked = phaseChecked.cell_inventory;
+  const placeChecked = phaseChecked.organelle_placement;
+  const matchChecked = phaseChecked.structure_function;
+  const quantityChecked = phaseChecked.cell_specialization;
 
   const shuffledFunctions = useMemo(() => {
     const values = [...functionMatches];
@@ -270,22 +281,42 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     }
     return values;
   }, [functionMatches]);
+  const boardJobIds = new Set(boardJobs(board, mission).map(j => j.organelleId));
+  const shownJobs = shuffledFunctions.filter(j => boardJobIds.has(j.organelleId));
 
-  const phaseChecked: Record<Phase, boolean> = {
-    cell_inventory: sortChecked,
-    organelle_placement: placeChecked,
-    structure_function: matchChecked,
-    cell_specialization: quantityChecked,
+  /** Clear one mission's work (a fresh board, a practice board, the full board back after one). */
+  const clearPhase = (phase: Phase) => {
+    if (phase === 'cell_inventory') setSortDecisions({});
+    if (phase === 'organelle_placement') { setPlacements({}); setSelectedOrganelle(null); setDragOverZone(null); }
+    if (phase === 'structure_function') { setMatchConnections({}); setSelectedMatchOrganelle(null); }
+    if (phase === 'cell_specialization') setQuantityAnswers({});
+    setPhaseChecked(prev => ({ ...prev, [phase]: false }));
+    setCheckedRight(prev => ({ ...prev, [phase]: false }));
+    setFeedback(null);
   };
 
+  // Workspace path: a fresh mission ends any practice; Try again KEEPS the board and reopens it for revision.
+  openItem.current = (index, retry) => {
+    const phase = missions[index]?.phase;
+    if (!phase) return;
+    if (!retry) { setPractice(null); setPhaseChecked(prev => ({ ...prev, [phase]: false })); setFeedback(null); return; }
+    setSelectedOrganelle(null); setSelectedMatchOrganelle(null);
+    setPhaseChecked(prev => ({ ...prev, [phase]: false }));
+  };
+
+  /** Whether the board's answers are locked: checked, or (workspace) closed until Try again. */
+  const locked = phaseChecked[currentPhase] || learnerBlocked();
+  /** Per-card right/wrong marks and corrective reveals: after any scripted check, after a right workspace check. */
+  const marks = phaseChecked[currentPhase] && (!tutorOwned || checkedRight[currentPhase]);
+
   const placeOrganelle = useCallback((organelleId: string, zone: CellZone) => {
-    if (placeChecked) return;
+    if (locked) return;
     setPlacements((previous) => ({ ...previous, [organelleId]: zone }));
     setSelectedOrganelle(null);
     setDragOverZone(null);
     setFeedback(null);
     SoundManager.snap();
-  }, [placeChecked]);
+  }, [locked]);
 
   const handleZoneDrop = useCallback((event: React.DragEvent<HTMLDivElement>, zone: CellZone) => {
     event.preventDefault();
@@ -293,72 +324,64 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
     if (organelleId) placeOrganelle(organelleId, zone);
   }, [placeOrganelle, selectedOrganelle]);
 
-  const checkCurrentPhase = useCallback(() => {
-    let message = '';
-    let isPerfect = false;
+  const checkCurrentPhase = () => {
+    if (locked || !boardComplete(board, mission, work)) return;
+    const { right, total } = boardScore(board, mission, work);
+    const miss = cellMiss(board, mission, work);
+    const isPerfect = !miss;
+    if (!practice && !firstWork.current[currentPhase]) firstWork.current[currentPhase] = { ...work };
+    setPhaseChecked(prev => ({ ...prev, [currentPhase]: true }));
+    setCheckedRight(prev => ({ ...prev, [currentPhase]: isPerfect }));
+    progress.commitCheck(describeCellWork(board, mission, work), isPerfect, miss);
 
-    if (currentPhase === 'cell_inventory') {
-      const correct = organelles.filter((item) => sortDecisions[item.id] === item.belongsInCell).length;
-      setSortChecked(true);
-      isPerfect = correct === organelles.length;
-      message = `${correct} of ${organelles.length} structures correctly identified.`;
-    } else if (currentPhase === 'organelle_placement') {
-      const correct = validOrganelles.filter((item) => item.correctZone && placements[item.id] === item.correctZone).length;
-      setPlaceChecked(true);
-      isPerfect = correct === validOrganelles.length;
-      message = `${correct} of ${validOrganelles.length} organelles placed in their best-fit model region.`;
-    } else if (currentPhase === 'structure_function') {
-      const correct = validOrganelles.filter((item) => matchConnections[item.id] === item.id).length;
-      setMatchChecked(true);
-      isPerfect = correct === validOrganelles.length;
-      message = `${correct} of ${validOrganelles.length} organelle jobs correctly connected.`;
-    } else {
-      const correct = quantityOrganelles.filter((item) => quantityAnswers[item.id] === item.expectedQuantity).length;
-      setQuantityChecked(true);
-      isPerfect = correct === quantityOrganelles.length;
-      message = `${correct} of ${quantityOrganelles.length} abundance choices fit this cell's mission.`;
-    }
-
-    setFeedback(message);
+    const noun: Record<Phase, string> = {
+      cell_inventory: 'structures correctly identified',
+      organelle_placement: 'organelles placed in their best-fit model region',
+      structure_function: 'organelle jobs correctly connected',
+      cell_specialization: "abundance choices fit this cell's mission",
+    };
+    setFeedback(`${right} of ${total} ${noun[currentPhase]}.`);
     if (isPerfect) SoundManager.playCorrect();
     else SoundManager.playIncorrect();
-  }, [currentPhase, matchConnections, organelles, placements, quantityAnswers, quantityOrganelles, sortDecisions, validOrganelles]);
+  };
 
-  const handleSubmit = useCallback(() => {
-    if (hasSubmitted) return;
-
+  /** The report's metrics, from the given work on each mission. */
+  const buildMetrics = (w: (phase: Phase) => CellWork, checked: Checked): { metrics: CellBuilderMetrics; overall: number; allCorrect: boolean; studentWork: Record<string, unknown> } => {
+    const inv = w('cell_inventory'), place = w('organelle_placement'), match = w('structure_function'), qty = w('cell_specialization');
     const sortResults = organelles.map((item) => ({
       organelleId: item.id,
       belongsInCell: item.belongsInCell,
-      studentSaidBelongs: sortDecisions[item.id] ?? false,
-      isCorrect: sortDecisions[item.id] === item.belongsInCell,
+      studentSaidBelongs: inv.sortDecisions[item.id] ?? false,
+      isCorrect: inv.sortDecisions[item.id] === item.belongsInCell,
     }));
     const correctlySorted = sortResults.filter((item) => item.isCorrect).length;
     const sortAccuracy = score(correctlySorted, organelles.length);
 
-    const zonePlacements = validOrganelles.map((item) => ({
+    // Build the model scores its own board (a structure named after its region is not on it).
+    const placeCards = boardCards(board, { id: 'organelle_placement', phase: 'organelle_placement' });
+    const zonePlacements = placeCards.map((item) => ({
       organelleId: item.id,
       correctZone: item.correctZone!,
-      placedZone: placements[item.id] ?? null,
-      isCorrect: placements[item.id] === item.correctZone,
+      placedZone: place.placements[item.id] ?? null,
+      isCorrect: place.placements[item.id] === item.correctZone,
     }));
     const correctZonePlacements = zonePlacements.filter((item) => item.isCorrect).length;
-    const zoneAccuracy = score(correctZonePlacements, validOrganelles.length);
+    const zoneAccuracy = score(correctZonePlacements, placeCards.length);
 
     const quantityResults = quantityOrganelles.map((item) => ({
       organelleId: item.id,
       expectedQuantity: item.expectedQuantity!,
-      studentQuantity: quantityAnswers[item.id] ?? null,
-      isCorrect: quantityAnswers[item.id] === item.expectedQuantity,
+      studentQuantity: qty.quantityAnswers[item.id] ?? null,
+      isCorrect: qty.quantityAnswers[item.id] === item.expectedQuantity,
     }));
     const quantityQuestionsCorrect = quantityResults.filter((item) => item.isCorrect).length;
     const quantityAccuracy = score(quantityQuestionsCorrect, quantityOrganelles.length);
 
     const functionMatchResults = validOrganelles.map((item) => ({
       organelleId: item.id,
-      selectedFunctionId: matchConnections[item.id] ?? null,
+      selectedFunctionId: match.matchConnections[item.id] ?? null,
       correctFunctionId: item.id,
-      isCorrect: matchConnections[item.id] === item.id,
+      isCorrect: match.matchConnections[item.id] === item.id,
     }));
     const correctFunctionMatches = functionMatchResults.filter((item) => item.isCorrect).length;
     const functionMatchAccuracy = score(correctFunctionMatches, validOrganelles.length);
@@ -369,9 +392,7 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
       structure_function: functionMatchAccuracy,
       cell_specialization: quantityAccuracy,
     };
-    const overallAccuracy = Math.round(
-      phases.reduce((sum, phase) => sum + phaseScores[phase], 0) / Math.max(phases.length, 1),
-    );
+    const overall = Math.round(phases.reduce((sum, phase) => sum + phaseScores[phase], 0) / Math.max(phases.length, 1));
     const allCorrect = phases.every((phase) => phaseScores[phase] === 100);
 
     const metrics: CellBuilderMetrics = {
@@ -379,20 +400,20 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
       cellType,
       cellContext,
       gradeBand: data.gradeBand,
-      phase1Completed: phases.includes('cell_inventory') ? sortChecked : false,
-      phase2Completed: phases.includes('organelle_placement') ? placeChecked : quantityChecked,
-      phase3Completed: phases.includes('structure_function') ? matchChecked : false,
-      allPhasesCompleted: phases.every((phase) => phaseChecked[phase]),
+      phase1Completed: phases.includes('cell_inventory') ? checked.cell_inventory : false,
+      phase2Completed: phases.includes('organelle_placement') ? checked.organelle_placement : checked.cell_specialization,
+      phase3Completed: phases.includes('structure_function') ? checked.structure_function : false,
+      allPhasesCompleted: phases.every((phase) => checked[phase]),
       totalOrganelles: organelles.length,
       validOrganelles: validOrganelles.length,
       distractorOrganelles: distractors.length,
       correctlySorted,
       sortAccuracy,
       sortResults,
-      totalToPlace: validOrganelles.length,
+      totalToPlace: placeCards.length,
       correctZonePlacements,
-      incorrectZonePlacements: validOrganelles.length - correctZonePlacements,
-      unplacedOrganelles: validOrganelles.length - Object.keys(placements).length,
+      incorrectZonePlacements: placeCards.length - correctZonePlacements,
+      unplacedOrganelles: placeCards.filter(item => !place.placements[item.id]).length,
       zoneAccuracy,
       zonePlacements,
       quantityQuestionsTotal: quantityOrganelles.length,
@@ -404,49 +425,90 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
       functionMatchAccuracy,
       functionMatchResults,
       allCorrect,
-      accuracy: overallAccuracy,
+      accuracy: overall,
     };
+    return { metrics, overall, allCorrect, studentWork: { activeMissions: phases, sortDecisions: inv.sortDecisions,
+      placements: place.placements, matchConnections: match.matchConnections, quantityAnswers: qty.quantityAnswers } };
+  };
 
-    submitResult(overallAccuracy >= 75, overallAccuracy, metrics, {
-      studentWork: { activeMissions: phases, sortDecisions, placements, matchConnections, quantityAnswers },
-    });
-    setFeedback(allCorrect ? 'Mission complete. This cell is ready to work.' : `Mission score: ${overallAccuracy}%.`);
-  }, [cellContext, cellType, data.gradeBand, distractors.length, hasSubmitted, matchChecked, matchConnections, organelles, phaseChecked, phases, placeChecked, placements, quantityAnswers, quantityChecked, quantityOrganelles, sortChecked, sortDecisions, submitResult, validOrganelles]);
+  const handleSubmit = () => {
+    if (hasSubmitted) return;
+    const { metrics, overall, allCorrect, studentWork } = buildMetrics(() => work, phaseChecked);
+    submitResult(overall >= 75, overall, metrics, { studentWork });
+    setFeedback(allCorrect ? 'Mission complete. This cell is ready to work.' : `Mission score: ${overall}%.`);
+  };
 
-  const handleReset = useCallback(() => {
-    setPhaseIndex(0);
+  // Workspace path, under a lesson's evaluation provider only: the scored session, from each mission's first answer.
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false) return;
+    const done: Checked = { ...NONE_CHECKED, ...Object.fromEntries(phases.map(p => [p, true])) };
+    const { metrics, studentWork } = buildMetrics(phase => firstWork.current[phase] ?? EMPTY_WORK, done);
+    submitResult(result.passed, result.accuracy, { ...metrics, accuracy: result.accuracy },
+      { studentWork, challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  const handleReset = () => {
+    if (tutorOwned) {
+      // Workspace path: clear this board only; the session's missions and attempts stay the runtime's.
+      if (!learnerBlocked() && !phaseChecked[currentPhase]) clearPhase(currentPhase);
+      return;
+    }
+    progress.reset();
     setSortDecisions({});
-    setSortChecked(false);
     setPlacements({});
     setSelectedOrganelle(null);
     setDragOverZone(null);
-    setPlaceChecked(false);
     setSelectedMatchOrganelle(null);
     setMatchConnections({});
-    setMatchChecked(false);
     setQuantityAnswers({});
-    setQuantityChecked(false);
+    setPhaseChecked(NONE_CHECKED);
+    setCheckedRight(NONE_CHECKED);
     setFeedback(null);
+    firstWork.current = {};
     resetAttempt();
-  }, [resetAttempt]);
+  };
 
   const advance = () => {
     setFeedback(null);
-    setPhaseIndex((value) => Math.min(value + 1, phases.length - 1));
+    progress.advance();
   };
 
   const currentComplete = phaseChecked[currentPhase];
   const isFinalPhase = phaseIndex === phases.length - 1;
-  const canCheck = currentPhase === 'cell_inventory'
-    ? Object.keys(sortDecisions).length === organelles.length
-    : currentPhase === 'organelle_placement'
-      ? Object.keys(placements).length === validOrganelles.length
-      : currentPhase === 'structure_function'
-        ? validOrganelles.every((item) => matchConnections[item.id])
-        : quantityOrganelles.length > 0 && quantityOrganelles.every((item) => quantityAnswers[item.id]);
+  const canCheck = boardComplete(board, mission, work);
 
   const modeTabs = phases.map((phase) => ({ value: phase, label: PHASE_LABELS[phase] }));
   const cellTypeLabel = `${cellType.charAt(0).toUpperCase()}${cellType.slice(1)} cell`;
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned) return;
+    const scene = workspaceScene(board, mission, work, shownJobs.map(j => j.organelleId));
+    const onScreen = leverFact(board, practice ? null : sessionMission, pulledLevers);
+    const levers = practice ? [] : cellLevers(board, sessionMission, pulledLevers);
+    workspace.current = {
+      ...scene,
+      ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+      levers,
+      pullLever: (id) => {
+        const lever = levers.find(l => l.id === id);
+        if (practice || !lever) return `No lever ${id} on this board.`;
+        if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
+        const pulled = { item: sessionMission.id, pulled: [...pulledLevers, id] };
+        if (lever.kind === 'simplify') {
+          const smaller = fewerStructures(board, sessionMission);
+          if (!smaller) return 'This board is too small to shrink; try a help lever.';
+          setLeverState(pulled); clearPhase(smaller.phase); setPractice(smaller);
+          return { practice: workspaceAssignment(board, smaller) };
+        }
+        setLeverState(pulled);
+        return true;
+      },
+      endPractice: () => { clearPhase(sessionMission.phase); setPractice(null); },
+    };
+  });
 
   // ── Pip shared surface ───────────────────────────────────────────
   // A projection of this item's check state, the tutor's speech on it, and
@@ -454,11 +516,15 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
   // chooses, checks, or advances.
   const pip = useWorkspacePipSurface({
     instanceId: stableInstanceId.current,
-    scopeId: hasSubmitted ? null : currentPhase,
+    scopeId: hasSubmitted ? null : mission.id,
     label: 'The cell mission',
-    solved: currentComplete && (currentPhase === 'cell_inventory' ? organelles.every((item) => sortDecisions[item.id] === item.belongsInCell) : currentPhase === 'organelle_placement' ? validOrganelles.every((item) => !!item.correctZone && placements[item.id] === item.correctZone) : currentPhase === 'structure_function' ? validOrganelles.every((item) => matchConnections[item.id] === item.id) : quantityOrganelles.every((item) => quantityAnswers[item.id] === item.expectedQuantity)),
+    solved: currentComplete && cards.every(o => cardRight(o, currentPhase, work)),
     tutorSpeaking: false,
   });
+
+  const jobsOn = leverOn(JOBS_LEVER);
+  const hintsOn = leverOn(HINTS_LEVER);
+  const levelsOn = leverOn(LEVELS_LEVER);
 
   return (
     <LuminaCard className={['overflow-hidden shadow-2xl', className].filter(Boolean).join(' ')}>
@@ -485,8 +551,8 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
           <div className="flex items-start gap-3">
             <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
-                Mission {phaseIndex + 1} of {phases.length}
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300" {...(practice ? { 'data-practice': 'fewer-structures' } : {})}>
+                {practice ? `A smaller board first: ${cards.length} structures` : `Mission ${phaseIndex + 1} of ${phases.length}`}
               </div>
               <div className="mt-1">{PHASE_PROMPTS[currentPhase]}</div>
             </div>
@@ -498,24 +564,26 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
         <div {...pip.workspace}>
         {currentPhase === 'cell_inventory' && (
           <div className="grid gap-3 sm:grid-cols-2">
-            {organelles.map((organelle) => {
+            {cards.map((organelle) => {
               const decision = sortDecisions[organelle.id];
               const correct = decision === organelle.belongsInCell;
-              const state = !sortChecked ? decision == null ? 'idle' : 'selected' : correct ? 'correct' : 'incorrect';
+              const state = !marks ? decision == null ? 'idle' : 'selected' : correct ? 'correct' : 'incorrect';
+              const job = jobsOn ? jobLine(organelle, currentPhase, board) : null;
               return (
                 <div key={organelle.id} className={`rounded-xl border p-3 ${answerStateClass(state)}`}>
                   <div className="flex items-center gap-3">
                     <OrganelleGlyph organelle={organelle} />
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-slate-100">{organelle.name}</div>
-                      <div className="mt-0.5 text-xs text-slate-400">{organelle.analogy}</div>
+                      <div className="mt-0.5 text-xs text-slate-400">{blankCellKinds(organelle.analogy ?? '', board)}</div>
+                      {job && <div data-lever={JOBS_LEVER} className="mt-1 text-xs text-cyan-200">{job}</div>}
                     </div>
                     <div className="flex gap-1">
-                      <LuminaButton size="sm" tone={decision === true ? 'primary' : 'subtle'} disabled={sortChecked} onClick={() => setSortDecisions((previous) => ({ ...previous, [organelle.id]: true }))}>Keep</LuminaButton>
-                      <LuminaButton size="sm" tone={decision === false ? 'danger' : 'subtle'} disabled={sortChecked} onClick={() => setSortDecisions((previous) => ({ ...previous, [organelle.id]: false }))}>Reject</LuminaButton>
+                      <LuminaButton size="sm" data-pip-object={`keep-${organelle.id}`} tone={decision === true ? 'primary' : 'subtle'} disabled={locked} onClick={() => setSortDecisions((previous) => ({ ...previous, [organelle.id]: true }))}>Keep</LuminaButton>
+                      <LuminaButton size="sm" data-pip-object={`reject-${organelle.id}`} tone={decision === false ? 'danger' : 'subtle'} disabled={locked} onClick={() => setSortDecisions((previous) => ({ ...previous, [organelle.id]: false }))}>Reject</LuminaButton>
                     </div>
                   </div>
-                  {sortChecked && !correct && (
+                  {marks && !correct && (
                     <p className="mt-2 border-t border-white/10 pt-2 text-xs text-amber-200">
                       {organelle.belongsInCell ? `${organelle.name} belongs in this cell.` : organelle.distractorExplanation ?? `${organelle.name} does not belong in a ${cellContext}.`}
                     </p>
@@ -539,23 +607,28 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
             <div className="grid gap-4 lg:grid-cols-[minmax(220px,0.7fr)_minmax(0,1.5fr)]">
               <LuminaPanel className="space-y-2">
                 <LuminaSectionLabel accent="cyan">Organelle bay</LuminaSectionLabel>
-                {validOrganelles.map((organelle) => {
+                {cards.map((organelle) => {
                   const placed = placements[organelle.id];
                   const selected = selectedOrganelle === organelle.id;
+                  const job = jobsOn ? jobLine(organelle, currentPhase, board) : null;
                   return (
                     <button
                       key={organelle.id}
                       type="button"
-                      draggable={!placeChecked}
-                      disabled={placeChecked}
+                      data-pip-object={`bay-${organelle.id}`}
+                      draggable={!locked}
+                      disabled={locked}
                       onDragStart={(event) => { event.dataTransfer.setData('text/plain', organelle.id); setSelectedOrganelle(organelle.id); }}
                       onClick={() => setSelectedOrganelle(selected ? null : organelle.id)}
-                      className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${selected ? 'border-cyan-400/60 bg-cyan-500/15 text-cyan-100' : placed ? 'border-white/10 bg-white/[0.03] text-slate-500' : 'border-white/15 bg-white/5 text-slate-200 hover:bg-white/10'}`}
+                      className={`flex w-full flex-col rounded-xl border px-3 py-2 text-left transition ${selected ? 'border-cyan-400/60 bg-cyan-500/15 text-cyan-100' : placed ? 'border-white/10 bg-white/[0.03] text-slate-500' : 'border-white/15 bg-white/5 text-slate-200 hover:bg-white/10'}`}
                     >
-                      <GripVertical className="h-4 w-4 shrink-0" />
-                      <OrganelleGlyph organelle={organelle} small />
-                      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{organelle.name}</span>
-                      {placed && <span className="text-[10px] uppercase tracking-wider">{ZONE_LABELS[placed]}</span>}
+                      <span className="flex w-full items-center gap-2">
+                        <GripVertical className="h-4 w-4 shrink-0" />
+                        <OrganelleGlyph organelle={organelle} small />
+                        <span className="min-w-0 flex-1 truncate text-sm font-semibold">{organelle.name}</span>
+                        {placed && <span className="text-[10px] uppercase tracking-wider">{ZONE_LABELS[placed]}</span>}
+                      </span>
+                      {job && <span data-lever={JOBS_LEVER} className="mt-1 pl-6 text-[11px] font-normal text-cyan-200">{job}</span>}
                     </button>
                   );
                 })}
@@ -565,16 +638,17 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
                 <div className="pointer-events-none absolute inset-3 rounded-[2rem] border border-teal-300/20" />
                 <div className="relative grid min-h-[470px] grid-cols-2 gap-3 sm:grid-cols-3">
                   {ZONE_ORDER.map((zone) => {
-                    const zoneOrganelles = validOrganelles.filter((item) => placements[item.id] === zone);
-                    const zoneCorrect = placeChecked && zoneOrganelles.every((item) => item.correctZone === zone);
-                    const containsIncorrect = placeChecked && zoneOrganelles.some((item) => item.correctZone !== zone);
+                    const zoneOrganelles = cards.filter((item) => placements[item.id] === zone);
+                    const zoneCorrect = marks && zoneOrganelles.every((item) => item.correctZone === zone);
+                    const containsIncorrect = marks && zoneOrganelles.some((item) => item.correctZone !== zone);
                     const state: DropZoneState = dragOverZone === zone ? 'dragOver' : containsIncorrect ? 'incorrect' : zoneCorrect && zoneOrganelles.length > 0 ? 'correct' : zoneOrganelles.length > 0 ? 'filled' : 'idle';
                     return (
                       <LuminaDropZone
                         key={zone}
                         state={state}
+                        data-pip-object={`zone-${zone}`}
                         className="min-h-[138px] content-start p-3"
-                        onDragOver={(event) => { event.preventDefault(); if (!placeChecked) setDragOverZone(zone); }}
+                        onDragOver={(event) => { event.preventDefault(); if (!locked) setDragOverZone(zone); }}
                         onDragLeave={() => setDragOverZone(null)}
                         onDrop={(event) => handleZoneDrop(event, zone)}
                         onClick={() => selectedOrganelle && placeOrganelle(selectedOrganelle, zone)}
@@ -594,13 +668,13 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
                                 <button
                                   key={organelle.id}
                                   type="button"
-                                  disabled={placeChecked}
-                                  onClick={(event) => { event.stopPropagation(); setPlacements((previous) => { const next = { ...previous }; delete next[organelle.id]; return next; }); }}
-                                  className={`flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] ${placeChecked ? correct ? answerStateClass('correct') : answerStateClass('incorrect') : 'border-white/15 bg-slate-950/50 text-slate-200'}`}
+                                  disabled={locked}
+                                  onClick={(event) => { event.stopPropagation(); if (locked) return; setPlacements((previous) => { const next = { ...previous }; delete next[organelle.id]; return next; }); }}
+                                  className={`flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] ${marks ? correct ? answerStateClass('correct') : answerStateClass('incorrect') : 'border-white/15 bg-slate-950/50 text-slate-200'}`}
                                 >
                                   <OrganelleGlyph organelle={organelle} small />
                                   {organelle.name}
-                                  {placeChecked && !correct && organelle.correctZone && <span className="text-amber-200">→ {ZONE_LABELS[organelle.correctZone]}</span>}
+                                  {marks && !correct && organelle.correctZone && <span className="text-amber-200">→ {ZONE_LABELS[organelle.correctZone]}</span>}
                                 </button>
                               );
                             })}
@@ -619,15 +693,19 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
           <div className="grid gap-4 lg:grid-cols-2">
             <LuminaPanel className="space-y-2">
               <LuminaSectionLabel accent="purple">Structures</LuminaSectionLabel>
-              {validOrganelles.map((organelle) => {
+              {cards.map((organelle) => {
                 const selected = selectedMatchOrganelle === organelle.id;
                 const connected = matchConnections[organelle.id];
                 const correct = connected === organelle.id;
+                const hint = hintsOn ? hintLine(organelle, board) : null;
                 return (
-                  <button key={organelle.id} type="button" disabled={matchChecked} onClick={() => setSelectedMatchOrganelle(selected ? null : organelle.id)} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left ${matchChecked ? correct ? answerStateClass('correct') : answerStateClass('incorrect') : selected ? answerStateClass('selected') : connected ? 'border-purple-400/30 bg-purple-500/10 text-slate-100' : answerStateClass('idle')}`}>
-                    <OrganelleGlyph organelle={organelle} small />
-                    <span className="flex-1 text-sm font-semibold">{organelle.name}</span>
-                    {connected && <CheckCircle2 className="h-4 w-4 text-purple-300" />}
+                  <button key={organelle.id} type="button" data-pip-object={`structure-${organelle.id}`} disabled={locked} onClick={() => setSelectedMatchOrganelle(selected ? null : organelle.id)} className={`flex w-full flex-col rounded-xl border p-3 text-left ${marks ? correct ? answerStateClass('correct') : answerStateClass('incorrect') : selected ? answerStateClass('selected') : connected ? 'border-purple-400/30 bg-purple-500/10 text-slate-100' : answerStateClass('idle')}`}>
+                    <span className="flex w-full items-center gap-3">
+                      <OrganelleGlyph organelle={organelle} small />
+                      <span className="flex-1 text-sm font-semibold">{organelle.name}</span>
+                      {connected && <CheckCircle2 className="h-4 w-4 text-purple-300" />}
+                    </span>
+                    {hint && <span data-lever={HINTS_LEVER} className="mt-1 pl-10 text-[11px] font-normal text-cyan-200">{hint}</span>}
                   </button>
                 );
               })}
@@ -635,24 +713,25 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
 
             <LuminaPanel className="space-y-2">
               <LuminaSectionLabel accent="amber">Cell jobs</LuminaSectionLabel>
-              {shuffledFunctions.map((match) => {
+              {shownJobs.map((match) => {
                 const owner = Object.entries(matchConnections).find(([, functionId]) => functionId === match.organelleId)?.[0];
                 const ownerCorrect = owner === match.organelleId;
                 return (
                   <button
                     key={match.organelleId}
                     type="button"
-                    disabled={matchChecked || !selectedMatchOrganelle}
+                    data-pip-object={jobTarget(board, match.organelleId)}
+                    disabled={locked || !selectedMatchOrganelle}
                     onClick={() => {
-                      if (!selectedMatchOrganelle) return;
+                      if (!selectedMatchOrganelle || locked) return;
                       setMatchConnections((previous) => { const next = { ...previous }; if (owner) delete next[owner]; next[selectedMatchOrganelle] = match.organelleId; return next; });
                       setSelectedMatchOrganelle(null);
                       SoundManager.snap();
                     }}
-                    className={`w-full rounded-xl border p-3 text-left text-sm leading-relaxed ${matchChecked ? ownerCorrect ? answerStateClass('correct') : owner ? answerStateClass('incorrect') : answerStateClass('dimmed') : owner ? 'border-amber-400/30 bg-amber-500/10 text-slate-100' : answerStateClass('idle')}`}
+                    className={`w-full rounded-xl border p-3 text-left text-sm leading-relaxed ${marks ? ownerCorrect ? answerStateClass('correct') : owner ? answerStateClass('incorrect') : answerStateClass('dimmed') : owner ? 'border-amber-400/30 bg-amber-500/10 text-slate-100' : answerStateClass('idle')}`}
                   >
-                    {match.functionDescription}
-                    {owner && <span className="mt-2 block text-[10px] font-bold uppercase tracking-wider text-amber-300">Connected to {validOrganelles.find((item) => item.id === owner)?.name}</span>}
+                    {jobCardText(board, match.functionDescription)}
+                    {owner && <span className="mt-2 block text-[10px] font-bold uppercase tracking-wider text-amber-300">Connected to {organelles.find((item) => item.id === owner)?.name}</span>}
                   </button>
                 );
               })}
@@ -667,15 +746,20 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
               <div>
                 <LuminaSectionLabel accent="amber">Design brief</LuminaSectionLabel>
                 <p className="mt-1 text-sm text-slate-300">A <strong className="text-white">{cellContext}</strong> has a specific job. Decide how heavily it should invest in each organelle.</p>
+                {levelsOn && (
+                  <ul data-lever={LEVELS_LEVER} className="mt-2 space-y-0.5 text-xs text-cyan-200">
+                    {levelLegend().map(line => <li key={line}>{line}</li>)}
+                  </ul>
+                )}
               </div>
             </LuminaPanel>
 
             <div className="grid gap-3 lg:grid-cols-2">
-              {quantityOrganelles.map((organelle) => {
+              {cards.map((organelle) => {
                 const answer = quantityAnswers[organelle.id];
                 const correct = answer === organelle.expectedQuantity;
                 return (
-                  <LuminaPanel key={organelle.id} className={quantityChecked ? correct ? 'border-emerald-500/30' : 'border-rose-500/30' : ''}>
+                  <LuminaPanel key={organelle.id} className={marks ? correct ? 'border-emerald-500/30' : 'border-rose-500/30' : ''}>
                     <div className="flex items-start gap-3">
                       <OrganelleGlyph organelle={organelle} />
                       <div className="min-w-0 flex-1">
@@ -684,9 +768,9 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
                       </div>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {QUANTITY_OPTIONS.map((quantity) => <LuminaChoiceChip key={quantity} label={QUANTITY_LABELS[quantity]} accent="amber" selected={answer === quantity} disabled={quantityChecked} onClick={() => setQuantityAnswers((previous) => ({ ...previous, [organelle.id]: quantity }))} className="px-3 py-2 text-xs" />)}
+                      {QUANTITY_OPTIONS.map((quantity) => <LuminaChoiceChip key={quantity} data-pip-object={`level-${organelle.id}-${quantity}`} label={QUANTITY_LABELS[quantity]} accent="amber" selected={answer === quantity} disabled={locked} onClick={() => setQuantityAnswers((previous) => ({ ...previous, [organelle.id]: quantity }))} className="px-3 py-2 text-xs" />)}
                     </div>
-                    {quantityChecked && (
+                    {marks && (
                       <div className={`mt-3 rounded-lg border p-2 text-xs ${correct ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-200' : 'border-amber-500/20 bg-amber-500/5 text-amber-100'}`}>
                         <Lightbulb className="mr-1 inline h-3.5 w-3.5" />
                         {organelle.quantityReasoning ?? `${organelle.name} supports this cell by ${organelle.function.toLowerCase()}`}
@@ -702,25 +786,32 @@ const CellBuilder: React.FC<CellBuilderProps> = ({ data, className }) => {
         </div>
 
         {feedback && (
-          <LuminaFeedbackCard status="insight" label={hasSubmitted ? 'Cell report' : 'Mission checked'} teachingNote={currentComplete && !hasSubmitted ? 'Your first committed answer is what counts; the reveal is for learning, not rescoring.' : undefined}>
+          <LuminaFeedbackCard status="insight" label={hasSubmitted ? 'Cell report' : 'Mission checked'} teachingNote={!tutorOwned && currentComplete && !hasSubmitted ? 'Your first committed answer is what counts; the reveal is for learning, not rescoring.' : undefined}>
             {feedback}
           </LuminaFeedbackCard>
         )}
 
         <div className="flex flex-wrap items-center gap-2 border-t border-white/5 pt-4">
-          {!currentComplete && !hasSubmitted && <LuminaActionButton action="check" disabled={!canCheck} onClick={checkCurrentPhase}>Check mission</LuminaActionButton>}
-          {currentComplete && !isFinalPhase && !hasSubmitted && <LuminaActionButton action="next" onClick={advance}>Next mission</LuminaActionButton>}
-          {currentComplete && isFinalPhase && !hasSubmitted && <LuminaActionButton action="check" onClick={handleSubmit}><Activity className="mr-2 h-4 w-4" />Run cell report</LuminaActionButton>}
+          {!currentComplete && !hasSubmitted && <LuminaActionButton action="check" disabled={!canCheck || learnerBlocked()} onClick={checkCurrentPhase}>Check mission</LuminaActionButton>}
+          {!tutorOwned && currentComplete && !isFinalPhase && !hasSubmitted && <LuminaActionButton action="next" onClick={advance}>Next mission</LuminaActionButton>}
+          {!tutorOwned && currentComplete && isFinalPhase && !hasSubmitted && <LuminaActionButton action="check" onClick={handleSubmit}><Activity className="mr-2 h-4 w-4" />Run cell report</LuminaActionButton>}
           <LuminaButton tone="subtle" onClick={handleReset} className="ml-auto"><RotateCcw className="mr-1 h-4 w-4" />Reset</LuminaButton>
         </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
-          <span><span className="text-slate-400">Membrane:</span> {cellMembrane.function}</span>
-          {cellWall.present && <span><span className="text-slate-400">Cell wall:</span> {cellWall.description}</span>}
-        </div>
+        {/* The membrane and wall lines say what this cell has, which Stock the cell asks: hidden on that board. */}
+        {currentPhase !== 'cell_inventory' && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+            <span><span className="text-slate-400">Membrane:</span> {cellMembrane.function}</span>
+            {cellWall.present && <span><span className="text-slate-400">Cell wall:</span> {cellWall.description}</span>}
+          </div>
+        )}
       </LuminaCardContent>
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const CellBuilder = withWorkspaceController<CellBuilderProps, ProgressOptions<CellMission>, Progress>(
+  'cell-builder', CellBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('cell-builder'));
 
 export default CellBuilder;

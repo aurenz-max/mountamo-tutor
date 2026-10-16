@@ -1,0 +1,242 @@
+{
+ "source": "qa/tutor-reports/construction-sequence-planner-runtime-critical_path-hard-payload-2026-10-16.json",
+ "primitiveId": "construction-sequence-planner",
+ "evalMode": "critical_path",
+ "data": {
+  "title": "House Blueprint Planning",
+  "description": "Plan the construction schedule for a new residential building.",
+  "projectType": "house",
+  "gradeLevel": "5",
+  "challengeTypes": [
+   "critical_path"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "critical_path-1",
+    "mode": "critical_path",
+    "project": "house",
+    "jobs": [
+     {
+      "id": "foundation",
+      "name": "Pour the foundation",
+      "icon": "\ud83e\uddf1",
+      "weeks": 3,
+      "needs": []
+     },
+     {
+      "id": "frame",
+      "name": "Frame the walls",
+      "icon": "\ud83d\udd28",
+      "weeks": 4,
+      "needs": [
+       "foundation"
+      ]
+     },
+     {
+      "id": "roof",
+      "name": "Put on the roof",
+      "icon": "\ud83c\udfe0",
+      "weeks": 3,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "pipes",
+      "name": "Run the water pipes",
+      "icon": "\ud83d\udeb0",
+      "weeks": 1,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "wires",
+      "name": "Run the electric wires",
+      "icon": "\ud83d\udca1",
+      "weeks": 1,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "inside",
+      "name": "Cover the inside walls",
+      "icon": "\ud83e\udeb5",
+      "weeks": 1,
+      "needs": [
+       "pipes",
+       "wires"
+      ]
+     },
+     {
+      "id": "paint",
+      "name": "Paint the rooms",
+      "icon": "\ud83c\udfa8",
+      "weeks": 4,
+      "needs": [
+       "inside",
+       "roof"
+      ]
+     }
+    ],
+    "options": [
+     4,
+     13,
+     14,
+     17
+    ]
+   },
+   {
+    "id": "critical_path-2",
+    "mode": "critical_path",
+    "project": "tower",
+    "jobs": [
+     {
+      "id": "piles",
+      "name": "Drive the steel piles",
+      "icon": "\ud83d\udd29",
+      "weeks": 1,
+      "needs": []
+     },
+     {
+      "id": "base",
+      "name": "Pour the base slab",
+      "icon": "\ud83e\uddf1",
+      "weeks": 3,
+      "needs": [
+       "piles"
+      ]
+     },
+     {
+      "id": "core",
+      "name": "Build the center core",
+      "icon": "\ud83c\udfd7\ufe0f",
+      "weeks": 1,
+      "needs": [
+       "base"
+      ]
+     },
+     {
+      "id": "floors",
+      "name": "Build the floors",
+      "icon": "\ud83c\udfe2",
+      "weeks": 1,
+      "needs": [
+       "core"
+      ]
+     },
+     {
+      "id": "elevator",
+      "name": "Install the elevator",
+      "icon": "\ud83d\uded7",
+      "weeks": 4,
+      "needs": [
+       "core"
+      ]
+     },
+     {
+      "id": "glass",
+      "name": "Hang the glass walls",
+      "icon": "\ud83e\ude9f",
+      "weeks": 1,
+      "needs": [
+       "floors"
+      ]
+     },
+     {
+      "id": "wires",
+      "name": "Run the wires",
+      "icon": "\ud83d\udca1",
+      "weeks": 1,
+      "needs": [
+       "floors"
+      ]
+     }
+    ],
+    "options": [
+     4,
+     7,
+     9,
+     12
+    ]
+   },
+   {
+    "id": "critical_path-3",
+    "mode": "critical_path",
+    "project": "road",
+    "jobs": [
+     {
+      "id": "survey",
+      "name": "Mark the road's path",
+      "icon": "\ud83d\udcd0",
+      "weeks": 3,
+      "needs": []
+     },
+     {
+      "id": "clear",
+      "name": "Clear trees and rocks",
+      "icon": "\ud83d\ude9c",
+      "weeks": 2,
+      "needs": [
+       "survey"
+      ]
+     },
+     {
+      "id": "level",
+      "name": "Level the ground",
+      "icon": "\ud83d\udea7",
+      "weeks": 4,
+      "needs": [
+       "clear"
+      ]
+     },
+     {
+      "id": "drains",
+      "name": "Lay the drain pipes",
+      "icon": "\ud83d\udeb0",
+      "weeks": 2,
+      "needs": [
+       "level"
+      ]
+     },
+     {
+      "id": "gravel",
+      "name": "Spread the gravel",
+      "icon": "\ud83e\udea8",
+      "weeks": 2,
+      "needs": [
+       "level"
+      ]
+     },
+     {
+      "id": "pave",
+      "name": "Pave with asphalt",
+      "icon": "\ud83d\udee3\ufe0f",
+      "weeks": 1,
+      "needs": [
+       "gravel",
+       "drains"
+      ]
+     },
+     {
+      "id": "signs",
+      "name": "Put up the signs",
+      "icon": "\ud83d\udea6",
+      "weeks": 4,
+      "needs": [
+       "level"
+      ]
+     }
+    ],
+    "options": [
+     4,
+     12,
+     13,
+     18
+    ]
+   }
+  ]
+ }
+}

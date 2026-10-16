@@ -1,0 +1,125 @@
+{
+ "source": "qa/tutor-reports/how-it-works-runtime-sequence-payload-2026-10-16.json",
+ "primitiveId": "how-it-works",
+ "evalMode": "sequence",
+ "data": {
+  "title": "How a Bicycle Moves",
+  "subtitle": "Discover the mechanical journey from your feet to the street",
+  "overview": "Every time you hop on a bicycle and push your feet down, an invisible chain reaction of gears and wheels turns your leg power into fast forward motion.",
+  "category": "engineering",
+  "steps": [
+   {
+    "stepNumber": 1,
+    "title": "Stepping on the Levers",
+    "description": "Your foot applies downward force against a metal platform attached to a central arm. This direct pressure forces the arm to rotate in a wide circle.",
+    "imagePrompt": "Close-up of a child's sneakers pushing down on a metal bicycle pedal, photographed outdoors on a paved sidewalk in bright afternoon sunlight.",
+    "whatsHappening": "Your muscles contract to push the pedal downward, creating rotational force called torque.",
+    "funFact": "Your leg muscles can produce up to 100 watts of power during a casual ride.",
+    "purpose": "It starts the rotational movement that the rest of the bicycle passes along to the wheel."
+   },
+   {
+    "stepNumber": 2,
+    "title": "Spinning the Metal Wheel",
+    "description": "The rotating arm turns a large metal circle with teeth on its outer edge. This toothed circle is firmly attached to the frame near the center of the bicycle.",
+    "imagePrompt": "Side view of a bicycle chainring and metal crank arm on a modern mountain bike, captured in natural shade with visible metallic textures.",
+    "whatsHappening": "The crank arms act as extensions of your legs, magnifying the distance your feet travel.",
+    "purpose": "It gathers the circular force from your legs and prepares to share it with the back wheel."
+   },
+   {
+    "stepNumber": 3,
+    "title": "Pulling the Metal Links",
+    "description": "As the large toothed circle turns, it catches the individual metal loops of a continuous chain. These tiny interconnected links loop tightly all the way back to the rear wheel.",
+    "imagePrompt": "Close-up photograph of a metal bicycle chain resting on shiny gear teeth, shot outside with natural daylight highlighting the oily steel links.",
+    "funFact": "A standard bicycle chain has over 100 individual moving links working together.",
+    "purpose": "It transfers the turning energy from the middle of the frame all the way to the back axle."
+   },
+   {
+    "stepNumber": 4,
+    "title": "Turning the Rear Cogs",
+    "description": "The moving chain snags onto a much smaller cluster of toothed wheels attached directly to the center of the back tire. Because this back wheel is smaller, it spins much faster than the front pedals.",
+    "imagePrompt": "Macro photo of a bicycle cassette gear cluster and derailleur on a parked road bike, illuminated by soft daylight.",
+    "whatsHappening": "Passing force from a large gear to a small gear increases rotational speed.",
+    "purpose": "It multiplies your speed so the bicycle travels much faster than your feet are moving."
+   },
+   {
+    "stepNumber": 5,
+    "title": "Rolling Across the Ground",
+    "description": "The spinning back tire grips the pavement and pushes backward against the Earth. According to the laws of physics, this friction pushes the entire bicycle forward into a smooth glide.",
+    "imagePrompt": "Low angle shot of a rubber bicycle tire rolling over asphalt on a sunny day, focusing on the tread pattern and road texture.",
+    "funFact": "Good tire tread can grip the road even when tiny water droplets coat the pavement.",
+    "purpose": "It translates internal mechanical spinning into real world travel across the neighborhood."
+   }
+  ],
+  "summary": {
+   "text": "By connecting your leg muscles through pedals, chains, and gears, a bicycle multiplies your strength to roll smoothly across the pavement.",
+   "keyTakeaway": "Gears of different sizes let you trade raw strength for incredible speed.",
+   "totalTime": "Instantaneous"
+  },
+  "quickFacts": {
+   "duration": "Happens instantly as you pedal",
+   "whereItHappens": "Along the bicycle frame from pedals to tires"
+  },
+  "realWorldExamples": [
+   "A hand-cranked pencil sharpener",
+   "An egg beater in a mixing bowl",
+   "A motorcycle chain driving the rear wheel"
+  ],
+  "relatedProcesses": [
+   "How Car Engines Work",
+   "How Pulleys Lift Heavy Loads",
+   "Friction and Traction"
+  ],
+  "modes": [
+   "sequence"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "sequence-1",
+    "mode": "sequence",
+    "kind": "sequence",
+    "cards": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ],
+    "bank": [
+     2,
+     4,
+     1,
+     3,
+     0
+    ],
+    "asClues": true
+   },
+   {
+    "id": "identify-2",
+    "mode": "sequence",
+    "kind": "identify",
+    "target": 3,
+    "options": [
+     3,
+     4,
+     2,
+     0
+    ],
+    "strip": false
+   },
+   {
+    "id": "identify-3",
+    "mode": "sequence",
+    "kind": "identify",
+    "target": 1,
+    "options": [
+     1,
+     0,
+     2,
+     4
+    ],
+    "strip": false
+   }
+  ]
+ }
+}

@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/atom-builder-runtime-make_atom-payload-2026-10-15.json",
+ "primitiveId": "atom-builder",
+ "evalMode": "make_atom",
+ "data": {
+  "title": "Make Your Own Atom",
+  "description": "Build atoms of your own that fit each ask, then press I'm done!",
+  "targetElement": {
+   "atomicNumber": null,
+   "massNumber": null,
+   "charge": 0,
+   "name": null
+  },
+  "challenges": [
+   {
+    "id": "ma1",
+    "type": "make_atom",
+    "instruction": "Make any neutral atom with four electrons in its outer shell.",
+    "ask": {
+     "kind": "valence",
+     "outer": 4
+    },
+    "targetProtons": null,
+    "targetNeutrons": null,
+    "targetElectrons": null,
+    "hint": "",
+    "narration": ""
+   },
+   {
+    "id": "ma2",
+    "type": "make_atom",
+    "instruction": "Make any neutral atom whose outer shell is full.",
+    "ask": {
+     "kind": "full_shell"
+    },
+    "targetProtons": null,
+    "targetNeutrons": null,
+    "targetElectrons": null,
+    "hint": "",
+    "narration": ""
+   },
+   {
+    "id": "ma3",
+    "type": "make_atom",
+    "instruction": "Make any ion with a charge of +2.",
+    "ask": {
+     "kind": "charge",
+     "charge": 2
+    },
+    "targetProtons": null,
+    "targetNeutrons": null,
+    "targetElectrons": null,
+    "hint": "",
+    "narration": ""
+   },
+   {
+    "id": "ma4",
+    "type": "make_atom",
+    "instruction": "Make two different isotopes of the same element. Build one atom and press Keep, then build the other.",
+    "ask": {
+     "kind": "isotopes"
+    },
+    "targetProtons": null,
+    "targetNeutrons": null,
+    "targetElectrons": null,
+    "hint": "",
+    "narration": ""
+   }
+  ],
+  "showOptions": {
+   "showMiniPeriodicTable": true,
+   "showIdentityCard": true,
+   "showShellCapacity": false,
+   "showCharge": false,
+   "showMassNumber": false,
+   "showElectronConfiguration": false,
+   "showNucleusDetail": true
+  },
+  "constraints": {
+   "maxProtons": 36,
+   "maxShells": 4,
+   "allowIons": true,
+   "allowIsotopes": true
+  },
+  "imagePrompt": null,
+  "gradeBand": "6-8"
+ }
+}

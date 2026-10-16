@@ -3360,8 +3360,9 @@ export interface TransportChallengeMetrics extends BasePrimitiveMetrics {
   scenariosCompleted: number;
   totalScenarios: number;
   vehicleChoiceAccuracy: number;
-  tradeOffAccuracy: number;
-  averageConstraintsMet: number;
+  /** Jobs whose right vehicle was the first pick (the trade-off question was retired 2026-10-16). */
+  firstTryCount: number;
+  attemptsCount: number;
 }
 
 export interface AirplaneDioramaMetrics extends BasePrimitiveMetrics {

@@ -1,49 +1,77 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import {
-  LuminaCard,
-  LuminaCardHeader,
-  LuminaCardTitle,
-  LuminaCardContent,
-  LuminaButton,
-  LuminaBadge,
-  LuminaPanel,
-  LuminaAnswerChoice,
-  LuminaReadAloud,
-  type AnswerChoiceState,
-} from '../../../ui';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+/**
+ * Flight Forces Explorer: a plane, its four force arrows (lift, weight, thrust, drag), and one task per eval mode.
+ * - predict: a plane flying level at a steady speed, one change (a pilot action, a load); predict what it does, then
+ *   the change runs.
+ * - observe: a plane drawn with its arrows at set lengths, standing still; say what its height and speed are doing.
+ * - adjust: a goal; set the thrust and the nose angle, then fly it.
+ *
+ * Every item is built and keyed by code (`flightForcesWorkspace.ts`). No label, badge or readout names what the plane
+ * is doing, and the plane moves only after a credited answer (predict, observe) or a flight (adjust). Two paths,
+ * chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and two tries before a
+ * reveal; the workspace path (W1, plain shape) commits every check through `progress.commitCheck` with a named miss,
+ * takes a spoken answer judged by the tutor, and lets the runtime move on. The levers live in `flightForcesLevers.ts`.
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { FlightForcesExplorerMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { ReadMeButton } from '../../shared/ReadMeButton';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { ReadMeButton } from '../../shared/ReadMeButton';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaButton,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  angleOf, askedAxes, askOf, choicesFor, describeFlightWork, emptyWork, flightCorrect, flightItems, flightMiss,
+  forcesAt, forcesRun, isStalled, keyOf, LEVEL, MAX_THRUST, maxNose, motionText, solution, speedOf, workComplete,
+  workspaceAssignment, workspaceScene, type AircraftId, type Axis, type FlightItem, type FlightMode, type FlightTier,
+  type FlightWork, type Forces, type Setting,
+} from './flightForcesWorkspace';
+import {
+  COUNT_UNITS_LEVER, countLines, FORCE_LINK_LEVER, forceLinkLines, flightLevers, leverFact, PAIR_UP_LEVER,
+  SHOW_ARROWS_LEVER, shownArrows, simplerItem, STALL_MARK_LEVER, stallLine, TARGET_MARKS_LEVER,
+} from './flightForcesLevers';
 
 // ============================================================================
-// Data Types (Single Source of Truth)
+// Data Types (single source of truth; the generator imports them)
 // ============================================================================
 
-export interface FlightChallenge {
-  id: string;
-  type: 'predict' | 'observe' | 'adjust';
-  instruction: string;
-  options: { id: string; text: string }[];
-  correctOptionId: string;
-  hint: string;
-}
+export type { FlightItem, FlightMode, FlightTier };
 
 export interface FlightForcesExplorerData {
   title: string;
-  description: string;
-  overview: string;
-  aircraftType: string;
-  aircraftName: string;
-  gradeBand: '1-2' | '3-5';
-  challenges?: FlightChallenge[];
+  description?: string;
+  /** One sentence shown under the title; never states an outcome. */
+  overview?: string;
+  aircraftType?: string;
+  aircraftName?: string;
+  gradeBand?: '1-2' | '3-5';
+  /** The eval modes this session asks, in order (`resolveFlightModes`). */
+  challengeTypes?: FlightMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: FlightTier;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: FlightItem[];
+  /** Legacy generations (model-written multiple choice): read only for their modes. */
+  challenges?: Array<{ type?: string }>;
   forceDescriptions?: Record<string, { name: string; description: string; analogy: string }>;
   flightStateDescriptions?: Record<string, { name: string; description: string }>;
 
@@ -56,1289 +84,545 @@ export interface FlightForcesExplorerData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<FlightForcesExplorerMetrics>) => void;
 }
 
-// ============================================================================
-// Physics Constants — Component owns ALL geometry and physics
-// ============================================================================
-
-const CW = 720;
-const CH = 420;
-const AIR_DENSITY = 1.225;
-
-type AircraftId = 'cessna' | 'jumbo_jet' | 'glider' | 'fighter';
-
-interface AircraftDef {
-  label: string;
-  emoji: string;
-  emptyWeight: number;
-  maxThrust: number;
-  wingArea: number;
-  stallAngle: number;
-  bodyW: number;
-  bodyH: number;
-  wingSpan: number;
-  color: string;
+interface FlightForcesExplorerProps {
+  data: FlightForcesExplorerData;
+  className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
 
-const AIRCRAFT_DEFS: Record<AircraftId, AircraftDef> = {
-  cessna: {
-    label: 'Light Plane', emoji: '🛩️',
-    emptyWeight: 750, maxThrust: 2200, wingArea: 16, stallAngle: 16,
-    bodyW: 70, bodyH: 18, wingSpan: 60, color: '#60a5fa',
-  },
-  jumbo_jet: {
-    label: 'Jumbo Jet', emoji: '✈️',
-    emptyWeight: 180000, maxThrust: 900000, wingArea: 540, stallAngle: 14,
-    bodyW: 90, bodyH: 24, wingSpan: 80, color: '#a78bfa',
-  },
-  glider: {
-    label: 'Glider', emoji: '🪂',
-    emptyWeight: 300, maxThrust: 0, wingArea: 18, stallAngle: 18,
-    bodyW: 60, bodyH: 12, wingSpan: 75, color: '#34d399',
-  },
-  fighter: {
-    label: 'Fighter Jet', emoji: '🛫',
-    emptyWeight: 10000, maxThrust: 130000, wingArea: 50, stallAngle: 20,
-    bodyW: 75, bodyH: 16, wingSpan: 50, color: '#f97316',
-  },
-};
-
-const AIRCRAFT_IDS: AircraftId[] = ['cessna', 'jumbo_jet', 'glider', 'fighter'];
-
-const DEFAULT_CHALLENGES: FlightChallenge[] = [
-  {
-    id: 'ch1', type: 'predict',
-    instruction: 'What happens to the air particles above the wing when you increase the angle of attack?',
-    options: [
-      { id: 'a', text: 'They slow down and bunch together' },
-      { id: 'b', text: 'They speed up and spread apart — creating lower pressure above the wing' },
-      { id: 'c', text: 'They stay exactly the same' },
-      { id: 'd', text: 'They disappear' },
-    ],
-    correctOptionId: 'b',
-    hint: 'Watch the particles above and below the wing as you tilt it. Which side has faster-moving, more spread-out particles?',
-  },
-  {
-    id: 'ch2', type: 'observe',
-    instruction: 'Increase the angle of attack past 15 degrees. Watch the particles above the wing. What happens?',
-    options: [
-      { id: 'a', text: 'They flow smoothly and lift gets even bigger' },
-      { id: 'b', text: 'They detach and swirl — the wing stalls and lift collapses!' },
-      { id: 'c', text: 'Nothing changes' },
-      { id: 'd', text: 'The particles turn red' },
-    ],
-    correctOptionId: 'b',
-    hint: 'A stall happens when air can no longer follow the wing surface. Watch for turbulence!',
-  },
-  {
-    id: 'ch3', type: 'adjust',
-    instruction: 'Can you find the sweet spot? Set the controls so the plane cruises at level flight (lift = weight, thrust = drag).',
-    options: [
-      { id: 'a', text: 'Maximum thrust and zero angle of attack' },
-      { id: 'b', text: 'Moderate thrust (~50%) and gentle angle (~5-8 degrees)' },
-      { id: 'c', text: 'No thrust needed — the wing does all the work' },
-      { id: 'd', text: 'Full angle of attack (20 degrees) with low thrust' },
-    ],
-    correctOptionId: 'b',
-    hint: 'Watch the force arrows. Level flight means UP = DOWN and FORWARD = BACKWARD.',
-  },
-  {
-    id: 'ch4', type: 'predict',
-    instruction: 'You add heavy cargo. What needs to change to keep flying level?',
-    options: [
-      { id: 'a', text: 'Nothing — more weight means more lift automatically' },
-      { id: 'b', text: 'More thrust and/or steeper angle to generate more lift' },
-      { id: 'c', text: 'Less thrust so you don\'t go too fast' },
-      { id: 'd', text: 'Remove the wings' },
-    ],
-    correctOptionId: 'b',
-    hint: 'More weight = more downward force. You need more lift to balance it. How can you get more lift?',
-  },
-];
+const MODE_LABEL: Record<FlightMode, string> = { predict: 'Predict, then watch', observe: 'Read the arrows', adjust: 'Set the controls' };
+const AXIS_LABEL: Record<Axis, string> = { height: 'Height', speed: 'Speed' };
 
 // ============================================================================
-// Particle Types
+// The flight scene (canvas). Draws the arrows it is given; the plane moves only when `motion` is set.
 // ============================================================================
 
-interface AirParticle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  turbulent: boolean;
+const CW = 640;
+const CH = 360;
+const UNIT = 11;
+const COLORS = { lift: '#60a5fa', weight: '#f87171', thrust: '#4ade80', drag: '#fb923c' };
+
+interface SceneProps {
+  aircraft: AircraftId;
+  forces: Forces;
+  pitch: number;
+  /** The forces that move the plane, once run; null while it holds still. */
+  motion: Forces | null;
+  stalled: boolean;
+  marks: { lift: number; thrust: number } | null;
 }
 
-// ============================================================================
-// Canvas Sub-component: FlightSimulation
-// ============================================================================
-
-interface SimCallbacks {
-  onFlightState: (state: string) => void;
-  onForces: (forces: { lift: number; weight: number; thrust: number; drag: number }) => void;
-  onStall: () => void;
-  onAltitude: (alt: number) => void;
-  onSpeed: (spd: number) => void;
-  onAoaChange: (aoa: number) => void;
-  onGrab: () => void;
-}
-
-const MIN_AOA = -5;
-const MAX_AOA = 25;
-const DRAG_SENSITIVITY = 0.18; // degrees per pixel of vertical drag
-
-const FlightSimulation: React.FC<{
-  aircraft: AircraftDef;
-  thrustPct: number;
-  aoa: number;
-  cargoWeight: number;
-  callbacks: SimCallbacks;
-}> = ({ aircraft, thrustPct, aoa, cargoWeight, callbacks }) => {
+const FlightScene = ({ aircraft, forces, pitch, motion, stalled, marks }: SceneProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<AirParticle[]>([]);
-  const simRef = useRef({
-    planeY: CH * 0.45,
-    planeVy: 0,
-    speed: 120,
-    altitude: 2000,
-    wasStalling: false,
-    cloudOffsetX: 0,
-  });
-  const animRef = useRef<number>(0);
-  const dragRef = useRef({
-    dragging: false,
-    startPointerY: 0,
-    startAoa: 0,
-    hovering: false,
-    hasGrabbed: false,
-  });
-  const [cursor, setCursor] = useState<'default' | 'grab' | 'grabbing'>('default');
+  const live = useRef({ forces, pitch, motion, stalled, marks });
+  live.current = { forces, pitch, motion, stalled, marks };
+  const sim = useRef({ y: CH * 0.5, scroll: 0, speed: 1 });
+  const particles = useRef<Array<{ x: number; y: number; v: number; swirl: number }>>([]);
 
-  const thrustRef = useRef(thrustPct);
-  const aoaRef = useRef(aoa);
-  const cargoRef = useRef(cargoWeight);
-  const cbRef = useRef(callbacks);
-  const acRef = useRef(aircraft);
-  useEffect(() => { thrustRef.current = thrustPct; }, [thrustPct]);
-  useEffect(() => { aoaRef.current = aoa; }, [aoa]);
-  useEffect(() => { cargoRef.current = cargoWeight; }, [cargoWeight]);
-  useEffect(() => { cbRef.current = callbacks; }, [callbacks]);
-  useEffect(() => { acRef.current = aircraft; }, [aircraft]);
+  // A new run starts from the middle at the cruising speed.
+  useEffect(() => { sim.current = { y: CH * 0.5, scroll: sim.current.scroll, speed: 1 }; }, [motion]);
 
-  // Reset on aircraft change
   useEffect(() => {
-    particlesRef.current = [];
-    simRef.current = {
-      planeY: CH * 0.45,
-      planeVy: 0,
-      speed: 120,
-      altitude: 2000,
-      wasStalling: false,
-      cloudOffsetX: 0,
-    };
-  }, [aircraft]);
-
-  // Main animation loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvasRef.current?.getContext?.('2d');
     if (!ctx) return;
-
-    const PLANE_X = CW * 0.4;
-    const PARTICLE_COUNT = 60;
-
-    // Cloud positions (static seed)
-    const clouds = Array.from({ length: 8 }, (_, i) => ({
-      x: (i * 197) % CW,
-      y: 30 + (i * 73) % 100,
-      w: 40 + (i * 31) % 40,
-      h: 12 + (i * 17) % 10,
-    }));
-
-    const animate = () => {
-      const sim = simRef.current;
-      const particles = particlesRef.current;
-      const ac = acRef.current;
-      const thr = thrustRef.current / 100;
-      const angle = aoaRef.current;
-      const cargo = cargoRef.current;
-      const cbs = cbRef.current;
-
-      // ======== PHYSICS ========
-      const totalWeight = (ac.emptyWeight + cargo) * 9.81;
-      const thrustN = thr * ac.maxThrust;
-      const speedMs = sim.speed / 3.6;
-
-      // Lift coefficient: linear up to stall, then drops
-      const stalling = angle > ac.stallAngle;
-      let cl = 0.3 + angle * 0.11;
-      if (stalling) cl = Math.max(0, cl - (angle - ac.stallAngle) * 0.25);
-      if (angle < 0) cl = Math.max(-0.5, 0.3 + angle * 0.08);
-
-      const liftN = 0.5 * AIR_DENSITY * speedMs * speedMs * ac.wingArea * cl;
-      const cd = 0.025 + (cl * cl) / (Math.PI * 7);
-      const dragN = 0.5 * AIR_DENSITY * speedMs * speedMs * ac.wingArea * cd;
-
-      // Update speed
-      const accel = (thrustN - dragN) / (ac.emptyWeight + cargo);
-      sim.speed = Math.max(0, Math.min(600, sim.speed + accel * 0.008));
-
-      // Update altitude / plane Y
-      const netVertical = liftN - totalWeight;
-      sim.planeVy += netVertical * 0.000002;
-      sim.planeVy *= 0.98; // damping
-      sim.planeY -= sim.planeVy;
-      sim.planeY = Math.max(60, Math.min(CH - 60, sim.planeY));
-
-      sim.altitude = Math.max(0, sim.altitude + sim.planeVy * 3);
-
-      // Flight state
-      let flightState = 'cruising';
-      if (stalling) flightState = 'stalling';
-      else if (liftN > totalWeight * 1.05 && thrustN > dragN) flightState = 'climbing';
-      else if (liftN < totalWeight * 0.9) flightState = 'descending';
-      else if (Math.abs(liftN - totalWeight) < totalWeight * 0.1) flightState = 'cruising';
-
-      cbs.onFlightState(flightState);
-      cbs.onForces({ lift: liftN, weight: totalWeight, thrust: thrustN, drag: dragN });
-      cbs.onAltitude(Math.round(sim.altitude));
-      cbs.onSpeed(Math.round(sim.speed));
-
-      // Stall detection
-      if (stalling && !sim.wasStalling) {
-        sim.wasStalling = true;
-        cbs.onStall();
+    let frame = 0;
+    const clouds = Array.from({ length: 7 }, (_, i) => ({ x: (i * 173) % CW, y: 30 + (i * 61) % 110, w: 40 + (i * 29) % 40 }));
+    const arrow = (x: number, y: number, dx: number, dy: number, n: number, color: string, label: string) => {
+      const len = n * UNIT;
+      if (len <= 0) return;
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + dx * len, y + dy * len); ctx.stroke();
+      // One tick per unit, so the lengths can be counted.
+      ctx.lineWidth = 2;
+      for (let i = 1; i < n; i++) {
+        const tx = x + dx * i * UNIT, ty = y + dy * i * UNIT;
+        ctx.beginPath(); ctx.moveTo(tx - dy * 5, ty - dx * 5); ctx.lineTo(tx + dy * 5, ty + dx * 5); ctx.stroke();
       }
-      if (!stalling) sim.wasStalling = false;
-
-      // Cloud scroll
-      sim.cloudOffsetX -= sim.speed * 0.003;
-      if (sim.cloudOffsetX < -CW) sim.cloudOffsetX += CW;
-
-      // ======== PARTICLES ========
-      // Emit air particles from the right (from plane's reference frame, air comes from front)
-      while (particles.length < PARTICLE_COUNT) {
-        particles.push({
-          x: CW + Math.random() * 40,
-          y: sim.planeY + (Math.random() - 0.5) * 200,
-          vx: -(3 + sim.speed * 0.015 + Math.random()),
-          vy: (Math.random() - 0.5) * 0.3,
-          life: 1,
-          turbulent: false,
-        });
+      const ex = x + dx * len, ey = y + dy * len;
+      ctx.beginPath(); ctx.moveTo(ex + dx * 10, ey + dy * 10); ctx.lineTo(ex - dy * 6, ey - dx * 6); ctx.lineTo(ex + dy * 6, ey + dx * 6); ctx.closePath(); ctx.fill();
+      ctx.font = '10px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(label, ex + dx * 24 + (dy !== 0 ? 22 : 0), ey + dy * 24 + (dx !== 0 ? -10 : 4));
+    };
+    const draw = () => {
+      const { forces: f, pitch: p, motion: m, stalled: st, marks: mk } = live.current;
+      const s = sim.current;
+      if (m) {
+        const dv = m.lift - m.weight, dh = m.thrust - m.drag;
+        s.y = Math.max(70, Math.min(CH - 70, s.y - dv * 0.12));
+        s.speed = Math.max(0.3, Math.min(2.4, s.speed + dh * 0.002));
       }
-
-      // Wing geometry
-      const wingY = sim.planeY;
-      const aoaRad = (angle * Math.PI) / 180;
-
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-
-        // Distance to wing center
-        const dx = p.x - PLANE_X;
-        const dy = p.y - wingY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        // Wing interaction zone
-        if (Math.abs(dx) < ac.wingSpan * 0.7 && dist < ac.wingSpan * 0.8) {
-          const aboveWing = dy < -ac.bodyH * 0.3 * Math.cos(aoaRad) + dx * Math.sin(aoaRad);
-
-          if (stalling && aboveWing && dist < ac.wingSpan * 0.6) {
-            // STALL: turbulent swirling above wing
-            p.turbulent = true;
-            p.vx += (Math.random() - 0.5) * 2;
-            p.vy += (Math.random() - 0.5) * 2.5;
-            p.life -= 0.015;
-          } else if (aboveWing) {
-            // Above wing: speed up, deflect upward (lower pressure)
-            const speedBoost = 1 + cl * 0.3;
-            p.vx *= speedBoost;
-            p.vy -= 0.15 + angle * 0.015;
-          } else {
-            // Below wing: slow down slightly, deflect downward (higher pressure)
-            p.vx *= 0.98;
-            p.vy += 0.08 + angle * 0.008;
-          }
-
-          // Deflect away from wing body
-          if (dist < ac.bodyH * 1.5) {
-            const pushAngle = Math.atan2(dy, dx);
-            p.vx += Math.cos(pushAngle) * 0.5;
-            p.vy += Math.sin(pushAngle) * 0.5;
-          }
-        }
-
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy *= 0.99;
-        p.life -= 0.004;
-
-        if (p.life <= 0 || p.x < -30 || p.y < -20 || p.y > CH + 20) {
-          particles.splice(i, 1);
-        }
-      }
-
-      // ======== DRAW ========
-      ctx.clearRect(0, 0, CW, CH);
-
-      // Sky gradient
+      s.scroll = (s.scroll + 1.6 * s.speed) % CW;
+      const px = CW * 0.45, py = s.y;
       const bg = ctx.createLinearGradient(0, 0, 0, CH);
-      bg.addColorStop(0, '#0a1628');
-      bg.addColorStop(0.6, '#1a2d4a');
-      bg.addColorStop(1, '#1e3a5f');
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, CW, CH);
-
-      // Clouds
-      ctx.fillStyle = 'rgba(148,163,184,0.08)';
-      for (const c of clouds) {
-        const cx = ((c.x + sim.cloudOffsetX) % CW + CW) % CW;
-        ctx.beginPath();
-        ctx.ellipse(cx, c.y, c.w, c.h, 0, 0, Math.PI * 2);
-        ctx.fill();
+      bg.addColorStop(0, '#0a1628'); bg.addColorStop(1, '#1e3a5f');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, CW, CH);
+      ctx.fillStyle = 'rgba(148,163,184,0.10)';
+      for (const c of clouds) { ctx.beginPath(); ctx.ellipse(((c.x - s.scroll) % CW + CW) % CW, c.y, c.w, 12, 0, 0, Math.PI * 2); ctx.fill(); }
+      // Air streaming past the wing: faster over the top; swirling above it when the wing is stalled.
+      while (particles.current.length < 50) particles.current.push({ x: CW + Math.random() * 60, y: py + (Math.random() - 0.5) * 160, v: 2.5 + Math.random(), swirl: 0 });
+      for (const q of particles.current) {
+        const over = q.y < py && Math.abs(q.x - px) < 60;
+        q.x -= q.v * s.speed * (over && !st ? 1.5 : 1);
+        if (over && st) { q.swirl += 0.2; q.y += Math.sin(q.swirl) * 2; }
+        ctx.beginPath(); ctx.arc(q.x, q.y, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = over && st ? 'rgba(248,113,113,0.6)' : 'rgba(165,210,255,0.45)'; ctx.fill();
       }
-
-      // Ground line hint
-      if (sim.altitude < 500) {
-        const groundY = CH - 10 + (sim.altitude / 500) * 30;
-        if (groundY < CH + 20) {
-          ctx.fillStyle = '#2d4a2e';
-          ctx.fillRect(0, groundY, CW, CH - groundY + 40);
-        }
-      }
-
-      // Draw particles
-      for (const p of particles) {
-        const alpha = p.life * 0.6;
-        const size = p.turbulent ? 3 + Math.random() * 2 : 3;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
-        if (p.turbulent) {
-          ctx.fillStyle = `rgba(239,68,68,${alpha})`;
-          if (p.life > 0.5) {
-            ctx.shadowColor = '#ef4444';
-            ctx.shadowBlur = 5;
-          }
-        } else {
-          // Color by speed: fast = bright cyan, slow = dim blue
-          const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-          const t = Math.min(1, spd / 8);
-          const r = Math.round(100 + t * 50);
-          const g = Math.round(160 + t * 70);
-          const b = Math.round(200 + t * 55);
-          ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
-        }
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      }
-
-      // Draw aircraft
-      ctx.save();
-      ctx.translate(PLANE_X, sim.planeY);
-      ctx.rotate(-aoaRad);
-
-      // Grab affordance: pulsing ring around the plane when hoverable/grabbed
-      const drag = dragRef.current;
-      if (drag.dragging || drag.hovering) {
-        const ringR = Math.max(ac.wingSpan, ac.bodyW) * 0.55;
-        const pulse = drag.dragging ? 1 : 0.6 + Math.sin(Date.now() * 0.006) * 0.2;
-        ctx.strokeStyle = drag.dragging
-          ? `rgba(96,165,250,${0.85 * pulse})`
-          : `rgba(148,197,255,${0.55 * pulse})`;
-        ctx.lineWidth = drag.dragging ? 2.5 : 1.5;
-        ctx.setLineDash(drag.dragging ? [] : [4, 4]);
-        ctx.beginPath();
-        ctx.arc(0, 0, ringR, 0, Math.PI * 2);
-        ctx.stroke();
+      particles.current = particles.current.filter(q => q.x > -20);
+      ctx.save(); ctx.translate(px, py); ctx.rotate((-p * Math.PI) / 180);
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath(); ctx.ellipse(0, 0, 44, 9, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-6, -2); ctx.lineTo(18, -2); ctx.lineTo(4, -26); ctx.closePath(); ctx.fillStyle = '#475569'; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-40, -2); ctx.lineTo(-30, -2); ctx.lineTo(-44, -20); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      arrow(px, py, 0, -1, f.lift, COLORS.lift, 'LIFT');
+      arrow(px, py, 0, 1, f.weight, COLORS.weight, 'WEIGHT');
+      arrow(px, py, 1, 0, f.thrust, COLORS.thrust, 'THRUST');
+      arrow(px, py, -1, 0, f.drag, COLORS.drag, 'DRAG');
+      if (mk) {
+        ctx.setLineDash([5, 4]); ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(px - 14, py - mk.lift * UNIT); ctx.lineTo(px + 14, py - mk.lift * UNIT); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px + mk.thrust * UNIT, py - 14); ctx.lineTo(px + mk.thrust * UNIT, py + 14); ctx.stroke();
         ctx.setLineDash([]);
       }
-
-      // Fuselage
-      const bw = ac.bodyW;
-      const bh = ac.bodyH;
-      const fuselageGrad = ctx.createLinearGradient(0, -bh / 2, 0, bh / 2);
-      fuselageGrad.addColorStop(0, '#475569');
-      fuselageGrad.addColorStop(0.5, '#64748b');
-      fuselageGrad.addColorStop(1, '#475569');
-      ctx.fillStyle = fuselageGrad;
-      ctx.beginPath();
-      ctx.moveTo(-bw / 2, 0);
-      ctx.quadraticCurveTo(-bw / 2, -bh / 2, -bw / 4, -bh / 2);
-      ctx.lineTo(bw / 3, -bh / 2);
-      ctx.quadraticCurveTo(bw / 2 + 10, 0, bw / 3, bh / 2);
-      ctx.lineTo(-bw / 4, bh / 2);
-      ctx.quadraticCurveTo(-bw / 2, bh / 2, -bw / 2, 0);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = ac.color + '80';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // Wings
-      ctx.fillStyle = '#475569';
-      ctx.strokeStyle = ac.color + '60';
-      ctx.lineWidth = 1;
-      // Top wing
-      ctx.beginPath();
-      ctx.moveTo(-ac.wingSpan * 0.1, -bh * 0.3);
-      ctx.lineTo(ac.wingSpan * 0.4, -bh * 0.5);
-      ctx.lineTo(ac.wingSpan * 0.4, -bh * 0.3);
-      ctx.lineTo(-ac.wingSpan * 0.1, -bh * 0.15);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      // Bottom wing
-      ctx.beginPath();
-      ctx.moveTo(-ac.wingSpan * 0.1, bh * 0.3);
-      ctx.lineTo(ac.wingSpan * 0.4, bh * 0.5);
-      ctx.lineTo(ac.wingSpan * 0.4, bh * 0.3);
-      ctx.lineTo(-ac.wingSpan * 0.1, bh * 0.15);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Tail
-      ctx.fillStyle = '#475569';
-      ctx.beginPath();
-      ctx.moveTo(-bw / 2 + 5, 0);
-      ctx.lineTo(-bw / 2 - 15, -bh * 1.2);
-      ctx.lineTo(-bw / 2 - 5, -bh * 1.2);
-      ctx.lineTo(-bw / 2 + 10, -bh * 0.1);
-      ctx.closePath();
-      ctx.fill();
-
-      // Thrust glow
-      if (thr > 0.05 && ac.maxThrust > 0) {
-        const glowR = 6 + thr * 15;
-        const glow = ctx.createRadialGradient(-bw / 2 - 5, 0, 2, -bw / 2 - 5, 0, glowR);
-        glow.addColorStop(0, `rgba(251,146,60,${thr * 0.8})`);
-        glow.addColorStop(1, 'rgba(251,146,60,0)');
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(-bw / 2 - 5, 0, glowR, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.restore();
-
-      // Force arrows (drawn in world space, not rotated)
-      const arrowScale = 0.00005;
-      const maxArrow = 80;
-
-      // Lift arrow (up, blue)
-      const liftLen = Math.min(maxArrow, Math.abs(liftN) * arrowScale);
-      if (liftLen > 3) {
-        const lDir = liftN >= 0 ? -1 : 1;
-        ctx.strokeStyle = '#60a5fa';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(PLANE_X, sim.planeY);
-        ctx.lineTo(PLANE_X, sim.planeY + lDir * liftLen);
-        ctx.stroke();
-        ctx.fillStyle = '#60a5fa';
-        ctx.beginPath();
-        ctx.moveTo(PLANE_X, sim.planeY + lDir * (liftLen + 8));
-        ctx.lineTo(PLANE_X - 5, sim.planeY + lDir * liftLen);
-        ctx.lineTo(PLANE_X + 5, sim.planeY + lDir * liftLen);
-        ctx.closePath();
-        ctx.fill();
-        ctx.font = '9px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('LIFT', PLANE_X + 18, sim.planeY + lDir * liftLen / 2);
-      }
-
-      // Weight arrow (down, red)
-      const weightLen = Math.min(maxArrow, totalWeight * arrowScale);
-      if (weightLen > 3) {
-        ctx.strokeStyle = '#f87171';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(PLANE_X, sim.planeY);
-        ctx.lineTo(PLANE_X, sim.planeY + weightLen);
-        ctx.stroke();
-        ctx.fillStyle = '#f87171';
-        ctx.beginPath();
-        ctx.moveTo(PLANE_X, sim.planeY + weightLen + 8);
-        ctx.lineTo(PLANE_X - 5, sim.planeY + weightLen);
-        ctx.lineTo(PLANE_X + 5, sim.planeY + weightLen);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillText('WEIGHT', PLANE_X - 24, sim.planeY + weightLen / 2);
-      }
-
-      // Thrust arrow (right, green)
-      const thrustLen = Math.min(maxArrow, thrustN * arrowScale);
-      if (thrustLen > 3) {
-        ctx.strokeStyle = '#4ade80';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(PLANE_X, sim.planeY);
-        ctx.lineTo(PLANE_X + thrustLen, sim.planeY);
-        ctx.stroke();
-        ctx.fillStyle = '#4ade80';
-        ctx.beginPath();
-        ctx.moveTo(PLANE_X + thrustLen + 8, sim.planeY);
-        ctx.lineTo(PLANE_X + thrustLen, sim.planeY - 5);
-        ctx.lineTo(PLANE_X + thrustLen, sim.planeY + 5);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillText('THRUST', PLANE_X + thrustLen / 2, sim.planeY - 10);
-      }
-
-      // Drag arrow (left, orange)
-      const dragLen = Math.min(maxArrow, dragN * arrowScale);
-      if (dragLen > 3) {
-        ctx.strokeStyle = '#fb923c';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(PLANE_X, sim.planeY);
-        ctx.lineTo(PLANE_X - dragLen, sim.planeY);
-        ctx.stroke();
-        ctx.fillStyle = '#fb923c';
-        ctx.beginPath();
-        ctx.moveTo(PLANE_X - dragLen - 8, sim.planeY);
-        ctx.lineTo(PLANE_X - dragLen, sim.planeY - 5);
-        ctx.lineTo(PLANE_X - dragLen, sim.planeY + 5);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillText('DRAG', PLANE_X - dragLen / 2, sim.planeY - 10);
-      }
-
-      // Stall warning
-      if (stalling) {
-        ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 16px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('STALL!', PLANE_X, sim.planeY - 50);
-        ctx.font = '10px monospace';
-        ctx.fillStyle = '#fca5a5';
-        ctx.fillText('Angle too steep — air detaching from wing!', PLANE_X, sim.planeY - 36);
-      }
-
-      // Flight state badge
-      const stateColor = stalling ? '#ef4444'
-        : flightState === 'climbing' ? '#60a5fa'
-        : flightState === 'descending' ? '#f87171'
-        : flightState === 'cruising' ? '#4ade80' : '#fbbf24';
-      ctx.fillStyle = 'rgba(15,23,42,0.7)';
-      ctx.beginPath();
-      const badgeW = 120, badgeH = 24, badgeX = 10, badgeY = 10;
-      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
-      ctx.fill();
-      ctx.fillStyle = stateColor;
-      ctx.font = 'bold 12px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(flightState.toUpperCase(), badgeX + 8, badgeY + 16);
-
-      // HUD: Speed & Altitude
-      ctx.fillStyle = 'rgba(15,23,42,0.7)';
-      ctx.beginPath();
-      ctx.roundRect(CW - 140, 10, 130, 50, 6);
-      ctx.fill();
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 14px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(`${Math.round(sim.speed)} km/h`, CW - 18, 30);
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '10px monospace';
-      ctx.fillText(`ALT ${Math.round(sim.altitude)}m`, CW - 18, 50);
-
-      // "Grab the plane to tilt it" hint — only before the student has grabbed once
-      if (!dragRef.current.hasGrabbed && !dragRef.current.dragging) {
-        const hintPulse = 0.55 + Math.sin(Date.now() * 0.004) * 0.25;
-        ctx.fillStyle = `rgba(148,197,255,${hintPulse})`;
-        ctx.font = '11px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('↕ Grab the plane and tilt the nose', PLANE_X, sim.planeY + 70);
-      }
-
-      ctx.textAlign = 'start';
-      animRef.current = requestAnimationFrame(animate);
+      frame = requestAnimationFrame(draw);
     };
-
-    animRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animRef.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    draw();
+    return () => cancelAnimationFrame(frame);
   }, [aircraft]);
 
-  // ======== Pointer handlers: direct manipulation of the plane ========
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const PLANE_X = CW * 0.4;
-
-    const toCanvas = (clientX: number, clientY: number) => {
-      const rect = canvas.getBoundingClientRect();
-      const sx = CW / rect.width;
-      const sy = CH / rect.height;
-      return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
-    };
-
-    const hitTestPlane = (cx: number, cy: number) => {
-      const ac = acRef.current;
-      const py = simRef.current.planeY;
-      // Generous bounding box around the rotated plane — includes wingspan
-      const halfW = Math.max(ac.bodyW, ac.wingSpan * 0.5) * 0.6;
-      const halfH = Math.max(ac.bodyH * 1.5, ac.wingSpan * 0.3) * 0.9;
-      return Math.abs(cx - PLANE_X) <= halfW && Math.abs(cy - py) <= halfH;
-    };
-
-    const clampAoa = (v: number) => Math.max(MIN_AOA, Math.min(MAX_AOA, v));
-
-    const onPointerDown = (e: PointerEvent) => {
-      const { x, y } = toCanvas(e.clientX, e.clientY);
-      if (!hitTestPlane(x, y)) return;
-      e.preventDefault();
-      canvas.setPointerCapture?.(e.pointerId);
-      dragRef.current.dragging = true;
-      dragRef.current.startPointerY = y;
-      dragRef.current.startAoa = aoaRef.current;
-      if (!dragRef.current.hasGrabbed) {
-        dragRef.current.hasGrabbed = true;
-        cbRef.current.onGrab();
-      }
-      setCursor('grabbing');
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      const { x, y } = toCanvas(e.clientX, e.clientY);
-      const drag = dragRef.current;
-
-      if (drag.dragging) {
-        // Dragging UP on the canvas (smaller y) tilts the nose UP (larger AoA)
-        const delta = (drag.startPointerY - y) * DRAG_SENSITIVITY;
-        const next = clampAoa(drag.startAoa + delta);
-        aoaRef.current = next;
-        cbRef.current.onAoaChange(next);
-        return;
-      }
-
-      const over = hitTestPlane(x, y);
-      if (over !== drag.hovering) {
-        drag.hovering = over;
-        setCursor(over ? 'grab' : 'default');
-      }
-    };
-
-    const endDrag = (e: PointerEvent) => {
-      const drag = dragRef.current;
-      if (!drag.dragging) return;
-      drag.dragging = false;
-      canvas.releasePointerCapture?.(e.pointerId);
-      setCursor(drag.hovering ? 'grab' : 'default');
-    };
-
-    const onPointerLeave = () => {
-      if (!dragRef.current.dragging) {
-        dragRef.current.hovering = false;
-        setCursor('default');
-      }
-    };
-
-    canvas.addEventListener('pointerdown', onPointerDown);
-    canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerup', endDrag);
-    canvas.addEventListener('pointercancel', endDrag);
-    canvas.addEventListener('pointerleave', onPointerLeave);
-    return () => {
-      canvas.removeEventListener('pointerdown', onPointerDown);
-      canvas.removeEventListener('pointermove', onPointerMove);
-      canvas.removeEventListener('pointerup', endDrag);
-      canvas.removeEventListener('pointercancel', endDrag);
-      canvas.removeEventListener('pointerleave', onPointerLeave);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={CW}
-      height={CH}
-      className="rounded-xl w-full"
-      style={{ maxWidth: CW, imageRendering: 'auto', cursor, touchAction: 'none' }}
-    />
-  );
+  return <canvas ref={canvasRef} width={CW} height={CH} className="w-full rounded-xl border border-white/10"
+    style={{ maxWidth: CW }} aria-label="The plane and its four force arrows" />;
 };
 
+/** pair_up: the arrows side by side in their pairs, as bars on one unit grid. */
+const PairBars = ({ forces, counts }: { forces: Forces; counts: boolean }) => (
+  <LuminaPanel accent="cyan" data-lever="pair-up" className="space-y-2 text-xs text-slate-300">
+    {([['lift', 'weight'], ['thrust', 'drag']] as Array<[keyof Forces, keyof Forces]>).map(pair => (
+      <div key={pair[0]} className="space-y-1">
+        {pair.map(k => (
+          <div key={k} className="flex items-center gap-2">
+            <span className="w-14 capitalize">{k}</span>
+            <div className="flex">
+              {Array.from({ length: forces[k] }, (_, i) => (
+                <span key={i} className="mr-px inline-block h-3 w-3 rounded-sm" style={{ background: COLORS[k] }} />
+              ))}
+            </div>
+            {counts && <span className="font-mono">{forces[k]}</span>}
+          </div>
+        ))}
+      </div>
+    ))}
+  </LuminaPanel>
+);
+
 // ============================================================================
-// Main Component: FlightForcesExplorer
+// Component
 // ============================================================================
 
-const FlightForcesExplorer: React.FC<{ data: FlightForcesExplorerData; className?: string }> = ({ data, className }) => {
-  const {
-    title, overview, aircraftType = 'cessna', aircraftName,
-    gradeBand = '1-2',
-    challenges: dataChallenges,
-    instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit,
-  } = data;
+const pairSentence = (f: Forces, axis: Axis): string => axis === 'height'
+  ? (f.lift === f.weight ? `Lift (${f.lift}) is as big as weight (${f.weight}).` : f.lift > f.weight ? `Lift (${f.lift}) is bigger than weight (${f.weight}).` : `Weight (${f.weight}) is bigger than lift (${f.lift}).`)
+  : (f.thrust === f.drag ? `Thrust (${f.thrust}) is as big as drag (${f.drag}).` : f.thrust > f.drag ? `Thrust (${f.thrust}) is bigger than drag (${f.drag}).` : `Drag (${f.drag}) is bigger than thrust (${f.thrust}).`);
 
-  const challenges = dataChallenges && dataChallenges.length > 0 ? dataChallenges : DEFAULT_CHALLENGES;
-  const resolvedAircraftId = (AIRCRAFT_IDS.includes(aircraftType as AircraftId) ? aircraftType : 'cessna') as AircraftId;
+const FlightForcesExplorerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  FlightForcesExplorerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<FlightItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, overview, gradeBand = '3-5', instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
-  // ---- State ----
-  const [selectedAircraft, setSelectedAircraft] = useState<AircraftId>(resolvedAircraftId);
-  const [thrustPct, setThrustPct] = useState(50);
-  const [aoa, setAoa] = useState(2);
-  const [cargoWeight, setCargoWeight] = useState(0);
-  const [flightState, setFlightState] = useState('cruising');
-  const [forces, setForces] = useState({ lift: 0, weight: 0, thrust: 0, drag: 0 });
-  const [altitude, setAltitude] = useState(2000);
-  const [speed, setSpeed] = useState(120);
-  const [stallCount, setStallCount] = useState(0);
-  const [statesExplored, setStatesExplored] = useState<Set<string>>(new Set());
-  const [aircraftExplored, setAircraftExplored] = useState<Set<AircraftId>>(new Set([resolvedAircraftId]));
-  const [hasGrabbedPlane, setHasGrabbedPlane] = useState(false);
+  const items = useMemo(() => flightItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.aircraftType, data.title]);
+  const stableInstanceId = useRef(instanceId || `flight-forces-explorer-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
 
-  // Challenge state
-  const [showChallenges, setShowChallenges] = useState(false);
-  const [currentChallengeIdx, setCurrentChallengeIdx] = useState(0);
-  const [challengeResults, setChallengeResults] = useState<{ id: string; correct: boolean }[]>([]);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [answerFeedback, setAnswerFeedback] = useState<'correct' | 'incorrect' | null>(null);
-  const [showHint, setShowHint] = useState(false);
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  /** Bound below; an answer the observer credited on the simplify lever's practice item. */
+  const practiceAloud = useRef<(source: 'speech' | 'gesture') => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onPracticeSolved: (_id, source) => practiceAloud.current(source),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  const resolvedInstanceId = instanceId ?? `flight-forces-${Date.now()}`;
-  const allChallengesDone = challengeResults.length >= challenges.length;
-  const acDef = AIRCRAFT_DEFS[selectedAircraft];
+  const sessionItem: FlightItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<FlightItem | null>(null);
+  const item = practice ?? sessionItem;
 
-  // Track flight states explored
-  const prevFlightState = useRef('');
-  useEffect(() => {
-    if (flightState !== prevFlightState.current) {
-      setStatesExplored(prev => {
-        const next = new Set(prev);
-        next.add(flightState);
-        return next;
-      });
-      prevFlightState.current = flightState;
-    }
-  }, [flightState]);
+  const [work, setWork] = useState<FlightWork>(() => emptyWork(sessionItem));
+  /** Workspace path: the checked wrong work, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  /** Adjust: the setting last flown. */
+  const [flown, setFlown] = useState<Setting | null>(null);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
 
-  // ---- Evaluation ----
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-  } = usePrimitiveEvaluation<FlightForcesExplorerMetrics>({
-    primitiveType: 'flight-forces-explorer' as any,
+  const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
+  const leverOn = (id: string) => pulled.includes(id);
+  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<FlightForcesExplorerMetrics>({
+    primitiveType: 'flight-forces-explorer',
     instanceId: resolvedInstanceId,
     skillId, subskillId, objectiveId, exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ---- AI Tutoring ----
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
   const aiPrimitiveData = useMemo(() => ({
-    aircraft: acDef.label, flightState, thrustPct, aoa, speed, altitude,
-    stallCount, statesExplored: statesExplored.size,
-    hasGrabbedPlane,
-    challengeProgress: `${challengeResults.length}/${challenges.length}`,
-  }), [acDef.label, flightState, thrustPct, aoa, speed, altitude, stallCount, statesExplored.size, hasGrabbedPlane, challengeResults.length, challenges.length]);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'flight-forces-explorer' as any,
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: gradeBand === '1-2' ? 'K-2' : '3-5',
+    gradeBand, mode: item?.mode ?? 'predict', itemIndex: currentIndex + 1, totalItems: items.length,
+    ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
+  }), [gradeBand, item, currentIndex, items.length, title, currentAttempts]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'flight-forces-explorer', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: gradeBand === '1-2' ? 'Grade 1-2' : 'Grade 3-5', enabled: !tutorOwned,
   });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
-  // ── Read-aloud for young learners ─────────────────────────────────────────
-  // Load-bearing text here is unreadable to a K–2 student; these taps route to a
-  // NON-silent sendText — the read-aloud IS the tutor speaking the words verbatim.
-  const readBlockAloud = useCallback((text: string, tag: string) => {
-    if (!text) return;
-    SoundManager.tap();
-    sendText?.(
-      `${tag} The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, in a warm friendly voice: "${text}". Then wait.`,
-    );
-  }, [sendText]);
+  const clearItem = (next?: FlightItem) => {
+    setWork(emptyWork(next ?? item)); setWrongShown(false); setFlown(null); setFeedback(null);
+    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+  };
 
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Student is exploring a living flight simulation with particle airflow. `
-      + `Aircraft: ${acDef.label}. ${overview}. `
-      + `The student flies the plane directly — they grab the plane on the canvas and drag up/down to tilt the nose. `
-      + `Encourage them to grab the plane and pull the nose up gently, then watch what happens to the particles above the wing.`,
-      { silent: true },
-    );
-  }, [isConnected, acDef.label, overview, sendText]);
+  openItem.current = (index, retry) => {
+    const target = retry ? item : items[index];
+    if (retry) { setWork(emptyWork(target)); setWrongShown(false); setFlown(null); setFeedback(null); setPracticeSolved(false); return; }
+    setPractice(null); clearItem(items[index]);
+  };
 
-  // ---- Handlers ----
-  const handleAircraftChange = useCallback((id: AircraftId) => {
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || solved.mode === 'adjust' || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setWork(w => ({ ...w, ...keyOf(solved) })); setWrongShown(false);
+  };
+
+  // A spoken answer credited on the practice item: shown there as on a session item, recorded nowhere. The full item
+  // comes back blank when the practice closes. A tap shows its own credit in the check.
+  practiceAloud.current = (source) => {
+    if (source !== 'speech' || !practice || practice.mode === 'adjust') return;
+    setPracticeSolved(true);
+    setWork(w => ({ ...w, ...keyOf(practice) })); setWrongShown(false);
+  };
+
+  // ── Handlers ──
+  const closed = revealed || wrongShown || learnerBlocked();
+  const pick = (axis: Axis, c: string) => {
+    if (!item || closed) return;
     SoundManager.select();
-    setSelectedAircraft(id);
-    setAircraftExplored(prev => { const n = new Set(prev); n.add(id); return n; });
-    if (isConnected) {
-      sendText(
-        `[AIRCRAFT_CHANGED] Student switched to ${AIRCRAFT_DEFS[id].label}. Different weight, thrust, and wing area — ask what they expect to change.`,
-        { silent: true },
-      );
-    }
-  }, [isConnected, sendText]);
-
-  // Deduped like the AoA handler below: after settling, speak only on a meaningful
-  // (>=10%) move from the last narrated thrust, so sliding back and forth is silent.
-  const thrustTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const lastNarratedThrustRef = useRef<number>(Number.NEGATIVE_INFINITY);
-  const handleThrustChange = useCallback((val: number) => {
+    setWork(w => ({ ...w, [axis]: c })); setFeedback(null);
+  };
+  const nudge = (control: 'thrust' | 'nose', by: number) => {
+    if (!item || item.mode !== 'adjust' || closed || !item.controls.includes(control)) return;
     SoundManager.tick();
-    setThrustPct(val);
-    if (thrustTimeoutRef.current) clearTimeout(thrustTimeoutRef.current);
-    thrustTimeoutRef.current = setTimeout(() => {
-      if (isConnected && Math.abs(val - lastNarratedThrustRef.current) >= 10) {
-        lastNarratedThrustRef.current = val;
-        sendText(`[THRUST_CHANGED] Thrust at ${val}%. Watch the force arrows!`, { silent: true });
-      }
-    }, 800);
-  }, [isConnected, sendText]);
+    setWork(w => {
+      const max = control === 'thrust' ? MAX_THRUST : maxNose(item);
+      return { ...w, setting: { ...w.setting, [control]: Math.max(0, Math.min(max, w.setting[control] + by)) } };
+    });
+    setFlown(null); setFeedback(null);
+  };
 
-  // AoA is now driven by direct drag on the plane — not a slider.
-  // We still debounce AI narration so rapid drag doesn't spam the tutor.
-  const aoaTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const lastNarratedAoaRef = useRef<number>(2);
-  const handleAoaChange = useCallback((val: number) => {
-    const rounded = Math.round(val * 2) / 2;
-    setAoa(rounded);
-    if (aoaTimeoutRef.current) clearTimeout(aoaTimeoutRef.current);
-    aoaTimeoutRef.current = setTimeout(() => {
-      if (!isConnected) return;
-      if (Math.abs(rounded - lastNarratedAoaRef.current) < 2) return;
-      lastNarratedAoaRef.current = rounded;
-      const msg = rounded > acDef.stallAngle
-        ? `[AOA_STALL_ZONE] Student tilted the plane to ${rounded} — past stall angle ${acDef.stallAngle}! Ask what they see happening to the particles above the wing.`
-        : `[AOA_DRAGGED] Student tilted the plane to ${rounded}. Watch the particles above and below the wing.`;
-      sendText(msg, { silent: true });
-    }, 900);
-  }, [isConnected, sendText, acDef.stallAngle]);
-
-  // Deduped: threshold scales with the aircraft (maxCargo = 30% of empty weight),
-  // so a meaningful cargo change narrates but small back-and-forth nudges stay silent.
-  const cargoTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const lastNarratedCargoRef = useRef<number>(Number.NEGATIVE_INFINITY);
-  const handleCargoChange = useCallback((val: number) => {
-    setCargoWeight(val);
-    if (cargoTimeoutRef.current) clearTimeout(cargoTimeoutRef.current);
-    cargoTimeoutRef.current = setTimeout(() => {
-      const cargoThreshold = Math.max(10, acDef.emptyWeight * 0.03);
-      if (isConnected && Math.abs(val - lastNarratedCargoRef.current) >= cargoThreshold) {
-        lastNarratedCargoRef.current = val;
-        sendText(`[CARGO_CHANGED] Cargo weight: ${val}kg. Total weight increased — what needs to change?`, { silent: true });
-      }
-    }, 800);
-  }, [isConnected, sendText, acDef.emptyWeight]);
-
-  // Latch so the "grabbed for the first time" narration actually fires only once.
-  const planeGrabSpokenRef = useRef(false);
-  const simCallbacks = useMemo<SimCallbacks>(() => ({
-    onFlightState: setFlightState,
-    onForces: setForces,
-    onStall: () => {
-      setStallCount(c => c + 1);
-      if (isConnected) {
-        sendText(
-          `[STALL] The student tilted the plane past stall — air particles detached from the wing. Ask: "What happened to the particles above the wing?"`,
-          { silent: true },
-        );
-      }
-    },
-    onAltitude: setAltitude,
-    onSpeed: setSpeed,
-    onAoaChange: handleAoaChange,
-    onGrab: () => {
-      setHasGrabbedPlane(true);
-      if (isConnected && !planeGrabSpokenRef.current) {
-        planeGrabSpokenRef.current = true;
-        sendText(
-          `[PLANE_GRABBED] Student just grabbed the plane for the first time. Encourage them to pull the nose up and watch what happens to the particles and the force arrows.`,
-          { silent: true },
-        );
-      }
-    },
-  }), [isConnected, sendText, handleAoaChange]);
-
-  // Challenge handler
-  const handleAnswer = useCallback((optionId: string) => {
-    if (answerFeedback) return;
-    setSelectedAnswer(optionId);
-    const challenge = challenges[currentChallengeIdx];
-    const correct = optionId === challenge.correctOptionId;
-    if (correct) SoundManager.playCorrect(); else SoundManager.playIncorrect();
-    setAnswerFeedback(correct ? 'correct' : 'incorrect');
-
+  const check = () => {
+    if (!item || closed || !workComplete(item, work)) return;
+    const correct = flightCorrect(item, work);
+    progress.commitCheck(describeFlightWork(item, work), correct, correct ? undefined : flightMiss(item, work));
+    if (item.mode === 'adjust') setFlown({ ...work.setting });
     if (correct) {
-      setChallengeResults(prev => [...prev, { id: challenge.id, correct: true }]);
-      if (isConnected) sendText(`[CHALLENGE_CORRECT] "${challenge.instruction}" — correct! Connect to what they see in the simulation.`, { silent: true });
-      setTimeout(() => {
-        setCurrentChallengeIdx(i => i + 1);
-        setSelectedAnswer(null);
-        setAnswerFeedback(null);
-        setShowHint(false);
-      }, 1500);
+      SoundManager.playCorrect();
+      if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} The plane now flies on screen. Praise briefly.`);
+      return;
+    }
+    SoundManager.playIncorrect();
+    if (tutorOwned) { setWrongShown(true); return; }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      if (item.mode === 'adjust') { const s = solution(item); if (s) { setWork(w => ({ ...w, setting: s })); setFlown(s); } }
+      else setWork(w => ({ ...w, ...keyOf(item) }));
+      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] Two tries missed on: ${askOf(item)} The answer is now on screen; explain it with the arrows.`);
+      return;
+    }
+    if (item.mode === 'adjust') {
+      setFeedback(`${`The plane ${motionText(forcesAt(item, work.setting))}`}. That is not the goal yet: compare each pair of arrows and fly again.`);
     } else {
-      setShowHint(true);
-      if (isConnected) sendText(`[CHALLENGE_INCORRECT] "${challenge.instruction}" wrong. Hint: ${challenge.hint}. Guide gently.`, { silent: true });
-      setTimeout(() => { setSelectedAnswer(null); setAnswerFeedback(null); }, 2000);
+      setWork(emptyWork(item));
+      setFeedback('Not quite. Compare each pair of arrows, and try once more.');
     }
-  }, [answerFeedback, challenges, currentChallengeIdx, isConnected, sendText]);
+    say(`[ANSWER_INCORRECT] ${describeFlightWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask which arrows to compare, without naming a choice.`);
+  };
 
-  // Submit evaluation
-  const handleSubmitEvaluation = useCallback(() => {
-    if (hasSubmittedEvaluation) return;
-    const correctCount = challengeResults.filter(r => r.correct).length;
-    const metrics: FlightForcesExplorerMetrics = {
+  const metrics = (): FlightForcesExplorerMetrics => {
+    const right = items.filter(i => results.some(r => r.challengeId === i.id && r.correct));
+    return {
       type: 'flight-forces-explorer',
-      flightStatesExplored: statesExplored.size,
-      flightStatesTotal: 4,
-      aircraftTypesExplored: aircraftExplored.size,
-      stallDiscoveries: stallCount,
-      challengesCompleted: challengeResults.length,
-      challengesCorrect: correctCount,
-      challengesTotal: challenges.length,
-      attemptsCount: 1,
+      flightStatesExplored: new Set(right.map(i => (i.mode === 'adjust' ? motionText(forcesAt(i, solution(i) ?? i.start))
+        : i.mode === 'observe' ? motionText(i.forces) : motionText(forcesRun(i))))).size,
+      flightStatesTotal: 9,
+      aircraftTypesExplored: new Set(items.map(i => i.aircraft)).size,
+      stallDiscoveries: right.filter(i => (i.mode === 'predict' && i.change === 'stall') || (i.mode === 'adjust' && i.stall)).length,
+      challengesCompleted: results.length,
+      challengesCorrect: right.length,
+      challengesTotal: items.length,
+      attemptsCount: currentAttempts,
     };
-    const score =
-      (statesExplored.size / 4) * 15 +
-      (stallCount > 0 ? 20 : 5) +
-      (aircraftExplored.size > 1 ? 15 : 5) +
-      (correctCount / Math.max(challenges.length, 1)) * 50;
+  };
 
-    submitEvaluation(score >= 40, Math.round(score), metrics, { aircraftType: selectedAircraft });
+  /** Scripted path: Next, and on the last item the session report. */
+  const next = () => {
+    if (progress.advance()) { clearItem(items[currentIndex + 1]); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 50, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
+  };
 
-    if (isConnected) {
-      sendText(
-        `[ALL_COMPLETE] Score: ${Math.round(score)}%. States: ${statesExplored.size}/4. Stalls: ${stallCount}. `
-        + `Challenges: ${correctCount}/${challenges.length}. Summarize the four forces of flight!`,
-        { silent: true },
-      );
-    }
-  }, [hasSubmittedEvaluation, challengeResults, statesExplored.size, aircraftExplored.size, stallCount, challenges.length, selectedAircraft, submitEvaluation, isConnected, sendText]);
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), attemptsCount: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
 
-  const currentChallenge = challenges[currentChallengeIdx];
-  const maxCargo = Math.floor(acDef.emptyWeight * 0.3);
-
-  // ---- Render ----
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: (instanceId || 'flight-forces-explorer'),
-    scopeId: hasSubmittedEvaluation ? null : showChallenges && currentChallenge ? currentChallenge.id : 'explore',
-    label: 'The flight simulator and the challenge',
-    solved: answerFeedback === 'correct',
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || 'flight-forces-explorer'),
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const scene = workspaceScene(item, { work, solved: revealed, flown });
+    const levers = practice ? [] : flightLevers(sessionItem, pulled);
+    const onScreen = practice ? '' : leverFact(sessionItem, pulled, work.setting);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
+        ...(onScreen ? { onScreen } : {}) },
+      levers,
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (l.kind === 'simplify') {
+          const simpler = simplerItem(sessionItem);
+          if (!simpler) return 'There is no simpler item here; try a help lever.';
+          setLeverState(nextState); clearItem(simpler); setPractice(simpler);
+          return { practice: workspaceAssignment(simpler) };
+        }
+        setLeverState(nextState);
+        return true;
+      },
+      endPractice: () => { clearItem(sessionItem); setPractice(null); },
+    };
   });
+
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete);
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: done || !item ? null : item.id,
+    label: 'The plane, its force arrows and your answer',
+    solved: revealed,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
+  if (!items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This lab has no questions to ask.</p></LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  // ── What the scene draws ──
+  let drawn: Forces = LEVEL, pitch = 2, motion: Forces | null = null, stalled = false;
+  let marks: SceneProps['marks'] = null;
+  if (item?.mode === 'predict') {
+    const run = forcesRun(item);
+    drawn = revealed ? run : leverOn(SHOW_ARROWS_LEVER) ? shownArrows(item) : LEVEL;
+    pitch = revealed && (item.change === 'nose_up' || item.change === 'stall') ? (item.change === 'stall' ? 18 : 6) : 2;
+    motion = revealed ? run : null;
+    stalled = revealed && item.change === 'stall';
+  } else if (item?.mode === 'observe') {
+    drawn = item.forces; pitch = item.noseUp ? 12 : 2; motion = revealed ? item.forces : null;
+  } else if (item?.mode === 'adjust') {
+    drawn = forcesAt(item, work.setting); pitch = angleOf(work.setting.nose);
+    motion = flown ? forcesAt(item, flown) : null;
+    stalled = isStalled(item, work.setting);
+    if (leverOn(TARGET_MARKS_LEVER)) marks = { lift: drawn.weight, thrust: drawn.drag };
+  }
+
+  const choiceState = (axis: Axis, c: string): AnswerChoiceState => {
+    if (!item || item.mode === 'adjust') return 'idle';
+    const key = keyOf(item)[axis];
+    if (revealed) return c === key ? 'correct' : c === work[axis] ? 'incorrect' : 'dimmed';
+    if (wrongShown && work[axis] === c) return c === key ? 'selected' : 'incorrect';
+    return work[axis] === c ? 'selected' : 'idle';
+  };
+
+  const revealText = (): string => {
+    if (!item) return '';
+    if (item.mode === 'adjust') {
+      const f = forcesAt(item, flown ?? work.setting);
+      return `The plane ${motionText(f)}. ${pairSentence(f, 'height')} ${pairSentence(f, 'speed')}`;
+    }
+    const f = item.mode === 'observe' ? item.forces : forcesRun(item);
+    const axes = askedAxes(item);
+    const lead = item.mode === 'predict' && item.later
+      ? (speedOf(shownArrows(item)) === 'Slows down' ? 'First the plane slows down, so less air rushes over the wings and the lift gets smaller. '
+        : 'First the plane speeds up, so more air rushes over the wings and the lift gets bigger. ')
+      : item.mode === 'predict' && item.change === 'stall' ? 'Past the stall angle the air swirls off the top of the wing, and the lift collapses. ' : '';
+    return `${lead}The plane ${motionText(f)}. ${axes.map(a => pairSentence(f, a)).join(' ')}`;
+  };
+
+  const adjustItem = item?.mode === 'adjust' ? item : null;
 
   return (
-    <div className={`w-full max-w-5xl mx-auto my-16 animate-fade-in ${className || ''}`}>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8 justify-center">
-        <div className="w-12 h-12 rounded-xl bg-slate-800/60 flex items-center justify-center border border-sky-500/30 shadow-lg">
-          <span className="text-2xl">{acDef.emoji}</span>
-        </div>
-        <div className="text-left">
-          <h2 className="text-2xl font-bold text-white tracking-tight">{title}</h2>
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-            <p className="text-xs text-sky-400 font-mono uppercase tracking-wider">
-              Living Flight Lab
-            </p>
-          </div>
-        </div>
-      </div>
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{title}</LuminaCardTitle>
+        {!done && item && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {practice ? 'A simpler item first' : `${MODE_LABEL[item.mode]} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
+        )}
+        {overview && !done && <p className="text-sm text-slate-400">{overview}</p>}
+      </LuminaCardHeader>
 
-      <LuminaCard className="overflow-hidden">
-        <LuminaCardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <LuminaCardTitle className="text-lg">{aircraftName || acDef.label}</LuminaCardTitle>
-              <div className="flex items-start gap-2 mt-1">
-                <p className="text-slate-400 text-sm flex-1">{overview}</p>
-                <LuminaReadAloud
-                  iconOnly
-                  size="sm"
-                  accent="cyan"
-                  speaking={isAudioPlaying}
-                  aria-label="Read the overview to me"
-                  className="flex-shrink-0"
-                  onClick={() => readBlockAloud(overview, '[READ_OVERVIEW]')}
-                />
-              </div>
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Lab complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} items answered.`}
+          </LuminaFeedbackCard>
+        ) : item && (
+          <>
+            <div className="flex items-start gap-2">
+              <LuminaPrompt accent="cyan" className="flex-1" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
+              {!tutorOwned && (
+                <ReadMeButton instruction={askOf(item)} ask="Look at the plane and its arrows, then answer."
+                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
+                  className="flex-shrink-0" aria-label="Read the question to me" />
+              )}
             </div>
-            <div className="flex gap-2">
-              <LuminaBadge accent={flightState === 'stalling' ? 'rose' : undefined}>
-                {flightState}
-              </LuminaBadge>
-              <LuminaBadge accent="cyan">
-                Grades {gradeBand}
-              </LuminaBadge>
-            </div>
-          </div>
-        </LuminaCardHeader>
 
-        <LuminaCardContent className="space-y-5">
-          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-          {pip.store && !hasSubmittedEvaluation && <div {...pip.dock} />}
-          <div {...pip.workspace} className="space-y-5">
-          {/* Simulation Canvas — bespoke interaction surface, untouched */}
-          <div className="relative bg-slate-800/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50">
-            <FlightSimulation
-              aircraft={acDef}
-              thrustPct={thrustPct}
-              aoa={aoa}
-              cargoWeight={cargoWeight}
-              callbacks={simCallbacks}
-            />
-            {!hasGrabbedPlane && (
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/85 px-4 py-1.5 rounded-full border border-sky-400/30 shadow-lg shadow-sky-500/10">
-                <p className="text-sky-200 text-xs font-medium">
-                  <span className="mr-1">{'✋'}</span>
-                  Grab the plane and drag up or down to tilt the nose
-                </p>
-              </div>
-            )}
-            {hasGrabbedPlane && statesExplored.size <= 1 && (
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/80 px-4 py-1.5 rounded-full border border-white/10">
-                <p className="text-slate-400 text-xs">Try pulling the nose up gently, then watch what happens when you tilt too far.</p>
-              </div>
-            )}
-          </div>
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-4">
+              <FlightScene aircraft={item.aircraft} forces={drawn} pitch={pitch} motion={motion} stalled={stalled} marks={marks} />
 
-          {/* Aircraft Selector */}
-          <div className="space-y-2">
-            <label className="text-slate-400 text-xs font-mono uppercase tracking-wider block">Aircraft</label>
-            <div className="flex gap-2 flex-wrap">
-              {AIRCRAFT_IDS.map(id => {
-                const def = AIRCRAFT_DEFS[id];
-                const isActive = selectedAircraft === id;
-                return (
-                  <LuminaButton key={id} size="sm"
-                    onClick={() => handleAircraftChange(id)}
-                    className={isActive ? 'bg-white/15 ring-1 ring-white/30 text-white' : 'text-slate-400'}
-                  >
-                    <span className="mr-1.5">{def.emoji}</span> {def.label}
-                  </LuminaButton>
-                );
-              })}
-            </div>
-          </div>
+              {item.mode === 'predict' && leverOn(FORCE_LINK_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="force-link" className="text-sm text-slate-300">
+                  {forceLinkLines(item).map(l => <p key={l}>{l}</p>)}
+                </LuminaPanel>
+              )}
+              {item.mode === 'predict' && leverOn(SHOW_ARROWS_LEVER) && !revealed && (
+                <LuminaPanel accent="cyan" data-lever="show-arrows" className="text-sm text-slate-300">
+                  The arrows now show the forces right after the change. The plane has not moved yet.
+                </LuminaPanel>
+              )}
+              {item.mode === 'observe' && (leverOn(PAIR_UP_LEVER) || leverOn(COUNT_UNITS_LEVER)) && (
+                leverOn(PAIR_UP_LEVER) ? <PairBars forces={item.forces} counts={leverOn(COUNT_UNITS_LEVER)} />
+                  : <LuminaPanel accent="cyan" data-lever="count-units" className="font-mono text-sm text-slate-300">{countLines(item.forces).join('   ')}</LuminaPanel>
+              )}
 
-          {/* Controls — the plane's tilt is hand-driven; these set flight conditions */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Angle of Attack — readout only (controlled by dragging the plane).
-                Stall tint is semantic physics feedback, not chrome — kept inline. */}
-            <LuminaPanel className={aoa > acDef.stallAngle ? 'bg-red-500/10 border-red-500/40' : ''}>
-              <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 flex items-center justify-between">
-                <span>Angle of Attack</span>
-                <span className="text-[10px] text-sky-400 normal-case tracking-normal">{'✋'} hand-driven</span>
-              </label>
-              <div className="flex items-baseline gap-2">
-                <span className={`text-2xl font-mono font-bold ${aoa > acDef.stallAngle ? 'text-red-300 animate-pulse' : 'text-sky-300'}`}>
-                  {aoa.toFixed(1)}&deg;
-                </span>
-                {aoa > acDef.stallAngle && <span className="text-red-300 text-xs font-bold">STALL!</span>}
-              </div>
-              <p className="text-slate-500 text-[10px] mt-1">
-                Stall angle: {acDef.stallAngle}&deg; {'·'} Drag the plane to change
-              </p>
-            </LuminaPanel>
-
-            {/* Thrust */}
-            <LuminaPanel>
-              <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 block">
-                Thrust
-              </label>
-              <input type="range" min={0} max={100} value={thrustPct}
-                onChange={e => handleThrustChange(Number(e.target.value))}
-                className="w-full accent-green-500"
-                disabled={acDef.maxThrust === 0}
-              />
-              <div className="flex justify-between mt-1">
-                <span className="text-slate-500 text-xs">0%</span>
-                <span className="text-green-300 text-sm font-mono font-bold">
-                  {acDef.maxThrust === 0 ? 'No engine' : `${thrustPct}%`}
-                </span>
-                <span className="text-slate-500 text-xs">100%</span>
-              </div>
-            </LuminaPanel>
-
-            {/* Cargo Weight */}
-            <LuminaPanel>
-              <label className="text-slate-400 text-xs font-mono uppercase tracking-wider mb-2 block">
-                Cargo
-              </label>
-              <input type="range" min={0} max={maxCargo} step={Math.max(1, Math.floor(maxCargo / 50))} value={cargoWeight}
-                onChange={e => handleCargoChange(Number(e.target.value))}
-                className="w-full accent-orange-500"
-              />
-              <div className="flex justify-between mt-1">
-                <span className="text-slate-500 text-xs">Empty</span>
-                <span className="text-orange-300 text-sm font-mono font-bold">{cargoWeight}kg</span>
-                <span className="text-slate-500 text-xs">{maxCargo}kg</span>
-              </div>
-            </LuminaPanel>
-          </div>
-
-          {/* Force Readout — physics values, accent colors carry meaning */}
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { label: 'Lift', val: forces.lift, color: '#60a5fa', dir: '↑' },
-              { label: 'Weight', val: forces.weight, color: '#f87171', dir: '↓' },
-              { label: 'Thrust', val: forces.thrust, color: '#4ade80', dir: '→' },
-              { label: 'Drag', val: forces.drag, color: '#fb923c', dir: '←' },
-            ].map(f => (
-              <LuminaPanel key={f.label} className="text-center p-2">
-                <span className="text-lg" style={{ color: f.color }}>{f.dir}</span>
-                <p className="text-xs text-slate-400">{f.label}</p>
-                <p className="text-sm font-mono font-bold" style={{ color: f.color }}>
-                  {f.val >= 1000 ? `${(f.val / 1000).toFixed(1)}kN` : `${f.val.toFixed(0)}N`}
-                </p>
-              </LuminaPanel>
-            ))}
-          </div>
-
-          {/* Discovery Cards */}
-          {stallCount > 0 && (
-            <LuminaPanel accent="rose" className="animate-fade-in space-y-2 bg-red-500/5">
-              <h4 className="text-red-200 font-semibold text-sm flex items-center gap-2">
-                <span>&#x26A0;&#xFE0F;</span> Stall Discovered!
-              </h4>
-              <div className="flex items-start gap-2">
-                <p className="text-slate-300 text-sm flex-1">
-                  When the angle of attack is too steep, air particles <span className="text-red-300 font-medium">detach from the wing surface</span> and
-                  swirl turbulently. Lift collapses and the plane drops. Real pilots train to recover from stalls!
-                </p>
-                <LuminaReadAloud
-                  iconOnly
-                  size="sm"
-                  accent="cyan"
-                  speaking={isAudioPlaying}
-                  aria-label="Read this to me"
-                  className="flex-shrink-0"
-                  onClick={() => readBlockAloud('When the angle of attack is too steep, air particles detach from the wing surface and swirl turbulently. Lift collapses and the plane drops. Real pilots train to recover from stalls!', '[READ_STALL]')}
-                />
-              </div>
-            </LuminaPanel>
-          )}
-
-          {/* Challenges Section */}
-          {!showChallenges && !allChallengesDone && (
-            <div className="flex justify-center">
-              <LuminaButton
-                className="bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                onClick={() => setShowChallenges(true)}
-              >
-                &#x1F9EA; Ready for a Challenge?
-              </LuminaButton>
-            </div>
-          )}
-
-          {showChallenges && !allChallengesDone && currentChallenge && (
-            <LuminaPanel accent="purple" className="animate-fade-in space-y-4 bg-purple-500/5">
-              <div className="flex items-center justify-between">
-                <LuminaBadge accent="purple">
-                  Challenge {currentChallengeIdx + 1} of {challenges.length}
-                </LuminaBadge>
-                <LuminaBadge className="text-xs">
-                  {currentChallenge.type}
-                </LuminaBadge>
-              </div>
-              <div className="flex items-start gap-2">
-                <p className="text-slate-200 text-sm font-medium flex-1">{currentChallenge.instruction}</p>
-                <ReadMeButton
-                  instruction={currentChallenge.instruction}
-                  ask="Look at what is happening to the plane and the air, then tap the answer you think is right."
-                  speaking={isAudioPlaying}
-                  onAskTutor={(m) => sendText?.(m)}
-                  tag="[READ_CHALLENGE]"
-                  className="flex-shrink-0"
-                  aria-label="Read the question to me"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {currentChallenge.options.map(opt => {
-                  const isSelected = selectedAnswer === opt.id;
-                  const isCorrectOpt = opt.id === currentChallenge.correctOptionId;
-                  // Map the existing FSM onto the shared answer-state colors.
-                  let state: AnswerChoiceState = 'idle';
-                  if (answerFeedback && isSelected) {
-                    state = answerFeedback === 'correct' ? 'correct' : 'incorrect';
-                  } else if (answerFeedback === 'correct' && isCorrectOpt) {
-                    state = 'correct';
-                  }
-                  return (
-                    <LuminaAnswerChoice key={opt.id}
-                      state={state}
-                      className="flex items-center gap-0 p-3 min-h-[3rem]"
-                      disabled={!!answerFeedback}
-                      onClick={() => handleAnswer(opt.id)}
-                    >
-                      <span className="mr-2 text-xs font-mono opacity-50 shrink-0">{opt.id.toUpperCase()}</span>
-                      <span className="text-sm leading-snug whitespace-normal break-words">{opt.text}</span>
-                    </LuminaAnswerChoice>
-                  );
-                })}
-              </div>
-              {showHint && (
-                <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20 animate-fade-in">
-                  <div className="flex items-start gap-2">
-                    <p className="text-amber-200 text-sm flex-1">
-                      <span className="text-amber-400 font-semibold">Hint: </span>
-                      {currentChallenge.hint}
-                    </p>
-                    <LuminaReadAloud
-                      iconOnly
-                      size="sm"
-                      accent="cyan"
-                      speaking={isAudioPlaying}
-                      aria-label="Read the hint to me"
-                      className="flex-shrink-0"
-                      onClick={() => readBlockAloud(currentChallenge.hint, '[READ_HINT]')}
-                    />
-                  </div>
+              {item.mode !== 'adjust' && (
+                <div className="space-y-2">
+                  {askedAxes(item).map(axis => (
+                    <div key={axis} className="space-y-1">
+                      {askedAxes(item).length > 1 && <p className="text-xs uppercase tracking-wider text-slate-400">{AXIS_LABEL[axis]}</p>}
+                      <div className="grid grid-cols-3 gap-2">
+                        {choicesFor(axis).map(c => (
+                          <LuminaAnswerChoice key={c} aria-label={c} state={choiceState(axis, c)} disabled={closed}
+                            className="p-3 text-center font-semibold" onClick={() => pick(axis, c)}>
+                            {c}
+                          </LuminaAnswerChoice>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
-            </LuminaPanel>
-          )}
 
-          </div>
-
-          {allChallengesDone && showChallenges && (
-            <LuminaPanel accent="emerald" className="text-center bg-green-500/10">
-              <p className="text-green-300 text-sm font-medium">
-                All challenges complete! {challengeResults.filter(r => r.correct).length}/{challenges.length} correct
-              </p>
-            </LuminaPanel>
-          )}
-
-          {/* Submit */}
-          {!hasSubmittedEvaluation && (statesExplored.size > 1 || challengeResults.length > 0) && (
-            <div className="flex justify-center pt-2">
-              <LuminaButton
-                className="bg-green-500/10 border-green-500/30 text-green-300 hover:bg-green-500/20"
-                onClick={handleSubmitEvaluation}
-              >
-                &#x2713; I&apos;m Done Exploring
-              </LuminaButton>
+              {adjustItem && (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <LuminaPanel className="space-y-2">
+                    <p className="text-xs uppercase tracking-wider text-slate-400">Thrust</p>
+                    <div className="flex items-center gap-3">
+                      <LuminaButton aria-label="Less thrust" disabled={closed || !adjustItem.controls.includes('thrust') || work.setting.thrust <= 0} onClick={() => nudge('thrust', -1)}>−</LuminaButton>
+                      <span className="font-mono text-lg text-green-300">{work.setting.thrust}</span>
+                      <LuminaButton aria-label="More thrust" disabled={closed || !adjustItem.controls.includes('thrust') || work.setting.thrust >= MAX_THRUST} onClick={() => nudge('thrust', 1)}>+</LuminaButton>
+                      {!adjustItem.controls.includes('thrust') && <span className="text-xs text-slate-500">fixed</span>}
+                    </div>
+                  </LuminaPanel>
+                  <LuminaPanel className="space-y-2">
+                    <p className="text-xs uppercase tracking-wider text-slate-400">Nose angle</p>
+                    <div className="flex items-center gap-3">
+                      <LuminaButton aria-label="Nose down" disabled={closed || !adjustItem.controls.includes('nose') || work.setting.nose <= 0} onClick={() => nudge('nose', -1)}>−</LuminaButton>
+                      <span className="font-mono text-lg text-sky-300">{`${angleOf(work.setting.nose)}°`}</span>
+                      <LuminaButton aria-label="Nose up" disabled={closed || !adjustItem.controls.includes('nose') || work.setting.nose >= maxNose(adjustItem)} onClick={() => nudge('nose', 1)}>+</LuminaButton>
+                      {!adjustItem.controls.includes('nose') && <span className="text-xs text-slate-500">fixed</span>}
+                    </div>
+                    {leverOn(STALL_MARK_LEVER) && <p data-lever="stall-mark" className="text-xs text-rose-300">{stallLine(adjustItem)}</p>}
+                  </LuminaPanel>
+                  {leverOn(TARGET_MARKS_LEVER) && (
+                    <LuminaPanel accent="cyan" data-lever="target-marks" className="text-sm text-slate-300 sm:col-span-2">
+                      {`Dashed marks: on the lift arrow at the weight's length (${drawn.weight}), on the thrust arrow at the drag's length (${drawn.drag}). A mark shows where an arrow would equal its partner.`}
+                    </LuminaPanel>
+                  )}
+                </div>
+              )}
             </div>
-          )}
 
-          {hasSubmittedEvaluation && (
-            <LuminaPanel accent="emerald" className="text-center bg-green-500/10">
-              <p className="text-green-300 text-sm font-medium">
-                Exploration complete! You discovered how the four forces of flight work!
-              </p>
-            </LuminaPanel>
-          )}
-        </LuminaCardContent>
-      </LuminaCard>
-    </div>
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={closed || !workComplete(item, work)} onClick={check}>
+                  {item.mode === 'adjust' ? 'Fly and check' : 'Check Answer'}
+                </LuminaActionButton>
+              </div>
+            )}
+
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {revealText()}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongShown && (
+              <LuminaFeedbackCard status="incorrect">
+                {item.mode === 'adjust' && flown ? `The plane ${motionText(forcesAt(item, flown))}. That is not the goal.` : 'That is not it.'}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
+
+            {!tutorOwned && revealed && !practice && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
+              </div>
+            )}
+          </>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const FlightForcesExplorer = withWorkspaceController<FlightForcesExplorerProps, ProgressOptions<FlightItem>, Progress>(
+  'flight-forces-explorer', FlightForcesExplorerSurface, useScriptedProgress, useWorkspaceProgressFor('flight-forces-explorer'));
 
 export default FlightForcesExplorer;

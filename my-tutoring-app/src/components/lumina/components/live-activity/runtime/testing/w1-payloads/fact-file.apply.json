@@ -1,0 +1,148 @@
+{
+ "source": "qa/tutor-reports/fact-file-runtime-apply-payload-2026-10-16.json",
+ "primitiveId": "fact-file",
+ "evalMode": "apply",
+ "data": {
+  "title": "The Amazon Rainforest",
+  "category": "Landmark",
+  "description": "The Amazon rainforest is the world's largest tropical rainforest, spanning nine South American countries and housing an unmatched wealth of biodiversity.",
+  "keyStats": [
+   {
+    "value": "5.5",
+    "unit": "million square kilometers",
+    "label": "Total Area"
+   },
+   {
+    "value": "10",
+    "unit": "percent",
+    "label": "Known Species"
+   },
+   {
+    "value": "20",
+    "unit": "percent",
+    "label": "Oxygen Production"
+   },
+   {
+    "value": "6,400",
+    "unit": "kilometers",
+    "label": "River Length"
+   }
+  ],
+  "quickFacts": [
+   {
+    "fact": "The Amazon basin covers about 40 percent of the entire South American continent.",
+    "icon": "\ud83c\udf0e"
+   },
+   {
+    "fact": "Over three million different species of plants and animals live within the rainforest ecosystem.",
+    "icon": "\ud83e\udd9c"
+   },
+   {
+    "fact": "More than 400 distinct indigenous tribes call the Amazon basin their ancestral home.",
+    "icon": "\ud83c\udfd5\ufe0f"
+   },
+   {
+    "fact": "The canopy layer blocks up to 95 percent of sunlight from reaching the dimly lit forest floor.",
+    "icon": "\ud83c\udf33"
+   }
+  ],
+  "deepDive": [
+   {
+    "heading": "Layers of the Rainforest",
+    "body": "The Amazon is divided into four distinct vertical layers, starting with the emergent layer where giant trees tower above the rest. Below that is the dense canopy, followed by the understory, and finally the dark forest floor. Each layer creates unique microclimates that support entirely different communities of specialized wildlife.",
+    "detail": "Most rainforest animals spend their entire lives high up in the canopy and never touch the ground."
+   },
+   {
+    "heading": "The Amazon River System",
+    "body": "The Amazon River carries more water than the next seven largest independent rivers in the world combined. It discharges an astonishing amount of fresh water into the Atlantic Ocean, lowering the ocean's salinity for over one hundred miles away from the coast.",
+    "detail": "During the wet season, parts of the river expand to over 30 miles wide."
+   }
+  ],
+  "records": [
+   {
+    "label": "Largest Drainage Basin",
+    "value": "Spans over 7 million square kilometers across nine countries"
+   },
+   {
+    "label": "Most Species Rich",
+    "value": "Contains one in ten known species on planet Earth"
+   }
+  ],
+  "didYouKnow": [
+   {
+    "text": "The Amazon rainforest generates a portion of its own rainfall by releasing massive amounts of water vapor from plant leaves into the atmosphere.",
+    "source": "Amazon Basin Climatology Study"
+   },
+   {
+    "text": "Nutrients from the Sahara Desert in Africa are carried across the Atlantic Ocean by wind and regularly fertilize the Amazon soil.",
+    "source": "NASA Earth Observatory"
+   }
+  ],
+  "selfChecks": [
+   {
+    "question": "If a conservationist wants to study the greatest variety of plants and animals in a single global ecosystem, why would they choose the Amazon?",
+    "options": [
+     "It contains one in ten known species on Earth across its massive basin.",
+     "It maintains a completely uniform climate with no distinct vertical layers.",
+     "It receives all of its soil nutrients exclusively from the Sahara Desert.",
+     "It covers exactly 40 percent of every country in South America."
+    ],
+    "correctIndex": 0,
+    "explanation": "The Amazon is notable for holding ten percent of all known species on Earth, making it the most biodiverse region.",
+    "difficulty": "hard",
+    "relatedSection": "keyStats",
+    "challengeType": "recall_hard",
+    "id": "check-1",
+    "fileOpen": false
+   },
+   {
+    "question": "If an ocean researcher notices that the Atlantic Ocean's salt levels are significantly reduced miles away from the South American coast, what conclusion can they draw about regional geography?",
+    "options": [
+     "Sahara Desert winds are depositing mineral dust into the marine ecosystem.",
+     "The forest canopy is blocking nearly all sunlight from reaching coastal waters.",
+     "The Amazon River is discharging an immense volume of fresh water into the sea.",
+     "Indigenous tribes are cultivating crops across nine different countries."
+    ],
+    "correctIndex": 2,
+    "explanation": "The Amazon River carries so much water that it lowers ocean salinity for over a hundred miles offshore.",
+    "difficulty": "hard",
+    "relatedSection": "deepDive",
+    "challengeType": "recall_hard",
+    "id": "check-2",
+    "fileOpen": false
+   },
+   {
+    "question": "How do atmospheric moisture patterns in the Amazon rely on the dense vegetation living within the basin?",
+    "options": [
+     "Trees release massive amounts of water vapor from their leaves to help create rainfall.",
+     "Plants absorb mineral nutrients carried by winds from African deserts.",
+     "The river system expands during the wet season to cover 40 percent of the continent.",
+     "The emergent layer towers above the rest of the forest to catch ocean tides."
+    ],
+    "correctIndex": 0,
+    "explanation": "The rainforest generates part of its own rain because plant leaves constantly release water vapor into the air.",
+    "difficulty": "hard",
+    "relatedSection": "didYouKnow",
+    "challengeType": "recall_hard",
+    "id": "check-3",
+    "fileOpen": false
+   },
+   {
+    "question": "Why is it logical that the Amazon basin influences the climate and geography of nine different countries in South America?",
+    "options": [
+     "It discharges more water than the next seven largest rivers combined.",
+     "It covers roughly 40 percent of the entire continent.",
+     "It blocks 95 percent of sunlight from reaching the ground.",
+     "It contains three million species of plants and animals."
+    ],
+    "correctIndex": 1,
+    "explanation": "Covering about 40 percent of the continent necessarily places the Amazon basin across multiple national borders.",
+    "difficulty": "hard",
+    "relatedSection": "quickFacts",
+    "challengeType": "recall_hard",
+    "id": "check-4",
+    "fileOpen": false
+   }
+  ]
+ }
+}

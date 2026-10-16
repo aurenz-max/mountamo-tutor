@@ -12,6 +12,7 @@ import { missLists } from './missLists';
 import type { FoodChainMiss, FoodWebMiss } from '../../../primitives/visual-primitives/biology/foodWebWorkspace';
 import type { CycleMiss } from '../../../primitives/visual-primitives/biology/lifeCycleSequencerWorkspace';
 import type { SortMiss } from '../../../primitives/visual-primitives/biology/classificationSorterWorkspace';
+import type { CellBuilderMiss } from '../../../primitives/visual-primitives/biology/cellBuilderWorkspace';
 
 export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   {
@@ -663,6 +664,29 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         description: 'Reason from a specialized cell mission to relative organelle abundance and biological tradeoffs.',
       },
     ],
+    teachingWorkspace: {
+      grades: ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'Each mission is one board over the same cell, checked by the activity against the lesson’s key, which you '
+        + 'are not told. Stock the cell: the learner taps Keep or Reject on every structure. Build the model: they tap a '
+        + 'structure in the bay, then a region. Wire the jobs: they tap a structure, then the job card it does. Tune the '
+        + 'cell: they pick Few, Some, Many or Abundant for every structure. When every card has an answer they press Check '
+        + 'mission. After a wrong check the board shows only how many are right, and you are not told which. You know the '
+        + 'biology, but never use it to point at a card: do not name a structure, region, job or level to look at again, '
+        + 'or point at one by what it does ("what keeps the cell upright"), do not suggest a swap, and do not say how many '
+        + 'structures do not belong. Never say whether a structure belongs '
+        + 'in this cell, which region or job card goes with a structure, or how much of one this cell needs, and never '
+        + 'confirm one card before the check. Asking about the whole board (what does this cell do all day?), or what a '
+        + 'region or a level means, is teaching. You cannot tap or place for the learner.',
+      // Every mode publishes levers (`cellBuilderLevers.ts`); every miss is answered by a help lever and fewer_structures.
+      levers: true,
+      // The activity's own check (`cellMiss`).
+      misses: missLists<CellBuilderMiss>({
+        cell_inventory: ['kept_impostor', 'rejected_needed', 'kept_and_rejected'],
+        organelle_placement: ['cytoplasm_distributed_swap', 'core_network_swap', 'one_misplaced', 'several_misplaced'],
+        structure_function: ['two_swapped', 'several_wrong'],
+        cell_specialization: ['too_little', 'too_much', 'both_ways'],
+      }),
+    },
     supportsEvaluation: true,
   },
   {

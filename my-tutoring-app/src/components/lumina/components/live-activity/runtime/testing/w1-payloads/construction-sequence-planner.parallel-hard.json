@@ -1,0 +1,157 @@
+{
+ "source": "qa/tutor-reports/construction-sequence-planner-runtime-parallel-hard-payload-2026-10-16.json",
+ "primitiveId": "construction-sequence-planner",
+ "evalMode": "parallel",
+ "data": {
+  "title": "Home Sweet Home: Designing the Family Dwelling",
+  "description": "Children map out the various tasks involved in creating a brand new residential home.",
+  "projectType": "house",
+  "gradeLevel": "5",
+  "challengeTypes": [
+   "parallel"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "parallel-1",
+    "mode": "parallel",
+    "project": "house",
+    "jobs": [
+     {
+      "id": "inside",
+      "name": "Cover the inside walls",
+      "icon": "\ud83e\udeb5",
+      "weeks": 1,
+      "needs": [
+       "pipes",
+       "wires"
+      ]
+     },
+     {
+      "id": "pipes",
+      "name": "Run the water pipes",
+      "icon": "\ud83d\udeb0",
+      "weeks": 1,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "foundation",
+      "name": "Pour the foundation",
+      "icon": "\ud83e\uddf1",
+      "weeks": 1,
+      "needs": []
+     },
+     {
+      "id": "frame",
+      "name": "Frame the walls",
+      "icon": "\ud83d\udd28",
+      "weeks": 1,
+      "needs": [
+       "foundation"
+      ]
+     },
+     {
+      "id": "wires",
+      "name": "Run the electric wires",
+      "icon": "\ud83d\udca1",
+      "weeks": 1,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "roof",
+      "name": "Put on the roof",
+      "icon": "\ud83c\udfe0",
+      "weeks": 1,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "windows",
+      "name": "Put in the windows",
+      "icon": "\ud83e\ude9f",
+      "weeks": 1,
+      "needs": [
+       "frame"
+      ]
+     }
+    ],
+    "crews": 2,
+    "deadline": 5
+   },
+   {
+    "id": "parallel-2",
+    "mode": "parallel",
+    "project": "bridge",
+    "jobs": [
+     {
+      "id": "piers",
+      "name": "Build the piers",
+      "icon": "\ud83c\udfdb\ufe0f",
+      "weeks": 1,
+      "needs": []
+     },
+     {
+      "id": "ends",
+      "name": "Build the end supports",
+      "icon": "\ud83e\uddf1",
+      "weeks": 1,
+      "needs": []
+     },
+     {
+      "id": "deck",
+      "name": "Pour the deck",
+      "icon": "\ud83d\udee3\ufe0f",
+      "weeks": 1,
+      "needs": [
+       "beams"
+      ]
+     },
+     {
+      "id": "beams",
+      "name": "Lift the beams into place",
+      "icon": "\ud83c\udfd7\ufe0f",
+      "weeks": 1,
+      "needs": [
+       "piers",
+       "ends"
+      ]
+     },
+     {
+      "id": "lines",
+      "name": "Paint the road lines",
+      "icon": "\ud83c\udfa8",
+      "weeks": 1,
+      "needs": [
+       "deck"
+      ]
+     },
+     {
+      "id": "lamps",
+      "name": "Put up the lamps",
+      "icon": "\ud83d\udca1",
+      "weeks": 1,
+      "needs": [
+       "deck"
+      ]
+     },
+     {
+      "id": "rails",
+      "name": "Put up the side rails",
+      "icon": "\ud83d\udea7",
+      "weeks": 1,
+      "needs": [
+       "deck"
+      ]
+     }
+    ],
+    "crews": 2,
+    "deadline": 5
+   }
+  ]
+ }
+}

@@ -1,0 +1,113 @@
+{
+ "source": "qa/tutor-reports/how-it-works-runtime-guided-payload-2026-10-16.json",
+ "primitiveId": "how-it-works",
+ "evalMode": "guided",
+ "data": {
+  "title": "How a Bicycle Moves",
+  "subtitle": "Discovering how your legs turn into wheels",
+  "overview": "Have you ever wondered how pushing down with your feet makes a bicycle roll forward down the street? It is an amazing chain reaction of simple machines working together!",
+  "category": "engineering",
+  "steps": [
+   {
+    "stepNumber": 1,
+    "title": "Stepping on the Levers",
+    "description": "Your foot applies heavy weight and force onto the metal bar attached to the bicycle frame. This downward drop acts as a simple lever that forces the center axis to begin turning in a circle.",
+    "imagePrompt": "Close-up of a child sneaker pressing down on a silver metal bicycle pedal on a sunny sidewalk, natural afternoon lighting, realistic textures of rubber shoe tread and pitted metal.",
+    "whatsHappening": "The pedal acts as a lever arm, multiplying your leg strength into rotational force called torque.",
+    "funFact": "Your leg muscles can push with a force equal to three times your actual body weight when starting from a dead stop!",
+    "purpose": "It starts the rotational movement that the rest of the bicycle transfers directly to the rear wheel."
+   },
+   {
+    "stepNumber": 2,
+    "title": "Pulling the Metal Loop",
+    "description": "As your foot goes down, the metal arm rotates a large metal wheel covered in sharp metallic teeth. This toothed circle grabs onto a flexible loop of interlocking metal links.",
+    "imagePrompt": "Macro photograph of a shiny silver bicycle chain resting on the teeth of a large metal chainring, outdoors in daylight, showing oil sheen and metallic grain.",
+    "whatsHappening": "Teeth on the chainring hook into the gaps between individual metal links to pull the chain forward.",
+    "funFact": "A standard bicycle chain contains over 100 tiny moving parts that all bend together simultaneously.",
+    "purpose": "This connection carries the spinning energy from the front of the bike all the way to the back."
+   },
+   {
+    "stepNumber": 3,
+    "title": "Spinning the Rear Gear",
+    "description": "The interlocking metal links race backward and catch onto a much smaller set of teeth attached to the center of the back wheel. Because the back wheel gear is smaller, it whips around much faster than your feet are moving.",
+    "imagePrompt": "Close-up of a multi-speed bicycle cassette gear cluster on the rear wheel, photographed outdoors with natural light reflecting off the steel cogs.",
+    "funFact": "You can change gears to make pedaling feel like climbing a steep mountain or zooming down a flat highway!",
+    "purpose": "It multiplies your speed so the back wheel spins much faster than your feet."
+   },
+   {
+    "stepNumber": 4,
+    "title": "Rolling Across the Ground",
+    "description": "The fast-spinning center hub forces the outer rubber tire to rotate rapidly against the pavement. The friction between the rubber tread and the road pushes the entire bicycle forward into motion.",
+    "imagePrompt": "Low angle photograph of a bicycle tire rolling along a grey asphalt road, captured in bright daylight with dust particles visible in the air.",
+    "funFact": "A bicycle is one of the most efficient machines ever invented, turning over 90 percent of human leg energy into motion!",
+    "purpose": "This final action converts all the stored mechanical energy into forward travel."
+   }
+  ],
+  "summary": {
+   "text": "By linking your leg muscles to levers, chains, and gears, a bicycle transforms a simple downward push into fast, rolling transportation.",
+   "keyTakeaway": "Gears and chains work together to let small forces travel great distances and create high speeds.",
+   "totalTime": "Instantaneous"
+  },
+  "quickFacts": {
+   "duration": "Less than one second per pedal stroke",
+   "whereItHappens": "Along the drivetrain of the bicycle",
+   "funComparison": "Over 90 percent efficient, beating almost every car engine!",
+   "energySource": "Energy from food converted by your muscles"
+  },
+  "realWorldExamples": [
+   "A hand-cranked pencil sharpener",
+   "An egg beater in a kitchen bowl",
+   "A motorcycle transmission"
+  ],
+  "relatedProcesses": [
+   "How Pulley Systems Work",
+   "Friction and Traction",
+   "How Car Engines Generate Power"
+  ],
+  "modes": [
+   "guided"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "identify-1",
+    "mode": "guided",
+    "kind": "identify",
+    "target": 0,
+    "options": [
+     2,
+     0,
+     3,
+     1
+    ],
+    "strip": true
+   },
+   {
+    "id": "identify-2",
+    "mode": "guided",
+    "kind": "identify",
+    "target": 2,
+    "options": [
+     2,
+     3,
+     1,
+     0
+    ],
+    "strip": true
+   },
+   {
+    "id": "identify-3",
+    "mode": "guided",
+    "kind": "identify",
+    "target": 3,
+    "options": [
+     1,
+     0,
+     2,
+     3
+    ],
+    "strip": true
+   }
+  ]
+ }
+}

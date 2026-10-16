@@ -1,0 +1,119 @@
+{
+ "source": "qa/tutor-reports/construction-sequence-planner-runtime-dependency_chain-payload-2026-10-16.json",
+ "primitiveId": "construction-sequence-planner",
+ "evalMode": "dependency_chain",
+ "data": {
+  "title": "Blueprint Builders: The Family House",
+  "description": "Children plan the construction of a residential home by looking at different building tasks.",
+  "projectType": "house",
+  "gradeLevel": "3",
+  "challengeTypes": [
+   "dependency_chain"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "dependency_chain-1",
+    "mode": "dependency_chain",
+    "project": "house",
+    "jobs": [
+     {
+      "id": "pipes",
+      "name": "Run the water pipes",
+      "icon": "\ud83d\udeb0",
+      "weeks": 2,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "inside",
+      "name": "Cover the inside walls",
+      "icon": "\ud83e\udeb5",
+      "weeks": 2,
+      "needs": [
+       "pipes",
+       "wires"
+      ]
+     },
+     {
+      "id": "wires",
+      "name": "Run the electric wires",
+      "icon": "\ud83d\udca1",
+      "weeks": 1,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "roof",
+      "name": "Put on the roof",
+      "icon": "\ud83c\udfe0",
+      "weeks": 2,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "frame",
+      "name": "Frame the walls",
+      "icon": "\ud83d\udd28",
+      "weeks": 3,
+      "needs": []
+     }
+    ]
+   },
+   {
+    "id": "dependency_chain-2",
+    "mode": "dependency_chain",
+    "project": "road",
+    "jobs": [
+     {
+      "id": "pave",
+      "name": "Pave with asphalt",
+      "icon": "\ud83d\udee3\ufe0f",
+      "weeks": 2,
+      "needs": [
+       "gravel",
+       "drains"
+      ]
+     },
+     {
+      "id": "level",
+      "name": "Level the ground",
+      "icon": "\ud83d\udea7",
+      "weeks": 2,
+      "needs": []
+     },
+     {
+      "id": "drains",
+      "name": "Lay the drain pipes",
+      "icon": "\ud83d\udeb0",
+      "weeks": 2,
+      "needs": [
+       "level"
+      ]
+     },
+     {
+      "id": "gravel",
+      "name": "Spread the gravel",
+      "icon": "\ud83e\udea8",
+      "weeks": 1,
+      "needs": [
+       "level"
+      ]
+     },
+     {
+      "id": "lines",
+      "name": "Paint the lines",
+      "icon": "\ud83c\udfa8",
+      "weeks": 1,
+      "needs": [
+       "pave"
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

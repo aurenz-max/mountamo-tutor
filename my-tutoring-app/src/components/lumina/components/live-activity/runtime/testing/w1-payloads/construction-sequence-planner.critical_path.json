@@ -1,0 +1,215 @@
+{
+ "source": "qa/tutor-reports/construction-sequence-planner-runtime-critical_path-payload-2026-10-16.json",
+ "primitiveId": "construction-sequence-planner",
+ "evalMode": "critical_path",
+ "data": {
+  "title": "Build It Right: The Cozy Cottage",
+  "description": "Learners explore the process of putting together a brand new house for a family.",
+  "projectType": "house",
+  "gradeLevel": "3",
+  "challengeTypes": [
+   "critical_path"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "critical_path-1",
+    "mode": "critical_path",
+    "project": "house",
+    "jobs": [
+     {
+      "id": "frame",
+      "name": "Frame the walls",
+      "icon": "\ud83d\udd28",
+      "weeks": 2,
+      "needs": []
+     },
+     {
+      "id": "roof",
+      "name": "Put on the roof",
+      "icon": "\ud83c\udfe0",
+      "weeks": 4,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "pipes",
+      "name": "Run the water pipes",
+      "icon": "\ud83d\udeb0",
+      "weeks": 4,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "wires",
+      "name": "Run the electric wires",
+      "icon": "\ud83d\udca1",
+      "weeks": 2,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "inside",
+      "name": "Cover the inside walls",
+      "icon": "\ud83e\udeb5",
+      "weeks": 4,
+      "needs": [
+       "pipes",
+       "wires"
+      ]
+     },
+     {
+      "id": "paint",
+      "name": "Paint the rooms",
+      "icon": "\ud83c\udfa8",
+      "weeks": 1,
+      "needs": [
+       "inside",
+       "roof"
+      ]
+     }
+    ],
+    "options": [
+     4,
+     9,
+     11,
+     17
+    ]
+   },
+   {
+    "id": "critical_path-2",
+    "mode": "critical_path",
+    "project": "bridge",
+    "jobs": [
+     {
+      "id": "ends",
+      "name": "Build the end supports",
+      "icon": "\ud83e\uddf1",
+      "weeks": 2,
+      "needs": []
+     },
+     {
+      "id": "beams",
+      "name": "Lift the beams into place",
+      "icon": "\ud83c\udfd7\ufe0f",
+      "weeks": 4,
+      "needs": [
+       "ends"
+      ]
+     },
+     {
+      "id": "deck",
+      "name": "Pour the deck",
+      "icon": "\ud83d\udee3\ufe0f",
+      "weeks": 4,
+      "needs": [
+       "beams"
+      ]
+     },
+     {
+      "id": "rails",
+      "name": "Put up the side rails",
+      "icon": "\ud83d\udea7",
+      "weeks": 3,
+      "needs": [
+       "deck"
+      ]
+     },
+     {
+      "id": "lamps",
+      "name": "Put up the lamps",
+      "icon": "\ud83d\udca1",
+      "weeks": 1,
+      "needs": [
+       "deck"
+      ]
+     },
+     {
+      "id": "lines",
+      "name": "Paint the road lines",
+      "icon": "\ud83c\udfa8",
+      "weeks": 4,
+      "needs": [
+       "deck"
+      ]
+     }
+    ],
+    "options": [
+     4,
+     13,
+     14,
+     18
+    ]
+   },
+   {
+    "id": "critical_path-3",
+    "mode": "critical_path",
+    "project": "road",
+    "jobs": [
+     {
+      "id": "level",
+      "name": "Level the ground",
+      "icon": "\ud83d\udea7",
+      "weeks": 2,
+      "needs": []
+     },
+     {
+      "id": "drains",
+      "name": "Lay the drain pipes",
+      "icon": "\ud83d\udeb0",
+      "weeks": 3,
+      "needs": [
+       "level"
+      ]
+     },
+     {
+      "id": "gravel",
+      "name": "Spread the gravel",
+      "icon": "\ud83e\udea8",
+      "weeks": 4,
+      "needs": [
+       "level"
+      ]
+     },
+     {
+      "id": "pave",
+      "name": "Pave with asphalt",
+      "icon": "\ud83d\udee3\ufe0f",
+      "weeks": 4,
+      "needs": [
+       "gravel",
+       "drains"
+      ]
+     },
+     {
+      "id": "lines",
+      "name": "Paint the lines",
+      "icon": "\ud83c\udfa8",
+      "weeks": 2,
+      "needs": [
+       "pave"
+      ]
+     },
+     {
+      "id": "signs",
+      "name": "Put up the signs",
+      "icon": "\ud83d\udea6",
+      "weeks": 4,
+      "needs": [
+       "level"
+      ]
+     }
+    ],
+    "options": [
+     4,
+     11,
+     12,
+     19
+    ]
+   }
+  ]
+ }
+}

@@ -1,6 +1,19 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * How It Works: a process told in 4-6 steps (or 3-4 picture steps for a pre-reader), read first, then questions about
+ * it that code builds from the steps and keys from their order (`howItWorksWorkspace.ts`):
+ * - guided: which step does this description tell of? (its own name blanked; the step list stays on screen)
+ * - sequence: put the step cards in order, then which step is this, with no step list on screen
+ * - predict: the first steps are shown, what happens next? and why does this step matter?
+ *
+ * The model writes the process; it never writes a question or picks an answer. Two paths, chosen by
+ * `withWorkspaceController`: the scripted path (no tutor) unlocks the questions once every step has been scrolled
+ * past, has its own Next and two tries before the answer is shown; the workspace path (W1, plain shape) commits every
+ * check through `progress.commitCheck` with a named miss, takes a spoken step name judged by the tutor, and lets the
+ * runtime move on. The levers live in `howItWorksLevers.ts`.
+ */
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -8,32 +21,48 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaBadge,
+  LuminaButton,
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
-  LuminaBadge,
-  LuminaButton,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
   LuminaSectionLabel,
-  LuminaAnswerChoice,
-  LuminaActionButton,
   answerStateClasses,
   surface,
   type AnswerChoiceState,
 } from '../../../ui';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { HowItWorksMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
 import { SpotlightCard } from '../../../components/SpotlightCard';
 import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askOf, cardText, choiceText, clueOf, describeHowWork, emptyWork, howCorrect, howItems, howMiss, isChoice, isPictures,
+  keyStep, processSteps, workComplete, workspaceAssignment, workspaceScene,
+  type HowItem, type HowKind, type HowMode, type HowTier, type HowWork,
+} from './howItWorksWorkspace';
+import {
+  crossedOut, howLevers, LAST_STEP_LEVER, lastStepLine, leverFacts, SHOW_STEP_LEVER, SHOW_WHY_LEVER, showStepLine,
+  simplerItem, STEP_NUMBERS_LEVER, TWO_CHOICES_LEVER, whyLine,
+} from './howItWorksLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
+
+export type { HowItem, HowMode, HowTier };
 
 export interface HowItWorksData {
   title: string;
@@ -53,6 +82,8 @@ export interface HowItWorksData {
       definition: string;
     };
     funFact?: string;
+    /** What this step makes possible, one sentence without the step's own title words (the explain items). */
+    purpose?: string;
   }>;
 
   summary: {
@@ -72,25 +103,18 @@ export interface HowItWorksData {
   realWorldExamples?: string[];
   relatedProcesses?: string[];
 
-  challenges?: Array<{
-    type: 'sequence' | 'identify' | 'predict' | 'explain';
-    question: string;
-    // For sequence: items to reorder
-    sequenceItems?: Array<{ id: string; text: string }>;
-    correctOrder?: string[];
-    // For identify/predict/explain: multiple choice
-    options?: string[];
-    correctIndex?: number;
-    explanation: string;
-    relatedStep: number;
-  }>;
+  /** The eval modes this session asks (the lesson's pin); absent: one question of each kind. */
+  modes?: HowMode[];
+  /** config.difficulty: the structural band the questions were built at. */
+  difficulty?: HowTier;
+  /** The questions, built and keyed by code from the steps; absent or invalid: rebuilt from the fields above. */
+  items?: HowItem[];
+  /** Legacy generations (model-written questions): read only for their kinds. */
+  challenges?: Array<{ type?: string }>;
 
   // ── Pre-reader (K / PRE band) subset ──
-  // When present, the primitive renders the picture-primary "put the steps in
-  // order" task INSTEAD of the reading-heavy magazine + text quiz. The generator
-  // only emits this at the Kindergarten/Preschool band (the emoji is the answer
-  // surface, steps are authored in correct order, and the tutor reads each step
-  // aloud). Its presence IS the band signal — the component honors the payload.
+  // When present, the process is told in picture cards (the tutor reads each step) instead of the magazine, and the
+  // questions use the pictures. The generator emits it at the Kindergarten/Preschool band.
   preReader?: {
     question: string;
     steps: Array<{ id: string; emoji: string; label: string; spoken: string }>;
@@ -121,6 +145,9 @@ const PROCESS_CATEGORIES: Record<string, { text: string; accent: string; rgb: st
 
 const DEFAULT_COLORS = { text: 'text-blue-300', accent: '#60a5fa', rgb: '96, 165, 250', icon: '⚡' };
 
+/** The Start button's name: the journey presses it by this label. */
+export const START_LABEL = 'Start the questions';
+
 // ============================================================================
 // Props
 // ============================================================================
@@ -128,13 +155,17 @@ const DEFAULT_COLORS = { text: 'text-blue-300', accent: '#60a5fa', rgb: '96, 165
 interface HowItWorksProps {
   data: HowItWorksData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
+const HowItWorksSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  HowItWorksProps & { tutorOwned: boolean; useController: (options: ProgressOptions<HowItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
     subtitle,
@@ -145,7 +176,6 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     quickFacts,
     realWorldExamples,
     relatedProcesses,
-    challenges = [],
     instanceId,
     skillId,
     subskillId,
@@ -153,8 +183,41 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     exhibitId,
     onEvaluationSubmit,
   } = data;
+  const preReader = data.preReader;
+  const pictures = isPictures(data);
 
   const colors = PROCESS_CATEGORIES[category || ''] || DEFAULT_COLORS;
+
+  // The process as the questions read it, and the questions.
+  const pSteps = useMemo(() => processSteps(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.steps, data.preReader]);
+  const items = useMemo(() => howItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.modes, data.difficulty, data.steps, data.preReader, data.title, data.challenges]);
+  const question = preReader?.question;
+
+  // Stable instance ID
+  const stableInstanceIdRef = useRef(instanceId || `how-it-works-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+
+  // -------------------------------------------------------------------------
+  // Progress: the runtime moves the index on the workspace path (callbacks bound below)
+  // -------------------------------------------------------------------------
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: i => workspaceAssignment(pSteps, i, pictures, question),
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
   // -------------------------------------------------------------------------
   // State
@@ -168,39 +231,36 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
 
-  // Challenge state
-  const [showChallenges, setShowChallenges] = useState(false);
-  const [currentChallengeIndex, setCurrentChallengeIndex] = useState(0);
-  const [challengeAnswers, setChallengeAnswers] = useState<Array<{ correct: boolean; attempts: number }>>([]);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [showChallengeFeedback, setShowChallengeFeedback] = useState(false);
-  const [allChallengesComplete, setAllChallengesComplete] = useState(false);
-  const [currentAttempts, setCurrentAttempts] = useState(0);
-
-  // Sequence challenge state
-  const [sequenceOrder, setSequenceOrder] = useState<string[]>([]);
-  const [sequenceChecked, setSequenceChecked] = useState(false);
-  const [sequenceCorrect, setSequenceCorrect] = useState(false);
-
-  // ── Pre-reader (K / PRE) picture-order state ──
-  const preReader = data.preReader;
-  const [preOrder, setPreOrder] = useState<string[]>([]); // placed ids, in order
-  const [preTray, setPreTray] = useState<string[]>([]);   // shuffled remaining ids
-  const [preStatus, setPreStatus] = useState<'idle' | 'wrong' | 'correct'>('idle');
-  const preInitRef = useRef(false);
-  const preOrientedRef = useRef(false);
+  /** The reading is over and the questions are open. */
+  const [started, setStarted] = useState(false);
+  const [practice, setPractice] = useState<HowItem | null>(null);
+  const [work, setWork] = useState<HowWork>(emptyWork);
+  /** Workspace path: the checked wrong work, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [scriptedDone, setScriptedDone] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
 
   // Timing
   const stepEntryTimes = useRef<Record<number, number>>({ 0: Date.now() });
-  const [stepTimes, setStepTimes] = useState<number[]>([]);
-
-  // Stable instance ID
-  const stableInstanceIdRef = useRef(instanceId || `how-it-works-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
 
   const totalSteps = steps.length;
   const stepsExplored = visitedSteps.size;
   const allStepsExplored = stepsExplored >= totalSteps;
+
+  const sessionItem: HowItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const item = practice ?? sessionItem;
+  const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
+  const leverOn = (id: string) => pulled.includes(id);
+  const solvedNow = practice ? practiceSolved || !!progress.practiceSolved
+    : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+  const crossed = item && isChoice(item) && leverOn(TWO_CHOICES_LEVER) ? crossedOut(item) : [];
 
   // Collect fun facts and key terms for promoted sections
   const allFunFacts = useMemo(() =>
@@ -251,37 +311,49 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   });
 
   // -------------------------------------------------------------------------
-  // AI Tutoring Integration
+  // Scripted tutor only: its context carries no answer; the workspace tutor reads the scene instead
   // -------------------------------------------------------------------------
   const aiPrimitiveData = useMemo(() => ({
     title,
     overview,
     totalSteps,
     stepsExplored,
-    challengesCompleted: challengeAnswers.length,
-    totalChallenges: challenges.length,
-  }), [title, overview, totalSteps, stepsExplored, challengeAnswers.length, challenges.length]);
+    challengesCompleted: results.length,
+    totalChallenges: items.length,
+    question: started && item ? askOf(pSteps, item, pictures, question) : '',
+  }), [title, overview, totalSteps, stepsExplored, results.length, items.length, started, item, pSteps, pictures, question]);
 
   const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
     primitiveType: 'how-it-works',
     instanceId: resolvedInstanceId,
     primitiveData: aiPrimitiveData,
-    gradeLevel: 'Elementary',
+    gradeLevel: pictures ? 'Kindergarten' : 'Elementary',
+    enabled: !tutorOwned,
   });
+  const say = useCallback((text: string, opts: { silent?: boolean } = { silent: true }) => {
+    if (!tutorOwned && isConnected) sendText(text, opts);
+  }, [tutorOwned, isConnected, sendText]);
 
-  // Introduce on connect
+  // Introduce on connect (scripted path). A pre-reader hears the picture story read aloud: it is the process itself.
   const hasIntroducedRef = useRef(false);
   useEffect(() => {
-    // Pre-reader has its own spoken ORIENT beat below — skip the magazine intro.
-    if (!isConnected || hasIntroducedRef.current || preReader) return;
+    if (tutorOwned || !isConnected || hasIntroducedRef.current) return;
     hasIntroducedRef.current = true;
-    sendText(
+    if (preReader) {
+      const story = preReader.steps.map((s, i) => `${i + 1}) ${s.spoken}`).join(' ');
+      say(
+        `[ACTIVITY_START_PRE] You are helping a child who cannot read. Warmly read the story of the process aloud, every step in order, word for word: ${story} `
+        + 'Then invite them to tap the big play button when they are ready for the questions. Reading the steps aloud IS your greeting — do not shorten it or skip any step.',
+        {},
+      );
+      return;
+    }
+    say(
       `[ACTIVITY_START] How It Works: "${title}" — ${subtitle}. `
-      + `${totalSteps} steps to explore. ${challenges.length > 0 ? `${challenges.length} comprehension challenges after.` : ''} `
+      + `${totalSteps} steps to explore. ${items.length > 0 ? `${items.length} questions after.` : ''} `
       + `Overview: ${overview}. Introduce the process warmly and encourage step-by-step exploration.`,
-      { silent: true }
     );
-  }, [isConnected, title, subtitle, overview, totalSteps, challenges.length, sendText]);
+  }, [tutorOwned, isConnected, title, subtitle, overview, totalSteps, items.length, preReader, say]);
 
   // -------------------------------------------------------------------------
   // IntersectionObserver for scroll-based step tracking
@@ -289,6 +361,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined' || started) return;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -301,7 +374,6 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                 next.add(stepIdx);
                 return next;
               });
-              // Record entry time
               if (!stepEntryTimes.current[stepIdx]) {
                 stepEntryTimes.current[stepIdx] = Date.now();
               }
@@ -317,7 +389,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     });
 
     return () => observer.disconnect();
-  }, [steps.length]);
+  }, [steps.length, started]);
 
   // -------------------------------------------------------------------------
   // Image Generation
@@ -374,439 +446,195 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
         next.delete(stepIndex);
       } else {
         next.add(stepIndex);
-        if (isConnected) {
-          sendText(
-            `[DETAIL_EXPANDED] Student opened "What's Happening?" for Step ${stepIndex + 1}: "${steps[stepIndex]?.title}". `
-            + `React with enthusiasm and add a relatable comparison or context.`,
-            { silent: true }
-          );
-        }
+        say(
+          `[DETAIL_EXPANDED] Student opened "What's Happening?" for Step ${stepIndex + 1}: "${steps[stepIndex]?.title}". `
+          + `React with enthusiasm and add a relatable comparison or context.`,
+        );
       }
       return next;
     });
-  }, [steps, isConnected, sendText]);
-
-  // Track all steps explored
-  const hasNotifiedAllExploredRef = useRef(false);
-  useEffect(() => {
-    if (allStepsExplored && !hasNotifiedAllExploredRef.current && isConnected && !preReader) {
-      hasNotifiedAllExploredRef.current = true;
-      sendText(
-        `[ALL_STEPS_EXPLORED] Student explored all ${totalSteps} steps! `
-        + `${challenges.length > 0 ? `${challenges.length} comprehension challenges coming up.` : 'Process complete!'} `
-        + `Celebrate and summarize the full process in one sentence.`,
-        { silent: true }
-      );
-    }
-  }, [allStepsExplored, totalSteps, challenges.length, isConnected, sendText]);
+  }, [steps, say]);
 
   // -------------------------------------------------------------------------
-  // Challenge Handling
+  // Questions
   // -------------------------------------------------------------------------
-  const currentChallenge = challenges[currentChallengeIndex] ?? null;
+  const clearItem = () => {
+    setWork(emptyWork()); setWrongShown(false); setFeedback(null);
+    setScriptedWrongs(0); setScriptedReveal(false); setPracticeSolved(false);
+  };
 
-  // Effective answer key for the active sequence challenge. Generated content
-  // can ship an empty or mismatched `correctOrder` (flash-lite drops the CSV) —
-  // an empty key makes every arrangement "wrong" and bricks the lesson. When the
-  // key is not a clean permutation of the item IDs, fall back to the authored
-  // item order (items are authored in correct order; the board is shuffled for
-  // display), so the challenge is always winnable.
-  const sequenceKey = useMemo(() => {
-    if (!currentChallenge || currentChallenge.type !== 'sequence') return [] as string[];
-    const ids = (currentChallenge.sequenceItems ?? []).map(i => i.id);
-    const key = currentChallenge.correctOrder ?? [];
-    const valid =
-      key.length === ids.length &&
-      new Set(key).size === ids.length &&
-      key.every(id => ids.includes(id));
-    return valid ? key : ids;
-  }, [currentChallenge]);
+  openItem.current = (index, retry) => {
+    if (retry) { setWork(emptyWork()); setWrongShown(false); setFeedback(null); setPracticeSolved(false); return; }
+    setPractice(null); clearItem();
+    void index;
+  };
 
-  const handleStartChallenges = useCallback(() => {
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || !isChoice(solved) || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setWork({ choice: keyStep(solved), placed: [] }); setWrongShown(false);
+  };
+
+  const closed = !started || revealed || wrongShown || learnerBlocked();
+
+  const handleStart = () => {
+    if (started) return;
     SoundManager.tap();
-    setShowChallenges(true);
-    setCurrentChallengeIndex(0);
-    setCurrentAttempts(0);
-    if (challenges[0]?.type === 'sequence' && challenges[0].sequenceItems) {
-      setSequenceOrder(shuffleArray(challenges[0].sequenceItems.map(i => i.id)));
-    }
-  }, [challenges]);
+    setStarted(true);
+    if (items[0]) say(`[READ_QUESTION] The questions begin. ${pictures ? 'Read this aloud to the child, word for word: ' : 'The question on screen: '}"${askOf(pSteps, items[0], pictures, question)}"`, pictures ? {} : { silent: true });
+  };
 
-  const handleMCAnswer = useCallback((optionIndex: number) => {
-    if (!currentChallenge || showChallengeFeedback) return;
-    if (currentChallenge.type !== 'identify' && currentChallenge.type !== 'predict' && currentChallenge.type !== 'explain') return;
-
-    setSelectedOption(optionIndex);
-    setShowChallengeFeedback(true);
-
-    const correct = optionIndex === currentChallenge.correctIndex;
-    const attempts = currentAttempts + 1;
-    setCurrentAttempts(attempts);
-
+  const checkWith = (w: HowWork) => {
+    if (!item || closed || !workComplete(item, w)) return;
+    const correct = howCorrect(item, w);
+    progress.commitCheck(describeHowWork(pSteps, item, w, pictures), correct, correct ? undefined : howMiss(item, w));
     if (correct) {
       SoundManager.playCorrect();
-    } else {
-      SoundManager.playIncorrect();
+      if (practice) setPracticeSolved(true); else tappedCorrect.current = item.id;
+      say('[CHALLENGE_CORRECT] The learner answered the question correctly; the answer is now marked on screen. Praise briefly.');
+      return;
     }
-
-    if (correct || attempts >= 2) {
-      setChallengeAnswers(prev => [...prev, { correct, attempts }]);
+    SoundManager.playIncorrect();
+    if (tutorOwned) { setWrongShown(true); return; }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      setWork(item.kind === 'sequence' ? { choice: null, placed: [...item.cards] } : { choice: keyStep(item), placed: [] });
+      if (!practice) progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say('[ANSWER_REVEALED] Two tries missed. The answer is now on screen: explain it from the steps of the process.');
+      return;
     }
+    setWork(emptyWork());
+    setFeedback(item.kind === 'sequence' ? 'Not quite. Think about what has to happen before each step, and try again.' : 'Not quite. Try once more.');
+    say('[CHALLENGE_INCORRECT] The learner\'s answer is wrong. You are not told the answer: ask what has to happen before or after, without naming a choice.');
+  };
 
-    if (isConnected) {
-      const tag = correct ? '[CHALLENGE_CORRECT]' : '[CHALLENGE_INCORRECT]';
-      sendText(
-        `${tag} Challenge ${currentChallengeIndex + 1}/${challenges.length} (${currentChallenge.type}): `
-        + `"${currentChallenge.question}" — Student chose "${currentChallenge.options?.[optionIndex]}". `
-        + `${correct
-          ? 'Correct! Celebrate and reinforce understanding.'
-          : `Incorrect. Related to Step ${currentChallenge.relatedStep}. Hint at the relevant step without giving the answer.`
-        }`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, currentChallengeIndex, challenges, showChallengeFeedback, currentAttempts, isConnected, sendText]);
+  const pick = (o: number) => {
+    if (!item || closed || crossed.includes(o)) return;
+    SoundManager.select();
+    const next = { choice: o, placed: [] };
+    setWork(next); setFeedback(null);
+    if (pictures) checkWith(next);
+  };
+  const place = (s: number) => {
+    if (!item || item.kind !== 'sequence' || closed || work.placed.includes(s)) return;
+    SoundManager.tap();
+    const next = { choice: null, placed: [...work.placed, s] };
+    setWork(next); setFeedback(null);
+    if (pictures && workComplete(item, next)) checkWith(next);
+  };
+  const unplace = (k: number) => {
+    if (!item || closed) return;
+    SoundManager.tick();
+    setWork(w => ({ ...w, placed: w.placed.filter((_, i) => i !== k) }));
+  };
 
-  const handleSequenceCheck = useCallback(() => {
-    if (!currentChallenge || currentChallenge.type !== 'sequence') return;
-
-    const correct = JSON.stringify(sequenceOrder) === JSON.stringify(sequenceKey);
-    const attempts = currentAttempts + 1;
-    setCurrentAttempts(attempts);
-    setSequenceChecked(true);
-    setSequenceCorrect(correct);
-
-    if (correct) {
-      SoundManager.playCorrect();
-    } else {
-      SoundManager.playIncorrect();
-    }
-
-    if (correct || attempts >= 2) {
-      setChallengeAnswers(prev => [...prev, { correct, attempts }]);
-      setShowChallengeFeedback(true);
-    }
-
-    if (isConnected) {
-      const tag = correct ? '[CHALLENGE_CORRECT]' : '[CHALLENGE_INCORRECT]';
-      sendText(
-        `${tag} Sequence challenge: "${currentChallenge.question}" — `
-        + `${correct ? 'Student placed all steps in the correct order!' : 'Student has the wrong order. Ask "What needs to happen BEFORE this?"'}`,
-        { silent: true }
-      );
-    }
-  }, [currentChallenge, sequenceOrder, sequenceKey, currentAttempts, isConnected, sendText]);
-
-  const recordAllStepTimes = useCallback(() => {
+  const recordAllStepTimes = () => {
     const now = Date.now();
-    const times = steps.map((_, i) => {
-      const entry = stepEntryTimes.current[i];
-      return entry ? now - entry : 0;
-    });
-    setStepTimes(times);
-  }, [steps]);
+    return steps.map((_, i) => { const entry = stepEntryTimes.current[i]; return entry ? now - entry : 0; });
+  };
 
-  const handleNextChallenge = useCallback(() => {
-    setSelectedOption(null);
-    setShowChallengeFeedback(false);
-    setSequenceChecked(false);
-    setSequenceCorrect(false);
-    setCurrentAttempts(0);
+  const metrics = (attempts: number): HowItWorksMetrics => {
+    const accuracy = (kinds: HowKind[]) => {
+      const its = items.filter(i => kinds.includes(i.kind));
+      return its.length ? Math.round((its.filter(i => results.some(r => r.challengeId === i.id && r.correct)).length / its.length) * 100) : 0;
+    };
+    const times = recordAllStepTimes();
+    return {
+      type: 'how-it-works',
+      stepsExplored: pictures ? pSteps.length : stepsExplored,
+      totalSteps: pictures ? pSteps.length : totalSteps,
+      detailsExpanded: expandedDetails.size,
+      sequenceAccuracy: accuracy(['sequence']),
+      identifyAccuracy: accuracy(['identify']),
+      predictAccuracy: accuracy(['predict', 'explain']),
+      challengeAttempts: attempts,
+      averageTimePerStep: totalSteps > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / totalSteps) : 0,
+    };
+  };
 
-    if (currentChallengeIndex + 1 >= challenges.length) {
-      setAllChallengesComplete(true);
-      recordAllStepTimes();
-
-      const correctCount = challengeAnswers.filter(a => a.correct).length;
-      const totalAttempts = challengeAnswers.reduce((sum, a) => sum + a.attempts, 0);
-      const accuracy = challenges.length > 0 ? Math.round((correctCount / challenges.length) * 100) : 0;
-
-      if (isConnected) {
-        sendText(
-          `[ALL_COMPLETE] Student finished all ${challenges.length} challenges. `
-          + `Accuracy: ${accuracy}%. Steps explored: ${stepsExplored}/${totalSteps}. `
-          + `Details expanded: ${expandedDetails.size}. `
-          + `Celebrate and give specific feedback on their understanding of the process.`,
-          { silent: true }
-        );
-      }
-
-      if (!hasSubmittedEvaluation) {
-        const avgTimePerStep = totalSteps > 0
-          ? Math.round(stepTimes.reduce((a, b) => a + (b || 0), 0) / totalSteps)
-          : 0;
-
-        const byType = (type: string) => {
-          const relevant = challenges
-            .map((c, i) => ({ ...c, answer: challengeAnswers[i] }))
-            .filter(c => c.type === type && c.answer);
-          if (relevant.length === 0) return 0;
-          return Math.round((relevant.filter(c => c.answer?.correct).length / relevant.length) * 100);
-        };
-
-        const metrics: HowItWorksMetrics = {
-          type: 'how-it-works',
-          stepsExplored,
-          totalSteps,
-          detailsExpanded: expandedDetails.size,
-          sequenceAccuracy: byType('sequence'),
-          identifyAccuracy: byType('identify'),
-          predictAccuracy: byType('predict'),
-          challengeAttempts: totalAttempts,
-          averageTimePerStep: avgTimePerStep,
-        };
-
-        const overallScore = Math.round(
-          (stepsExplored / Math.max(totalSteps, 1)) * 30 + accuracy * 0.7
-        );
-
-        submitEvaluation(
-          accuracy >= 70 && stepsExplored >= totalSteps,
-          overallScore,
-          metrics,
-          { challengeAnswers: [...challengeAnswers] }
-        );
-      }
-    } else {
-      const nextIdx = currentChallengeIndex + 1;
-      setCurrentChallengeIndex(nextIdx);
-      if (challenges[nextIdx]?.type === 'sequence' && challenges[nextIdx].sequenceItems) {
-        setSequenceOrder(shuffleArray(challenges[nextIdx].sequenceItems!.map(i => i.id)));
-      }
+  /** Scripted path: Next, and after the last question the session report. */
+  const next = () => {
+    if (progress.advance()) {
+      clearItem();
+      const upcoming = items[currentIndex + 1];
+      if (upcoming) say(`[NEXT_QUESTION] Question ${currentIndex + 2} of ${items.length}. ${pictures ? 'Read it aloud, word for word: ' : ''}"${askOf(pSteps, upcoming, pictures, question)}"`, pictures ? {} : { silent: true });
+      return;
     }
-  }, [
-    currentChallengeIndex, challenges, challengeAnswers, stepsExplored, totalSteps,
-    expandedDetails, stepTimes, isConnected, sendText, hasSubmittedEvaluation,
-    submitEvaluation, recordAllStepTimes,
-  ]);
+    setScriptedDone(true);
+    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} questions (${score}%). Celebrate and name the most important idea of the process in one sentence.`);
+    if (hasSubmittedEvaluation || submitted || progress.recordsEvaluation === false) return;
+    setSubmitted(true);
+    submitEvaluation(score >= 70, score, metrics(results.reduce((a, r) => a + r.attempts, 0)), { challengeResults: results });
+  };
 
-  // Auto-submit for display-only mode (no challenges)
+  finish.current = (result) => {
+    if (hasSubmittedEvaluation || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitEvaluation(result.passed, result.accuracy, metrics(result.teachingAttempts.length),
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // Display only (no questions could be built): the exhibit submits once every step has been read.
   const hasAutoSubmittedRef = useRef(false);
   useEffect(() => {
-    // PRE renders the ordering task (its own submit path) — never auto-submit it
-    // just because the empty magazine step list counts as "all explored".
-    if (challenges.length === 0 && allStepsExplored && !hasSubmittedEvaluation && !hasAutoSubmittedRef.current && !preReader) {
-      hasAutoSubmittedRef.current = true;
-      const avgTimePerStep = totalSteps > 0
-        ? Math.round(stepTimes.reduce((a, b) => a + (b || 0), 0) / totalSteps)
-        : 0;
-
-      const metrics: HowItWorksMetrics = {
-        type: 'how-it-works',
-        stepsExplored,
-        totalSteps,
-        detailsExpanded: expandedDetails.size,
-        sequenceAccuracy: 0,
-        identifyAccuracy: 0,
-        predictAccuracy: 0,
-        challengeAttempts: 0,
-        averageTimePerStep: avgTimePerStep,
-      };
-
-      submitEvaluation(true, 100, metrics, {});
-    }
-  }, [challenges.length, allStepsExplored, hasSubmittedEvaluation, stepsExplored, totalSteps, expandedDetails, stepTimes, submitEvaluation]);
+    if (tutorOwned || items.length > 0 || pictures || !allStepsExplored || hasSubmittedEvaluation || hasAutoSubmittedRef.current) return;
+    hasAutoSubmittedRef.current = true;
+    submitEvaluation(true, 100, metrics(0), {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorOwned, items.length, pictures, allStepsExplored, hasSubmittedEvaluation]);
 
   // -------------------------------------------------------------------------
-  // Sequence reorder helper
+  // Workspace path: what the tutor and the observer are shown, republished every render
   // -------------------------------------------------------------------------
-  const moveSequenceItem = useCallback((fromIndex: number, direction: number) => {
-    const toIndex = fromIndex + direction;
-    if (toIndex < 0 || toIndex >= sequenceOrder.length) return;
-    SoundManager.tick();
-    setSequenceOrder(prev => {
-      const next = [...prev];
-      [next[fromIndex], next[toIndex]] = [next[toIndex], next[fromIndex]];
-      return next;
-    });
-    setSequenceChecked(false);
-  }, [sequenceOrder.length]);
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const reading = !started;
+    const scene = workspaceScene(pSteps, item, { reading, work, solved: revealed, crossed }, pictures, { title, question });
+    const levers = practice || reading ? [] : howLevers(pSteps, sessionItem, pulled, pictures);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'An easier question of the same kind, before the full item comes back.' } : {}),
+        ...(reading || practice ? {} : leverFacts(pSteps, sessionItem, pulled)) },
+      readyForResponse: !reading,
+      levers,
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (practice || reading || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (l.kind === 'simplify') {
+          const simpler = simplerItem(pSteps, sessionItem, pictures);
+          if (!simpler) return 'There is no easier question here; try a help lever.';
+          setLeverState(nextState); clearItem(); setPractice(simpler);
+          return { practice: workspaceAssignment(pSteps, simpler, pictures, question) };
+        }
+        if (id === TWO_CHOICES_LEVER && isChoice(sessionItem) && work.choice !== null && crossedOut(sessionItem).includes(work.choice)) {
+          setWork(emptyWork());
+        }
+        setLeverState(nextState);
+        return true;
+      },
+      endPractice: () => { clearItem(); setPractice(null); },
+    };
+  });
 
-  // -------------------------------------------------------------------------
-  // Pre-reader (K / PRE) picture-order handlers + spoken beats
-  // -------------------------------------------------------------------------
-  // Seed the shuffled tray once.
-  useEffect(() => {
-    if (!preReader || preInitRef.current) return;
-    preInitRef.current = true;
-    setPreTray(shuffleArray(preReader.steps.map(s => s.id)));
-  }, [preReader]);
+  const done = hasSubmittedEvaluation || submitted || scriptedDone || (tutorOwned && isComplete);
 
-  // ORIENT + STIMULUS: read the question and every step aloud on connect. Not
-  // silent — this IS the spoken instruction channel for a non-reader. (The
-  // catalog aiDirective reinforces it so it survives the lesson one-sentence cap.)
-  useEffect(() => {
-    if (!preReader || !isConnected || preOrientedRef.current) return;
-    preOrientedRef.current = true;
-    const stepsScript = preReader.steps.map((s, i) => `${i + 1}) ${s.spoken}`).join(' ');
-    sendText(
-      `[ACTIVITY_START_PRE] You are helping a child who cannot read. Warmly read the question aloud, then read every step out loud in order — word for word — and invite them to tap the pictures to put them in order. `
-      + `Question: "${preReader.question}" Steps in order: ${stepsScript} `
-      + `Reading these aloud IS your greeting — do not shorten it or skip any step, and never say the final order as the answer.`,
-      {},
-    );
-  }, [preReader, isConnected, sendText]);
-
-  const handlePrePlace = useCallback((id: string) => {
-    if (preStatus === 'correct') return;
-    SoundManager.tap();
-    setPreStatus('idle');
-    setPreTray(prev => prev.filter(x => x !== id));
-    setPreOrder(prev => [...prev, id]);
-  }, [preStatus]);
-
-  const handlePreUndo = useCallback((position: number) => {
-    if (preStatus === 'correct') return;
-    SoundManager.tick();
-    setPreStatus('idle');
-    setPreOrder(prev => {
-      const id = prev[position];
-      if (id === undefined) return prev;
-      setPreTray(t => [...t, id]);
-      return prev.filter((_, i) => i !== position);
-    });
-  }, [preStatus]);
-
-  // Auto-evaluate when every slot is filled (tap=choose, no Check button).
-  const preSubmittedRef = useRef(false);
-  useEffect(() => {
-    if (!preReader || preStatus === 'correct') return;
-    if (preOrder.length !== preReader.steps.length) return;
-    const key = preReader.steps.map(s => s.id); // authored order = correct order
-    const correct = preOrder.every((id, i) => id === key[i]);
-
-    if (correct) {
-      setPreStatus('correct');
-      SoundManager.playCorrect();
-      if (isConnected) {
-        sendText(
-          `[PRE_COMPLETE] The child put all ${preReader.steps.length} steps in the right order. Celebrate warmly in ONE short sentence.`,
-          {},
-        );
-      }
-      if (!hasSubmittedEvaluation && !preSubmittedRef.current) {
-        preSubmittedRef.current = true;
-        const metrics: HowItWorksMetrics = {
-          type: 'how-it-works',
-          stepsExplored: preReader.steps.length,
-          totalSteps: preReader.steps.length,
-          detailsExpanded: 0,
-          sequenceAccuracy: 100,
-          identifyAccuracy: 0,
-          predictAccuracy: 0,
-          challengeAttempts: 1,
-          averageTimePerStep: 0,
-        };
-        submitEvaluation(true, 100, metrics, {});
-      }
-    } else {
-      setPreStatus('wrong');
-      SoundManager.playIncorrect();
-      if (isConnected) {
-        sendText(
-          `[PRE_WRONG] The child ordered the steps but it isn't right yet. Give ONE warm, encouraging spoken hint about what happens FIRST — never say the whole order. Invite them to move a picture and try again.`,
-          {},
-        );
-      }
-    }
-  }, [preOrder, preReader, preStatus, isConnected, sendText, hasSubmittedEvaluation, submitEvaluation]);
-
-  const handlePreReplay = useCallback(() => {
-    SoundManager.tap();
-    if (isConnected && preReader) {
-      const stepsScript = preReader.steps.map((s, i) => `${i + 1}) ${s.spoken}`).join(' ');
-      sendText(
-        `[PRE_REPLAY] Read the question and every step aloud again, in order, word for word: "${preReader.question}" ${stepsScript}`,
-        {},
-      );
-    }
-  }, [isConnected, preReader, sendText]);
-
-  // -------------------------------------------------------------------------
-  // Render: Pre-reader picture-order task
-  // -------------------------------------------------------------------------
-  const renderPreReader = () => {
-    if (!preReader) return null;
-    const byId = (id: string) => preReader.steps.find(s => s.id === id);
-
-    return (
-      <div className="space-y-8 py-4">
-        {/* Spoken prompt + replay (the ONLY words on screen are a caption) */}
-        <div className="flex items-center justify-center gap-3">
-          <p className="text-slate-100 text-xl font-semibold text-center">{preReader.question}</p>
-          <button
-            onClick={handlePreReplay}
-            aria-label="Read to me"
-            className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 text-xl hover:bg-cyan-500/25 transition-all"
-          >
-            🔊
-          </button>
-        </div>
-
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace} className="space-y-8">
-        {/* Order slots (tap a filled card to send it back) */}
-        <div className="flex justify-center gap-4 flex-wrap">
-          {preReader.steps.map((_, position) => {
-            const id = preOrder[position];
-            const step = id ? byId(id) : undefined;
-            const filled = !!step;
-            const state: AnswerChoiceState =
-              preStatus === 'correct' && filled ? 'correct'
-              : preStatus === 'wrong' && filled ? 'incorrect'
-              : filled ? 'selected'
-              : 'idle';
-            return (
-              <button
-                key={position}
-                onClick={() => filled && handlePreUndo(position)}
-                disabled={!filled || preStatus === 'correct'}
-                className={`w-28 h-32 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all duration-200 ${
-                  filled ? answerStateClasses[state] : 'border-dashed border-white/15 bg-white/[0.02]'
-                }`}
-              >
-                {step ? (
-                  <>
-                    <span className="text-5xl leading-none">{step.emoji}</span>
-                    <span className="text-slate-200 text-xs font-medium">{step.label}</span>
-                  </>
-                ) : (
-                  <span className="text-slate-600 text-3xl font-bold">{position + 1}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Tray of remaining picture cards (tap to place) */}
-        {preTray.length > 0 && (
-          <div className="flex justify-center gap-4 flex-wrap">
-            {preTray.map(id => {
-              const step = byId(id);
-              if (!step) return null;
-              return (
-                <button
-                  key={id}
-                  data-step-id={id}
-                  onClick={() => handlePrePlace(id)}
-                  className="w-28 h-32 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-white/15 bg-slate-800/60 hover:bg-slate-700/60 hover:border-cyan-400/40 transition-all duration-200 active:scale-95"
-                >
-                  <span className="text-5xl leading-none">{step.emoji}</span>
-                  <span className="text-slate-200 text-xs font-medium">{step.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        </div>
-
-        {preStatus === 'correct' && (
-          <div className="text-center text-6xl animate-bounce">🎉</div>
-        )}
-      </div>
-    );
-  };
+  // ── Pip shared surface ───────────────────────────────────────────
+  // Nothing is published while the learner reads; from the first question on, the question and the answer.
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: done || !started || !item ? null : item.id,
+    label: 'The question and your answer',
+    solved: revealed,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
 
   // -------------------------------------------------------------------------
   // Render: Step Image
@@ -832,12 +660,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
       return (
         <SpotlightCard color={colors.rgb}>
           <div className="relative rounded-xl overflow-hidden bg-black/60 backdrop-blur-sm border border-white/10">
-            <img
-              src={imageUrl}
-              alt={`Step ${stepIndex + 1}`}
-              className="w-full h-auto object-cover"
-              loading="lazy"
-            />
+            <img src={imageUrl} alt={`Step ${stepIndex + 1}`} className="w-full h-auto object-cover" loading="lazy" />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent p-3">
               <p className="text-xs text-slate-400 italic">{imagePrompt}</p>
             </div>
@@ -851,16 +674,11 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
         <div className="rounded-xl overflow-hidden bg-black/20 backdrop-blur-sm border border-dashed border-white/20 p-6 flex flex-col items-center justify-center min-h-[180px]">
           <p className="text-slate-400 text-sm text-center mb-3 italic max-w-sm">{imagePrompt}</p>
           {!hasError && (
-            <LuminaButton
-              onClick={() => handleGenerateImage(stepIndex, imagePrompt)}
-              className={`${colors.text} text-xs`}
-            >
+            <LuminaButton onClick={() => handleGenerateImage(stepIndex, imagePrompt)} className={`${colors.text} text-xs`}>
               Generate Visual
             </LuminaButton>
           )}
-          {hasError && (
-            <p className="text-xs text-slate-600">Image generation unavailable</p>
-          )}
+          {hasError && <p className="text-xs text-slate-600">Image generation unavailable</p>}
         </div>
       </SpotlightCard>
     );
@@ -873,24 +691,12 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     const isVisited = visitedSteps.has(index);
 
     return (
-      <div
-        key={index}
-        ref={(el) => { stepRefs.current[index] = el; }}
-        data-step-index={index}
-        className="relative"
-      >
-        {/* Timeline connector line */}
+      <div key={index} ref={(el) => { stepRefs.current[index] = el; }} data-step-index={index} className="relative">
         {index < totalSteps - 1 && (
-          <div
-            className="absolute left-4 top-14 bottom-0 w-0.5"
-            style={{
-              background: `linear-gradient(to bottom, ${colors.accent}40, ${colors.accent}10)`,
-            }}
-          />
+          <div className="absolute left-4 top-14 bottom-0 w-0.5" style={{ background: `linear-gradient(to bottom, ${colors.accent}40, ${colors.accent}10)` }} />
         )}
 
         <div className="flex gap-4">
-          {/* Step number circle */}
           <div
             className="flex items-center justify-center w-9 h-9 rounded-full shrink-0 text-sm font-bold transition-all duration-500 mt-1"
             style={{
@@ -903,23 +709,16 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
             {index + 1}
           </div>
 
-          {/* Step content */}
           <div className="flex-1 space-y-3 pb-8">
             <h3 className="text-slate-100 text-base font-semibold">{step.title}</h3>
-
-            {/* Step image */}
-            <div className="max-w-lg">
-              {renderStepImage(index, step.imagePrompt)}
-            </div>
-
+            <div className="max-w-lg">{renderStepImage(index, step.imagePrompt)}</div>
             <p className="text-slate-300 text-sm leading-relaxed">{step.description}</p>
 
-            {/* Key Term callout */}
             {step.keyTerm && (
               <button
                 onClick={() => setShowKeyTermDef(prev => {
                   const next = new Set(prev);
-                  next.has(index) ? next.delete(index) : next.add(index);
+                  if (next.has(index)) next.delete(index); else next.add(index);
                   return next;
                 })}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-400/20 text-amber-300 text-xs font-medium hover:bg-amber-500/20 transition-all"
@@ -930,12 +729,9 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
               </button>
             )}
             {step.keyTerm && showKeyTermDef.has(index) && (
-              <p className="text-slate-400 text-xs border-l-2 border-amber-400/20 pl-3">
-                {step.keyTerm.definition}
-              </p>
+              <p className="text-slate-400 text-xs border-l-2 border-amber-400/20 pl-3">{step.keyTerm.definition}</p>
             )}
 
-            {/* What's Happening? accordion */}
             {step.whatsHappening && (
               <Accordion
                 type="multiple"
@@ -943,29 +739,22 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                 onValueChange={(vals) => {
                   if (vals.includes(`detail-${index}`)) {
                     if (!expandedDetails.has(index)) handleDetailExpand(index);
-                  } else {
-                    if (expandedDetails.has(index)) handleDetailExpand(index);
-                  }
+                  } else if (expandedDetails.has(index)) handleDetailExpand(index);
                 }}
               >
                 <AccordionItem value={`detail-${index}`} className="border-white/10">
                   <AccordionTrigger className="text-cyan-300 text-xs font-medium hover:text-cyan-200 py-2">
                     What&apos;s Happening?
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-300 text-sm leading-relaxed pb-3">
-                    {step.whatsHappening}
-                  </AccordionContent>
+                  <AccordionContent className="text-slate-300 text-sm leading-relaxed pb-3">{step.whatsHappening}</AccordionContent>
                 </AccordionItem>
               </Accordion>
             )}
 
-            {/* Inline fun fact (kept small — promoted grid is below) */}
             {step.funFact && (
               <div className="p-2.5 rounded-lg bg-purple-500/5 border border-purple-500/10">
                 <div className="flex items-start gap-2">
-                  <LuminaBadge accent="purple" className="text-[10px] shrink-0">
-                    Fun Fact
-                  </LuminaBadge>
+                  <LuminaBadge accent="purple" className="text-[10px] shrink-0">Fun Fact</LuminaBadge>
                   <p className="text-slate-300 text-xs leading-relaxed">{step.funFact}</p>
                 </div>
               </div>
@@ -977,133 +766,177 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   };
 
   // -------------------------------------------------------------------------
-  // Render: Challenge
+  // Render: the question
   // -------------------------------------------------------------------------
-  const renderChallenge = () => {
-    if (!currentChallenge) return null;
+  const stepCard = (i: number, extra?: string) => (
+    <div key={i} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200">
+      <span className="font-mono text-xs text-slate-500">{i + 1}.</span>
+      {pSteps[i].emoji && <span className="text-2xl leading-none" aria-hidden="true">{pSteps[i].emoji}</span>}
+      <span>{pSteps[i].title}</span>
+      {extra && <span className="text-xs text-slate-500">{extra}</span>}
+    </div>
+  );
 
+  /** The step list the item shows: all steps (guided, explain), the first ones (predict), or none. */
+  const renderStrip = (it: HowItem) => {
+    const shown = it.kind === 'predict' ? it.shown : it.kind === 'explain' || (it.kind === 'identify' && it.strip) ? pSteps.length : 0;
+    if (!shown) return null;
+    return (
+      <div data-step-strip className="space-y-1.5">
+        <p className="text-xs uppercase tracking-wider text-slate-500">{it.kind === 'predict' ? 'So far' : 'The steps, in order'}</p>
+        <div className={pictures ? 'flex flex-wrap gap-2' : 'grid gap-1.5'}>
+          {Array.from({ length: shown }, (_, i) => stepCard(i))}
+          {it.kind === 'predict' && (
+            <div className="flex items-center gap-2 rounded-lg border border-dashed border-white/20 px-3 py-2 text-sm text-slate-500">
+              <span className="font-mono text-xs">{it.shown + 1}.</span><span>?</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const choiceState = (o: number): AnswerChoiceState => {
+    if (!item || !isChoice(item)) return 'idle';
+    const key = keyStep(item);
+    if (revealed) return o === key ? 'correct' : o === work.choice ? 'incorrect' : 'dimmed';
+    if (wrongShown && work.choice === o) return 'incorrect';
+    if (crossed.includes(o)) return 'dimmed';
+    return work.choice === o ? 'selected' : 'idle';
+  };
+
+  const renderChoices = (it: Extract<HowItem, { kind: 'identify' | 'predict' | 'explain' }>) => (
+    <div className={pictures ? 'flex flex-wrap justify-center gap-4' : 'space-y-2'}>
+      {it.options.map(o => {
+        const label = choiceText(pSteps, it, o);
+        const out = crossed.includes(o);
+        const number = it.kind === 'identify' && leverOn(STEP_NUMBERS_LEVER) && !practice
+          ? <span className="mr-2 rounded bg-white/10 px-1.5 py-0.5 font-mono text-xs text-slate-300">Step {o + 1}</span> : null;
+        if (pictures) {
+          return (
+            <button key={o} aria-label={label} disabled={closed || out} onClick={() => pick(o)}
+              className={`w-28 h-32 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all duration-200 ${answerStateClasses[choiceState(o)]} ${out ? 'opacity-30 line-through' : ''}`}>
+              <span className="text-5xl leading-none" aria-hidden="true">{pSteps[o].emoji}</span>
+              <span className="text-slate-200 text-xs font-medium">{label}</span>
+            </button>
+          );
+        }
+        return (
+          <LuminaAnswerChoice key={o} aria-label={label} state={choiceState(o)} disabled={closed || out}
+            className={`p-3 text-sm ${out ? 'line-through opacity-50' : ''}`} onClick={() => pick(o)}>
+            {number}{label}
+          </LuminaAnswerChoice>
+        );
+      })}
+    </div>
+  );
+
+  const renderSequence = (it: Extract<HowItem, { kind: 'sequence' }>) => {
+    const why = leverOn(SHOW_WHY_LEVER) && !practice;
+    const label = (s: number) => cardText(pSteps, it, s);
+    const face = (s: number) => (
+      <>
+        {pSteps[s].emoji && <span className="text-4xl leading-none" aria-hidden="true">{pSteps[s].emoji}</span>}
+        <span className="text-slate-200 text-sm">{label(s)}</span>
+        {why && <span data-lever="show-why" className="block text-xs text-cyan-300/80">{whyLine(pSteps, s)}</span>}
+      </>
+    );
+    const slotState: AnswerChoiceState = revealed ? 'correct' : wrongShown ? 'incorrect' : 'selected';
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-slate-400 text-xs">
-            Challenge {currentChallengeIndex + 1} of {challenges.length}
-          </p>
-          <LuminaBadge className="text-xs">
-            {currentChallenge.type}
-          </LuminaBadge>
+        <div className={pictures ? 'flex flex-wrap justify-center gap-3' : 'grid gap-2'}>
+          {it.cards.map((_, k) => {
+            const s = work.placed[k];
+            const filled = s !== undefined;
+            return (
+              <button key={k} aria-label={filled ? `Take back ${label(s)}` : `Slot ${k + 1}`} disabled={!filled || closed}
+                onClick={() => filled && unplace(k)}
+                className={`flex items-center gap-3 rounded-xl border-2 p-3 text-left transition-all ${pictures ? 'w-28 h-32 flex-col justify-center text-center' : ''} ${filled ? answerStateClasses[slotState] : 'border-dashed border-white/15 bg-white/[0.02]'}`}>
+                <span className="font-mono text-xs text-slate-500">{k + 1}</span>
+                {filled && face(s)}
+              </button>
+            );
+          })}
         </div>
-
-        <p className="text-slate-100 text-sm font-medium">{currentChallenge.question}</p>
-
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && <div {...pip.dock} />}
-        <div {...pip.workspace}>
-        {/* Multiple choice (identify / predict / explain) */}
-        {(currentChallenge.type === 'identify' || currentChallenge.type === 'predict' || currentChallenge.type === 'explain') && currentChallenge.options && (
-          <div className="space-y-2">
-            {currentChallenge.options.map((opt, i) => {
-              const isSelected = selectedOption === i;
-              const isCorrectOption = i === currentChallenge.correctIndex;
-
-              let state: AnswerChoiceState;
-              if (!showChallengeFeedback) {
-                state = isSelected ? 'selected' : 'idle';
-              } else if (isCorrectOption) {
-                state = 'correct';
-              } else if (isSelected) {
-                state = 'incorrect';
-              } else {
-                state = 'dimmed';
-              }
-
-              return (
-                <LuminaAnswerChoice
-                  key={i}
-                  state={state}
-                  className="p-3 text-sm"
-                  onClick={() => handleMCAnswer(i)}
-                  disabled={showChallengeFeedback}
-                >
-                  {opt}
-                </LuminaAnswerChoice>
-              );
-            })}
+        {work.placed.length < it.cards.length && (
+          <div className={pictures ? 'flex flex-wrap justify-center gap-3' : 'grid gap-2 sm:grid-cols-2'}>
+            {it.bank.filter(s => !work.placed.includes(s)).map(s => (
+              <button key={s} aria-label={label(s)} data-step-id={`p${s}`} disabled={closed} onClick={() => place(s)}
+                className={`flex flex-col items-start gap-1 rounded-xl border-2 border-white/15 bg-slate-800/60 p-3 text-left transition-all hover:border-cyan-400/40 hover:bg-slate-700/60 active:scale-95 ${pictures ? 'w-28 h-32 items-center justify-center text-center' : ''}`}>
+                {face(s)}
+              </button>
+            ))}
           </div>
         )}
+      </div>
+    );
+  };
 
-        {/* Sequence challenge */}
-        {currentChallenge.type === 'sequence' && currentChallenge.sequenceItems && (
-          <div className="space-y-2">
-            {sequenceOrder.map((id, position) => {
-              const item = currentChallenge.sequenceItems!.find(si => si.id === id);
-              if (!item) return null;
+  const revealText = (): string => {
+    if (!item) return '';
+    if (item.kind === 'sequence') return `The order: ${item.cards.map((s, k) => `${k + 1}) ${pSteps[s].title}`).join('  ')}.`;
+    const key = keyStep(item);
+    if (item.kind === 'identify') return pictures ? `That is the ${pSteps[key].title} picture.` : `That describes step ${key + 1}, "${pSteps[key].title}".`;
+    if (item.kind === 'predict') return `Next comes step ${key + 1}: "${pSteps[key].title}".`;
+    return `Step ${key + 1} matters because ${(pSteps[key].purpose ?? '').replace(/^[A-Z]/, c => c.toLowerCase())}`;
+  };
 
-              const isCorrectPosition = sequenceChecked && sequenceKey[position] === id;
-              const isWrongPosition = sequenceChecked && !sequenceCorrect && sequenceKey[position] !== id;
-
-              const itemState: AnswerChoiceState = isCorrectPosition
-                ? 'correct'
-                : isWrongPosition
-                  ? 'incorrect'
-                  : 'idle';
-
-              return (
-                <div
-                  key={id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${answerStateClasses[itemState]}`}
-                >
-                  <span className="text-slate-500 text-xs font-mono w-4">{position + 1}.</span>
-                  <span className="text-slate-200 text-sm flex-1">{item.text}</span>
-                  {!showChallengeFeedback && (
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => moveSequenceItem(position, -1)}
-                        disabled={position === 0}
-                        className="p-1 text-slate-500 hover:text-slate-300 disabled:opacity-30"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        onClick={() => moveSequenceItem(position, 1)}
-                        disabled={position === sequenceOrder.length - 1}
-                        className="p-1 text-slate-500 hover:text-slate-300 disabled:opacity-30"
-                      >
-                        ▼
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {!showChallengeFeedback && (
-              <div className="flex justify-center pt-2">
-                <LuminaActionButton action="check" onClick={handleSequenceCheck}>
-                  Check Order
-                </LuminaActionButton>
-              </div>
-            )}
-            {sequenceChecked && !sequenceCorrect && !showChallengeFeedback && (
-              <p className="text-amber-400 text-xs text-center">Not quite — try rearranging and check again!</p>
-            )}
-          </div>
-        )}
-
-        </div>
-
-        {/* Feedback */}
-        {showChallengeFeedback && (
-          <div className="space-y-3">
-            <p className={`text-sm font-medium ${
-              challengeAnswers[challengeAnswers.length - 1]?.correct ? 'text-emerald-400' : 'text-amber-400'
-            }`}>
-              {challengeAnswers[challengeAnswers.length - 1]?.correct ? 'Correct!' : 'Not quite, but let\'s keep going.'}
-            </p>
-            <p className="text-slate-400 text-xs">{currentChallenge.explanation}</p>
-            <div className="flex justify-center">
-              <LuminaActionButton action="next" onClick={handleNextChallenge}>
-                {currentChallengeIndex + 1 >= challenges.length ? 'See Results' : 'Next Challenge'}
-              </LuminaActionButton>
+  const renderQuestion = () => {
+    if (!item) return null;
+    const ask = askOf(pSteps, item, pictures, question);
+    return (
+      <div className="space-y-4">
+        <LuminaPrompt accent="cyan" {...(practice ? { 'data-practice': 'easier' } : {})}>
+          {item.kind === 'identify' ? (
+            <div className="space-y-2">
+              <p className="text-slate-100 text-sm font-medium">{pictures ? 'Which picture shows this?' : 'Which step does this describe?'}</p>
+              <p className="text-slate-200 text-base italic">&ldquo;{clueOf(pSteps, item.target, pictures)}&rdquo;</p>
+              {!pictures && <p className="text-xs text-slate-500">The step&apos;s own name is blanked out.</p>}
             </div>
+          ) : (
+            <p className="text-slate-100 text-sm font-medium">{ask}</p>
+          )}
+        </LuminaPrompt>
+
+        {pip.store && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-4">
+          {renderStrip(item)}
+          {item.kind === 'predict' && leverOn(LAST_STEP_LEVER) && !practice && (
+            <LuminaPanel accent="cyan" data-lever="last-step" className="text-sm text-slate-300">
+              {`Step ${item.shown}: ${lastStepLine(pSteps, item)}`}
+            </LuminaPanel>
+          )}
+          {item.kind === 'explain' && leverOn(SHOW_STEP_LEVER) && !practice && (
+            <LuminaPanel accent="cyan" data-lever="show-step" className="text-sm text-slate-300">
+              {`Step ${item.target + 1}: ${showStepLine(pSteps, item)}`}
+            </LuminaPanel>
+          )}
+          {item.kind === 'sequence' ? renderSequence(item) : renderChoices(item)}
+        </div>
+
+        {!revealed && !pictures && (
+          <div className="flex justify-center">
+            <LuminaActionButton action="check" disabled={closed || !workComplete(item, work)} onClick={() => checkWith(work)}>
+              Check Answer
+            </LuminaActionButton>
+          </div>
+        )}
+
+        {revealed && (
+          <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+            {revealText()}
+          </LuminaFeedbackCard>
+        )}
+        {!revealed && wrongShown && (
+          <LuminaFeedbackCard status="incorrect">{item.kind === 'sequence' ? 'That order is not right yet.' : 'That is not it.'}</LuminaFeedbackCard>
+        )}
+        {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
+
+        {!tutorOwned && revealed && !practice && (
+          <div className="flex justify-center">
+            <LuminaActionButton action="next" onClick={next}>
+              {currentIndex + 1 >= items.length ? 'See Results' : 'Next Question'}
+            </LuminaActionButton>
           </div>
         )}
       </div>
@@ -1114,21 +947,22 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   // Render: Results
   // -------------------------------------------------------------------------
   const renderResults = () => {
-    const correctCount = challengeAnswers.filter(a => a.correct).length;
-    const accuracy = challenges.length > 0 ? Math.round((correctCount / challenges.length) * 100) : 0;
+    const correctCount = results.filter(a => a.correct).length;
+    const accuracy = items.length > 0 ? Math.round((correctCount / items.length) * 100) : 0;
     const score = submittedResult?.score ?? accuracy;
 
     return (
       <div className="text-center space-y-4 py-4">
         <div className="text-3xl font-bold text-emerald-400">{score}%</div>
-        <p className="text-slate-200 text-sm font-medium">Process Mastered!</p>
-        <div className="flex justify-center gap-4 text-xs text-slate-400">
-          <span>{stepsExplored}/{totalSteps} steps explored</span>
-          <span>{correctCount}/{challenges.length} challenges correct</span>
-          <span>{expandedDetails.size} details expanded</span>
-          {elapsedMs > 0 && <span>{Math.round(elapsedMs / 1000)}s total</span>}
-        </div>
-        {summary && (
+        <p className="text-slate-200 text-sm font-medium">{`${correctCount} of ${items.length} questions answered`}</p>
+        {!pictures && (
+          <div className="flex justify-center gap-4 text-xs text-slate-400">
+            <span>{stepsExplored}/{totalSteps} steps explored</span>
+            <span>{expandedDetails.size} details expanded</span>
+            {elapsedMs > 0 && <span>{Math.round(elapsedMs / 1000)}s total</span>}
+          </div>
+        )}
+        {summary && !pictures && (
           <div className="mt-4 p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-left">
             <p className="text-slate-200 text-sm">{summary.keyTakeaway}</p>
           </div>
@@ -1137,121 +971,111 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
     );
   };
 
+  const startButton = (enabled: boolean) => (
+    <LuminaActionButton action="next" aria-label={START_LABEL} disabled={!enabled} onClick={handleStart}
+      className={pictures ? 'h-16 px-10 text-2xl' : 'w-full mt-3 text-xs h-8'}>
+      {pictures ? '▶' : `${START_LABEL} (${items.length})`}
+    </LuminaActionButton>
+  );
+
   // -------------------------------------------------------------------------
   // Main Render
   // -------------------------------------------------------------------------
-  // Pre-reader (K / PRE) subset: the picture-order task replaces the whole
-  // reading-heavy magazine + text quiz. No header chrome, no counters — the
-  // emoji cards are the entire surface and the tutor carries the words.
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: preReader ? 'pre-order' : allChallengesComplete || hasSubmittedEvaluation || !showChallenges || !currentChallenge ? null : `challenge-${currentChallengeIndex}`,
-    label: 'The challenge answers',
-    solved: preReader ? preStatus === 'correct' : currentChallenge?.type === 'sequence' ? sequenceChecked && sequenceCorrect : showChallengeFeedback && selectedOption === currentChallenge?.correctIndex,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const questionCard = (
+    <SpotlightCard color={colors.rgb}>
+      <LuminaCard className="border-0">
+        <LuminaCardContent className="pt-6">
+          <LuminaSectionLabel accent="cyan" size="sm" className="mb-3">
+            {practice ? 'An easier one first' : `Question ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
+          {renderQuestion()}
+        </LuminaCardContent>
+      </LuminaCard>
+    </SpotlightCard>
+  );
+  const doneCard = (
+    <LuminaCard>
+      <LuminaCardContent className="pt-6">
+        {tutorOwned ? <LuminaFeedbackCard status="insight" label="All questions answered">{`${results.filter(r => r.correct).length} of ${items.length} questions answered.`}</LuminaFeedbackCard>
+          : renderResults()}
+      </LuminaCardContent>
+    </LuminaCard>
+  );
 
-  if (preReader) {
+  // Pre-reader: the picture story (in order, read aloud by the tutor), then the picture questions. No magazine chrome.
+  if (pictures) {
     return (
-      <div className={`space-y-6 ${className || ''}`}>
-        {renderPreReader()}
+      <div data-how-it-works className={`space-y-6 py-4 ${className || ''}`}>
+        {done ? doneCard : !started ? (
+          <div className="space-y-8">
+            <p className="text-slate-100 text-xl font-semibold text-center">{title}</p>
+            <div className="flex justify-center gap-4 flex-wrap">
+              {pSteps.map((s, i) => (
+                <div key={i} className="w-28 h-32 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-white/15 bg-slate-800/60">
+                  <span className="text-5xl leading-none" aria-hidden="true">{s.emoji}</span>
+                  <span className="text-slate-200 text-xs font-medium">{s.title}</span>
+                </div>
+              ))}
+            </div>
+            {items.length > 0 && <div className="flex justify-center">{startButton(true)}</div>}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {renderQuestion()}
+            {revealed && solvedNow && item?.kind === 'sequence' && !practice && <div className="text-center text-6xl animate-bounce">🎉</div>}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className={`space-y-6 ${className || ''}`}>
+    <div data-how-it-works className={`space-y-6 ${className || ''}`}>
       {/* ── Header Card ── */}
       <LuminaCard className="relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-slate-800/90">
-        {/* Ambient glow orb */}
-        <div
-          className="absolute -top-20 -right-20 w-60 h-60 rounded-full blur-[120px] opacity-20 pointer-events-none"
-          style={{ backgroundColor: colors.accent }}
-        />
-
+        <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full blur-[120px] opacity-20 pointer-events-none" style={{ backgroundColor: colors.accent }} />
         <LuminaCardHeader className="relative z-10 pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-2xl">{colors.icon}</span>
               <div>
-                <LuminaCardTitle className="text-xl font-bold">
-                  How It Works: {title}
-                </LuminaCardTitle>
+                <LuminaCardTitle className="text-xl font-bold">How It Works: {title}</LuminaCardTitle>
                 {subtitle && <p className="text-slate-400 text-sm mt-0.5">{subtitle}</p>}
               </div>
             </div>
             <div className="flex items-center gap-2">
               {category && (
-                <LuminaBadge
-                  className="text-xs"
-                  style={{
-                    backgroundColor: `${colors.accent}15`,
-                    borderColor: `${colors.accent}40`,
-                    color: colors.accent,
-                  }}
-                >
+                <LuminaBadge className="text-xs" style={{ backgroundColor: `${colors.accent}15`, borderColor: `${colors.accent}40`, color: colors.accent }}>
                   {category}
                 </LuminaBadge>
               )}
-              <LuminaBadge accent="cyan" className="text-xs">
-                {totalSteps} Steps
-              </LuminaBadge>
+              <LuminaBadge accent="cyan" className="text-xs">{totalSteps} Steps</LuminaBadge>
             </div>
           </div>
           <p className="text-slate-400 text-sm mt-2 leading-relaxed">{overview}</p>
         </LuminaCardHeader>
       </LuminaCard>
 
-      {allChallengesComplete ? (
-        /* ── Results ── */
-        <LuminaCard>
-          <LuminaCardContent className="pt-6">
-            {renderResults()}
-          </LuminaCardContent>
-        </LuminaCard>
-      ) : showChallenges ? (
-        /* ── Challenge Section ── */
-        <SpotlightCard color={colors.rgb}>
-          <LuminaCard className="border-0">
-            <LuminaCardContent className="pt-6">
-              <LuminaSectionLabel accent="cyan" size="sm" className="mb-3">
-                Comprehension Check
-              </LuminaSectionLabel>
-              {renderChallenge()}
-            </LuminaCardContent>
-          </LuminaCard>
-        </SpotlightCard>
-      ) : (
+      {done ? doneCard : started ? questionCard : (
         <>
           {/* ── Two-Column Layout: Timeline + Sidebar ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left column: Timeline Steps (2/3 width) */}
             <div className="lg:col-span-2 space-y-2">
               {steps.map((step, i) => renderTimelineStep(step, i))}
             </div>
 
-            {/* Right column: Quick Facts + Summary (1/3 width) */}
             <div className="space-y-4">
-              {/* Quick Facts */}
               {quickFactEntries.length > 0 && (
                 <SpotlightCard color={colors.rgb}>
                   <LuminaCard className="border-0">
                     <LuminaCardContent className="pt-5 pb-4">
-                      <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>
-                        Quick Facts
-                      </p>
+                      <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>Quick Facts</p>
                       <div className="space-y-2.5">
                         {quickFactEntries.map((entry, i) => (
                           <div key={i} className="flex items-start gap-2">
                             <span className="text-sm shrink-0">{entry.label.split(' ')[0]}</span>
                             <div>
-                              <p className="text-slate-500 text-[10px] uppercase tracking-wider">
-                                {entry.label.split(' ').slice(1).join(' ')}
-                              </p>
+                              <p className="text-slate-500 text-[10px] uppercase tracking-wider">{entry.label.split(' ').slice(1).join(' ')}</p>
                               <p className="text-slate-200 text-sm">{entry.value}</p>
                             </div>
                           </div>
@@ -1262,23 +1086,18 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                 </SpotlightCard>
               )}
 
-              {/* Process Summary */}
               {summary && (
                 <SpotlightCard color={colors.rgb}>
                   <LuminaCard className="border-0">
                     <LuminaCardContent className="pt-5 pb-4">
                       <Accordion type="multiple" defaultValue={['summary']}>
                         <AccordionItem value="summary" className="border-white/10">
-                          <AccordionTrigger className={`${colors.text} text-xs font-medium uppercase tracking-wider py-2`}>
-                            Process Summary
-                          </AccordionTrigger>
+                          <AccordionTrigger className={`${colors.text} text-xs font-medium uppercase tracking-wider py-2`}>Process Summary</AccordionTrigger>
                           <AccordionContent className="space-y-3 pb-3">
                             <p className="text-slate-200 text-sm leading-relaxed">{summary.text}</p>
                             {summary.totalTime && (
                               <div className="flex items-center gap-2">
-                                <LuminaBadge className="text-xs">
-                                  Duration
-                                </LuminaBadge>
+                                <LuminaBadge className="text-xs">Duration</LuminaBadge>
                                 <span className="text-slate-300 text-xs">{summary.totalTime}</span>
                               </div>
                             )}
@@ -1294,7 +1113,6 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                 </SpotlightCard>
               )}
 
-              {/* Glossary (promoted key terms) */}
               {allKeyTerms.length > 0 && (
                 <SpotlightCard color={colors.rgb}>
                   <LuminaCard className="border-0">
@@ -1322,52 +1140,29 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
                 </SpotlightCard>
               )}
 
-              {/* Exploration Progress */}
+              {/* Exploration progress, and the way into the questions */}
               <LuminaCard>
                 <LuminaCardContent className="pt-4 pb-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-slate-500 text-xs">{stepsExplored} of {totalSteps} steps explored</span>
-                    {allStepsExplored && (
-                      <LuminaBadge accent="emerald" className="text-[10px]">
-                        Complete
-                      </LuminaBadge>
-                    )}
+                    {allStepsExplored && <LuminaBadge accent="emerald" className="text-[10px]">Complete</LuminaBadge>}
                   </div>
-                  {/* Progress bar */}
                   <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${(stepsExplored / Math.max(totalSteps, 1)) * 100}%`,
-                        backgroundColor: colors.accent,
-                      }}
-                    />
+                    <div className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${(stepsExplored / Math.max(totalSteps, 1)) * 100}%`, backgroundColor: colors.accent }} />
                   </div>
-                  {allStepsExplored && challenges.length > 0 && !showChallenges && (
-                    <LuminaActionButton
-                      action="next"
-                      className="w-full mt-3 text-xs h-8"
-                      onClick={handleStartChallenges}
-                    >
-                      Start Challenges ({challenges.length})
-                    </LuminaActionButton>
-                  )}
-                  {!allStepsExplored && (
-                    <p className="text-slate-600 text-[10px] mt-2">Scroll through all steps to unlock challenges</p>
+                  {items.length > 0 && (tutorOwned || allStepsExplored) && startButton(true)}
+                  {items.length > 0 && !tutorOwned && !allStepsExplored && (
+                    <p className="text-slate-600 text-[10px] mt-2">Scroll through all steps to unlock the questions</p>
                   )}
                 </LuminaCardContent>
               </LuminaCard>
             </div>
           </div>
 
-          {/* ── Bottom Sections ── */}
-
-          {/* Fascinating Facts grid */}
           {allFunFacts.length > 1 && (
             <div>
-              <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>
-                Fascinating Facts
-              </p>
+              <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>Fascinating Facts</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {allFunFacts.map((ff, i) => (
                   <SpotlightCard key={i} color={colors.rgb}>
@@ -1386,22 +1181,14 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
             </div>
           )}
 
-          {/* Real World Examples */}
           {realWorldExamples && realWorldExamples.length > 0 && (
             <SpotlightCard color={colors.rgb}>
               <LuminaCard className="border-0">
                 <LuminaCardContent className="pt-5 pb-4">
-                  <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>
-                    Real World Examples
-                  </p>
+                  <p className={`${colors.text} text-xs font-medium uppercase tracking-wider mb-3`}>Real World Examples</p>
                   <div className="flex flex-wrap gap-2">
                     {realWorldExamples.map((ex, i) => (
-                      <LuminaBadge
-                        key={i}
-                        className="text-slate-200 text-xs font-normal px-3 py-1"
-                      >
-                        {ex}
-                      </LuminaBadge>
+                      <LuminaBadge key={i} className="text-slate-200 text-xs font-normal px-3 py-1">{ex}</LuminaBadge>
                     ))}
                   </div>
                 </LuminaCardContent>
@@ -1409,20 +1196,12 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
             </SpotlightCard>
           )}
 
-          {/* Related Processes footer */}
           {relatedProcesses && relatedProcesses.length > 0 && (
             <div className="flex items-center gap-3 flex-wrap pt-1">
               <span className="text-slate-600 text-xs uppercase tracking-wider">Explore next:</span>
               {relatedProcesses.map((rp, i) => (
-                <LuminaBadge
-                  key={i}
-                  className="text-xs font-normal px-3 py-1 cursor-default"
-                  style={{
-                    backgroundColor: `${colors.accent}10`,
-                    borderColor: `${colors.accent}30`,
-                    color: colors.accent,
-                  }}
-                >
+                <LuminaBadge key={i} className="text-xs font-normal px-3 py-1 cursor-default"
+                  style={{ backgroundColor: `${colors.accent}10`, borderColor: `${colors.accent}30`, color: colors.accent }}>
                   {rp}
                 </LuminaBadge>
               ))}
@@ -1434,17 +1213,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ data, className }) => {
   );
 };
 
-// ============================================================================
-// Utility
-// ============================================================================
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const shuffled = [...arr];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const HowItWorks = withWorkspaceController<HowItWorksProps, ProgressOptions<HowItem>, Progress>(
+  'how-it-works', HowItWorksSurface, useScriptedProgress, useWorkspaceProgressFor('how-it-works'));
 
 export default HowItWorks;

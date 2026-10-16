@@ -1,0 +1,179 @@
+{
+ "source": "qa/tutor-reports/planetary-explorer-runtime-explore-payload-2026-10-15.json",
+ "primitiveId": "planetary-explorer",
+ "evalMode": "explore",
+ "data": {
+  "title": "My First Space Trip",
+  "description": "Let us look at three fun planets in space!",
+  "introduction": "Put on your helmet and get ready to look at space! We are going to visit three very cool worlds.",
+  "celebration": "You did a super job looking at the planets!",
+  "gradeLevel": "1",
+  "planets": [
+   {
+    "planetId": "mars",
+    "focusTheme": "The Red Planet",
+    "description": "Mars is a rocky world with a very dusty and red ground. It is smaller than Earth and has two little moons.",
+    "keyStats": [
+     {
+      "label": "Colour",
+      "value": "Red",
+      "comparisonToEarth": "Different"
+     },
+     {
+      "label": "Moons",
+      "value": "Two",
+      "comparisonToEarth": "Fewer moons"
+     },
+     {
+      "label": "Size",
+      "value": "Small",
+      "comparisonToEarth": "Smaller"
+     },
+     {
+      "label": "Ground",
+      "value": "Rocky",
+      "comparisonToEarth": "Same type"
+     }
+    ],
+    "funFact": "Mars has the biggest volcano in space!",
+    "transition": "Now let us go see a giant planet made of gas.",
+    "questions": [
+     {
+      "question": "What colour is Mars?",
+      "questionType": "mc",
+      "options": [
+       "Blue",
+       "Green",
+       "Yellow",
+       "Red"
+      ],
+      "correctIndex": 3,
+      "explanation": "Mars is red like rust!",
+      "difficulty": "easy"
+     },
+     {
+      "question": "Mars has two moons.",
+      "questionType": "true-false",
+      "options": [
+       "True",
+       "False"
+      ],
+      "correctIndex": 0,
+      "explanation": "Yes, Mars has two moons.",
+      "difficulty": "easy"
+     }
+    ]
+   },
+   {
+    "planetId": "jupiter",
+    "focusTheme": "The Giant Planet",
+    "description": "Jupiter is a giant ball of gas with no solid ground to walk on. It is the biggest planet of all.",
+    "keyStats": [
+     {
+      "label": "Size",
+      "value": "Very big",
+      "comparisonToEarth": "Much bigger"
+     },
+     {
+      "label": "Ground",
+      "value": "Gas",
+      "comparisonToEarth": "Not rocky"
+     },
+     {
+      "label": "Moons",
+      "value": "Many",
+      "comparisonToEarth": "More moons"
+     },
+     {
+      "label": "Colour",
+      "value": "Stripes",
+      "comparisonToEarth": "Different look"
+     }
+    ],
+    "funFact": "Jupiter is so big that all other planets fit inside it!",
+    "transition": "Next, let us visit a planet with pretty rings.",
+    "questions": [
+     {
+      "question": "Is Jupiter made of gas?",
+      "questionType": "true-false",
+      "options": [
+       "True",
+       "False"
+      ],
+      "correctIndex": 0,
+      "explanation": "Jupiter is a big ball of gas.",
+      "difficulty": "easy"
+     },
+     {
+      "question": "What is the size of Jupiter?",
+      "questionType": "mc",
+      "options": [
+       "Square",
+       "Tiny",
+       "Very big",
+       "Flat"
+      ],
+      "correctIndex": 2,
+      "explanation": "Jupiter is the biggest planet!",
+      "difficulty": "easy"
+     }
+    ]
+   },
+   {
+    "planetId": "saturn",
+    "focusTheme": "The Ringed Planet",
+    "description": "Saturn is a big gas planet with huge rings made of ice and rock. The rings look like a lovely hat.",
+    "keyStats": [
+     {
+      "label": "Rings",
+      "value": "Big rings",
+      "comparisonToEarth": "Has rings"
+     },
+     {
+      "label": "Ground",
+      "value": "Gas",
+      "comparisonToEarth": "Not rocky"
+     },
+     {
+      "label": "Size",
+      "value": "Big",
+      "comparisonToEarth": "Bigger"
+     },
+     {
+      "label": "Colour",
+      "value": "Yellow",
+      "comparisonToEarth": "Different colour"
+     }
+    ],
+    "funFact": "Saturn has the biggest rings in space!",
+    "transition": "",
+    "questions": [
+     {
+      "question": "Does Saturn have big rings?",
+      "questionType": "true-false",
+      "options": [
+       "True",
+       "False"
+      ],
+      "correctIndex": 0,
+      "explanation": "Saturn has huge rings made of ice.",
+      "difficulty": "easy"
+     },
+     {
+      "question": "What are Saturn rings made of?",
+      "questionType": "mc",
+      "options": [
+       "Hot fire",
+       "Ice and rock",
+       "Green cheese",
+       "Soft fluff"
+      ],
+      "correctIndex": 1,
+      "explanation": "The rings are made of ice and rock bits.",
+      "difficulty": "easy"
+     }
+    ]
+   }
+  ]
+ }
+}

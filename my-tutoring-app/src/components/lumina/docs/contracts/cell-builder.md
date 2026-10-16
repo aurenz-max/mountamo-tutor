@@ -14,6 +14,10 @@
 6. Checking locks the first committed answer. Corrective reveals may teach the answer but must not rewrite the evidence submitted for that attempt.
 7. Pinned eval modes render only their task identity. Curated blends render their selected missions in canonical order. Unpinned/legacy data renders all missions.
 8. Evaluation accuracy is the mean of the active missions only; an inactive task must never silently contribute a zero.
+9. Stock the cell shows its cards in an order that does not follow the key (alphabetical; the generator lists the needed structures first). No analogy or lever line on that board names a kind of cell, and the membrane and wall lines are hidden on it (they say what the cell has). Probe: `CellBuilder.workspace.test.tsx`.
+10. Build the model leaves off a structure whose name shares a word with its own region's label ("Cytoplasm" into "Cytoplasm"); the large-central region reads "Main storage", not "Central storage" ("Large Central Vacuole"). Placement accuracy is scored over that board. Probe: same file.
+11. Wire the jobs: no job card shows a word built on a structure's name (`jobCardText`).
+12. On the teaching workspace a wrong board shows only the count right, never per-card marks or reveals; Try again keeps the work; the report scores each mission's first committed board (requirement 6, re-based: the session's first-response gate replaces the scripted lock). Levers (`cellBuilderLevers.ts`) carry their leak rules in code: a job line names no kind of cell (Stock) or region (Build); a hint shares no five-letter word with its own job card; the smaller board (simplify) keeps the mission and, on Stock, at least one structure that does not belong.
 
 ## Eval-mode identities
 
@@ -41,3 +45,7 @@ The 2026-08-18 redesign is **compatible by eval-mode fork**. It preserves all fo
 - Lumina typecheck: 0 errors.
 - Focused generator/component suites: 10/10 passing.
 - Real `/api/lumina/eval-test` draw is currently blocked before registry load by the unrelated missing `service/literacy/gemini-word-flip` module.
+
+## History
+
+- 2026-10-15: W1 workspace binding and levers (ROLLOUT C24, `/add-live-tutor-tools`, `/add-support-tiers`). Requirements 9-12 added; requirement 6 re-based for the workspace path (Try again exists there; the first committed board is still the scored evidence). Compatible: the scripted path keeps its lock, reveals, Next mission and Run cell report.

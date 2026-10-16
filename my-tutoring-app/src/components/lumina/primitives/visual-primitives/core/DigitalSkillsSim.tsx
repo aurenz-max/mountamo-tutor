@@ -1,52 +1,69 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+/**
+ * Digital Skills Sim: K-2 device skills with one right action among wrong ones, per eval mode.
+ * - click: pictures in a play area; click the one the question names.
+ * - drag: a picture and some boxes; press, hold, move it and let go over the named box.
+ * - type: an on-screen keyboard; press the letter on the card (a capital, a small letter, or a word in order).
+ *
+ * Every item is built and keyed by code (`digitalSkillsWorkspace.ts`). Nothing marks the target picture, box or key;
+ * pictures and boxes carry no words. Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no
+ * tutor) moves on by itself after a right answer and lets a wrong one be tried again; the workspace path (W1, plain
+ * shape) commits every check through `progress.commitCheck` with a named miss and lets the runtime move on. The levers
+ * live in `digitalSkillsLevers.ts`.
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   LuminaCard,
   LuminaCardContent,
   LuminaCardHeader,
   LuminaCardTitle,
-  LuminaBadge,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
 } from '../../../ui';
-import {
-  usePrimitiveEvaluation,
-  type PrimitiveEvaluationResult,
-} from '../../../evaluation';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { DigitalSkillsSimMetrics } from '../../../evaluation/types';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
-import { useChallengeProgress } from '../../../hooks/useChallengeProgress';
 import { usePhaseResults, type PhaseConfig } from '../../../hooks/usePhaseResults';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
+import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  ARENA, askOf, BOXES, boxOf, describeSkillWork, DRAG_START, emptyWork, KEY_ROWS, keyLabel, onGrab, radiusOf,
+  skillCorrect, skillItems, skillMiss, SPOTS, workComplete, workspaceAssignment, workspaceScene,
+  type Point, type SkillItem, type SkillMode, type SkillTier, type SkillWork, type ThemeId,
+} from './digitalSkillsWorkspace';
+import {
+  BIG_BOXES_LEVER, BIG_KEYS_LEVER, BIG_TARGETS_LEVER, CAPITAL_CARD_LEVER, GLOW_ROW_LEVER, glowRow, leverFact,
+  nextLetter, pictureOf, SHOW_PICTURE_LEVER, simplerItem, skillLevers,
+} from './digitalSkillsLevers';
 
 // ============================================================================
-// Data Types (Single Source of Truth)
+// Data Types (single source of truth; the generator imports them)
 // ============================================================================
 
-export interface DigitalSkillsSimChallenge {
-  id: string;
-  type: 'click' | 'drag' | 'type';
-  instruction: string;
-  /** Click: label on the target button */
-  targetLabel?: string;
-  /** Click: emoji shown on the target */
-  targetEmoji?: string;
-  /** Drag: label of the item to drag */
-  dragItemLabel?: string;
-  /** Drag: emoji of the item to drag */
-  dragItemEmoji?: string;
-  /** Drag: label of the drop zone */
-  dropZoneLabel?: string;
-  /** Type: the key the student should press */
-  targetKey?: string;
-  /** Type: a hint about the key */
-  keyHint?: string;
-}
+export type { SkillItem, SkillMode, SkillTier, ThemeId };
 
 export interface DigitalSkillsSimData {
   title: string;
-  description: string;
-  challenges: DigitalSkillsSimChallenge[];
+  description?: string;
+  /** The picture set the click and drag items draw from (`THEMES`). */
+  theme?: ThemeId;
+  /** The eval modes this session asks, in order (`resolveSkillModes`). */
+  challengeTypes?: SkillMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: SkillTier;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: SkillItem[];
+  /** Legacy generations (model-written challenges): read only for their modes. */
+  challenges?: Array<{ type?: string }>;
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -57,506 +74,379 @@ export interface DigitalSkillsSimData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<DigitalSkillsSimMetrics>) => void;
 }
 
-// ============================================================================
-// Phase config
-// ============================================================================
-
-const PHASE_TYPE_CONFIG: Record<string, PhaseConfig> = {
-  click: { label: 'Click Practice', icon: '🖱️', accentColor: 'blue' },
-  drag:  { label: 'Drag Practice',  icon: '✋', accentColor: 'purple' },
-  type:  { label: 'Type Practice',  icon: '⌨️', accentColor: 'emerald' },
-};
-
-// Virtual keyboard layout rows
-const KEYBOARD_ROWS = [
-  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
-];
-
-// ============================================================================
-// Props
-// ============================================================================
-
 interface DigitalSkillsSimProps {
   data: DigitalSkillsSimData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
+}
+
+const PHASE_TYPE_CONFIG: Record<SkillMode, PhaseConfig> = {
+  click: { label: 'Click Practice', icon: '🖱️', accentColor: 'blue' },
+  drag: { label: 'Drag Practice', icon: '✋', accentColor: 'purple' },
+  type: { label: 'Type Practice', icon: '⌨️', accentColor: 'emerald' },
+};
+
+/** A drag shorter than this (viewBox units) is a tap on the picture, not a drag. */
+const MIN_DRAG = 12;
+
+function coordinate(event: React.PointerEvent<SVGSVGElement>): Point | null {
+  const svg = event.currentTarget;
+  const matrix = svg.getScreenCTM?.();
+  if (!matrix || !svg.createSVGPoint) return null;
+  const point = svg.createSVGPoint();
+  point.x = event.clientX;
+  point.y = event.clientY;
+  const local = point.matrixTransform(matrix.inverse());
+  return { x: local.x, y: local.y };
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-const DigitalSkillsSim: React.FC<DigitalSkillsSimProps> = ({ data, className }) => {
-  const {
-    title,
-    description,
-    challenges = [],
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
+const DigitalSkillsSimSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  DigitalSkillsSimProps & { tutorOwned: boolean; useController: (options: ProgressOptions<SkillItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, description, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
 
-  // Stable instance ID
-  const stableInstanceIdRef = useRef(instanceId || `digital-skills-sim-${Date.now()}`);
-  const resolvedInstanceId = instanceId || stableInstanceIdRef.current;
+  const items = useMemo(() => skillItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.theme, data.title]);
+  const stableInstanceId = useRef(instanceId || `digital-skills-sim-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+  const startedAt = useRef(Date.now());
 
-  // -------------------------------------------------------------------------
-  // Shared hooks for challenge progression
-  // -------------------------------------------------------------------------
-  const {
-    currentIndex,
-    currentAttempts,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    recordResult,
-    incrementAttempts,
-    advance: advanceProgress,
-  } = useChallengeProgress({ challenges, getChallengeId: (ch) => ch.id });
-
-  const phaseResults = usePhaseResults({
-    challenges,
-    results: challengeResults,
-    isComplete: allChallengesComplete,
-    getChallengeType: (ch) => ch.type,
-    phaseConfig: PHASE_TYPE_CONFIG,
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onFinished: result => finish.current(result),
   });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
 
-  const currentChallenge = challenges[currentIndex] ?? null;
+  const sessionItem: SkillItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [practice, setPractice] = useState<SkillItem | null>(null);
+  const item = practice ?? sessionItem;
 
-  // -------------------------------------------------------------------------
-  // Local state for interactions
-  // -------------------------------------------------------------------------
-  const [clickTargetPos, setClickTargetPos] = useState({ x: 50, y: 50 });
-  const [showFeedback, setShowFeedback] = useState<'correct' | 'wrong' | null>(null);
-  const [dragState, setDragState] = useState<'idle' | 'dragging' | 'dropped'>('idle');
-  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
-  const [typedKey, setTypedKey] = useState<string | null>(null);
-  const challengeStartRef = useRef(Date.now());
+  const [work, setWork] = useState<SkillWork>(emptyWork);
+  /** The picture while it is being dragged (viewBox units), or null. */
+  const [dragAt, setDragAt] = useState<Point | null>(null);
+  const dragFrom = useRef<Point | null>(null);
+  /** Workspace path: the checked wrong work, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  const [practiceSolved, setPracticeSolved] = useState(false);
+  const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
+  const [submitted, setSubmitted] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  // Randomize click target position on each challenge
-  useEffect(() => {
-    if (currentChallenge?.type === 'click') {
-      setClickTargetPos({
-        x: 15 + Math.random() * 70,
-        y: 15 + Math.random() * 70,
-      });
-    }
-    setShowFeedback(null);
-    setDragState('idle');
-    setDragPos({ x: 0, y: 0 });
-    setTypedKey(null);
-    challengeStartRef.current = Date.now();
-  }, [currentIndex, currentChallenge?.type]);
+  const pulled = sessionItem && leverState.item === sessionItem.id && !practice ? leverState.pulled : [];
+  const leverOn = (id: string) => pulled.includes(id);
+  const reach = { big: leverOn(BIG_TARGETS_LEVER) || leverOn(BIG_BOXES_LEVER) };
+  const solvedNow = practice ? practiceSolved : !!item && results.some(r => r.challengeId === item.id && r.correct);
+  /** Right keys typed so far (the keyboard levers act on the next letter). */
+  const typedRight = item?.mode === 'type' ? work.keys.findIndex((k, i) => k !== item.text[i]) : -1;
+  const typed = item?.mode === 'type' ? (typedRight < 0 ? work.keys.length : typedRight) : 0;
 
-  // -------------------------------------------------------------------------
-  // Evaluation Hook
-  // -------------------------------------------------------------------------
-  const {
-    submitResult: submitEvaluation,
-    hasSubmitted: hasSubmittedEvaluation,
-    submittedResult,
-    elapsedMs,
-  } = usePrimitiveEvaluation<DigitalSkillsSimMetrics>({
+  const { submitResult, hasSubmitted, elapsedMs } = usePrimitiveEvaluation<DigitalSkillsSimMetrics>({
     primitiveType: 'digital-skills-sim',
     instanceId: resolvedInstanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
+    skillId, subskillId, objectiveId, exhibitId,
     onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // -------------------------------------------------------------------------
-  // AI Tutoring Integration
-  // -------------------------------------------------------------------------
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    currentPhase: currentChallenge?.type ?? 'none',
-    challengeIndex: currentIndex,
-    totalChallenges: challenges.length,
-    instruction: currentChallenge?.instruction ?? '',
-  }), [title, currentChallenge, currentIndex, challenges.length]);
-
-  const { sendText, isConnected, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'digital-skills-sim',
-    instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: 'K-1',
+  const phaseResults = usePhaseResults({
+    challenges: items, results, isComplete, getChallengeType: i => i.mode, phaseConfig: PHASE_TYPE_CONFIG,
   });
 
-  // Introduce on connect
-  const hasIntroducedRef = useRef(false);
-  useEffect(() => {
-    if (!isConnected || hasIntroducedRef.current) return;
-    hasIntroducedRef.current = true;
-    sendText(
-      `[ACTIVITY_START] Digital Skills Sim: "${title}". ${challenges.length} challenges across click, drag, and type phases. `
-      + `Introduce the activity warmly. This teaches basic computer skills to young learners.`,
-      { silent: true },
-    );
-  }, [isConnected, title, challenges.length, sendText]);
+  // ── Scripted tutor only: the context carries the ask, never where the target is ──
+  const aiPrimitiveData = useMemo(() => ({
+    title, currentPhase: item?.mode ?? 'none', challengeIndex: currentIndex + 1, totalChallenges: items.length,
+    instruction: item ? askOf(item) : '',
+  }), [title, item, currentIndex, items.length]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'digital-skills-sim', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: 'K-1', enabled: !tutorOwned,
+  });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
-  // -------------------------------------------------------------------------
-  // Handle correct answer + advance
-  // -------------------------------------------------------------------------
-  const handleCorrect = useCallback(() => {
-    if (!currentChallenge) return;
-    const timeMs = Date.now() - challengeStartRef.current;
+  const clearItem = () => {
+    setWork(emptyWork()); setDragAt(null); dragFrom.current = null; setWrongShown(false); setFeedback(null); setPracticeSolved(false);
+  };
 
-    setShowFeedback('correct');
-    recordResult({
-      challengeId: currentChallenge.id,
-      correct: true,
-      attempts: currentAttempts + 1,
-      timeMs,
-    });
+  // A retry keeps a practice item on screen; a fresh item drops it.
+  openItem.current = (_index, retry) => {
+    if (!retry) setPractice(null);
+    clearItem();
+  };
 
-    if (isConnected) {
-      sendText(
-        `[ANSWER_CORRECT] Student completed a ${currentChallenge.type} challenge: "${currentChallenge.instruction}". `
-        + `Attempts: ${currentAttempts + 1}. Time: ${Math.round(timeMs / 1000)}s. Congratulate briefly!`,
-        { silent: true },
-      );
-    }
-
-    // Auto-advance after a brief delay
-    setTimeout(() => {
-      if (!advanceProgress()) {
-        // All challenges done — handled by allChallengesComplete effect
-      } else if (isConnected) {
-        const next = challenges[currentIndex + 1];
-        if (next) {
-          sendText(
-            `[NEXT_ITEM] Moving to challenge ${currentIndex + 2} of ${challenges.length}. `
-            + `Type: ${next.type}. Instruction: "${next.instruction}". Introduce briefly.`,
-            { silent: true },
-          );
-        }
-      }
-    }, 800);
-  }, [currentChallenge, currentAttempts, currentIndex, challenges, isConnected, sendText, recordResult, advanceProgress]);
-
-  const handleWrong = useCallback(() => {
-    if (!currentChallenge) return;
-    incrementAttempts();
-    setShowFeedback('wrong');
-
-    if (isConnected) {
-      sendText(
-        `[ANSWER_INCORRECT] Student missed a ${currentChallenge.type} challenge: "${currentChallenge.instruction}". `
-        + `Attempt ${currentAttempts + 1}. Give a gentle hint.`,
-        { silent: true },
-      );
-    }
-
-    setTimeout(() => setShowFeedback(null), 600);
-  }, [currentChallenge, currentAttempts, isConnected, sendText, incrementAttempts]);
-
-  // -------------------------------------------------------------------------
-  // Submit evaluation when all complete
-  // -------------------------------------------------------------------------
-  const localOverallScore = useMemo(() => {
-    if (!allChallengesComplete || challengeResults.length === 0) return 0;
-    const correct = challengeResults.filter(r => r.correct).length;
-    return Math.round((correct / challengeResults.length) * 100);
-  }, [allChallengesComplete, challengeResults]);
-
-  useEffect(() => {
-    if (!allChallengesComplete || hasSubmittedEvaluation) return;
-
-    const clickResults = challengeResults.filter((_, i) => challenges[i]?.type === 'click');
-    const dragResults = challengeResults.filter((_, i) => challenges[i]?.type === 'drag');
-    const typeResults = challengeResults.filter((_, i) => challenges[i]?.type === 'type');
-
-    const avgTime = challengeResults.length > 0
-      ? Math.round(challengeResults.reduce((s, r) => s + (r.timeMs as number || 0), 0) / challengeResults.length)
-      : 0;
-
-    const metrics: DigitalSkillsSimMetrics = {
-      type: 'digital-skills-sim',
-      clickAccuracy: clickResults.length > 0
-        ? Math.round((clickResults.filter(r => r.correct).length / clickResults.length) * 100) : 100,
-      dragAccuracy: dragResults.length > 0
-        ? Math.round((dragResults.filter(r => r.correct).length / dragResults.length) * 100) : 100,
-      typeAccuracy: typeResults.length > 0
-        ? Math.round((typeResults.filter(r => r.correct).length / typeResults.length) * 100) : 100,
-      totalAttempts: challengeResults.reduce((s, r) => s + r.attempts, 0),
-      averageTimeMs: avgTime,
-      challengesCompleted: challengeResults.length,
-      totalChallenges: challenges.length,
+  const metrics = (): DigitalSkillsSimMetrics => {
+    const firstTry = (mode: SkillMode) => {
+      const of = items.filter(i => i.mode === mode);
+      if (!of.length) return 100;
+      return Math.round((of.filter(i => results.some(r => r.challengeId === i.id && r.correct && r.attempts === 1)).length / of.length) * 100);
     };
+    return {
+      type: 'digital-skills-sim',
+      clickAccuracy: firstTry('click'), dragAccuracy: firstTry('drag'), typeAccuracy: firstTry('type'),
+      totalAttempts: results.reduce((s, r) => s + r.attempts, 0),
+      averageTimeMs: items.length ? Math.round((Date.now() - startedAt.current) / items.length) : 0,
+      challengesCompleted: results.filter(r => r.correct).length,
+      totalChallenges: items.length,
+    };
+  };
 
-    submitEvaluation(
-      localOverallScore >= 70,
-      localOverallScore,
-      metrics,
-      { challengeResults },
-    );
+  /** Scripted path: the next item, and after the last the session report. */
+  const next = () => {
+    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((items.filter(i => results.some(r => r.challengeId === i.id && r.correct && r.attempts === 1)).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 70, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} digital skills items. Celebrate briefly.`);
+  };
 
-    if (isConnected) {
-      const phaseScoreStr = phaseResults.map(p => `${p.label} ${p.score}% (${p.attempts} attempts)`).join(', ');
-      sendText(
-        `[ALL_COMPLETE] Student finished all digital skills challenges! Phase scores: ${phaseScoreStr}. `
-        + `Overall: ${localOverallScore}%. Give encouraging phase-specific feedback for a young learner.`,
-        { silent: true },
-      );
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), totalAttempts: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // ── The check ──
+  const closed = solvedNow || wrongShown || learnerBlocked();
+  const commit = (w: SkillWork) => {
+    if (!item) return;
+    const correct = skillCorrect(item, w, reach);
+    progress.commitCheck(describeSkillWork(item, w, reach), correct, correct ? undefined : skillMiss(item, w, reach));
+    if (correct) {
+      SoundManager.playCorrect();
+      setFeedback('correct');
+      if (practice) { setPracticeSolved(true); return; }
+      say(`[ANSWER_CORRECT] The learner did it: ${askOf(item)} Praise briefly.`);
+      if (!tutorOwned) timer.current = setTimeout(next, 900);
+      return;
     }
-  }, [allChallengesComplete, hasSubmittedEvaluation, challengeResults, challenges, localOverallScore, phaseResults, isConnected, sendText, submitEvaluation]);
+    SoundManager.playIncorrect();
+    setFeedback('wrong');
+    if (tutorOwned) { setWrongShown(true); return; }
+    say(`[ANSWER_INCORRECT] ${describeSkillWork(item, w, reach)}, for: ${askOf(item)} Encourage another try without saying where to go.`);
+    timer.current = setTimeout(() => { setWork(emptyWork()); setDragAt(null); setFeedback(null); }, 700);
+  };
 
-  // -------------------------------------------------------------------------
-  // Click handler
-  // -------------------------------------------------------------------------
-  const handleClickTarget = useCallback(() => {
-    handleCorrect();
-  }, [handleCorrect]);
-
-  const handleClickMiss = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // Only count as miss if clicking the arena background, not the target
-    if ((e.target as HTMLElement).dataset.clickTarget) return;
-    handleWrong();
-  }, [handleWrong]);
-
-  // -------------------------------------------------------------------------
-  // Drag handlers (pointer-based for touch + mouse)
-  // -------------------------------------------------------------------------
-  const dragItemRef = useRef<HTMLDivElement>(null);
-  const dropZoneRef = useRef<HTMLDivElement>(null);
-  const dragStartRef = useRef({ x: 0, y: 0 });
-
-  const handleDragStart = useCallback((e: React.PointerEvent) => {
-    e.preventDefault();
-    setDragState('dragging');
-    dragStartRef.current = { x: e.clientX, y: e.clientY };
-    setDragPos({ x: 0, y: 0 });
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, []);
-
-  const handleDragMove = useCallback((e: React.PointerEvent) => {
-    if (dragState !== 'dragging') return;
-    setDragPos({
-      x: e.clientX - dragStartRef.current.x,
-      y: e.clientY - dragStartRef.current.y,
-    });
-  }, [dragState]);
-
-  const handleDragEnd = useCallback((e: React.PointerEvent) => {
-    if (dragState !== 'dragging') return;
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-
-    // Check if item overlaps drop zone
-    if (dragItemRef.current && dropZoneRef.current) {
-      const itemRect = dragItemRef.current.getBoundingClientRect();
-      const zoneRect = dropZoneRef.current.getBoundingClientRect();
-      const overlap =
-        itemRect.right > zoneRect.left &&
-        itemRect.left < zoneRect.right &&
-        itemRect.bottom > zoneRect.top &&
-        itemRect.top < zoneRect.bottom;
-
-      if (overlap) {
-        setDragState('dropped');
-        handleCorrect();
-        return;
-      }
+  // ── Arena (click, drag): one SVG, read in viewBox units ──
+  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!item || item.mode === 'type' || closed || work.release) return;
+    const p = coordinate(e);
+    if (!p) return;
+    if (item.mode === 'drag') {
+      if (!onGrab(p)) return;
+      dragFrom.current = p; setDragAt(DRAG_START); SoundManager.select();
+      try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch { /* jsdom and old browsers */ }
     }
+  };
+  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!item || item.mode !== 'drag' || !dragFrom.current) return;
+    const p = coordinate(e);
+    if (p) setDragAt({ x: DRAG_START.x + p.x - dragFrom.current.x, y: DRAG_START.y + p.y - dragFrom.current.y });
+  };
+  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!item || item.mode === 'type' || closed || work.release) return;
+    const p = coordinate(e);
+    if (!p) return;
+    if (item.mode === 'click') { const w = { ...work, release: p }; setWork(w); commit(w); return; }
+    const from = dragFrom.current;
+    dragFrom.current = null;
+    try { e.currentTarget.releasePointerCapture?.(e.pointerId); } catch { /* as above */ }
+    if (!from) return;
+    const at = { x: DRAG_START.x + p.x - from.x, y: DRAG_START.y + p.y - from.y };
+    if (Math.hypot(p.x - from.x, p.y - from.y) < MIN_DRAG) { setDragAt(null); return; }
+    // The drop is where the picture's centre is let go: the picture moved with the pointer from where it was grabbed.
+    const w = { ...work, release: at };
+    setDragAt(at); setWork(w); commit(w);
+  };
 
-    // Snap back
-    setDragState('idle');
-    setDragPos({ x: 0, y: 0 });
-    handleWrong();
-  }, [dragState, handleCorrect, handleWrong]);
-
-  // -------------------------------------------------------------------------
-  // Type handler (keyboard events)
-  // -------------------------------------------------------------------------
-  const handleKeyPress = useCallback((key: string) => {
-    if (!currentChallenge || currentChallenge.type !== 'type') return;
-    setTypedKey(key);
-
-    if (key.toUpperCase() === (currentChallenge.targetKey ?? '').toUpperCase()) {
-      handleCorrect();
-    } else {
-      handleWrong();
-    }
-  }, [currentChallenge, handleCorrect, handleWrong]);
-
-  // Listen for physical keyboard
+  // ── Keyboard ──
+  const pressKey = (k: string) => {
+    if (!item || item.mode !== 'type' || closed || workComplete(item, work)) return;
+    SoundManager.tick();
+    const w = { ...work, keys: [...work.keys, k.toUpperCase()] };
+    setWork(w);
+    if (workComplete(item, w)) commit(w);
+  };
+  const pressRef = useRef(pressKey); pressRef.current = pressKey;
   useEffect(() => {
-    if (!currentChallenge || currentChallenge.type !== 'type') return;
-
+    if (item?.mode !== 'type') return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key.length === 1) {
-        handleKeyPress(e.key.toUpperCase());
-      }
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA)$/.test(target.tagName)) return;
+      if (/^[a-z]$/i.test(e.key)) pressRef.current(e.key);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [currentChallenge, handleKeyPress]);
+  }, [item?.mode, item?.id]);
 
-  // -------------------------------------------------------------------------
-  // Progress info
-  // -------------------------------------------------------------------------
-  const progressPct = challenges.length > 0
-    ? Math.round(((currentIndex + (allChallengesComplete ? 1 : 0)) / challenges.length) * 100)
-    : 0;
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || isComplete) return;
+    const scene = workspaceScene(item, { work, reach });
+    const levers = practice ? [] : skillLevers(sessionItem, pulled);
+    const onScreen = practice ? '' : leverFact(sessionItem, pulled, typed);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(practice ? { practice: 'A simpler item of the same kind, before the full item comes back.' } : {}),
+        ...(onScreen ? { onScreen } : {}) },
+      levers,
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (practice || !l || !sessionItem) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        const nextState = { item: sessionItem.id, pulled: [...pulled, id] };
+        if (l.kind === 'simplify') {
+          const simpler = simplerItem(sessionItem);
+          if (!simpler) return 'There is no simpler item here; try a help lever.';
+          setLeverState(nextState); clearItem(); setPractice(simpler);
+          return { practice: workspaceAssignment(simpler) };
+        }
+        setLeverState(nextState);
+        return true;
+      },
+      endPractice: () => { clearItem(); setPractice(null); },
+    };
+  });
 
-  // -------------------------------------------------------------------------
-  // Render: Click challenge
-  // -------------------------------------------------------------------------
-  const renderClickChallenge = () => {
-    if (!currentChallenge) return null;
+  const done = hasSubmitted || submitted || isComplete;
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: done || !item ? null : item.id,
+    label: 'The practice area',
+    solved: solvedNow,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
+  if (!items.length) {
     return (
-      <div
-        className="relative w-full h-64 rounded-xl bg-slate-800/50 border border-white/10 overflow-hidden cursor-crosshair select-none"
-        onClick={handleClickMiss}
-      >
-        {/* Target */}
-        <button
-          data-click-target="true"
-          className={`absolute w-16 h-16 rounded-full flex items-center justify-center text-2xl
-            transition-all duration-200 shadow-lg
-            ${showFeedback === 'correct'
-              ? 'bg-emerald-500/30 border-2 border-emerald-400 scale-110'
-              : showFeedback === 'wrong'
-                ? 'bg-red-500/20 border-2 border-red-400'
-                : 'bg-blue-500/20 border-2 border-blue-400/60 hover:bg-blue-500/30 hover:scale-110 animate-pulse'
-            }`}
-          style={{
-            left: `${clickTargetPos.x}%`,
-            top: `${clickTargetPos.y}%`,
-            transform: 'translate(-50%, -50%)',
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleClickTarget();
-          }}
-        >
-          {currentChallenge.targetEmoji || '🎯'}
-        </button>
-
-        {/* Instruction overlay */}
-        <div className="absolute bottom-3 left-0 right-0 text-center">
-          <span className="text-xs text-slate-400 bg-slate-900/70 px-3 py-1 rounded-full">
-            {currentChallenge.targetLabel || 'Click the target!'}
-          </span>
-        </div>
-      </div>
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">No challenges available.</p></LuminaCardContent>
+      </LuminaCard>
     );
-  };
+  }
 
-  // -------------------------------------------------------------------------
-  // Render: Drag challenge
-  // -------------------------------------------------------------------------
-  const renderDragChallenge = () => {
-    if (!currentChallenge) return null;
+  // ── Render: the arena ──
+  const renderArena = () => {
+    if (!item || item.mode === 'type') return null;
+    const bigBoxes = leverOn(BIG_BOXES_LEVER);
     return (
-      <div className="relative w-full h-64 rounded-xl bg-slate-800/50 border border-white/10 overflow-hidden select-none">
-        {/* Drop zone */}
-        <div
-          ref={dropZoneRef}
-          className={`absolute right-8 top-1/2 -translate-y-1/2 w-24 h-24 rounded-2xl border-2 border-dashed
-            flex items-center justify-center text-center transition-all duration-200
-            ${dragState === 'dropped'
-              ? 'border-emerald-400 bg-emerald-500/20'
-              : dragState === 'dragging'
-                ? 'border-blue-400 bg-blue-500/10 scale-105'
-                : 'border-white/20 bg-white/5'
-            }`}
-        >
-          <span className="text-xs text-slate-400 px-2">
-            {currentChallenge.dropZoneLabel || 'Drop here'}
-          </span>
-        </div>
-
-        {/* Draggable item */}
-        {dragState !== 'dropped' && (
-          <div
-            ref={dragItemRef}
-            className={`absolute left-8 top-1/2 -translate-y-1/2 w-20 h-20 rounded-xl
-              flex flex-col items-center justify-center gap-1 cursor-grab active:cursor-grabbing
-              transition-colors duration-200 touch-none
-              ${dragState === 'dragging'
-                ? 'bg-blue-500/30 border-2 border-blue-400 shadow-xl z-10'
-                : showFeedback === 'wrong'
-                  ? 'bg-red-500/20 border-2 border-red-400'
-                  : 'bg-white/10 border-2 border-white/20 hover:bg-white/15'
-              }`}
-            style={{
-              transform: `translate(${dragPos.x}px, calc(-50% + ${dragPos.y}px))`,
-            }}
-            onPointerDown={handleDragStart}
-            onPointerMove={handleDragMove}
-            onPointerUp={handleDragEnd}
-          >
-            <span className="text-2xl">{currentChallenge.dragItemEmoji || '📦'}</span>
-            <span className="text-[10px] text-slate-300">{currentChallenge.dragItemLabel || 'Drag me'}</span>
-          </div>
+      <svg data-pip-object="arena" viewBox={`0 0 ${ARENA.w} ${ARENA.h}`} role="application"
+        aria-label={item.mode === 'click' ? 'Play area with pictures to click' : 'Play area with a picture to drag and boxes'}
+        className={`w-full rounded-xl border border-white/10 bg-slate-800/50 touch-none select-none ${item.mode === 'click' ? 'cursor-pointer' : ''}`}
+        style={{ maxWidth: 720 }}
+        onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
+        {item.mode === 'click' && (
+          <g {...(leverOn(BIG_TARGETS_LEVER) ? { 'data-lever': 'big-targets' } : {})}>
+            {item.things.map((thing, i) => {
+              const s = SPOTS[item.things.length][i], r = radiusOf(item.things.length, leverOn(BIG_TARGETS_LEVER));
+              const right = solvedNow && i === item.target;
+              return (
+                <g key={thing.name} data-thing={i}>
+                  <circle cx={s.x} cy={s.y} r={r} fill={right ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.06)'}
+                    stroke={right ? '#34d399' : 'rgba(255,255,255,0.25)'} strokeWidth={2} />
+                  <text x={s.x} y={s.y} textAnchor="middle" dominantBaseline="central" fontSize={r * 1.1} aria-hidden="true">{thing.emoji}</text>
+                </g>
+              );
+            })}
+            {work.release && !solvedNow && (
+              <circle data-release cx={work.release.x} cy={work.release.y} r={8} fill="none" stroke="#f87171" strokeWidth={3} />
+            )}
+          </g>
         )}
-
-        {/* Instruction */}
-        <div className="absolute bottom-3 left-0 right-0 text-center">
-          <span className="text-xs text-slate-400 bg-slate-900/70 px-3 py-1 rounded-full">
-            {currentChallenge.instruction}
-          </span>
-        </div>
-      </div>
+        {item.mode === 'drag' && (
+          <>
+            {BOXES[item.homes.length].map((b, i) => {
+              const right = solvedNow && i === item.target;
+              const catchBox = boxOf(b, true);
+              return (
+                <g key={item.homes[i].name} data-box={i}>
+                  {bigBoxes && (
+                    <rect data-lever="big-boxes" x={catchBox.x} y={catchBox.y} width={catchBox.w} height={catchBox.h} rx={16}
+                      fill="rgba(56,189,248,0.06)" stroke="rgba(56,189,248,0.6)" strokeDasharray="6 5" strokeWidth={2} />
+                  )}
+                  <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={14}
+                    fill={right ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.05)'} stroke={right ? '#34d399' : 'rgba(255,255,255,0.3)'} strokeWidth={2} />
+                  <text x={b.x + b.w / 2} y={b.y + b.h / 2} textAnchor="middle" dominantBaseline="central" fontSize={Math.min(b.w, b.h) * 0.55} aria-hidden="true">
+                    {item.homes[i].emoji}
+                  </text>
+                </g>
+              );
+            })}
+            {(() => {
+              const at = dragAt ?? DRAG_START;
+              return (
+                <g data-drag-picture style={{ cursor: closed ? 'default' : 'grab' }} pointerEvents="all">
+                  <circle cx={at.x} cy={at.y} r={34} fill={dragAt ? 'rgba(59,130,246,0.25)' : 'rgba(255,255,255,0.1)'}
+                    stroke={wrongShown || feedback === 'wrong' ? '#f87171' : 'rgba(255,255,255,0.35)'} strokeWidth={2} />
+                  <text x={at.x} y={at.y} textAnchor="middle" dominantBaseline="central" fontSize={36} aria-hidden="true">{item.thing.emoji}</text>
+                </g>
+              );
+            })()}
+          </>
+        )}
+      </svg>
     );
   };
 
-  // -------------------------------------------------------------------------
-  // Render: Type challenge
-  // -------------------------------------------------------------------------
-  const renderTypeChallenge = () => {
-    if (!currentChallenge) return null;
-    const targetKey = (currentChallenge.targetKey ?? '').toUpperCase();
-
+  // ── Render: the keyboard ──
+  const renderKeyboard = () => {
+    if (!item || item.mode !== 'type') return null;
+    const big = leverOn(BIG_KEYS_LEVER);
+    const glow = leverOn(GLOW_ROW_LEVER) ? glowRow(item, typed) : -1;
+    const shown = item.lower ? item.text.toLowerCase() : item.text;
+    const last = work.keys.length - 1;
     return (
       <div className="space-y-4">
-        {/* Target key display */}
-        <div className="text-center py-4">
-          <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl text-3xl font-bold
-            transition-all duration-200
-            ${showFeedback === 'correct'
-              ? 'bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 scale-110'
-              : showFeedback === 'wrong'
-                ? 'bg-red-500/20 border-2 border-red-400 text-red-300'
-                : 'bg-blue-500/10 border-2 border-blue-400/40 text-blue-300 animate-bounce'
-            }`}
-          >
-            {targetKey}
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="inline-flex items-center justify-center gap-1 rounded-2xl border-2 border-blue-400/40 bg-blue-500/10 px-5 py-3 font-bold text-blue-200" style={{ fontSize: 40 }}>
+            {shown.split('').map((ch, i) => (
+              <span key={i} className={item.text.length > 1 && i === typed && !solvedNow ? 'underline decoration-4 underline-offset-8' : ''}>{ch}</span>
+            ))}
           </div>
-          {currentChallenge.keyHint && (
-            <p className="text-xs text-slate-500 mt-2">{currentChallenge.keyHint}</p>
+          {leverOn(CAPITAL_CARD_LEVER) && (
+            <LuminaPanel accent="cyan" data-lever="capital-card" className="text-2xl font-bold text-slate-200">
+              {`${nextLetter(item, typed).toLowerCase()}  ·  ${nextLetter(item, typed)}`}
+            </LuminaPanel>
           )}
         </div>
-
-        {/* Virtual keyboard */}
-        <div className="space-y-1.5 px-2">
-          {KEYBOARD_ROWS.map((row, rowIndex) => (
-            <div key={rowIndex} className="flex justify-center gap-1">
-              {row.map((key) => {
-                const isTarget = key === targetKey;
-                const isTyped = typedKey === key;
+        {item.text.length > 1 && (
+          <p className="text-center font-mono text-xl tracking-[0.5em] text-slate-300" aria-label="Typed so far">
+            {item.text.split('').map((_, i) => work.keys[i] ?? '_').join('')}
+          </p>
+        )}
+        <div className={`px-2 ${big ? 'space-y-2.5' : 'space-y-1.5'}`} {...(big ? { 'data-lever': 'big-keys' } : {})}>
+          {KEY_ROWS.map((row, r) => (
+            <div key={row} className={`flex justify-center rounded-lg py-1 ${big ? 'gap-2' : 'gap-1'} ${r === glow ? 'bg-amber-400/15 ring-2 ring-amber-300/60' : ''}`}
+              {...(r === glow ? { 'data-lever': 'glow-row' } : {})}>
+              {row.split('').map(k => {
+                const pressedLast = work.keys[last] === k;
+                const state = pressedLast && (feedback === 'wrong' || wrongShown) ? 'wrong' : pressedLast && feedback === 'correct' ? 'right' : 'idle';
                 return (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`w-8 h-10 sm:w-10 sm:h-11 p-0 rounded-md text-xs sm:text-sm font-mono transition-all duration-150
-                      ${isTarget && !showFeedback
-                        ? 'bg-blue-500/20 border border-blue-400/50 text-blue-200 ring-2 ring-blue-400/30'
-                        : isTyped && showFeedback === 'correct'
-                          ? 'bg-emerald-500/20 border border-emerald-400 text-emerald-300'
-                          : isTyped && showFeedback === 'wrong'
-                            ? 'bg-red-500/20 border border-red-400 text-red-300'
-                            : 'bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10'
-                      }`}
-                    onClick={() => handleKeyPress(key)}
-                  >
-                    {key}
+                  <button key={k} type="button" aria-label={keyLabel(k)} disabled={closed}
+                    className={`${big ? 'h-14 w-12 text-lg' : 'h-10 w-8 text-sm sm:h-11 sm:w-10'} rounded-md border p-0 font-mono transition-colors duration-150
+                      ${state === 'wrong' ? 'border-red-400 bg-red-500/20 text-red-300'
+                        : state === 'right' ? 'border-emerald-400 bg-emerald-500/20 text-emerald-300'
+                          : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'}`}
+                    onClick={() => pressKey(k)}>
+                    {k}
                   </button>
                 );
               })}
@@ -567,95 +457,59 @@ const DigitalSkillsSim: React.FC<DigitalSkillsSimProps> = ({ data, className }) 
     );
   };
 
-  // -------------------------------------------------------------------------
-  // Main Render
-  // -------------------------------------------------------------------------
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: allChallengesComplete || hasSubmittedEvaluation ? null : currentChallenge?.id ?? null,
-    label: 'The practice area',
-    solved: challengeResults.some((r) => r.challengeId === currentChallenge?.id && r.correct),
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
-  });
+  const showPicture = item && item.mode !== 'type' && leverOn(SHOW_PICTURE_LEVER) ? pictureOf(item) : null;
 
   return (
     <LuminaCard className={`shadow-2xl ${className || ''}`}>
       <LuminaCardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🖥️</span>
-            <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
-          </div>
-          {!allChallengesComplete && currentChallenge && (
-            <LuminaBadge accent="blue" className="text-xs">
-              {PHASE_TYPE_CONFIG[currentChallenge.type]?.icon} {PHASE_TYPE_CONFIG[currentChallenge.type]?.label}
-            </LuminaBadge>
-          )}
+        <div className="flex items-center gap-2">
+          <span className="text-lg" aria-hidden="true">🖥️</span>
+          <LuminaCardTitle className="text-lg">{title}</LuminaCardTitle>
         </div>
-        <p className="text-slate-400 text-sm mt-1">{description}</p>
+        {!done && item && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {practice ? 'A simpler one first' : `${PHASE_TYPE_CONFIG[item.mode].label} · ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
+        )}
+        {description && !done && <p className="mt-1 text-sm text-slate-400">{description}</p>}
       </LuminaCardHeader>
 
       <LuminaCardContent className="space-y-4">
-        {/* Completion summary */}
-        {allChallengesComplete && phaseResults.length > 0 ? (
-          <PhaseSummaryPanel
-            phases={phaseResults}
-            overallScore={submittedResult?.score ?? localOverallScore}
-            durationMs={elapsedMs}
-            heading="Great Job!"
-            celebrationMessage="You completed all the digital skills challenges!"
-            className="mb-6"
-          />
-        ) : currentChallenge ? (
+        {done ? (
+          tutorOwned ? (
+            <LuminaFeedbackCard status="insight" label="All done">{`${items.length} of ${items.length} finished.`}</LuminaFeedbackCard>
+          ) : (
+            <PhaseSummaryPanel phases={phaseResults} durationMs={elapsedMs} heading="Great Job!"
+              celebrationMessage="You finished the digital skills practice!" className="mb-6" />
+          )
+        ) : item && (
           <>
-            {/* Progress bar */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>Challenge {currentIndex + 1} of {challenges.length}</span>
-                <span>{progressPct}%</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-500"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
+            <div className="flex items-center gap-3">
+              <LuminaPrompt accent="cyan" className="flex-1" {...(practice ? { 'data-practice': 'simpler' } : {})}>{askOf(item)}</LuminaPrompt>
+              {showPicture && (
+                <LuminaPanel accent="cyan" data-lever="show-picture" className="flex-shrink-0 text-4xl" aria-label="The picture to look for">
+                  {showPicture.emoji}
+                </LuminaPanel>
+              )}
             </div>
 
-            {/* Instruction */}
-            <p className="text-slate-200 text-sm font-medium text-center">
-              {currentChallenge.instruction}
-            </p>
-
-            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
             {pip.store && <div {...pip.dock} />}
             <div {...pip.workspace}>
-            {/* Phase-specific UI */}
-            {currentChallenge.type === 'click' && renderClickChallenge()}
-            {currentChallenge.type === 'drag' && renderDragChallenge()}
-            {currentChallenge.type === 'type' && renderTypeChallenge()}
-
+              {renderArena()}
+              {renderKeyboard()}
             </div>
 
-            {/* Feedback toast */}
-            {showFeedback && (
-              <div className={`text-center text-sm font-medium py-1 transition-opacity duration-300 ${
-                showFeedback === 'correct' ? 'text-emerald-400' : 'text-red-400'
-              }`}>
-                {showFeedback === 'correct' ? 'Nice work!' : 'Try again!'}
-              </div>
-            )}
+            {feedback === 'correct' && <LuminaFeedbackCard status="correct">Nice work!</LuminaFeedbackCard>}
+            {feedback === 'wrong' && <LuminaFeedbackCard status="incorrect">{tutorOwned ? 'Not that one.' : 'Not quite. Try again!'}</LuminaFeedbackCard>}
           </>
-        ) : (
-          <p className="text-slate-500 text-sm text-center py-8">No challenges available.</p>
         )}
       </LuminaCardContent>
     </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose own moving on would compete with the observer.
+const DigitalSkillsSim = withWorkspaceController<DigitalSkillsSimProps, ProgressOptions<SkillItem>, Progress>(
+  'digital-skills-sim', DigitalSkillsSimSurface, useScriptedProgress, useWorkspaceProgressFor('digital-skills-sim'));
 
 export default DigitalSkillsSim;

@@ -11,7 +11,9 @@ export type AtomAsk =
   | { kind: 'full_shell' }
   | { kind: 'valence'; outer: number }
   | { kind: 'charge'; charge: number }
-  | { kind: 'isotopes' };
+  | { kind: 'isotopes' }
+  /** Practice only (the `simpler_ask` lever, `atomBuilderLevers.ts`): any neutral atom whose nucleus holds. */
+  | { kind: 'neutral' };
 
 export interface BuiltAtom { protons: number; neutrons: number; electrons: number }
 
@@ -94,6 +96,9 @@ export function judgeAtomBuild(ask: AtomAsk, atom: BuiltAtom, kept?: BuiltAtom |
   if (!nucleusHolds(atom.protons, atom.neutrons)) return miss('nucleus_off');
   const charge = atom.protons - atom.electrons;
   switch (ask.kind) {
+    case 'neutral':
+      if (charge !== 0) return miss('not_neutral');
+      break;
     case 'full_shell':
       if (charge !== 0) return miss('not_neutral');
       if (!outerShellFull(atom.electrons)) return miss('shell_not_full');
@@ -127,6 +132,7 @@ export function atomAskInstruction(ask: AtomAsk): string {
     case 'valence': return `Make any neutral atom with ${WORDS[ask.outer] ?? ask.outer} electron${ask.outer === 1 ? '' : 's'} in its outer shell.`;
     case 'charge': return `Make any ion with a charge of ${ask.charge > 0 ? '+' : '-'}${Math.abs(ask.charge)}.`;
     case 'isotopes': return 'Make two different isotopes of the same element. Build one atom and press Keep, then build the other.';
+    case 'neutral': return 'Make any neutral atom.';
   }
 }
 
@@ -162,3 +168,63 @@ export function buildAtomAsks(gradeBand: '3-5' | '6-8', rand: () => number = Mat
     { kind: 'isotopes' },
   ];
 }
+
+// ============================================================================
+// Element Data (first 36 elements)
+// ============================================================================
+
+export interface ElementInfo {
+  symbol: string;
+  name: string;
+  category: string;
+  categoryColor: string;
+}
+
+export const ELEMENTS: Record<number, ElementInfo> = {
+  1: { symbol: 'H', name: 'Hydrogen', category: 'Nonmetal', categoryColor: '#22c55e' },
+  2: { symbol: 'He', name: 'Helium', category: 'Noble Gas', categoryColor: '#a855f7' },
+  3: { symbol: 'Li', name: 'Lithium', category: 'Alkali Metal', categoryColor: '#ef4444' },
+  4: { symbol: 'Be', name: 'Beryllium', category: 'Alkaline Earth', categoryColor: '#f97316' },
+  5: { symbol: 'B', name: 'Boron', category: 'Metalloid', categoryColor: '#14b8a6' },
+  6: { symbol: 'C', name: 'Carbon', category: 'Nonmetal', categoryColor: '#22c55e' },
+  7: { symbol: 'N', name: 'Nitrogen', category: 'Nonmetal', categoryColor: '#22c55e' },
+  8: { symbol: 'O', name: 'Oxygen', category: 'Nonmetal', categoryColor: '#22c55e' },
+  9: { symbol: 'F', name: 'Fluorine', category: 'Halogen', categoryColor: '#eab308' },
+  10: { symbol: 'Ne', name: 'Neon', category: 'Noble Gas', categoryColor: '#a855f7' },
+  11: { symbol: 'Na', name: 'Sodium', category: 'Alkali Metal', categoryColor: '#ef4444' },
+  12: { symbol: 'Mg', name: 'Magnesium', category: 'Alkaline Earth', categoryColor: '#f97316' },
+  13: { symbol: 'Al', name: 'Aluminum', category: 'Post-Transition Metal', categoryColor: '#3b82f6' },
+  14: { symbol: 'Si', name: 'Silicon', category: 'Metalloid', categoryColor: '#14b8a6' },
+  15: { symbol: 'P', name: 'Phosphorus', category: 'Nonmetal', categoryColor: '#22c55e' },
+  16: { symbol: 'S', name: 'Sulfur', category: 'Nonmetal', categoryColor: '#22c55e' },
+  17: { symbol: 'Cl', name: 'Chlorine', category: 'Halogen', categoryColor: '#eab308' },
+  18: { symbol: 'Ar', name: 'Argon', category: 'Noble Gas', categoryColor: '#a855f7' },
+  19: { symbol: 'K', name: 'Potassium', category: 'Alkali Metal', categoryColor: '#ef4444' },
+  20: { symbol: 'Ca', name: 'Calcium', category: 'Alkaline Earth', categoryColor: '#f97316' },
+  21: { symbol: 'Sc', name: 'Scandium', category: 'Transition Metal', categoryColor: '#ec4899' },
+  22: { symbol: 'Ti', name: 'Titanium', category: 'Transition Metal', categoryColor: '#ec4899' },
+  23: { symbol: 'V', name: 'Vanadium', category: 'Transition Metal', categoryColor: '#ec4899' },
+  24: { symbol: 'Cr', name: 'Chromium', category: 'Transition Metal', categoryColor: '#ec4899' },
+  25: { symbol: 'Mn', name: 'Manganese', category: 'Transition Metal', categoryColor: '#ec4899' },
+  26: { symbol: 'Fe', name: 'Iron', category: 'Transition Metal', categoryColor: '#ec4899' },
+  27: { symbol: 'Co', name: 'Cobalt', category: 'Transition Metal', categoryColor: '#ec4899' },
+  28: { symbol: 'Ni', name: 'Nickel', category: 'Transition Metal', categoryColor: '#ec4899' },
+  29: { symbol: 'Cu', name: 'Copper', category: 'Transition Metal', categoryColor: '#ec4899' },
+  30: { symbol: 'Zn', name: 'Zinc', category: 'Transition Metal', categoryColor: '#ec4899' },
+  31: { symbol: 'Ga', name: 'Gallium', category: 'Post-Transition Metal', categoryColor: '#3b82f6' },
+  32: { symbol: 'Ge', name: 'Germanium', category: 'Metalloid', categoryColor: '#14b8a6' },
+  33: { symbol: 'As', name: 'Arsenic', category: 'Metalloid', categoryColor: '#14b8a6' },
+  34: { symbol: 'Se', name: 'Selenium', category: 'Nonmetal', categoryColor: '#22c55e' },
+  35: { symbol: 'Br', name: 'Bromine', category: 'Halogen', categoryColor: '#eab308' },
+  36: { symbol: 'Kr', name: 'Krypton', category: 'Noble Gas', categoryColor: '#a855f7' },
+};
+
+/**
+ * The mass number of each element's most common atom (protons + neutrons), as a periodic table rounds it. The generator
+ * asks for "the most common isotope" on the classic modes; the `table_key` lever writes these in the table.
+ */
+export const USUAL_MASS: Record<number, number> = {
+  1: 1, 2: 4, 3: 7, 4: 9, 5: 11, 6: 12, 7: 14, 8: 16, 9: 19, 10: 20, 11: 23, 12: 24, 13: 27, 14: 28, 15: 31, 16: 32, 17: 35,
+  18: 40, 19: 39, 20: 40, 21: 45, 22: 48, 23: 51, 24: 52, 25: 55, 26: 56, 27: 59, 28: 58, 29: 63, 30: 64, 31: 69, 32: 74,
+  33: 75, 34: 80, 35: 79, 36: 84,
+};

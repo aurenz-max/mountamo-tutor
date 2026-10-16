@@ -49,6 +49,16 @@ cd my-tutoring-app && TUTOR_REPLAY_OUT=<moments.json> TUTOR_REPLAY_ONLY=<id> npm
 cd backend/tests/tutor_live && ../../venv/Scripts/python tutor_replay.py <moments.json> --primitive <id> --samples 5 [--observe]
 ```
 
+By default only each payload's first item is recorded. `TUTOR_REPLAY_ITEMS=all` records every item, one record each
+(`<file>#2`, `#3`...; the host text the tutor got as the item opened starts its record): use it for a gate, since later
+items carry different keys, choices and lever states (10-15: equation-balancer named the unbalanced element on a
+later item 3/5 that the first item never showed).
+
+Tool calls are answered as the bridge answers them: one action per round (a second is `blocked`), and a lever the
+sweep did not record comes back marked pulled in the packet. Until 10-15 an unrecorded lever came back with nothing
+pulled, and the tutor pulled again: every two-lever reply in the 10-15 lever-turn replay was that
+(`qa/tutor-reports/lever-turn-doctrine-2026-10-15.md`).
+
 A replay passes when no check misses on any sample. A miss is read by hand before it is filed: the checks are
 code over words, and a false positive is fixed in `replay_checks.py` with a pinned case in `test_replay_checks.py`.
 For a before/after comparison, replay the same moments with the old and the new wording

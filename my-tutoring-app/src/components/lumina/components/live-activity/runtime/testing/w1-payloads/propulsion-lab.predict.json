@@ -1,0 +1,88 @@
+{
+ "source": "qa/tutor-reports/propulsion-lab-runtime-predict-payload-2026-10-16.json",
+ "primitiveId": "propulsion-lab",
+ "evalMode": "predict",
+ "data": {
+  "title": "Action and Reaction Lab",
+  "overview": "You will test how different craft respond when various propulsion systems operate on Earth and in space.",
+  "gradeBand": "3-5",
+  "challengeTypes": [
+   "predict"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "predict-1",
+    "mode": "predict",
+    "place": "space",
+    "thrusters": [
+     {
+      "engine": "jet",
+      "blast": "left",
+      "size": 3
+     },
+     {
+      "engine": "propeller",
+      "blast": "right",
+      "size": 3
+     }
+    ],
+    "named": false
+   },
+   {
+    "id": "predict-2",
+    "mode": "predict",
+    "place": "air",
+    "thrusters": [
+     {
+      "engine": "rocket",
+      "blast": "left",
+      "size": 4
+     },
+     {
+      "engine": "rocket",
+      "blast": "right",
+      "size": 2
+     }
+    ],
+    "named": false
+   },
+   {
+    "id": "predict-3",
+    "mode": "predict",
+    "place": "space",
+    "thrusters": [
+     {
+      "engine": "jet",
+      "blast": "left",
+      "size": 3
+     },
+     {
+      "engine": "rocket",
+      "blast": "right",
+      "size": 3
+     }
+    ],
+    "named": false
+   },
+   {
+    "id": "predict-4",
+    "mode": "predict",
+    "place": "air",
+    "thrusters": [
+     {
+      "engine": "propeller",
+      "blast": "left",
+      "size": 3
+     },
+     {
+      "engine": "propeller",
+      "blast": "right",
+      "size": 3
+     }
+    ],
+    "named": false
+   }
+  ]
+ }
+}

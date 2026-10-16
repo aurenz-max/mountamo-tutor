@@ -1,0 +1,84 @@
+{
+ "source": "qa/tutor-reports/atom-builder-runtime-ion_isotope-payload-2026-10-15.json",
+ "primitiveId": "atom-builder",
+ "evalMode": "ion_isotope",
+ "data": {
+  "title": "Neon Signs and Atomic Secrets",
+  "description": "Discover how protons, neutrons, and electrons build the universe around us, from the neon in bright city lights to the air we breathe.",
+  "targetElement": {
+   "atomicNumber": 10,
+   "massNumber": 20,
+   "charge": 0,
+   "name": "Neon"
+  },
+  "challenges": [
+   {
+    "id": "ch1",
+    "type": "build_element",
+    "instruction": "Build a neutral atom of Neon, the glowing gas used in vibrant store signs. Add 10 protons to the nucleus.",
+    "targetProtons": 10,
+    "targetNeutrons": 10,
+    "targetElectrons": 10,
+    "hint": "Neon has an atomic number of 10, meaning it needs 10 protons in its nucleus.",
+    "narration": "Amazing! 10 protons creates Neon, the gas that glows brilliantly when electricity passes through it!"
+   },
+   {
+    "id": "ch2",
+    "type": "fill_shells",
+    "instruction": "Arrange the 10 electrons into their correct energy shells. Remember: the first shell holds up to 2, and the second shell holds up to 8.",
+    "targetProtons": 10,
+    "targetNeutrons": 10,
+    "targetElectrons": 10,
+    "hint": "Put 2 electrons in the innermost shell, and the remaining 8 in the outer valence shell.",
+    "narration": "Fantastic job! Look at that completely full outer valence shell. That is why neon is so stable and unreactive!"
+   },
+   {
+    "id": "ch3",
+    "type": "make_isotope",
+    "instruction": "Let's explore isotopes! Standard neon has 10 neutrons, but Neon-22 has 12 neutrons. Adjust your neutrons to build Neon-22.",
+    "targetProtons": 10,
+    "targetNeutrons": 12,
+    "targetElectrons": 10,
+    "hint": "Keep your 10 protons and 10 electrons, but add 2 more neutrons to the nucleus.",
+    "narration": "You have built an isotope! Neon-22 has the exact same chemical properties as regular neon, just a heavier mass number due to the extra neutrons."
+   },
+   {
+    "id": "ch4",
+    "type": "make_ion",
+    "instruction": "Transform your neon atom into an ion by removing one electron. What happens to the overall charge?",
+    "targetProtons": 10,
+    "targetNeutrons": 10,
+    "targetElectrons": 9,
+    "hint": "Leave protons at 10, but take away 1 electron so you have more positive protons than negative electrons.",
+    "narration": "You created a positively charged neon ion! When electrons are gained or lost, atoms become ions capable of forming new chemical bonds."
+   },
+   {
+    "id": "ch5",
+    "type": "identify",
+    "instruction": "Examine this mysterious atom with 6 protons, 6 neutrons, and 6 electrons. What element is it?",
+    "targetProtons": 6,
+    "targetNeutrons": 6,
+    "targetElectrons": 6,
+    "hint": "Look at the atomic number, which matches the number of protons. Think about what element is found in pencil lead and all living things.",
+    "narration": "Spot on! 6 protons makes Carbon, the foundational building block of all known organic life on Earth."
+   }
+  ],
+  "showOptions": {
+   "showMiniPeriodicTable": true,
+   "showIdentityCard": true,
+   "showShellCapacity": true,
+   "showCharge": true,
+   "showMassNumber": true,
+   "showElectronConfiguration": true,
+   "showNucleusDetail": true
+  },
+  "constraints": {
+   "maxProtons": 36,
+   "maxShells": 4,
+   "allowIons": true,
+   "allowIsotopes": true
+  },
+  "gradeBand": "6-8",
+  "imagePrompt": "Colorful neon signs glowing brightly in a bustling city street at night"
+ }
+}

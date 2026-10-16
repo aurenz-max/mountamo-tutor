@@ -28,8 +28,10 @@ const data = (challenges: AtomBuilderChallenge[]): AtomBuilderData => ({
   constraints: { maxProtons: 36, maxShells: 4, allowIons: true, allowIsotopes: true }, gradeBand: '6-8', instanceId: 'ab',
 });
 
-const plus = (i: 0 | 1 | 2, times = 1) => { for (let k = 0; k < times; k++) fireEvent.click(screen.getAllByRole('button', { name: '+' })[i]); };
-const minus = (i: 0 | 1 | 2) => fireEvent.click(screen.getAllByRole('button', { name: '-' })[i]);
+// The tray's buttons are named by what they do ("Add proton"), so the journey's `choose` and a screen reader find them.
+const KINDS = ['proton', 'neutron', 'electron'] as const;
+const plus = (i: 0 | 1 | 2, times = 1) => { for (let k = 0; k < times; k++) fireEvent.click(screen.getByRole('button', { name: `Add ${KINDS[i]}` })); };
+const minus = (i: 0 | 1 | 2) => fireEvent.click(screen.getByRole('button', { name: `Remove ${KINDS[i]}` }));
 const done = () => fireEvent.click(screen.getByRole('button', { name: "I'm done!" }));
 const particles = (c: HTMLElement, kind: string, where = 'now') => c.querySelectorAll(`[data-atom="${where}"] [data-particle="${kind}"]`).length;
 

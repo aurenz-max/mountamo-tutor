@@ -1,0 +1,64 @@
+{
+ "source": "qa/tutor-reports/ph-explorer-runtime-test-payload-2026-10-15.json",
+ "primitiveId": "ph-explorer",
+ "evalMode": "test",
+ "data": {
+  "title": "Kitchen Mystery pH Lab",
+  "description": "Discover the hidden properties of everyday liquids using colorful testing paper!",
+  "substances": [
+   {
+    "id": "lemon_juice",
+    "name": "Lemon Juice",
+    "pH": 2,
+    "category": "food",
+    "realWorldInfo": "Lemon juice makes your mouth pucker because it is packed with sour flavor and natural juice!"
+   },
+   {
+    "id": "vinegar",
+    "name": "Vinegar",
+    "pH": 3,
+    "category": "food",
+    "realWorldInfo": "Vinegar is often used to give potato chips a tangy punch and helps make pickles crunchy."
+   },
+   {
+    "id": "orange_juice",
+    "name": "Orange Juice",
+    "pH": 3.5,
+    "category": "food",
+    "realWorldInfo": "Drinking orange juice is a popular way to get a big boost of vitamin C in the morning."
+   },
+   {
+    "id": "pure_water",
+    "name": "Pure Water",
+    "pH": 7,
+    "category": "nature",
+    "realWorldInfo": "Pure water is totally balanced and makes up over half of the human body!"
+   },
+   {
+    "id": "baking_soda",
+    "name": "Baking Soda Solution",
+    "pH": 8.5,
+    "category": "food",
+    "realWorldInfo": "Baking soda helps fluffy cakes rise high when they bake in a hot oven."
+   },
+   {
+    "id": "hand_soap",
+    "name": "Hand Soap",
+    "pH": 10,
+    "category": "cleaning",
+    "realWorldInfo": "Soap helps trap greasy dirt in bubbles so it can easily wash down the drain with water."
+   },
+   {
+    "id": "milk_of_magnesia",
+    "name": "Milk of Magnesia",
+    "pH": 10.5,
+    "category": "body",
+    "realWorldInfo": "Despite its milky name, this liquid is used in medicine cabinets to help soothe tummy aches."
+   }
+  ],
+  "challengeTypes": [
+   "test"
+  ],
+  "gradeBand": "4-6"
+ }
+}

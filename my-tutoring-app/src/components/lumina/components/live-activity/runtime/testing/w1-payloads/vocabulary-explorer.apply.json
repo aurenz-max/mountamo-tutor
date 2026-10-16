@@ -1,0 +1,145 @@
+{
+ "source": "qa/tutor-reports/vocabulary-explorer-runtime-apply-payload-2026-10-16.json",
+ "primitiveId": "vocabulary-explorer",
+ "evalMode": "apply",
+ "data": {
+  "title": "Journey of Water",
+  "topic": "The water cycle",
+  "introduction": "Discover the amazing ways that moisture travels around our planet every single day.",
+  "terms": [
+   {
+    "id": "term1",
+    "word": "evaporation",
+    "pronunciation": "ih-vap-uh-rey-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "The process where liquid turns into a gas when it gets warm.",
+    "exampleSentence": "Sunlight causes rapid evaporation of puddles on the sidewalk after a storm.",
+    "relatedWords": [
+     "vapor",
+     "sun",
+     "heat"
+    ],
+    "clozeSentence": "We watched the puddle disappear through evaporation as the sun heated the concrete.",
+    "scenario": "A wet shirt is hung on a clothesline in the bright sun and slowly dries out because the wetness goes into the air."
+   },
+   {
+    "id": "term2",
+    "word": "condensation",
+    "pronunciation": "kon-den-sey-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "The change of a gas back into tiny liquid droplets when it cools down.",
+    "exampleSentence": "Cold glasses of lemonade often develop condensation on the outside.",
+    "relatedWords": [
+     "cloud",
+     "cooling",
+     "droplet"
+    ],
+    "clozeSentence": "Droplets formed on the cold soda can due to condensation in the warm room.",
+    "scenario": "Tiny water drops appear on the bathroom mirror after someone takes a hot steamy shower."
+   },
+   {
+    "id": "term3",
+    "word": "precipitation",
+    "pronunciation": "pri-sip-uh-tey-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "Any form of moisture that falls from the sky toward the ground.",
+    "exampleSentence": "Heavy rain and snow are common types of winter precipitation.",
+    "relatedWords": [
+     "rain",
+     "snow",
+     "storm"
+    ],
+    "clozeSentence": "Dark storm clouds brought freezing precipitation that covered the yard in white flakes.",
+    "scenario": "Children look out the classroom window as soft white flakes begin to drift down from the gray clouds."
+   },
+   {
+    "id": "term4",
+    "word": "collection",
+    "pronunciation": "kuh-lek-shuhn",
+    "partOfSpeech": "noun",
+    "definition": "The gathering of fallen moisture into large bodies like rivers, lakes, and oceans.",
+    "exampleSentence": "Streams carry runoff downhill for the final collection in the ocean.",
+    "relatedWords": [
+     "ocean",
+     "river",
+     "puddle"
+    ],
+    "clozeSentence": "Rainwater flowed down the hills into a large lake for its collection.",
+    "scenario": "Streams of rainwater run off the street and pool together into a big puddle at the corner."
+   },
+   {
+    "id": "term5",
+    "word": "vapor",
+    "pronunciation": "vey-per",
+    "partOfSpeech": "noun",
+    "definition": "The invisible gas state of a liquid floating freely in the air.",
+    "exampleSentence": "Hot water creates invisible vapor that rises toward the kitchen ceiling.",
+    "relatedWords": [
+     "evaporation",
+     "gas",
+     "air"
+    ],
+    "clozeSentence": "Steam from the boiling kettle turned into warm vapor in the kitchen air.",
+    "scenario": "You can see your breath turn into a little puff of steam on a very cold winter morning."
+   },
+   {
+    "id": "term6",
+    "word": "cycle",
+    "pronunciation": "sy-kuhl",
+    "partOfSpeech": "noun",
+    "definition": "A series of steps or events that happen over and over again in the same order.",
+    "exampleSentence": "The seasons follow a predictable cycle throughout the entire year.",
+    "relatedWords": [
+     "repeat",
+     "circle",
+     "pattern"
+    ],
+    "clozeSentence": "Water moves in a never-ending cycle from the ground to the sky and back again.",
+    "scenario": "A caterpillar turns into a chrysalis, becomes a butterfly, lays eggs, and the whole pattern begins again."
+   }
+  ],
+  "challengeTypes": [
+   "fill_blank",
+   "context"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "fill_blank-1",
+    "kind": "fill_blank",
+    "term": "term5",
+    "options": [
+     "term1",
+     "term4",
+     "term3",
+     "term5"
+    ],
+    "clue": "sentence"
+   },
+   {
+    "id": "context-2",
+    "kind": "context",
+    "term": "term1",
+    "options": [
+     "term5",
+     "term1",
+     "term2",
+     "term4"
+    ],
+    "clue": "scenario"
+   },
+   {
+    "id": "context-3",
+    "kind": "context",
+    "term": "term2",
+    "options": [
+     "term5",
+     "term6",
+     "term2",
+     "term3"
+    ],
+    "clue": "scenario"
+   }
+  ]
+ }
+}

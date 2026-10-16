@@ -1,0 +1,53 @@
+{
+ "source": "qa/tutor-reports/flight-forces-explorer-runtime-predict-payload-2026-10-15.json",
+ "primitiveId": "flight-forces-explorer",
+ "evalMode": "predict",
+ "data": {
+  "title": "Four Forces Flight Lab",
+  "overview": "You will observe how lift, weight, thrust, and drag interact as you adjust the plane's controls and load.",
+  "aircraftType": "cessna",
+  "gradeBand": "3-5",
+  "challengeTypes": [
+   "predict"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "predict-1",
+    "mode": "predict",
+    "aircraft": "cessna",
+    "change": "throttle_up",
+    "asked": "height",
+    "named": false,
+    "later": true
+   },
+   {
+    "id": "predict-2",
+    "mode": "predict",
+    "aircraft": "cessna",
+    "change": "stall",
+    "asked": "height",
+    "named": false,
+    "later": false
+   },
+   {
+    "id": "predict-3",
+    "mode": "predict",
+    "aircraft": "cessna",
+    "change": "gear_and_throttle",
+    "asked": "speed",
+    "named": false,
+    "later": false
+   },
+   {
+    "id": "predict-4",
+    "mode": "predict",
+    "aircraft": "cessna",
+    "change": "crate_and_nose",
+    "asked": "height",
+    "named": false,
+    "later": false
+   }
+  ]
+ }
+}

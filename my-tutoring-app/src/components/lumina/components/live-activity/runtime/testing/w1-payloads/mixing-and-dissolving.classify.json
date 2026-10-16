@@ -1,0 +1,155 @@
+{
+ "source": "qa/tutor-reports/mixing-and-dissolving-runtime-classify-payload-2026-10-15.json",
+ "primitiveId": "mixing-and-dissolving",
+ "evalMode": "classify",
+ "data": {
+  "title": "What Dissolves in Water?",
+  "description": "Explore which everyday kitchen items dissolve in water and which ones don't!",
+  "solvent": {
+   "name": "Water",
+   "formula": "H2O",
+   "volume": 200,
+   "temperature": 20
+  },
+  "substances": [
+   {
+    "id": "salt",
+    "name": "Table Salt",
+    "formula": "NaCl",
+    "type": "soluble",
+    "maxSolubility": 36,
+    "solubilityVsTemp": "unchanged",
+    "color": "#ffffff",
+    "particleColor": "#4a90e2",
+    "imagePrompt": "A small pile of white table salt crystals"
+   },
+   {
+    "id": "sugar",
+    "name": "Sugar",
+    "formula": "C12H22O11",
+    "type": "soluble",
+    "maxSolubility": 200,
+    "solubilityVsTemp": "increases",
+    "color": "#f5f5f5",
+    "particleColor": "#e67e22",
+    "imagePrompt": "A small pile of white sugar granules"
+   },
+   {
+    "id": "sand",
+    "name": "Sand",
+    "formula": "SiO2",
+    "type": "insoluble",
+    "maxSolubility": null,
+    "solubilityVsTemp": "unchanged",
+    "color": "#d2b48c",
+    "particleColor": "#8c7853",
+    "imagePrompt": "A small pile of brown beach sand"
+   },
+   {
+    "id": "oil",
+    "name": "Cooking Oil",
+    "formula": null,
+    "type": "immiscible_liquid",
+    "maxSolubility": null,
+    "solubilityVsTemp": "unchanged",
+    "color": "rgba(255, 215, 0, 0.6)",
+    "particleColor": "#f1c40f",
+    "imagePrompt": "Golden cooking oil in a clear glass"
+   }
+  ],
+  "separationMethods": [
+   {
+    "method": "filtration",
+    "worksFor": [
+     "Sand"
+    ],
+    "description": "Pour the mixture through a paper filter to catch solid bits that didn't dissolve.",
+    "animation": "solid particles get trapped in the paper cone while clear liquid passes through"
+   },
+   {
+    "method": "evaporation",
+    "worksFor": [
+     "Table Salt",
+     "Sugar"
+    ],
+    "description": "Heat the solution until the water turns to gas and goes into the air, leaving crystals behind.",
+    "animation": "liquid boils away leaving shiny crystals at the bottom"
+   },
+   {
+    "method": "decanting",
+    "worksFor": [
+     "Cooking Oil"
+    ],
+    "description": "Carefully pour the top liquid layer off the heavier liquid underneath.",
+    "animation": "top oil layer pours out first leaving water behind"
+   }
+  ],
+  "challenges": [
+   {
+    "id": "classify-sugar",
+    "type": "classify",
+    "answerType": "multiple_choice",
+    "instruction": "Add the sugar to the water and stir. What do you get?",
+    "options": [
+     "A solution",
+     "A suspension",
+     "Two layers"
+    ],
+    "correctOptionIndex": 0,
+    "hint": "Look at the beaker after you stir: can you still see the substance, and where is it?",
+    "narration": ""
+   },
+   {
+    "id": "classify-oil",
+    "type": "classify",
+    "answerType": "multiple_choice",
+    "instruction": "Add the cooking oil to the water and stir. What do you get?",
+    "options": [
+     "A solution",
+     "A suspension",
+     "Two layers"
+    ],
+    "correctOptionIndex": 2,
+    "hint": "Look at the beaker after you stir: can you still see the substance, and where is it?",
+    "narration": ""
+   },
+   {
+    "id": "classify-salt",
+    "type": "classify",
+    "answerType": "multiple_choice",
+    "instruction": "Add the table salt to the water and stir. What do you get?",
+    "options": [
+     "A solution",
+     "A suspension",
+     "Two layers"
+    ],
+    "correctOptionIndex": 0,
+    "hint": "Look at the beaker after you stir: can you still see the substance, and where is it?",
+    "narration": ""
+   },
+   {
+    "id": "classify-sand",
+    "type": "classify",
+    "answerType": "multiple_choice",
+    "instruction": "Add the sand to the water and stir. What do you get?",
+    "options": [
+     "A solution",
+     "A suspension",
+     "Two layers"
+    ],
+    "correctOptionIndex": 1,
+    "hint": "Look at the beaker after you stir: can you still see the substance, and where is it?",
+    "narration": ""
+   }
+  ],
+  "showOptions": {
+   "showParticleView": true,
+   "showConcentrationMeter": false,
+   "showTemperatureControl": false,
+   "showSaturationIndicator": true,
+   "showSeparationTools": true,
+   "showSolubilityCurve": false
+  },
+  "gradeBand": "3-5"
+ }
+}

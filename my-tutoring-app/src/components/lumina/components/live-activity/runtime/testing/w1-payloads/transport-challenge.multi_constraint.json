@@ -1,0 +1,252 @@
+{
+ "source": "qa/tutor-reports/transport-challenge-runtime-multi_constraint-payload-2026-10-16.json",
+ "primitiveId": "transport-challenge",
+ "evalMode": "multi_constraint",
+ "data": {
+  "title": "Transport Choices Under Limits",
+  "description": "Learners select a vehicle to complete each transport job while staying within budget, time, and CO2 limits.",
+  "challengeTypes": [
+   "multi_constraint"
+  ],
+  "difficulty": "medium",
+  "frames": [
+   {
+    "title": "Morning Commute",
+    "origin": "Oakwood Suburb",
+    "destination": "Downtown Station",
+    "kind": "people",
+    "loadName": "commuters",
+    "featured": "train"
+   },
+   {
+    "title": "Harvest Delivery",
+    "origin": "Green Valley Farm",
+    "destination": "City Market",
+    "kind": "cargo",
+    "loadName": "grain",
+    "featured": "semi_truck"
+   },
+   {
+    "title": "Island Crossing",
+    "origin": "North Port",
+    "destination": "Blue Island",
+    "kind": "people",
+    "loadName": "passengers",
+    "featured": "ferry"
+   },
+   {
+    "title": "Store Restock",
+    "origin": "Central Warehouse",
+    "destination": "West End Shop",
+    "kind": "cargo",
+    "loadName": "goods",
+    "featured": "delivery_truck"
+   },
+   {
+    "title": "Festival Crowd",
+    "origin": "South Park",
+    "destination": "Fairgrounds",
+    "kind": "people",
+    "loadName": "festival visitors",
+    "featured": "bus"
+   }
+  ],
+  "items": [
+   {
+    "id": "multi_constraint-1",
+    "mode": "multi_constraint",
+    "title": "Morning Commute",
+    "origin": "Oakwood Suburb",
+    "destination": "Downtown Station",
+    "load": {
+     "kind": "people",
+     "amount": 60,
+     "name": "commuters"
+    },
+    "vehicles": [
+     {
+      "id": "minivan",
+      "name": "Minivan",
+      "emoji": "\ud83d\ude90",
+      "capacity": 8,
+      "cost": 50,
+      "hours": 2,
+      "co2": 16
+     },
+     {
+      "id": "train",
+      "name": "Train",
+      "emoji": "\ud83d\ude86",
+      "capacity": 300,
+      "cost": 1200,
+      "hours": 2,
+      "co2": 100
+     },
+     {
+      "id": "bus",
+      "name": "Bus",
+      "emoji": "\ud83d\ude8c",
+      "capacity": 40,
+      "cost": 180,
+      "hours": 4,
+      "co2": 60
+     },
+     {
+      "id": "car",
+      "name": "Car",
+      "emoji": "\ud83d\ude97",
+      "capacity": 4,
+      "cost": 30,
+      "hours": 2,
+      "co2": 10
+     }
+    ],
+    "limits": [
+     {
+      "type": "budget",
+      "max": 1000
+     },
+     {
+      "type": "time",
+      "max": 10
+     }
+    ],
+    "shows": [
+     "budget",
+     "time",
+     "co2"
+    ]
+   },
+   {
+    "id": "multi_constraint-2",
+    "mode": "multi_constraint",
+    "title": "Harvest Delivery",
+    "origin": "Green Valley Farm",
+    "destination": "City Market",
+    "load": {
+     "kind": "cargo",
+     "amount": 380,
+     "name": "grain"
+    },
+    "vehicles": [
+     {
+      "id": "freight_train",
+      "name": "Freight train",
+      "emoji": "\ud83d\ude82",
+      "capacity": 400,
+      "cost": 3600,
+      "hours": 8,
+      "co2": 800
+     },
+     {
+      "id": "cargo_plane",
+      "name": "Cargo plane",
+      "emoji": "\ud83d\udee9\ufe0f",
+      "capacity": 100,
+      "cost": 10000,
+      "hours": 2,
+      "co2": 6000
+     },
+     {
+      "id": "cargo_ship",
+      "name": "Cargo ship",
+      "emoji": "\ud83d\udea2",
+      "capacity": 1000,
+      "cost": 8000,
+      "hours": 24,
+      "co2": 3000
+     },
+     {
+      "id": "semi_truck",
+      "name": "Semi truck",
+      "emoji": "\ud83d\ude9b",
+      "capacity": 20,
+      "cost": 300,
+      "hours": 4,
+      "co2": 120
+     }
+    ],
+    "limits": [
+     {
+      "type": "time",
+      "max": 10
+     },
+     {
+      "type": "co2",
+      "max": 4000
+     }
+    ],
+    "shows": [
+     "budget",
+     "time",
+     "co2"
+    ]
+   },
+   {
+    "id": "multi_constraint-3",
+    "mode": "multi_constraint",
+    "title": "Island Crossing",
+    "origin": "North Port",
+    "destination": "Blue Island",
+    "load": {
+     "kind": "people",
+     "amount": 18,
+     "name": "passengers"
+    },
+    "vehicles": [
+     {
+      "id": "train",
+      "name": "Train",
+      "emoji": "\ud83d\ude86",
+      "capacity": 300,
+      "cost": 600,
+      "hours": 1,
+      "co2": 50
+     },
+     {
+      "id": "ferry",
+      "name": "Ferry",
+      "emoji": "\u26f4\ufe0f",
+      "capacity": 120,
+      "cost": 300,
+      "hours": 3,
+      "co2": 120
+     },
+     {
+      "id": "plane",
+      "name": "Plane",
+      "emoji": "\u2708\ufe0f",
+      "capacity": 150,
+      "cost": 1500,
+      "hours": 1,
+      "co2": 500
+     },
+     {
+      "id": "car",
+      "name": "Car",
+      "emoji": "\ud83d\ude97",
+      "capacity": 4,
+      "cost": 15,
+      "hours": 1,
+      "co2": 5
+     }
+    ],
+    "limits": [
+     {
+      "type": "budget",
+      "max": 500
+     },
+     {
+      "type": "time",
+      "max": 4
+     }
+    ],
+    "shows": [
+     "budget",
+     "time",
+     "co2"
+    ]
+   }
+  ]
+ }
+}

@@ -925,9 +925,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "adjust":  PriorConfig(1.0, "Set piston sizes and forces to achieve specific outputs"),
     },
     "transport-challenge": {
-        "single_constraint":  PriorConfig(-1.5, "One constraint, obvious best vehicle"),
-        "multi_constraint":   PriorConfig(0.0, "Multiple constraints with trade-offs"),
-        "full_optimization":  PriorConfig(1.5, "All constraints, no perfect answer"),
+        "single_constraint":  PriorConfig(-1.5, "One limit: the one vehicle whose trips and total keep it"),
+        "multi_constraint":   PriorConfig(0.0, "Two limits: the one vehicle that keeps both"),
+        "full_optimization":  PriorConfig(1.5, "Three limits, none kept by all: the vehicle breaking only one"),
     },
     "train-yard": {
         "match_car":   PriorConfig(-1.5, "Match the car to the cargo; counts and engines given"),
@@ -951,10 +951,10 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "experiment": PriorConfig(1.0, "Design experiments comparing propulsion in different mediums"),
     },
     "construction-sequence-planner": {
-        "sequence":         PriorConfig(-1.0, "Order 4-5 linear tasks with clear dependencies"),
-        "dependency_chain": PriorConfig(0.0, "Order 5-6 tasks with branching/converging dependencies"),
-        "parallel":         PriorConfig(1.0, "Find parallel paths to meet a deadline with 6-8 tasks"),
-        "critical_path":    PriorConfig(2.0, "Identify critical path and optimize 8-10 task schedule"),
+        "sequence":         PriorConfig(-1.0, "Tap 3-5 jobs in a straight chain into build order; needs hidden"),
+        "dependency_chain": PriorConfig(0.0, "Order 4-6 jobs whose cards show their needs, one needing two"),
+        "parallel":         PriorConfig(1.0, "Plan 5-7 one-week jobs into weeks to meet a deadline"),
+        "critical_path":    PriorConfig(2.0, "Fewest weeks a branching build takes: the critical path"),
     },
     "wheel-axle-explorer":        {"default": PriorConfig(3.0, "Explore wheel-axle force multiplication")},
     "shape-strength-tester":      {"default": PriorConfig(3.5, "Test shape rigidity under load")},
@@ -1050,9 +1050,9 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "explain":  PriorConfig(2.0, "Explain reactions using particle model and conservation of mass"),
     },
     "equation-balancer": {
-        "simple":   PriorConfig(-0.5, "Balance simple 2-element equations with small coefficients"),
-        "guided":   PriorConfig(1.0, "Balance multi-element equations with guided hints"),
-        "complex":  PriorConfig(2.5, "Balance complex equations with 3+ elements independently"),
+        "simple":   PriorConfig(-0.5, "Count the atoms of one element on one side of a printed equation"),
+        "guided":   PriorConfig(1.0, "Balance an equation where each element sits in one formula per side"),
+        "complex":  PriorConfig(2.5, "Balance an equation with an element shared between two formulas on a side"),
     },
     "energy-of-reactions": {
         "classify":    PriorConfig(-0.5, "Classify reactions as exothermic or endothermic from diagrams"),

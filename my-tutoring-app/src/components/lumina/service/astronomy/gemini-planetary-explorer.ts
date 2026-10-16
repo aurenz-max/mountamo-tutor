@@ -375,7 +375,9 @@ function reconstructStats(raw: any): PlanetStat[] {
     const value = raw[`stat${i}Value`];
     if (!label || !value) continue;
     const stat: PlanetStat = { label, value };
-    if (raw[`stat${i}Unit`]) stat.unit = raw[`stat${i}Unit`];
+    // A unitless stat came back with the unit "none" and printed as "Red none" on the card.
+    const unit = String(raw[`stat${i}Unit`] ?? '').trim();
+    if (unit && !/^(none|n\/?a|null|-+|unitless)$/i.test(unit)) stat.unit = unit;
     if (raw[`stat${i}ComparisonToEarth`]) stat.comparisonToEarth = raw[`stat${i}ComparisonToEarth`];
     stats.push(stat);
   }

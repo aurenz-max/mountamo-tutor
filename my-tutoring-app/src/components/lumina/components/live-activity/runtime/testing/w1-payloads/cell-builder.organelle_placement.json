@@ -1,0 +1,158 @@
+{
+ "source": "qa/tutor-reports/cell-builder-runtime-organelle_placement-payload-2026-10-15.json",
+ "primitiveId": "cell-builder",
+ "evalMode": "organelle_placement",
+ "data": {
+  "challengeType": "organelle_placement",
+  "title": "Build a Plant Leaf Cell",
+  "description": "Explore the inside of a plant leaf cell by placing its organelles in the correct zones and learning what they do!",
+  "cellType": "plant",
+  "cellContext": "leaf cell",
+  "organelles": [
+   {
+    "id": "nucleus",
+    "name": "Nucleus",
+    "function": "It is the control center of the cell and holds DNA.",
+    "analogy": "Like the principal's office in a school.",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "center",
+    "distractorExplanation": "null",
+    "expectedQuantity": "few",
+    "quantityReasoning": "A plant cell only needs one main control center to direct all its daily activities.",
+    "uniqueTo": "null"
+   },
+   {
+    "id": "mitochondria",
+    "name": "Mitochondria",
+    "function": "They make energy for the cell to use.",
+    "analogy": "Like a power plant.",
+    "belongsInCell": true,
+    "sizeRelative": "small",
+    "correctZone": "scattered",
+    "distractorExplanation": "null",
+    "expectedQuantity": "some",
+    "quantityReasoning": "Leaf cells need energy to live and grow, so they have several power-generating mitochondria.",
+    "uniqueTo": "null"
+   },
+   {
+    "id": "chloroplast",
+    "name": "Chloroplast",
+    "function": "They capture sunlight to make food for the plant through photosynthesis.",
+    "analogy": "Like tiny solar panels.",
+    "belongsInCell": true,
+    "sizeRelative": "medium",
+    "correctZone": "scattered",
+    "distractorExplanation": "null",
+    "expectedQuantity": "lots",
+    "quantityReasoning": "Leaf cells capture lots of sunlight to make food, so they need many solar-panel chloroplasts.",
+    "uniqueTo": "plant cells only"
+   },
+   {
+    "id": "vacuole",
+    "name": "Large Central Vacuole",
+    "function": "It stores water and helps keep the plant cell firm.",
+    "analogy": "Like a water storage tank.",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "large-central",
+    "distractorExplanation": "null",
+    "expectedQuantity": "few",
+    "quantityReasoning": "Plant cells usually have one huge central water tank to help hold the plant upright.",
+    "uniqueTo": "plant cells only"
+   },
+   {
+    "id": "cytoplasm",
+    "name": "Cytoplasm",
+    "function": "It is the jelly-like fluid that fills the cell and holds parts in place.",
+    "analogy": "Like fruit jelly inside a donut.",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "peripheral",
+    "distractorExplanation": "null",
+    "expectedQuantity": "lots",
+    "quantityReasoning": "The cell needs enough fluid to fill all the space and cushion the internal parts.",
+    "uniqueTo": "null"
+   },
+   {
+    "id": "cell_membrane",
+    "name": "Cell Membrane",
+    "function": "It controls what goes in and out of the cell.",
+    "analogy": "Like a security guard at a door.",
+    "belongsInCell": true,
+    "sizeRelative": "large",
+    "correctZone": "membrane-associated",
+    "distractorExplanation": "null",
+    "expectedQuantity": "few",
+    "quantityReasoning": "Every cell surrounds itself with one protective outer wrapper.",
+    "uniqueTo": "null"
+   },
+   {
+    "id": "centrioles",
+    "name": "Centrioles",
+    "function": "They help organize cell division in animal cells.",
+    "analogy": "Like construction workers.",
+    "belongsInCell": false,
+    "sizeRelative": "small",
+    "correctZone": "center",
+    "distractorExplanation": "Centrioles are typically only found in animal cells, not plant cells.",
+    "expectedQuantity": "few",
+    "quantityReasoning": "null",
+    "uniqueTo": "animal cells only"
+   },
+   {
+    "id": "lysosome",
+    "name": "Lysosome",
+    "function": "They break down waste and old cell parts.",
+    "analogy": "Like a recycling center.",
+    "belongsInCell": false,
+    "sizeRelative": "small",
+    "correctZone": "peripheral",
+    "distractorExplanation": "Lysosomes are very rare in plant cells and belong mostly in animal cells.",
+    "expectedQuantity": "few",
+    "quantityReasoning": "null",
+    "uniqueTo": "animal cells"
+   }
+  ],
+  "functionMatches": [
+   {
+    "organelleId": "nucleus",
+    "functionDescription": "Acts as the brain of the cell by storing instructions and telling other parts what to do."
+   },
+   {
+    "organelleId": "mitochondria",
+    "functionDescription": "Converts nutrients into usable energy so the cell can perform its daily tasks."
+   },
+   {
+    "organelleId": "chloroplast",
+    "functionDescription": "Uses energy from the sun to turn water and carbon dioxide into sweet food for the plant."
+   },
+   {
+    "organelleId": "vacuole",
+    "functionDescription": "Stores water and other vital liquids while giving the plant cell its rigid shape."
+   },
+   {
+    "organelleId": "cytoplasm",
+    "functionDescription": "Provides a watery background where all the other cell parts float safely."
+   },
+   {
+    "organelleId": "cell_membrane",
+    "functionDescription": "Acts as a flexible gatekeeper that lets helpful nutrients in while keeping harmful things out."
+   }
+  ],
+  "cellMembrane": {
+   "description": "A flexible outer barrier just inside the cell wall.",
+   "function": "Controls the movement of water, nutrients, and waste into and out of the cell."
+  },
+  "cellWall": {
+   "present": true,
+   "description": "A tough, rigid outer layer made of cellulose that surrounds the cell membrane."
+  },
+  "gradeBand": "4-5",
+  "targetEvalMode": "organelle_placement",
+  "objectiveGrade": "6",
+  "challengeTypes": [
+   "organelle_placement"
+  ]
+ }
+}

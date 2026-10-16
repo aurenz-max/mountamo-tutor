@@ -7,7 +7,12 @@
 
 import { ComponentDefinition } from '../../../types';
 import type { FastFactMiss } from '../../../primitives/visual-primitives/core/fastFactWorkspace';
-import { sameMisses } from './missLists';
+import type { VocabMiss } from '../../../primitives/visual-primitives/core/vocabularyExplorerWorkspace';
+import type { FactFileMiss } from '../../../primitives/visual-primitives/core/factFileWorkspace';
+import type { TimelineMiss } from '../../../primitives/visual-primitives/core/timelineExplorerWorkspace';
+import type { HowMiss } from '../../../primitives/visual-primitives/core/howItWorksWorkspace';
+import { missLists, sameMisses } from './missLists';
+import type { SkillMiss } from '../../../primitives/visual-primitives/core/digitalSkillsWorkspace';
 
 export const CORE_CATALOG: ComponentDefinition[] = [
   {
@@ -447,6 +452,24 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'fact-file',
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'A fact file (key stats and tabbed sections) with multiple-choice questions about it. You cannot see the '
+        + 'file text, so never state a fact, number or detail as if from it. Open file: the learner looks the answer up. '
+        + 'Closed file: the learner remembers it. While the learner is reading, the question is hidden: help them read '
+        + 'and do not ask it. Read the question aloud, and for a young learner every choice, in the same voice. Before '
+        + 'an answer and after a wrong one: never say the answer or which choice it is; never describe a choice by what '
+        + 'it says or is about ("the one about species"); never hint at the idea the answer rests on ("think about '
+        + 'what makes things float", "heavier or lighter?"); never say what a wrong choice is or means; never rule '
+        + 'choices out until one is left. Never name a section in words, not even as a memory cue ("think back to the '
+        + 'Key Stats", "what you read about records"): point_to_section shows it, recorded as help. Teaching is what the '
+        + 'question asks and how to look or remember, never the content of the answer. You cannot tap or open a tab '
+        + 'for the learner.',
+      // Every mode: point_to_section (help) and drop_far_choice (simplify), `factFileLevers.ts`.
+      levers: true,
+      // The tap's own check (`factFileMiss`): the wrong choice is a fact the file states elsewhere, or one it does not state.
+      misses: sameMisses<FactFileMiss>(['explore', 'recall', 'apply'], ['other_file_fact', 'not_in_file']),
+    },
     description: 'Magazine-style profile card with key stats, quick facts, deep dive sections, records, and "did you know?" callouts. Students explore tabbed sections then answer self-check questions. Works for ANY topic — trash trucks, volcanoes, ancient civilizations, animals. ESSENTIAL for K-8 general content delivery.',
     constraints: 'Best for topics with concrete facts and stats. Not ideal for purely narrative content.',
     affordances: { representation: 'symbolic', reader: 'none', answers: ['tap'], role: ['introduce', 'apply'], minutes: 6 },
@@ -457,7 +480,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['recall_easy'],
-        description: 'Student explores all sections, then answers 3 easy recall questions with section hints visible',
+        description: 'Student answers 3 easy recall questions with the Fact File open above them, finding each answer in its sections (look it up)',
       },
       {
         evalMode: 'recall',
@@ -465,7 +488,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['recall_easy', 'recall_medium'],
-        description: 'Student reads the Fact File, then answers 4 questions without section hints. Mix of easy and medium.',
+        description: 'Student reads the Fact File, then answers 4 questions with the file closed (key stats included). Mix of easy and medium.',
       },
       {
         evalMode: 'apply',
@@ -473,7 +496,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: 5.0,
         scaffoldingMode: 4,
         challengeTypes: ['recall_medium', 'recall_hard'],
-        description: 'Student answers harder questions requiring inference, comparison, or application of facts to new scenarios',
+        description: 'Student reads the Fact File, then answers 4 harder questions with the file closed, requiring inference, comparison, or application of facts to new scenarios',
       },
     ],
     tutoring: {
@@ -545,38 +568,61 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'how-it-works',
-    description: 'Interactive step-by-step process diagram. Students navigate through 4-6 sequential stages learning how something works (garbage collection, water cycle, digestion, bill-making). Each step has description, optional "What\'s Happening?" deeper explanation, key terms, and fun facts. Comprehension challenges test understanding via sequencing, identifying, predicting, and explaining. ESSENTIAL for K-8 procedural knowledge across all subjects.',
-    constraints: 'Best for processes with clear sequential steps (4-6). Not ideal for non-linear or branching processes.',
-    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap', 'manipulate'], role: ['introduce', 'visualize', 'apply'], minutes: 6 },
+    description: 'Step-by-step process exhibit. Students read how something works in 4-6 sequential steps (garbage collection, water cycle, digestion, bill-making), each with a description, an optional "What\'s Happening?" deeper explanation, key terms and fun facts; a pre-reader gets 3-4 picture steps that the tutor reads aloud. Then questions that code builds from the steps and checks from their order: which step a description tells of (its own name blanked out), putting the steps in order, what happens next after the first few steps, and why a step matters. ESSENTIAL for K-8 procedural knowledge across all subjects.',
+    constraints: 'Best for processes with clear sequential steps (4-6). Not ideal for non-linear or branching processes. Code builds every question, choice and answer from the steps; the manifest picks the process, never the questions. Evaluable: every answer is checked by code.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap', 'spoken', 'manipulate'], role: ['introduce', 'visualize', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'guided',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Guided Walkthrough (Easy)',
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['identify'],
-        description: 'Student walks through all steps with full guidance, then answers 3 "identify" questions with steps still visible',
+        description: 'Student reads all the steps, then answers 3 identify questions: which step a description tells of, with its own name blanked out and the step list still on screen (hard: both neighbouring steps among the choices)',
       },
       {
         evalMode: 'sequence',
-        affordances: { answers: ['manipulate', 'tap'] },
+        affordances: { answers: ['manipulate', 'tap', 'spoken'] },
         label: 'Sequence & Identify (Medium)',
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['sequence', 'identify'],
-        description: 'Student must drag steps into correct order AND answer identify questions without step details visible',
+        description: 'Student puts the step cards in order (easy 3 cards, medium 4, hard every step written as its description) AND answers identify questions with no step list on screen',
       },
       {
         evalMode: 'predict',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Predict & Explain (Hard)',
         beta: 5.5,
         scaffoldingMode: 4,
         challengeTypes: ['predict', 'explain'],
-        description: 'Student sees partial process and must predict next step or explain why a step happens. Requires inference beyond memorization.',
+        description: 'Student sees the first steps and predicts the next one (hard: both wrong choices come later in the process), and explains why a step matters by choosing what it makes possible. Requires inference beyond memorization.',
       },
     ],
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'Code builds every question from the process steps and checks every answer; you are not told the key. '
+        + 'The learner first reads the steps (a pre-reader sees pictures: read them aloud); the questions start when they press Start. '
+        + 'Once they start, never retell the steps in order. IDENTIFY: the description of a step, its own name blanked; never say '
+        + 'which step it is, its number, or the blanked words. SEQUENCE: no step list is on screen; never say or imply which card '
+        + 'comes first, next or last, what comes before or after any card, or that two cards are swapped, even as a question '
+        + '("what happens after your foot pushes down?"). PREDICT: never say or describe what the next step does, or hint with a '
+        + 'word from the name of a choice. EXPLAIN: never say in your own words what the asked step makes possible, carries or '
+        + 'connects (that is the answer), or which choice fits. Outside SEQUENCE you may ask what has to happen before or after a '
+        + 'step the learner names. After a miss, never say why the wrong choice was chosen. Describe a lever only by what the '
+        + 'scene says it shows. You cannot tap, place, check or press Start for the learner.',
+      // identify: step_numbers (no step list on screen), two_choices, easier_item; predict: last_step, two_choices,
+      // easier_item; explain: show_step, two_choices, easier_item; sequence: show_why (every card has a purpose) and
+      // fewer_cards (`howItWorksLevers.ts`). A pre-reader's picture order has only fewer_cards.
+      levers: true,
+      // The activity's own check (`howMiss`) on a tap or an order, and the same ids as each spoken item's known misses.
+      misses: missLists<HowMiss>({
+        guided: ['neighbour_step', 'far_step'],
+        sequence: ['adjacent_swap', 'reversed', 'one_moved', 'two_swapped', 'mixed_order', 'neighbour_step', 'far_step'],
+        predict: ['skipped_ahead', 'went_back', 'neighbour_step', 'far_step'],
+      }),
+    },
     tutoring: {
       taskDescription:
         'Guide the student through a step-by-step process: "{{title}}". '
@@ -604,11 +650,11 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       ],
       aiDirectives: [
         {
-          title: 'PRE-READER PICTURE ORDER (K)',
+          title: 'PRE-READER PICTURE STORY (K)',
           instruction:
-            'If this activity is the picture-order task for a young child (you will receive [ACTIVITY_START_PRE] with a question and a numbered list of steps), READ IT ALOUD as your greeting: say the question warmly, then read every step out loud in order, word for word, and invite the child to tap the pictures to put them in order. '
+            'If this activity is the picture story for a young child (you will receive [ACTIVITY_START_PRE] with a numbered list of steps), READ IT ALOUD as your greeting: read every step out loud in order, word for word, and invite the child to tap the big play button when ready for the questions. '
             + 'Reading the steps aloud IS your greeting — this OVERRIDES any one-sentence or "keep it brief" cap; do not shorten it or skip a step. '
-            + 'Never say the final order as the answer. On [PRE_WRONG] give ONE encouraging hint about what happens FIRST; on [PRE_COMPLETE] celebrate in one short sentence.',
+            + 'When you receive [READ_QUESTION] or [NEXT_QUESTION], read the question aloud word for word. Once the questions start, never say the order of the steps or which picture is right.',
         },
         {
           title: 'STEP NAVIGATION',
@@ -644,35 +690,36 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'timeline-explorer',
-    description: 'Interactive chronological timeline with 5-8 event cards. Students explore events spanning a time period, reading descriptions, impact callouts, and connections between events. Comprehension challenges test chronological understanding via ordering, identification, dating, and cause-effect reasoning. Works for ANY chronological topic — history of aviation, evolution of computers, life of a city, scientific discoveries. ESSENTIAL for K-8 chronological understanding across all subjects.',
-    constraints: 'Best for topics with clear chronological progression (5-8 events). Not ideal for non-sequential topics.',
-    affordances: { representation: 'symbolic', answers: ['tap', 'manipulate'], role: ['introduce', 'apply'], minutes: 6 },
+    description: 'Interactive chronological timeline with 5-8 events. Students first read every event on the timeline (its date, a description, an impact line and how it connects to the next), then the timeline closes and a check built by code from the events\' time order begins: name the event a clue describes, say when an event happened, put event cards in time order, or match each cause to the event it led to. No card in the check shows a date. Works for ANY chronological topic — history of aviation, evolution of computers, life of a city, scientific discoveries. ESSENTIAL for K-8 chronological understanding across all subjects.',
+    constraints: 'Best for topics with clear chronological progression (5-8 events). Not ideal for non-sequential topics. Code builds every question, option and answer from the events; the manifest picks the topic, never the questions. Evaluable: every answer is checked by code.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'spoken', 'manipulate'], role: ['introduce', 'apply'], minutes: 6 },
     evalModes: [
       {
         evalMode: 'explore',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Guided Exploration (Easy)',
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['identify'],
-        description: 'Student explores all events with full guidance, then answers 3 "which event?" identification questions with timeline visible',
+        description: 'Student reads every event, then answers 3 "which event is this?" questions from a clue that names neither the event nor its date (easy: 3 choices far apart in time; hard: 4 choices including the events next to it). The timeline can come back as help.',
       },
       {
         evalMode: 'order',
+        affordances: { answers: ['manipulate', 'tap', 'spoken'] },
         label: 'Chronological Ordering (Medium)',
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['order', 'identify'],
-        description: 'Student must arrange events chronologically AND identify events by description, timeline hidden during challenges',
+        description: 'Student puts event cards (titles, no dates) in time order and identifies an event from a clue, with the timeline hidden (easy: 3 cards spread out in time; hard: 5 cards next to each other in time)',
       },
       {
         evalMode: 'connect',
-        affordances: { answers: ['tap'] },
+        affordances: { answers: ['manipulate', 'tap', 'spoken'] },
         label: 'Cause & Effect (Hard)',
         beta: 5.5,
         scaffoldingMode: 4,
         challengeTypes: ['cause_effect', 'date'],
-        description: 'Student matches causes to effects across events and places events in correct time periods. Requires understanding WHY things happened, not just WHEN.',
+        description: 'Student matches each cause to the later event it led to and says when events happened, with the timeline hidden (easy: 2 pairs; hard: 3 pairs and an extra event that happened before every cause). Requires understanding WHY things happened, not just WHEN.',
       },
     ],
     tutoring: {
@@ -725,21 +772,68 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         },
       ],
     },
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'First the learner reads the timeline: they open every event, then press Begin the questions. While they read, talk '
+        + 'about the events freely. Then the timeline closes and code builds and checks every question from the events; you are '
+        + 'not told the key. IDENTIFY: a clue describes one event; the learner says or taps its title. DATE: the learner says or '
+        + 'taps when an event happened. ORDER: the learner moves cards into time order, earliest at the top. '
+        + 'CAUSE AND EFFECT: the learner matches each cause to the event it led to. During the questions never say an '
+        + 'event\'s date, which event fits the clue, where an event falls in time (first, last, next to another), which card comes before another (never name a card or a pair to look at), or which effect '
+        + 'goes with a cause, and never retell what an event was about; ask what the learner remembers of it. When you restate a clue, never add a word from a choice\'s title. After a miss, never '
+        + 'say which choice it was close to. Describe a lever card only by what the scene says it shows. You cannot open, tap, '
+        + 'move, match or check for the learner.',
+      // identify: show_timeline, two_choices; date: before_after, date_line, two_dates; order: read_cards, led_to,
+      // fewer_cards; cause_effect: read_cards, show_dates, two_links (`timelineExplorerLevers.ts`). Every miss is answered
+      // by a help lever first.
+      levers: true,
+      // The activity's own check (`timelineMiss`) on a tap or a check, and the same ids as each spoken item's known misses.
+      misses: missLists<TimelineMiss>({
+        explore: ['adjacent_event', 'distant_event'],
+        order: ['reversed', 'adjacent_swap', 'two_swapped', 'one_moved', 'mixed_order', 'adjacent_event', 'distant_event'],
+        connect: ['used_extra', 'effect_before_cause', 'pairs_swapped', 'mixed_links', 'adjacent_date', 'distant_date'],
+      }),
+    },
     supportsEvaluation: true,
   },
   {
     id: 'vocabulary-explorer',
-    description: 'Topic-specific vocabulary explorer with rich contextual definitions, example sentences, word origins, related words, and pronunciation guides. Students explore 5-8 terms through an interactive card interface, then demonstrate comprehension via matching, fill-in-blank, context usage, and identification challenges. Natural complement to any content primitive. ESSENTIAL for K-8 vocabulary building across all subjects.',
-    constraints: 'Best for topics with specialized terminology (5-8 terms). Not ideal for topics without distinct vocabulary.',
-    affordances: { representation: 'symbolic', answers: ['tap'], role: ['introduce', 'apply'], minutes: 6 },
+    description: 'Topic-specific vocabulary: 6-8 word cards (what each word means, a sentence using it, related words, pronunciation and origin) that students study, then a check built by code from those words. The cards close when the check starts. Tasks: match words to their meanings; choose the word that completes a new sentence; choose the word that fits a described situation that never names it. Students say the word or tap it. Natural complement to any content primitive. ESSENTIAL for K-8 vocabulary building across all subjects.',
+    constraints: 'Best for topics with specialized terminology (6-8 words). Not ideal for topics without distinct vocabulary. Code builds every question, choice and answer from the word cards; the manifest picks the topic, never the questions. Evaluable: every answer is checked by code.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'spoken'], role: ['introduce', 'apply'], minutes: 6 },
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'Code builds and checks every item from the word cards; you are not told which word or meaning is right. '
+        + 'Before the check the learner reads the cards (what each word means, a sentence using it): talk about the words then, '
+        + 'and do not ask the questions of the check. Start the check closes the cards for good. MATCH: the words and meanings are '
+        + 'on screen; never say which meaning goes with a word, never retell a meaning so it points to one word, never say which '
+        + 'pairs are wrong, and never name an idea from one meaning for the learner to look for ("warming up into a gas", '
+        + '"cooling into drops"), in the meanings or in the example sentences. SENTENCE and '
+        + 'SITUATION items: the learner says the word or taps it. Never say the word, its first sound or letter, and never rule a '
+        + 'choice out. Never put what is happening into the words of the right meaning ("liquid turning into a gas", "water '
+        + 'gathering together"): read the sentence or situation as written and ask what is happening in it and which words are '
+        + 'clues. Never say what kind of word the blank needs (an action word, a thing), even when the choices are labeled. Never '
+        + 'say what a choice means unless the meanings are on screen; then the learner reads them (read them aloud only when '
+        + 'asked, every one in order), and never point to one. You cannot tap, '
+        + 'pair or check for the learner.',
+      // match publishes show_examples and fewer_pairs (when other words are left for a smaller match); fill_blank
+      // tag_word_kinds (choices of two kinds), show_meanings, drop_choice; context show_meanings, drop_choice
+      // (`vocabularyExplorerLevers.ts`). Every miss is answered by a help lever first.
+      levers: true,
+      // The activity's own check (`vocabMiss`) on a tap, and the same ids as each spoken item's known misses.
+      misses: missLists<VocabMiss>({ explore: ['extra_meaning', 'swapped_pair', 'several_wrong'],
+        recall: ['extra_meaning', 'swapped_pair', 'several_wrong', 'related_word', 'wrong_kind_of_word', 'other_word'],
+        apply: ['related_word', 'wrong_kind_of_word', 'other_word'] }),
+    },
     evalModes: [
       {
         evalMode: 'explore',
+        affordances: { answers: ['tap'] },
         label: 'Explore & Match (Guided)',
         beta: 1.5,
         scaffoldingMode: 1,
         challengeTypes: ['match'],
-        description: 'Student explores all terms, then matches terms to definitions with term cards still visible',
+        description: 'Student studies the word cards, then matches words to their meanings (easy 3 pairs, medium 4, hard 4 with one extra meaning that goes with none)',
       },
       {
         evalMode: 'recall',
@@ -747,15 +841,16 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: 3.5,
         scaffoldingMode: 3,
         challengeTypes: ['match', 'fill_blank'],
-        description: 'Student matches terms AND fills in blanks in sentences, without definitions visible',
+        description: 'Student matches words to meanings AND chooses the word that completes new sentences, with the cards closed (hard: the other choices are related words of the same kind)',
       },
       {
         evalMode: 'apply',
+        affordances: { answers: ['tap', 'spoken'] },
         label: 'Apply in Context (Hard)',
         beta: 5.5,
         scaffoldingMode: 4,
         challengeTypes: ['fill_blank', 'context'],
-        description: 'Student fills blanks and uses terms in new sentences/scenarios. Requires transferring vocabulary to novel contexts.',
+        description: 'Student chooses the word that completes a new sentence and the word that fits a described situation that never names it. Requires transferring vocabulary to novel contexts.',
       },
     ],
     tutoring: {
@@ -791,24 +886,17 @@ export const CORE_CATALOG: ComponentDefinition[] = [
             + 'If the word has an interesting origin, tease it. Keep to 1-2 sentences.',
         },
         {
-          title: 'RELATED WORD CONNECTION',
+          title: 'CHECK STARTED',
           instruction:
-            'When you receive [RELATED_WORD_CLICKED], briefly explain how the two terms '
-            + 'connect to each other. Build a mental web of vocabulary. Keep to 1-2 sentences.',
+            'When you receive [CHECK_STARTED], the word cards have closed. Read the first question aloud '
+            + 'and let the student answer. Keep to 1-2 sentences.',
         },
         {
           title: 'CHALLENGE FEEDBACK',
           instruction:
-            'When you receive [CHALLENGE_CORRECT], celebrate and use the word in a new sentence. '
-            + 'When you receive [CHALLENGE_INCORRECT], give a contextual hint using the word\'s '
-            + 'definition or origin without revealing the answer. Keep to 1-2 sentences.',
-        },
-        {
-          title: 'ALL TERMS EXPLORED',
-          instruction:
-            'When you receive [ALL_TERMS_EXPLORED], congratulate the student and challenge them '
-            + 'to use one of the new words in their own sentence. Preview the challenges. '
-            + 'Keep to 2-3 sentences.',
+            'When you receive [ANSWER_CORRECT], celebrate and use the word in a new sentence. '
+            + 'When you receive [ANSWER_INCORRECT], give a hint about the meaning '
+            + 'without naming a word or ruling a choice out. Keep to 1-2 sentences.',
         },
         {
           title: 'VOCABULARY MASTERY',
@@ -823,8 +911,8 @@ export const CORE_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'digital-skills-sim',
-    description: 'Guided tutorial teaching fundamental digital device skills: clicking targets, dragging objects to zones, and typing on a virtual keyboard. Gamified with score tracking. Perfect for teaching basic computer interaction. ESSENTIAL for K-1 digital literacy.',
-    constraints: 'K-1 only. Challenges are very simple motor-skill tasks, not academic content.',
+    description: 'Guided practice of basic device skills for young learners: click the named picture among several, press, hold and drag a picture into the named box, and find and press letters on an on-screen keyboard (a capital letter, a small letter, or a short word in order). Pictures and boxes carry no words and nothing marks the right picture, box or key; harder items add more and smaller pictures and boxes. Perfect for teaching basic computer interaction. ESSENTIAL for K-1 digital literacy.',
+    constraints: 'K-1 only. Challenges are very simple motor-skill tasks, not academic content. Code builds every item and its answer; the manifest picks the picture theme, never the items.',
     affordances: { answers: ['tap', 'manipulate', 'type'], role: ['introduce', 'apply'], minutes: 4 },
     evalModes: [
       {
@@ -834,7 +922,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: -1.5,
         scaffoldingMode: 1,
         challengeTypes: ['click'],
-        description: 'Click accuracy and speed practice',
+        description: 'Click the named picture among 2 to 4 pictures with no words (harder: more, smaller pictures)',
       },
       {
         evalMode: 'drag',
@@ -843,7 +931,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: -1.0,
         scaffoldingMode: 2,
         challengeTypes: ['drag'],
-        description: 'Drag objects to target zones',
+        description: 'Press, hold and drag a picture into the named box among 2 to 4 boxes (harder: more, smaller boxes)',
       },
       {
         evalMode: 'type',
@@ -852,7 +940,7 @@ export const CORE_CATALOG: ComponentDefinition[] = [
         beta: -0.5,
         scaffoldingMode: 2,
         challengeTypes: ['type'],
-        description: 'Find and press the correct key',
+        description: 'Find and press a letter on an on-screen keyboard (easy: a capital letter; medium: a small letter on a capital key; hard: a three-letter word in order)',
       },
     ],
     tutoring: {
@@ -861,17 +949,38 @@ export const CORE_CATALOG: ComponentDefinition[] = [
       contextKeys: ['title', 'currentPhase', 'challengeIndex', 'totalChallenges', 'instruction'],
       scaffoldingLevels: {
         level1:
-          '"Can you find the [target]? Look carefully at the screen!"',
+          '"Listen again: what are we looking for? Look at every picture before you click."',
         level2:
-          '"Try moving your mouse slowly toward the [target]. Take your time!"',
+          '"Move the pointer slowly until it sits right on the picture, keep your hand still, then click."',
         level3:
-          '"I see the [target] right here — move your mouse to it and click! You can do it!"',
+          '"Say the name of each picture you see, one by one. Which one did I ask for?"',
       },
       commonStruggles: [
-        { pattern: 'Student clicks but misses the target repeatedly', response: 'Encourage slower, more deliberate mouse movement. Suggest making the pointer touch the target before clicking.' },
-        { pattern: 'Student cannot complete drag — drops item before reaching zone', response: 'Remind student to hold the mouse button down while moving. Practice the hold-and-move motion.' },
-        { pattern: 'Student presses wrong keys repeatedly', response: 'Point out where the highlighted key is on the keyboard. Use positional hints like "top row" or "bottom left".' },
+        { pattern: 'Student clicks but misses the pictures', response: 'Encourage slower, more deliberate mouse movement: the pointer touches the picture before clicking.' },
+        { pattern: 'Student cannot complete drag — lets go before reaching a box', response: 'Remind the student to hold the button down while moving, and let go only when the picture is over the box.' },
+        { pattern: 'Student presses wrong keys repeatedly', response: 'Ask the student to look along each row of keys, one row at a time, without naming the row.' },
       ],
+    },
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1'],
+      guidance: 'Code builds and checks every item; you are not told where the target is. The learner may not read yet, so say '
+        + 'the question in your own words. CLICK: pictures with no words spread across a play area; the learner clicks the one '
+        + 'the question names. DRAG: the learner presses on the picture, holds, moves it and lets go over the box the question '
+        + 'names; the boxes are pictures with no words. TYPE: an on-screen keyboard of capital letters; the learner presses the '
+        + 'letter on the card (a small letter is pressed on its capital key), or the letters of a word in order. Coach the movement: '
+        + 'move the pointer onto a picture before clicking, keep the hand still when clicking, hold the button down while moving, '
+        + 'let go only over a box, look along each row of keys. Never say where a picture, box or key is (left, right, top, bottom, '
+        + 'which row, next to; a row that glows may be named), never describe the right one beyond the name the question uses, and never say which one is right '
+        + 'or which one the learner should have chosen. For a small letter, never say or spell its capital: matching it to the '
+        + 'capital key is the task. Describe a lever card only by what the scene says it shows. You cannot '
+        + 'click, drag or press keys for the learner.',
+      // click publishes show_picture, big_targets and fewer_pictures (3 or more pictures); drag show_picture, big_boxes and
+      // fewer_boxes (3 or more boxes); type glow_row, big_keys, capital_card (small letters) and one_letter (words)
+      // (`digitalSkillsLevers.ts`). Every miss is answered by a help lever first.
+      levers: true,
+      // The activity's own check (`skillMiss`) on a click, a drop or a key.
+      misses: missLists<SkillMiss>({ click: ['wrong_picture', 'missed_picture'], drag: ['wrong_box', 'let_go_outside'],
+        type: ['neighbour_key', 'mirror_letter', 'wrong_key'] }),
     },
     supportsEvaluation: true,
   },

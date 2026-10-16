@@ -89,15 +89,21 @@ import { threeDShapeExplorerLiveDomain } from './adapters/threeDShapeExplorerLiv
 import { calendarExplorerLiveDomain } from './adapters/calendarExplorerLive';
 import { timelineBuilderLiveDomain } from './adapters/timelineBuilderLive';
 import { fastFactLiveDomain } from './adapters/fastFactLive';
+import { factFileLiveDomain } from './adapters/factFileLive';
 import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
+import { raceTrackLabLiveDomain } from './adapters/raceTrackLabLive';
 import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
 import { foodWebBuilderLiveDomain } from './adapters/foodWebBuilderLive';
 import { lifeCycleSequencerLiveDomain } from './adapters/lifeCycleSequencerLive';
 import { classificationSorterLiveDomain } from './adapters/classificationSorterLive';
+import { cellBuilderLiveDomain } from './adapters/cellBuilderLive';
 import { towerStackerLiveDomain } from './adapters/towerStackerLive';
 import { gearTrainBuilderLiveDomain } from './adapters/gearTrainBuilderLive';
 import { matterExplorerLiveDomain } from './adapters/matterExplorerLive';
 import { moleculeConstructorLiveDomain } from './adapters/moleculeConstructorLive';
+import { atomBuilderLiveDomain } from './adapters/atomBuilderLive';
+import { mixingAndDissolvingLiveDomain } from './adapters/mixingAndDissolvingLive';
+import { reactionLabLiveDomain } from './adapters/reactionLabLive';
 import { genreExplorerLiveDomain } from './adapters/genreExplorerLive';
 import { textStructureAnalyzerLiveDomain } from './adapters/textStructureAnalyzerLive';
 import { contextCluesDetectiveLiveDomain } from './adapters/contextCluesDetectiveLive';
@@ -111,11 +117,29 @@ import { oralSentenceStudioLiveDomain } from './adapters/oralSentenceStudioLive'
 import { statesOfMatterLiveDomain } from './adapters/statesOfMatterLive';
 import { solarSystemExplorerLiveDomain } from './adapters/solarSystemExplorerLive';
 import { lightShadowLabLiveDomain } from './adapters/lightShadowLabLive';
+import { planetaryExplorerLiveDomain } from './adapters/planetaryExplorerLive';
+import { constellationBuilderLiveDomain } from './adapters/constellationBuilderLive';
+import { phExplorerLiveDomain } from './adapters/phExplorerLive';
+import { gasLawsSimulatorLiveDomain } from './adapters/gasLawsSimulatorLive';
+import { equationBalancerLiveDomain } from './adapters/equationBalancerLive';
+import { energyOfReactionsLiveDomain } from './adapters/energyOfReactionsLive';
+import { stoichiometryLabLiveDomain } from './adapters/stoichiometryLabLive';
+import { gravityDropTowerLiveDomain } from './adapters/gravityDropTowerLive';
+import { soundWaveExplorerLiveDomain } from './adapters/soundWaveExplorerLive';
 import { youAndMeLiveDomain } from './adapters/youAndMeLive';
 import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { trainYardLiveDomain } from './adapters/trainYardLive';
 import { airplaneDioramaLiveDomain } from './adapters/airplaneDioramaLive';
 import { constructionSiteDioramaLiveDomain } from './adapters/constructionSiteDioramaLive';
+import { flightForcesExplorerLiveDomain } from './adapters/flightForcesExplorerLive';
+import { constructionSequencePlannerLiveDomain } from './adapters/constructionSequencePlannerLive';
+import { timelineExplorerLiveDomain } from './adapters/timelineExplorerLive';
+import { vocabularyExplorerLiveDomain } from './adapters/vocabularyExplorerLive';
+import { howItWorksLiveDomain } from './adapters/howItWorksLive';
+import { vehicleComparisonLabLiveDomain } from './adapters/vehicleComparisonLabLive';
+import { transportChallengeLiveDomain } from './adapters/transportChallengeLive';
+import { propulsionLabLiveDomain } from './adapters/propulsionLabLive';
+import { digitalSkillsSimLiveDomain } from './adapters/digitalSkillsSimLive';
 import { openBuilderLiveDomain } from './adapters/openBuilderLive';
 import { shapeBuilderLiveDomain } from './adapters/shapeBuilderLive';
 import { shapeComposerLiveDomain } from './adapters/shapeComposerLive';
@@ -236,15 +260,21 @@ export const LIVE_ADAPTERS = {
   'calendar-explorer': workspaceAdapter('calendar-explorer', calendarExplorerLiveDomain),
   'timeline-builder': workspaceAdapter('timeline-builder', timelineBuilderLiveDomain),
   'fast-fact': workspaceAdapter('fast-fact', fastFactLiveDomain),
+  'fact-file': workspaceAdapter('fact-file', factFileLiveDomain),
   'push-pull-arena': workspaceAdapter('push-pull-arena', pushPullArenaLiveDomain),
+  'race-track-lab': workspaceAdapter('race-track-lab', raceTrackLabLiveDomain),
   'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
   'food-web-builder': workspaceAdapter('food-web-builder', foodWebBuilderLiveDomain),
   'life-cycle-sequencer': workspaceAdapter('life-cycle-sequencer', lifeCycleSequencerLiveDomain),
   'classification-sorter': workspaceAdapter('classification-sorter', classificationSorterLiveDomain),
+  'cell-builder': workspaceAdapter('cell-builder', cellBuilderLiveDomain),
   'tower-stacker': workspaceAdapter('tower-stacker', towerStackerLiveDomain),
   'gear-train-builder': workspaceAdapter('gear-train-builder', gearTrainBuilderLiveDomain),
   'matter-explorer': workspaceAdapter('matter-explorer', matterExplorerLiveDomain),
   'molecule-constructor': workspaceAdapter('molecule-constructor', moleculeConstructorLiveDomain),
+  'atom-builder': workspaceAdapter('atom-builder', atomBuilderLiveDomain),
+  'mixing-and-dissolving': workspaceAdapter('mixing-and-dissolving', mixingAndDissolvingLiveDomain),
+  'reaction-lab': workspaceAdapter('reaction-lab', reactionLabLiveDomain),
   'genre-explorer': workspaceAdapter('genre-explorer', genreExplorerLiveDomain),
   'text-structure-analyzer': workspaceAdapter('text-structure-analyzer', textStructureAnalyzerLiveDomain),
   'context-clues-detective': workspaceAdapter('context-clues-detective', contextCluesDetectiveLiveDomain),
@@ -258,11 +288,29 @@ export const LIVE_ADAPTERS = {
   'states-of-matter': workspaceAdapter('states-of-matter', statesOfMatterLiveDomain),
   'solar-system-explorer': workspaceAdapter('solar-system-explorer', solarSystemExplorerLiveDomain),
   'light-shadow-lab': workspaceAdapter('light-shadow-lab', lightShadowLabLiveDomain),
+  'planetary-explorer': workspaceAdapter('planetary-explorer', planetaryExplorerLiveDomain),
+  'constellation-builder': workspaceAdapter('constellation-builder', constellationBuilderLiveDomain),
+  'ph-explorer': workspaceAdapter('ph-explorer', phExplorerLiveDomain),
+  'gas-laws-simulator': workspaceAdapter('gas-laws-simulator', gasLawsSimulatorLiveDomain),
+  'equation-balancer': workspaceAdapter('equation-balancer', equationBalancerLiveDomain),
+  'energy-of-reactions': workspaceAdapter('energy-of-reactions', energyOfReactionsLiveDomain),
+  'stoichiometry-lab': workspaceAdapter('stoichiometry-lab', stoichiometryLabLiveDomain),
+  'gravity-drop-tower': workspaceAdapter('gravity-drop-tower', gravityDropTowerLiveDomain),
+  'sound-wave-explorer': workspaceAdapter('sound-wave-explorer', soundWaveExplorerLiveDomain),
   'you-and-me': workspaceAdapter('you-and-me', youAndMeLiveDomain),
   'ramp-lab': workspaceAdapter('ramp-lab', rampLabLiveDomain),
   'train-yard': workspaceAdapter('train-yard', trainYardLiveDomain),
   'airplane-diorama': workspaceAdapter('airplane-diorama', airplaneDioramaLiveDomain),
   'construction-site-diorama': workspaceAdapter('construction-site-diorama', constructionSiteDioramaLiveDomain),
+  'flight-forces-explorer': workspaceAdapter('flight-forces-explorer', flightForcesExplorerLiveDomain),
+  'construction-sequence-planner': workspaceAdapter('construction-sequence-planner', constructionSequencePlannerLiveDomain),
+  'timeline-explorer': workspaceAdapter('timeline-explorer', timelineExplorerLiveDomain),
+  'vocabulary-explorer': workspaceAdapter('vocabulary-explorer', vocabularyExplorerLiveDomain),
+  'how-it-works': workspaceAdapter('how-it-works', howItWorksLiveDomain),
+  'vehicle-comparison-lab': workspaceAdapter('vehicle-comparison-lab', vehicleComparisonLabLiveDomain),
+  'transport-challenge': workspaceAdapter('transport-challenge', transportChallengeLiveDomain),
+  'propulsion-lab': workspaceAdapter('propulsion-lab', propulsionLabLiveDomain),
+  'digital-skills-sim': workspaceAdapter('digital-skills-sim', digitalSkillsSimLiveDomain),
   'open-builder': workspaceAdapter('open-builder', openBuilderLiveDomain),
   'shape-builder': workspaceAdapter('shape-builder', shapeBuilderLiveDomain),
   'shape-composer': workspaceAdapter('shape-composer', shapeComposerLiveDomain),

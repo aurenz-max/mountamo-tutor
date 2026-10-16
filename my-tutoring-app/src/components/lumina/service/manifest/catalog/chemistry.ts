@@ -10,6 +10,14 @@ import type { PeriodicMiss, SpokenPeriodicMiss } from '../../../primitives/chemi
 import type { SpokenMatterMiss } from '../../../primitives/visual-primitives/chemistry/matterExplorerWorkspace';
 import type { SpokenStatesMiss } from '../../../primitives/visual-primitives/chemistry/statesOfMatterWorkspace';
 import type { MoleculeMiss } from '../../../primitives/visual-primitives/chemistry/moleculeConstructorWorkspace';
+import type { AtomMiss } from '../../../primitives/visual-primitives/chemistry/atomBuilderWorkspace';
+import type { DissolvingMiss } from '../../../primitives/visual-primitives/chemistry/mixingAndDissolvingWorkspace';
+import type { PhExplorerMiss } from '../../../primitives/visual-primitives/chemistry/phExplorerWorkspace';
+import type { GasLawsMiss } from '../../../primitives/visual-primitives/chemistry/gasLawsWorkspace';
+import type { EquationBalancerMiss } from '../../../primitives/visual-primitives/chemistry/equationBalancerWorkspace';
+import type { ReactionMiss } from '../../../primitives/visual-primitives/chemistry/reactionLabWorkspace';
+import type { EnergyMiss } from '../../../primitives/visual-primitives/chemistry/energyOfReactionsWorkspace';
+import type { StoichiometryMiss } from '../../../primitives/visual-primitives/chemistry/stoichiometryLabWorkspace';
 import { missLists } from './missLists';
 
 export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
@@ -260,7 +268,8 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       scaffoldingLevels: {
         level1: '"What do you notice happening? Look carefully at the substances — is anything changing?"',
         level2: '"Think about the signs of a chemical change: fizzing, color change, temperature change, new smell, or a new substance forming. Which signs can you see in this {{experimentName}} experiment?"',
-        level3: '"Let\'s look at this step by step. The {{reactionType}} change is happening because the substances are {{reactionType === \'chemical\' ? \'forming new substances with different properties\' : \'changing form but staying the same substance\'}}. Look at the {{currentPhase === \'observe\' ? \'observation prompts\' : \'question\'}} and describe exactly what you see."',
+        // Never names the reaction type: it is the classify answer.
+        level3: '"Let\'s look at this step by step. Did something new form, with different properties, or did the substance only change form? Look at the {{currentPhase === \'observe\' ? \'observation prompts\' : \'question\'}} and describe exactly what you see."',
       },
       commonStruggles: [
         { pattern: 'Student confuses chemical and physical change', response: 'Ask: "Is the substance still the same thing, just in a different form? Or has something completely NEW been created? If it\'s new, that\'s a chemical change!"' },
@@ -272,62 +281,135 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
     },
     evalModes: [
       { evalMode: 'predict', label: 'Predict (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['predict'], description: 'Predict reaction outcomes before mixing' },
-      { evalMode: 'observe', label: 'Observe (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['observe'], description: 'Identify signs of chemical vs physical change' },
-      { evalMode: 'explain', label: 'Explain (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['explain'], description: 'Explain reactions using particle model and conservation of mass' },
+      { evalMode: 'observe', label: 'Observe (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['observe', 'identify_signs', 'classify'], description: 'Identify signs of chemical vs physical change' },
+      { evalMode: 'explain', label: 'Explain (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['explain', 'balance', 'conservation'], description: 'Explain reactions using particle model and conservation of mass' },
     ],
+    // W1 (ROLLOUT C26): `reactionLabWorkspace.ts` owns the items, checks and scene; `reactionLabLevers.ts` the levers.
+    // The scripted path (`withWorkspaceController`) still sends the `tutoring` block above.
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'Every item is one challenge about the experiment on screen. A predict challenge is asked beside the '
+        + 'unmixed substances, before the reaction runs: never say what will happen or what the substances do together. '
+        + 'Every other challenge opens once the learner presses Mix Substances!; then the beaker, its badges and the '
+        + 'temperature badge show what happened, and reading them is the skill. During an observe, signs or classify '
+        + 'question never say what the beaker showed, which sign it shows, or whether the change is chemical or physical. '
+        + 'On an explain question never give the reason or the particle story, and never say whether mass or atoms stay '
+        + 'the same. Never use the experiment\'s real-world example as a clue. Ask the learner what they noticed or to '
+        + 'watch again instead. The learner answers by saying it, or by tapping one choice and checking it; the activity '
+        + 'checks the tap against the challenge\'s own key. For kindergarten to grade 2, read the question and every '
+        + 'choice aloud. You cannot mix, tap, check or point at a choice for the learner.',
+      levers: true,
+      // The activity's own check (`reactionMiss`), a tap or a spoken choice, in every mode.
+      misses: missLists<ReactionMiss>({
+        predict: ['no_change', 'chemical_physical_swap', 'true_false_flipped', 'other_choice'],
+        observe: ['chemical_physical_swap', 'no_change', 'true_false_flipped', 'other_choice'],
+        explain: ['unbalanced_equation', 'chemical_physical_swap', 'true_false_flipped', 'no_change', 'other_choice'],
+      }),
+    },
     supportsEvaluation: true,
   },
   {
     id: 'equation-balancer',
-    description: 'Interactive chemical equation balancer with adjustable coefficients, live atom counter, molecule visualization, and balance scale. Students adjust coefficients to balance equations while tracking atom counts on each side. Perfect for teaching conservation of mass and systematic problem-solving. ESSENTIAL for grade 6-8 chemistry.',
-    constraints: 'Requires equation data with reactants/products and atom counts. Max 10 compounds. Best for grade 6-8.',
+    description: 'Conservation of atoms in real chemical reactions, three tasks. Count: the equation is printed with its numbers in front, and the student says or taps how many atoms of one element are on one side (the number in front times the small number after the symbol, summed over the formulas). Balance: the student sets the number in front of each formula with + and − so every element has the same count on both sides, with the smallest whole numbers; first on equations where each element sits in one formula per side, then where an element is shared between two formulas (combustion, respiration). Every equation comes from a code bank of real reactions and every answer is solved by code. No live atom counter, tipping scale or match marks give the answer away; molecule drawings and an atom tally appear only as help. Perfect for teaching conservation of mass, reading formulas, and systematic balancing. ESSENTIAL for grade 6-8 chemistry.',
+    constraints: 'Best for grade 6-8. The manifest must not supply equations, coefficients or answers: the generator picks bank reactions for the topic and code builds every item. Numbers in front go from 1 to 10.',
     affordances: { representation: 'symbolic', answers: ['manipulate'], role: 'apply', minutes: 5 },
+    // Scripted fallback only (the tester, no tutor): `withWorkspaceController` keeps it until that path is retired.
+    // Its context carries the item's ask and no key.
     tutoring: {
-      taskDescription: 'The student is balancing the chemical equation: {{equationString}}. They adjust coefficients (big numbers in front of formulas) to make atom counts match on both sides. Currently balanced elements: {{balancedElements}}, unbalanced elements: {{unbalancedElements}}.',
-      contextKeys: ['currentCoefficients', 'atomCounts', 'elements', 'balancedElements', 'unbalancedElements', 'isBalanced', 'equationString', 'guidedMode', 'guidedElement', 'attemptNumber'],
+      taskDescription: 'The student is working on item {{itemIndex}} of {{totalItems}}: {{ask}}',
+      contextKeys: ['mode', 'ask', 'itemIndex', 'totalItems', 'attemptNumber'],
       scaffoldingLevels: {
-        level1: '"Look at the atom counter — which element has different numbers on each side? Start there."',
-        level2: '"Focus on {{guidedElement}} first. There are {{atomCounts.reactants[guidedElement]}} on the left and {{atomCounts.products[guidedElement]}} on the right. What coefficient would make them equal?"',
-        level3: '"Let\'s balance {{guidedElement}} step by step. Right now you have {{atomCounts.reactants[guidedElement]}} {{guidedElement}} atoms in the reactants. Each molecule of the product has a certain number — try coefficient 2 and watch the atom counter change."',
+        level1: '"Pick one element. How many of its atoms are on the left side, and how many on the right?"',
+        level2: '"The number in front tells how many molecules there are; the small number tells how many atoms of that element are in one molecule. Multiply them."',
+        level3: '"Go element by element: start with one that sits in only one formula on each side, make it match, then check the others again."',
       },
       commonStruggles: [
-        { pattern: 'Student changes subscripts instead of coefficients', response: 'Remind them: coefficients (big numbers in front) tell HOW MANY molecules. Subscripts (small numbers) tell what the molecule IS. We never change subscripts — that would make a different molecule!' },
-        { pattern: 'Student balances one element but unbalances another', response: 'Acknowledge the progress: "Great, you balanced the hydrogen! But notice the oxygen changed too. That happens — it\'s like a seesaw. Try adjusting the coefficient on the compound that has BOTH elements."' },
-        { pattern: 'Student uses very large coefficients', response: 'Guide toward simplicity: "Your equation is balanced, but can we use smaller numbers? Try dividing all coefficients by the same number — the smallest balanced set is the conventional answer."' },
-        { pattern: 'Student seems stuck after 5+ attempts', response: 'Offer guided mode: "Let\'s try a strategy! Start with the element that appears in the fewest places — it\'s easier to control. Which element only shows up in one compound on each side?"' },
+        { pattern: 'Student counts one molecule and leaves out the number in front', response: 'Ask what the big number in front means: how many copies of that molecule are there?' },
+        { pattern: 'Student balances one element but unbalances another', response: 'Acknowledge the progress, then ask them to count every element again after each change.' },
+        { pattern: 'Student finds a balanced set that is not the smallest', response: 'Ask whether every number can be divided by the same number.' },
       ],
     },
+    teachingWorkspace: {
+      grades: ['Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'Code builds and checks every item from real reactions, and you are not told the key. Count: the equation is printed '
+        + 'with its numbers in front; the learner says or taps how many atoms of one element are on one side. Balance: the learner '
+        + 'sets the number in front of each formula with + and − and presses Check Balance; it is right only when every element has '
+        + 'the same count on both sides with the smallest whole numbers. No atoms are drawn and no totals are shown unless a lever '
+        + 'draws them. Never say a number to set, an atom total, or which formula to change, and never name the element that is '
+        + 'off or the element to start with: ask the learner which element they will count first, then to count it on each '
+        + 'side and say what they find. With the molecules or the atom tally on screen, never say which rows or sides match; '
+        + 'ask the learner to compare them. You '
+        + 'cannot set a number, tap or check for the learner.',
+      // simple: molecule_view and simpler_equation; guided and complex: molecule_view, atom_tally and simpler_equation
+      // (`equationBalancerLevers.ts`). Every miss of every mode is answered by a help lever.
+      levers: true,
+      // The activity's own check (`countMiss`, `balanceMiss`), and the same ids as a spoken count's known misses.
+      misses: missLists<EquationBalancerMiss>({
+        simple: ['ignored_coefficient', 'ignored_subscript', 'ignored_parentheses', 'one_compound_only', 'added_not_multiplied', 'miscounted'],
+        guided: ['not_lowest', 'one_element_off', 'several_off'],
+        complex: ['not_lowest', 'shared_element_off', 'one_element_off', 'several_off'],
+      }),
+    },
     evalModes: [
-      { evalMode: 'simple', label: 'Simple (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['simple'], description: 'Balance simple 2-element equations with small coefficients' },
-      { evalMode: 'guided', label: 'Guided (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['guided'], description: 'Balance multi-element equations with guided hints' },
-      { evalMode: 'complex', label: 'Complex (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['complex'], description: 'Balance complex equations with 3+ elements independently' },
+      { evalMode: 'simple', affordances: { answers: ['tap', 'spoken'] }, label: 'Count atoms (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['simple'], description: 'Count the atoms of one element on one side of an equation printed with its numbers in front' },
+      { evalMode: 'guided', label: 'Balance (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['guided'], description: 'Balance an equation where each element sits in one formula on each side, using the smallest whole numbers' },
+      { evalMode: 'complex', label: 'Balance, shared element (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['complex'], description: 'Balance an equation where an element is shared between two formulas on one side, such as a combustion' },
     ],
     supportsEvaluation: true,
   },
   {
     id: 'energy-of-reactions',
-    description: 'Interactive energy-of-reactions visualization with enthalpy diagrams, temperature gauges, bond energy breakdowns, and catalyst comparisons. Students explore why reactions release or absorb heat through animated energy diagrams and real-world connections. Perfect for teaching exothermic/endothermic classification, activation energy, and bond energies. ESSENTIAL for grade 5-8 chemistry.',
-    constraints: 'Requires reaction data with energy values. Bond energy view only for grade 7-8. Best for grade 5-8.',
-    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 6 },
+    description: 'Energy-of-reactions lab with three task identities, each built and keyed in code: thermometer evidence (run a named classroom reaction, such as baking soda and vinegar or magnesium and acid, in a beaker of water, read the thermometer, and decide whether it releases or absorbs energy), energy diagrams (read an unlabelled energy diagram on a kJ grid: the direction, the energy change, the activation energy, or how much a catalyst lowers it), and bond energies (from a table of the bonds broken and formed, with counts and energy per bond, choose the energy change). Answers are tapped or said aloud. Perfect for teaching exothermic and endothermic reactions, energy diagrams, activation energy, catalysts and bond energies. ESSENTIAL for grade 5-8 chemistry.',
+    constraints: 'Best for grades 5-8. Use for chemistry lessons on energy in reactions: exothermic and endothermic, temperature change as evidence, energy diagrams, activation energy, catalysts, and bond energies (grades 7-8). The manifest must NOT supply reactions, energy values or answer keys: the reactions come from a code library, and every reading, diagram, bond table and key is built in code.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
+    // The scripted fallback (tester, no tutor) still sends this block through `useLuminaAI`; its context carries no key.
     tutoring: {
-      taskDescription: 'The student is exploring the energy changes in {{reactionName}} ({{equation}}). This is a {{reactionType}} reaction with \u0394H = {{deltaH}} kJ. They are working on a {{challengeType}} challenge: "{{instruction}}".',
-      contextKeys: ['reactionName', 'reactionType', 'equation', 'deltaH', 'activationEnergy', 'realWorldExample', 'reactionActive', 'showCatalyst', 'bondEnergiesEnabled', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer'],
+      taskDescription: 'Student is in an energy-of-reactions lab, item {{itemIndex}} of {{totalItems}} (mode: {{mode}}). The question on screen: {{ask}} Attempt {{attemptNumber}}. You are not told the answer: help the learner read the thermometer, the levels on the energy diagram, or the bond table, and never name the right choice.',
+      contextKeys: ['gradeBand', 'mode', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
       scaffoldingLevels: {
-        level1: '"Look at the energy diagram \u2014 are the products higher or lower than the reactants? What does that tell you about energy?"',
-        level2: '"This is a {{reactionType}} reaction. The \u0394H is {{deltaH}} kJ. On the diagram, notice the products are {{reactionType === \'exothermic\' ? \'lower\' : \'higher\'}} \u2014 energy came {{reactionType === \'exothermic\' ? \'out\' : \'in\'}}. Think of {{realWorldExample}}."',
-        level3: '"Let\'s trace the energy path step by step. Start at the reactant level. The ball has to climb the activation energy hill ({{activationEnergy}} kJ) to get going. Then it {{reactionType === \'exothermic\' ? \'rolls down below where it started \u2014 releasing\' : \'lands higher than where it started \u2014 absorbing\'}} {{Math.abs(deltaH)}} kJ of energy."',
+        level1: '"What do you see on the screen? What did the thermometer read before, and what does it read now?"',
+        level2: '"Where did the energy go: into the water around the reaction, or out of it? How can you tell?"',
+        level3: '"Let us read it together: find the reactants\' line first. What do you measure from there?"',
       },
       commonStruggles: [
-        { pattern: 'Student confuses exothermic with endothermic', response: 'Connect to experience: "EXO means OUT \u2014 energy exits the reaction, making it feel HOT. ENDO means IN \u2014 energy enters the reaction, making it feel COLD. A campfire is exo (hot!), a cold pack is endo (cold!)."' },
-        { pattern: 'Student does not understand the energy diagram direction', response: 'Use the hill metaphor: "Think of it like a ball rolling. If it ends up LOWER, it released energy on the way down (exothermic). If it ends up HIGHER, something had to push it up there (endothermic)."' },
-        { pattern: 'Student confuses activation energy with deltaH', response: 'Clarify: "Activation energy is the push to START the reaction \u2014 like lighting a match. DeltaH is the OVERALL energy change \u2014 did the reaction give off or absorb heat in total? They are different things!"' },
-        { pattern: 'Student struggles with bond energy calculations', response: 'Break it into steps: "First, add up ALL the energy to break bonds (that costs energy). Then add up ALL the energy from forming bonds (that releases energy). Subtract: if breaking costs more, it is endothermic. If forming releases more, it is exothermic."' },
+        { pattern: 'Student thinks a reaction that cools the water gives out cold', response: 'Ask what the thermometer is measuring: the water around the reaction. Did the water gain energy or lose it?' },
+        { pattern: 'Student reads a level from zero instead of from the reactants', response: 'Ask where the reaction starts on the diagram, and what it climbs or drops from there.' },
+        { pattern: 'Student confuses activation energy with the energy change', response: 'Ask which part of the drawing is the hill, and which part is the difference between start and end. Do not give either value.' },
+        { pattern: 'Student struggles with bond energy arithmetic', response: 'Ask which bonds are broken and which are formed, how many of each, and which side costs energy. Do not do the subtraction.' },
       ],
     },
+    teachingWorkspace: {
+      grades: ['Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'Code builds and checks every item, and you are not told the key; the learner taps a choice and presses Check '
+        + 'Answer, or says the answer. Classify: a named reaction and a beaker of water with a thermometer; the learner presses Run '
+        + 'the reaction and the reading changes; the question is whether the reaction releases or absorbs energy. Diagram: an energy '
+        + 'diagram on a kJ grid with lines labelled Reactants and Products and a hill between them (a dashed catalyst path on some '
+        + 'items); no arrows and no values are drawn until a lever writes them. Bond energy: the equation and a table of the bonds '
+        + 'broken and formed, each with its count and energy per bond, and no totals. The scene gives you the readings, levels and '
+        + 'rows as they are drawn. Never make a comparison the learner is asked to make: never say the reading went up or down, the water '
+        + 'warmed or cooled, the products are higher or lower than the reactants, or one total is larger; ask the learner. '
+        + 'Never say what a reading means (that the water got colder so the reaction took energy in, that '
+        + 'lower products mean energy came out), whether the reaction releases or absorbs energy, which choice is right or how '
+        + 'close a choice is, and never do any subtraction or sum for the learner (the climb, the drop, the change, the totals, '
+        + 'energy in minus energy out); ask what the learner reads and what it tells them. With the heat-flow card on screen, never '
+        + 'say which line of it matches this beaker; ask the learner to find it. Never say which side is energy in or energy out '
+        + 'unless that card is on screen. With the bond totals or the rule on screen, never say which total is larger, which sign the '
+        + 'answer has, or which number to take from which; ask the learner to use what the card says. After a wrong answer, never say '
+        + 'that its number or its sign was right. Never call a reaction hot, cold, warming or cooling as a clue, and never mention what it '
+        + 'is used for (a cold pack, a hand warmer). You cannot run the reaction, tap or check for the learner.',
+      // classify publishes start_mark and heat_flow_card; diagram level_values, start_line and fewer_choices (not on a
+      // direction item); bond_energy row_totals, in_out_totals and simpler_reaction (`energyOfReactionsLevers.ts`).
+      levers: true,
+      // The activity's own check (`energyMiss`) on a tap, and the same ids as each spoken item's known misses (`energySpokenMisses`).
+      misses: missLists<EnergyMiss>({ classify: ['cooling_called_release', 'warming_called_absorb'],
+        diagram: ['direction_reversed', 'sign_flipped', 'read_level', 'read_activation', 'read_peak_height', 'read_delta_h',
+          'from_products', 'catalysed_ea', 'full_ea'],
+        bond_energy: ['subtracted_backwards', 'ignored_counts', 'added_totals'] }),
+    },
     evalModes: [
-      { evalMode: 'classify', affordances: { answers: ['tap'] }, label: 'Classify (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['classify'], description: 'Classify reactions as exothermic or endothermic from diagrams' },
-      { evalMode: 'diagram', affordances: { answers: ['type'] }, label: 'Read Diagram (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['diagram'], description: 'Read activation energy and deltaH from enthalpy diagrams' },
-      { evalMode: 'bond_energy', affordances: { answers: ['type'] }, label: 'Bond Energy (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['bond_energy'], description: 'Calculate deltaH from bond energies' },
+      { evalMode: 'classify', affordances: { answers: ['tap', 'spoken'] }, label: 'Classify (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['classify'], description: 'Run a reaction in a beaker of water, read the thermometer, and decide whether the reaction releases or absorbs energy' },
+      { evalMode: 'diagram', affordances: { answers: ['tap', 'spoken'] }, label: 'Read Diagram (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['diagram'], description: 'Read an unlabelled energy diagram on a kJ grid: the direction, the energy change, the activation energy, or how much a catalyst lowers it' },
+      { evalMode: 'bond_energy', affordances: { answers: ['tap', 'spoken'] }, label: 'Bond Energy (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['bond_energy'], description: 'From a table of bonds broken and formed (count and energy per bond), choose the energy change: energy in minus energy out' },
     ],
     supportsEvaluation: true,
   },
@@ -455,10 +537,31 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
       ],
     },
     evalModes: [
-      { evalMode: 'dissolve', affordances: { answers: ['manipulate'] }, label: 'Dissolve (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['dissolve'], description: 'Test which substances dissolve and which do not' },
+      { evalMode: 'dissolve', affordances: { answers: ['manipulate'] }, label: 'Dissolve (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['dissolve_sort', 'particle_explain'], description: 'Test which substances dissolve and which do not' },
       { evalMode: 'classify', affordances: { answers: ['tap'] }, label: 'Classify (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['classify'], description: 'Classify as solution, suspension, or mixture' },
       { evalMode: 'separate', affordances: { answers: ['tap', 'type'] }, label: 'Separate (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['separate'], description: 'Choose correct separation technique and explain why' },
     ],
+    teachingWorkspace: {
+      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7'],
+      guidance: 'Every item is one question about a beaker of water and a shelf of substances. The learner may add '
+        + 'substances, stir and open the particle view to test them, then answers by saying it, or by tapping one choice '
+        + 'and pressing Submit Answer; the activity checks the tap against the question\'s own key. You are told what is '
+        + 'in the beaker, never what it looks like: whether a substance dissolved, sank or floats is what the learner '
+        + 'looks for. Never say it, never say which choice is right, and never rule a choice out. Ask the learner to add '
+        + 'the substance and tell you what they see, then ask what that means for the question. Never state the rule a '
+        + 'question asks about (dissolved particles spread out, a suspension has bits you can see, filtering catches '
+        + 'solids) during it. Never say a dissolved substance disappeared or is gone, not even when reading a model: it '
+        + 'spread out and is still there. With method cards on screen, never point at a card by what it does ("the one '
+        + 'that leaves dissolved things behind") or by the mixture it fits, and never name two cards to read: ask what the '
+        + 'learner saw in the beaker, then let them read every card. You cannot add, stir, tap or check for the learner.',
+      levers: true,
+      // The activity's own check (`dissolvingMiss`), a tap or a spoken choice; dissolve also carries the particle question.
+      misses: missLists<DissolvingMiss>({
+        dissolve: ['chose_dissolves', 'chose_does_not_dissolve', 'chose_disappeared', 'chose_sank', 'other_choice'],
+        classify: ['called_solution', 'called_suspension', 'called_layers'],
+        separate: ['filter_for_dissolved', 'evaporate_for_undissolved', 'other_method', 'other_choice'],
+      }),
+    },
     supportsEvaluation: true,
   },
   {
@@ -481,6 +584,29 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
         { pattern: 'Student does not understand isotopes', response: 'Simplify: "Isotopes are like siblings — they have the same number of protons (same element!) but different numbers of neutrons. Carbon-12 has 6 neutrons, but Carbon-14 has 8 neutrons. Same element, different mass!"' },
         { pattern: 'Student cannot identify element from particle counts', response: 'Guide: "The SECRET to identifying any element is simple: count the protons! The number of protons IS the atomic number, and the atomic number tells you exactly which element it is. Look at the periodic table!"' },
       ],
+    },
+    teachingWorkspace: {
+      grades: ['Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      // Every item publishes levers (`atomBuilderLevers.ts`).
+      levers: true,
+      guidance: 'The activity checks every build itself, and you are not told the key. The learner adds and removes '
+        + 'protons, neutrons and electrons with the + and - buttons, then has the activity check the atom; on make_atom '
+        + 'many atoms pass. The check reads only the three particle counts: an item that asks what element an atom is '
+        + 'checks the build, not a named answer. The scene gives the learner\'s own counts and the name the identity card '
+        + 'shows. Never tell the learner which particle to add or remove or how many, never state a count or a mass number '
+        + 'the task does not state, and on make_atom never name an atom that has the asked property. When a lever is on '
+        + 'screen, ask the learner what it shows them. You cannot add or remove particles for the learner.',
+      // The activity's own checks: `classicMisses` (the target counts, in check order) and `judgeAtomBuild` (make_atom).
+      // The generator does not pin the classic modes, so any classic session can hold any classic challenge type.
+      misses: missLists<AtomMiss>({
+        build: ['protons_off', 'neutrons_off', 'electrons_off'],
+        identify: ['protons_off', 'neutrons_off', 'electrons_off'],
+        ion_isotope: ['protons_off', 'neutrons_off', 'electrons_off'],
+        make_atom: ['no_protons', 'nucleus_off', 'not_neutral', 'shell_not_full', 'valence_off', 'still_neutral',
+          'charge_sign', 'charge_size', 'need_two', 'different_element', 'same_neutrons'],
+      }),
+      // need_two: its words say to press Keep, and the Keep button is on the board.
+      unanswered: missLists<AtomMiss>({ make_atom: ['need_two'] }),
     },
     evalModes: [
       { evalMode: 'build', affordances: { answers: ['build'] }, label: 'Build (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['build'], description: 'Build a named element from protons, neutrons, electrons' },
@@ -551,28 +677,52 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'ph-explorer',
-    description: 'Interactive pH scale exploration with rainbow gradient (0-14), substance testing with multiple indicators (litmus, cabbage juice, universal, phenolphthalein), acid/base/neutral sorting, neutralization station with real-time pH meter, and particle view showing H+/OH- concentration. Features cabbage juice rainbow mode where students create a color spectrum by testing many substances. Perfect for teaching the pH scale, acids and bases, indicators, and neutralization. ESSENTIAL for grade 4-8 chemistry.',
-    constraints: 'Best for grades 4-8. Use for chemistry lessons on pH, acids and bases, indicators, neutralization, acid-base reactions, and the pH scale. Grade-appropriate complexity adjusts automatically.',
-    affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate', 'tap', 'type'], role: ['visualize', 'apply'], minutes: 6 },
+    description: 'Interactive pH lab on a rainbow pH scale (0-14), with three task identities, each keyed in code from the substances\' pH values: litmus test (dip a blue and a red litmus paper into a named everyday or lab substance and say acid, base or neutral), indicator colours (read an unnamed sample\'s red cabbage juice colour and choose its pH range), and neutralize (choose how many cups of a strong base make 1 cup of a strong acid neutral, from their two pH values, where each pH step is ten times as strong; a universal-indicator beaker changes colour when they mix). Answers are tapped or said aloud. Perfect for teaching the pH scale, acids and bases, indicators, and neutralization. ESSENTIAL for grade 4-8 chemistry.',
+    constraints: 'Best for grades 4-8. Use for chemistry lessons on pH, acids and bases, indicators, neutralization, acid-base reactions, and the pH scale. Grade-appropriate complexity adjusts automatically. The manifest must NOT supply answer keys: every key is computed from the generated substances\' pH values.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
+    // The scripted fallback (tester, no tutor) still sends this block through `useLuminaAI`; its context carries no key.
     tutoring: {
-      taskDescription: 'Student is exploring pH and acids/bases with {{totalSubstances}} substances available. They have tested {{testedCount}} substances so far. Currently on challenge {{currentChallengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Selected indicator: {{selectedIndicator}}. Rainbow substances tested: {{rainbowCount}}. Attempt {{attemptNumber}}.',
-      contextKeys: ['gradeBand', 'totalSubstances', 'testedCount', 'selectedSubstance', 'selectedIndicator', 'currentChallengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'attemptNumber', 'studentAnswer', 'neutralizationPH', 'rainbowCount'],
+      taskDescription: 'Student is in a pH lab, item {{itemIndex}} of {{totalItems}} (mode: {{mode}}). The question on screen: {{ask}} Attempt {{attemptNumber}}. You are not told the answer: help the learner read the litmus papers, the cabbage juice colour or the two pH values, and never name the right choice.',
+      contextKeys: ['gradeBand', 'mode', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
       scaffoldingLevels: {
-        level1: '"What color did the indicator turn? What do you think that tells us about this substance?"',
-        level2: '"Remember: acids turn litmus red and have pH below 7. Bases turn litmus blue and have pH above 7. Look at the color you got with {{selectedIndicator}} — is {{selectedSubstance}} an acid, a base, or neutral?"',
-        level3: '"Let\'s figure this out step by step. You tested {{selectedSubstance}} with {{selectedIndicator}}. The color tells us the pH. On our scale, red colors mean low pH (acidic), green means neutral (pH 7), and blue/purple means high pH (basic). Where does this color fall?"',
+        level1: '"What do you see on the screen? What colour is it now?"',
+        level2: '"Think about what that colour tells you about the pH. Which part of the scale is it?"',
+        level3: '"Let\'s look again together: what was the colour before, and what is it now? What does that change mean?"',
       },
       commonStruggles: [
-        { pattern: 'Student confuses acids and bases', response: 'Connect to everyday experience: "Think about taste — acids taste SOUR like lemon juice. Bases feel SLIPPERY like soap. Sour = acid, slippery = base!"' },
-        { pattern: 'Student does not understand the pH scale direction', response: 'Use the number line: "pH works like a number line from 0 to 14. The middle is 7 — that\'s neutral, like pure water. Numbers below 7 are acids (the lower, the stronger). Numbers above 7 are bases."' },
-        { pattern: 'Student struggles with neutralization concept', response: 'Make it concrete: "When you mix an acid and a base, they cancel each other out — like mixing hot and cold water to get warm. The pH moves toward 7. That\'s neutralization!"' },
-        { pattern: 'Student cannot interpret indicator colors', response: 'Guide with the color chart: "Each indicator has its own color code. Litmus is simple: red = acid, blue = base. Cabbage juice is a rainbow: red and pink = acid, purple = neutral, blue and green = base, yellow = very strong base!"' },
+        { pattern: 'Student confuses acids and bases', response: 'Ask what each paper did: which one changed colour, and from what to what. Do not say which result means which.' },
+        { pattern: 'Student does not understand the pH scale direction', response: 'Point at the scale: 7 is the middle. Ask whether the liquid sits below or above it.' },
+        { pattern: 'Student struggles with neutralization concept', response: 'Ask how far each liquid is from 7 on the scale, and remind them each step is ten times as strong.' },
+        { pattern: 'Student cannot interpret indicator colours', response: 'Ask them to name the colour they see, then think where on the scale that colour sits. Do not name the range.' },
       ],
     },
+    teachingWorkspace: {
+      grades: ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
+      guidance: 'Code builds and checks every item from the substances\' pH values, and you are not told the key; the learner '
+        + 'taps a choice and presses Check Answer (Mix and check on neutralize), or says the answer. Test: a named substance '
+        + 'beside a blue and a red litmus paper; the learner presses Dip the litmus papers, then says acid, base or neutral. '
+        + 'Indicator: an unnamed sample in red cabbage juice; the learner names the pH range its colour shows; no scale is on '
+        + 'screen, and no colour chart until its lever is pulled. Neutralize: 1 cup of a strong acid and a bottle of a strong base, each with its pH; the '
+        + 'learner chooses how many cups of the base make the beaker neutral, and no pH meter reads a mix until its lever is pulled. The scene names the '
+        + 'paper colours, the juice colour and the mixed colour as they are drawn: never say what a colour means (that red '
+        + 'paper means an acid, that green juice means a base), which range or amount is right, or whether the two liquids are '
+        + 'equally strong; ask what the learner sees and what it tells them. With the litmus key card or the colour chart on '
+        + 'screen, never say which row or swatch matches the papers or the tube; ask the learner to find it. With the step '
+        + 'counts on screen, never say the two liquids are the same number of steps from 7, equally far, or which is farther; '
+        + 'ask the learner to compare the two counts. Never say the substance is sour, slippery, a '
+        + 'cleaner or a food as a clue to its kind. A test substance\'s pH and its real-world line show only after credit. You '
+        + 'cannot dip, tap, mix or check for the learner.',
+      // test publishes litmus_key; indicator color_chart and fewer_choices; neutralize step_count, ph_meter and
+      // fewer_choices (`phExplorerLevers.ts`). Every miss of every mode is answered by the mode's help lever.
+      levers: true,
+      // The activity's own check (`phMiss`) on a tap, and the same ids as each spoken item's known misses (`phSpokenMisses`).
+      misses: missLists<PhExplorerMiss>({ test: ['acid_base_swapped', 'said_neutral', 'missed_neutral'],
+        indicator: ['other_side', 'next_band', 'far_band'], neutralize: ['equal_amounts', 'too_little', 'too_much'] }),
+    },
     evalModes: [
-      { evalMode: 'test', affordances: { answers: ['manipulate'] }, label: 'Test (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['test'], description: 'Test substances and sort as acid, base, or neutral' },
-      { evalMode: 'indicator', affordances: { answers: ['tap'] }, label: 'Indicator (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['indicator'], description: 'Match indicator colors to pH ranges' },
-      { evalMode: 'neutralize', affordances: { answers: ['manipulate', 'type'] }, label: 'Neutralize (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['neutralize'], description: 'Predict and achieve target pH through neutralization' },
+      { evalMode: 'test', affordances: { answers: ['tap', 'spoken'] }, label: 'Test (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['test'], description: 'Dip blue and red litmus papers into a named substance and say whether it is an acid, a base or neutral' },
+      { evalMode: 'indicator', affordances: { answers: ['tap', 'spoken'] }, label: 'Indicator (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['indicator'], description: 'Read an unnamed sample\'s red cabbage juice colour and choose the pH range it shows' },
+      { evalMode: 'neutralize', affordances: { answers: ['tap', 'spoken'] }, label: 'Neutralize (Hard)', beta: 2.0, scaffoldingMode: 5, challengeTypes: ['neutralize'], description: 'From the pH of a strong acid and a strong base, choose how many cups of base make 1 cup of acid neutral (each pH step is ten times as strong)' },
     ],
     supportsEvaluation: true,
   },
@@ -605,66 +755,120 @@ export const CHEMISTRY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'stoichiometry-lab',
-    description: 'Interactive mole-conversion workshop for stoichiometry. Students stage reactant amounts (in grams), watch a balanced equation consume reactants in correct mole ratios, and see products form alongside any leftover (excess) reactant. Mole ladder converts grams ↔ moles via molar mass; mole-ratio strip exposes the coefficients as a conversion factor. Three eval modes ladder from single conversions to limiting-reagent identification to theoretical/percent yield. ESSENTIAL for HS chemistry — closes the largest K-8 → HS gap (the mole concept).',
-    constraints: 'Best for grades 8-12. Requires a fully balanced reaction with molar masses for every reactant and product. Each challenge specifies given masses (one for convert, two for limiting/yield) and a numeric or formula target answer. Not a particle simulation — workspace-style.',
-    affordances: { representation: 'symbolic', answers: ['type', 'tap'], role: 'apply', minutes: 9 },
+    description: 'Stoichiometry lab on one balanced reaction, with molar masses printed under the equation and three task identities, each built and keyed in code from the reaction: conversion chain (tap conversion-factor cards, each drawn as a fraction, into the chain that turns a given mass into moles or grams of a substance: molar mass, mole ratio, molar mass), which runs out first (two reactant jars given by mass; say or tap which reactant runs out first, the limiting reactant, or that both run out together), and how much forms (the same two jars; say or type the grams of a product that can form, the theoretical yield). Nothing on screen computes the answer before credit: no mole counts, running units or reaction output. Difficulty is structural: more cards in the chain; a limiting reactant with the larger mass, then with more moles. ESSENTIAL for HS chemistry — closes the largest K-8 → HS gap (the mole concept).',
+    constraints: 'Best for grades 8-12. The reaction comes from a built-in library of balanced reactions (hydrogen, methane, propane, ethane and glucose burning; the Haber process; metals with oxygen, chlorine or acid; iron smelting; decompositions); the manifest must NOT supply masses or answer keys. Percent yield is not asked. Not a particle simulation.',
+    affordances: { representation: 'symbolic', answers: ['tap', 'type', 'spoken'], role: 'apply', minutes: 9 },
+    // The scripted fallback (tester, no tutor) still sends this block through `useLuminaAI`; its context carries no key.
     tutoring: {
-      taskDescription: 'Student is doing stoichiometry on the reaction {{equation}}. They are on challenge {{challengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). Given: {{givenMassA}} g of {{givenFormulaA}}{{givenFormulaB ? ", " + givenMassB + " g of " + givenFormulaB : ""}}. They must find: {{askFor}}. Computed limiting reagent: {{limitingReagent}}. Phase: {{phase}}. Attempt {{attemptNumber}}.',
-      contextKeys: ['gradeBand', 'title', 'equation', 'challengeType', 'challengeIndex', 'totalChallenges', 'instruction', 'askFor', 'givenFormulaA', 'givenMassA', 'givenFormulaB', 'givenMassB', 'answerFormula', 'answerUnit', 'targetAnswer', 'targetAnswerFormula', 'limitingReagent', 'productYieldGrams', 'leftoversGrams', 'studentAnswer', 'studentLimitingChoice', 'phase', 'attemptNumber'],
+      taskDescription: 'Student is in a stoichiometry lab on the reaction {{equation}}, item {{itemIndex}} of {{totalItems}} (mode: {{mode}}). The question on screen: {{ask}} Attempt {{attemptNumber}}. You are not told the answer: help the learner use the molar masses, the coefficients and the units, and never name the right card, reactant or amount.',
+      contextKeys: ['gradeBand', 'mode', 'equation', 'itemIndex', 'totalItems', 'ask', 'attemptNumber'],
       scaffoldingLevels: {
-        level1: '"Look at the mole ladder for {{givenFormulaA}}. How many moles is {{givenMassA}} g? That\'s your starting point — the rest is just multiplying by ratios."',
-        level2: '"Three steps. (1) {{givenMassA}} g of {{givenFormulaA}} ÷ molar mass = moles. (2) Multiply by the coefficient ratio in the equation to get moles of the target. (3) Multiply by the target\'s molar mass to get grams. Try step 1 first."',
-        level3: '"Walk it slowly. {{givenFormulaA}} weighs about its molar mass per mole, so {{givenMassA}} g is roughly {{givenMassA}} ÷ molar mass moles. The balanced equation says the ratio of {{givenFormulaA}} to the target is the ratio of their coefficients. Multiply moles by that ratio. Then convert moles back to grams using the target\'s molar mass."',
+        level1: '"What do you have, and what unit is it in? What unit does the question want?"',
+        level2: '"Coefficients count moles, not grams. What would you need to turn these grams into moles?"',
+        level3: '"Let\'s go one step at a time: grams to moles first, then what the equation says about moles. What is the first step here?"',
       },
       commonStruggles: [
-        { pattern: 'Student multiplies grams by coefficients directly without converting to moles first', response: 'Stop them at the start: "Coefficients are mole ratios, not gram ratios. You can\'t multiply grams by 2 because the equation says 2 — you must convert grams to moles first using the molar mass."' },
-        { pattern: 'Student picks the reactant with the smaller MASS as limiting (not smaller moles ÷ coefficient)', response: 'Reframe: "Limiting isn\'t about which one weighs less — it\'s about which one runs out first when you account for the recipe. Convert each reactant to moles, divide by its coefficient, and the smallest result is the limiting reagent."' },
-        { pattern: 'Student forgets to apply the mole ratio and converts moles of reactant directly to grams of product using the product\'s molar mass', response: 'Remind them of the middle step: "You did grams → moles, but you skipped the mole-ratio step. The reaction tells you how many moles of product form per mole of reactant — apply that ratio before converting back to grams."' },
-        { pattern: 'Student computes theoretical yield correctly but reports percent yield as actual ÷ theoretical (not × 100)', response: 'Catch the unit: "Percent yield is actual ÷ theoretical times 100. You got the ratio right — just multiply by 100 to express it as a percent."' },
-        { pattern: 'Student treats both reactants as having unlimited supply and ignores the limiting reagent', response: 'Direct attention: "You used reactant A\'s amount, but check reactant B too. Whichever reactant runs out first determines how much product forms — even if the other one is in excess. Compute moles ÷ coefficient for both."' },
+        { pattern: 'Student multiplies grams by coefficients directly without converting to moles first', response: 'Ask what unit the coefficients count. Do not do the conversion for them.' },
+        { pattern: 'Student picks the reactant with the smaller mass as the one that runs out first', response: 'Ask whether a gram of each holds the same number of particles. Do not say which runs out.' },
+        { pattern: 'Student skips the mole ratio and goes straight from one substance to another', response: 'Ask what the equation says about how many moles of one go with how many of the other. Do not give the ratio.' },
       ],
     },
+    teachingWorkspace: {
+      grades: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'Code builds and checks every item from one balanced reaction, and you are not told the key. The molar masses '
+        + 'are printed under the equation. Convert: a start card (grams of one substance), a goal card (moles or grams of a '
+        + 'substance) and a tray of six conversion-factor cards, each a fraction; the learner taps cards into the chain in '
+        + 'order and presses Check chain. Never say or ask which unit belongs on the top or the bottom of a card (that is the '
+        + 'step the item checks), which card goes next, that a card should be flipped or swapped, how many cards the chain '
+        + 'needs, or what the chain has reached; ask what unit the start card is in and what unit the goal needs, and, with '
+        + 'the unit tracker on screen, what it says under each card. The start card is one amount, with no top or bottom. '
+        + 'Limiting: two '
+        + 'jars of reactants given by mass; the learner says or taps which runs out first, or that both run out together. '
+        + 'Yield: the same two jars; the learner says or types the grams of a product that can form. The jars are drawn the '
+        + 'same size, and no mole counts are on screen until their lever is pulled. Never name the reactant that runs out '
+        + 'first, say that one is in excess or left over, give a number of moles, runs or grams the screen does not show, or '
+        + 'say that the lighter '
+        + 'reactant runs out first; ask the learner to turn each mass into moles and compare them using the coefficients. '
+        + 'With the mole counts or the recipe card on screen, never compare the two jars for the learner (which has more, '
+        + 'which lasts longer); ask the learner to compare. You cannot place cards, tap, type or check for the learner.',
+      // convert publishes unit_track and mole_map; limiting and yield mole_counts and recipe_card; a medium or hard item
+      // also easier_item (`stoichiometryLabLevers.ts`). Every miss of every mode is answered by a help lever.
+      levers: true,
+      // The activity's own check (`convertMiss`, `limitingMiss`, `yieldMiss`) on a tap or a typed number, and the same
+      // ids as each spoken item's known misses (`stoichSpokenMisses`).
+      misses: missLists<StoichiometryMiss>({
+        convert: ['stopped_short', 'extra_step', 'upside_down_molar_mass', 'upside_down_ratio', 'skipped_ratio', 'out_of_order', 'other_substance', 'wrong_card'],
+        limiting: ['fewer_moles', 'smaller_mass', 'missed_both', 'said_both', 'other_reactant'],
+        yield: ['from_excess', 'skipped_ratio', 'upside_down_ratio', 'mass_sum', 'other_amount'],
+      }),
+    },
     evalModes: [
-      { evalMode: 'convert', affordances: { answers: ['type'] }, label: 'Mole Conversion (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['convert'], description: 'Single-step gram ↔ mole conversion using molar mass and a 1:1 mole ratio' },
-      { evalMode: 'limiting', affordances: { answers: ['tap'] }, label: 'Limiting Reagent (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['limiting'], description: 'Identify the limiting reagent from two given reactant masses' },
-      { evalMode: 'yield', affordances: { answers: ['type'] }, label: 'Theoretical & Percent Yield (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['yield'], description: 'Compute theoretical yield in grams (and percent yield when actual is given)' },
+      { evalMode: 'convert', affordances: { answers: ['tap'] }, label: 'Conversion Chain (Easy)', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['convert'], description: 'Tap conversion-factor cards into the chain that turns a given mass into moles of the same substance, moles of another, or grams of another (one, two or three cards)' },
+      { evalMode: 'limiting', affordances: { answers: ['tap', 'spoken'] }, label: 'Which Runs Out First (Medium)', beta: 1.0, scaffoldingMode: 3, challengeTypes: ['limiting'], description: 'From two reactant masses, say or tap which reactant runs out first (the limiting reactant), or that both run out together' },
+      { evalMode: 'yield', affordances: { answers: ['type', 'spoken'] }, label: 'Theoretical Yield (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['yield'], description: 'From two reactant masses, say or type the grams of a product that can form (the theoretical yield, through the limiting reactant)' },
     ],
     supportsEvaluation: true,
   },
   {
     id: 'gas-laws-simulator',
-    description: 'Living-simulation gas laws workbench with canvas-driven particle physics in a cylinder with a movable piston. Students watch particles speed up with temperature, slam the piston when compressed, and see pressure / volume / temperature / amount relationships read off one simulation. Live P-V, V-T, and P-T plots track state changes in real time. Three eval modes ladder from KMT observation → directional prediction → PV=nRT calculation. ESSENTIAL for HS chemistry — closes the Gas Behavior unit entirely missing from the K-8 catalog.',
-    constraints: 'Best for grades 8-12. Grade 8 uses KMT-only mode (qualitative). Grades 9-10 use Boyle, Charles, or Gay-Lussac (one variable locked). Grades 11-12 unlock the combined and ideal gas laws including full PV=nRT calculations. Not suitable for real-gas deviations (ideal gas only).',
-    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'type'], role: ['visualize', 'apply'], minutes: 8 },
+    description: 'Gas laws lab built on a particle model: a container of gas (a rigid steel tank, a cylinder with a free piston, a sealed syringe in a water bath, or a cylinder that is pressed and heated at once) shown with its particles moving, a before/after table of pressure, volume and temperature, and a change. The learner predicts what happens to the quantity that moves, then the change runs on screen. Three eval modes: observe (predict the direction: up, down or stays the same, from the particle model), predict (one change: choose the new value by proportion), calculate (two changes at once: combined gas law). Every item, choice and key is built by code; wrong choices are the classic errors (inverted ratio, old value kept, degrees Celsius in a ratio, only one change applied). ESSENTIAL for HS chemistry: closes the Gas Behavior unit missing from the K-8 catalog.',
+    constraints: 'Best for grades 8-12. Grade 8 defaults to observe (qualitative, particle model). Grades 9-10 observe and predict (Boyle, Charles, Gay-Lussac). Grades 11-12 predict and calculate (combined gas law). Ideal gases only; amounts are relative, never in moles, so it does not teach PV=nRT with R or real-gas deviations.',
+    affordances: { representation: ['pictorial', 'symbolic'], answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 8 },
     tutoring: {
-      taskDescription: 'Student is using a gas-laws simulator focused on {{lawFocus}} for grades {{gradeBand}}. Initial state: P={{initialP}} atm, V={{initialV}} L, T={{initialT}} K, n={{initialN}} mol. Locked variables: {{lockedVariables}}. Current sim state: P={{currentP}} atm, V={{currentV}} L, T={{currentT}} K, n={{currentN}} mol. They are on challenge {{challengeIndex}} of {{totalChallenges}} (type: {{challengeType}}). The perturbation applies {{changeVariable}} → {{changeNewValue}}. Student must determine: {{askFor}}. Phase: {{phase}}. Attempt {{attemptNumber}}.',
-      contextKeys: ['gradeBand', 'title', 'lawFocus', 'lockedVariables', 'initialP', 'initialV', 'initialT', 'initialN', 'currentP', 'currentV', 'currentT', 'currentN', 'challengeIndex', 'totalChallenges', 'challengeType', 'instruction', 'askFor', 'changeVariable', 'changeNewValue', 'askedVariable', 'directionAnswer', 'targetAnswer', 'studentNumber', 'studentDirection', 'phase', 'attemptNumber'],
+      taskDescription: 'Student is in a gas laws lab ({{mode}}), item {{itemIndex}} of {{totalItems}}: {{ask}} Choices: {{choices}}. Attempt {{attemptNumber}}.',
+      contextKeys: ['gradeBand', 'mode', 'itemIndex', 'totalItems', 'ask', 'choices', 'attemptNumber'],
       scaffoldingLevels: {
-        level1: '"Watch the particles. What happens to how often they hit the piston when you change {{changeVariable}}? That collision frequency IS pressure."',
-        level2: '"Anchor in KMT. Hotter = faster particles = harder and more frequent collisions. Squeezing the volume = less room = more collisions per second. How does {{changeVariable}} going to {{changeNewValue}} ripple through PV=nRT to change {{askedVariable}}?"',
-        level3: '"Walk it in steps. Start from the initial state: P={{initialP}}, V={{initialV}}, T={{initialT}}, n={{initialN}}. The perturbation is {{changeVariable}} → {{changeNewValue}}. Locked: {{lockedVariables}}. Solve PV=nRT for {{askedVariable}}. Plug in the new values of the other variables, and isolate {{askedVariable}}."',
+        level1: '"Look at the container. What does it keep the same while the change happens?"',
+        level2: '"Think about the particles. What does this change do to how fast they move, how many there are, or how much room they have? What does that do to how often they hit the walls?"',
+        level3: '"Write what stays constant for this container, then put the before values and the change into it. Which quantity is left to work out?"',
       },
       commonStruggles: [
-        { pattern: 'Student confuses what holds constant when reading a gas law', response: 'Clarify the locked set: "For this scenario, {{lockedVariables}} are held fixed. Only {{askedVariable}} is free to change in response. Check which law that matches — Boyle (T, n fixed), Charles (P, n fixed), or Gay-Lussac (V, n fixed)."' },
-        { pattern: 'Student predicts the wrong direction for pressure when compressing volume', response: 'Anchor in collisions: "When you compress the cylinder, particles have less room so they hit the piston more often per second. More collisions per unit area = higher pressure. Pressure and volume move in OPPOSITE directions at constant T — that\'s Boyle\'s law."' },
-        { pattern: 'Student uses Celsius instead of Kelvin in gas-law calculations', response: 'Catch the unit: "Every gas law uses ABSOLUTE temperature in Kelvin. Celsius won\'t work because ratios break at 0°C. Convert by adding 273: 25°C = 298 K."' },
-        { pattern: 'Student forgets R is 0.0821 L·atm/(mol·K) and uses a wrong constant', response: 'Tie to units: "R depends on the units you pick. With P in atm, V in L, and T in K, R = 0.0821 L·atm/(mol·K). Keep units consistent across the equation."' },
-        { pattern: 'Student says more moles = higher temperature', response: 'Decouple n and T: "Temperature is about AVERAGE kinetic energy per particle, not total. Adding more particles adds collisions (raising P or V), but doesn\'t directly change how fast any one particle moves — T is independent of n."' },
+        { pattern: 'Student confuses what holds constant when reading a gas law', response: 'Ask what the container does: a free piston slides until the push inside matches the weight, a steel tank cannot stretch, a water bath keeps the temperature.' },
+        { pattern: 'Student predicts the wrong direction for pressure when compressing volume', response: 'Anchor in collisions: less room means the particles reach the walls more often. Ask what that does to the pressure, without saying it.' },
+        { pattern: 'Student uses Celsius instead of Kelvin in gas-law calculations', response: 'Every gas-law ratio uses kelvin. Ask the learner to add 273 to each temperature before dividing.' },
+        { pattern: 'Student says more moles = higher temperature', response: 'Temperature is how fast each particle moves. Adding particles adds hits on the walls but does not make any particle faster.' },
       ],
       aiDirectives: [
         {
           title: 'KMT NARRATION',
           instruction:
-            'Every explanation must ground the gas law in particle behavior visible on the canvas. '
-            + 'Pressure = collisions per area per time. Temperature = average kinetic energy. Volume = space the particles have. '
-            + 'Reference what the student is seeing (particles slowing, piston moving, collision flashes) before naming the law.',
+            'Ground every explanation in particle behavior: pressure is how hard and how often particles hit the walls, temperature is how fast they move, volume is the room they have. '
+            + 'Never state which choice is right or which way the asked quantity moves.',
         },
       ],
     },
+    teachingWorkspace: {
+      grades: ['Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'],
+      guidance: 'Code builds and checks every item, and you are not told the key; the learner taps a choice and presses Check '
+        + 'Answer, or says the answer. The screen shows the container with its gas BEFORE the change and a before/after '
+        + 'table with "?" for the asked quantity; the change runs on screen only after the answer is credited, so nothing on '
+        + 'screen shows the result first. Observe: say whether the asked quantity goes up, goes down or stays the same. On '
+        + 'some items the ask does not say what is held; the learner works it out from the container, and that is the task: '
+        + 'never say which quantity the container holds, or ask a yes-or-no question that settles it ("can the steel '
+        + 'stretch?", "does the space inside change?", "can the piston move?", "does the bath keep the temperature?"); '
+        + 'ask what the container keeps the same and let the learner name it. Predict: one change; choose the new '
+        + 'value. Calculate: two changes at once; choose the new value. Temperatures may be in degrees Celsius; the ratios '
+        + 'need kelvin. Never say which way the asked quantity moves, which value is right, that it "doubles", "halves" or '
+        + '"stays the same", or which factor to multiply or divide by; ask what the container keeps the same, what the '
+        + 'change does to the particles, and how big the change is. After a miss, never say what the wrong value came from '
+        + 'or which change the learner left out or turned round ("you only used the pressure", "remember the '
+        + 'cooling"); ask how each change on the table affects the asked quantity. With a lever card on screen, describe it only by what '
+        + 'the scene says it shows, never read it back as the conclusion (never "so the pressure goes up"), and ask the '
+        + 'learner what it tells them. No gauge or meter reading is drawn: after the run, the new value is in the table. '
+        + 'You cannot tap, check or run the change for the learner.',
+      // observe publishes particle_card (and held_label where the ask does not name what is held); predict and
+      // calculate relation_card, factor_line, kelvin_scale on Celsius items, and simpler_numbers / one_change
+      // (`gasLawsLevers.ts`). Every miss of every mode is answered by a help lever first.
+      levers: true,
+      // The activity's own check (`gasMiss`) on a tap, and the same ids as each spoken item's known misses (`gasSpokenMisses`).
+      misses: missLists<GasLawsMiss>({ observe: ['opposite_direction', 'said_unchanged', 'missed_unchanged'],
+        predict: ['inverse_factor', 'kept_value', 'celsius_ratio'],
+        calculate: ['first_change_only', 'second_change_only', 'ratio_inverted', 'celsius_ratio'] }),
+    },
     evalModes: [
-      { evalMode: 'observe', affordances: { answers: ['tap'] }, label: 'KMT Observe (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['observe'], description: 'Identify directional change of a variable when one input is altered (KMT-grounded)' },
-      { evalMode: 'predict', affordances: { answers: ['type'] }, label: 'Directional Predict (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['predict'], description: 'Predict numeric end-state value before applying a perturbation' },
-      { evalMode: 'calculate', affordances: { answers: ['type'] }, label: 'Gas Law Calculate (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['calculate'], description: 'Solve for an unknown using PV=nRT or the combined gas law' },
+      { evalMode: 'observe', affordances: { answers: ['tap', 'spoken'] }, label: 'KMT Observe (Easy)', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['observe'], description: 'Predict whether a quantity goes up, goes down or stays the same when a container of gas is heated, squeezed or given more gas (particle model; some items leave what is held to infer from the container)' },
+      { evalMode: 'predict', affordances: { answers: ['tap', 'spoken'] }, label: 'Directional Predict (Medium)', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['predict'], description: 'One change to a container of gas: choose the new pressure or volume by proportion (Boyle, Charles, Gay-Lussac; hard items give temperatures in degrees Celsius)' },
+      { evalMode: 'calculate', affordances: { answers: ['tap', 'spoken'] }, label: 'Gas Law Calculate (Hard)', beta: 2.5, scaffoldingMode: 5, challengeTypes: ['calculate'], description: 'Two changes at once to a cylinder of gas: choose the new pressure, volume or temperature with the combined gas law' },
     ],
     supportsEvaluation: true,
   },

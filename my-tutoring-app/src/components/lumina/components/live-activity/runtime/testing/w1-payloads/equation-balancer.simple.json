@@ -1,0 +1,35 @@
+{
+ "source": "qa/tutor-reports/equation-balancer-runtime-simple-payload-2026-10-15.json",
+ "primitiveId": "equation-balancer",
+ "evalMode": "simple",
+ "data": {
+  "title": "Everyday Chemistry Counting",
+  "description": "Count atoms in familiar reactions that happen all around us every day.",
+  "equations": [
+   {
+    "id": "water",
+    "for": "simple",
+    "realWorld": "Hydrogen fuel cells combine hydrogen and oxygen to generate clean electricity in modern buses."
+   },
+   {
+    "id": "table_salt",
+    "for": "simple",
+    "realWorld": "Chefs combine reactive elements to create the seasoning we put on our food."
+   },
+   {
+    "id": "rust",
+    "for": "simple",
+    "realWorld": "Old bicycles left out in the rain slowly develop a reddish-brown flaky coating on their metal frames."
+   },
+   {
+    "id": "methane",
+    "for": "simple",
+    "realWorld": "Blue flames dance on a kitchen stove burner when cooking dinner."
+   }
+  ],
+  "challengeTypes": [
+   "simple"
+  ],
+  "gradeBand": "6-7"
+ }
+}

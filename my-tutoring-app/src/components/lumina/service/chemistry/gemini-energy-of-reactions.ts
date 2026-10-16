@@ -1,323 +1,53 @@
 import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
+import { resolveEvalModeConstraint, logEvalModeResolution, type ChallengeTypeDoc } from "../evalMode";
+import type { EnergyOfReactionsData } from "../../primitives/visual-primitives/chemistry/EnergyOfReactions";
 import {
-  EnergyOfReactionsData,
-} from "../../primitives/visual-primitives/chemistry/EnergyOfReactions";
+  ENERGY_MODES, NAME_LEAKS, THERMO_REACTIONS, type EnergyMode,
+} from "../../primitives/visual-primitives/chemistry/energyOfReactionsWorkspace";
 
 // Re-export type for convenience (no redefinition — sourced from the component)
 export type { EnergyOfReactionsData };
 
 /**
- * Schema definition for Energy of Reactions Data
- *
- * Describes the JSON structure Gemini must return:
- * - reaction: core reaction info (name, equation, type, deltaH, activation energy, real-world example)
- * - energyDiagram: enthalpy diagram levels and catalyst path
- * - bondEnergies: breaking/forming bond energy breakdown
- * - challenges: sequenced interactive challenges (classify → read_diagram → draw_diagram → catalyst_effect → calculate_deltaH → predict)
- * - showOptions: UI toggles for diagram, gauge, bond view, panels, animation
- * - gradeBand: 5-6 or 7-8
+ * Energy of Reactions generator. Gemini writes only the title, one sentence, and which library reactions the classify
+ * items run (by id, a schema enum); every item, reading, diagram, bond table and key is built by code
+ * (`energyOfReactionsWorkspace.ts`), so the schema carries no challenge, answer, ΔH or reaction type.
  */
+const CHALLENGE_TYPE_DOCS: Record<EnergyMode, ChallengeTypeDoc> = {
+  classify: {
+    promptDoc: "classify: the learner runs each chosen reaction in a beaker of water and decides from the thermometer whether it releases or absorbs energy.",
+    schemaDescription: "Thermometer evidence: releases or absorbs energy",
+  },
+  diagram: {
+    promptDoc: "diagram: the learner reads unlabelled energy diagrams (code draws them).",
+    schemaDescription: "Read an energy diagram",
+  },
+  bond_energy: {
+    promptDoc: "bond_energy: the learner works out the energy change from a table of bond energies (code builds it).",
+    schemaDescription: "Energy change from bond energies",
+  },
+};
+
 const energyOfReactionsSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: {
-      type: Type.STRING,
-      description:
-        "Short, engaging title for the activity (e.g. 'Combustion: Feel the Heat!')",
-    },
-    description: {
-      type: Type.STRING,
-      description:
-        "One-sentence activity description in kid-friendly language",
-    },
-    reaction: {
-      type: Type.OBJECT,
-      description: "Core information about the chemical reaction",
-      properties: {
-        name: {
-          type: Type.STRING,
-          description: "Human-readable name of the reaction (e.g. 'Combustion of Methane')",
-        },
-        equation: {
-          type: Type.STRING,
-          description:
-            "Balanced chemical equation as a string (e.g. 'CH4 + 2O2 → CO2 + 2H2O')",
-        },
-        type: {
-          type: Type.STRING,
-          enum: ["exothermic", "endothermic"],
-          description: "Whether the reaction releases (exothermic) or absorbs (endothermic) energy",
-        },
-        deltaH: {
-          type: Type.NUMBER,
-          description:
-            "Enthalpy change in kJ/mol. Negative for exothermic (e.g. -890), positive for endothermic (e.g. +178). Must be scientifically accurate for the given reaction.",
-        },
-        activationEnergy: {
-          type: Type.NUMBER,
-          description:
-            "Activation energy in kJ/mol — the energy barrier that must be overcome to start the reaction (always positive, e.g. 150)",
-        },
-        realWorldExample: {
-          type: Type.STRING,
-          description:
-            "A relatable real-world example of this reaction (e.g. 'Burning natural gas on a stove to cook food')",
-        },
-        imagePrompt: {
-          type: Type.STRING,
-          description:
-            "Optional image generation prompt for an illustration of this reaction",
-          nullable: true,
-        },
-      },
-      required: [
-        "name",
-        "equation",
-        "type",
-        "deltaH",
-        "activationEnergy",
-        "realWorldExample",
-      ],
-    },
-    energyDiagram: {
-      type: Type.OBJECT,
-      description:
-        "Energy levels for the enthalpy diagram visualization (values in kJ, used for relative positioning)",
-      properties: {
-        reactantLevel: {
-          type: Type.NUMBER,
-          description: "Energy level of the reactants in kJ (e.g. 500)",
-        },
-        productLevel: {
-          type: Type.NUMBER,
-          description:
-            "Energy level of the products in kJ. Lower than reactantLevel for exothermic, higher for endothermic.",
-        },
-        activationPeak: {
-          type: Type.NUMBER,
-          description:
-            "Peak energy at the transition state (must be higher than both reactantLevel and productLevel)",
-        },
-        showCatalystPath: {
-          type: Type.BOOLEAN,
-          description: "Whether to display the catalyst comparison path on the diagram",
-        },
-        catalystActivation: {
-          type: Type.NUMBER,
-          description:
-            "Peak energy with catalyst present (lower than activationPeak but higher than both reactant and product levels). Null if no catalyst path.",
-          nullable: true,
-        },
-      },
-      required: [
-        "reactantLevel",
-        "productLevel",
-        "activationPeak",
-        "showCatalystPath",
-        "catalystActivation",
-      ],
-    },
-    bondEnergies: {
-      type: Type.OBJECT,
-      description:
-        "Bond energy breakdown for calculating deltaH from bond energies (grade 7-8 feature)",
-      properties: {
-        enabled: {
-          type: Type.BOOLEAN,
-          description:
-            "Whether bond energy view is enabled (true for grade 7-8, false for grade 5-6)",
-        },
-        bondsBreaking: {
-          type: Type.ARRAY,
-          description:
-            "Bonds broken in reactants (endothermic step — costs energy)",
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              bond: {
-                type: Type.STRING,
-                description: "Bond notation (e.g. 'C-H', 'O=O', 'C=O')",
-              },
-              energy: {
-                type: Type.NUMBER,
-                description:
-                  "Bond dissociation energy per bond in kJ/mol (e.g. C-H: 413, O=O: 498)",
-              },
-              count: {
-                type: Type.NUMBER,
-                description: "Number of these bonds broken in the reaction",
-              },
-            },
-            required: ["bond", "energy", "count"],
-          },
-        },
-        bondsForming: {
-          type: Type.ARRAY,
-          description:
-            "Bonds formed in products (exothermic step — releases energy)",
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              bond: {
-                type: Type.STRING,
-                description: "Bond notation (e.g. 'C=O', 'O-H')",
-              },
-              energy: {
-                type: Type.NUMBER,
-                description:
-                  "Bond dissociation energy per bond in kJ/mol (e.g. C=O in CO2: 799, O-H: 463)",
-              },
-              count: {
-                type: Type.NUMBER,
-                description: "Number of these bonds formed in the reaction",
-              },
-            },
-            required: ["bond", "energy", "count"],
-          },
-        },
-      },
-      required: ["enabled", "bondsBreaking", "bondsForming"],
-    },
-    challenges: {
+    title: { type: Type.STRING, description: "Short, engaging title for the lab (e.g. 'The Reaction Energy Lab'). Never say which reaction releases or absorbs energy." },
+    description: { type: Type.STRING, description: "One kid-friendly sentence about the lab. Never say which reaction releases or absorbs energy." },
+    reactionIds: {
       type: Type.ARRAY,
-      description:
-        "3-6 sequenced challenges progressing in difficulty: classify → read_diagram → draw_diagram → catalyst_effect → calculate_deltaH → predict",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: {
-            type: Type.STRING,
-            description: "Unique challenge identifier (e.g. 'ch1', 'ch2')",
-          },
-          type: {
-            type: Type.STRING,
-            enum: [
-              "classify",
-              "read_diagram",
-              "draw_diagram",
-              "catalyst_effect",
-              "calculate_deltaH",
-              "predict",
-            ],
-            description: "Type of challenge task",
-          },
-          answerType: {
-            type: Type.STRING,
-            enum: ["multiple_choice", "true_false"],
-            description:
-              "Answer interaction type. Use 'true_false' for binary choices (e.g. Exothermic/Endothermic, True/False, Hot/Cold). " +
-              "Use 'multiple_choice' for questions with 3-4 options including plausible distractors.",
-          },
-          instruction: {
-            type: Type.STRING,
-            description: "Kid-friendly instruction for this challenge",
-          },
-          options: {
-            type: Type.ARRAY,
-            description:
-              "Answer choices for the student. For true_false: exactly 2 options. For multiple_choice: 3-4 options. " +
-              "Include one correct answer and plausible distractors. Randomize correct answer position.",
-            items: { type: Type.STRING },
-          },
-          correctOptionIndex: {
-            type: Type.NUMBER,
-            description:
-              "0-based index of the correct option in the options array. MUST be a valid index within the options array.",
-          },
-          hint: {
-            type: Type.STRING,
-            description: "Gentle hint if the student is stuck",
-          },
-          narration: {
-            type: Type.STRING,
-            description:
-              "Wonder-driven narration text to spark curiosity and celebrate success",
-          },
-        },
-        required: ["id", "type", "answerType", "instruction", "options", "correctOptionIndex", "hint", "narration"],
-      },
-    },
-    showOptions: {
-      type: Type.OBJECT,
-      description: "Which UI panels to enable for this activity",
-      properties: {
-        showEnergyDiagram: {
-          type: Type.BOOLEAN,
-          description: "Show the enthalpy diagram with reaction pathway",
-        },
-        showTemperatureGauge: {
-          type: Type.BOOLEAN,
-          description: "Show the temperature gauge that responds to reaction activation",
-        },
-        showBondView: {
-          type: Type.BOOLEAN,
-          description:
-            "Show bond energy breakdown panel (typically true for grade 7-8 only)",
-        },
-        showRealWorldPanel: {
-          type: Type.BOOLEAN,
-          description: "Show real-world connection panel with example",
-        },
-        showCalculation: {
-          type: Type.BOOLEAN,
-          description:
-            "Show energy calculation panel (grade 7-8 only)",
-        },
-        showCatalystComparison: {
-          type: Type.BOOLEAN,
-          description:
-            "Show catalyst vs. uncatalyzed path comparison toggle",
-        },
-        animateReactionPath: {
-          type: Type.BOOLEAN,
-          description: "Animate the energy ball along the reaction pathway",
-        },
-      },
-      required: [
-        "showEnergyDiagram",
-        "showTemperatureGauge",
-        "showBondView",
-        "showRealWorldPanel",
-        "showCalculation",
-        "showCatalystComparison",
-        "animateReactionPath",
-      ],
-    },
-    gradeBand: {
-      type: Type.STRING,
-      enum: ["5-6", "7-8"],
-      description: "Target grade band for content complexity",
+      description: "4-6 reaction ids from the list, the ones that best fit the topic, in the order to run them.",
+      items: { type: Type.STRING, enum: THERMO_REACTIONS.map(r => r.id) },
     },
   },
-  required: [
-    "title",
-    "description",
-    "reaction",
-    "energyDiagram",
-    "bondEnergies",
-    "challenges",
-    "showOptions",
-    "gradeBand",
-  ],
+  required: ["title", "description", "reactionIds"],
 };
 
-/**
- * Determine the grade band from grade level context string
- */
+/** Determine the grade band from grade level context string */
 const resolveGradeBand = (gradeLevel: string): "5-6" | "7-8" => {
   const gl = gradeLevel.toLowerCase();
-  if (
-    gl.includes("8") ||
-    gl.includes("grade 8") ||
-    gl.includes("7-8") ||
-    gl.includes("7") ||
-    gl.includes("grade 7") ||
-    gl.includes("advanced")
-  ) {
-    return "7-8";
-  }
+  if (gl.includes("7") || gl.includes("8") || gl.includes("middle") || gl.includes("advanced")) return "7-8";
   return "5-6";
 };
 
@@ -335,394 +65,70 @@ export function energyOfReactionsGradeBandFromGrade(grade?: string): "5-6" | "7-
   return n <= 6 ? "5-6" : "7-8";
 }
 
-/**
- * Generate Energy of Reactions data using Gemini
- *
- * Creates an interactive energy-of-reactions activity where students explore
- * exothermic and endothermic reactions through enthalpy diagrams, temperature
- * gauges, bond energy breakdowns, and catalyst comparisons.
- *
- * Grade-appropriate content:
- * - 5-6: Focus on classifying reactions as exothermic/endothermic, reading
- *         simple energy diagrams, temperature changes, and real-world examples.
- *         No bond energy calculations. Simpler vocabulary.
- * - 7-8: Include bond energy calculations (deltaH = bonds broken - bonds formed),
- *         activation energy concepts, catalyst effects, and quantitative challenges.
- *         Scientific vocabulary and more complex reactions.
- *
- * @param topic - The topic or theme (e.g. "combustion reactions", "photosynthesis energy")
- * @param gradeLevel - Grade level context string
- * @param config - Optional partial EnergyOfReactionsData for overrides
- * @returns EnergyOfReactionsData ready for the EnergyOfReactions component
- */
+/** Without the thermometer task the model still titles the reactions it picked; a title that names no asked task is replaced. */
+const TASK_TITLE: Record<Exclude<EnergyMode, "classify">, [RegExp, string]> = {
+  diagram: [/diagram|activation|catalyst|hill|enthalpy/i, "Reading Energy Diagrams"],
+  bond_energy: [/bond|enthalpy/i, "Bond Energy Lab"],
+};
+function labTitle(title: string | undefined, modes: EnergyMode[]): string {
+  if (modes.includes("classify")) return title || "The Energy Lab";
+  const asked = modes.filter((m): m is Exclude<EnergyMode, "classify"> => m !== "classify");
+  return title && asked.some(m => TASK_TITLE[m][0].test(title)) ? title : TASK_TITLE[asked[asked.length - 1]][1];
+}
+
 export const generateEnergyOfReactions = async (ctx: GenerationContext): Promise<EnergyOfReactionsData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as Partial<EnergyOfReactionsData>;
   // Canonical objective grade wins; the prose parser is only the fallback (14m).
-  const gradeBand = energyOfReactionsGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(gradeLevel);
-  // Per-primitive intent: the specific objective the manifest assigned to THIS card.
-  // The topic stays fixed; intent biases which facets get the spotlight.
-  const intent = ctx.intent || "";
-  const intentFocus = intent
-    ? `
-LEARNING FOCUS: This activity is being used to teach: "${intent}".
-Keep all chemistry accurate and complete, but lead with and expand the reactions,
-diagrams, and explanations most relevant to this focus. Do not state or reveal the
-answer to any challenge the student will be asked.`
-    : "";
+  const gradeBand = energyOfReactionsGradeBandFromGrade(ctx.grade) ?? resolveGradeBand(ctx.gradeContext);
+  const constraint = resolveEvalModeConstraint("energy-of-reactions", ctx.targetEvalMode, CHALLENGE_TYPE_DOCS);
+  logEvalModeResolution("EnergyOfReactions", ctx.targetEvalMode, constraint);
+  const modes: EnergyMode[] = constraint
+    ? ENERGY_MODES.filter(m => constraint.allowedTypes.includes(m))
+    : gradeBand === "7-8" ? ENERGY_MODES : ["classify", "diagram"];
 
-  const gradeBandDescriptions: Record<string, string> = {
-    "5-6":
-      "Grades 5-6. Focus on SIMPLE, everyday reactions students can relate to. " +
-      "Use reactions like: burning wood, rusting iron, baking soda + vinegar, ice melting, cooking an egg. " +
-      "Vocabulary: 'gives off heat', 'absorbs heat', 'energy comes out', 'energy goes in'. " +
-      "Energy diagram should be visually clear with big differences between reactant and product levels. " +
-      "NO bond energy calculations — set bondEnergies.enabled to false and provide empty arrays. " +
-      "Challenges should focus on: classify (is it exo or endo?), read_diagram (which is higher?), predict (will it feel hot or cold?). " +
-      "DO NOT include calculate_deltaH or catalyst_effect challenges. " +
-      "Use kid-friendly language throughout: 'Does this reaction give off heat or absorb heat?' " +
-      "showOptions: showBondView=false, showCalculation=false, showCatalystComparison=false. " +
-      "Keep deltaH values rounded to simple numbers (e.g. -400, +200). " +
-      "Activation energy: use simple values, no need for scientific precision.",
+  const intent = ctx.intent ? `\nLEARNING FOCUS: "${ctx.intent}". Choose reactions that serve it.` : "";
+  const prompt = `Write the title and pick the reactions for an energy-of-reactions lab about "${topic}" for grades ${gradeBand}.${intent}
 
-    "7-8":
-      "Grades 7-8. Use scientifically accurate reactions with correct deltaH values. " +
-      "Good reactions: CH4 + 2O2 → CO2 + 2H2O (ΔH = -890 kJ), photosynthesis (ΔH = +2803 kJ), " +
-      "neutralization HCl + NaOH → NaCl + H2O (ΔH = -57 kJ), decomposition of CaCO3 (ΔH = +178 kJ). " +
-      "MUST include accurate bond energies: C-H ≈ 413, O=O ≈ 498, C=O (in CO2) ≈ 799, O-H ≈ 463, " +
-      "H-H ≈ 436, N≡N ≈ 945, C-C ≈ 348, C=C ≈ 614. Set bondEnergies.enabled to true. " +
-      "Include catalyst path on the energy diagram with showCatalystPath=true and a realistic catalystActivation value. " +
-      "Use scientific vocabulary: 'enthalpy change', 'activation energy', 'transition state', 'catalyst'. " +
-      "Challenges should progress: classify → read_diagram → catalyst_effect → calculate_deltaH → predict. " +
-      "Include at least one calculate_deltaH challenge where students compute ΔH from bond energies. " +
-      "showOptions: showBondView=true, showCalculation=true, showCatalystComparison=true. " +
-      "Connect to real-world applications: car engines, cold packs, industrial processes.",
+The learner will do these tasks (code builds every item):
+${modes.map(m => `- ${CHALLENGE_TYPE_DOCS[m].promptDoc}`).join("\n")}
+
+Reactions you can pick from (id: reaction):
+${THERMO_REACTIONS.map(r => `- ${r.id}: ${r.words}`).join("\n")}
+
+RULES:
+1. Pick 4-6 ids that fit the topic (code uses them only for the thermometer task). Pick both reactions that warm the water and reactions that cool it.
+2. The title and description are about the tasks listed above, not only the reactions (a bond-energy lab is about bonds breaking and forming).
+3. The title and description must not say which reaction releases or absorbs energy, gets hot or gets cold.`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-flash-lite-latest",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: energyOfReactionsSchema,
+      systemInstruction: "You are an expert chemistry educator choosing classroom reactions for a lab on energy in reactions.",
+    },
+  });
+  const text = response.text;
+  if (!text) throw new Error("No data returned from Gemini API for energy-of-reactions");
+  const result = JSON.parse(text) as Partial<EnergyOfReactionsData>;
+
+  const known = new Set(THERMO_REACTIONS.map(r => r.id));
+  const reactionIds = Array.from(new Set((Array.isArray(result.reactionIds) ? result.reactionIds : []).filter(id => known.has(id))));
+  // The description is not drawn during an item, but it reaches the manifest's intro: drop one that names a kind.
+  const description = result.description && !NAME_LEAKS.test(result.description) ? result.description : undefined;
+
+  const data: EnergyOfReactionsData = {
+    title: labTitle(result.title?.trim(), modes),
+    description,
+    reactionIds: reactionIds.length ? reactionIds : THERMO_REACTIONS.map(r => r.id),
+    challengeTypes: modes,
+    gradeBand,
+    ...(config.title !== undefined ? { title: config.title } : {}),
+    ...(config.reactionIds !== undefined ? { reactionIds: config.reactionIds } : {}),
+    ...(config.gradeBand !== undefined ? { gradeBand: config.gradeBand } : {}),
   };
-
-  const generationPrompt = `Create an Energy of Reactions activity about "${topic}" for ${gradeBand} students.
-${intentFocus}
-
-GRADE BAND REQUIREMENTS (${gradeBand}):
-${gradeBandDescriptions[gradeBand]}
-
-CRITICAL REQUIREMENTS:
-
-1. REACTION DATA:
-   - "name" should be a clear, descriptive name (e.g. "Combustion of Methane").
-   - "equation" must be a properly balanced chemical equation string (e.g. "CH4 + 2O2 → CO2 + 2H2O").
-   - "type" must be "exothermic" if deltaH is negative, "endothermic" if positive.
-   - "deltaH" must be scientifically accurate for the given reaction (negative for exothermic, positive for endothermic).
-   - "activationEnergy" is always positive (it's the energy barrier to START the reaction).
-   - "realWorldExample" should be relatable and age-appropriate.
-
-2. ENERGY DIAGRAM:
-   - "reactantLevel" and "productLevel" should reflect the relative energy. For exothermic: reactantLevel > productLevel. For endothermic: productLevel > reactantLevel.
-   - "activationPeak" must be HIGHER than both reactantLevel and productLevel (it's the transition state).
-   - The difference between reactantLevel and productLevel should roughly correspond to |deltaH|.
-   - If showCatalystPath is true, "catalystActivation" should be lower than "activationPeak" but still above both reactant and product levels.
-
-3. BOND ENERGIES (grade 7-8 only):
-   - Set "enabled" to true for grade 7-8, false for grade 5-6.
-   - "bondsBreaking" lists all bonds broken in reactants with accurate bond energies.
-   - "bondsForming" lists all bonds formed in products with accurate bond energies.
-   - VERIFY: sum(breaking energies) - sum(forming energies) should approximately equal deltaH.
-   - For grade 5-6: set enabled=false and use empty arrays for bondsBreaking and bondsForming.
-
-4. CHALLENGES (Multiple Choice / True-False):
-   - Provide 3-5 challenges sequenced by difficulty.
-   - Each challenge must have a unique "id" (e.g. "ch1", "ch2").
-   - ALL challenges use "answerType": either "multiple_choice" or "true_false".
-   - For "true_false": provide exactly 2 options (e.g. ["Exothermic", "Endothermic"] or ["True", "False"] or ["Hot", "Cold"]).
-   - For "multiple_choice": provide 3-4 options with plausible distractors. VARY the position of the correct answer (don't always put it first).
-   - "correctOptionIndex" is the 0-based index of the correct option in the options array.
-   - "hint" should gently guide without giving away the answer.
-   - "narration" should celebrate learning and build curiosity.
-   - Good answerType choices:
-     * classify → true_false (Exothermic / Endothermic)
-     * read_diagram → true_false or multiple_choice
-     * predict → true_false (Hot / Cold, or True / False)
-     * catalyst_effect → multiple_choice (3-4 options about what catalysts do)
-     * calculate_deltaH → multiple_choice (correct value + 2-3 plausible wrong values)
-   - Challenge types by grade band:
-     * 5-6: classify, read_diagram, predict ONLY
-     * 7-8: classify, read_diagram, catalyst_effect, calculate_deltaH, predict
-
-5. SHOW OPTIONS:
-   - 5-6: showEnergyDiagram=true, showTemperatureGauge=true, showBondView=false, showRealWorldPanel=true, showCalculation=false, showCatalystComparison=false, animateReactionPath=true
-   - 7-8: showEnergyDiagram=true, showTemperatureGauge=true, showBondView=true, showRealWorldPanel=true, showCalculation=true, showCatalystComparison=true, animateReactionPath=true
-
-6. NARRATION EXAMPLES:
-   - "When methane burns, the bonds in CH4 break and NEW bonds form in CO2 and H2O — and more energy comes OUT than went IN!"
-   - "A catalyst is like a shortcut over the mountain — the reaction still releases the same energy, but it needs less of a push to get started."
-   - "An ice pack feels cold because the reaction inside ABSORBS heat from your skin — that's endothermic in action!"
-
-DOUBLE-CHECK: Verify that your deltaH sign matches the reaction type (negative = exothermic, positive = endothermic), that the energy diagram levels are consistent, and that bond energy calculations (if enabled) approximately match deltaH.`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-flash-lite-latest",
-      contents: generationPrompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: energyOfReactionsSchema,
-        systemInstruction:
-          "You are an expert chemistry educator creating interactive energy-of-reactions activities " +
-          "for grades 5-8. Design engaging activities where students discover why some reactions release " +
-          "heat (exothermic) and others absorb heat (endothermic). Use enthalpy diagrams, temperature " +
-          "changes, and real-world connections to build intuition. For older students (7-8), include " +
-          "bond energy calculations showing that deltaH = energy to break bonds - energy released forming bonds. " +
-          "All deltaH values, bond energies, and activation energies should be scientifically accurate. " +
-          "Language should be age-appropriate: friendly and concrete for grades 5-6, with proper " +
-          "scientific terminology for grades 7-8. Connect every reaction to something students can see " +
-          "or experience in daily life (cooking, cold packs, rusting, photosynthesis, combustion).",
-      },
-    });
-
-    const text = response.text;
-    if (!text) {
-      throw new Error(
-        "No data returned from Gemini API for energy-of-reactions"
-      );
-    }
-
-    const result = JSON.parse(text) as EnergyOfReactionsData;
-
-    // -----------------------------------------------------------------------
-    // Validation & Defaults
-    // -----------------------------------------------------------------------
-
-    // Ensure gradeBand
-    if (!result.gradeBand || !["5-6", "7-8"].includes(result.gradeBand)) {
-      result.gradeBand = gradeBand;
-    }
-
-    // Ensure reaction has valid structure
-    if (!result.reaction) {
-      result.reaction = {
-        name: "Combustion of Methane",
-        equation: "CH4 + 2O2 \u2192 CO2 + 2H2O",
-        type: "exothermic",
-        deltaH: -890,
-        activationEnergy: 150,
-        realWorldExample:
-          "Burning natural gas on a stove to cook food",
-      };
-    }
-
-    // Ensure reaction fields have defaults
-    result.reaction = {
-      name: result.reaction.name || "Chemical Reaction",
-      equation: result.reaction.equation || "A + B \u2192 C",
-      type: result.reaction.type || "exothermic",
-      deltaH: result.reaction.deltaH ?? -400,
-      activationEnergy: result.reaction.activationEnergy ?? 100,
-      realWorldExample:
-        result.reaction.realWorldExample || "A common everyday reaction",
-      imagePrompt: result.reaction.imagePrompt ?? undefined,
-    };
-
-    // Ensure deltaH sign matches reaction type
-    if (
-      result.reaction.type === "exothermic" &&
-      result.reaction.deltaH > 0
-    ) {
-      result.reaction.deltaH = -Math.abs(result.reaction.deltaH);
-    } else if (
-      result.reaction.type === "endothermic" &&
-      result.reaction.deltaH < 0
-    ) {
-      result.reaction.deltaH = Math.abs(result.reaction.deltaH);
-    }
-
-    // Ensure activationEnergy is always positive
-    result.reaction.activationEnergy = Math.abs(
-      result.reaction.activationEnergy
-    );
-
-    // Ensure energyDiagram has valid structure
-    if (!result.energyDiagram) {
-      const isExo = result.reaction.type === "exothermic";
-      result.energyDiagram = {
-        reactantLevel: isExo ? 500 : 300,
-        productLevel: isExo ? 300 : 500,
-        activationPeak: 650,
-        showCatalystPath: gradeBand === "7-8",
-        catalystActivation: gradeBand === "7-8" ? 550 : null,
-      };
-    }
-
-    // Ensure activationPeak is higher than both levels
-    const maxLevel = Math.max(
-      result.energyDiagram.reactantLevel,
-      result.energyDiagram.productLevel
-    );
-    if (result.energyDiagram.activationPeak <= maxLevel) {
-      result.energyDiagram.activationPeak = maxLevel + 100;
-    }
-
-    // Ensure catalystActivation is between max level and activation peak
-    if (
-      result.energyDiagram.showCatalystPath &&
-      result.energyDiagram.catalystActivation != null
-    ) {
-      if (result.energyDiagram.catalystActivation >= result.energyDiagram.activationPeak) {
-        result.energyDiagram.catalystActivation =
-          maxLevel + (result.energyDiagram.activationPeak - maxLevel) * 0.5;
-      }
-      if (result.energyDiagram.catalystActivation <= maxLevel) {
-        result.energyDiagram.catalystActivation = maxLevel + 30;
-      }
-    }
-
-    // Ensure bondEnergies has valid structure
-    if (!result.bondEnergies) {
-      result.bondEnergies = {
-        enabled: gradeBand === "7-8",
-        bondsBreaking: [],
-        bondsForming: [],
-      };
-    }
-
-    // For grade 5-6, force bond energies off
-    if (gradeBand === "5-6") {
-      result.bondEnergies.enabled = false;
-    }
-
-    // Ensure arrays exist
-    result.bondEnergies.bondsBreaking = result.bondEnergies.bondsBreaking || [];
-    result.bondEnergies.bondsForming = result.bondEnergies.bondsForming || [];
-
-    // Ensure showOptions defaults
-    result.showOptions = {
-      showEnergyDiagram: result.showOptions?.showEnergyDiagram ?? true,
-      showTemperatureGauge: result.showOptions?.showTemperatureGauge ?? true,
-      showBondView:
-        result.showOptions?.showBondView ?? (gradeBand === "7-8" && result.bondEnergies.enabled),
-      showRealWorldPanel: result.showOptions?.showRealWorldPanel ?? true,
-      showCalculation:
-        result.showOptions?.showCalculation ?? gradeBand === "7-8",
-      showCatalystComparison:
-        result.showOptions?.showCatalystComparison ??
-        (gradeBand === "7-8" && result.energyDiagram.showCatalystPath),
-      animateReactionPath: result.showOptions?.animateReactionPath ?? true,
-    };
-
-    // Ensure every challenge has required fields
-    if (result.challenges) {
-      result.challenges = result.challenges.map((ch, idx) => {
-        const challenge = {
-          ...ch,
-          id: ch.id || `ch${idx + 1}`,
-          type: ch.type || "classify",
-          answerType: ch.answerType || "true_false",
-          instruction:
-            ch.instruction ||
-            "Is this reaction exothermic or endothermic?",
-          options: ch.options && ch.options.length >= 2
-            ? ch.options
-            : ["Exothermic", "Endothermic"],
-          correctOptionIndex: ch.correctOptionIndex ?? 0,
-          hint:
-            ch.hint ||
-            "Look at the energy diagram — are the products higher or lower than the reactants?",
-          narration: ch.narration || ch.instruction || "Great work!",
-        };
-        // Ensure correctOptionIndex is within bounds
-        if (challenge.correctOptionIndex < 0 || challenge.correctOptionIndex >= challenge.options.length) {
-          challenge.correctOptionIndex = 0;
-        }
-        // Ensure true_false has exactly 2 options
-        if (challenge.answerType === "true_false" && challenge.options.length !== 2) {
-          challenge.answerType = "multiple_choice";
-        }
-        return challenge;
-      });
-    }
-
-    // Ensure at least one challenge exists
-    if (!result.challenges || result.challenges.length === 0) {
-      const isExo = result.reaction.type === "exothermic";
-      result.challenges = [
-        {
-          id: "ch1",
-          type: "classify",
-          answerType: "true_false" as const,
-          instruction: isExo
-            ? "This reaction releases energy. Is it exothermic or endothermic?"
-            : "This reaction absorbs energy. Is it exothermic or endothermic?",
-          options: ["Exothermic", "Endothermic"],
-          correctOptionIndex: isExo ? 0 : 1,
-          hint:
-            "Exothermic = energy exits (releases heat). Endothermic = energy enters (absorbs heat).",
-          narration: isExo
-            ? "That's right! Exothermic means 'heat out' — the reaction releases energy to its surroundings."
-            : "Correct! Endothermic means 'heat in' — the reaction absorbs energy from its surroundings.",
-        },
-        {
-          id: "ch2",
-          type: "read_diagram",
-          answerType: "true_false" as const,
-          instruction:
-            "Look at the energy diagram. Are the products at a higher or lower energy level than the reactants?",
-          options: ["Lower", "Higher"],
-          correctOptionIndex: isExo ? 0 : 1,
-          hint:
-            "Compare the right side (products) to the left side (reactants) on the diagram.",
-          narration: isExo
-            ? "The products are lower — energy was released! That extra energy became heat."
-            : "The products are higher — energy was absorbed! The reaction needed energy from its surroundings.",
-        },
-        {
-          id: "ch3",
-          type: "predict",
-          answerType: "true_false" as const,
-          instruction:
-            "If you touched the container during this reaction, would it feel hot or cold?",
-          options: ["Hot", "Cold"],
-          correctOptionIndex: isExo ? 0 : 1,
-          hint:
-            "Think about whether energy is leaving the reaction (warming things up) or entering it (cooling things down).",
-          narration: isExo
-            ? "It would feel hot! The reaction releases heat energy into its surroundings — including your hand."
-            : "It would feel cold! The reaction absorbs heat from its surroundings — pulling warmth away from your hand.",
-        },
-      ];
-    }
-
-    // Apply config overrides if provided
-    if (config) {
-      if (config.title !== undefined) result.title = config.title;
-      if (config.description !== undefined)
-        result.description = config.description;
-      if (config.reaction !== undefined)
-        result.reaction = { ...result.reaction, ...config.reaction };
-      if (config.energyDiagram !== undefined)
-        result.energyDiagram = { ...result.energyDiagram, ...config.energyDiagram };
-      if (config.bondEnergies !== undefined)
-        result.bondEnergies = { ...result.bondEnergies, ...config.bondEnergies };
-      if (config.challenges !== undefined)
-        result.challenges = config.challenges;
-      if (config.showOptions !== undefined)
-        result.showOptions = { ...result.showOptions, ...config.showOptions };
-      if (config.gradeBand !== undefined) result.gradeBand = config.gradeBand;
-    }
-
-    console.log("\u26A1 Energy of Reactions Generated:", {
-      title: result.title,
-      gradeBand: result.gradeBand,
-      reactionName: result.reaction.name,
-      reactionType: result.reaction.type,
-      deltaH: result.reaction.deltaH,
-      activationEnergy: result.reaction.activationEnergy,
-      challengeCount: result.challenges?.length ?? 0,
-      bondEnergiesEnabled: result.bondEnergies.enabled,
-      showCatalystPath: result.energyDiagram.showCatalystPath,
-    });
-
-    return result;
-  } catch (error) {
-    console.error("Error generating energy-of-reactions data:", error);
-    throw error;
-  }
+  console.log("⚡ Energy of Reactions Generated:", { title: data.title, gradeBand: data.gradeBand, modes, reactions: data.reactionIds });
+  return data;
 };

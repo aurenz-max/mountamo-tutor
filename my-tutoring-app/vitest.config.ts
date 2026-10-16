@@ -21,6 +21,9 @@ export default defineConfig({
     // The full Lumina suite (~19k tests, 2026-10-09) runs every file in parallel; the same mounted tests that take
     // 1-2 s alone crossed the 5 s default on every full run and passed alone, so a full-run gate always read red.
     testTimeout: 15_000,
+    // The journey sweep mounts every saved payload four times in one worker; at ~750 payloads (10-16) it passed 4 GB
+    // and the worker died with "heap out of memory", which reads as a crash, not a finding. The per-mount leak is queued.
+    execArgv: ['--max-old-space-size=8192'],
   },
   resolve: {
     alias: {

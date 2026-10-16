@@ -1,0 +1,191 @@
+{
+ "source": "qa/tutor-reports/reaction-lab-runtime-predict-payload-2026-10-15.json",
+ "primitiveId": "reaction-lab",
+ "evalMode": "predict",
+ "data": {
+  "title": "Lemon Volcano Fizz",
+  "description": "Discover the hidden magic of kitchen chemistry by mixing lemon juice and baking soda to create a fizzy eruption!",
+  "experiment": {
+   "name": "Lemon Volcano Eruption",
+   "category": "acid_base",
+   "safetyLevel": "safe",
+   "realWorldConnection": "This is very similar to how baking powder helps cakes and breads rise when you bake them in the oven!"
+  },
+  "substances": [
+   {
+    "id": "sub-lemon-juice",
+    "name": "Lemon Juice",
+    "state": "liquid",
+    "color": "yellow",
+    "safetyInfo": "Avoid contact with eyes; wash hands after.",
+    "amount": "50 mL",
+    "formula": null,
+    "imagePrompt": "fresh yellow lemon juice in a small glass beaker"
+   },
+   {
+    "id": "sub-baking-soda",
+    "name": "Baking Soda",
+    "state": "solid",
+    "color": "white",
+    "safetyInfo": "Do not taste or inhale powder.",
+    "amount": "2 tablespoons",
+    "formula": null,
+    "imagePrompt": "white baking soda powder in a small dish"
+   }
+  ],
+  "reaction": {
+   "type": "chemical",
+   "signs": [
+    "fizzing",
+    "gas_produced"
+   ],
+   "isReversible": false,
+   "energyChange": "neutral",
+   "particleDescription": "When the lemon juice touches the baking soda, their particles crash together and trade pieces, instantly building tiny new gas bubbles that escape into the air!",
+   "equation": null
+  },
+  "animation": {
+   "realView": {
+    "duration": 3.5,
+    "effects": [
+     "bubbles",
+     "foam"
+    ],
+    "temperatureChange": null
+   },
+   "particleView": {
+    "reactantMolecules": [
+     "Lemon Juice Particle",
+     "Baking Soda Particle"
+    ],
+    "productMolecules": [
+     "Carbon Dioxide Gas",
+     "Liquid Solution"
+    ],
+    "bondBreaking": true,
+    "bondForming": true
+   }
+  },
+  "challenges": [
+   {
+    "id": "chal-1",
+    "type": "predict",
+    "instruction": "What do you think will happen when we pour lemon juice onto the baking soda?",
+    "targetAnswer": "Bubbles will form and it will fizz",
+    "hint": "Think about what happens when an acid meets a powder with trapped air inside.",
+    "narration": "Get ready to observe closely and unlock the secrets of chemical change!",
+    "correctOptionId": "A",
+    "options": [
+     {
+      "id": "A",
+      "text": "Bubbles will form and it will fizz"
+     },
+     {
+      "id": "B",
+      "text": "The liquid will turn completely solid"
+     },
+     {
+      "id": "C",
+      "text": "Nothing at all will happen"
+     },
+     {
+      "id": "D",
+      "text": "The mixture will turn bright blue"
+     }
+    ]
+   },
+   {
+    "id": "chal-2",
+    "type": "predict",
+    "instruction": "Do you predict that this reaction will create a brand new gas?",
+    "targetAnswer": "Yes, carbon dioxide gas will be created",
+    "hint": "Watch the bubbles as they rise up and escape into the air.",
+    "narration": "Let us test our ideas about what happens to the ingredients during mixing!",
+    "correctOptionId": "A",
+    "options": [
+     {
+      "id": "A",
+      "text": "Yes, carbon dioxide gas will be created"
+     },
+     {
+      "id": "B",
+      "text": "No, it will only create water vapor"
+     },
+     {
+      "id": "C",
+      "text": "No, gases can never be made from liquids and solids"
+     },
+     {
+      "id": "D",
+      "text": "Yes, oxygen gas will make a bright flame"
+     }
+    ]
+   },
+   {
+    "id": "chal-3",
+    "type": "predict",
+    "instruction": "What kind of change do you predict this fizzing eruption will be?",
+    "targetAnswer": "A chemical change because new substances are formed",
+    "hint": "Ask yourself if you can easily turn the foam back into original lemon juice and baking soda.",
+    "narration": "Fantastic prediction work! Science is all about testing our thoughts.",
+    "correctOptionId": "A",
+    "options": [
+     {
+      "id": "A",
+      "text": "A chemical change because new substances are formed"
+     },
+     {
+      "id": "B",
+      "text": "A physical change because the color stays similar"
+     },
+     {
+      "id": "C",
+      "text": "Only a change in temperature"
+     },
+     {
+      "id": "D",
+      "text": "No change at all"
+     }
+    ]
+   }
+  ],
+  "notebook": {
+   "predictPrompt": "What do you think will happen when we mix the lemon juice and baking soda together?",
+   "predictionOptions": [
+    {
+     "id": "A",
+     "text": "Bubbles will form and overflow with fizz"
+    },
+    {
+     "id": "B",
+     "text": "The mixture will turn into a solid brick"
+    },
+    {
+     "id": "C",
+     "text": "Nothing will happen"
+    },
+    {
+     "id": "D",
+     "text": "The liquid will start to glow in the dark"
+    }
+   ],
+   "correctPredictionId": "A",
+   "observePrompts": [
+    "What did you see happen right when the lemon juice touched the baking soda?",
+    "Did you hear any sounds during the reaction?",
+    "What state of matter formed at the top of the cup?"
+   ],
+   "explainPrompt": "Why do you think the bubbles and fizzing appeared when these two substances met?"
+  },
+  "showOptions": {
+   "showParticleView": true,
+   "showEquation": false,
+   "showSafetyBadge": true,
+   "showTemperatureGauge": false,
+   "showObservationNotebook": true,
+   "showConservationCounter": false
+  },
+  "gradeBand": "3-5",
+  "imagePrompt": "a colorful science experiment setup with lemon juice pouring onto baking soda creating fizzy bubbles"
+ }
+}

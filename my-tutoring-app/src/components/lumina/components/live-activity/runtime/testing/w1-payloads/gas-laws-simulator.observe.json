@@ -1,0 +1,102 @@
+{
+ "source": "qa/tutor-reports/gas-laws-simulator-runtime-observe-payload-2026-10-15.json",
+ "primitiveId": "gas-laws-simulator",
+ "evalMode": "observe",
+ "data": {
+  "title": "Pressure, Volume, and Temperature in Gas Systems",
+  "description": "Students investigate how altering variables in containers like syringes and tanks relates pressure, volume, and temperature.",
+  "lawFocus": "combined",
+  "gas": "air",
+  "challengeTypes": [
+   "observe"
+  ],
+  "difficulty": "hard",
+  "gradeBand": "9-10",
+  "items": [
+   {
+    "id": "observe-1",
+    "mode": "observe",
+    "gas": "air",
+    "apparatus": "tank",
+    "before": {
+     "P": 4,
+     "V": 3,
+     "T": 600,
+     "n": 1
+    },
+    "asked": "V",
+    "celsius": false,
+    "heldNamed": false,
+    "changes": [
+     {
+      "v": "T",
+      "to": 900
+     }
+    ]
+   },
+   {
+    "id": "observe-2",
+    "mode": "observe",
+    "gas": "air",
+    "apparatus": "piston",
+    "before": {
+     "P": 4,
+     "V": 6,
+     "T": 450,
+     "n": 1
+    },
+    "asked": "T",
+    "celsius": false,
+    "heldNamed": false,
+    "changes": [
+     {
+      "v": "n",
+      "to": 1.5
+     }
+    ]
+   },
+   {
+    "id": "observe-3",
+    "mode": "observe",
+    "gas": "air",
+    "apparatus": "piston",
+    "before": {
+     "P": 4,
+     "V": 12,
+     "T": 600,
+     "n": 1
+    },
+    "asked": "V",
+    "celsius": false,
+    "heldNamed": false,
+    "changes": [
+     {
+      "v": "n",
+      "to": 3
+     }
+    ]
+   },
+   {
+    "id": "observe-4",
+    "mode": "observe",
+    "gas": "air",
+    "apparatus": "piston",
+    "before": {
+     "P": 4,
+     "V": 6,
+     "T": 450,
+     "n": 1
+    },
+    "asked": "P",
+    "celsius": false,
+    "heldNamed": false,
+    "changes": [
+     {
+      "v": "T",
+      "to": 300
+     }
+    ]
+   }
+  ]
+ }
+}

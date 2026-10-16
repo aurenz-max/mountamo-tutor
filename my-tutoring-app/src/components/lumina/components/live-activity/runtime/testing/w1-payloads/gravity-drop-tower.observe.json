@@ -1,0 +1,64 @@
+{
+ "source": "qa/tutor-reports/gravity-drop-tower-runtime-observe-payload-2026-10-15.json",
+ "primitiveId": "gravity-drop-tower",
+ "evalMode": "observe",
+ "data": {
+  "title": "The Tower Drop Test",
+  "description": "You will drop different objects from the tower and watch them fall to see what happens.",
+  "challengeTypes": [
+   "observe"
+  ],
+  "difficulty": "medium",
+  "gradeLevel": "Kindergarten",
+  "items": [
+   {
+    "id": "observe-1",
+    "mode": "observe",
+    "ask": "first",
+    "air": false,
+    "drops": [
+     {
+      "obj": "feather",
+      "height": 12
+     },
+     {
+      "obj": "hammer",
+      "height": 12
+     }
+    ]
+   },
+   {
+    "id": "observe-2",
+    "mode": "observe",
+    "ask": "first",
+    "air": true,
+    "drops": [
+     {
+      "obj": "baseball",
+      "height": 12
+     },
+     {
+      "obj": "feather",
+      "height": 12
+     }
+    ]
+   },
+   {
+    "id": "observe-3",
+    "mode": "observe",
+    "ask": "first",
+    "air": true,
+    "drops": [
+     {
+      "obj": "paper_sheet",
+      "height": 5
+     },
+     {
+      "obj": "rock",
+      "height": 5
+     }
+    ]
+   }
+  ]
+ }
+}

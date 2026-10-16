@@ -1,0 +1,98 @@
+{
+ "source": "qa/tutor-reports/stoichiometry-lab-runtime-convert-payload-2026-10-15.json",
+ "primitiveId": "stoichiometry-lab",
+ "evalMode": "convert",
+ "data": {
+  "title": "Natural Gas Burner",
+  "description": "A laboratory burner mixes natural gas and oxygen to produce a steady flame.",
+  "gradeBand": "9-10",
+  "reaction": {
+   "id": "methane",
+   "equation": "CH4 + 2O2 -> CO2 + 2H2O",
+   "reactants": [
+    {
+     "formula": "CH4",
+     "coefficient": 1,
+     "molarMass": 16,
+     "name": "methane"
+    },
+    {
+     "formula": "O2",
+     "coefficient": 2,
+     "molarMass": 32,
+     "name": "oxygen"
+    }
+   ],
+   "products": [
+    {
+     "formula": "CO2",
+     "coefficient": 1,
+     "molarMass": 44,
+     "name": "carbon dioxide"
+    },
+    {
+     "formula": "H2O",
+     "coefficient": 2,
+     "molarMass": 18,
+     "name": "water"
+    }
+   ]
+  },
+  "challenges": [
+   {
+    "id": "convert-1",
+    "type": "convert",
+    "tier": "easy",
+    "givenFormulaA": "O2",
+    "givenMassA": 64,
+    "answerFormula": "O2",
+    "answerUnit": "mol",
+    "tray": [
+     "CH4|per|O2",
+     "O2|g>mol",
+     "CH4|g>mol",
+     "O2|per|CH4",
+     "O2|mol>g",
+     "CH4|mol>g"
+    ]
+   },
+   {
+    "id": "convert-2",
+    "type": "convert",
+    "tier": "medium",
+    "givenFormulaA": "CH4",
+    "givenMassA": 80,
+    "answerFormula": "H2O",
+    "answerUnit": "mol",
+    "tray": [
+     "H2O|g>mol",
+     "CH4|per|H2O",
+     "CH4|g>mol",
+     "H2O|mol>g",
+     "CH4|mol>g",
+     "H2O|per|CH4"
+    ]
+   },
+   {
+    "id": "convert-3",
+    "type": "convert",
+    "tier": "hard",
+    "givenFormulaA": "CH4",
+    "givenMassA": 96,
+    "answerFormula": "O2",
+    "answerUnit": "g",
+    "tray": [
+     "CH4|per|O2",
+     "O2|g>mol",
+     "CH4|mol>g",
+     "CH4|g>mol",
+     "O2|mol>g",
+     "O2|per|CH4"
+    ]
+   }
+  ],
+  "challengeTypes": [
+   "convert"
+  ]
+ }
+}

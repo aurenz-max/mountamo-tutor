@@ -1,0 +1,64 @@
+{
+ "source": "qa/tutor-reports/ph-explorer-runtime-neutralize-payload-2026-10-15.json",
+ "primitiveId": "ph-explorer",
+ "evalMode": "neutralize",
+ "data": {
+  "title": "Acids, Bases, and the pH Scale",
+  "description": "Explore the hidden pH levels of everyday liquids and laboratory chemicals!",
+  "substances": [
+   {
+    "id": "hydrochloric_acid",
+    "name": "Hydrochloric Acid",
+    "pH": 1,
+    "category": "lab",
+    "realWorldInfo": "This strong acid is similar to the gastric acid found in your stomach that helps digest food."
+   },
+   {
+    "id": "lemon_juice",
+    "name": "Lemon Juice",
+    "pH": 2,
+    "category": "food",
+    "realWorldInfo": "Lemon juice gets its tart flavor from high concentrations of citric acid."
+   },
+   {
+    "id": "vinegar",
+    "name": "Vinegar",
+    "pH": 3,
+    "category": "food",
+    "realWorldInfo": "Vinegar contains acetic acid and has been used for cooking and preserving food for thousands of years."
+   },
+   {
+    "id": "pure_water",
+    "name": "Pure Water",
+    "pH": 7,
+    "category": "nature",
+    "realWorldInfo": "Pure water is completely neutral, perfectly balancing hydrogen and hydroxide ions."
+   },
+   {
+    "id": "baking_soda_solution",
+    "name": "Baking Soda Solution",
+    "pH": 8.5,
+    "category": "food",
+    "realWorldInfo": "Dissolved baking soda releases mild alkalinity, which helps neutralize baking acids to make fluffy cakes."
+   },
+   {
+    "id": "ammonia_solution",
+    "name": "Ammonia Solution",
+    "pH": 11,
+    "category": "cleaning",
+    "realWorldInfo": "Ammonia is a powerful cleaner that easily breaks down grease and grime proteins."
+   },
+   {
+    "id": "sodium_hydroxide",
+    "name": "Sodium Hydroxide",
+    "pH": 13,
+    "category": "lab",
+    "realWorldInfo": "Also known as lye, this strong base has a very high concentration of hydroxide ions."
+   }
+  ],
+  "challengeTypes": [
+   "neutralize"
+  ],
+  "gradeBand": "7-8"
+ }
+}

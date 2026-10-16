@@ -1,0 +1,539 @@
+{
+ "source": "qa/tutor-reports/vehicle-comparison-lab-runtime-constraint_tradeoff-payload-2026-10-16.json",
+ "primitiveId": "vehicle-comparison-lab",
+ "evalMode": "constraint_tradeoff",
+ "data": {
+  "title": "Transportation by the Numbers",
+  "instructions": "Read the table of vehicle numbers to answer questions about speed, capacity, and range.",
+  "topicFocus": "Comparing vehicles that move people and goods by speed, capacity and range",
+  "vehicles": [
+   {
+    "id": "container-ship",
+    "name": "Container Ship",
+    "category": "sea",
+    "visualKind": "ship",
+    "imagePrompt": "A large cargo ship loaded with colorful shipping containers on the ocean.",
+    "metrics": {
+     "topSpeed": {
+      "value": 45,
+      "unit": "km/h",
+      "display": "45 km/h"
+     },
+     "weight": {
+      "value": 180000,
+      "unit": "tons",
+      "display": "180,000 tons"
+     },
+     "passengerCapacity": {
+      "value": 30,
+      "unit": "passengers",
+      "display": "30 passengers"
+     },
+     "cargoCapacity": {
+      "value": 200000,
+      "unit": "tons",
+      "display": "200,000 tons"
+     },
+     "range": {
+      "value": 25000,
+      "unit": "km",
+      "display": "25,000 km"
+     },
+     "fuelType": "Heavy Fuel Oil",
+     "yearIntroduced": 2006,
+     "co2PerPassengerKm": null,
+     "costPerTrip": "$500,000"
+    },
+    "funFact": "Modern container ships can carry over 20,000 metal boxes filled with goods across the sea!",
+    "imageUrl": null
+   },
+   {
+    "id": "bullet-train",
+    "name": "Bullet Train",
+    "category": "land",
+    "visualKind": "train",
+    "imagePrompt": "A sleek, aerodynamic white bullet train speeding along a track.",
+    "metrics": {
+     "topSpeed": {
+      "value": 320,
+      "unit": "km/h",
+      "display": "320 km/h"
+     },
+     "weight": {
+      "value": 450,
+      "unit": "tons",
+      "display": "450 tons"
+     },
+     "passengerCapacity": {
+      "value": 1300,
+      "unit": "passengers",
+      "display": "1,300 passengers"
+     },
+     "cargoCapacity": {
+      "value": 0,
+      "unit": "tons",
+      "display": "0 tons"
+     },
+     "range": {
+      "value": 1000,
+      "unit": "km",
+      "display": "1,000 km"
+     },
+     "fuelType": "Electricity",
+     "yearIntroduced": 1964,
+     "co2PerPassengerKm": 15,
+     "costPerTrip": "$10,000"
+    },
+    "funFact": "Bullet trains have a nose shaped like a kingfisher bird's beak to reduce noise when entering tunnels.",
+    "imageUrl": null
+   },
+   {
+    "id": "cargo-airplane",
+    "name": "Cargo Airplane",
+    "category": "air",
+    "visualKind": "airplane",
+    "imagePrompt": "A large transport airplane with its nose open to load heavy cargo.",
+    "metrics": {
+     "topSpeed": {
+      "value": 900,
+      "unit": "km/h",
+      "display": "900 km/h"
+     },
+     "weight": {
+      "value": 175,
+      "unit": "tons",
+      "display": "175 tons"
+     },
+     "passengerCapacity": {
+      "value": 5,
+      "unit": "passengers",
+      "display": "5 passengers"
+     },
+     "cargoCapacity": {
+      "value": 110,
+      "unit": "tons",
+      "display": "110 tons"
+     },
+     "range": {
+      "value": 7400,
+      "unit": "km",
+      "display": "7,400 km"
+     },
+     "fuelType": "Jet Fuel",
+     "yearIntroduced": 1995,
+     "co2PerPassengerKm": null,
+     "costPerTrip": "$80,000"
+    },
+    "funFact": "Cargo airplanes can be loaded with trucks, other smaller planes, or even live animals like horses.",
+    "imageUrl": null
+   },
+   {
+    "id": "semi-truck",
+    "name": "Semi Truck",
+    "category": "land",
+    "visualKind": "truck",
+    "imagePrompt": "A large semi-truck with a long trailer driving on a highway.",
+    "metrics": {
+     "topSpeed": {
+      "value": 110,
+      "unit": "km/h",
+      "display": "110 km/h"
+     },
+     "weight": {
+      "value": 15,
+      "unit": "tons",
+      "display": "15 tons"
+     },
+     "passengerCapacity": {
+      "value": 2,
+      "unit": "passengers",
+      "display": "2 passengers"
+     },
+     "cargoCapacity": {
+      "value": 20,
+      "unit": "tons",
+      "display": "20 tons"
+     },
+     "range": {
+      "value": 2000,
+      "unit": "km",
+      "display": "2,000 km"
+     },
+     "fuelType": "Diesel",
+     "yearIntroduced": 1914,
+     "co2PerPassengerKm": null,
+     "costPerTrip": "$1,500"
+    },
+    "funFact": "Semi trucks have up to 18 wheels to help spread out the heavy weight of their cargo.",
+    "imageUrl": null
+   },
+   {
+    "id": "passenger-ferry",
+    "name": "Passenger Ferry",
+    "category": "sea",
+    "visualKind": "ship",
+    "imagePrompt": "A wide passenger ferry boat cruising across calm blue water.",
+    "metrics": {
+     "topSpeed": {
+      "value": 40,
+      "unit": "km/h",
+      "display": "40 km/h"
+     },
+     "weight": {
+      "value": 1200,
+      "unit": "tons",
+      "display": "1,200 tons"
+     },
+     "passengerCapacity": {
+      "value": 1000,
+      "unit": "passengers",
+      "display": "1,000 passengers"
+     },
+     "cargoCapacity": {
+      "value": 150,
+      "unit": "tons",
+      "display": "150 tons"
+     },
+     "range": {
+      "value": 800,
+      "unit": "km",
+      "display": "800 km"
+     },
+     "fuelType": "Marine Diesel",
+     "yearIntroduced": 1989,
+     "co2PerPassengerKm": 45,
+     "costPerTrip": "$5,000"
+    },
+    "funFact": "Passenger ferries are designed to carry both hundreds of people and dozens of cars at the same time.",
+    "imageUrl": null
+   }
+  ],
+  "comparisonMetrics": [
+   "topSpeed",
+   "passengerCapacity",
+   "cargoCapacity",
+   "range"
+  ],
+  "surprisingFacts": [
+   {
+    "fact": "Even though the Container Ship is the slowest vehicle, it can travel the farthest distance without stopping.",
+    "vehicleIds": [
+     "container-ship"
+    ]
+   },
+   {
+    "fact": "The Bullet Train carries the highest number of passengers, but it cannot carry any cargo at all.",
+    "vehicleIds": [
+     "bullet-train"
+    ]
+   }
+  ],
+  "gradeBand": "3-5",
+  "challengeTypes": [
+   "constraint_tradeoff"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "constraint_tradeoff-1",
+    "mode": "constraint_tradeoff",
+    "rows": [
+     {
+      "id": "passenger-ferry",
+      "name": "Passenger Ferry",
+      "category": "sea",
+      "visualKind": "ship",
+      "values": {
+       "topSpeed": 40,
+       "weight": 1200,
+       "passengerCapacity": 1000,
+       "cargoCapacity": 150,
+       "range": 800,
+       "yearIntroduced": 1989,
+       "co2PerPassengerKm": 45
+      }
+     },
+     {
+      "id": "cargo-airplane",
+      "name": "Cargo Airplane",
+      "category": "air",
+      "visualKind": "airplane",
+      "values": {
+       "topSpeed": 900,
+       "weight": 175,
+       "passengerCapacity": 5,
+       "cargoCapacity": 110,
+       "range": 7400,
+       "yearIntroduced": 1995
+      }
+     },
+     {
+      "id": "bullet-train",
+      "name": "Bullet Train",
+      "category": "land",
+      "visualKind": "train",
+      "values": {
+       "topSpeed": 320,
+       "weight": 450,
+       "passengerCapacity": 1300,
+       "cargoCapacity": 0,
+       "range": 1000,
+       "yearIntroduced": 1964,
+       "co2PerPassengerKm": 15
+      }
+     },
+     {
+      "id": "semi-truck",
+      "name": "Semi Truck",
+      "category": "land",
+      "visualKind": "truck",
+      "values": {
+       "topSpeed": 110,
+       "weight": 15,
+       "passengerCapacity": 2,
+       "cargoCapacity": 20,
+       "range": 2000,
+       "yearIntroduced": 1914
+      }
+     },
+     {
+      "id": "container-ship",
+      "name": "Container Ship",
+      "category": "sea",
+      "visualKind": "ship",
+      "values": {
+       "topSpeed": 45,
+       "weight": 180000,
+       "passengerCapacity": 30,
+       "cargoCapacity": 200000,
+       "range": 25000,
+       "yearIntroduced": 2006
+      }
+     }
+    ],
+    "columns": [
+     "range",
+     "topSpeed",
+     "cargoCapacity",
+     "passengerCapacity"
+    ],
+    "units": {
+     "topSpeed": "km/h",
+     "weight": "tons",
+     "range": "km"
+    },
+    "metric": "cargoCapacity",
+    "minimums": [
+     {
+      "metric": "passengerCapacity",
+      "atLeast": 5
+     },
+     {
+      "metric": "topSpeed",
+      "atLeast": 110
+     }
+    ]
+   },
+   {
+    "id": "constraint_tradeoff-2",
+    "mode": "constraint_tradeoff",
+    "rows": [
+     {
+      "id": "bullet-train",
+      "name": "Bullet Train",
+      "category": "land",
+      "visualKind": "train",
+      "values": {
+       "topSpeed": 320,
+       "weight": 450,
+       "passengerCapacity": 1300,
+       "cargoCapacity": 0,
+       "range": 1000,
+       "yearIntroduced": 1964,
+       "co2PerPassengerKm": 15
+      }
+     },
+     {
+      "id": "cargo-airplane",
+      "name": "Cargo Airplane",
+      "category": "air",
+      "visualKind": "airplane",
+      "values": {
+       "topSpeed": 900,
+       "weight": 175,
+       "passengerCapacity": 5,
+       "cargoCapacity": 110,
+       "range": 7400,
+       "yearIntroduced": 1995
+      }
+     },
+     {
+      "id": "semi-truck",
+      "name": "Semi Truck",
+      "category": "land",
+      "visualKind": "truck",
+      "values": {
+       "topSpeed": 110,
+       "weight": 15,
+       "passengerCapacity": 2,
+       "cargoCapacity": 20,
+       "range": 2000,
+       "yearIntroduced": 1914
+      }
+     },
+     {
+      "id": "passenger-ferry",
+      "name": "Passenger Ferry",
+      "category": "sea",
+      "visualKind": "ship",
+      "values": {
+       "topSpeed": 40,
+       "weight": 1200,
+       "passengerCapacity": 1000,
+       "cargoCapacity": 150,
+       "range": 800,
+       "yearIntroduced": 1989,
+       "co2PerPassengerKm": 45
+      }
+     },
+     {
+      "id": "container-ship",
+      "name": "Container Ship",
+      "category": "sea",
+      "visualKind": "ship",
+      "values": {
+       "topSpeed": 45,
+       "weight": 180000,
+       "passengerCapacity": 30,
+       "cargoCapacity": 200000,
+       "range": 25000,
+       "yearIntroduced": 2006
+      }
+     }
+    ],
+    "columns": [
+     "topSpeed",
+     "range",
+     "passengerCapacity",
+     "cargoCapacity"
+    ],
+    "units": {
+     "topSpeed": "km/h",
+     "weight": "tons",
+     "range": "km"
+    },
+    "metric": "passengerCapacity",
+    "minimums": [
+     {
+      "metric": "topSpeed",
+      "atLeast": 110
+     },
+     {
+      "metric": "cargoCapacity",
+      "atLeast": 20
+     }
+    ]
+   },
+   {
+    "id": "constraint_tradeoff-3",
+    "mode": "constraint_tradeoff",
+    "rows": [
+     {
+      "id": "cargo-airplane",
+      "name": "Cargo Airplane",
+      "category": "air",
+      "visualKind": "airplane",
+      "values": {
+       "topSpeed": 900,
+       "weight": 175,
+       "passengerCapacity": 5,
+       "cargoCapacity": 110,
+       "range": 7400,
+       "yearIntroduced": 1995
+      }
+     },
+     {
+      "id": "bullet-train",
+      "name": "Bullet Train",
+      "category": "land",
+      "visualKind": "train",
+      "values": {
+       "topSpeed": 320,
+       "weight": 450,
+       "passengerCapacity": 1300,
+       "cargoCapacity": 0,
+       "range": 1000,
+       "yearIntroduced": 1964,
+       "co2PerPassengerKm": 15
+      }
+     },
+     {
+      "id": "semi-truck",
+      "name": "Semi Truck",
+      "category": "land",
+      "visualKind": "truck",
+      "values": {
+       "topSpeed": 110,
+       "weight": 15,
+       "passengerCapacity": 2,
+       "cargoCapacity": 20,
+       "range": 2000,
+       "yearIntroduced": 1914
+      }
+     },
+     {
+      "id": "container-ship",
+      "name": "Container Ship",
+      "category": "sea",
+      "visualKind": "ship",
+      "values": {
+       "topSpeed": 45,
+       "weight": 180000,
+       "passengerCapacity": 30,
+       "cargoCapacity": 200000,
+       "range": 25000,
+       "yearIntroduced": 2006
+      }
+     },
+     {
+      "id": "passenger-ferry",
+      "name": "Passenger Ferry",
+      "category": "sea",
+      "visualKind": "ship",
+      "values": {
+       "topSpeed": 40,
+       "weight": 1200,
+       "passengerCapacity": 1000,
+       "cargoCapacity": 150,
+       "range": 800,
+       "yearIntroduced": 1989,
+       "co2PerPassengerKm": 45
+      }
+     }
+    ],
+    "columns": [
+     "cargoCapacity",
+     "topSpeed",
+     "range",
+     "passengerCapacity"
+    ],
+    "units": {
+     "topSpeed": "km/h",
+     "weight": "tons",
+     "range": "km"
+    },
+    "metric": "topSpeed",
+    "minimums": [
+     {
+      "metric": "range",
+      "atLeast": 1000
+     },
+     {
+      "metric": "passengerCapacity",
+      "atLeast": 30
+     }
+    ]
+   }
+  ]
+ }
+}

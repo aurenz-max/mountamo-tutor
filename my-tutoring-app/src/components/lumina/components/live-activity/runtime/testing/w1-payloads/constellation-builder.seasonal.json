@@ -1,0 +1,216 @@
+{
+ "source": "qa/tutor-reports/constellation-builder-runtime-seasonal-payload-2026-10-15.json",
+ "primitiveId": "constellation-builder",
+ "evalMode": "seasonal",
+ "data": {
+  "title": "Stargazer Seasons",
+  "description": "Learn how Earth's orbit around the sun changes which star patterns we can see in the night sky during different seasons.",
+  "gradeLevel": "4",
+  "stars": [
+   {
+    "id": "s1",
+    "x": 15,
+    "y": 20,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s2",
+    "x": 25,
+    "y": 25,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s3",
+    "x": 35,
+    "y": 30,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s4",
+    "x": 45,
+    "y": 25,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s5",
+    "x": 55,
+    "y": 30,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s6",
+    "x": 65,
+    "y": 25,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s7",
+    "x": 75,
+    "y": 20,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s8",
+    "x": 10,
+    "y": 50,
+    "magnitude": 5,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s9",
+    "x": 30,
+    "y": 60,
+    "magnitude": 6,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s10",
+    "x": 50,
+    "y": 70,
+    "magnitude": 4,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s11",
+    "x": 70,
+    "y": 60,
+    "magnitude": 5,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s12",
+    "x": 90,
+    "y": 50,
+    "magnitude": 6,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s13",
+    "x": 20,
+    "y": 80,
+    "magnitude": 5,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s14",
+    "x": 80,
+    "y": 80,
+    "magnitude": 4,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s15",
+    "x": 40,
+    "y": 10,
+    "magnitude": 6,
+    "isPartOfConstellation": false
+   }
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "seasonal",
+    "constellationName": "Big Dipper",
+    "instruction": "Which of these star groups is most famously seen shining high in northern skies during spring evenings?",
+    "starOrder": [
+     "s1",
+     "s2",
+     "s3",
+     "s4",
+     "s5",
+     "s6",
+     "s7"
+    ],
+    "correctConnections": [],
+    "mythologyFact": "The Big Dipper is actually part of a larger constellation called Ursa Major, or the Great Bear.",
+    "season": "spring",
+    "distractorName0": "Orion",
+    "distractorName1": "Scorpius",
+    "distractorName2": "Pegasus"
+   },
+   {
+    "id": "c2",
+    "type": "seasonal",
+    "constellationName": "Orion",
+    "instruction": "Which star pattern dominates the cold winter night sky with its bright belt?",
+    "starOrder": [
+     "s1",
+     "s2",
+     "s3",
+     "s4"
+    ],
+    "correctConnections": [],
+    "mythologyFact": "Orion contains Betelgeuse, a red supergiant star that is hundreds of times larger than our sun.",
+    "season": "winter",
+    "distractorName0": "Cygnus",
+    "distractorName1": "Cassiopeia",
+    "distractorName2": "Leo"
+   },
+   {
+    "id": "c3",
+    "type": "seasonal",
+    "constellationName": "Cassiopeia",
+    "instruction": "Look up during autumn nights to find which famous five-star pattern in the northern sky?",
+    "starOrder": [
+     "s1",
+     "s2",
+     "s3",
+     "s4",
+     "s5"
+    ],
+    "correctConnections": [],
+    "mythologyFact": "Because it is so close to the North Pole star, this pattern never sets below the horizon in northern latitudes.",
+    "season": "fall",
+    "distractorName0": "Taurus",
+    "distractorName1": "Scorpius",
+    "distractorName2": "Bo\u00f6tes"
+   },
+   {
+    "id": "c4",
+    "type": "seasonal",
+    "constellationName": "Cygnus",
+    "instruction": "Which pattern is easiest to spot flying down the Milky Way during warm summer nights?",
+    "starOrder": [
+     "s1",
+     "s2",
+     "s3",
+     "s4",
+     "s5"
+    ],
+    "correctConnections": [],
+    "mythologyFact": "Cygnus lies right along the bright band of the Milky Way galaxy, making it look like it is flying through a river of stars.",
+    "season": "summer",
+    "distractorName0": "Orion",
+    "distractorName1": "Leo",
+    "distractorName2": "Big Dipper"
+   },
+   {
+    "id": "c5",
+    "type": "seasonal",
+    "constellationName": "Leo",
+    "instruction": "Which stellar group heralds the arrival of spring and warmer weather in the evening sky?",
+    "starOrder": [
+     "s1",
+     "s2",
+     "s3",
+     "s4",
+     "s5",
+     "s6"
+    ],
+    "correctConnections": [],
+    "mythologyFact": "Leo contains Regulus, a bright blue-white star whose name means \"little king\" in Latin.",
+    "season": "spring",
+    "distractorName0": "Cassiopeia",
+    "distractorName1": "Cygnus",
+    "distractorName2": "Pegasus"
+   }
+  ]
+ }
+}

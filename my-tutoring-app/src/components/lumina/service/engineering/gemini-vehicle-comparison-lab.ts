@@ -2,653 +2,195 @@ import { Type, Schema } from "@google/genai";
 import { ai } from "../geminiClient";
 import type { GenerationContext } from "../generation/generationContext";
 import { buildScopePromptSection } from '../scopeContext';
-import {
-  resolveEvalModes,
-  constrainChallengeTypeEnum,
-  buildModeConstraintSection,
-  type ChallengeTypeDoc,
-} from '../evalMode';
+import { resolveEvalModes, type ChallengeTypeDoc } from '../evalMode';
 import {
   VEHICLE_VISUAL_KINDS,
   resolveVehicleVisualKind,
 } from '../../primitives/visual-primitives/engineering/vehicleVisualKind';
-
-// Import types from the component - single source of truth
 import type {
   VehicleComparisonLabData,
   ComparisonVehicle,
-  ComparisonChallenge,
   SurprisingFact,
-  ComparisonMetricKey,
 } from '../../primitives/visual-primitives/engineering/VehicleComparisonLab';
+import {
+  buildVehicleItems, METRIC_KEYS, rosterOf, VEHICLE_MODES,
+  type MetricKey, type VehicleMode, type VehicleTier,
+} from '../../primitives/visual-primitives/engineering/vehicleComparisonWorkspace';
 
-// Re-export for convenience
 export type { VehicleComparisonLabData };
 
-type ComparisonChallengeType = 'metric_leader' | 'evidence_choice' | 'constraint_tradeoff';
-
-const CHALLENGE_TYPE_DOCS: Record<ComparisonChallengeType, ChallengeTypeDoc> = {
+/**
+ * Vehicle Comparison Lab generator. Gemini writes the frame (title, instructions, topic focus), a topic-specific
+ * roster of real vehicles with their real statistics, and a few surprising facts for the end of the lab. Code builds
+ * every item and key from those numbers (`vehicleComparisonWorkspace.ts`, `buildVehicleItems`): the eval-mode pin
+ * picks the task, `config.difficulty` the structural band (rows, columns, how close the race is, how many minimums).
+ * The old schema had the model write each mission and its key; code then rewrote most of them, and a learner could
+ * read the leader off the comparison bay before answering.
+ */
+const CHALLENGE_TYPE_DOCS: Record<VehicleMode, ChallengeTypeDoc> = {
   metric_leader: {
-    promptDoc:
-      '"metric_leader": Name one visible comparison metric in the scenario. The student reads that column and chooses the vehicle with the greatest value (or the lowest non-null CO2 value). Set bestEvidenceMetric to that named metric; no separate evidence choice is required.',
-    schemaDescription: "'metric_leader' (read one metric and identify its leader)",
+    promptDoc: '"metric_leader": the learner reads one named column of a vehicle data table and chooses the vehicle that leads it.',
+    schemaDescription: "'metric_leader' (read one column and find its leader)",
   },
   evidence_choice: {
-    promptDoc:
-      '"evidence_choice": Write a real job from the world of the lesson with ONE need (e.g. "The grain co-op must ship 9,000 tons of wheat to the port in one go"). The student picks the vehicle for the job AND the visible metric that proves it — working out which number matters is the task. The keyed vehicle must be the mathematical leader on bestEvidenceMetric. The scenario must NOT name the winner or the metric (no "capacity", "speed", "range" words); describe the need, not the column.',
-    schemaDescription: "'evidence_choice' (choose a vehicle and cite its supporting metric)",
+    promptDoc: '"evidence_choice": the learner reads a job with one need and chooses the vehicle for it and the column that proves it.',
+    schemaDescription: "'evidence_choice' (choose a vehicle and the column that proves it)",
   },
   constraint_tradeoff: {
-    promptDoc:
-      '"constraint_tradeoff": Give meaningful passenger and distance minimums that rule out at least one vehicle, plus one priority (speed, capacity, range, or environment). The student must first find the vehicles that satisfy BOTH minimums, then choose the feasible vehicle that leads on the priority metric and cite that metric.',
-    schemaDescription: "'constraint_tradeoff' (filter by constraints, then justify a priority trade-off)",
+    promptDoc: '"constraint_tradeoff": the learner rules out vehicles that miss a minimum, then chooses the best of the rest on one priority.',
+    schemaDescription: "'constraint_tradeoff' (rule out by minimums, then choose on a priority)",
   },
 };
 
-const CHALLENGE_TYPES = Object.keys(CHALLENGE_TYPE_DOCS) as ComparisonChallengeType[];
-
-/**
- * Schema for Vehicle Metric
- */
 const vehicleMetricSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    value: { type: Type.NUMBER, description: "Numeric value for comparison (e.g., 920 for 920 km/h)." },
-    unit: { type: Type.STRING, description: "Unit of measurement (e.g., 'km/h', 'kg', 'passengers')." },
-    display: { type: Type.STRING, description: "Human-readable display string (e.g., '920 km/h')." },
+    value: { type: Type.NUMBER, description: "The real statistic as a plain number (920 for 920 km/h). Never a placeholder such as 99999." },
+    unit: { type: Type.STRING, description: "Unit; the SAME unit for every vehicle on this measure (km/h, kg, km, passengers, tons)." },
+    display: { type: Type.STRING, description: "Human-readable value, e.g. '920 km/h'." },
   },
-  required: ["value", "unit", "display"]
+  required: ["value", "unit", "display"],
 };
 
-/**
- * Schema for Comparison Vehicle
- */
 const comparisonVehicleSchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    id: { type: Type.STRING, description: "Unique identifier for this vehicle (kebab-case)." },
-    name: { type: Type.STRING, description: "Full name of the vehicle (e.g., 'Boeing 747-400')." },
-    category: { type: Type.STRING, enum: ["air", "land", "sea", "space"], description: "Transportation domain." },
-    visualKind: {
-      type: Type.STRING,
-      enum: [...VEHICLE_VISUAL_KINDS],
-      description: "Specific visual form of this vehicle. Use generic only when none of the named forms is honest.",
-    },
-    imagePrompt: { type: Type.STRING, description: "Detailed prompt for AI image generation of this vehicle." },
+    id: { type: Type.STRING, description: "Unique kebab-case id." },
+    name: { type: Type.STRING, description: "Short real name a child can say (e.g. 'Boeing 747', 'School bus')." },
+    category: { type: Type.STRING, enum: ["air", "land", "sea", "space"] },
+    visualKind: { type: Type.STRING, enum: [...VEHICLE_VISUAL_KINDS], description: "The vehicle's actual form; generic only when none fits." },
+    imagePrompt: { type: Type.STRING, description: "A short description of the vehicle's look." },
     metrics: {
       type: Type.OBJECT,
       properties: {
         topSpeed: vehicleMetricSchema,
         weight: vehicleMetricSchema,
         passengerCapacity: vehicleMetricSchema,
-        cargoCapacity: {
-          ...vehicleMetricSchema,
-          description: "Freight this vehicle hauls per trip, in tons (unit 'tons'). 0 for a vehicle that carries only people.",
-        },
+        cargoCapacity: { ...vehicleMetricSchema, description: "Tons of freight per trip (unit 'tons'); 0 for a people-only vehicle." },
         range: vehicleMetricSchema,
-        fuelType: { type: Type.STRING, description: "Type of fuel or energy source." },
-        yearIntroduced: { type: Type.NUMBER, description: "Year this vehicle was first introduced." },
-        costPerTrip: { type: Type.STRING, nullable: true, description: "Approximate cost per trip or per passenger." },
-        co2PerPassengerKm: { type: Type.NUMBER, nullable: true, description: "CO2 emissions per passenger-kilometer in grams." },
+        fuelType: { type: Type.STRING },
+        yearIntroduced: { type: Type.NUMBER },
+        costPerTrip: { type: Type.STRING, nullable: true },
+        co2PerPassengerKm: { type: Type.NUMBER, nullable: true, description: "Grams of CO2 per passenger-kilometer; null when unknown." },
       },
-      required: ["topSpeed", "weight", "passengerCapacity", "cargoCapacity", "range", "fuelType", "yearIntroduced"]
+      required: ["topSpeed", "weight", "passengerCapacity", "cargoCapacity", "range", "fuelType", "yearIntroduced"],
     },
-    funFact: { type: Type.STRING, description: "An engaging fun fact about this vehicle that kids will want to share." },
+    funFact: { type: Type.STRING },
   },
-  required: ["id", "name", "category", "visualKind", "imagePrompt", "metrics", "funFact"]
+  required: ["id", "name", "category", "visualKind", "imagePrompt", "metrics", "funFact"],
 };
 
-/**
- * Schema for Comparison Challenge
- */
-const comparisonChallengeSchema: Schema = {
+const schema: Schema = {
   type: Type.OBJECT,
   properties: {
-    id: { type: Type.STRING, description: "Unique kebab-case challenge ID." },
-    type: { type: Type.STRING, enum: CHALLENGE_TYPES },
-    scenario: { type: Type.STRING, description: "Real-world transportation scenario (e.g., 'Move 500 people from Tokyo to Osaka')." },
-    origin: { type: Type.STRING, nullable: true },
-    destination: { type: Type.STRING, nullable: true },
-    constraints: {
-      type: Type.OBJECT,
-      properties: {
-        passengers: { type: Type.NUMBER, description: "Number of passengers to transport." },
-        distance: { type: Type.NUMBER, description: "Distance in kilometers." },
-        maxTime: { type: Type.STRING, nullable: true, description: "Maximum acceptable travel time." },
-        priority: { type: Type.STRING, enum: ["speed", "capacity", "cargo", "range", "weight", "environment"] },
-      },
-      required: ["passengers", "distance", "maxTime", "priority"]
-    },
-    bestVehicleId: { type: Type.STRING, description: "ID of the best vehicle for this scenario." },
-    explanation: { type: Type.STRING, description: "Why this vehicle is the best choice, using data." },
-    acceptableAlternatives: { type: Type.ARRAY, items: { type: Type.STRING }, description: "IDs of other acceptable vehicle choices." },
-    bestEvidenceMetric: { type: Type.STRING, enum: ["topSpeed", "weight", "passengerCapacity", "cargoCapacity", "range", "yearIntroduced", "co2PerPassengerKm"] },
-    acceptableEvidenceMetrics: { type: Type.ARRAY, items: { type: Type.STRING, enum: ["topSpeed", "weight", "passengerCapacity", "cargoCapacity", "range", "yearIntroduced", "co2PerPassengerKm"] } },
-  },
-  required: ["id", "type", "scenario", "origin", "destination", "constraints", "bestVehicleId", "explanation", "acceptableAlternatives", "bestEvidenceMetric", "acceptableEvidenceMetrics"]
-};
-
-/**
- * Schema for Surprising Fact
- */
-const surprisingFactSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    fact: { type: Type.STRING, description: "A counterintuitive or surprising comparison fact." },
-    vehicleIds: { type: Type.ARRAY, items: { type: Type.STRING }, description: "IDs of vehicles involved in this fact." },
-  },
-  required: ["fact", "vehicleIds"]
-};
-
-/**
- * Schema for Vehicle Comparison Lab Data
- */
-const vehicleComparisonLabSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    title: { type: Type.STRING, description: "Title for the comparison lab (e.g., 'Air vs Land vs Sea')." },
-    instructions: { type: Type.STRING, description: "Brief instructions for the student." },
+    title: { type: Type.STRING, description: "Short neutral title, e.g. 'Airplanes by the Numbers'. Never names a winner." },
+    instructions: { type: Type.STRING, description: "One neutral sentence: the learner reads a table of vehicle numbers to answer questions. Never names a vehicle or a winner." },
     topicFocus: { type: Type.STRING, description: "Short phrase naming the requested comparison focus." },
-    vehicles: {
+    vehicles: { type: Type.ARRAY, items: comparisonVehicleSchema, description: "5-6 real, topic-specific vehicles." },
+    comparisonMetrics: { type: Type.ARRAY, items: { type: Type.STRING, enum: METRIC_KEYS }, description: "The 3-5 measures the lesson is about." },
+    surprisingFacts: {
       type: Type.ARRAY,
-      items: comparisonVehicleSchema,
-      minItems: "4",
-      maxItems: "6",
-      description: "Array of 4-6 topic-specific vehicles to compare.",
+      items: { type: Type.OBJECT, properties: { fact: { type: Type.STRING }, vehicleIds: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["fact", "vehicleIds"] },
+      description: "2-3 true, counterintuitive comparison facts (shown after the lab).",
     },
-    comparisonMetrics: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Which metrics to show in the comparison chart (e.g., 'topSpeed', 'passengerCapacity', 'cargoCapacity', 'range'). Include cargoCapacity whenever the topic involves moving goods or freight." },
-    chartType: { type: Type.STRING, enum: ["bar", "radar", "scatter", "table"], description: "Default chart type for the comparison." },
-    challengeType: { type: Type.STRING, enum: CHALLENGE_TYPES },
-    challenges: { type: Type.ARRAY, items: comparisonChallengeSchema, description: "2-3 transportation scenario challenges." },
-    surprisingFacts: { type: Type.ARRAY, items: surprisingFactSchema, description: "2-3 counterintuitive comparison facts." },
-    gradeBand: { type: Type.STRING, enum: ["K-2", "3-5"], description: "Grade band for content complexity." },
   },
-  required: ["title", "instructions", "topicFocus", "vehicles", "comparisonMetrics", "chartType", "challengeType", "challenges", "surprisingFacts", "gradeBand"]
+  required: ["title", "instructions", "topicFocus", "vehicles", "comparisonMetrics", "surprisingFacts"],
 };
 
-/**
- * Generate Vehicle Comparison Lab data
- */
-export const generateVehicleComparisonLab = async (
-  ctx: GenerationContext,
-): Promise<VehicleComparisonLabData> => {
+type GradeBand = 'K-2' | '3-5';
+export function vehicleGradeBand(grade?: string, gradeContext?: string): GradeBand {
+  const g = (grade ?? '').trim().toUpperCase();
+  if (g === 'K' || g === '1' || g === '2') return 'K-2';
+  const n = parseInt(g, 10);
+  if (!isNaN(n)) return n <= 2 ? 'K-2' : '3-5';
+  return /\b(k|kindergarten|grade 1|grade 2|first|second)\b/i.test(gradeContext ?? '') ? 'K-2' : '3-5';
+}
+const DEFAULT_MODES: Record<GradeBand, VehicleMode[]> = { 'K-2': ['metric_leader'], '3-5': [...VEHICLE_MODES] };
+const normalizeTier = (d?: string): VehicleTier => {
+  const t = (d ?? '').toLowerCase().trim();
+  return t === 'easy' || t === 'hard' ? t : 'medium';
+};
+
+export const generateVehicleComparisonLab = async (ctx: GenerationContext): Promise<VehicleComparisonLabData> => {
   const { topic } = ctx;
   const scopeSection = buildScopePromptSection(ctx.scope);
-  const gradeLevel = ctx.gradeContext;
-  const rawConfig = ctx.raw as Partial<VehicleComparisonLabData> & {
-    targetEvalMode?: string;
-    intent?: string;
-    objectiveText?: string;
-  };
-  const config = {
-    ...rawConfig,
-    intent: ctx.intent ?? rawConfig.intent,
-  };
-  const resolution = await resolveEvalModes(
-    'vehicle-comparison-lab',
-    {
-      targetEvalMode: config.targetEvalMode,
-      intent: config.intent,
-      objectiveText: config.objectiveText,
-    },
-    CHALLENGE_TYPE_DOCS,
-  );
-  const allowedTypes = resolution?.allowedTypes;
-  const activeSchema = resolution
-    ? constrainChallengeTypeEnum(vehicleComparisonLabSchema, resolution.allowedTypes, CHALLENGE_TYPE_DOCS)
-    : vehicleComparisonLabSchema;
-  const challengeTypeSection = buildModeConstraintSection(resolution, CHALLENGE_TYPE_DOCS);
-  const {
-    targetEvalMode: _targetEvalMode,
-    intent: _intent,
-    objectiveText: _objectiveText,
-    ...contentConfig
-  } = config;
-  const hasContentConfig = Object.keys(contentConfig).length > 0;
-  const prompt = `
-Create a Vehicle Comparison Lab for teaching "${topic}"
-${scopeSection} to ${gradeLevel} students.
+  const raw = (ctx.raw ?? {}) as { difficulty?: string; targetEvalMode?: string; intent?: string; objectiveText?: string };
+  const gradeBand = vehicleGradeBand(ctx.grade, ctx.gradeContext);
+  const resolution = await resolveEvalModes('vehicle-comparison-lab', {
+    targetEvalMode: ctx.targetEvalMode ?? raw.targetEvalMode,
+    intent: ctx.intent ?? raw.intent,
+    objectiveText: raw.objectiveText,
+  }, CHALLENGE_TYPE_DOCS);
+  const modes: VehicleMode[] = resolution
+    ? VEHICLE_MODES.filter(m => resolution.allowedTypes.includes(m))
+    : DEFAULT_MODES[gradeBand];
+  const tier = normalizeTier(raw.difficulty);
 
-TOPIC FIDELITY — AUTHORITATIVE:
-- Build the entire roster around the LESSON TOPIC and THIS COMPONENT'S INTENT.
-- If the scope names a class such as airplanes, bicycles, trains, boats, spacecraft, or construction vehicles, compare examples INSIDE that class. Never force a token air/land/sea mix.
-- If the scope names vehicles, include those exact vehicles and only close, meaningful peers.
-- If it names one vehicle, include it plus 3-5 peers that reveal its defining trade-offs.
-- Use a mixed transport roster only when the scope itself is broad transportation comparison.
-- title, instructions, topicFocus, every vehicle, scenario, and fact must reinforce the same focus.
-- Set each vehicle's visualKind to its actual form (for example bicycle, bus, car, or train), not merely its broad air/land/sea/space category.
+  const prompt = `Build the vehicle roster for a comparison lab about "${topic}"
+${scopeSection} for grades ${gradeBand}.${ctx.intent ? `\nLEARNING FOCUS: "${ctx.intent}".` : ''}
 
-CONTEXT — VEHICLE COMPARISON:
-A Vehicle Comparison Lab lets students compare real vehicles across multiple dimensions:
-speed, weight, passenger capacity, cargo capacity (tons of freight), range, fuel type, and environmental impact.
-Pick the metrics that answer the lesson's question. A lesson about moving goods (freight trains, trucks, ships)
-must show cargoCapacity; a lesson comparing people-movers with goods-movers shows BOTH passengerCapacity and cargoCapacity.
-Weight and year introduced are rarely what a job depends on; use them only when the lesson is about them.
+Code writes every question from the numbers you give. The learner will: ${modes.map(m => CHALLENGE_TYPE_DOCS[m].promptDoc).join(' ')}
 
-${challengeTypeSection}
+TOPIC FIDELITY:
+- Build the roster around the lesson topic. If it names a class (airplanes, bicycles, trains, boats, spacecraft,
+  construction vehicles), compare examples INSIDE that class. If it names vehicles, include them plus close peers.
+  Use a mixed air/land/sea set only when the topic is broad transportation.
 
-REQUIRED VEHICLE DATA (use REAL statistics — never make up numbers):
-Include 4-6 real vehicles that form the coherent topic-specific comparison set described above. A surprise vehicle is welcome only when it belongs in that set.
+THE ROSTER (5-6 vehicles):
+- Real vehicles with REAL statistics. Never a placeholder number (no 99999 for "unlimited"); leave co2PerPassengerKm null when unknown.
+- Use ONE unit per measure across all vehicles (all speeds in km/h, all weights in kg, all ranges in km).
+- Make the vehicles differ: no vehicle should lead every measure (a fast one carries few, a big one is slow).
+- comparisonMetrics: the 3-5 measures the lesson is about. A lesson about moving goods includes cargoCapacity;
+  passengerCapacity and range suit people-movers; co2PerPassengerKm only when most vehicles have a value.
+- Short names a child can say aloud.
 
-REFERENCE DATA (use only entries relevant to the authoritative topic; do not import unrelated examples):
-- Boeing 747: 920 km/h, 178,756 kg, 416 pax, 14,200 km range
-- Shinkansen N700: 300 km/h, 715,000 kg, 1,323 pax, 0 t cargo, 500 km/trip
-- Freight train (100 cars): 100 km/h, about 13,000,000 kg loaded, 2 crew, about 10,000 t cargo, 1,000+ km
-- Semi truck: 105 km/h, 36,000 kg loaded, 1 driver, about 22 t cargo, 1,000 km
-- Commuter train (8 cars): 130 km/h, 400,000 kg, 1,200 pax, 0 t cargo, 300 km
-- Cargo plane (747-8F): 900 km/h, 448,000 kg, 4 crew, 134 t cargo, 8,000 km
-- Tesla Model 3: 225 km/h, 1,760 kg, 5 pax, 580 km
-- School Bus: 90 km/h, 10,000 kg, 72 pax, 450 km
-- Bicycle: 25 km/h, 10 kg, 1 pax, unlimited range
-- Container Ship: 46 km/h, 55,000,000 kg, 0 pax, about 150,000 t cargo, 24,000 km
-- Space Shuttle: 28,000 km/h, 2,030,000 kg, 7 crew, LEO
-- Wright Flyer: 48 km/h, 274 kg, 1 pilot, 260 m
-
-${!resolution ? `GRADE-LEVEL GUIDELINES:
-
-GRADES K-2:
-- Focus on big vs small, fast vs slow, few vs many
-- Simple comparisons: "Which is faster?" "Which carries more people?"
-- 4-5 vehicles maximum (too many is overwhelming)
-- comparisonMetrics: ["topSpeed", "passengerCapacity", "weight"]
-- chartType: "bar"
-- Simple challenges: "Which vehicle takes you to school?"
-- gradeBand: "K-2"
-- Fun, wonder-driven language
-
-GRADES 3-5:
-- Trade-off analysis: "No vehicle is best at everything"
-- 5-6 topic-specific vehicles; include environmental data only when it is meaningfully comparable
-- comparisonMetrics: the 4-5 metrics the lesson's jobs depend on, e.g. ["topSpeed", "passengerCapacity", "cargoCapacity", "range", "co2PerPassengerKm"]
-- chartType: "bar" (can toggle to table)
-- Complex challenges with constraints
-- gradeBand: "3-5"
-- Data-driven reasoning language
-` : ''}
-
-FOR ALL GRADES:
-- surprisingFacts must be genuine and counterintuitive
-- challenges must reference actual vehicle IDs from the vehicles array
-- All metric values must be real statistics
-- funFact should make kids want to tell their parents
-- Return exactly 3 challenges with unique IDs.
-- Every challenge needs bestEvidenceMetric from comparisonMetrics.
-- For metric_leader and evidence_choice, bestVehicleId is the mathematical maximum on bestEvidenceMetric, except CO2 where it is the minimum non-null value.
-- For constraint_tradeoff, map priority to bestEvidenceMetric (speed=topSpeed, capacity=passengerCapacity, cargo=cargoCapacity, range=range, environment=co2PerPassengerKm). First filter to vehicles whose passengerCapacity and range meet the scenario minimums, then key the mathematical leader among those feasible vehicles. Do not use priority "weight" for this type.
-- Make the pre-answer scenario answer-free: never name the best vehicle or its exact winning number.
-- The post-answer explanation names the winner and quotes its exact visible value.
-- Set topicFocus to the actual requested comparison focus and chartType to "bar". Set challengeType to the first challenge's type as representative metadata.
-
-${hasContentConfig ? `CONFIGURATION HINTS:\n${JSON.stringify(contentConfig, null, 2)}` : ''}
-
-Return a complete Vehicle Comparison Lab configuration.
-`;
-
-  console.log(
-    `[VehicleComparisonLab] modes: ${resolution ? `${resolution.modes.map((mode) => mode.evalMode).join('+')} (${resolution.source})` : 'mixed'} -> types [${(allowedTypes ?? ['all']).join(', ')}]`,
-  );
+FRAME:
+- title and instructions are neutral: they never name a vehicle as best, fastest or biggest.
+- surprisingFacts: 2-3 true, counterintuitive facts (they are shown only after the lab).`;
 
   const result = await ai.models.generateContent({
     model: "gemini-flash-lite-latest",
     contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: activeSchema
-    },
+    config: { responseMimeType: "application/json", responseSchema: schema },
   });
-
   const data = result.text ? JSON.parse(result.text) : null;
+  if (!data) throw new Error('No valid Vehicle Comparison Lab data returned from Gemini API');
 
-  if (!data) {
-    throw new Error('No valid Vehicle Comparison Lab data returned from Gemini API');
-  }
-
-  const metricKeys: ComparisonMetricKey[] = [
-    'topSpeed', 'weight', 'passengerCapacity', 'cargoCapacity', 'range', 'yearIntroduced', 'co2PerPassengerKm',
-  ];
-  const isMetricKey = (value: unknown): value is ComparisonMetricKey =>
-    typeof value === 'string' && metricKeys.includes(value as ComparisonMetricKey);
-
-  if (!Array.isArray(data.vehicles) || data.vehicles.length < 4) {
-    throw new Error('Vehicle Comparison Lab requires at least 4 topic-specific vehicles');
-  }
-  const seenVehicleIds = new Set<string>();
-  data.vehicles = data.vehicles
-    .filter((vehicle: ComparisonVehicle) => {
-      if (!vehicle?.id || seenVehicleIds.has(vehicle.id)) return false;
-      seenVehicleIds.add(vehicle.id);
-      return !!vehicle.name && !!vehicle.metrics && !!vehicle.imagePrompt;
-    })
-    .map((vehicle: ComparisonVehicle) => ({
-      ...vehicle,
-      visualKind: resolveVehicleVisualKind(vehicle),
-      imageUrl: null,
-    }));
-  if (data.vehicles.length < 4) {
-    throw new Error('Vehicle Comparison Lab returned fewer than 4 valid unique vehicles');
-  }
-
-  data.topicFocus = typeof data.topicFocus === 'string' && data.topicFocus.trim()
-    ? data.topicFocus.trim()
-    : (ctx.intent || topic);
-  data.chartType = 'bar';
-  data.comparisonMetrics = (Array.isArray(data.comparisonMetrics) ? data.comparisonMetrics : [])
-    .filter(isMetricKey)
-    .filter((metric: ComparisonMetricKey, index: number, all: ComparisonMetricKey[]) => all.indexOf(metric) === index)
-    .filter((metric: ComparisonMetricKey) => metric !== 'co2PerPassengerKm'
-      || data.vehicles.filter((vehicle: ComparisonVehicle) => vehicle.metrics.co2PerPassengerKm != null).length >= 2)
-    // A cargo column only compares something when at least two vehicles haul freight.
-    .filter((metric: ComparisonMetricKey) => metric !== 'cargoCapacity'
-      || data.vehicles.filter((vehicle: ComparisonVehicle) => (vehicle.metrics.cargoCapacity?.value ?? 0) > 0).length >= 2);
-  for (const fallbackMetric of ['topSpeed', 'passengerCapacity', 'range'] as ComparisonMetricKey[]) {
-    if (data.comparisonMetrics.length >= 3) break;
-    if (!data.comparisonMetrics.includes(fallbackMetric)) data.comparisonMetrics.push(fallbackMetric);
-  }
-
-  const valueFor = (vehicle: ComparisonVehicle, metric: ComparisonMetricKey): number | null => {
-    if (metric === 'yearIntroduced') return vehicle.metrics.yearIntroduced;
-    if (metric === 'co2PerPassengerKm') return vehicle.metrics.co2PerPassengerKm;
-    if (metric === 'cargoCapacity') return vehicle.metrics.cargoCapacity?.value ?? null;
-    return vehicle.metrics[metric].value;
-  };
-  const winnerFor = (
-    metric: ComparisonMetricKey,
-    candidates: ComparisonVehicle[] = data.vehicles,
-  ): ComparisonVehicle | null => {
-    const available = candidates.filter((vehicle: ComparisonVehicle) => valueFor(vehicle, metric) != null);
-    if (available.length === 0) return null;
-    return available.reduce((best: ComparisonVehicle, vehicle: ComparisonVehicle) => {
-      const bestValue = valueFor(best, metric) ?? 0;
-      const value = valueFor(vehicle, metric) ?? 0;
-      return metric === 'co2PerPassengerKm'
-        ? (value < bestValue ? vehicle : best)
-        : (value > bestValue ? vehicle : best);
-    });
-  };
-  const displayFor = (vehicle: ComparisonVehicle, metric: ComparisonMetricKey): string => {
-    if (metric === 'yearIntroduced') return String(vehicle.metrics.yearIntroduced);
-    if (metric === 'co2PerPassengerKm') return `${vehicle.metrics.co2PerPassengerKm} g CO2/pkm`;
-    if (metric === 'cargoCapacity') return vehicle.metrics.cargoCapacity?.display ?? 'not available';
-    return vehicle.metrics[metric].display;
-  };
-  const metricName = (metric: ComparisonMetricKey): string => ({
-    topSpeed: 'top speed',
-    weight: 'weight',
-    passengerCapacity: 'passenger capacity',
-    cargoCapacity: 'cargo capacity',
-    range: 'range',
-    yearIntroduced: 'year introduced',
-    co2PerPassengerKm: 'CO2 per passenger-kilometer',
-  })[metric];
-  // What a job needs, phrased without naming the column, so an evidence_choice
-  // item asks the student to connect the need to the metric.
-  const metricNeed: Partial<Record<ComparisonMetricKey, string>> = {
-    topSpeed: 'A delivery has to arrive as soon as possible. Which vehicle should do the job, and which number proves it?',
-    passengerCapacity: 'A huge crowd has to travel together, all in one trip. Which vehicle should do the job, and which number proves it?',
-    cargoCapacity: 'A mountain of goods has to move in as few trips as possible. Which vehicle should do the job, and which number proves it?',
-    range: 'The trip is very long, with nowhere to stop and refuel. Which vehicle should do the job, and which number proves it?',
-    co2PerPassengerKm: 'The town wants the trip that puts the least pollution in the air for each rider. Which vehicle should do the job, and which number proves it?',
-  };
-  const metricWords: Record<ComparisonMetricKey, RegExp> = {
-    topSpeed: /\b(top speed|speed)\b/i,
-    weight: /\bweigh(t|s)?\b/i,
-    passengerCapacity: /\b(passenger capacity|capacity)\b/i,
-    cargoCapacity: /\b(cargo capacity|capacity)\b/i,
-    range: /\brange\b/i,
-    yearIntroduced: /\b(year introduced|introduced)\b/i,
-    co2PerPassengerKm: /\b(co2|co₂|emissions?)\b/i,
-  };
-  const priorityMetric = (priority: ComparisonChallenge['constraints']['priority']): ComparisonMetricKey | null => {
-    switch (priority) {
-      case 'speed': return 'topSpeed';
-      case 'capacity': return 'passengerCapacity';
-      case 'cargo': return 'cargoCapacity';
-      case 'range': return 'range';
-      case 'environment': return 'co2PerPassengerKm';
-      default: return null;
-    }
-  };
-  const feasibleVehiclesFor = (challenge: ComparisonChallenge): ComparisonVehicle[] => (
-    data.vehicles.filter((vehicle: ComparisonVehicle) => (
-      vehicle.metrics.passengerCapacity.value >= challenge.constraints.passengers
-      && vehicle.metrics.range.value >= challenge.constraints.distance
-    ))
-  );
-  const derivedWinnerFor = (challenge: ComparisonChallenge): ComparisonVehicle | null => {
-    if (challenge.type !== 'constraint_tradeoff') return winnerFor(challenge.bestEvidenceMetric);
-    const expectedMetric = priorityMetric(challenge.constraints.priority);
-    if (!expectedMetric || expectedMetric !== challenge.bestEvidenceMetric) return null;
-    return winnerFor(challenge.bestEvidenceMetric, feasibleVehiclesFor(challenge));
-  };
-
-  const seenChallengeIds = new Set<string>();
-  data.challenges = (Array.isArray(data.challenges) ? data.challenges : [])
-    .filter((challenge: ComparisonChallenge) => CHALLENGE_TYPES.includes(challenge?.type))
-    .map((challenge: ComparisonChallenge, index: number) => {
-      let normalizedChallenge: ComparisonChallenge = {
-        ...challenge,
-        constraints: { ...challenge.constraints },
-      };
-      let evidenceMetric = isMetricKey(challenge.bestEvidenceMetric)
-        ? challenge.bestEvidenceMetric
-        : 'topSpeed';
-
-      if (normalizedChallenge.type === 'constraint_tradeoff') {
-        const requestedMetric = priorityMetric(normalizedChallenge.constraints.priority);
-        evidenceMetric = requestedMetric && data.comparisonMetrics.includes(requestedMetric)
-          ? requestedMetric
-          : 'topSpeed';
-        if (evidenceMetric === 'topSpeed') normalizedChallenge.constraints.priority = 'speed';
-
-        let feasible = feasibleVehiclesFor(normalizedChallenge);
-        if (feasible.length === 0 || feasible.length === data.vehicles.length) {
-          const capacities = data.vehicles
-            .map((vehicle: ComparisonVehicle) => vehicle.metrics.passengerCapacity.value)
-            .sort((a: number, b: number) => a - b);
-          normalizedChallenge.constraints.passengers = capacities[
-            Math.max(0, Math.floor((capacities.length - 1) / 2))
-          ] ?? 1;
-          normalizedChallenge.constraints.distance = Math.min(
-            ...data.vehicles.map((vehicle: ComparisonVehicle) => vehicle.metrics.range.value),
-          );
-          feasible = feasibleVehiclesFor(normalizedChallenge);
-        }
-
-        const derivedWinner = winnerFor(evidenceMetric, feasible);
-        if (derivedWinner) {
-          const priorityLabel = normalizedChallenge.constraints.priority === 'environment'
-            ? 'lowest emissions'
-            : normalizedChallenge.constraints.priority === 'capacity'
-              ? 'greatest capacity'
-              : normalizedChallenge.constraints.priority === 'range'
-                ? 'longest range'
-                : 'greatest speed';
-          normalizedChallenge = {
-            ...normalizedChallenge,
-            scenario: `Carry at least ${normalizedChallenge.constraints.passengers} passengers for ${normalizedChallenge.constraints.distance} km. Among the vehicles that qualify, which has the ${priorityLabel}?`,
-            bestVehicleId: derivedWinner.id,
-            bestEvidenceMetric: evidenceMetric,
-            explanation: `${derivedWinner.name} meets the passenger and range minimums, then leads the qualifying vehicles on ${metricName(evidenceMetric)} with ${displayFor(derivedWinner, evidenceMetric)}.`,
-          };
-        }
-      } else {
-        if (!data.comparisonMetrics.includes(evidenceMetric)) {
-          evidenceMetric = data.comparisonMetrics[0] ?? 'topSpeed';
-        }
-        const derivedWinner = winnerFor(evidenceMetric);
-        if (derivedWinner) {
-          // evidence_choice keeps the model's real-world job when it is honest:
-          // keyed to the computed winner and naming neither the winner nor the
-          // metric. Otherwise the scenario becomes a need sentence that still
-          // leaves the metric for the student to find.
-          const modelScenario = typeof normalizedChallenge.scenario === 'string' ? normalizedChallenge.scenario.trim() : '';
-          const honestModelScenario = normalizedChallenge.type === 'evidence_choice'
-            && !!modelScenario
-            && normalizedChallenge.bestVehicleId === derivedWinner.id
-            && !modelScenario.toLowerCase().includes(derivedWinner.name.toLowerCase())
-            && !metricWords[evidenceMetric].test(modelScenario);
-          normalizedChallenge = {
-            ...normalizedChallenge,
-            scenario: normalizedChallenge.type === 'metric_leader'
-              ? `Which vehicle leads on ${metricName(evidenceMetric)}? Read the visible values and choose.`
-              : honestModelScenario
-                ? modelScenario
-                : metricNeed[evidenceMetric]
-                  ?? `Which vehicle leads on ${metricName(evidenceMetric)}? Choose the visible data that proves it.`,
-            bestVehicleId: derivedWinner.id,
-            bestEvidenceMetric: evidenceMetric,
-            explanation: `${derivedWinner.name} leads this comparison on ${metricName(evidenceMetric)} with ${displayFor(derivedWinner, evidenceMetric)}.`,
-          };
-        }
-      }
-
-      const candidates = normalizedChallenge.type === 'constraint_tradeoff'
-        ? feasibleVehiclesFor(normalizedChallenge)
-        : data.vehicles;
-      const keyedVehicle = candidates.find(
-        (vehicle: ComparisonVehicle) => vehicle.id === normalizedChallenge.bestVehicleId,
-      );
-      const keyedValue = keyedVehicle ? valueFor(keyedVehicle, evidenceMetric) : null;
-      return {
-        ...normalizedChallenge,
-        id: normalizedChallenge.id || `evidence-mission-${index + 1}`,
-        // An alternative is only genuinely acceptable when the displayed key
-        // metric ties the keyed winner. This prevents a generous prose answer
-        // from bypassing the visible evidence the student is asked to cite.
-        acceptableAlternatives: Array.isArray(normalizedChallenge.acceptableAlternatives)
-          ? normalizedChallenge.acceptableAlternatives.filter((id: string) => {
-            const alternative = candidates.find((vehicle: ComparisonVehicle) => vehicle.id === id);
-            return !!alternative && keyedValue != null && valueFor(alternative, evidenceMetric) === keyedValue;
-          })
-          : [],
-        acceptableEvidenceMetrics: Array.isArray(normalizedChallenge.acceptableEvidenceMetrics)
-          ? normalizedChallenge.acceptableEvidenceMetrics.filter((metric: unknown) => (
-            isMetricKey(metric)
-            && metric !== evidenceMetric
-            && data.comparisonMetrics.includes(metric)
-            && winnerFor(metric, candidates)?.id === normalizedChallenge.bestVehicleId
-          ))
-          : [],
-      };
-    })
-    .filter((challenge: ComparisonChallenge) => {
-      if (seenChallengeIds.has(challenge.id)
-        || !seenVehicleIds.has(challenge.bestVehicleId)
-        || !isMetricKey(challenge.bestEvidenceMetric)
-        || !data.comparisonMetrics.includes(challenge.bestEvidenceMetric)) return false;
-      const derivedWinner = derivedWinnerFor(challenge);
-      if (!derivedWinner || derivedWinner.id !== challenge.bestVehicleId) {
-        console.warn(`[VehicleComparisonLab] Rejected ${challenge.id}: answer is not derivable from visible evidence`);
-        return false;
-      }
-      seenChallengeIds.add(challenge.id);
+  const seen = new Set<string>();
+  const vehicles: ComparisonVehicle[] = (Array.isArray(data.vehicles) ? data.vehicles : [])
+    .filter((v: ComparisonVehicle) => {
+      if (!v?.id || !v.name || !v.metrics || seen.has(v.id)) return false;
+      seen.add(v.id);
       return true;
     })
-    .slice(0, 3);
+    .map((v: ComparisonVehicle) => ({ ...v, visualKind: resolveVehicleVisualKind(v), imageUrl: null }));
+  if (vehicles.length < 4) throw new Error('Vehicle Comparison Lab returned fewer than 4 valid unique vehicles');
 
-  const buildFallbackChallenge = (
-    type: ComparisonChallengeType,
-    idSuffix: string | number,
-  ): ComparisonChallenge => {
-    const usedMetrics = new Set<ComparisonMetricKey>(
-      data.challenges.map((challenge: ComparisonChallenge) => challenge.bestEvidenceMetric),
-    );
-    let evidenceMetric = data.comparisonMetrics.find((metric: ComparisonMetricKey) => !usedMetrics.has(metric) && winnerFor(metric))
-      || data.comparisonMetrics.find((metric: ComparisonMetricKey) => winnerFor(metric))
-      || 'topSpeed';
-    let passengers = 1;
-    let distance = 1;
-    let priority: ComparisonChallenge['constraints']['priority'] = evidenceMetric === 'passengerCapacity' ? 'capacity'
-      : evidenceMetric === 'cargoCapacity' ? 'cargo'
-      : evidenceMetric === 'range' ? 'range'
-        : evidenceMetric === 'co2PerPassengerKm' ? 'environment' : 'speed';
-    let candidates = data.vehicles;
-    if (type === 'constraint_tradeoff') {
-      const capacities = data.vehicles
-        .map((vehicle: ComparisonVehicle) => vehicle.metrics.passengerCapacity.value)
-        .sort((a: number, b: number) => a - b);
-      passengers = capacities[Math.max(0, Math.floor((capacities.length - 1) / 2))] ?? 1;
-      distance = Math.min(...data.vehicles.map((vehicle: ComparisonVehicle) => vehicle.metrics.range.value));
-      evidenceMetric = 'topSpeed';
-      priority = 'speed';
-      candidates = data.vehicles.filter((vehicle: ComparisonVehicle) => (
-        vehicle.metrics.passengerCapacity.value >= passengers
-        && vehicle.metrics.range.value >= distance
-      ));
-    }
-    const winner = winnerFor(evidenceMetric, candidates) || data.vehicles[0];
-    const scenario = type === 'metric_leader'
-      ? `Which vehicle leads on ${metricName(evidenceMetric)}? Read the visible values and choose.`
-      : type === 'constraint_tradeoff'
-        ? `Move at least ${passengers} passengers for ${distance} km, then choose the fastest vehicle that qualifies.`
-        : metricNeed[evidenceMetric as ComparisonMetricKey]
-          ?? `Which vehicle leads on ${metricName(evidenceMetric)}? Choose the visible data that proves it.`;
-    return {
-      id: `derived-${type}-${idSuffix}`,
-      type,
-      scenario,
-      origin: 'Comparison Bay',
-      destination: 'Evidence Station',
-      constraints: {
-        passengers,
-        distance,
-        maxTime: null,
-        priority,
-      },
-      bestVehicleId: winner.id,
-      acceptableAlternatives: [],
-      bestEvidenceMetric: evidenceMetric,
-      acceptableEvidenceMetrics: [],
-      explanation: type === 'constraint_tradeoff'
-        ? `${winner.name} meets the passenger and range minimums, then leads the qualifying vehicles on ${metricName(evidenceMetric)} with ${displayFor(winner, evidenceMetric)}.`
-        : `${winner.name} leads this comparison with ${displayFor(winner, evidenceMetric)}.`,
-    };
+  const comparisonMetrics = (Array.isArray(data.comparisonMetrics) ? data.comparisonMetrics : [])
+    .filter((m: unknown, i: number, all: unknown[]): m is MetricKey => (METRIC_KEYS as unknown[]).includes(m) && all.indexOf(m) === i);
+  const roster = rosterOf({ vehicles, comparisonMetrics });
+  const items = buildVehicleItems({ modes, tier, roster, rng: Math.random });
+  for (const mode of modes) {
+    if (!items.some(i => i.mode === mode)) throw new Error(`Vehicle Comparison Lab roster cannot support a ${mode} item`);
+  }
+
+  const surprisingFacts: SurprisingFact[] = (Array.isArray(data.surprisingFacts) ? data.surprisingFacts : [])
+    .filter((f: SurprisingFact) => typeof f?.fact === 'string' && f.fact.trim())
+    .map((f: SurprisingFact) => ({ fact: f.fact.trim(), vehicleIds: (f.vehicleIds ?? []).filter(id => seen.has(id)) }));
+
+  const out: VehicleComparisonLabData = {
+    title: typeof data.title === 'string' && data.title.trim() ? data.title.trim() : 'Vehicles by the Numbers',
+    instructions: typeof data.instructions === 'string' && data.instructions.trim()
+      ? data.instructions.trim() : 'Read the numbers in the table to answer each question.',
+    topicFocus: typeof data.topicFocus === 'string' && data.topicFocus.trim() ? data.topicFocus.trim() : (ctx.intent || topic),
+    vehicles,
+    comparisonMetrics: roster.focus,
+    surprisingFacts,
+    gradeBand,
+    challengeTypes: modes,
+    difficulty: tier,
+    items,
   };
-
-  let fallbackIndex = 1;
-  while (data.challenges.length < 3) {
-    const fallbackTypes = resolution?.allowedTypes.length
-      ? resolution.allowedTypes as ComparisonChallengeType[]
-      : CHALLENGE_TYPES;
-    const type = fallbackTypes[(fallbackIndex - 1) % fallbackTypes.length] ?? 'evidence_choice';
-    data.challenges.push(buildFallbackChallenge(type, fallbackIndex));
-    fallbackIndex += 1;
-  }
-
-  // A mixed session is only honest when every task identity appears. With three
-  // challenge slots and three types, replace duplicate types deterministically
-  // instead of trusting the model's natural tendency to collapse to one enum.
-  if (!resolution) {
-    const counts = new Map<ComparisonChallengeType, number>();
-    for (const challenge of data.challenges as ComparisonChallenge[]) {
-      counts.set(challenge.type, (counts.get(challenge.type) ?? 0) + 1);
-    }
-    for (const missingType of CHALLENGE_TYPES.filter((type) => !counts.has(type))) {
-      const replaceIndex = (data.challenges as ComparisonChallenge[]).findIndex(
-        (challenge) => (counts.get(challenge.type) ?? 0) > 1,
-      );
-      if (replaceIndex < 0) break;
-      const replacedType = data.challenges[replaceIndex].type as ComparisonChallengeType;
-      counts.set(replacedType, (counts.get(replacedType) ?? 1) - 1);
-      data.challenges[replaceIndex] = buildFallbackChallenge(missingType, `mixed-${missingType}`);
-      counts.set(missingType, 1);
-    }
-  }
-  data.challengeType = data.challenges[0]?.type ?? resolution?.allowedTypes[0] ?? 'evidence_choice';
-
-  if (!Array.isArray(data.surprisingFacts) || data.surprisingFacts.length === 0) {
-    data.surprisingFacts = data.vehicles.slice(0, 2).map((vehicle: ComparisonVehicle) => ({
-      fact: vehicle.funFact,
-      vehicleIds: [vehicle.id],
-    }));
-  } else {
-    data.surprisingFacts = data.surprisingFacts
-      .map((fact: SurprisingFact) => ({
-        ...fact,
-        vehicleIds: fact.vehicleIds.filter((id: string) => seenVehicleIds.has(id)),
-      }))
-      .filter((fact: SurprisingFact) => !!fact.fact && fact.vehicleIds.length > 0);
-  }
-
-  return data as VehicleComparisonLabData;
+  console.log(`[VehicleComparisonLab] modes ${modes.join('+')} (${resolution?.source ?? 'grade default'}), tier ${tier}, items ${items.map(i => i.id).join(', ')}`);
+  return out;
 };

@@ -1,0 +1,138 @@
+{
+ "source": "qa/tutor-reports/construction-sequence-planner-runtime-parallel-payload-2026-10-16.json",
+ "primitiveId": "construction-sequence-planner",
+ "evalMode": "parallel",
+ "data": {
+  "title": "Designing a Cozy Family House",
+  "description": "Children plan the construction tasks involved in creating a residential building.",
+  "projectType": "house",
+  "gradeLevel": "3",
+  "challengeTypes": [
+   "parallel"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "parallel-1",
+    "mode": "parallel",
+    "project": "house",
+    "jobs": [
+     {
+      "id": "dig",
+      "name": "Dig the base",
+      "icon": "\u26cf\ufe0f",
+      "weeks": 1,
+      "needs": []
+     },
+     {
+      "id": "pipes",
+      "name": "Run the water pipes",
+      "icon": "\ud83d\udeb0",
+      "weeks": 1,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "frame",
+      "name": "Frame the walls",
+      "icon": "\ud83d\udd28",
+      "weeks": 1,
+      "needs": [
+       "foundation"
+      ]
+     },
+     {
+      "id": "roof",
+      "name": "Put on the roof",
+      "icon": "\ud83c\udfe0",
+      "weeks": 1,
+      "needs": [
+       "frame"
+      ]
+     },
+     {
+      "id": "foundation",
+      "name": "Pour the foundation",
+      "icon": "\ud83e\uddf1",
+      "weeks": 1,
+      "needs": [
+       "dig"
+      ]
+     },
+     {
+      "id": "wires",
+      "name": "Run the electric wires",
+      "icon": "\ud83d\udca1",
+      "weeks": 1,
+      "needs": [
+       "frame"
+      ]
+     }
+    ],
+    "deadline": 4
+   },
+   {
+    "id": "parallel-2",
+    "mode": "parallel",
+    "project": "road",
+    "jobs": [
+     {
+      "id": "drains",
+      "name": "Lay the drain pipes",
+      "icon": "\ud83d\udeb0",
+      "weeks": 1,
+      "needs": [
+       "level"
+      ]
+     },
+     {
+      "id": "level",
+      "name": "Level the ground",
+      "icon": "\ud83d\udea7",
+      "weeks": 1,
+      "needs": [
+       "clear"
+      ]
+     },
+     {
+      "id": "pave",
+      "name": "Pave with asphalt",
+      "icon": "\ud83d\udee3\ufe0f",
+      "weeks": 1,
+      "needs": [
+       "gravel",
+       "drains"
+      ]
+     },
+     {
+      "id": "signs",
+      "name": "Put up the signs",
+      "icon": "\ud83d\udea6",
+      "weeks": 1,
+      "needs": [
+       "level"
+      ]
+     },
+     {
+      "id": "gravel",
+      "name": "Spread the gravel",
+      "icon": "\ud83e\udea8",
+      "weeks": 1,
+      "needs": [
+       "level"
+      ]
+     },
+     {
+      "id": "clear",
+      "name": "Clear trees and rocks",
+      "icon": "\ud83d\ude9c",
+      "weeks": 1,
+      "needs": []
+     }
+    ],
+    "deadline": 4
+   }
+  ]
+ }
+}

@@ -1,0 +1,80 @@
+{
+ "source": "qa/tutor-reports/stoichiometry-lab-runtime-yield-payload-2026-10-15.json",
+ "primitiveId": "stoichiometry-lab",
+ "evalMode": "yield",
+ "data": {
+  "title": "Zinc and Hydrochloric Acid",
+  "description": "Students drop a metal sample into an acid solution in a beaker to observe gas bubbles.",
+  "gradeBand": "9-10",
+  "reaction": {
+   "id": "zinc",
+   "equation": "Zn + 2HCl -> ZnCl2 + H2",
+   "reactants": [
+    {
+     "formula": "Zn",
+     "coefficient": 1,
+     "molarMass": 65,
+     "name": "zinc"
+    },
+    {
+     "formula": "HCl",
+     "coefficient": 2,
+     "molarMass": 36.5,
+     "name": "hydrogen chloride"
+    }
+   ],
+   "products": [
+    {
+     "formula": "ZnCl2",
+     "coefficient": 1,
+     "molarMass": 136,
+     "name": "zinc chloride"
+    },
+    {
+     "formula": "H2",
+     "coefficient": 1,
+     "molarMass": 2,
+     "name": "hydrogen"
+    }
+   ]
+  },
+  "challenges": [
+   {
+    "id": "yield-1",
+    "type": "yield",
+    "tier": "easy",
+    "givenFormulaA": "Zn",
+    "givenMassA": 97.5,
+    "givenFormulaB": "HCl",
+    "givenMassB": 146,
+    "answerFormula": "ZnCl2",
+    "answerUnit": "g"
+   },
+   {
+    "id": "yield-2",
+    "type": "yield",
+    "tier": "easy",
+    "givenFormulaA": "Zn",
+    "givenMassA": 32.5,
+    "givenFormulaB": "HCl",
+    "givenMassB": 109.5,
+    "answerFormula": "ZnCl2",
+    "answerUnit": "g"
+   },
+   {
+    "id": "yield-3",
+    "type": "yield",
+    "tier": "hard",
+    "givenFormulaA": "Zn",
+    "givenMassA": 130,
+    "givenFormulaB": "HCl",
+    "givenMassB": 109.5,
+    "answerFormula": "H2",
+    "answerUnit": "g"
+   }
+  ],
+  "challengeTypes": [
+   "yield"
+  ]
+ }
+}

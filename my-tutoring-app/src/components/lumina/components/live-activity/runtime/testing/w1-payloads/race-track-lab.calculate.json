@@ -1,0 +1,85 @@
+{
+ "source": "qa/tutor-reports/race-track-lab-runtime-calculate-payload-2026-10-15.json",
+ "primitiveId": "race-track-lab",
+ "evalMode": "calculate",
+ "data": {
+  "title": "Toy Car Track: Speed, Distance and Time",
+  "description": "You will calculate how fast each coloured car travels by measuring the distance it covers and the time it takes.",
+  "challengeTypes": [
+   "calculate"
+  ],
+  "difficulty": "hard",
+  "grade": "5",
+  "items": [
+   {
+    "id": "calculate-1",
+    "mode": "calculate",
+    "ask": "faster_speed",
+    "trackLength": 20,
+    "time": 0,
+    "racers": [
+     {
+      "name": "Green car",
+      "color": "#22C55E",
+      "speed": 2,
+      "start": 0,
+      "time": 5
+     },
+     {
+      "name": "Red car",
+      "color": "#EF4444",
+      "speed": 4,
+      "start": 0,
+      "time": 2
+     }
+    ]
+   },
+   {
+    "id": "calculate-2",
+    "mode": "calculate",
+    "ask": "faster_speed",
+    "trackLength": 20,
+    "time": 0,
+    "racers": [
+     {
+      "name": "Yellow car",
+      "color": "#EAB308",
+      "speed": 3,
+      "start": 0,
+      "time": 3
+     },
+     {
+      "name": "Orange car",
+      "color": "#F97316",
+      "speed": 2,
+      "start": 0,
+      "time": 5
+     }
+    ]
+   },
+   {
+    "id": "calculate-3",
+    "mode": "calculate",
+    "ask": "faster_speed",
+    "trackLength": 20,
+    "time": 0,
+    "racers": [
+     {
+      "name": "Red car",
+      "color": "#EF4444",
+      "speed": 1,
+      "start": 0,
+      "time": 5
+     },
+     {
+      "name": "Green car",
+      "color": "#22C55E",
+      "speed": 2,
+      "start": 0,
+      "time": 2
+     }
+    ]
+   }
+  ]
+ }
+}

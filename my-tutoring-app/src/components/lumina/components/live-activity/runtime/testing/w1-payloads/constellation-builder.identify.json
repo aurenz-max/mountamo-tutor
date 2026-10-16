@@ -1,0 +1,313 @@
+{
+ "source": "qa/tutor-reports/constellation-builder-runtime-identify-payload-2026-10-15.json",
+ "primitiveId": "constellation-builder",
+ "evalMode": "identify",
+ "data": {
+  "title": "Starry Sky Explorers: Constellation Detectives",
+  "description": "Learn about the fascinating patterns of stars in our night sky, connect their mythology to real science, and identify famous constellations by observing their shapes and brightness.",
+  "gradeLevel": "3",
+  "stars": [
+   {
+    "id": "s1",
+    "x": 15,
+    "y": 20,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s2",
+    "x": 25,
+    "y": 22,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s3",
+    "x": 35,
+    "y": 28,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s4",
+    "x": 40,
+    "y": 40,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s5",
+    "x": 55,
+    "y": 38,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s6",
+    "x": 65,
+    "y": 45,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s7",
+    "x": 75,
+    "y": 50,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s8",
+    "x": 50,
+    "y": 70,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s9",
+    "x": 55,
+    "y": 80,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s10",
+    "x": 45,
+    "y": 80,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s11",
+    "x": 10,
+    "y": 85,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s12",
+    "x": 20,
+    "y": 75,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s13",
+    "x": 30,
+    "y": 80,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s14",
+    "x": 35,
+    "y": 90,
+    "magnitude": 1,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s15",
+    "x": 25,
+    "y": 95,
+    "magnitude": 2,
+    "isPartOfConstellation": true
+   },
+   {
+    "id": "s16",
+    "x": 80,
+    "y": 20,
+    "magnitude": 5,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s17",
+    "x": 90,
+    "y": 35,
+    "magnitude": 6,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s18",
+    "x": 5,
+    "y": 50,
+    "magnitude": 5,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s19",
+    "x": 90,
+    "y": 80,
+    "magnitude": 4,
+    "isPartOfConstellation": false
+   },
+   {
+    "id": "s20",
+    "x": 70,
+    "y": 90,
+    "magnitude": 6,
+    "isPartOfConstellation": false
+   }
+  ],
+  "challenges": [
+   {
+    "id": "c1",
+    "type": "identify",
+    "constellationName": "Big Dipper",
+    "instruction": "Look at these seven bright stars forming a recognizable bowl and handle shape high in the night sky. What famous pattern is this?",
+    "starOrder": [
+     "s1",
+     "s2",
+     "s3",
+     "s4",
+     "s5",
+     "s6",
+     "s7"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s1",
+      "toStarId": "s2"
+     },
+     {
+      "fromStarId": "s2",
+      "toStarId": "s3"
+     },
+     {
+      "fromStarId": "s3",
+      "toStarId": "s4"
+     },
+     {
+      "fromStarId": "s4",
+      "toStarId": "s5"
+     },
+     {
+      "fromStarId": "s5",
+      "toStarId": "s6"
+     },
+     {
+      "fromStarId": "s6",
+      "toStarId": "s7"
+     }
+    ],
+    "mythologyFact": "Long ago, many cultures saw this group of stars as a great bear, while others viewed it as a wagon or a ladle to scoop water!",
+    "season": "spring",
+    "distractorName0": "Orion",
+    "distractorName1": "Cassiopeia",
+    "distractorName2": "Leo"
+   },
+   {
+    "id": "c2",
+    "type": "identify",
+    "constellationName": "Cassiopeia",
+    "instruction": "Examine these five prominent stars that form a distinct zigzag shape resembling a giant letter in the cosmos. Can you name this constellation?",
+    "starOrder": [
+     "s11",
+     "s12",
+     "s13",
+     "s14",
+     "s15"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s11",
+      "toStarId": "s12"
+     },
+     {
+      "fromStarId": "s12",
+      "toStarId": "s13"
+     },
+     {
+      "fromStarId": "s13",
+      "toStarId": "s14"
+     },
+     {
+      "fromStarId": "s14",
+      "toStarId": "s15"
+     }
+    ],
+    "mythologyFact": "In Greek mythology, Cassiopeia was a proud queen who sits in her starry chair spinning around the North Star all night long.",
+    "season": "fall",
+    "distractorName0": "Big Dipper",
+    "distractorName1": "Cygnus",
+    "distractorName2": "Orion"
+   },
+   {
+    "id": "c3",
+    "type": "identify",
+    "constellationName": "Orion",
+    "instruction": "Observe these bright stars featuring a distinctive straight belt of three stars near glowing shoulders and feet. What legendary hunter do they represent?",
+    "starOrder": [
+     "s3",
+     "s4",
+     "s5",
+     "s8",
+     "s9",
+     "s10"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s3",
+      "toStarId": "s4"
+     },
+     {
+      "fromStarId": "s4",
+      "toStarId": "s5"
+     },
+     {
+      "fromStarId": "s4",
+      "toStarId": "s8"
+     },
+     {
+      "fromStarId": "s8",
+      "toStarId": "s9"
+     },
+     {
+      "fromStarId": "s8",
+      "toStarId": "s10"
+     }
+    ],
+    "mythologyFact": "Orion is one of the most famous winter constellations and contains Betelgeuse, a giant red star nearing the end of its life.",
+    "season": "winter",
+    "distractorName0": "Leo",
+    "distractorName1": "Big Dipper",
+    "distractorName2": "Cassiopeia"
+   },
+   {
+    "id": "c4",
+    "type": "identify",
+    "constellationName": "Leo",
+    "instruction": "Study this majestic grouping of stars that traces the head and body of a powerful beast ruling over the spring sky. What constellation is shown?",
+    "starOrder": [
+     "s1",
+     "s3",
+     "s8",
+     "s9",
+     "s10"
+    ],
+    "correctConnections": [
+     {
+      "fromStarId": "s1",
+      "toStarId": "s3"
+     },
+     {
+      "fromStarId": "s3",
+      "toStarId": "s8"
+     },
+     {
+      "fromStarId": "s8",
+      "toStarId": "s9"
+     },
+     {
+      "fromStarId": "s9",
+      "toStarId": "s10"
+     }
+    ],
+    "mythologyFact": "Leo shines brightly during springtime and is easy to spot thanks to its backward question-mark shape called the Sickle.",
+    "season": "spring",
+    "distractorName0": "Cygnus",
+    "distractorName1": "Orion",
+    "distractorName2": "Cassiopeia"
+   }
+  ]
+ }
+}

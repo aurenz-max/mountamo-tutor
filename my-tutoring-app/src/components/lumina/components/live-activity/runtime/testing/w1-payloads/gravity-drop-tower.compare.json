@@ -1,0 +1,76 @@
+{
+ "source": "qa/tutor-reports/gravity-drop-tower-runtime-compare-payload-2026-10-15.json",
+ "primitiveId": "gravity-drop-tower",
+ "evalMode": "compare",
+ "data": {
+  "title": "The Tower Drop Investigation",
+  "description": "Learners investigate how different objects fall from various heights inside the drop-tower.",
+  "challengeTypes": [
+   "compare"
+  ],
+  "difficulty": "hard",
+  "gradeLevel": "Grade 3",
+  "items": [
+   {
+    "id": "compare-1",
+    "mode": "compare",
+    "ask": "order",
+    "air": true,
+    "drops": [
+     {
+      "obj": "brick",
+      "height": 2
+     },
+     {
+      "obj": "rock",
+      "height": 12
+     },
+     {
+      "obj": "balloon",
+      "height": 6
+     }
+    ]
+   },
+   {
+    "id": "compare-2",
+    "mode": "compare",
+    "ask": "order",
+    "air": true,
+    "drops": [
+     {
+      "obj": "hammer",
+      "height": 8
+     },
+     {
+      "obj": "bowling_ball",
+      "height": 15
+     },
+     {
+      "obj": "feather",
+      "height": 3
+     }
+    ]
+   },
+   {
+    "id": "compare-3",
+    "mode": "compare",
+    "ask": "order",
+    "air": true,
+    "drops": [
+     {
+      "obj": "baseball",
+      "height": 5
+     },
+     {
+      "obj": "watermelon",
+      "height": 20
+     },
+     {
+      "obj": "balloon",
+      "height": 10
+     }
+    ]
+   }
+  ]
+ }
+}
