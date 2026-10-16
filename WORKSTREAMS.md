@@ -17,29 +17,30 @@ grep -c '^> ### ' WORKSTREAMS.md                                  # 0
 Findings go to: the executor skill (how) · `docs/contracts/<id>.md` (one primitive) · a
 queue item (a defect class) · `qa/<lane>/` (run evidence) · here, as a row (state only).
 
-## Where we are (2026-10-15)
+## Where we are (2026-10-16)
 
 | Item | State |
 |---|---|
 | Branch | `ship/2026-08-10-judged-loop` pushed; `main` = 56fbda8c, 6 behind (fast-forward owed) |
-| Tree | construction3d.ts view tweak + airplane `flight_plan` W1 payload uncommitted (4.2); `my-tutoring-app/sizes.txt` scratch |
+| Tree | C15/C18 retest removal in progress (pulse backend + Pulse UI, uncommitted, another session); construction3d.ts view tweak, construction-site birth report, airplane `flight_plan` W1 payload uncommitted (4.2); `my-tutoring-app/sizes.txt` scratch |
 | Gates | `typecheck:lumina` 0; full tsc 770 baseline (09-29, re-measure) |
 | Human checks | 134 open, next free #185 (`my-tutoring-app/qa/HUMAN-CHECKS.md`); 10-08..10-15 browser debt still lives in queues |
 | WIP | 7 phases marked current vs a limit of 2+1. Proposal 10-15 below, user to confirm |
+| Handoffs | `my-tutoring-app/qa/HANDOFF-*-2026-10-16.md`: c15-c18 (7), 8.1-item-space-fixes + 8.1-decided-forks (8), r2-workspace-triage (1), 4.2-construction-site-L1 (4.2) |
 
 ## Phases
 
 | # | Phase | Queue · executor | State · next pull |
 |---|---|---|---|
-| 1 | A miss is one contract, both channels | `qa/workspace-rollout/ROLLOUT.md` · `/add-live-tutor-tools` | **ACTIVE 10-15 (user).** 158 `teachingWorkspace` blocks. R1 done: batches 1-3 10-15 (15 primitives), batch 4 10-16 (9: engineering + exhibits, all rebuilt; rulings closed 10-16, all accepted; follow-ups shipped). VB-F1 done 10-16 (J15). Next R2 (26 without modes), then VB-2, then phase 2 |
+| 1 | A miss is one contract, both channels | `qa/workspace-rollout/ROLLOUT.md` · `/add-live-tutor-tools` | **ACTIVE 10-15 (user).** R1 done 10-16 (24 primitives, b4e1ae85; rulings and follow-ups closed). VB-F1 done. Next R2 (26 without modes; triage first, handoff r2), then VB-2, then phase 2 |
 | 2 | The ladder tests a pass, then a miss | handoff 19/20, `LIVE_TESTING.md` · `/add-live-tutor-tools` | J10/J11 done 09-28. Open: T2 observer replay, T3 responsiveness, one gate command per family |
 | 3 | Levers answer misses | `qa/support-levers/`, `qa/lever-bench/QUEUE.md` · `/add-support-tiers` | Levers on every workspace primitive (3.1e, 10-09). **Ready, paid, user approves:** DI class Live (`di-lever-plan-2026-10-03.md` step 9), literacy G2-6 class Live (`literacy-lever-plan-2026-10-03.md` step 5). M2 Live needs a mixed payload. Residuals: `QUEUE-item-gaps-2026-10-09.md` |
 | 4.1 | Open build is a modality | `qa/open-build/ROADMAP.md` · `/add-eval-modes` | OB waves 1-3, OB-4 pilots, OB-9M, OB-10 committed. Next: OB-4 pulley/bridge/blueprint; capabilities C1-C5; literacy class Live (go-ahead); 3 rulings |
-| 4.2 | 3D dioramas (user 10-14) | `qa/eval-reports/airplane-diorama-birth.md` · `/add-eval-modes` | airplane `find_part` + `flight_plan` committed cf15c810. Next: commit payload + site tweak, `preflight` mode, build mode, `/eval-test`, `/curriculum-fit`. **construction-site-diorama BORN 10-15, uncommitted** (user moved to excavator + dump truck): `load_truck` (K-2 count scoops, 3-5 fill to a tons limit), headless-WebGL drive K 18/19 (drive artifact) · 3-5 19/19; `qa/eval-reports/construction-site-diorama-birth.md`. Next: `/add-eval-modes` (`plan_trips`, `limit_with_remainder`, `which_limit`, `operate`), `/curriculum-fit`, tablet fps |
+| 4.2 | 3D dioramas (user 10-14) | birth reports `qa/eval-reports/{airplane,construction-site}-diorama-birth.md` · `/add-eval-modes` | Both born and committed cf15c810 (airplane `find_part` + `flight_plan`; site `load_truck`). Next: commit birth report + view tweak + payload, then site L1 modes (handoff 4.2), `/curriculum-fit`; airplane `preflight`; tablet fps |
 | 5 | Parent report | `qa/parent-report/ROADMAP.md` | PR-1..4 done 10-08. Left: rulings PR-R1/R2, PR-D2 cleanup (user). Proposed CLOSE |
 | 6 | Drawers + curator brief | `qa/drawers/ROADMAP.md` | 18 kinds + one-screen brief committed (9e39be02, bbe0a635). Next DR-2 quality, DR-3 leak, DR-5 tutor. Brief findings: K hook with no pattern drawn, empty Pip dock |
-| 7 | Prerequisite graph + practice selection | `qa/pulse/ROADMAP.md` · `/pulse-fix`, `/pulse-agent` | Learner model is the sole selector, shipped 10-13. Lifecycle retests retired, gates set by the learner model (C13, 10-16, uncommitted). Next: C14 gate backfill (first), C15 delete retest machinery, C16 browser check, C17 promotion lag, C12 joint knowledge + recall fit; P0.3 backfill, T5 node beta by grade, T6 residual (spacing for passing learn picks), 7.14, 7.8, P5 |
-| 8 | Difficulty is code-owned | `my-tutoring-app/qa/difficulty-demo/QUEUE.md` · `/add-item-space`, `/add-word-space` | 24 math spaces, 15 word-space primitives committed. Next: 8.1a/b/c/f/i/j fixes; 8.1d/e/g decided 10-15 and queued; 8.1n ruling; 8.2q one browser sitting |
+| 7 | Prerequisite graph + practice selection | `qa/pulse/ROADMAP.md` · `/pulse-fix`, `/pulse-agent` | Learner model selects (10-13) and sets gates (C13, b40aa75a); C14 backfill applied to every student 10-16. In progress: C15 retest deletion + C18 Pulse shows the model gate (handoff c15-c18). Then C16 browser check, C17, C12 joint fit; T5, T6 residual, 7.14, 7.8, P5 |
+| 8 | Difficulty is code-owned | `my-tutoring-app/qa/difficulty-demo/QUEUE.md` · `/add-item-space`, `/add-word-space`, `/eval-fix` | 24 math spaces, 15 word-space primitives committed. Next: 8.1a/b/c/f/i/j/o (handoff 8.1-item-space-fixes); 8.1d/e/g (handoff 8.1-decided-forks); 8.1n ruling; 8.2q one browser sitting |
 
 ## Proposed WIP (10-15, user to confirm)
 
