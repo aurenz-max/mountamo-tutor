@@ -1126,6 +1126,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "compare_attribute": PriorConfig(5.0, "Tap the extreme on an attribute — biggest, hottest, most moons"),
         "orbital_reasoning": PriorConfig(8.0, "Tap by orbital period — distance-to-year relationship"),
     },
+    "telescope-simulator": {
+        "find_by_look":    PriorConfig(1.5, "Tap the unnamed object in the view that matches a described look"),
+        "brightest":       PriorConfig(2.5, "Tap the brightest of 2-4 objects drawn as bright as they shine"),
+        "object_type":     PriorConfig(3.5, "Name the kind of object: moon, planet, star, cluster, nebula, galaxy"),
+        "pick_instrument": PriorConfig(5.0, "Least powerful instrument that shows a named detail"),
+    },
     "planetary-explorer": {
         "explore":  PriorConfig(1.5, "Basic recall after reading planet info"),
         "identify": PriorConfig(3.0, "Identify planets from descriptions"),

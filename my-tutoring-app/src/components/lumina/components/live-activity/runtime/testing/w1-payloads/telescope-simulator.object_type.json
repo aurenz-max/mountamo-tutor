@@ -1,0 +1,64 @@
+{
+ "source": "qa/tutor-reports/telescope-simulator-runtime-object_type-payload-2026-10-16.json",
+ "primitiveId": "telescope-simulator",
+ "evalMode": "object_type",
+ "data": {
+  "title": "Cosmic Viewfinder",
+  "overview": "Learners will examine distant points in the dark expanse and determine their categories.",
+  "gradeLevel": "4",
+  "challengeTypes": [
+   "object_type"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "object_type-1",
+    "mode": "object_type",
+    "scope": "binoculars",
+    "object": "jupiter",
+    "choices": [
+     "moon",
+     "planet",
+     "star",
+     "galaxy"
+    ]
+   },
+   {
+    "id": "object_type-2",
+    "mode": "object_type",
+    "scope": "binoculars",
+    "object": "betelgeuse",
+    "choices": [
+     "moon",
+     "planet",
+     "star",
+     "nebula"
+    ]
+   },
+   {
+    "id": "object_type-3",
+    "mode": "object_type",
+    "scope": "binoculars",
+    "object": "orion-nebula",
+    "choices": [
+     "star",
+     "cluster",
+     "nebula",
+     "galaxy"
+    ]
+   },
+   {
+    "id": "object_type-4",
+    "mode": "object_type",
+    "scope": "binoculars",
+    "object": "moon",
+    "choices": [
+     "moon",
+     "planet",
+     "star",
+     "nebula"
+    ]
+   }
+  ]
+ }
+}

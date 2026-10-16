@@ -1,77 +1,79 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import * as d3 from 'd3';
+/**
+ * Telescope Simulator: a telescope eyepiece on the night sky, and one task per eval mode (rebuilt 2026-10-16 under the
+ * 10-15 ruling; the old free sandbox scored exploring and drew every target's name and a ring around it).
+ * - find_by_look: unnamed objects in the view; tap the one the ask describes.
+ * - brightest: unnamed objects through binoculars, each as bright as it shines; tap the brightest.
+ * - object_type: one unnamed object; say or tap its kind.
+ * - pick_instrument: say or tap the least powerful instrument that shows a named detail.
+ *
+ * Every item is built and keyed by code (`telescopeWorkspace.ts`). No name, ring or badge marks an object before the
+ * answer is credited. Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own
+ * Next and two tries before a reveal; the workspace path (W1, plain shape) commits every check through
+ * `progress.commitCheck` with a named miss, takes a spoken answer judged by the tutor, and lets the runtime move on.
+ * The levers live in `telescopeLevers.ts`.
+ */
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { TelescopeSimulatorMetrics } from '../../../evaluation/types';
+import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askOf, brightFootprint, brightness, capital, choiceKey, choiceLabel, clueTags, describeTelescopeWork, detailDef, emptyWork,
+  isTapItem, KIND_TEXT, objectDef, SCOPE_TEXT, scopeRank, shows, skyTarget, tapKey, telescopeCorrect, telescopeItems,
+  telescopeMiss, workComplete, workspaceAssignment, workspaceScene,
+  type ChoiceItem, type Kind, type LookTag, type Scope, type SkyObjectDef, type TapItem, type TelescopeItem,
+  type TelescopeMode, type TelescopeTier, type TelescopeWork,
+} from './telescopeWorkspace';
+import {
+  CLOSER_LEVER, CLUE_PICTURES_LEVER, DROP_LEVER, dropTarget, LADDER_LEVER, ladderLines, leverFacts, MY_PICK_LEVER,
+  myPickLine, NO_LEVERS, SAME_SIZE_LEVER, SIDE_BY_SIDE_LEVER, telescopeLevers, TYPE_PICTURES_LEVER, viewScope,
+  type TelescopeLeverState,
+} from './telescopeLevers';
 
-// =============================================================================
-// Exported Data Types (Single Source of Truth)
-// =============================================================================
+// ============================================================================
+// Data Types (single source of truth; the generator imports them)
+// ============================================================================
 
-export interface CelestialTarget {
-  id: string;
-  name: string;
-  type: 'planet' | 'star' | 'moon' | 'constellation' | 'nebula' | 'galaxy' | 'cluster';
-  azimuth: number;   // 0-360 degrees
-  altitude: number;  // 0-90 degrees
-  magnitude: number; // apparent magnitude (lower = brighter)
-  angularSize: number; // apparent size in arcminutes
-  color: string;
-  description: string;
-  funFact: string;
-  visibleNaked: boolean;
-  bestTelescope: TelescopeType;
-  detailLevels: {
-    naked: string;
-    binoculars: string;
-    small: string;
-    large: string;
-    space: string;
-  };
-}
-
-export interface JournalEntry {
-  id: string;
-  objectId: string;
-  objectName: string;
-  timestamp: number;
-  magnification: number;
-  telescopeType: string;
-  viewMode: string;
-  notes: string;
-}
-
-export type TelescopeType = 'binoculars' | 'small' | 'large' | 'space';
-export type SkyViewMode = 'visible' | 'infrared' | 'radio';
+export type { TelescopeItem, TelescopeMode, TelescopeTier };
+/** Legacy names `types.ts` re-exports. */
+export type TelescopeType = Scope;
+export type SkyViewMode = 'visible';
+export type CelestialTarget = SkyObjectDef;
+export interface JournalEntry { id: string; objectId: string; objectName: string; timestamp: number; notes: string }
 
 export interface TelescopeSimulatorData {
   title: string;
-  description: string;
-  gradeLevel: string;
-
-  celestialObjects: CelestialTarget[];
-
-  starFieldSeed?: number;
-  starCount?: number;
-
-  telescopeType: TelescopeType;
-  initialMagnification: number;
-  maxMagnification?: number; // Deprecated: each telescope has its own maxMag
-  viewMode: SkyViewMode;
-
-  showLabels: boolean;
-  showGrid: boolean;
-
-  targetObjects?: string[];
-  journalMode: boolean;
-
-  focusMode: 'auto' | 'manual';
-
-  learningFocus: string;
-  hints: string[];
-  funFact?: string;
+  description?: string;
+  /** One neutral sentence under the title; never names or describes an answer. */
+  overview?: string;
+  /** Grade rung '2'..'5' (2 is the band floor). */
+  gradeLevel?: string;
+  /** The eval modes this session asks, in order. */
+  challengeTypes?: TelescopeMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: TelescopeTier;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: TelescopeItem[];
 
   // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
@@ -82,1033 +84,617 @@ export interface TelescopeSimulatorData {
   onEvaluationSubmit?: (result: PrimitiveEvaluationResult<TelescopeSimulatorMetrics>) => void;
 }
 
-// =============================================================================
-// Constants
-// =============================================================================
-
-const VIEWPORT_SIZE = 560;
-const VIEWPORT_RADIUS = 260;
-
-const TELESCOPE_SPECS: Record<TelescopeType, {
-  maxMag: number;
-  fovBase: number;
-  label: string;
-  icon: string;
-  resolution: number;
-}> = {
-  binoculars: { maxMag: 12, fovBase: 8, label: 'Binoculars', icon: '👀', resolution: 0.6 },
-  small:      { maxMag: 60, fovBase: 4, label: 'Small Scope', icon: '🔭', resolution: 0.8 },
-  large:      { maxMag: 250, fovBase: 2.5, label: 'Large Scope', icon: '🏗️', resolution: 0.95 },
-  space:      { maxMag: 500, fovBase: 1.5, label: 'Space Telescope', icon: '🛰️', resolution: 1.0 },
-};
-
-const VIEW_MODE_CONFIG: Record<SkyViewMode, {
-  bg: string;
-  starColor: string;
-  label: string;
-  icon: string;
-}> = {
-  visible:  { bg: '#060618', starColor: '#ffffff', label: 'Visible', icon: '👁️' },
-  infrared: { bg: '#180808', starColor: '#ff9955', label: 'Infrared', icon: '🔴' },
-  radio:    { bg: '#081018', starColor: '#55aaff', label: 'Radio', icon: '📡' },
-};
-
-const STAR_COLORS = ['#ffffff', '#ffe4c4', '#fff5e0', '#cce0ff', '#ffd0a0', '#aaccff', '#ffcccc'];
-
-// =============================================================================
-// Utility Functions
-// =============================================================================
-
-function seededRandom(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 1664525 + 1013904223) & 0x7fffffff;
-    return s / 0x7fffffff;
-  };
-}
-
-interface StarData {
-  id: string;
-  az: number;
-  alt: number;
-  magnitude: number;
-  color: string;
-  twinklePhase: number;
-}
-
-function generateStarField(seed: number, count: number): StarData[] {
-  const rng = seededRandom(seed);
-  const stars: StarData[] = [];
-  for (let i = 0; i < count; i++) {
-    stars.push({
-      id: `star-${i}`,
-      az: rng() * 360,
-      alt: rng() * 85 + 5, // 5-90 degrees altitude
-      magnitude: rng() * 6 + 1, // 1-7 magnitude
-      color: STAR_COLORS[Math.floor(rng() * STAR_COLORS.length)],
-      twinklePhase: rng() * Math.PI * 2,
-    });
-  }
-  return stars;
-}
-
-function normalizeAngle(angle: number): number {
-  return ((angle % 360) + 360) % 360;
-}
-
-function angleDiff(a: number, b: number): number {
-  let d = normalizeAngle(a - b);
-  if (d > 180) d -= 360;
-  return d;
-}
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, v));
-}
-
-// =============================================================================
-// Sub-Components
-// =============================================================================
-
-const FocusRing: React.FC<{
-  focusLevel: number;
-  optimalFocus: number;
-  onChange: (value: number) => void;
-  disabled: boolean;
-}> = ({ focusLevel, optimalFocus, onChange, disabled }) => {
-  const quality = 100 - Math.abs(focusLevel - optimalFocus) * 2;
-  const qualityColor = quality > 80 ? 'text-green-400' : quality > 50 ? 'text-yellow-400' : 'text-red-400';
-
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-400">Focus</span>
-        <span className={`text-xs font-mono ${disabled ? 'text-slate-500' : qualityColor}`}>
-          {disabled ? 'AUTO' : `${Math.round(quality)}%`}
-        </span>
-      </div>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={focusLevel}
-        onChange={(e) => onChange(Number(e.target.value))}
-        disabled={disabled}
-        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
-      />
-    </div>
-  );
-};
-
-const ObjectInfoPopup: React.FC<{
-  object: CelestialTarget;
-  telescopeType: TelescopeType;
-  magnification: number;
-  onClose: () => void;
-  onLogObservation: () => void;
-  journalMode: boolean;
-}> = ({ object, telescopeType, magnification, onClose, onLogObservation, journalMode }) => {
-  const detailKey = telescopeType;
-  const detail = object.detailLevels[detailKey] || object.detailLevels.naked;
-  const typeIcons: Record<string, string> = {
-    planet: '🪐', star: '⭐', moon: '🌙', constellation: '✨',
-    nebula: '🌌', galaxy: '🌀', cluster: '💫',
-  };
-
-  return (
-    <div className="absolute top-4 left-4 right-4 bg-slate-900/95 backdrop-blur-lg border border-blue-500/30 rounded-xl p-4 z-30 shadow-xl shadow-blue-500/10">
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xl">{typeIcons[object.type] || '✨'}</span>
-            <h4 className="text-lg font-bold text-white">{object.name}</h4>
-          </div>
-          <span className="text-xs text-blue-300 capitalize">{object.type}</span>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-slate-400 hover:text-white transition p-1"
-        >✕</button>
-      </div>
-      <p className="text-sm text-slate-300 mb-2">{object.description}</p>
-      <div className="bg-slate-800/50 rounded-lg p-3 mb-2">
-        <p className="text-xs text-blue-300 font-medium mb-1">Through your {TELESCOPE_SPECS[telescopeType].label} at {magnification}×:</p>
-        <p className="text-sm text-slate-200">{detail}</p>
-      </div>
-      <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 mb-3">
-        <p className="text-xs text-indigo-300 font-medium">💡 Fun Fact</p>
-        <p className="text-sm text-slate-200">{object.funFact}</p>
-      </div>
-      <div className="flex items-center justify-between text-xs text-slate-400">
-        <span>Magnitude: {object.magnitude.toFixed(1)} · Size: {object.angularSize}′</span>
-        {journalMode && (
-          <button
-            onClick={onLogObservation}
-            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-xs"
-          >📝 Log Observation</button>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// =============================================================================
-// Main Component
-// =============================================================================
-
 interface TelescopeSimulatorProps {
   data: TelescopeSimulatorData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
 
-const TelescopeSimulator: React.FC<TelescopeSimulatorProps> = ({ data, className }) => {
-  const {
-    title, description, gradeLevel, celestialObjects = [],
-    starFieldSeed = 42, starCount = 400,
-    telescopeType: initialTelescope = 'small',
-    initialMagnification = 5,
-    viewMode: initialViewMode = 'visible',
-    showLabels: initialShowLabels = true,
-    showGrid: initialShowGrid = false,
-    targetObjects = [], journalMode = false,
-    focusMode: initialFocusMode = 'auto',
-    learningFocus, hints = [], funFact,
-    instanceId, skillId, subskillId, objectiveId, exhibitId,
-    onEvaluationSubmit,
-  } = data;
+const MODE_LABEL: Record<TelescopeMode, string> = {
+  find_by_look: 'Find it by its look', brightest: 'Find the brightest', object_type: 'What kind of object?', pick_instrument: 'Pick the instrument',
+};
 
-  // ---- State ----
-  const [telescopeAz, setTelescopeAz] = useState(180); // pointing azimuth
-  const [telescopeAlt, setTelescopeAlt] = useState(45); // pointing altitude
-  const [magnification, setMagnification] = useState(initialMagnification);
-  const [focusLevel, setFocusLevel] = useState(50);
-  const [telescopeType, setTelescopeType] = useState<TelescopeType>(initialTelescope);
-  const [viewMode, setViewMode] = useState<SkyViewMode>(initialViewMode);
-  const [showLabels, setShowLabels] = useState(initialShowLabels);
-  const [showGrid, setShowGrid] = useState(initialShowGrid);
-  const [focusMode, setFocusMode] = useState<'auto' | 'manual'>(initialFocusMode);
+// ============================================================================
+// The eyepiece (bespoke SVG). Draws what it is given; names only once `named`.
+// ============================================================================
 
-  const [selectedObject, setSelectedObject] = useState<CelestialTarget | null>(null);
-  const [foundObjects, setFoundObjects] = useState<Set<string>>(new Set());
-  const [journal, setJournal] = useState<JournalEntry[]>([]);
-  const [showHints, setShowHints] = useState(false);
-  const [activeTab, setActiveTab] = useState<'targets' | 'journal'>('targets');
-  const [panStart, setPanStart] = useState<{ x: number; y: number; az: number; alt: number } | null>(null);
+const VIEW = 400;
+const C = 200;
+const R = 190;
+const BACKGROUND = Array.from({ length: 70 }, (_, i) => {
+  const r = (n: number) => ((Math.sin(i * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1;
+  const a = r(1) * Math.PI * 2, d = Math.sqrt(r(2)) * (R - 8);
+  return { x: C + Math.cos(a) * d, y: C + Math.sin(a) * d, r: 0.4 + r(3) * 0.5, o: 0.15 + r(4) * 0.3 };
+});
+/** Twinkling, as an SVG animation (a <style> element would put its text into the page's text). */
+const Twinkle = ({ delay = 0 }: { delay?: number }) => <animate attributeName="opacity" values="1;0.45;1" dur="1.8s" begin={`${delay}s`} repeatCount="indefinite" />;
 
-  const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+type GlyphMode = 'look' | 'bright' | 'uniform';
+/** How opaque an object is drawn in the brightest view: squared, so a magnitude apart reads as a clear step. */
+const shine = (o: SkyObjectDef) => 0.15 + 0.85 * brightness(o) ** 2;
 
-  // Track interactions for evaluation
-  const [panDistance, setPanDistance] = useState(0);
-  const [viewModesUsed, setViewModesUsed] = useState<Set<string>>(new Set([initialViewMode]));
-  const [telescopesUsed, setTelescopesUsed] = useState<Set<string>>(new Set([initialTelescope]));
-  const [manualFocusAttempts, setManualFocusAttempts] = useState(0);
-  const [objectsExplored, setObjectsExplored] = useState<Set<string>>(new Set());
-  const [magRange, setMagRange] = useState<[number, number]>([initialMagnification, initialMagnification]);
+/** One object as seen through an instrument. `bright`: drawn as bright as it shines, without twinkling. */
+function Glyph({ o, scope, x, y, mode, delay = 0 }: { o: SkyObjectDef; scope: Scope; x: number; y: number; mode: GlyphMode; delay?: number }) {
+  const r = scopeRank(scope);
+  const b = brightness(o);
+  if (mode === 'uniform') return <circle cx={x} cy={y} r={6} fill={o.color} opacity={shine(o)} />;
+  const fade = mode === 'bright' ? shine(o) : 1;
+  const dot = (steady: boolean) => {
+    const core = mode === 'bright' ? 1 + 5 * b : 2.6;
+    const glow = mode === 'bright' ? brightFootprint(o) : 9;
+    return (
+      <g>
+        {!steady && mode !== 'bright' && <Twinkle delay={delay} />}
+        <circle cx={x} cy={y} r={glow} fill={o.color} opacity={0.22 * fade} />
+        <circle cx={x} cy={y} r={core} fill={o.color} opacity={fade} />
+        {!steady && mode !== 'bright' && (
+          <g stroke={o.color} strokeWidth={0.6} opacity={0.5}>
+            <line x1={x - 8} y1={y} x2={x + 8} y2={y} /><line x1={x} y1={y - 8} x2={x} y2={y + 8} />
+          </g>
+        )}
+        {shows(o, 'partner', scope) && <circle cx={x + glow + 3} cy={y - 3} r={1.1} fill="#cbd5e1" opacity={0.85} />}
+      </g>
+    );
+  };
+  if (o.kind === 'star') return dot(false);
+  if (o.kind === 'planet') {
+    if (r === 0 || mode === 'bright') return dot(true);
+    const pr = [3, 5, 11, 16, 19][r];
+    const dark = '#0b1024';
+    return (
+      <g>
+        {shows(o, 'ring', scope) && <ellipse cx={x} cy={y} rx={pr * 2.1} ry={pr * 0.65} fill="none" stroke={o.color} strokeWidth={2} opacity={0.85} />}
+        <circle cx={x} cy={y} r={pr} fill={o.color} />
+        {shows(o, 'crescent', scope) && <circle cx={x - pr * 0.45} cy={y} r={pr * 0.95} fill={dark} />}
+        {shows(o, 'stripes', scope) && [-0.45, 0, 0.45].map(k => {
+          const half = Math.sqrt(1 - k * k) * pr * 0.95;
+          return <line key={k} x1={x - half} y1={y + k * pr} x2={x + half} y2={y + k * pr} stroke="#8b5e3c" strokeWidth={pr * 0.14} opacity={0.75} />;
+        })}
+        {shows(o, 'spot', scope) && <ellipse cx={x + pr * 0.3} cy={y + pr * 0.3} rx={pr * 0.25} ry={pr * 0.14} fill="#c0392b" />}
+        {shows(o, 'cap', scope) && <ellipse cx={x} cy={y - pr * 0.78} rx={pr * 0.4} ry={pr * 0.18} fill="#ffffff" />}
+        {shows(o, 'moons', scope) && [-2.6, -1.7, 1.8, 2.9].map(k => <circle key={k} cx={x + k * pr - Math.sign(k) * 2} cy={y} r={1.2} fill="#e2e8f0" />)}
+      </g>
+    );
+  }
+  if (o.kind === 'moon') {
+    const mr = [16, 24, 34, 42, 46][r];
+    return (
+      <g>
+        <circle cx={x} cy={y} r={mr} fill={o.color} />
+        {[[0.3, -0.2, 0.28], [-0.25, 0.25, 0.22], [0.1, 0.45, 0.15]].map(([dx, dy, s], i) => (
+          <ellipse key={i} cx={x + dx * mr} cy={y + dy * mr} rx={s * mr * 1.2} ry={s * mr} fill="#9a968c" opacity={0.6} />
+        ))}
+        {shows(o, 'craters', scope) && [[-0.5, -0.4], [0.55, 0.3], [-0.1, -0.65], [-0.55, 0.45], [0.35, -0.55], [0.0, 0.1]].map(([dx, dy], i) => (
+          <circle key={i} cx={x + dx * mr} cy={y + dy * mr} r={mr * 0.09} fill="#8f8a80" stroke="#ece8df" strokeWidth={0.6} />
+        ))}
+      </g>
+    );
+  }
+  if (o.kind === 'cluster') {
+    const many = shows(o, 'many', scope);
+    const spread = mode === 'bright' ? 17 : [10, 18, 24, 30, 32][r];
+    const n = many ? 14 : 7;
+    return (
+      <g opacity={fade}>
+        {Array.from({ length: n }, (_, i) => {
+          const a = i * 2.39996, d = spread * Math.sqrt((i + 0.5) / n);
+          return <circle key={i} cx={x + Math.cos(a) * d} cy={y + Math.sin(a) * d * 0.8} r={i < 6 ? 1.6 : 1.0} fill={o.color} />;
+        })}
+      </g>
+    );
+  }
+  if (o.kind === 'nebula') {
+    if (r === 0) return <ellipse cx={x} cy={y} rx={8} ry={5} fill={o.color} opacity={0.3} filter="url(#ts-blur)" />;
+    const rx = mode === 'bright' ? 20 : [8, 20, 30, 38, 42][r];
+    return (
+      <g opacity={mode === 'bright' ? fade : 1}>
+        <ellipse cx={x} cy={y} rx={rx} ry={rx * 0.7} fill={o.color} opacity={0.45} filter="url(#ts-blur)" />
+        <ellipse cx={x + rx * 0.2} cy={y - rx * 0.1} rx={rx * 0.6} ry={rx * 0.45} fill={o.color} opacity={0.55} filter="url(#ts-blur)" />
+        {shows(o, 'gap', scope) && <rect x={x - rx} y={y - rx * 0.06} width={rx * 2} height={rx * 0.14} fill="#0b1024" opacity={0.8} transform={`rotate(-20 ${x} ${y})`} />}
+        {shows(o, 'four', scope) && [[-0.08, -0.06], [0.08, -0.08], [-0.05, 0.08], [0.1, 0.06]].map(([dx, dy], i) => (
+          <circle key={i} cx={x + dx * rx} cy={y + dy * rx} r={1.6} fill="#ffffff" />
+        ))}
+      </g>
+    );
+  }
+  // galaxy
+  if (r === 0) return <ellipse cx={x} cy={y} rx={8} ry={4} fill={o.color} opacity={0.3} filter="url(#ts-blur)" />;
+  const rx = mode === 'bright' ? 24 : [8, 22, 34, 42, 46][r];
+  return (
+    <g opacity={mode === 'bright' ? fade : 1} transform={`rotate(-28 ${x} ${y})`}>
+      <ellipse cx={x} cy={y} rx={rx} ry={rx * 0.38} fill={o.color} opacity={0.4} filter="url(#ts-blur)" />
+      {shows(o, 'middle', scope) && <ellipse cx={x} cy={y} rx={rx * 0.28} ry={rx * 0.16} fill="#fffaf0" opacity={0.85} filter="url(#ts-blur)" />}
+      {shows(o, 'lanes', scope) && [0.12, 0.22].map(k => (
+        <ellipse key={k} cx={x} cy={y + k * rx * 0.38} rx={rx * 0.8} ry={rx * 0.1} fill="none" stroke="#0b1024" strokeWidth={1.2} opacity={0.7} />
+      ))}
+    </g>
+  );
+}
 
-  // ---- Evaluation ----
-  const { submitResult, hasSubmitted, resetAttempt } = usePrimitiveEvaluation<TelescopeSimulatorMetrics>({
+/** How far out a tap reaches around an object. */
+const hitRadius = (o: SkyObjectDef, scope: Scope) => {
+  const r = scopeRank(scope);
+  if (o.kind === 'moon') return [16, 24, 34, 42, 46][r] + 4;
+  if (o.kind === 'planet' && r > 0) return Math.max(22, [3, 5, 11, 16, 19][r] * (o.features.ring ? 2.2 : 1.4));
+  if (o.kind === 'nebula' || o.kind === 'galaxy') return Math.max(24, [8, 22, 34, 42, 46][r]);
+  if (o.kind === 'cluster') return Math.max(22, [10, 18, 24, 30, 32][r] + 4);
+  return 22;
+};
+
+interface Mark { index: number; state: 'selected' | 'wrong' | 'right' }
+
+function Eyepiece({ children, label }: { children: React.ReactNode; label: string }) {
+  return (
+    <svg viewBox={`0 0 ${VIEW} ${VIEW}`} className="mx-auto block w-full max-w-[420px] select-none" role="group" aria-label={label}>
+      <defs>
+        <clipPath id="ts-clip"><circle cx={C} cy={C} r={R} /></clipPath>
+        <radialGradient id="ts-sky"><stop offset="0%" stopColor="#0b1024" /><stop offset="100%" stopColor="#050712" /></radialGradient>
+        <radialGradient id="ts-vignette"><stop offset="78%" stopColor="#000" stopOpacity={0} /><stop offset="100%" stopColor="#000" stopOpacity={0.85} /></radialGradient>
+        <filter id="ts-blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation={2.2} /></filter>
+      </defs>
+      <circle cx={C} cy={C} r={R} fill="url(#ts-sky)" />
+      <g clipPath="url(#ts-clip)">
+        {BACKGROUND.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#e2e8f0" opacity={s.o} />)}
+        {children}
+      </g>
+      <circle cx={C} cy={C} r={R} fill="url(#ts-vignette)" pointerEvents="none" />
+      <circle cx={C} cy={C} r={R + 4} fill="none" stroke="#1e293b" strokeWidth={10} pointerEvents="none" />
+    </svg>
+  );
+}
+
+// ============================================================================
+// Lever pictures (models outside the item)
+// ============================================================================
+
+/** clue_pictures: a model picture for one clue. Grey models; a colour clue is a plain swatch. */
+function ClueIcon({ tag, color }: { tag: LookTag; color: string }) {
+  const g = '#94a3b8';
+  const id = tag.id;
+  const body = (() => {
+    if (id.startsWith('color:')) return <circle cx={18} cy={18} r={11} fill={color} />;
+    if (id === 'size:big') return <><circle cx={10} cy={22} r={4} fill={g} opacity={0.5} /><circle cx={24} cy={16} r={10} fill={g} /></>;
+    if (id === 'noun:ball') return <circle cx={18} cy={18} r={10} fill={g} />;
+    if (id === 'noun:dot') return <><circle cx={18} cy={18} r={7} fill={g} opacity={0.25} /><circle cx={18} cy={18} r={2.5} fill={g} /></>;
+    if (id === 'noun:crescent') return <><circle cx={18} cy={18} r={10} fill={g} /><circle cx={13} cy={18} r={9.5} fill="#0f172a" /></>;
+    if (id === 'noun:group') return <>{[[12, 12], [20, 10], [25, 17], [15, 20], [22, 24], [10, 24], [18, 16]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r={1.6} fill={g} />)}</>;
+    if (id === 'noun:cloud' || id === 'noun:smudge') return <ellipse cx={18} cy={18} rx={13} ry={9} fill={g} opacity={id === 'noun:cloud' ? 0.6 : 0.3} filter="url(#ts-icon-blur)" />;
+    if (id === 'noun:oval') return <ellipse cx={18} cy={18} rx={14} ry={5} fill={g} opacity={0.6} transform="rotate(-25 18 18)" filter="url(#ts-icon-blur)" />;
+    if (id === 'with:ring') return <><ellipse cx={18} cy={18} rx={15} ry={4.5} fill="none" stroke={g} strokeWidth={1.6} /><circle cx={18} cy={18} r={7} fill={g} /></>;
+    if (id === 'with:stripes') return <><circle cx={18} cy={18} r={10} fill={g} />{[-4, 0, 4].map(k => <line key={k} x1={9} y1={18 + k} x2={27} y2={18 + k} stroke="#475569" strokeWidth={1.4} />)}</>;
+    if (id === 'with:moons') return <><circle cx={18} cy={18} r={5} fill={g} />{[5, 9, 27, 32].map(x => <circle key={x} cx={x} cy={18} r={1.2} fill={g} />)}</>;
+    if (id === 'with:spot') return <><circle cx={18} cy={18} r={10} fill={g} /><ellipse cx={21} cy={21} rx={3} ry={1.8} fill="#c0392b" /></>;
+    if (id === 'with:cap') return <><circle cx={18} cy={18} r={10} fill={g} /><ellipse cx={18} cy={10} rx={4} ry={2} fill="#fff" /></>;
+    if (id === 'with:craters' || id === 'with:patches') return <><circle cx={18} cy={18} r={11} fill={g} />{[[14, 14], [22, 20], [16, 23]].map(([x, y], i) => id === 'with:craters'
+      ? <circle key={i} cx={x} cy={y} r={2} fill="#64748b" stroke="#e2e8f0" strokeWidth={0.5} /> : <ellipse key={i} cx={x} cy={y} rx={3.5} ry={2.5} fill="#64748b" />)}</>;
+    if (id === 'with:partner') return <><circle cx={15} cy={19} r={2.5} fill={g} /><circle cx={23} cy={15} r={1} fill={g} /></>;
+    if (id === 'with:four') return <><ellipse cx={18} cy={18} rx={13} ry={9} fill={g} opacity={0.35} />{[[15, 16], [21, 15], [16, 21], [22, 20]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r={1.4} fill="#fff" />)}</>;
+    if (id === 'with:gap') return <><ellipse cx={18} cy={18} rx={13} ry={9} fill={g} opacity={0.45} /><rect x={5} y={16.5} width={26} height={3} fill="#0f172a" transform="rotate(-20 18 18)" /></>;
+    if (id === 'with:middle') return <><ellipse cx={18} cy={18} rx={14} ry={5} fill={g} opacity={0.4} /><ellipse cx={18} cy={18} rx={4} ry={2.4} fill="#fff" /></>;
+    if (id === 'with:lanes') return <><ellipse cx={18} cy={18} rx={14} ry={5} fill={g} opacity={0.5} /><ellipse cx={18} cy={19} rx={11} ry={1.6} fill="none" stroke="#0f172a" strokeWidth={1} /></>;
+    if (id === 'how:twinkles') return <g><Twinkle /><path d="M18 6 L20 16 L30 18 L20 20 L18 30 L16 20 L6 18 L16 16 Z" fill={g} /></g>;
+    if (id === 'how:steady') return <circle cx={18} cy={18} r={6} fill={g} />;
+    return <circle cx={18} cy={18} r={6} fill={g} />;
+  })();
+  return (
+    <svg width={36} height={36} viewBox="0 0 36 36" aria-hidden="true">
+      <defs><filter id="ts-icon-blur"><feGaussianBlur stdDeviation={1.2} /></filter></defs>
+      {body}
+    </svg>
+  );
+}
+
+/** type_pictures: a simple model of each kind, never the item's own object. */
+function KindModel({ kind }: { kind: Kind }) {
+  const g = '#cbd5e1';
+  const body = {
+    moon: <><circle cx={24} cy={24} r={16} fill={g} />{[[18, 18], [30, 26], [22, 31]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r={2.5} fill="#94a3b8" />)}</>,
+    planet: <circle cx={24} cy={24} r={9} fill={g} />,
+    star: <><circle cx={24} cy={24} r={8} fill={g} opacity={0.25} /><circle cx={24} cy={24} r={2.5} fill={g} /><line x1={14} y1={24} x2={34} y2={24} stroke={g} strokeWidth={0.6} /><line x1={24} y1={14} x2={24} y2={34} stroke={g} strokeWidth={0.6} /></>,
+    cluster: <>{Array.from({ length: 12 }, (_, i) => { const a = i * 2.4, d = 14 * Math.sqrt((i + 0.5) / 12); return <circle key={i} cx={24 + Math.cos(a) * d} cy={24 + Math.sin(a) * d} r={1.3} fill={g} />; })}</>,
+    nebula: <ellipse cx={24} cy={24} rx={17} ry={12} fill="#a78bfa" opacity={0.55} filter="url(#ts-model-blur)" />,
+    galaxy: <g transform="rotate(-25 24 24)"><ellipse cx={24} cy={24} rx={19} ry={7} fill={g} opacity={0.45} filter="url(#ts-model-blur)" /><ellipse cx={24} cy={24} rx={5} ry={3} fill="#fff" opacity={0.8} /></g>,
+  }[kind];
+  return (
+    <svg width={48} height={48} viewBox="0 0 48 48" aria-hidden="true">
+      <defs><filter id="ts-model-blur"><feGaussianBlur stdDeviation={1.8} /></filter></defs>
+      <rect width={48} height={48} rx={8} fill="#0b1024" />
+      {body}
+    </svg>
+  );
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
+type LeverMemo = { item: string } & TelescopeLeverState;
+
+const TelescopeSimulatorSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  TelescopeSimulatorProps & { tutorOwned: boolean; useController: (options: ProgressOptions<TelescopeItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, overview, description, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+
+  const items = useMemo(() => telescopeItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.title, data.gradeLevel]);
+  const stableInstanceId = useRef(instanceId || `telescope-simulator-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+  const startTime = useRef(Date.now());
+
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  const item: TelescopeItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [work, setWork] = useState<TelescopeWork>(emptyWork);
+  /** Workspace path: the checked wrong work, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverMemo, setLeverMemo] = useState<LeverMemo>({ item: '', ...NO_LEVERS });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
+
+  const lever: TelescopeLeverState = item && leverMemo.item === item.id ? leverMemo : NO_LEVERS;
+  const editLevers = (change: (s: TelescopeLeverState) => Partial<TelescopeLeverState>) => {
+    const id = item?.id ?? '';
+    setLeverMemo(m => { const s = m.item === id ? m : { item: id, ...NO_LEVERS }; return { ...s, ...change(s), item: id }; });
+  };
+  const leverOn = (id: string) => lever.pulled.includes(id);
+
+  const solvedNow = !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<TelescopeSimulatorMetrics>({
     primitiveType: 'telescope-simulator',
-    instanceId: instanceId || `telescope-${Date.now()}`,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit,
+    instanceId: resolvedInstanceId,
+    skillId, subskillId, objectiveId, exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // ---- Derived ----
-  const specs = TELESCOPE_SPECS[telescopeType];
-  const effectiveMaxMag = specs.maxMag; // Use telescope's actual max, not the initial prop
-  const fov = specs.fovBase / Math.max(1, magnification / 5); // field of view in degrees
-  const optimalFocus = 50 + (magnification / effectiveMaxMag) * 10 - 5; // shifts slightly with mag
-  const blurAmount = focusMode === 'auto' ? 0 : Math.min(8, Math.abs(focusLevel - optimalFocus) * 0.12);
-  const focusQuality = focusMode === 'auto' ? 100 : Math.max(0, 100 - Math.abs(focusLevel - optimalFocus) * 2);
+  const clearItem = () => { setWork(emptyWork()); setWrongShown(false); setFeedback(null); setScriptedWrongs(0); setScriptedReveal(false); };
 
-  const stars = useMemo(
-    () => generateStarField(starFieldSeed, starCount),
-    [starFieldSeed, starCount]
-  );
+  openItem.current = (_index, retry) => {
+    if (retry) { setWork(emptyWork()); setWrongShown(false); setFeedback(null); editLevers(s => ({ wrongs: s.wrongs + 1 })); return; }
+    clearItem();
+  };
 
-  const hasTargets = targetObjects.length > 0;
-  const allTargetsFound = hasTargets && targetObjects.every(id => foundObjects.has(id));
-  const modeConfig = VIEW_MODE_CONFIG[viewMode];
+  /** A spoken answer the observer credited: recorded as a correct tap records it, and shown the same way. */
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || isTapItem(solved) || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setWork({ pick: null, choice: choiceKey(solved) }); setWrongShown(false);
+  };
 
-  // ---- Sky-to-viewport coordinate conversion ----
-  const skyToViewport = useCallback((az: number, alt: number) => {
-    const cx = VIEWPORT_SIZE / 2;
-    const cy = VIEWPORT_SIZE / 2;
-    const dx = angleDiff(az, telescopeAz);
-    const dy = alt - telescopeAlt;
-    const scale = (VIEWPORT_RADIUS * 2) / fov;
+  // ── Handlers ──
+  const closed = revealed || wrongShown || learnerBlocked();
+  const tapObject = (i: number) => {
+    if (!item || !isTapItem(item) || closed || lever.dropped.includes(i)) return;
+    SoundManager.select();
+    setWork({ pick: i, choice: null }); setFeedback(null);
+  };
+  const choose = (c: string) => {
+    if (!item || isTapItem(item) || closed) return;
+    const i = (item.choices as string[]).indexOf(c);
+    if (lever.dropped.includes(i)) return;
+    SoundManager.select();
+    setWork({ pick: null, choice: c }); setFeedback(null);
+  };
+
+  const check = () => {
+    if (!item || closed || !workComplete(item, work)) return;
+    const correct = telescopeCorrect(item, work);
+    progress.commitCheck(describeTelescopeWork(item, work, viewScope(item, lever)), correct, correct ? undefined : telescopeMiss(item, work));
+    if (correct) { SoundManager.playCorrect(); tappedCorrect.current = item.id; return; }
+    SoundManager.playIncorrect();
+    if (tutorOwned) {
+      const at = isTapItem(item) ? work.pick! : (item.choices as string[]).indexOf(work.choice!);
+      editLevers(s => ({ picked: [...s.picked, at], lastPick: item.mode === 'pick_instrument' ? (work.choice as Scope) : s.lastPick }));
+      setWrongShown(true);
+      return;
+    }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= 2) {
+      setScriptedReveal(true);
+      setWork(isTapItem(item) ? { pick: tapKey(item), choice: null } : { pick: null, choice: choiceKey(item) });
+      progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      return;
+    }
+    setWork(emptyWork());
+    setFeedback('Not quite. Look again, and try once more.');
+  };
+
+  const metrics = (): TelescopeSimulatorMetrics => {
+    const right = items.filter(i => results.some(r => r.challengeId === i.id && r.correct));
+    const scopes = Array.from(new Set(items.map(i => (i.mode === 'pick_instrument' ? detailDef(i.detail)!.min : i.scope))));
     return {
-      x: cx + dx * scale,
-      y: cy - dy * scale,
-    };
-  }, [telescopeAz, telescopeAlt, fov]);
-
-  const isInViewport = useCallback((vx: number, vy: number) => {
-    const cx = VIEWPORT_SIZE / 2;
-    const cy = VIEWPORT_SIZE / 2;
-    const dx = vx - cx;
-    const dy = vy - cy;
-    return (dx * dx + dy * dy) < (VIEWPORT_RADIUS * VIEWPORT_RADIUS);
-  }, []);
-
-  // ---- D3 Rendering ----
-  useEffect(() => {
-    if (!svgRef.current) return;
-    const svg = d3.select(svgRef.current);
-    const cx = VIEWPORT_SIZE / 2;
-    const cy = VIEWPORT_SIZE / 2;
-
-    // ---- Defs (one-time setup) ----
-    let defs = svg.select<SVGDefsElement>('defs');
-    if (defs.empty()) {
-      defs = svg.append('defs');
-
-      // Circular clip
-      defs.append('clipPath').attr('id', 'telescope-clip')
-        .append('circle').attr('cx', cx).attr('cy', cy).attr('r', VIEWPORT_RADIUS);
-
-      // Vignette gradient
-      const radGrad = defs.append('radialGradient').attr('id', 'vignette');
-      radGrad.append('stop').attr('offset', '0%').attr('stop-color', 'transparent');
-      radGrad.append('stop').attr('offset', '70%').attr('stop-color', 'transparent');
-      radGrad.append('stop').attr('offset', '95%').attr('stop-opacity', 0.6).attr('stop-color', '#000');
-      radGrad.append('stop').attr('offset', '100%').attr('stop-opacity', 0.95).attr('stop-color', '#000');
-
-      // Focus blur filter
-      const blurFilter = defs.append('filter').attr('id', 'focus-blur').attr('x', '-10%').attr('y', '-10%').attr('width', '120%').attr('height', '120%');
-      blurFilter.append('feGaussianBlur').attr('in', 'SourceGraphic').attr('stdDeviation', 0);
-
-      // Glow filter for bright objects
-      const glow = defs.append('filter').attr('id', 'glow').attr('x', '-50%').attr('y', '-50%').attr('width', '200%').attr('height', '200%');
-      glow.append('feGaussianBlur').attr('in', 'SourceGraphic').attr('stdDeviation', 3).attr('result', 'blur');
-      glow.append('feMerge').html('<feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/>');
-
-      // Layers
-      svg.append('rect').attr('class', 'sky-bg').attr('width', VIEWPORT_SIZE).attr('height', VIEWPORT_SIZE)
-        .attr('clip-path', 'url(#telescope-clip)');
-      svg.append('g').attr('class', 'grid-layer').attr('clip-path', 'url(#telescope-clip)');
-      svg.append('g').attr('class', 'content-layer').attr('clip-path', 'url(#telescope-clip)')
-        .attr('filter', 'url(#focus-blur)');
-      svg.append('circle').attr('class', 'vignette')
-        .attr('cx', cx).attr('cy', cy).attr('r', VIEWPORT_RADIUS).attr('fill', 'url(#vignette)')
-        .attr('pointer-events', 'none');
-      // Crosshair
-      const ch = svg.append('g').attr('class', 'crosshair').attr('pointer-events', 'none');
-      ch.append('line').attr('x1', cx - 12).attr('y1', cy).attr('x2', cx + 12).attr('y2', cy)
-        .attr('stroke', 'rgba(100,150,255,0.25)').attr('stroke-width', 0.5);
-      ch.append('line').attr('x1', cx).attr('y1', cy - 12).attr('x2', cx).attr('y2', cy + 12)
-        .attr('stroke', 'rgba(100,150,255,0.25)').attr('stroke-width', 0.5);
-      // Eyepiece ring
-      svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', VIEWPORT_RADIUS)
-        .attr('fill', 'none').attr('stroke', '#222').attr('stroke-width', 16)
-        .attr('pointer-events', 'none');
-      svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', VIEWPORT_RADIUS + 6)
-        .attr('fill', 'none').attr('stroke', '#111').attr('stroke-width', 4)
-        .attr('pointer-events', 'none');
-    }
-
-    // ---- Update sky background ----
-    svg.select('.sky-bg').attr('fill', modeConfig.bg);
-
-    // ---- Update blur filter ----
-    svg.select('#focus-blur feGaussianBlur').attr('stdDeviation', blurAmount);
-
-    // ---- Grid layer ----
-    const gridLayer = svg.select('.grid-layer');
-    gridLayer.selectAll('*').remove();
-    if (showGrid) {
-      const gridStep = Math.max(2, Math.ceil(fov / 5)) * 2;
-      for (let az = 0; az < 360; az += gridStep) {
-        const p1 = skyToViewport(az, 0);
-        const p2 = skyToViewport(az, 90);
-        if (isInViewport(p1.x, p1.y) || isInViewport(p2.x, p2.y)) {
-          gridLayer.append('line')
-            .attr('x1', p1.x).attr('y1', p1.y).attr('x2', p2.x).attr('y2', p2.y)
-            .attr('stroke', 'rgba(100,150,255,0.08)').attr('stroke-width', 0.5);
-        }
-      }
-      for (let alt = 0; alt <= 90; alt += gridStep) {
-        const points: { x: number; y: number }[] = [];
-        for (let az = telescopeAz - fov; az <= telescopeAz + fov; az += 1) {
-          points.push(skyToViewport(az, alt));
-        }
-        if (points.length > 1) {
-          const line = d3.line<{ x: number; y: number }>()
-            .x(d => d.x).y(d => d.y);
-          gridLayer.append('path')
-            .attr('d', line(points))
-            .attr('fill', 'none')
-            .attr('stroke', 'rgba(100,150,255,0.08)')
-            .attr('stroke-width', 0.5);
-        }
-      }
-    }
-
-    // ---- Content layer (stars + objects) ----
-    const contentLayer = svg.select('.content-layer');
-    contentLayer.selectAll('*').remove();
-
-    // Render stars
-    const visibleStars = stars.filter(s => {
-      const pos = skyToViewport(s.az, s.alt);
-      return isInViewport(pos.x, pos.y);
-    });
-
-    visibleStars.forEach(star => {
-      const pos = skyToViewport(star.az, star.alt);
-      const magScale = Math.max(0.3, (7 - star.magnitude) / 5);
-      const r = magScale * Math.min(2.5, 0.5 + Math.sqrt(magnification) * 0.15);
-      const opacity = Math.min(1, magScale * 0.9);
-      const starColor = viewMode === 'visible' ? star.color : modeConfig.starColor;
-
-      contentLayer.append('circle')
-        .attr('cx', pos.x).attr('cy', pos.y).attr('r', r)
-        .attr('fill', starColor).attr('opacity', opacity);
-    });
-
-    // Render celestial objects
-    celestialObjects.forEach(obj => {
-      const pos = skyToViewport(obj.azimuth, obj.altitude);
-      if (!isInViewport(pos.x, pos.y)) return;
-
-      const magScale = Math.max(1, (8 - obj.magnitude) / 3);
-      // Better scaling: scale object size based on FOV and angular size
-      // This makes size proportional to how much of the FOV the object occupies
-      const isPlanetOrMoon = obj.type === 'planet' || obj.type === 'moon';
-
-      if (isPlanetOrMoon) {
-        // Convert angular size (arcminutes) to degrees, then calculate pixels based on FOV
-        const angularSizeDeg = obj.angularSize / 60; // arcmin to degrees
-        const pixelsPerDegree = (VIEWPORT_RADIUS * 2) / fov;
-        const angularSizePixels = angularSizeDeg * pixelsPerDegree;
-        // Use angular size directly, with a small base for visibility at low mag
-        var r = Math.max(3, angularSizePixels * 0.5);
-      } else {
-        // Stars and other objects use magnitude-based sizing
-        const angularScale = (obj.angularSize / 10) * Math.sqrt(magnification);
-        const sizeScale = 1 + angularScale;
-        var r = Math.max(3, magScale * sizeScale * 1.5);
-      }
-      const isTarget = targetObjects.includes(obj.id);
-      const isFound = foundObjects.has(obj.id);
-      const objColor = viewMode === 'visible' ? obj.color : modeConfig.starColor;
-
-      const g = contentLayer.append('g')
-        .attr('class', 'celestial-object')
-        .attr('cursor', 'pointer')
-        .on('click', (event: MouseEvent) => {
-          event.stopPropagation();
-          setSelectedObject(obj);
-          setObjectsExplored(prev => new Set(prev).add(obj.id));
-          if (isTarget && !isFound) {
-            setFoundObjects(prev => new Set(prev).add(obj.id));
-          }
-        });
-
-      // Glow for bright objects
-      if (obj.magnitude < 2) {
-        g.append('circle')
-          .attr('cx', pos.x).attr('cy', pos.y).attr('r', r * 2.5)
-          .attr('fill', objColor).attr('opacity', 0.08);
-        g.append('circle')
-          .attr('cx', pos.x).attr('cy', pos.y).attr('r', r * 1.6)
-          .attr('fill', objColor).attr('opacity', 0.15);
-      }
-
-      // Planet disc or star point
-      if (obj.type === 'planet' || obj.type === 'moon') {
-        // Main disc
-        g.append('circle')
-          .attr('cx', pos.x).attr('cy', pos.y).attr('r', r)
-          .attr('fill', objColor).attr('stroke', d3.color(objColor)?.brighter(0.5)?.toString() || objColor)
-          .attr('stroke-width', 0.5).attr('opacity', 0.95);
-
-        // Enhanced Moon rendering with craters at high magnification
-        if (obj.id === 'moon' && magnification > 15) {
-          // Add subtle shading gradient for 3D effect
-          const moonGradId = `moon-grad-${obj.id}`;
-          const existingDefs = svg.select<SVGDefsElement>('defs');
-          if (!existingDefs.empty() && !existingDefs.select(`#${moonGradId}`).node()) {
-            const moonGrad = existingDefs.append('radialGradient').attr('id', moonGradId);
-            moonGrad.append('stop').attr('offset', '0%').attr('stop-color', d3.color(objColor)?.brighter(0.3)?.toString() || objColor);
-            moonGrad.append('stop').attr('offset', '70%').attr('stop-color', objColor);
-            moonGrad.append('stop').attr('offset', '100%').attr('stop-color', d3.color(objColor)?.darker(0.5)?.toString() || objColor);
-          }
-          g.select('circle').attr('fill', `url(#${moonGradId})`);
-
-          // Add craters at higher magnifications
-          if (magnification > 30) {
-            const craterCount = Math.min(8, Math.floor(magnification / 10));
-            const rng = seededRandom(42); // Consistent crater positions
-            for (let i = 0; i < craterCount; i++) {
-              const angle = rng() * Math.PI * 2;
-              const dist = rng() * r * 0.7;
-              const craterR = r * (0.08 + rng() * 0.12);
-              const cx = pos.x + Math.cos(angle) * dist;
-              const cy = pos.y + Math.sin(angle) * dist;
-
-              // Crater shadow
-              g.append('circle')
-                .attr('cx', cx).attr('cy', cy).attr('r', craterR)
-                .attr('fill', d3.color(objColor)?.darker(1.2)?.toString() || '#555')
-                .attr('opacity', 0.6);
-
-              // Crater rim highlight
-              g.append('circle')
-                .attr('cx', cx - craterR * 0.2).attr('cy', cy - craterR * 0.2).attr('r', craterR * 0.8)
-                .attr('fill', 'none')
-                .attr('stroke', d3.color(objColor)?.brighter(0.3)?.toString() || '#fff')
-                .attr('stroke-width', 0.5)
-                .attr('opacity', 0.4);
-            }
-          }
-
-          // Add maria (dark patches) at medium magnification
-          if (magnification > 20 && magnification <= 30) {
-            const mariaData = [
-              { x: 0.3, y: -0.2, r: 0.25 },
-              { x: -0.2, y: 0.3, r: 0.2 },
-              { x: 0.1, y: 0.4, r: 0.15 }
-            ];
-            mariaData.forEach(maria => {
-              g.append('ellipse')
-                .attr('cx', pos.x + maria.x * r)
-                .attr('cy', pos.y + maria.y * r)
-                .attr('rx', maria.r * r * 1.2)
-                .attr('ry', maria.r * r)
-                .attr('fill', d3.color(objColor)?.darker(0.8)?.toString() || '#888')
-                .attr('opacity', 0.5);
-            });
-          }
-        }
-
-        // Phase effect for Venus at high magnification
-        if (obj.id === 'venus' && magnification > 20) {
-          g.append('circle')
-            .attr('cx', pos.x - r * 0.3).attr('cy', pos.y).attr('r', r * 0.9)
-            .attr('fill', modeConfig.bg).attr('opacity', 0.6);
-        }
-      } else if (obj.type === 'nebula' || obj.type === 'galaxy') {
-        g.append('ellipse')
-          .attr('cx', pos.x).attr('cy', pos.y).attr('rx', r * 1.5).attr('ry', r)
-          .attr('fill', objColor).attr('opacity', 0.25).attr('filter', 'url(#glow)');
-      } else if (obj.type === 'cluster') {
-        for (let i = 0; i < 7; i++) {
-          const angle = (i / 7) * Math.PI * 2;
-          const dist = r * 0.6;
-          g.append('circle')
-            .attr('cx', pos.x + Math.cos(angle) * dist)
-            .attr('cy', pos.y + Math.sin(angle) * dist)
-            .attr('r', r * 0.25)
-            .attr('fill', objColor).attr('opacity', 0.8);
-        }
-      } else {
-        // Diffraction spikes for stars
-        g.append('circle')
-          .attr('cx', pos.x).attr('cy', pos.y).attr('r', r)
-          .attr('fill', objColor).attr('opacity', 0.9);
-        if (magnification > 10 && obj.magnitude < 3) {
-          const spikeLen = r * 2;
-          [0, 90].forEach(angle => {
-            const rad = (angle * Math.PI) / 180;
-            g.append('line')
-              .attr('x1', pos.x - Math.cos(rad) * spikeLen)
-              .attr('y1', pos.y - Math.sin(rad) * spikeLen)
-              .attr('x2', pos.x + Math.cos(rad) * spikeLen)
-              .attr('y2', pos.y + Math.sin(rad) * spikeLen)
-              .attr('stroke', objColor).attr('stroke-width', 0.5).attr('opacity', 0.3);
-          });
-        }
-      }
-
-      // Label
-      if (showLabels || (isTarget && !isFound)) {
-        g.append('text')
-          .attr('x', pos.x).attr('y', pos.y + r + 12)
-          .attr('text-anchor', 'middle')
-          .attr('fill', isTarget && !isFound ? '#fbbf24' : '#94a3b8')
-          .attr('font-size', '10px')
-          .attr('font-family', 'sans-serif')
-          .text(obj.name);
-      }
-
-      // Target indicator ring
-      if (isTarget && !isFound) {
-        g.append('circle')
-          .attr('cx', pos.x).attr('cy', pos.y).attr('r', r + 8)
-          .attr('fill', 'none').attr('stroke', '#fbbf24')
-          .attr('stroke-width', 1).attr('stroke-dasharray', '3,3').attr('opacity', 0.6);
-      }
-      if (isTarget && isFound) {
-        g.append('text')
-          .attr('x', pos.x + r + 4).attr('y', pos.y - r)
-          .attr('fill', '#4ade80').attr('font-size', '12px')
-          .text('✓');
-      }
-    });
-
-  }, [
-    stars, celestialObjects, telescopeAz, telescopeAlt, magnification,
-    blurAmount, viewMode, showLabels, showGrid, fov, modeConfig,
-    skyToViewport, isInViewport, targetObjects, foundObjects,
-  ]);
-
-  // ---- Interaction Handlers ----
-  const handleMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    setPanStart({ x: e.clientX, y: e.clientY, az: telescopeAz, alt: telescopeAlt });
-  }, [telescopeAz, telescopeAlt]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    if (!panStart) return;
-    const dx = e.clientX - panStart.x;
-    const dy = e.clientY - panStart.y;
-    const scale = fov / (VIEWPORT_RADIUS * 2);
-    const newAz = normalizeAngle(panStart.az - dx * scale);
-    const newAlt = clamp(panStart.alt + dy * scale, 5, 85);
-    setTelescopeAz(newAz);
-    setTelescopeAlt(newAlt);
-    setPanDistance(prev => prev + Math.abs(dx) + Math.abs(dy));
-  }, [panStart, fov]);
-
-  const handleMouseUp = useCallback(() => {
-    setPanStart(null);
-  }, []);
-
-  const handleWheel = useCallback((e: React.WheelEvent<SVGSVGElement>) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -1 : 1;
-    const step = Math.max(1, magnification * 0.1);
-    setMagnification(prev => {
-      const next = clamp(prev + delta * step, 1, effectiveMaxMag);
-      setMagRange(r => [Math.min(r[0], next), Math.max(r[1], next)]);
-      return next;
-    });
-  }, [magnification, effectiveMaxMag]);
-
-  const handleFocusChange = useCallback((value: number) => {
-    setFocusLevel(value);
-    if (focusMode === 'manual') {
-      setManualFocusAttempts(prev => prev + 1);
-    }
-  }, [focusMode]);
-
-  const handleTelescopeChange = useCallback((type: TelescopeType) => {
-    setTelescopeType(type);
-    setTelescopesUsed(prev => new Set(prev).add(type));
-    // Reset magnification if exceeds new max
-    const newMax = TELESCOPE_SPECS[type].maxMag;
-    if (magnification > newMax) setMagnification(newMax);
-  }, [magnification]);
-
-  const handleViewModeChange = useCallback((mode: SkyViewMode) => {
-    setViewMode(mode);
-    setViewModesUsed(prev => new Set(prev).add(mode));
-  }, []);
-
-  const handleLogObservation = useCallback(() => {
-    if (!selectedObject) return;
-    const entry: JournalEntry = {
-      id: `obs-${Date.now()}`,
-      objectId: selectedObject.id,
-      objectName: selectedObject.name,
-      timestamp: Date.now(),
-      magnification,
-      telescopeType,
-      viewMode,
-      notes: `Observed ${selectedObject.name} at ${magnification}× with ${TELESCOPE_SPECS[telescopeType].label}`,
-    };
-    setJournal(prev => [...prev, entry]);
-  }, [selectedObject, magnification, telescopeType, viewMode]);
-
-  // ---- Quick Navigate to Object ----
-  const navigateToObject = useCallback((obj: CelestialTarget) => {
-    setTelescopeAz(obj.azimuth);
-    setTelescopeAlt(obj.altitude);
-  }, []);
-
-  // ---- Evaluation Submission ----
-  const handleSubmitEvaluation = useCallback(() => {
-    if (hasSubmitted) return;
-
-    const found = foundObjects.size;
-    const total = targetObjects.length || celestialObjects.length;
-    const score = hasTargets
-      ? Math.round((targetObjects.filter(id => foundObjects.has(id)).length / targetObjects.length) * 100)
-      : Math.round((objectsExplored.size / Math.max(1, celestialObjects.length)) * 100);
-
-    const success = hasTargets ? allTargetsFound : objectsExplored.size >= Math.ceil(celestialObjects.length / 2);
-
-    const metrics: TelescopeSimulatorMetrics = {
       type: 'telescope-simulator',
-      targetObjectsTotal: targetObjects.length,
-      targetObjectsFound: targetObjects.filter(id => foundObjects.has(id)).length,
-      allTargetsFound: hasTargets ? allTargetsFound : false,
-      observationsLogged: journal.length,
-      focusAccuracy: Math.round(focusQuality),
-      objectsExplored: objectsExplored.size,
-      viewModesUsed: Array.from(viewModesUsed),
-      telescopeTypesUsed: Array.from(telescopesUsed),
-      magnificationRange: magRange,
-      focusMode,
-      manualFocusAttempts: focusMode === 'manual' ? manualFocusAttempts : undefined,
-      timeSpent: 0,
-      panDistance: Math.round(panDistance),
+      targetObjectsTotal: items.length,
+      targetObjectsFound: right.length,
+      allTargetsFound: items.length > 0 && right.length === items.length,
+      observationsLogged: 0,
+      focusAccuracy: 100,
+      focusMode: 'auto',
+      objectsExplored: right.length,
+      viewModesUsed: ['visible'],
+      telescopeTypesUsed: scopes,
+      magnificationRange: [1, 1],
+      timeSpent: Date.now() - startTime.current,
+      panDistance: 0,
     };
+  };
 
-    submitResult(success, score, metrics, {
-      studentWork: {
-        foundObjects: Array.from(foundObjects),
-        journal,
-        finalPointing: { az: telescopeAz, alt: telescopeAlt },
+  /** Scripted path: Next, and on the last item the session report. */
+  const next = () => {
+    if (progress.advance()) { clearItem(); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 50, score, metrics(), { challengeResults: results });
+  };
+
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), targetObjectsFound: result.solvedCount },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || (isComplete && !solvedNow)) return;
+    const scope = item.mode === 'pick_instrument' && revealed ? detailDef(item.detail)!.min : viewScope(item, lever);
+    const scene = workspaceScene(item, { work, solved: revealed, scope });
+    const levers = revealed ? [] : telescopeLevers(item, lever);
+    const onScreen = leverFacts(item, lever);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (!l) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        if (id === DROP_LEVER) {
+          const far = dropTarget(item, lever);
+          if (far === null) return 'Nothing more can be greyed out here; too few would be left.';
+          editLevers(s => ({ pulled: [...s.pulled, id], dropped: [...s.dropped, far] }));
+          if (isTapItem(item) ? work.pick === far : (item.choices as string[]).indexOf(work.choice ?? '') === far) setWork(emptyWork());
+          return true;
+        }
+        if (id === MY_PICK_LEVER && !lever.lastPick) return 'The learner has not tapped an instrument yet.';
+        editLevers(s => ({ pulled: [...s.pulled, id] }));
+        return true;
       },
-    });
-  }, [
-    hasSubmitted, foundObjects, targetObjects, celestialObjects, objectsExplored,
-    journal, focusQuality, viewModesUsed, telescopesUsed, magRange, focusMode,
-    manualFocusAttempts, panDistance, telescopeAz, telescopeAlt, submitResult,
-    allTargetsFound, hasTargets,
-  ]);
+    };
+  });
 
-  // Auto-submit when all targets found
-  useEffect(() => {
-    if (allTargetsFound && !hasSubmitted && hasTargets) {
-      // Small delay so student sees the final check mark
-      const t = setTimeout(() => handleSubmitEvaluation(), 1500);
-      return () => clearTimeout(t);
-    }
-  }, [allTargetsFound, hasSubmitted, hasTargets, handleSubmitEvaluation]);
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
+  // The workspace path keeps the last credited item on screen (its names and detail) until the session is submitted.
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete && !solvedNow);
   const pip = useWorkspacePipSurface({
-    instanceId: instanceId || 'telescope-simulator',
-    scopeId: hasSubmitted ? null : 'observe',
-    label: 'The telescope view',
-    solved: allTargetsFound,
+    instanceId: resolvedInstanceId,
+    scopeId: done || !item ? null : item.id,
+    label: 'The telescope view and your answer',
+    solved: revealed,
     tutorSpeaking: false,
   });
 
-  // ---- Render ----
+  if (!items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title || 'Telescope Simulator'}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This telescope has nothing to ask.</p></LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  // ── Render pieces ──
+  const scope = item ? viewScope(item, lever) : 'small';
+  const shownScope: Scope = item?.mode === 'pick_instrument' && revealed ? detailDef(item.detail)!.min : scope;
+
+  const renderTapView = (it: TapItem) => {
+    const key = tapKey(it);
+    const glyphMode: GlyphMode = it.mode === 'brightest' ? (leverOn(SAME_SIZE_LEVER) ? 'uniform' : 'bright') : 'look';
+    const marks: Mark[] = [];
+    if (revealed) marks.push({ index: key, state: 'right' });
+    if (work.pick !== null && !(revealed && work.pick === key)) marks.push({ index: work.pick, state: wrongShown || (revealed && work.pick !== key) ? 'wrong' : 'selected' });
+    return (
+      <Eyepiece label={`The view ${SCOPE_TEXT[scope].with}`}>
+        {it.objects.map((p, i) => {
+          const o = objectDef(p.object)!;
+          const dropped = lever.dropped.includes(i);
+          const hit = glyphMode === 'look' ? hitRadius(o, scope) : 24;
+          const mark = marks.find(m => m.index === i);
+          return (
+            <g key={p.object} data-pip-object={skyTarget(i)} role="button" aria-label={`Option ${i + 1}`}
+              data-dropped={dropped || undefined} opacity={dropped ? 0.15 : 1}
+              style={{ cursor: closed || dropped ? 'default' : 'pointer' }} onClick={() => tapObject(i)}>
+              <circle cx={p.x} cy={p.y} r={hit} fill="transparent" style={{ pointerEvents: 'all' }} />
+              <Glyph o={o} scope={scope} x={p.x} y={p.y} mode={glyphMode} delay={i * 0.37} />
+              {mark && (
+                <circle cx={p.x} cy={p.y} r={hit + 3} fill="none" strokeWidth={1.6}
+                  stroke={mark.state === 'right' ? '#4ade80' : mark.state === 'wrong' ? '#f87171' : '#e2e8f0'}
+                  strokeDasharray={mark.state === 'selected' ? '4 3' : undefined} />
+              )}
+              {revealed && (
+                <text x={p.x} y={p.y + hit + 14} textAnchor="middle" fontSize={11} fill={i === key ? '#bbf7d0' : '#94a3b8'}>{capital(o.name)}</text>
+              )}
+            </g>
+          );
+        })}
+      </Eyepiece>
+    );
+  };
+
+  const renderCenterView = (it: ChoiceItem) => {
+    const o = objectDef(it.mode === 'object_type' ? it.object : detailDef(it.detail)!.object)!;
+    return (
+      <Eyepiece label={`One object ${SCOPE_TEXT[shownScope].with}`}>
+        <Glyph o={o} scope={shownScope} x={C} y={C} mode="look" />
+        {revealed && <text x={C} y={C + hitRadius(o, shownScope) + 18} textAnchor="middle" fontSize={12} fill="#bbf7d0">{capital(o.name)}</text>}
+      </Eyepiece>
+    );
+  };
+
+  const choiceState = (it: ChoiceItem, c: string, i: number): AnswerChoiceState => {
+    if (lever.dropped.includes(i)) return 'dimmed';
+    const key = choiceKey(it);
+    if (revealed) return c === key ? 'correct' : c === work.choice ? 'incorrect' : 'dimmed';
+    if (wrongShown && work.choice === c) return 'incorrect';
+    return work.choice === c ? 'selected' : 'idle';
+  };
+
+  const tapItem = item && isTapItem(item) ? item : null;
+  const choiceItem = item && !isTapItem(item) ? item : null;
+  const keyObject = tapItem?.mode === 'find_by_look' ? objectDef(tapItem.objects[tapKey(tapItem)]?.object ?? '') : undefined;
+
   return (
-    <div className={`bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden ${className || ''}`}>
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-700/50">
-        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-          🔭 {title || 'Telescope Simulator'}
-        </h3>
-        <p className="text-sm text-slate-400 mt-1">{description || learningFocus}</p>
-      </div>
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{`🔭 ${title || 'Telescope Simulator'}`}</LuminaCardTitle>
+        {!done && item && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {`${MODE_LABEL[item.mode]} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
+        )}
+        {(overview || description) && !done && <p className="text-sm text-slate-400">{overview || description}</p>}
+      </LuminaCardHeader>
 
-      <div className="flex flex-col lg:flex-row">
-        {/* ---- Viewport + Controls ---- */}
-        <div className="flex-1 p-4">
-          {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-          {pip.store && !hasSubmitted && <div {...pip.dock} />}
-          <div {...pip.workspace}>
-          {/* Viewport */}
-          <div
-            ref={containerRef}
-            className="relative mx-auto"
-            style={{ width: VIEWPORT_SIZE, height: VIEWPORT_SIZE }}
-          >
-            <svg
-              ref={svgRef}
-              width={VIEWPORT_SIZE}
-              height={VIEWPORT_SIZE}
-              className="cursor-grab active:cursor-grabbing select-none"
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onWheel={handleWheel}
-            />
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Observing complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} answered.`}
+          </LuminaFeedbackCard>
+        ) : item && (
+          <>
+            <LuminaPrompt accent="cyan">{askOf(item)}</LuminaPrompt>
 
-            {/* Info Popup */}
-            {selectedObject && (
-              <ObjectInfoPopup
-                object={selectedObject}
-                telescopeType={telescopeType}
-                magnification={magnification}
-                onClose={() => setSelectedObject(null)}
-                onLogObservation={handleLogObservation}
-                journalMode={journalMode}
-              />
-            )}
-
-            {/* Coordinate readout */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur px-3 py-1 rounded-full">
-              <span className="text-xs text-blue-300 font-mono">
-                AZ {telescopeAz.toFixed(1)}° · ALT {telescopeAlt.toFixed(1)}° · {magnification.toFixed(0)}×
-              </span>
-            </div>
-
-            {/* Target found celebration */}
-            {allTargetsFound && hasTargets && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                <div className="bg-green-500/20 backdrop-blur-lg border border-green-500/40 rounded-2xl px-8 py-6 text-center pointer-events-auto">
-                  <div className="text-4xl mb-2">🎉</div>
-                  <h4 className="text-xl font-bold text-green-400">All Objects Found!</h4>
-                  <p className="text-sm text-green-300 mt-1">
-                    You discovered {targetObjects.length} celestial {targetObjects.length === 1 ? 'object' : 'objects'}!
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          </div>
-
-          {/* Controls Bar */}
-          <div className="mt-4 bg-slate-800/50 rounded-xl p-4 space-y-3 max-w-[560px] mx-auto">
-            {/* Magnification */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-slate-400 font-medium">Magnification</span>
-                <span className="text-xs text-blue-300 font-mono">{magnification.toFixed(0)}× / {effectiveMaxMag}×</span>
-              </div>
-              <input
-                type="range" min={1} max={effectiveMaxMag}
-                value={magnification}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  setMagnification(v);
-                  setMagRange(r => [Math.min(r[0], v), Math.max(r[1], v)]);
-                }}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-              />
-            </div>
-
-            {/* Focus */}
-            <FocusRing
-              focusLevel={focusLevel}
-              optimalFocus={optimalFocus}
-              onChange={handleFocusChange}
-              disabled={focusMode === 'auto'}
-            />
-
-            {/* Telescope Type */}
-            <div>
-              <span className="text-xs text-slate-400 font-medium block mb-1">Telescope</span>
-              <div className="flex gap-1">
-                {(Object.keys(TELESCOPE_SPECS) as TelescopeType[]).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => handleTelescopeChange(t)}
-                    className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition ${
-                      telescopeType === t
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
-                    }`}
-                  >
-                    <span className="block text-sm">{TELESCOPE_SPECS[t].icon}</span>
-                    <span className="block mt-0.5">{TELESCOPE_SPECS[t].label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* View Mode */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-medium">View:</span>
-              <div className="flex gap-1 flex-1">
-                {(Object.keys(VIEW_MODE_CONFIG) as SkyViewMode[]).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => handleViewModeChange(m)}
-                    className={`flex-1 px-2 py-1 rounded-lg text-xs font-medium transition ${
-                      viewMode === m
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    {VIEW_MODE_CONFIG[m].icon} {VIEW_MODE_CONFIG[m].label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Toggles Row */}
-            <div className="flex items-center gap-4 text-xs">
-              <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox" checked={showLabels}
-                  onChange={(e) => setShowLabels(e.target.checked)}
-                  className="rounded border-slate-600 bg-slate-700 text-blue-500"
-                />
-                Labels
-              </label>
-              <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox" checked={showGrid}
-                  onChange={(e) => setShowGrid(e.target.checked)}
-                  className="rounded border-slate-600 bg-slate-700 text-blue-500"
-                />
-                Grid
-              </label>
-              <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={focusMode === 'manual'}
-                  onChange={(e) => setFocusMode(e.target.checked ? 'manual' : 'auto')}
-                  className="rounded border-slate-600 bg-slate-700 text-blue-500"
-                />
-                Manual Focus
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* ---- Sidebar ---- */}
-        <div className="lg:w-72 border-t lg:border-t-0 lg:border-l border-slate-700/50 p-4 flex flex-col">
-          {/* Tabs */}
-          <div className="flex mb-3 gap-1">
-            <button
-              onClick={() => setActiveTab('targets')}
-              className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                activeTab === 'targets' ? 'bg-blue-600 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-white'
-              }`}
-            >
-              🎯 Targets {hasTargets && `(${foundObjects.size}/${targetObjects.length})`}
-            </button>
-            {journalMode && (
-              <button
-                onClick={() => setActiveTab('journal')}
-                className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                  activeTab === 'journal' ? 'bg-blue-600 text-white' : 'bg-slate-800/50 text-slate-400 hover:text-white'
-                }`}
-              >
-                📝 Journal ({journal.length})
-              </button>
-            )}
-          </div>
-
-          {/* Target List */}
-          {activeTab === 'targets' && (
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {(hasTargets
-                ? celestialObjects.filter(o => targetObjects.includes(o.id))
-                : celestialObjects
-              ).map(obj => {
-                const isFound = foundObjects.has(obj.id);
-                const isExplored = objectsExplored.has(obj.id);
-                const typeIcons: Record<string, string> = {
-                  planet: '🪐', star: '⭐', moon: '🌙', constellation: '✨',
-                  nebula: '🌌', galaxy: '🌀', cluster: '💫',
-                };
-                return (
-                  <button
-                    key={obj.id}
-                    onClick={() => navigateToObject(obj)}
-                    className={`w-full text-left p-2.5 rounded-lg transition border ${
-                      isFound
-                        ? 'bg-green-500/10 border-green-500/30'
-                        : isExplored
-                          ? 'bg-blue-500/10 border-blue-500/20'
-                          : 'bg-slate-800/50 border-slate-700/30 hover:border-slate-600'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{typeIcons[obj.type] || '✨'}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm font-medium text-white truncate">{obj.name}</span>
-                          {isFound && <span className="text-green-400 text-xs">✓</span>}
-                        </div>
-                        <span className="text-xs text-slate-400 capitalize">{obj.type}</span>
-                      </div>
-                      <span className="text-xs text-slate-500">→</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Journal */}
-          {activeTab === 'journal' && (
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {journal.length === 0 ? (
-                <div className="text-center py-8 text-slate-500 text-sm">
-                  No observations yet. Click an object and log it!
-                </div>
-              ) : (
-                journal.map(entry => (
-                  <div key={entry.id} className="p-2.5 bg-slate-800/50 rounded-lg border border-slate-700/30">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-white">{entry.objectName}</span>
-                      <span className="text-xs text-slate-500">
-                        {new Date(entry.timestamp).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1">{entry.notes}</p>
-                  </div>
-                ))
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-3">
+              {tapItem ? renderTapView(tapItem) : choiceItem ? renderCenterView(choiceItem) : null}
+              <p className="text-center text-xs text-slate-400" data-seen-through={shownScope}>
+                {`Seen ${SCOPE_TEXT[shownScope].with}${tapItem || choiceItem?.mode === 'object_type' ? ' · sizes not to scale' : ''}`}
+              </p>
+              {leverOn(CLOSER_LEVER) && !revealed && <p data-lever="closer-look" className="text-center text-xs text-cyan-200">{`Now closer: ${SCOPE_TEXT[scope].button}`}</p>}
+              {choiceItem?.mode === 'pick_instrument' && revealed && (
+                <p className="text-center text-sm text-emerald-200">{`${SCOPE_TEXT[detailDef(choiceItem.detail)!.min].button}: ${detailDef(choiceItem.detail)!.text} can be seen.`}</p>
               )}
-            </div>
-          )}
 
-          {/* Hints */}
-          {hints.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-slate-700/50">
-              <button
-                onClick={() => setShowHints(!showHints)}
-                className="text-xs text-blue-400 hover:text-blue-300 transition"
-              >
-                💡 {showHints ? 'Hide hints' : 'Show hints'}
-              </button>
-              {showHints && (
-                <ul className="mt-2 space-y-1">
-                  {hints.map((hint, i) => (
-                    <li key={i} className="text-xs text-slate-400 flex gap-1.5">
-                      <span className="text-blue-400">•</span>
-                      {hint}
-                    </li>
+              {tapItem?.mode === 'find_by_look' && leverOn(CLUE_PICTURES_LEVER) && keyObject && (
+                <LuminaPanel accent="cyan" data-lever="clue-pictures" className="flex flex-wrap justify-center gap-4">
+                  {clueTags(tapItem.clues, keyObject, tapItem.scope).map(t => (
+                    <div key={t.id} className="flex flex-col items-center gap-1 text-xs text-slate-300">
+                      <ClueIcon tag={t} color={keyObject.color} /><span>{t.text}</span>
+                    </div>
                   ))}
-                </ul>
+                </LuminaPanel>
+              )}
+              {tapItem?.mode === 'brightest' && leverOn(SIDE_BY_SIDE_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="side-by-side" className="flex justify-center">
+                  <svg width={260} height={44} viewBox="0 0 260 44" aria-label="The objects in a row, the same size">
+                    <rect width={260} height={44} rx={8} fill="#050712" />
+                    {[...tapItem.objects].map((p, i) => ({ p, i })).sort((a, b) => a.p.x - b.p.x).map(({ p }, k, row) => {
+                      const o = objectDef(p.object)!;
+                      return <circle key={p.object} cx={(k + 1) * (260 / (row.length + 1))} cy={22} r={7} fill={o.color} opacity={shine(o)} />;
+                    })}
+                  </svg>
+                </LuminaPanel>
+              )}
+              {choiceItem?.mode === 'object_type' && leverOn(TYPE_PICTURES_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="type-pictures" className="flex flex-wrap justify-center gap-4">
+                  {choiceItem.choices.map(k => (
+                    <div key={k} className="flex flex-col items-center gap-1 text-xs text-slate-300"><KindModel kind={k} /><span>{KIND_TEXT[k]}</span></div>
+                  ))}
+                </LuminaPanel>
+              )}
+              {choiceItem?.mode === 'pick_instrument' && leverOn(LADDER_LEVER) && (
+                <LuminaPanel accent="cyan" data-lever="ladder" className="space-y-1 text-sm text-slate-300">
+                  {ladderLines().map(l => <p key={l}>{l}</p>)}
+                </LuminaPanel>
+              )}
+              {choiceItem?.mode === 'pick_instrument' && leverOn(MY_PICK_LEVER) && !revealed && (
+                <LuminaPanel accent="cyan" data-lever="my-pick" className="text-sm text-slate-300">{myPickLine(choiceItem, lever.lastPick)}</LuminaPanel>
+              )}
+
+              {choiceItem && (
+                <div className={`grid gap-2 ${choiceItem.choices.length > 3 ? 'grid-cols-2 sm:grid-cols-4' : choiceItem.choices.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                  {(choiceItem.choices as string[]).map((c, i) => (
+                    <LuminaAnswerChoice key={c} aria-label={choiceLabel(choiceItem, c)} state={choiceState(choiceItem, c, i)}
+                      disabled={closed || lever.dropped.includes(i)} data-dropped={lever.dropped.includes(i) || undefined}
+                      className="p-3 text-center font-semibold" onClick={() => choose(c)}>
+                      {choiceLabel(choiceItem, c)}
+                    </LuminaAnswerChoice>
+                  ))}
+                </div>
               )}
             </div>
-          )}
 
-          {/* Fun Fact */}
-          {funFact && (
-            <div className="mt-3 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
-              <p className="text-xs text-indigo-300 font-medium mb-1">✨ Did you know?</p>
-              <p className="text-xs text-slate-300">{funFact}</p>
-            </div>
-          )}
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={closed || !workComplete(item, work)} onClick={check}>Check Answer</LuminaActionButton>
+              </div>
+            )}
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {revealText(item)}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
 
-          {/* Submit Button */}
-          {!hasSubmitted && !allTargetsFound && (
-            <button
-              onClick={handleSubmitEvaluation}
-              className="mt-3 w-full py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm font-semibold rounded-lg transition shadow-lg"
-            >
-              Submit Observation
-            </button>
-          )}
-          {hasSubmitted && (
-            <div className="mt-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-center">
-              <p className="text-sm text-green-400 font-medium">✓ Observation Submitted!</p>
-              <button
-                onClick={resetAttempt}
-                className="mt-2 text-xs text-slate-400 hover:text-white transition"
-              >
-                Try Again
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+            {!tutorOwned && revealed && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
+              </div>
+            )}
+          </>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
+
+/** The worked explanation once an item is solved or revealed. */
+function revealText(item: TelescopeItem): string {
+  if (item.mode === 'find_by_look') {
+    const o = objectDef(item.objects[tapKey(item)].object)!;
+    return `${capital(o.name)} is ${describeTagsShort(item)}: it is the only one in the view that shows every clue.`;
+  }
+  if (item.mode === 'brightest') {
+    const o = objectDef(item.objects[tapKey(item)].object)!;
+    return `${capital(o.name)} shines the brightest here. A big fuzzy patch can look large and still be faint.`;
+  }
+  if (item.mode === 'object_type') {
+    const o = objectDef(item.object)!;
+    return `${capital(o.name)} is a ${KIND_TEXT[o.kind].toLowerCase()}.`;
+  }
+  const d = detailDef(item.detail)!;
+  return `${SCOPE_TEXT[d.min].button} is the least powerful instrument that shows ${d.text}. More powerful ones show it too.`;
+}
+const describeTagsShort = (item: TelescopeItem & { mode: 'find_by_look' }) => askOf(item).replace(/^Find /, '').replace(/\.$/, '');
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const TelescopeSimulator = withWorkspaceController<TelescopeSimulatorProps, ProgressOptions<TelescopeItem>, Progress>(
+  'telescope-simulator', TelescopeSimulatorSurface, useScriptedProgress, useWorkspaceProgressFor('telescope-simulator'));
 
 export default TelescopeSimulator;

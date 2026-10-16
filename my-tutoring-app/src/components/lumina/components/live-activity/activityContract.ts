@@ -119,6 +119,7 @@ import { solarSystemExplorerLiveDomain } from './adapters/solarSystemExplorerLiv
 import { lightShadowLabLiveDomain } from './adapters/lightShadowLabLive';
 import { planetaryExplorerLiveDomain } from './adapters/planetaryExplorerLive';
 import { constellationBuilderLiveDomain } from './adapters/constellationBuilderLive';
+import { telescopeSimulatorLiveDomain } from './adapters/telescopeSimulatorLive';
 import { phExplorerLiveDomain } from './adapters/phExplorerLive';
 import { gasLawsSimulatorLiveDomain } from './adapters/gasLawsSimulatorLive';
 import { equationBalancerLiveDomain } from './adapters/equationBalancerLive';
@@ -290,6 +291,7 @@ export const LIVE_ADAPTERS = {
   'light-shadow-lab': workspaceAdapter('light-shadow-lab', lightShadowLabLiveDomain),
   'planetary-explorer': workspaceAdapter('planetary-explorer', planetaryExplorerLiveDomain),
   'constellation-builder': workspaceAdapter('constellation-builder', constellationBuilderLiveDomain),
+  'telescope-simulator': workspaceAdapter('telescope-simulator', telescopeSimulatorLiveDomain),
   'ph-explorer': workspaceAdapter('ph-explorer', phExplorerLiveDomain),
   'gas-laws-simulator': workspaceAdapter('gas-laws-simulator', gasLawsSimulatorLiveDomain),
   'equation-balancer': workspaceAdapter('equation-balancer', equationBalancerLiveDomain),

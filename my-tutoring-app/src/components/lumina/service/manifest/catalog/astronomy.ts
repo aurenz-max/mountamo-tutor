@@ -9,6 +9,7 @@ import type { SpokenSolarMiss } from '../../../primitives/visual-primitives/astr
 import type { ShadowMiss } from '../../../primitives/visual-primitives/astronomy/lightShadowWorkspace';
 import type { PlanetMiss } from '../../../primitives/visual-primitives/astronomy/planetaryExplorerWorkspace';
 import type { ConstellationMiss } from '../../../primitives/visual-primitives/astronomy/constellationWorkspace';
+import type { TelescopeMiss } from '../../../primitives/visual-primitives/astronomy/telescopeWorkspace';
 import { missLists } from './missLists';
 
 export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
@@ -665,9 +666,40 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'telescope-simulator',
-    description: 'Virtual telescope experience where students explore the night sky, find celestial objects, and understand how astronomers work. Features an interactive D3 circular viewport simulating telescope eyepiece views. Students point the telescope at sky regions by dragging, adjust magnification with zoom slider, find specific objects (Moon, Venus, planets, stars, nebulae, galaxies), switch between telescope types (binoculars, small scope, large scope, space telescope), toggle viewing modes (visible, infrared, radio), log observations in a journal, and compare what different equipment reveals. Intuitive pan-to-aim controls with optional coordinate grid. Auto-focus mode for easy exploration (Grades 2-4), manual focus mode for realistic challenge (Grade 5). Venus is ALWAYS included as a featured object. Progressive difficulty from Grade 2 (finding things in the sky) to Grade 5 (professional astronomy techniques with manual focus). Each celestial object has grade-appropriate descriptions, fun facts, and detail levels showing what\'s visible at each telescope power. ESSENTIAL for teaching observational astronomy, telescope operation, and sky navigation for Grade 2-5 science.',
-    constraints: 'Best for grades 2-5 with distinct learning progressions. BAND FLOOR: Grade 2+ ONLY — do NOT route this to Kindergarten or Grade 1 under any topic. The instrument panel is permanently on screen (magnification slider, four telescope-type buttons, three view-mode buttons, Labels/Grid/Manual-Focus checkboxes, an AZ/ALT/magnification coordinate readout, and the target list) and every control is a text label with no spoken twin, so a pre-reader or emerging reader cannot even learn what the task is — the "find this object" instruction lives in the hints panel behind a "Show hints" toggle. For Kindergarten and Grade 1 astronomy route solar-system-explorer, day-night-seasons, or moon-phases-lab instead; they are tap-and-watch primitives that carry the same "we can see space" ideas without an instrument panel. Grade 2: small telescope, 6 objects including star cluster, telescope switching enabled, focus on "finding things in the sky". Grade 3: small telescope, 7 objects with varying visibility, IR view mode, journalMode: true, focus on "different telescopes see different things". Grade 4: large telescope, 8 objects including nebulae and galaxies, all controls, grid optional, journal required, focus on "systematic observation and logging". Grade 5: large telescope, 8-10 objects, focusMode: "manual" (hard mode!), showGrid: true, full journal, focus on "professional astronomy techniques". Venus MUST always be included as a target object. Use targetObjects to set discovery goals. celestialObjects need azimuth (0-360), altitude (5-85), magnitude, angularSize, color, and detailLevels for each telescope type.',
-    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap', 'manipulate'], role: 'visualize', minutes: 6 },
+    description: 'A telescope eyepiece on the night sky with real objects (the Moon, planets, stars, star clusters, nebulae, galaxies), drawn as each looks through an instrument, from just your eyes to binoculars, small and large telescopes and a space telescope. Every item is built and keyed by code, and no object is named until the learner answers. Four tasks: find an unnamed object from a description of its look (a ball with a ring around it, a dot that twinkles); tap the brightest of a few objects drawn as bright as they shine (a big faint patch is not bright); say what kind of object is in the view; and pick the least powerful instrument that shows a named detail (Saturn\'s rings, craters on the Moon). ESSENTIAL for observational astronomy in Grades 2-5: what sky objects look like, apparent brightness, kinds of objects, and what telescopes reveal.',
+    constraints: 'Best for grades 2-5. BAND FLOOR: Grade 2+ ONLY — do NOT route this to Kindergarten or Grade 1 under any topic. The asks, the instrument names and the kind names are written words, and the looks to match are described in words, so a pre-reader cannot work it even with the tutor reading aloud. For Kindergarten and Grade 1 astronomy route solar-system-explorer, day-night-seasons, or moon-phases-lab instead. Default modes when nothing pins them: Grade 2 find_by_look and brightest; Grade 3 adds object_type; Grades 4-5 all four.',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'developing', answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
+    evalModes: [
+      { evalMode: 'find_by_look', affordances: { answers: ['tap'] }, label: 'Find by look (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['find_by_look'], description: 'Tap the unnamed object in the telescope view that matches a described look (hard: a look-alike shows every clue but one)' },
+      { evalMode: 'brightest', affordances: { answers: ['tap'] }, label: 'Brightest (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['brightest'], description: 'Tap the brightest of 2-4 unnamed objects drawn as bright as they shine (hard: a big faint patch is drawn bigger than the brightest)' },
+      { evalMode: 'object_type', affordances: { answers: ['tap', 'spoken'] }, label: 'Object type (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['object_type'], description: 'Say or tap what kind of object is in the view: moon, planet, star, star cluster, nebula or galaxy (hard: both look-alike kinds offered, seen through binoculars)' },
+      { evalMode: 'pick_instrument', affordances: { answers: ['tap', 'spoken'] }, label: 'Pick the instrument (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['pick_instrument'], description: 'Say or tap the least powerful instrument that shows a named detail, from a code table (hard: four instruments to choose from)' },
+    ],
+    // Shared teaching workspace (W1, plain shape): `telescopeWorkspace.ts`, levers in `telescopeLevers.ts`.
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'Code builds and checks every item; you are not told the key. No object in the view is named until an '
+        + 'answer is credited. FIND BY LOOK: the ask describes one object\'s look; the learner taps it and presses Check '
+        + 'Answer. BRIGHTEST: the learner taps the brightest object; each is drawn as bright as it shines. Until credit, '
+        + 'never say which object matches or is brightest, where it is, or that the big one is not the brightest; ask '
+        + 'what the learner notices about each clue or each object. OBJECT TYPE: the learner says or taps what kind of '
+        + 'object is in the middle. Never say its kind or its name, never say what a look means or which kind has it '
+        + '("twinkling like a star", "a cloud like a nebula", "planets shine steadily"), and never rule a kind in or out; '
+        + 'describe only what is drawn and ask about its shape, its edges and its light. PICK THE INSTRUMENT: the learner '
+        + 'says or taps the least powerful instrument that still shows the named detail. Never say which instrument, what '
+        + 'any instrument shows of this object, or how much magnifying the detail needs, and never point at a choice by its '
+        + 'place in the order ("the least powerful one on your list", "one step up from your eyes"). After a miss, never say what the wrong pick was or why it was wrong. Describe a lever card only by '
+        + 'what the scene says it shows. You cannot tap, check or point for the learner.',
+      levers: true,
+      // The activity's own check (`telescopeMiss`) on a tap, and the same ids as each spoken item's known misses.
+      // Every miss is answered by a help lever (`telescopeLevers.ts`): clue_pictures, side_by_side, type_pictures, ladder.
+      misses: missLists<TelescopeMiss>({
+        find_by_look: ['near_match', 'shares_clue', 'other_object'],
+        brightest: ['picked_biggest', 'picked_dimmer'],
+        object_type: ['sharp_mixup', 'fuzzy_mixup', 'other_family'],
+        pick_instrument: ['too_weak', 'too_strong'],
+      }),
+    },
     supportsEvaluation: true,
   },
   {

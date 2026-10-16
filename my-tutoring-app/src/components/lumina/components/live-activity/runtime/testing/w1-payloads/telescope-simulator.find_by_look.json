@@ -1,0 +1,142 @@
+{
+ "source": "qa/tutor-reports/telescope-simulator-runtime-find_by_look-payload-2026-10-16.json",
+ "primitiveId": "telescope-simulator",
+ "evalMode": "find_by_look",
+ "data": {
+  "title": "Cosmic Clues",
+  "overview": "You will locate a hidden item in the magnified circle by matching its visual traits.",
+  "gradeLevel": "4",
+  "challengeTypes": [
+   "find_by_look"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "find_by_look-1",
+    "mode": "find_by_look",
+    "scope": "small",
+    "clues": [
+     "noun:dot",
+     "color:white",
+     "how:twinkles"
+    ],
+    "objects": [
+     {
+      "object": "betelgeuse",
+      "x": 124,
+      "y": 280
+     },
+     {
+      "object": "pleiades",
+      "x": 284,
+      "y": 117
+     },
+     {
+      "object": "orion-nebula",
+      "x": 283,
+      "y": 263
+     },
+     {
+      "object": "polaris",
+      "x": 114,
+      "y": 129
+     }
+    ]
+   },
+   {
+    "id": "find_by_look-2",
+    "mode": "find_by_look",
+    "scope": "small",
+    "clues": [
+     "noun:group",
+     "color:white"
+    ],
+    "objects": [
+     {
+      "object": "pleiades",
+      "x": 123,
+      "y": 266
+     },
+     {
+      "object": "lagoon-nebula",
+      "x": 276,
+      "y": 267
+     },
+     {
+      "object": "sirius",
+      "x": 115,
+      "y": 140
+     },
+     {
+      "object": "jupiter",
+      "x": 269,
+      "y": 118
+     }
+    ]
+   },
+   {
+    "id": "find_by_look-3",
+    "mode": "find_by_look",
+    "scope": "small",
+    "clues": [
+     "noun:cloud",
+     "color:pink",
+     "with:four"
+    ],
+    "objects": [
+     {
+      "object": "lagoon-nebula",
+      "x": 132,
+      "y": 121
+     },
+     {
+      "object": "jupiter",
+      "x": 268,
+      "y": 130
+     },
+     {
+      "object": "orion-nebula",
+      "x": 138,
+      "y": 282
+     },
+     {
+      "object": "andromeda",
+      "x": 269,
+      "y": 278
+     }
+    ]
+   },
+   {
+    "id": "find_by_look-4",
+    "mode": "find_by_look",
+    "scope": "small",
+    "clues": [
+     "noun:cloud",
+     "with:gap"
+    ],
+    "objects": [
+     {
+      "object": "lagoon-nebula",
+      "x": 136,
+      "y": 137
+     },
+     {
+      "object": "moon",
+      "x": 120,
+      "y": 278
+     },
+     {
+      "object": "orion-nebula",
+      "x": 283,
+      "y": 267
+     },
+     {
+      "object": "beehive",
+      "x": 265,
+      "y": 133
+     }
+    ]
+   }
+  ]
+ }
+}

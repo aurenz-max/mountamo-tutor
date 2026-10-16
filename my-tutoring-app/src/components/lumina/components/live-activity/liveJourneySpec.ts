@@ -280,6 +280,8 @@ import { solarJourneyItem } from './adapters/solarSystemExplorerLive';
 import { solarJourneyAnswers } from '../../primitives/visual-primitives/astronomy/solarSystemWorkspace';
 import { shadowHarnessAnswers } from '../../primitives/visual-primitives/astronomy/lightShadowWorkspace';
 import { planetHarnessAnswers, planetItems } from '../../primitives/visual-primitives/astronomy/planetaryExplorerWorkspace';
+import { choiceLabel as telescopeChoiceLabel, isTapItem as telescopeTapItem, skyTarget, telescopeHarnessAnswers, telescopeItems }
+  from '../../primitives/visual-primitives/astronomy/telescopeWorkspace';
 import { reactionHarnessAnswers, reactionItems } from '../../primitives/visual-primitives/chemistry/reactionLabWorkspace';
 import { phHarnessAnswers, phItems } from '../../primitives/visual-primitives/chemistry/phExplorerWorkspace';
 import { fewerChoices as phFewerChoices, practiceParent as phPracticeParent } from '../../primitives/visual-primitives/chemistry/phExplorerLevers';
@@ -4125,6 +4127,26 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const answers = planetHarnessAnswers(item, planets);
       const card: DriverInput[] = ctx.demand?.presentation !== 'ready' ? [{ type: 'choose', label: 'Ready for Questions →' }] : [];
       return [...card, { type: 'choose', label: intent === 'wrong' ? answers.plainWrong : answers.correct }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'telescope-simulator': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/astronomy/TelescopeSimulator.tsx',
+    instanceId: 'telescope-simulator',
+    defaults: { grade: 'Grade 4', mode: 'find_by_look', di: false, topic: 'Observing the night sky with a telescope' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE'],
+    prompts: WORKSPACE_PROMPTS,
+    // find_by_look and brightest touch one unnamed object in the view (`sky-<n>`) and Check Answer; object_type and
+    // pick_instrument tap one choice (its aria-label is the kind or the instrument) and Check Answer. A wrong answer
+    // shows the mode's first-listed miss the item can.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = telescopeItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error(`No current telescope-simulator item ${ctx.itemId}`);
+      const answers = telescopeHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      if (telescopeTapItem(item)) return [{ type: 'touch', target: skyTarget(work.pick!) }, { type: 'check' }];
+      return [{ type: 'choose', label: telescopeChoiceLabel(item, work.choice!) }, { type: 'check' }];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

@@ -1,0 +1,56 @@
+{
+ "source": "qa/tutor-reports/telescope-simulator-runtime-pick_instrument-payload-2026-10-16.json",
+ "primitiveId": "telescope-simulator",
+ "evalMode": "pick_instrument",
+ "data": {
+  "title": "Night Sky Detective",
+  "overview": "You will look through the device to find the tool that reveals a specific hidden detail.",
+  "gradeLevel": "4",
+  "challengeTypes": [
+   "pick_instrument"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "pick_instrument-1",
+    "mode": "pick_instrument",
+    "detail": "jupiter-moons",
+    "choices": [
+     "eyes",
+     "binoculars",
+     "small"
+    ]
+   },
+   {
+    "id": "pick_instrument-2",
+    "mode": "pick_instrument",
+    "detail": "andromeda-lanes",
+    "choices": [
+     "binoculars",
+     "small",
+     "large"
+    ]
+   },
+   {
+    "id": "pick_instrument-3",
+    "mode": "pick_instrument",
+    "detail": "jupiter-stripes",
+    "choices": [
+     "small",
+     "large",
+     "space"
+    ]
+   },
+   {
+    "id": "pick_instrument-4",
+    "mode": "pick_instrument",
+    "detail": "venus-crescent",
+    "choices": [
+     "eyes",
+     "binoculars",
+     "small"
+    ]
+   }
+  ]
+ }
+}

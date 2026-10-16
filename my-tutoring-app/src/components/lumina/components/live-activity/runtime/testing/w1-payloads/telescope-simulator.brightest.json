@@ -1,0 +1,124 @@
+{
+ "source": "qa/tutor-reports/telescope-simulator-runtime-brightest-payload-2026-10-16.json",
+ "primitiveId": "telescope-simulator",
+ "evalMode": "brightest",
+ "data": {
+  "title": "Starlit Treasure Hunt",
+  "overview": "You will tap the most brilliant point visible in the viewing area.",
+  "gradeLevel": "4",
+  "challengeTypes": [
+   "brightest"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "brightest-1",
+    "mode": "brightest",
+    "scope": "binoculars",
+    "objects": [
+     {
+      "object": "pleiades",
+      "x": 130,
+      "y": 126
+     },
+     {
+      "object": "venus",
+      "x": 266,
+      "y": 259
+     },
+     {
+      "object": "aldebaran",
+      "x": 137,
+      "y": 263
+     },
+     {
+      "object": "saturn",
+      "x": 282,
+      "y": 116
+     }
+    ]
+   },
+   {
+    "id": "brightest-2",
+    "mode": "brightest",
+    "scope": "binoculars",
+    "objects": [
+     {
+      "object": "pleiades",
+      "x": 281,
+      "y": 266
+     },
+     {
+      "object": "saturn",
+      "x": 116,
+      "y": 138
+     },
+     {
+      "object": "vega",
+      "x": 130,
+      "y": 261
+     },
+     {
+      "object": "jupiter",
+      "x": 281,
+      "y": 119
+     }
+    ]
+   },
+   {
+    "id": "brightest-3",
+    "mode": "brightest",
+    "scope": "binoculars",
+    "objects": [
+     {
+      "object": "polaris",
+      "x": 270,
+      "y": 267
+     },
+     {
+      "object": "sirius",
+      "x": 122,
+      "y": 128
+     },
+     {
+      "object": "andromeda",
+      "x": 122,
+      "y": 267
+     },
+     {
+      "object": "deneb",
+      "x": 269,
+      "y": 127
+     }
+    ]
+   },
+   {
+    "id": "brightest-4",
+    "mode": "brightest",
+    "scope": "binoculars",
+    "objects": [
+     {
+      "object": "polaris",
+      "x": 114,
+      "y": 131
+     },
+     {
+      "object": "vega",
+      "x": 274,
+      "y": 267
+     },
+     {
+      "object": "pleiades",
+      "x": 121,
+      "y": 281
+     },
+     {
+      "object": "deneb",
+      "x": 279,
+      "y": 139
+     }
+    ]
+   }
+  ]
+ }
+}
