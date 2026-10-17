@@ -1,0 +1,128 @@
+{
+ "source": "qa/tutor-reports/mission-planner-runtime-pick_window-payload-2026-10-16.json",
+ "primitiveId": "mission-planner",
+ "evalMode": "pick_window",
+ "data": {
+  "title": "Galaxy Explorers Mission Prep",
+  "overview": "Plan the mission: answer each question by choosing one.",
+  "gradeLevel": "3",
+  "challengeTypes": [
+   "pick_window"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "pick_window-1",
+    "mode": "pick_window",
+    "target": "jupiter",
+    "ask": "most",
+    "windows": [
+     {
+      "month": "August 2027",
+      "earth": 191,
+      "planet": 164
+     },
+     {
+      "month": "June 2028",
+      "earth": 131,
+      "planet": 189
+     },
+     {
+      "month": "March 2029",
+      "earth": 41,
+      "planet": 211
+     },
+     {
+      "month": "May 2029",
+      "earth": 101,
+      "planet": 216
+     }
+    ]
+   },
+   {
+    "id": "pick_window-2",
+    "mode": "pick_window",
+    "target": "venus",
+    "ask": "most",
+    "windows": [
+     {
+      "month": "September 2027",
+      "earth": 57,
+      "planet": 148
+     },
+     {
+      "month": "February 2028",
+      "earth": 207,
+      "planet": 28
+     },
+     {
+      "month": "December 2028",
+      "earth": 147,
+      "planet": 149
+     },
+     {
+      "month": "June 2029",
+      "earth": 327,
+      "planet": 78
+     }
+    ]
+   },
+   {
+    "id": "pick_window-3",
+    "mode": "pick_window",
+    "target": "mars",
+    "ask": "most",
+    "windows": [
+     {
+      "month": "July 2028",
+      "earth": 262,
+      "planet": 288
+     },
+     {
+      "month": "May 2029",
+      "earth": 202,
+      "planet": 87
+     },
+     {
+      "month": "October 2029",
+      "earth": 352,
+      "planet": 167
+     },
+     {
+      "month": "April 2030",
+      "earth": 172,
+      "planet": 262
+     }
+    ]
+   },
+   {
+    "id": "pick_window-4",
+    "mode": "pick_window",
+    "target": "mars",
+    "ask": "least",
+    "windows": [
+     {
+      "month": "January 2028",
+      "earth": 353,
+      "planet": 229
+     },
+     {
+      "month": "March 2028",
+      "earth": 53,
+      "planet": 260
+     },
+     {
+      "month": "February 2029",
+      "earth": 23,
+      "planet": 75
+     },
+     {
+      "month": "May 2029",
+      "earth": 113,
+      "planet": 123
+     }
+    ]
+   }
+  ]
+ }
+}

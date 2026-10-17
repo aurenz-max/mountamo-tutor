@@ -1,0 +1,68 @@
+{
+ "source": "qa/tutor-reports/mission-planner-runtime-pack_days-payload-2026-10-16.json",
+ "primitiveId": "mission-planner",
+ "evalMode": "pack_days",
+ "data": {
+  "title": "Galaxy Explorers Mission Prep",
+  "overview": "Plan the mission: answer each question by choosing one.",
+  "gradeLevel": "4",
+  "challengeTypes": [
+   "pack_days"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "pack_days-1",
+    "mode": "pack_days",
+    "there": 3,
+    "stay": 2,
+    "crew": 2,
+    "options": [
+     16,
+     12,
+     10,
+     20
+    ]
+   },
+   {
+    "id": "pack_days-2",
+    "mode": "pack_days",
+    "there": 5,
+    "stay": 1,
+    "crew": 4,
+    "options": [
+     15,
+     11,
+     44,
+     40
+    ]
+   },
+   {
+    "id": "pack_days-3",
+    "mode": "pack_days",
+    "there": 2,
+    "stay": 1,
+    "crew": 4,
+    "options": [
+     9,
+     20,
+     24,
+     12
+    ]
+   },
+   {
+    "id": "pack_days-4",
+    "mode": "pack_days",
+    "there": 4,
+    "stay": 1,
+    "crew": 4,
+    "options": [
+     36,
+     32,
+     9,
+     40
+    ]
+   }
+  ]
+ }
+}

@@ -1,165 +1,101 @@
 // @vitest-environment jsdom
 /**
- * Reader-fit behavioral verification for mission-planner — 15A / S7.
+ * Reader-fit for mission-planner, re-based on the 2026-10-16 rebuild (scripted path, no tutor runtime).
  *
- * Pre-fix this primitive had NO channel to a non-reader: no catalog tutoring
- * block and no `useLuminaAI`, so the backend was handed the literal string
- * "No specific scaffolding instructions for this primitive type."
- * (`lumina_tutor.py:385`). The instruction line, the destination names and the
- * travel times are all silent text at K.
- *
- * The component was ALREADY band-aware (`PHASE_INSTRUCTIONS[phase][gradeLevel]`,
- * K-specific destination copy, travel times hidden at K) — the S14 shape. Those
- * gates were running on Gemini's echoed `gradeLevel`, which the generator now
- * overrides; that half is covered in the generator test.
- *
- * Behaviors tsc cannot see: the ORIENT beat fires and withholds a "correct"
- * destination, the instruction line has a spoken twin at K-1, choosing a place
- * is voiced (the tutor's voice IS the destination name), and none of it appears
- * at grade 3.
+ * Item 15A / S7 gave this primitive a tutor channel for a non-reader (ORIENT, a spoken twin of the instruction line, the
+ * chosen place voiced). The 10-16 ruling makes K-1 an ungraded story: those beats now live on the story, and it never
+ * submits a score. Grades 2-5 are the graded planner: the first answer scores and no answer is on screen before it.
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 
 const sendTextSpy = vi.fn();
 vi.mock('../../../../hooks/useLuminaAI', () => ({
-  useLuminaAI: () => ({ sendText: sendTextSpy, isAudioPlaying: false, isConnected: true }),
+  useLuminaAI: () => ({ sendText: sendTextSpy, isAudioPlaying: false, isConnected: true, activePrimitiveId: null }),
 }));
+const submitResultSpy = vi.fn();
 vi.mock('../../../../evaluation', () => ({
-  usePrimitiveEvaluation: () => ({
-    submitResult: vi.fn(),
-    hasSubmitted: false,
-    resetAttempt: vi.fn(),
-  }),
+  usePrimitiveEvaluation: () => ({ submitResult: submitResultSpy, hasSubmitted: false, resetAttempt: vi.fn(), submittedResult: null, elapsedMs: 0 }),
 }));
+vi.mock('../../../../utils/SoundManager', () => ({ SoundManager: new Proxy({}, { get: () => vi.fn() }) }));
 
 import MissionPlanner, { type MissionPlannerData } from '../MissionPlanner';
+import type { FartherItem } from '../missionWorkspace';
 
-const dest = (id: string, name: string) => ({
-  id: id as MissionPlannerData['destinations'][number]['id'],
-  name,
-  distanceFromSunAU: 1,
-  orbitAngleDeg: 90,
-  color: '#ccc',
-  radiusPx: 5,
-  travelDaysDirect: 3,
-  description: `About ${name}.`,
-  funFact: `${name} is fun.`,
-});
+const kData = (over: Partial<MissionPlannerData> = {}): MissionPlannerData =>
+  ({ title: 'Fly to Space!', overview: 'Pick a place.', gradeLevel: 'K', challengeTypes: [], items: [], story: { places: ['moon', 'mars'] }, ...over });
 
-const kData = (over: Partial<MissionPlannerData> = {}): MissionPlannerData => ({
-  title: "Let's Go to the Moon!",
-  description: 'Pick a place in space.',
-  gradeLevel: 'K',
-  destinations: [dest('moon', 'The Moon'), dest('mars', 'Mars')],
-  missionType: 'flyby',
-  crewed: false,
-  showLaunchWindows: false,
-  showTrajectory: false,
-  supplyCalculator: false,
-  gravityAssistOption: false,
-  fuelConstraint: 100,
-  missionClock: false,
-  hints: ['Pick a planet to visit!'],
-  funFact: 'Space is big.',
-  ...over,
-}) as MissionPlannerData;
+// Farthest: Saturn; then closest: the Moon.
+const FAR: FartherItem[] = [
+  { id: 'farther_closer-1', mode: 'farther_closer', ask: 'far', places: ['mars', 'saturn'] },
+  { id: 'farther_closer-2', mode: 'farther_closer', ask: 'near', places: ['jupiter', 'moon'] },
+];
+const g3 = (over: Partial<MissionPlannerData> = {}): MissionPlannerData =>
+  ({ title: 'Mission Control', overview: 'Plan.', gradeLevel: '3', challengeTypes: ['farther_closer'], items: FAR, ...over });
 
-const g3Data = () => kData({
-  gradeLevel: '3',
-  showTrajectory: true,
-  missionClock: true,
-  supplyCalculator: true,
-  crewed: true,
-});
+beforeEach(() => { cleanup(); sendTextSpy.mockClear(); submitResultSpy.mockClear(); });
 
-const sent = () => sendTextSpy.mock.calls.map((c) => String(c[0]));
-const sentWith = (t: string) => sent().filter((m) => m.includes(t));
-
-beforeEach(() => {
-  sendTextSpy.mockReset();
-  cleanup();
-});
-
-describe('MissionPlanner — ORIENT', () => {
-  it('fires exactly once on mount', () => {
+describe('MissionPlanner @ K-1: the ungraded story', () => {
+  it('orients the tutor once, without a right answer', () => {
     render(<MissionPlanner data={kData()} />);
-    expect(sentWith('[MISSION_ORIENT]')).toHaveLength(1);
+    const orient = sendTextSpy.mock.calls.map(c => String(c[0])).filter(m => m.includes('[MISSION_ORIENT]'));
+    expect(orient).toHaveLength(1);
+    expect(orient[0]).toMatch(/Nothing here is right or wrong/);
   });
 
-  it('refuses to imply a correct destination', () => {
-    render(<MissionPlanner data={kData()} />);
-    expect(sentWith('[MISSION_ORIENT]')[0]).toMatch(/NO wrong destination/i);
+  it('is pictures and taps: no number, no Check, no score', () => {
+    vi.useFakeTimers();
+    const { container } = render(<MissionPlanner data={kData()} />);
+    expect(container.textContent).not.toMatch(/\d/);
+    expect(screen.queryByRole('button', { name: /Check/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Mars' }));
+    expect(String(sendTextSpy.mock.calls.at(-1)?.[0])).toMatch(/\[MISSION_DESTINATION_SELECTED\].*Mars.*Any place is a fine choice/);
+    fireEvent.click(screen.getByRole('button', { name: 'Water' }));
+    fireEvent.click(screen.getByRole('button', { name: /Fly!/ }));
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(container.textContent).toMatch(/many, many months/);
+    expect(container.textContent).not.toMatch(/\d/);
+    expect(submitResultSpy).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Fly somewhere else/ }));
+    expect(screen.getByRole('button', { name: 'The Moon' })).toBeTruthy();
+    vi.useRealTimers();
   });
 
-  it('sends every beat silently', () => {
-    render(<MissionPlanner data={kData()} />);
-    // Exercise the click-driven beats too. Asserting on mount alone leaves
-    // read-aloud and destination-select uncovered — a non-silent read-aloud
-    // posts a machine prompt as if the child had typed it.
-    fireEvent.click(screen.getByLabelText(/hear what to do/i));
-    fireEvent.click(screen.getByRole('button', { name: /Mars/ }));
-
-    for (const tag of ['[MISSION_ORIENT]', '[MISSION_READ_ALOUD]', '[MISSION_DESTINATION_SELECTED]']) {
-      expect(sentWith(tag).length).toBeGreaterThan(0);
-    }
-    for (const c of sendTextSpy.mock.calls) {
-      expect((c[1] as { silent?: boolean } | undefined)?.silent).toBe(true);
-    }
-  });
-});
-
-describe('MissionPlanner — the instruction line has a spoken twin at K-1', () => {
-  it('offers read-aloud at K and reads the instruction word for word', () => {
-    render(<MissionPlanner data={kData()} />);
-    const btn = screen.getByLabelText(/hear what to do/i);
-    expect(btn).toBeTruthy();
-    fireEvent.click(btn);
-    const msg = sentWith('[MISSION_READ_ALOUD]')[0];
-    expect(msg).toContain('Pick a place in space you want to visit!');
-    expect(msg).toMatch(/word for word/i);
-  });
-
-  it('offers it at grade 1 too', () => {
+  it('reads the line aloud on tap', () => {
     render(<MissionPlanner data={kData({ gradeLevel: '1' })} />);
-    expect(screen.getByLabelText(/hear what to do/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Read it to me' }));
+    expect(String(sendTextSpy.mock.calls.at(-1)?.[0])).toMatch(/\[MISSION_READ_ALOUD\].*Pick a place/);
   });
 
-  it('does NOT offer it at grade 3', () => {
-    render(<MissionPlanner data={g3Data()} />);
-    expect(screen.queryByLabelText(/hear what to do/i)).toBeNull();
-  });
-});
-
-describe('MissionPlanner — choosing a place is voiced', () => {
-  it("says the destination name, because the tutor's voice IS the label", () => {
-    render(<MissionPlanner data={kData()} />);
-    // "Mars" also appears as a D3 <text> label on the map — click the CARD.
-    fireEvent.click(screen.getByRole('button', { name: /Mars/ }));
-    const msg = sentWith('[MISSION_DESTINATION_SELECTED]')[0];
-    expect(msg).toContain('Mars');
-    expect(msg).toMatch(/one thing about it they can picture/i);
-  });
-
-  it('never suggests another destination would have been better', () => {
-    render(<MissionPlanner data={kData()} />);
-    fireEvent.click(screen.getByRole('button', { name: /The Moon/ }));
-    expect(sentWith('[MISSION_DESTINATION_SELECTED]')[0]).toMatch(/Never suggest a different one/i);
+  it('a K payload with items still gets the story (K-1 is never graded)', () => {
+    render(<MissionPlanner data={g3({ gradeLevel: 'K' })} />);
+    expect(screen.queryByRole('button', { name: /Check/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'The Moon' })).toBeTruthy();
   });
 });
 
-describe('MissionPlanner — structural', () => {
-  it('never nests a button inside a button', () => {
-    for (const d of [kData(), g3Data()]) {
-      const { container, unmount } = render(<MissionPlanner data={d} />);
-      expect(container.querySelectorAll('button button')).toHaveLength(0);
-      unmount();
-    }
+describe('MissionPlanner @ grade 3: graded', () => {
+  it('no map or distance before the answer; the first answer scores', () => {
+    const { container } = render(<MissionPlanner data={g3()} />);
+    expect(container.querySelector('[data-distance-strip]')).toBeNull();
+    expect(container.textContent).not.toMatch(/Best|\bAU\b|days away|closest!/i);
+    fireEvent.click(screen.getByRole('button', { name: 'Mars' }));
+    fireEvent.click(screen.getByRole('button', { name: /Check Answer/ }));
+    // Two choices: one wrong try reveals.
+    expect(container.querySelector('[data-distance-strip]')).not.toBeNull();
+    expect(container.textContent).toMatch(/Saturn is the farthest/);
+    fireEvent.click(screen.getByRole('button', { name: /Next/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'The Moon' }));
+    fireEvent.click(screen.getByRole('button', { name: /Check Answer/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Finish/ }));
+    expect(submitResultSpy).toHaveBeenCalledOnce();
+    expect(submitResultSpy.mock.calls[0][1]).toBe(50);
   });
 
-  it('renders the K instruction copy, not a higher rung', () => {
-    render(<MissionPlanner data={kData()} />);
-    expect(screen.getByText('Pick a place in space you want to visit!')).toBeTruthy();
+  it('a legacy payload (destinations, windows, supplies; no items) builds code items by grade', () => {
+    const legacy = { title: 'Mars Mission', gradeLevel: '3', destinations: [{ id: 'mars' }], launchWindows: [] } as unknown as MissionPlannerData;
+    const { container } = render(<MissionPlanner data={legacy} />);
+    expect(container.textContent).toMatch(/Near or far\? · item 1 of 6/);
   });
 });

@@ -1,0 +1,56 @@
+{
+ "source": "qa/tutor-reports/mission-planner-runtime-farther_closer-payload-2026-10-16.json",
+ "primitiveId": "mission-planner",
+ "evalMode": "farther_closer",
+ "data": {
+  "title": "Little Space Explorers Mission",
+  "overview": "Plan the mission: answer each question by choosing one.",
+  "gradeLevel": "2",
+  "challengeTypes": [
+   "farther_closer"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "farther_closer-1",
+    "mode": "farther_closer",
+    "ask": "far",
+    "places": [
+     "jupiter",
+     "uranus",
+     "moon"
+    ]
+   },
+   {
+    "id": "farther_closer-2",
+    "mode": "farther_closer",
+    "ask": "far",
+    "places": [
+     "neptune",
+     "moon",
+     "asteroids"
+    ]
+   },
+   {
+    "id": "farther_closer-3",
+    "mode": "farther_closer",
+    "ask": "near",
+    "places": [
+     "moon",
+     "neptune",
+     "jupiter"
+    ]
+   },
+   {
+    "id": "farther_closer-4",
+    "mode": "farther_closer",
+    "ask": "near",
+    "places": [
+     "mars",
+     "saturn",
+     "neptune"
+    ]
+   }
+  ]
+ }
+}

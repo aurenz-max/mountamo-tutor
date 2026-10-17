@@ -12,6 +12,7 @@ import type { ConstellationMiss } from '../../../primitives/visual-primitives/as
 import type { TelescopeMiss } from '../../../primitives/visual-primitives/astronomy/telescopeWorkspace';
 import type { OrbitMiss } from '../../../primitives/visual-primitives/astronomy/orbitWorkspace';
 import type { RocketMiss } from '../../../primitives/visual-primitives/astronomy/rocketWorkspace';
+import type { MissionMiss } from '../../../primitives/visual-primitives/astronomy/missionWorkspace';
 import { missLists } from './missLists';
 
 export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
@@ -566,79 +567,72 @@ export const ASTRONOMY_CATALOG: ComponentDefinition[] = [
   },
   {
     id: 'mission-planner',
-    description: 'Simplified mission design tool where students plan trips to the Moon, Mars, and beyond. Students select destinations on an interactive D3 solar system map, choose launch windows based on planetary alignment, plan trajectories (direct route vs gravity assist via other planets), pack supplies for crew (food, water, oxygen), estimate travel time, calculate fuel requirements, and monitor animated mission progress. Features progressive learning phases: explore destinations, plan route and timing, prepare supplies, and launch with real-time progress tracking. Includes interactive supply calculator for food/water/oxygen planning, launch window selection showing optimal planetary alignment, gravity assist trajectory visualization, mission clock with elapsed time, and destination info panels with fun facts. D3 solar system visualization shows orbital paths, planet positions, trajectory lines, and animated spacecraft icon. Progressive difficulty from K (pick a destination!) to Grade 5 (optimize fuel vs payload trade-offs with gravity assists and tight fuel constraints). ESSENTIAL for teaching space travel concepts, mission planning, supply logistics, and interplanetary navigation for K-5 astronomy.',
-    constraints: 'Best for grades K-5 with distinct learning progressions. K: 2-3 destinations (Moon, Mars), flyby mission, no trajectory/supplies/launch windows shown, focus on "we can visit other places in space". Grade 1: 3 destinations, showTrajectory enabled, missionClock enabled, focus on "different places take different times to reach". Grade 2: 3 destinations, supplyCalculator enabled with 3 items (food, water, oxygen), crewed: true, focus on "astronauts need food, water, and air". Grade 3: 4 destinations, showLaunchWindows with 3-4 options (one optimal), supplyCalculator with 4 items, focus on "can\'t launch anytime - planets move!". Grade 4: 4-5 destinations, gravityAssistOption enabled, all features active, missionType: "return", focus on "gravity assists give speed boosts from planets". Grade 5: All 5 destinations, tight fuelConstraint (30 tons), 5 supply types including science equipment, missionType: "return", focus on "trade-offs: speed vs fuel vs payload". Always provide age-appropriate hints and fun facts per destination.',
-    affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['tap'], role: 'visualize', minutes: 8 },
+    description: 'Space-mission planning with every choice and answer built by code. Grades 2-5, four graded tasks, each answered by tapping or saying one choice: which place in space (the Moon, Mars, the asteroid belt, the giant planets) is farthest or closest from Earth, from same-size pictures with no map or distance drawn until the answer; which launch month needs the least or the most fuel, from small pictures of the Sun, Earth\'s orbit and the target planet\'s orbit with both planets where they really are that month; how many food packs a trip to the Moon needs, there, staying and home the same way, for each astronaut; and which route to Jupiter or Saturn uses the least fuel (each flyby past a planet gives a free push) and still arrives within a year limit. Kindergarten and Grade 1 get an ungraded planning story instead: pick the Moon or Mars, pack food, water and air, watch the ship fly, and hear how long the trip takes in words; nothing is scored. ESSENTIAL for space travel in K-5: near and far in the solar system, why launch timing matters (planets move), supplies for a round trip, and gravity-assist trade-offs.',
+    constraints: 'Graded for Grades 2-5. Kindergarten and Grade 1 MAY be routed here only as an ungraded story (no score is submitted): use it there for exposure, never as an assessment. Code builds every place, month, trip, route and answer; the manifest picks the topic, never the content. Default modes when nothing pins them: Grade 2 farther_closer and pick_window; Grade 3 adds pack_days; Grades 4-5 all four. Not for the order of planets out from the Sun on a live model (solar-system-explorer), orbits and speeds (orbit-mechanics-lab), or what a rocket needs to lift off (rocket-builder).',
+    affordances: { representation: ['pictorial', 'symbolic'], reader: 'emerging', answers: ['tap', 'spoken'], role: ['visualize', 'apply'], minutes: 6 },
     tutoring: {
-      taskDescription:
-        'Student is planning a space mission — "{{title}}". Grade rung: {{gradeLevel}}. '
-        + 'They are in the {{currentPhase}} phase. Places they can choose from: {{destinationNames}}. '
-        + 'Chosen so far: {{selectedDestination}}. Mission type: {{missionType}}. '
-        + 'The instruction currently on screen reads: "{{phaseInstruction}}". '
-        + 'At K-1 the whole task is choosing a place and watching the ship fly; supplies, launch windows and gravity assists are switched off.',
-      contextKeys: [
-        'title',
-        'gradeLevel',
-        'currentPhase',
-        'destinationNames',
-        'selectedDestination',
-        'missionType',
-        'phaseInstruction',
-        'destinationCount',
-      ],
+      taskDescription: 'Student is on a space-mission activity, "{{title}}" (grade {{gradeLevel}}, task {{mode}}). On screen now: {{ask}}',
+      contextKeys: ['title', 'gradeLevel', 'mode', 'ask'],
       scaffoldingLevels: {
-        level1: '"Where in space would you like to go? Any of them is a good choice."',
-        level2: '"Some places are close to us and some are very far away. Which one do you want to see?"',
-        level3: '"Let me tell you a little about each place, and then you pick the one you like best."',
+        level1: '"What do you see in each picture? What is the question asking you to find?"',
+        level2: '"Think about what the question needs: how far, where the planets are, every day of the trip, or how long each route takes."',
+        level3: '"Look at one choice at a time and say what it shows. Then compare them."',
       },
       commonStruggles: [
-        {
-          pattern: 'Student is waiting to be told the right destination',
-          response: '"There is no wrong one here — this is YOUR mission. Pick the place you most want to see."',
-        },
-        {
-          pattern: 'Student thinks the trip is instant, like in a cartoon',
-          response: '"Real space trips take a long time. The Moon takes a few days. Mars takes months and months — longer than a whole school year."',
-        },
-        {
-          pattern: 'Student thinks the spaceship flies in a straight line to a planet',
-          response: '"The planets keep moving around the Sun, so the ship has to aim at where the planet is GOING to be, not where it is right now."',
-        },
-        {
-          pattern: 'Student wants to fly to the Sun or somewhere impossible',
-          response: 'Take the idea seriously and say warmly what would really happen, then steer to a place they can actually plan a trip to.',
-        },
-        {
-          pattern: 'A pre-reader cannot read the instruction line or the destination names',
-          response: '"Never ask them to read. Say the instruction aloud every time the phase changes, and name each place as they look at it. The words are yours to speak."',
-        },
+        { pattern: 'Answers the opposite of the question (closest for farthest, most fuel for least)', response: '"Read the question again with me. Is it asking for the most or the least?"' },
+        { pattern: 'Packs food only for the trip there', response: '"Where does the ship go after the Moon? What do the astronauts need on that part?"' },
+        { pattern: 'Picks the route with the most flybys without checking the time', response: '"There are two things to check for each route. What are they?"' },
       ],
       aiDirectives: [
         {
-          title: 'PRE-READER READ-ALOUD (kindergarten to grade 1)',
+          title: 'K-1 STORY: NOTHING IS RIGHT OR WRONG',
           instruction:
-            'A pre-reader CANNOT read the instruction line, the destination names, the travel times or the buttons. Your voice is the only channel. '
-            + 'When you receive [MISSION_ORIENT], say what to do in one or two warm child-sized sentences — they are choosing a place in space to fly to. '
-            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
-            + 'When you receive [MISSION_PHASE_CHANGED], SAY the new instruction aloud in child words: the screen just changed and they cannot read what it now says. '
-            + 'When you receive [MISSION_DESTINATION_SELECTED], say the name of the place they picked and one thing about it they can picture. '
-            + 'When you receive [MISSION_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait.',
+            'At Kindergarten and Grade 1 the screen is a story, not a test. When you receive [MISSION_ORIENT], say what to do in one or two warm child-sized sentences. '
+            + 'When you receive [MISSION_DESTINATION_SELECTED], name the place and one thing about it they can picture; any place is a fine choice. '
+            + 'When you receive [MISSION_ARRIVED], say how long the trip takes in words, never a number. When you receive [MISSION_READ_ALOUD] or [READ_CHALLENGE], read the text aloud, word for word, then wait.',
         },
         {
-          title: 'THERE IS NO WRONG DESTINATION — DO NOT MANUFACTURE ONE',
+          title: 'NEVER NAME THE ANSWER (grades 2-5)',
           instruction:
-            'Choosing where to go is a CHOICE, not an answer. Never imply one destination is the correct one, never ask "are you sure?" about a valid pick, and never steer them to the Moon because it is the easy trip. '
-            + 'The real learning is that different places are different distances away, so once they choose, talk about how long THAT trip takes. '
-            + 'Where a later phase does have a right answer — which launch window uses least fuel, at grade 3 and up — that one IS the answer: do not state it, and do not narrow it by elimination.',
-        },
-        {
-          title: 'NO NUMBERS AT K-1 — SAY HOW LONG IT FEELS',
-          instruction:
-            'At grade rung K and 1 do NOT say kilometres, miles, tons, AU, or a count of days. The screen deliberately hides travel times at K, so saying them puts back what was taken out. '
-            + 'Say "a few sleeps", "longer than the summer holidays", "really really far away". '
-            + 'From grade 2 up the numbers ARE the objective — say them, and help the student compare them.',
+            'Code checks every answer. Never say which place, month, number or route is right, never say a total of packs or days, never say which planets are closest together, and never rule a choice out. '
+            + 'After a wrong answer, ask what the learner noticed.',
         },
       ],
+    },
+    evalModes: [
+      { evalMode: 'farther_closer', affordances: { answers: ['tap', 'spoken'] }, label: 'Near or far? (Tier 1)', beta: 1.5, scaffoldingMode: 1, challengeTypes: ['farther_closer'], description: 'Say or tap which place (the Moon, Mars, the asteroid belt or a giant planet) is farthest or closest from Earth; no map is drawn until the answer (hard: four places, two of them next to each other in order)' },
+      { evalMode: 'pick_window', affordances: { answers: ['tap', 'spoken'] }, label: 'When to launch (Tier 2)', beta: 2.5, scaffoldingMode: 2, challengeTypes: ['pick_window'], description: 'Say or tap the launch month that needs the least or the most fuel, from where Earth and the target planet are that month (hard: four months, one a near miss)' },
+      { evalMode: 'pack_days', affordances: { answers: ['tap', 'spoken'] }, label: 'Pack the food (Tier 3)', beta: 3.5, scaffoldingMode: 3, challengeTypes: ['pack_days'], description: 'Say or tap how many food packs a Moon trip needs: days there, days staying and the same days home, one pack per astronaut per day (hard: a crew of 2-4)' },
+      { evalMode: 'assist_tradeoff', affordances: { answers: ['tap', 'spoken'] }, label: 'Pick a route (Tier 4)', beta: 5.0, scaffoldingMode: 4, challengeTypes: ['assist_tradeoff'], description: 'Say or tap the route to Jupiter or Saturn that uses the least fuel (more flybys, less fuel) and still arrives within a year limit (hard: four routes; the one with the most flybys may be too slow)' },
+    ],
+    // Shared teaching workspace (W1, plain shape): `missionWorkspace.ts`, levers in `missionLevers.ts`. Grades 2-5 only:
+    // the K-1 story is ungraded and renders outside the workspace (the adapter refuses it).
+    teachingWorkspace: {
+      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'Code builds and checks every item; you are not told the key. Never say which place, month, number of packs or '
+        + 'route is right, and never rule one out. NEAR OR FAR: no map or distance is on screen until the answer; never say '
+        + 'which place is nearer or farther, or put the places in order. WHEN TO LAUNCH: never say in which month the planets '
+        + 'are closest or farthest apart, which month is best, or that being close means less fuel unless a card the scene lists '
+        + 'says it; you may ask where Earth and the planet are in each picture. PACK THE FOOD: never say how many days the whole '
+        + 'trip takes, how many days the trip home takes, or any total, and never tell the learner to count every square or to '
+        + 'multiply by the crew; you may ask what happens after the stay. PICK A ROUTE: never say which route uses less fuel or '
+        + 'arrives in time, and never say that flybys save fuel unless a card the scene lists says it; you may ask what the '
+        + 'learner checks for each route. Even with a card on screen, never send the learner to look for the one choice that fits '
+        + 'it (the month with the planets closest, farthest apart or on the far side, the shortest or longest line, the route '
+        + 'with the most flybys, in time), and never ask which choice fits it ("Which picture shows them closest together?", '
+        + '"Which route has the most flybys?"): that is the answer; ask what they see in each picture. After a wrong answer, never say why the pick was '
+        + 'wrong and never suggest a choice or a kind of choice to try; ask the learner to look at their pick again. Describe a '
+        + 'lever card only by what the scene says it shows. You cannot tap or check for the learner.',
+      levers: true,
+      // The activity's own check (`missionMiss`) on a tap, and the same ids as each spoken item's known misses.
+      // Levers (`missionLevers.ts`): farther_closer is recall, so no help lever may put places in order (replay 10-16: an
+      // order card read aloud named the key); next_in_line and in_between are answered by drop_one only.
+      misses: missLists<MissionMiss>({
+        farther_closer: ['other_end', 'next_in_line', 'in_between'],
+        pick_window: ['far_apart', 'close_together', 'in_between_window'],
+        pack_days: ['forgot_home', 'stay_twice', 'forgot_stay', 'forgot_crew', 'added_crew'],
+        assist_tradeoff: ['too_slow', 'picked_direct', 'fewer_flybys'],
+      }),
     },
     supportsEvaluation: true,
   },

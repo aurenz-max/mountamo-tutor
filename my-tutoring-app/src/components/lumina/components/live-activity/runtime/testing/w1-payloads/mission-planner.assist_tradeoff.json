@@ -1,0 +1,148 @@
+{
+ "source": "qa/tutor-reports/mission-planner-runtime-assist_tradeoff-payload-2026-10-16.json",
+ "primitiveId": "mission-planner",
+ "evalMode": "assist_tradeoff",
+ "data": {
+  "title": "Cosmic Voyager Mission Planning",
+  "overview": "Plan the mission: answer each question by choosing one.",
+  "gradeLevel": "5",
+  "challengeTypes": [
+   "assist_tradeoff"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "assist_tradeoff-1",
+    "mode": "assist_tradeoff",
+    "target": "saturn",
+    "limit": 8,
+    "routes": [
+     {
+      "flybys": [
+       "venus",
+       "venus",
+       "earth"
+      ],
+      "years": 8
+     },
+     {
+      "flybys": [],
+      "years": 4
+     },
+     {
+      "flybys": [
+       "earth"
+      ],
+      "years": 5
+     },
+     {
+      "flybys": [
+       "earth",
+       "mars"
+      ],
+      "years": 9
+     }
+    ]
+   },
+   {
+    "id": "assist_tradeoff-2",
+    "mode": "assist_tradeoff",
+    "target": "jupiter",
+    "limit": 4,
+    "routes": [
+     {
+      "flybys": [
+       "venus",
+       "venus",
+       "earth"
+      ],
+      "years": 6
+     },
+     {
+      "flybys": [],
+      "years": 2
+     },
+     {
+      "flybys": [
+       "earth"
+      ],
+      "years": 4
+     },
+     {
+      "flybys": [
+       "venus",
+       "venus"
+      ],
+      "years": 3
+     }
+    ]
+   },
+   {
+    "id": "assist_tradeoff-3",
+    "mode": "assist_tradeoff",
+    "target": "jupiter",
+    "limit": 7,
+    "routes": [
+     {
+      "flybys": [
+       "venus",
+       "venus"
+      ],
+      "years": 7
+     },
+     {
+      "flybys": [
+       "earth"
+      ],
+      "years": 10
+     },
+     {
+      "flybys": [
+       "venus",
+       "earth",
+       "earth"
+      ],
+      "years": 7
+     },
+     {
+      "flybys": [],
+      "years": 3
+     }
+    ]
+   },
+   {
+    "id": "assist_tradeoff-4",
+    "mode": "assist_tradeoff",
+    "target": "saturn",
+    "limit": 6,
+    "routes": [
+     {
+      "flybys": [],
+      "years": 3
+     },
+     {
+      "flybys": [
+       "venus",
+       "earth",
+       "earth"
+      ],
+      "years": 9
+     },
+     {
+      "flybys": [
+       "earth"
+      ],
+      "years": 6
+     },
+     {
+      "flybys": [
+       "venus",
+       "venus"
+      ],
+      "years": 4
+     }
+    ]
+   }
+  ]
+ }
+}

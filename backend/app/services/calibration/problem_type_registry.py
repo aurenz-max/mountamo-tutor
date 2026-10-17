@@ -1111,6 +1111,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
         "on_budget":    PriorConfig(3.5, "Choose the rocket that lifts off and costs no more than a coin budget"),
         "reach_target": PriorConfig(5.0, "Predict which rocket flies highest: fuel, engine, weight, dropped tanks"),
     },
+    "mission-planner": {
+        "farther_closer":  PriorConfig(1.5, "Pick the place farthest or closest from Earth (Moon, Mars, asteroid belt, giants)"),
+        "pick_window":     PriorConfig(2.5, "Pick the launch month needing least/most fuel from where the planets are"),
+        "pack_days":       PriorConfig(3.5, "Food packs for a Moon trip: there, staying and home again, per astronaut"),
+        "assist_tradeoff": PriorConfig(5.0, "Route with least fuel (flybys) that still arrives within a year limit"),
+    },
     "orbit-mechanics-lab": {
         "pick_speed":   PriorConfig(1.5, "Tap the sideways push that makes a rocket fall back, circle or fly away"),
         "orbit_speed":  PriorConfig(2.5, "Tap the fastest/slowest rocket, or shortest/longest trip, by track distance"),

@@ -32,7 +32,7 @@ queue item (a defect class) · `qa/<lane>/` (run evidence) · here, as a row (st
 
 | # | Phase | Queue · executor | State · next pull |
 |---|---|---|---|
-| 1 | A miss is one contract, both channels | `qa/workspace-rollout/ROLLOUT.md` · `/add-live-tutor-tools` | **ACTIVE 10-15 (user).** R1 done 10-16 (24 primitives, b4e1ae85; rulings and follow-ups closed). VB-F1 done. R2 triaged 10-16 (`qa/workspace-rollout/R2-triage-2026-10-16.md`, rulings recorded); B1 telescope-simulator, orbit-mechanics-lab, rocket-builder done. Next R2 B1 mission-planner, then VB-2, then phase 2 |
+| 1 | A miss is one contract, both channels | `qa/workspace-rollout/ROLLOUT.md` · `/add-live-tutor-tools` | **ACTIVE 10-15 (user).** R1 done 10-16 (24 primitives, b4e1ae85; rulings and follow-ups closed). VB-F1 done. R2 triaged 10-16 (`qa/workspace-rollout/R2-triage-2026-10-16.md`, rulings recorded); B1 telescope-simulator, orbit-mechanics-lab, rocket-builder, mission-planner done (B1 closed). Next R2 B2 biology, then VB-2, then phase 2 |
 | 2 | The ladder tests a pass, then a miss | handoff 19/20, `LIVE_TESTING.md` · `/add-live-tutor-tools` | J10/J11 done 09-28. Open: T2 observer replay, T3 responsiveness, one gate command per family |
 | 3 | Levers answer misses | `qa/support-levers/`, `qa/lever-bench/QUEUE.md` · `/add-support-tiers` | Levers on every workspace primitive (3.1e, 10-09). **Ready, paid, user approves:** DI class Live (`di-lever-plan-2026-10-03.md` step 9), literacy G2-6 class Live (`literacy-lever-plan-2026-10-03.md` step 5). M2 Live needs a mixed payload. Residuals: `QUEUE-item-gaps-2026-10-09.md` |
 | 4.1 | Open build is a modality | `qa/open-build/ROADMAP.md` · `/add-eval-modes` | OB waves 1-3, OB-4 pilots, OB-9M, OB-10 committed. Next: OB-4 pulley/bridge/blueprint; capabilities C1-C5; literacy class Live (go-ahead); 3 rulings |
@@ -40,7 +40,7 @@ queue item (a defect class) · `qa/<lane>/` (run evidence) · here, as a row (st
 | 5 | Parent report | `qa/parent-report/ROADMAP.md` | PR-1..4 done 10-08. Left: rulings PR-R1/R2, PR-D2 cleanup (user). Proposed CLOSE |
 | 6 | Drawers + curator brief | `qa/drawers/ROADMAP.md` | 18 kinds + one-screen brief committed (9e39be02, bbe0a635). Next DR-2 quality, DR-3 leak, DR-5 tutor. Brief findings: K hook with no pattern drawn, empty Pip dock |
 | 7 | Prerequisite graph + practice selection | `qa/pulse/ROADMAP.md` · `/pulse-fix`, `/pulse-agent` | Learner model selects (10-13) and sets gates (C13, b40aa75a); C14 backfill applied to every student 10-16. C15 retest deletion + C18 Pulse shows the model gate BUILT 10-16 (uncommitted; sim identical to C13). Next: C16 browser check (also closes C15/C18), C17, C12 joint fit; T5, T6 residual, 7.14, 7.8, P5 |
-| 8 | Difficulty is code-owned | `my-tutoring-app/qa/difficulty-demo/QUEUE.md` · `/add-item-space`, `/add-word-space`, `/eval-fix` | 24 math spaces, 15 word-space primitives committed. 8.1a/b/c/d/e/g/i/j/o DONE 10-16 (handoffs 8.1-item-space-fixes, 8.1-decided-forks). Next: 8.1p/q levers (`/add-support-tiers`); 8.1f and 8.1n rulings; 8.2q one browser sitting; HUMAN-CHECKS #185-186 |
+| 8 | Difficulty is code-owned | `my-tutoring-app/qa/difficulty-demo/QUEUE.md` · `/add-item-space`, `/add-word-space`, `/eval-fix` | 25 math spaces (percent-of 10-16), 15 word-space primitives committed. 8.1a/b/c/d/e/f/g/i/j/o DONE 10-16 (8.1f: real find_part / find_whole, old ones renamed) (handoffs 8.1-item-space-fixes, 8.1-decided-forks). Next: 8.1p/q levers (`/add-support-tiers`); 8.1n ruling; 8.2q one browser sitting; HUMAN-CHECKS #185-186 |
 
 ## Proposed WIP (10-15, user to confirm)
 
@@ -53,7 +53,6 @@ resumed (R1 first), phase 2 follows it.
 | Ruling | Where |
 |---|---|
 | 8.1n fraction-bar add_subtract (8.1d/e/g done 10-16) | `qa/difficulty-demo/QUEUE.md` |
-| 8.1f percent-bar find_part / find_whole: rename the ids to what they ask, or build real find-part / find-whole modes | `qa/difficulty-demo/QUEUE.md` |
 | strategy-picker levers keep/revert; 3.1e rulings | `qa/support-levers/QUEUE-item-gaps-2026-10-09.md` |
 | Learner model: how far ahead a K child may go (T1); target share above grade (T3) | `qa/pulse/ROADMAP.md` |
 | story-bridge spoken misses or out of L4's class gate | handoff 24 step 3 |

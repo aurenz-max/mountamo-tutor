@@ -1,86 +1,84 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import * as d3 from 'd3';
-import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
+/**
+ * Mission Planner (rebuilt 2026-10-16 under the 10-15 ruling and the 10-16 ruling for this primitive). The old planner
+ * was a four-step wizard that always passed, with a "Best!" badge on the right launch window, window descriptions that
+ * stated the answer, a supply table that ticked "enough" and travel times from Gemini.
+ *
+ * Grades 2-5, graded, one code-keyed choice per eval mode (`missionWorkspace.ts`):
+ * - farther_closer: say or tap the place farthest (or closest) from Earth; no map until the answer.
+ * - pick_window: say or tap the launch month that needs the least (or most) fuel, from where the planets are.
+ * - pack_days: say or tap how many food packs a Moon trip needs, there, staying and home the same way.
+ * - assist_tradeoff: say or tap the route that uses the least fuel and arrives within the year limit.
+ * Two paths, chosen by `withWorkspaceController`: the scripted path (tester, no tutor) has its own Next and up to two
+ * tries before a reveal (one on two-choice items), and only a first-try answer scores; the workspace path (W1, plain
+ * shape) commits every check through `progress.commitCheck` with a named miss, takes a spoken answer judged by the
+ * tutor, and lets the runtime move on. The levers live in `missionLevers.ts`.
+ *
+ * K and Grade 1: an ungraded planning story (`MissionStory`): pick a place, pack, fly, hear how long the trip takes in
+ * words. No score, no evaluation submitted, and it never mounts the graded workspace (the adapter refuses a story).
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { MissionPlannerMetrics } from '../../../evaluation/types';
-import { LuminaReadAloud } from '../../../ui';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { ReadMeButton } from '../../shared/ReadMeButton';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askOf, describeMissionWork, emptyWork, FAR_NAME, FLYBY_NAME, isStoryGrade, keyOf, missionCorrect, missionItems,
+  missionMiss, optionCount, optionLabel, PLACE_AU, PLACE_COLOR, PLACE_NAME, PLACES, revealText, routeLabel, STORY_TRIP,
+  storyPlaces, TARGET_NAME, workComplete, workspaceAssignment, workspaceScene,
+  type AssistItem, type LaunchWindow, type MissionItem, type MissionMode, type MissionTier, type MissionWork, type PackItem,
+  type Place, type Route, type StoryPlace, type Target, type WindowItem,
+} from './missionWorkspace';
+import {
+  ASSIST_CARD_LEVER, ASSIST_CARD_LINES, CREW_LINE, CREW_ROWS_LEVER, DISTANCE_LINES_LEVER, DROP_LEVER, dropTarget,
+  FUEL_CARD_LEVER, FUEL_CARD_LINES, HOME_LEG_LEVER, leverFacts, LIMIT_LINE_LEVER, missionLevers, NO_LEVERS,
+  ASK_ARROW_LEVER, type MissionLeverState,
+} from './missionLevers';
 
-// =============================================================================
-// Type Definitions - Single Source of Truth
-// =============================================================================
+// ============================================================================
+// Data Types (single source of truth; the generator imports them)
+// ============================================================================
 
-export type Destination = 'moon' | 'mars' | 'venus' | 'jupiter' | 'asteroid';
-export type MissionType = 'flyby' | 'orbit' | 'landing' | 'return';
-export type TrajectoryType = 'direct' | 'gravity_assist';
-export type LearningPhase = 'explore' | 'plan' | 'prepare' | 'launch';
-
-export interface DestinationInfo {
-  id: Destination;
-  name: string;
-  distanceFromSunAU: number;
-  orbitAngleDeg: number;
-  color: string;
-  radiusPx: number;
-  travelDaysDirect: number;
-  travelDaysAssist?: number;
-  assistPlanet?: string;
-  description: string;
-  funFact: string;
-}
-
-export interface SupplyItem {
-  id: string;
-  name: string;
-  icon: string;
-  perDayKg: number;
-  description: string;
-  required: boolean;
-}
-
-export interface LaunchWindow {
-  id: string;
-  label: string;
-  description: string;
-  optimal: boolean;
-  fuelMultiplier: number;
-  travelTimeMultiplier: number;
-}
+export type { MissionItem, MissionMode, MissionTier, StoryPlace };
 
 export interface MissionPlannerData {
   title: string;
-  description: string;
-  gradeLevel: 'K' | '1' | '2' | '3' | '4' | '5';
+  /** One neutral sentence under the title; never states which place, month, number or route is right. */
+  overview?: string;
+  description?: string;
+  /** Grade rung 'K'..'5'. K and 1 get the ungraded story. */
+  gradeLevel?: string;
+  /** The eval modes this session asks, in order (grades 2-5). */
+  challengeTypes?: MissionMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: MissionTier;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: MissionItem[];
+  /** K-1: the places the story offers. */
+  story?: { places: StoryPlace[] };
 
-  // Available destinations
-  destinations: DestinationInfo[];
-
-  // Mission configuration
-  missionType: MissionType;
-  crewed: boolean;
-
-  // Feature toggles by grade
-  showLaunchWindows: boolean;
-  showTrajectory: boolean;
-  supplyCalculator: boolean;
-  gravityAssistOption: boolean;
-  fuelConstraint: number; // available propellant in tons
-  missionClock: boolean;
-
-  // Launch window options (grades 3+)
-  launchWindows?: LaunchWindow[];
-
-  // Supply items (grades 2+)
-  supplies?: SupplyItem[];
-
-  // Learning content
-  learningFocus: string;
-  hints: string[];
-  funFact?: string;
-
-  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -92,1160 +90,669 @@ export interface MissionPlannerData {
 interface MissionPlannerProps {
   data: MissionPlannerData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
 
-// =============================================================================
-// Constants
-// =============================================================================
-
-const EARTH_AU = 1.0;
-const SVG_CENTER = 300;
-const AU_TO_PX = 80;
-const EARTH_COLOR = '#4A90D9';
-const SUN_COLOR = '#FFD700';
-const ORBIT_COLOR = 'rgba(255, 255, 255, 0.15)';
-const TRAJECTORY_COLOR = '#00FF88';
-const ASSIST_COLOR = '#FF6B6B';
-
-const PHASE_LABELS: Record<LearningPhase, string> = {
-  explore: '1. Explore',
-  plan: '2. Plan',
-  prepare: '3. Prepare',
-  launch: '4. Launch!',
+const MODE_LABEL: Record<MissionMode, string> = {
+  farther_closer: 'Near or far?', pick_window: 'When to launch', pack_days: 'Pack the food', assist_tradeoff: 'Pick a route',
 };
 
-const PHASE_INSTRUCTIONS: Record<LearningPhase, Record<string, string>> = {
-  explore: {
-    K: 'Pick a place in space you want to visit!',
-    '1': 'Choose where you want to go! Some places are farther away.',
-    '2': 'Select your destination. Farther places need more time!',
-    '3': 'Choose a destination and think about how far it is from Earth.',
-    '4': 'Select your destination. Consider distance and travel time.',
-    '5': 'Analyze each destination. Consider distance, travel time, and mission complexity.',
-  },
-  plan: {
-    K: 'Your spaceship will fly to your destination!',
-    '1': 'Watch how your spaceship will travel through space!',
-    '2': 'See the path your spaceship will take!',
-    '3': 'Choose when to launch — timing matters in space!',
-    '4': 'Plan your route. Could another planet give you a speed boost?',
-    '5': 'Optimize your trajectory. Direct or gravity assist? When to launch?',
-  },
-  prepare: {
-    K: 'Pack some things for your space trip!',
-    '1': 'What do astronauts need for a long trip?',
-    '2': 'Pack food, water, and air. More days = more supplies!',
-    '3': 'Calculate how many supplies your crew needs.',
-    '4': 'Balance your payload: supplies vs fuel vs equipment.',
-    '5': 'Optimize fuel vs payload. Every kilogram matters!',
-  },
-  launch: {
-    K: 'Blast off! Watch your spaceship fly to space! 🚀',
-    '1': 'Your mission is launching! Watch it travel!',
-    '2': 'Mission launched! Track the progress!',
-    '3': 'Mission underway! Monitor supplies and distance.',
-    '4': 'Mission in progress. Is your plan working?',
-    '5': 'Mission executing. Monitor fuel, trajectory, and timing.',
-  },
-};
+// ============================================================================
+// Pictures
+// ============================================================================
 
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-function auToPixel(au: number): number {
-  return au * AU_TO_PX;
-}
-
-function polarToCartesian(centerX: number, centerY: number, radiusPx: number, angleDeg: number) {
-  const rad = (angleDeg - 90) * (Math.PI / 180);
-  return {
-    x: centerX + radiusPx * Math.cos(rad),
-    y: centerY + radiusPx * Math.sin(rad),
-  };
-}
-
-function formatDays(days: number, grade: string): string {
-  if (grade === 'K' || grade === '1') {
-    if (days < 7) return `${days} days`;
-    if (days < 60) return `about ${Math.round(days / 7)} weeks`;
-    return `about ${Math.round(days / 30)} months`;
-  }
-  if (days >= 365) {
-    const years = Math.floor(days / 365);
-    const remaining = days % 365;
-    if (remaining > 30) return `${years} year${years > 1 ? 's' : ''} ${Math.round(remaining / 30)} months`;
-    return `${years} year${years > 1 ? 's' : ''}`;
-  }
-  return `${days} days`;
-}
-
-// =============================================================================
-// Sub-components
-// =============================================================================
-
-const PhaseIndicator: React.FC<{
-  currentPhase: LearningPhase;
-  phases: LearningPhase[];
-  completedPhases: Set<LearningPhase>;
-}> = ({ currentPhase, phases, completedPhases }) => (
-  <div className="flex items-center gap-1 mb-4">
-    {phases.map((phase, i) => {
-      const isActive = phase === currentPhase;
-      const isCompleted = completedPhases.has(phase);
-      return (
-        <React.Fragment key={phase}>
-          {i > 0 && (
-            <div className={`h-0.5 w-6 ${isCompleted || isActive ? 'bg-blue-400' : 'bg-slate-600'}`} />
-          )}
-          <div
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              isActive
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : isCompleted
-                ? 'bg-green-600/30 text-green-300 border border-green-500/40'
-                : 'bg-slate-700/50 text-slate-500 border border-slate-600/40'
-            }`}
-          >
-            {isCompleted ? '✓ ' : ''}{PHASE_LABELS[phase]}
-          </div>
-        </React.Fragment>
-      );
-    })}
-  </div>
-);
-
-// =============================================================================
-// Solar System Map (D3)
-// =============================================================================
-
-const SolarSystemMap: React.FC<{
-  destinations: DestinationInfo[];
-  selectedDestination: Destination | null;
-  trajectoryType: TrajectoryType;
-  showTrajectory: boolean;
-  showGravityAssist: boolean;
-  missionProgress: number; // 0-1
-  missionActive: boolean;
-  grade: string;
-}> = ({
-  destinations,
-  selectedDestination,
-  trajectoryType,
-  showTrajectory,
-  showGravityAssist,
-  missionProgress,
-  missionActive,
-  grade,
-}) => {
-  const svgRef = useRef<SVGSVGElement>(null);
-
-  useEffect(() => {
-    if (!svgRef.current) return;
-
-    const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
-
-    const width = 600;
-    const height = 600;
-    const cx = width / 2;
-    const cy = height / 2;
-
-    // Background starfield
-    const defs = svg.append('defs');
-
-    // Sun glow gradient
-    const sunGradient = defs.append('radialGradient')
-      .attr('id', 'sun-glow')
-      .attr('cx', '50%').attr('cy', '50%').attr('r', '50%');
-    sunGradient.append('stop').attr('offset', '0%').attr('stop-color', '#FFF7D0');
-    sunGradient.append('stop').attr('offset', '60%').attr('stop-color', '#FFD700');
-    sunGradient.append('stop').attr('offset', '100%').attr('stop-color', '#FF8C00');
-
-    // Stars
-    const starGroup = svg.append('g').attr('class', 'stars');
-    for (let i = 0; i < 120; i++) {
-      starGroup.append('circle')
-        .attr('cx', Math.random() * width)
-        .attr('cy', Math.random() * height)
-        .attr('r', Math.random() * 1.5 + 0.3)
-        .attr('fill', 'white')
-        .attr('opacity', Math.random() * 0.6 + 0.2);
-    }
-
-    // Draw orbit rings
-    const orbits = svg.append('g').attr('class', 'orbits');
-
-    // Earth orbit
-    orbits.append('circle')
-      .attr('cx', cx).attr('cy', cy)
-      .attr('r', auToPixel(EARTH_AU))
-      .attr('fill', 'none')
-      .attr('stroke', ORBIT_COLOR)
-      .attr('stroke-width', 1)
-      .attr('stroke-dasharray', '4,4');
-
-    // Destination orbits
-    destinations.forEach((dest) => {
-      orbits.append('circle')
-        .attr('cx', cx).attr('cy', cy)
-        .attr('r', auToPixel(dest.distanceFromSunAU))
-        .attr('fill', 'none')
-        .attr('stroke', ORBIT_COLOR)
-        .attr('stroke-width', 1)
-        .attr('stroke-dasharray', '4,4');
-    });
-
-    // Sun
-    svg.append('circle')
-      .attr('cx', cx).attr('cy', cy)
-      .attr('r', 18)
-      .attr('fill', 'url(#sun-glow)')
-      .attr('filter', 'blur(1px)');
-    svg.append('circle')
-      .attr('cx', cx).attr('cy', cy)
-      .attr('r', 12)
-      .attr('fill', SUN_COLOR);
-
-    // Sun label
-    if (grade !== 'K') {
-      svg.append('text')
-        .attr('x', cx).attr('y', cy + 28)
-        .attr('text-anchor', 'middle')
-        .attr('fill', '#FFD700')
-        .attr('font-size', '10px')
-        .attr('font-weight', 'bold')
-        .text('Sun');
-    }
-
-    // Earth
-    const earthAngle = 180; // position Earth at bottom for intuitive layout
-    const earthPos = polarToCartesian(cx, cy, auToPixel(EARTH_AU), earthAngle);
-
-    svg.append('circle')
-      .attr('cx', earthPos.x).attr('cy', earthPos.y)
-      .attr('r', 8)
-      .attr('fill', EARTH_COLOR)
-      .attr('stroke', '#5DADE2')
-      .attr('stroke-width', 1.5);
-
-    svg.append('text')
-      .attr('x', earthPos.x).attr('y', earthPos.y + 18)
-      .attr('text-anchor', 'middle')
-      .attr('fill', '#5DADE2')
-      .attr('font-size', '11px')
-      .attr('font-weight', 'bold')
-      .text('Earth 🌍');
-
-    // Destination planets
-    destinations.forEach((dest) => {
-      const destPos = polarToCartesian(cx, cy, auToPixel(dest.distanceFromSunAU), dest.orbitAngleDeg);
-      const isSelected = dest.id === selectedDestination;
-
-      // Selection ring
-      if (isSelected) {
-        svg.append('circle')
-          .attr('cx', destPos.x).attr('cy', destPos.y)
-          .attr('r', dest.radiusPx + 6)
-          .attr('fill', 'none')
-          .attr('stroke', '#00FF88')
-          .attr('stroke-width', 2)
-          .attr('stroke-dasharray', '3,3')
-          .attr('opacity', 0.8);
-      }
-
-      // Planet
-      svg.append('circle')
-        .attr('cx', destPos.x).attr('cy', destPos.y)
-        .attr('r', dest.radiusPx)
-        .attr('fill', dest.color)
-        .attr('stroke', isSelected ? '#00FF88' : 'rgba(255,255,255,0.3)')
-        .attr('stroke-width', isSelected ? 2 : 1)
-        .attr('opacity', isSelected ? 1 : 0.8);
-
-      // Planet label
-      svg.append('text')
-        .attr('x', destPos.x).attr('y', destPos.y + dest.radiusPx + 14)
-        .attr('text-anchor', 'middle')
-        .attr('fill', isSelected ? '#00FF88' : 'rgba(255,255,255,0.7)')
-        .attr('font-size', isSelected ? '12px' : '10px')
-        .attr('font-weight', isSelected ? 'bold' : 'normal')
-        .text(dest.name);
-    });
-
-    // Draw trajectory
-    if (selectedDestination && showTrajectory) {
-      const dest = destinations.find((d) => d.id === selectedDestination);
-      if (dest) {
-        const destPos = polarToCartesian(cx, cy, auToPixel(dest.distanceFromSunAU), dest.orbitAngleDeg);
-
-        if (trajectoryType === 'gravity_assist' && showGravityAssist && dest.assistPlanet) {
-          // Find assist planet
-          const assistDest = destinations.find((d) => d.name.toLowerCase() === dest.assistPlanet?.toLowerCase());
-          if (assistDest) {
-            const assistPos = polarToCartesian(cx, cy, auToPixel(assistDest.distanceFromSunAU), assistDest.orbitAngleDeg);
-
-            // Earth → Assist planet
-            const line1 = d3.line<{ x: number; y: number }>()
-              .x((d) => d.x)
-              .y((d) => d.y)
-              .curve(d3.curveBasis);
-
-            const midpoint1 = {
-              x: (earthPos.x + assistPos.x) / 2 + (Math.random() - 0.5) * 30,
-              y: (earthPos.y + assistPos.y) / 2 + (Math.random() - 0.5) * 30,
-            };
-
-            svg.append('path')
-              .datum([earthPos, midpoint1, assistPos])
-              .attr('d', line1)
-              .attr('fill', 'none')
-              .attr('stroke', ASSIST_COLOR)
-              .attr('stroke-width', 2)
-              .attr('stroke-dasharray', '6,4')
-              .attr('opacity', 0.7);
-
-            // Assist planet → Destination
-            const midpoint2 = {
-              x: (assistPos.x + destPos.x) / 2 + (Math.random() - 0.5) * 30,
-              y: (assistPos.y + destPos.y) / 2 + (Math.random() - 0.5) * 30,
-            };
-
-            svg.append('path')
-              .datum([assistPos, midpoint2, destPos])
-              .attr('d', line1)
-              .attr('fill', 'none')
-              .attr('stroke', TRAJECTORY_COLOR)
-              .attr('stroke-width', 2)
-              .attr('stroke-dasharray', '6,4')
-              .attr('opacity', 0.7);
-
-            // Assist label
-            svg.append('text')
-              .attr('x', assistPos.x).attr('y', assistPos.y - assistDest.radiusPx - 8)
-              .attr('text-anchor', 'middle')
-              .attr('fill', ASSIST_COLOR)
-              .attr('font-size', '9px')
-              .text('Gravity Assist!');
-          }
-        } else {
-          // Direct trajectory - curved line from Earth to destination
-          const line = d3.line<{ x: number; y: number }>()
-            .x((d) => d.x)
-            .y((d) => d.y)
-            .curve(d3.curveBasis);
-
-          // Create a curved path through a midpoint offset from the straight line
-          const midX = (earthPos.x + destPos.x) / 2;
-          const midY = (earthPos.y + destPos.y) / 2;
-          const dx = destPos.x - earthPos.x;
-          const dy = destPos.y - earthPos.y;
-          const perpX = -dy * 0.2;
-          const perpY = dx * 0.2;
-
-          svg.append('path')
-            .datum([earthPos, { x: midX + perpX, y: midY + perpY }, destPos])
-            .attr('d', line)
-            .attr('fill', 'none')
-            .attr('stroke', TRAJECTORY_COLOR)
-            .attr('stroke-width', 2.5)
-            .attr('stroke-dasharray', '8,4')
-            .attr('opacity', 0.8);
-        }
-
-        // Spacecraft indicator during mission
-        if (missionActive && missionProgress > 0) {
-          const t = missionProgress;
-          const shipX = earthPos.x + (destPos.x - earthPos.x) * t;
-          const shipY = earthPos.y + (destPos.y - earthPos.y) * t;
-
-          // Spacecraft
-          svg.append('text')
-            .attr('x', shipX).attr('y', shipY)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '16px')
-            .text('🚀');
-
-          // Trail
-          svg.append('line')
-            .attr('x1', earthPos.x).attr('y1', earthPos.y)
-            .attr('x2', shipX).attr('y2', shipY)
-            .attr('stroke', TRAJECTORY_COLOR)
-            .attr('stroke-width', 1.5)
-            .attr('opacity', 0.5);
-        }
-      }
-    }
-  }, [destinations, selectedDestination, trajectoryType, showTrajectory, showGravityAssist, missionProgress, missionActive, grade]);
-
+/** A place, always the same size (a bigger picture must not hint at a farther place). */
+function PlacePicture({ place, size = 56 }: { place: Place | StoryPlace; size?: number }) {
+  const c = size / 2, r = size * 0.36, fill = PLACE_COLOR[place];
   return (
-    <svg
-      ref={svgRef}
-      viewBox="0 0 600 600"
-      className="w-full max-w-[600px] mx-auto rounded-xl border border-slate-700/50"
-      style={{ background: 'radial-gradient(ellipse at center, #0a1628 0%, #000510 100%)' }}
-    />
-  );
-};
-
-// =============================================================================
-// Supply Calculator Component
-// =============================================================================
-
-const SupplyCalculator: React.FC<{
-  supplies: SupplyItem[];
-  travelDays: number;
-  crewed: boolean;
-  crewSize: number;
-  packedSupplies: Record<string, number>;
-  onSupplyChange: (supplyId: string, days: number) => void;
-  grade: string;
-  fuelConstraint: number;
-}> = ({ supplies, travelDays, crewed, crewSize, packedSupplies, onSupplyChange, grade, fuelConstraint }) => {
-  const totalMassKg = useMemo(() => {
-    return supplies.reduce((total, supply) => {
-      const days = packedSupplies[supply.id] || 0;
-      return total + supply.perDayKg * days * (crewed ? crewSize : 1);
-    }, 0);
-  }, [supplies, packedSupplies, crewed, crewSize]);
-
-  const fuelUsedPercent = Math.min(100, (totalMassKg / (fuelConstraint * 1000)) * 100);
-
-  return (
-    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-      <h4 className="text-sm font-semibold text-white mb-3">
-        {grade === 'K' || grade === '1' ? '🎒 Pack Your Bag!' : '📦 Supply Calculator'}
-      </h4>
-
-      {crewed && (
-        <div className="mb-3 text-xs text-slate-400">
-          Crew of {crewSize} • Trip: {travelDays} days {grade !== 'K' && `(need supplies for ${travelDays * (crewed ? 2 : 1)} days round-trip)`}
-        </div>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" data-place={place}>
+      {place === 'asteroids' ? (
+        [[-10, -6, 5], [6, -9, 4], [9, 5, 6], [-6, 8, 4], [0, 0, 3], [-13, 4, 3]].map(([dx, dy, rr], i) => (
+          <circle key={i} cx={c + dx} cy={c + dy} r={rr} fill={fill} stroke="#57534e" strokeWidth={0.8} />
+        ))
+      ) : (
+        <>
+          <circle cx={c} cy={c} r={r} fill={fill} stroke="#0f172a" strokeWidth={0.8} />
+          {place === 'saturn' && <ellipse cx={c} cy={c} rx={r * 1.45} ry={r * 0.38} fill="none" stroke="#fde68a" strokeWidth={2} />}
+          {place === 'jupiter' && <path d={`M${c - r} ${c - 3} H${c + r} M${c - r + 2} ${c + 5} H${c + r - 2}`} stroke="#92400e" strokeWidth={2} opacity={0.6} />}
+          {place === 'moon' && <><circle cx={c - 5} cy={c - 4} r={3} fill="#94a3b8" /><circle cx={c + 6} cy={c + 5} r={2.4} fill="#94a3b8" /></>}
+        </>
       )}
+    </svg>
+  );
+}
 
-      <div className="space-y-3">
-        {supplies.map((supply) => {
-          const packed = packedSupplies[supply.id] || 0;
-          const needed = travelDays * (crewed ? 2 : 1); // round trip
-          const isEnough = packed >= needed;
+/** After the answer (farther_closer): Earth on the left, every place at its distance (log scale), the asked ones named. */
+function DistanceStrip({ places }: { places: Place[] }) {
+  const W = 320, lo = Math.log10(0.0015), hi = Math.log10(32);
+  const x = (au: number) => 30 + ((Math.log10(au) - lo) / (hi - lo)) * (W - 50);
+  // Labels alternate above and below in distance order, so neighbours never overlap.
+  const order = [...places].sort((a, b) => PLACE_AU[a] - PLACE_AU[b]);
+  return (
+    <svg viewBox={`0 0 ${W} 76`} className="mx-auto block w-full max-w-[520px]" role="img" aria-label="Each place at its distance from Earth" data-distance-strip>
+      <line x1={14} y1={34} x2={W - 8} y2={34} stroke="#475569" strokeWidth={1} />
+      <circle cx={14} cy={34} r={6} fill="#4a90d9" />
+      <text x={14} y={56} fontSize={9} fill="#cbd5e1" textAnchor="middle">Earth</text>
+      {PLACES.map(p => {
+        const shown = places.includes(p), px = x(PLACE_AU[p]);
+        return (
+          <g key={p} opacity={shown ? 1 : 0.3}>
+            <circle cx={px} cy={34} r={shown ? 5 : 3} fill={PLACE_COLOR[p]} />
+            {shown && <text x={px} y={order.indexOf(p) % 2 ? 58 : 20} fontSize={9} fill="#e2e8f0" textAnchor="middle">{PLACE_NAME[p].replace('The ', '')}</text>}
+          </g>
+        );
+      })}
+      <text x={W - 8} y={72} fontSize={8} fill="#94a3b8" textAnchor="end">farther →</text>
+    </svg>
+  );
+}
 
-          return (
-            <div key={supply.id} className="flex items-center gap-3">
-              <span className="text-lg">{supply.icon}</span>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-slate-300">{supply.name}</span>
-                  {grade !== 'K' && (
-                    <span className={`text-xs ${isEnough ? 'text-green-400' : 'text-amber-400'}`}>
-                      {packed}/{needed} days
-                    </span>
-                  )}
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={Math.max(needed * 1.5, 30)}
-                  step={1}
-                  value={packed}
-                  onChange={(e) => onSupplyChange(supply.id, parseInt(e.target.value))}
-                  className="w-full h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                />
-              </div>
-              {grade !== 'K' && (
-                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${
-                  isEnough ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'
-                }`}>
-                  {isEnough ? '✓' : '!'}
-                </div>
+/** farther_closer's `ask_arrow` lever: which end of "out from Earth" the question asks for. No place is drawn on it. */
+function AskArrow({ ask }: { ask: 'far' | 'near' }) {
+  const far = ask === 'far';
+  return (
+    <svg viewBox="0 0 320 44" className="block w-full" role="img" aria-label={far ? 'An arrow out from Earth, its far end marked' : 'An arrow out from Earth, its near end marked'} data-lever="ask-arrow">
+      <defs><marker id="ask-arrow-head" markerWidth={8} markerHeight={8} refX={6} refY={4} orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#fbbf24" /></marker></defs>
+      <circle cx={14} cy={18} r={7} fill="#4a90d9" />
+      <text x={14} y={38} fontSize={9} fill="#cbd5e1" textAnchor="middle">Earth</text>
+      <line x1={26} y1={18} x2={306} y2={18} stroke="#fbbf24" strokeWidth={2} markerEnd="url(#ask-arrow-head)" />
+      <rect x={far ? 236 : 26} y={6} width={74} height={24} rx={5} fill="none" stroke="#f87171" strokeWidth={1.5} strokeDasharray="3 2" />
+      <text x={far ? 273 : 63} y={40} fontSize={9} fill="#fecaca" textAnchor="middle">{far ? 'farthest from Earth' : 'closest to Earth'}</text>
+    </svg>
+  );
+}
+
+const RING: Record<Target, { earth: number; planet: number }> = {
+  venus: { earth: 48, planet: 30 }, mars: { earth: 32, planet: 52 }, jupiter: { earth: 22, planet: 60 },
+};
+const at = (cx: number, r: number, deg: number) => ({ x: cx + r * Math.cos((deg * Math.PI) / 180), y: cx - r * Math.sin((deg * Math.PI) / 180) });
+
+/** One launch month: the Sun, two orbits (not to scale), Earth and the target where they are that month. */
+function WindowPicture({ target, w, lines, path }: { target: Target; w: LaunchWindow; lines: boolean; path: boolean }) {
+  const S = 140, c = S / 2, ring = RING[target];
+  const e = at(c, ring.earth, w.earth), p = at(c, ring.planet, w.planet);
+  // The ship's path (after the answer): a curve from Earth to the planet, bowed away from the Sun.
+  const mid = { x: (e.x + p.x) / 2, y: (e.y + p.y) / 2 };
+  const out = Math.hypot(mid.x - c, mid.y - c) || 1;
+  const bow = { x: mid.x + ((mid.x - c) / out) * 18, y: mid.y + ((mid.y - c) / out) * 18 };
+  return (
+    <svg viewBox={`0 0 ${S} ${S}`} className="block w-full max-w-[150px] mx-auto" aria-hidden="true">
+      <rect width={S} height={S} rx={10} fill="#0b1026" />
+      <circle cx={c} cy={c} r={ring.earth} fill="none" stroke="rgba(255,255,255,0.18)" />
+      <circle cx={c} cy={c} r={ring.planet} fill="none" stroke="rgba(255,255,255,0.18)" strokeDasharray="3 3" />
+      <circle cx={c} cy={c} r={8} fill="#fcd34d" />
+      {lines && <line x1={e.x} y1={e.y} x2={p.x} y2={p.y} stroke="#e2e8f0" strokeWidth={1.2} strokeDasharray="4 3" data-distance-line />}
+      {path && <path d={`M${e.x} ${e.y} Q${bow.x} ${bow.y} ${p.x} ${p.y}`} fill="none" stroke="#4ade80" strokeWidth={2} data-ship-path />}
+      <circle cx={e.x} cy={e.y} r={5} fill="#4a90d9" data-earth />
+      <circle cx={p.x} cy={p.y} r={target === 'jupiter' ? 7 : 5} fill={target === 'venus' ? '#e8a838' : target === 'mars' ? '#ef4444' : '#d4a46a'} data-target />
+    </svg>
+  );
+}
+
+/** pack_days: the trip line. Day squares for the way there and the stay; the way home is an arrow until `homeLeg`. */
+function TripLine({ item, homeLeg, crewRows }: { item: PackItem; homeLeg: boolean; crewRows: boolean }) {
+  const sq = 11, gap = 3;
+  const thereW = item.there * (sq + gap);
+  const x0 = 34, moonX = x0 + thereW + 22, stayX = moonX + 22;
+  const W = Math.max(stayX + item.stay * (sq + gap) + 10, 260);
+  const squares = (n: number, x: number, y: number, key: string) => Array.from({ length: n }, (_, i) => (
+    <rect key={`${key}${i}`} x={x + i * (sq + gap)} y={y} width={sq} height={sq} rx={2} fill="#64748b" stroke="#cbd5e1" strokeWidth={0.6} data-day={key} />
+  ));
+  return (
+    <div className="space-y-2">
+      <svg viewBox={`0 0 ${W} 92`} className="mx-auto block w-full max-w-[520px]" role="img" aria-label="The trip line: the days there and the days staying" data-trip-line>
+        <circle cx={16} cy={26} r={12} fill="#4a90d9" />
+        <text x={16} y={50} fontSize={9} fill="#cbd5e1" textAnchor="middle">Earth</text>
+        {squares(item.there, x0, 20, 'there')}
+        <text x={x0} y={14} fontSize={8} fill="#94a3b8">there</text>
+        <circle cx={moonX} cy={26} r={10} fill="#cbd5e1" />
+        <text x={moonX} y={50} fontSize={9} fill="#cbd5e1" textAnchor="middle">Moon</text>
+        {squares(item.stay, stayX, 20, 'stay')}
+        <text x={stayX} y={14} fontSize={8} fill="#94a3b8">stay</text>
+        <path d={`M${moonX} 62 L${x0 - 4} 62`} stroke="#fbbf24" strokeWidth={1.5} markerEnd="url(#home-arrow)" />
+        <defs><marker id="home-arrow" markerWidth={8} markerHeight={8} refX={7} refY={4} orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#fbbf24" /></marker></defs>
+        {homeLeg ? squares(item.there, x0, 68, 'home') : <text x={x0} y={82} fontSize={9} fill="#fde68a">home the same way</text>}
+      </svg>
+      <div className="flex flex-wrap items-center justify-center gap-2 text-xl" aria-label={`${item.crew} astronaut${item.crew === 1 ? '' : 's'}`} data-crew={item.crew}>
+        {Array.from({ length: item.crew }, (_, i) => (
+          <span key={i} className="flex items-center gap-0.5">
+            <span aria-hidden="true">🧑‍🚀</span>{crewRows && <span aria-hidden="true" className="text-base" data-crew-pack>🥫</span>}
+          </span>
+        ))}
+      </div>
+      {crewRows && <p className="text-center text-xs text-rose-200" data-lever="crew-rows">{CREW_LINE}</p>}
+    </div>
+  );
+}
+
+const FLYBY_COLOR: Record<string, string> = { venus: '#e8a838', earth: '#4a90d9', mars: '#ef4444' };
+
+/** assist_tradeoff: a route's path from Earth past its flyby planets to the target, and its years as squares. */
+function RoutePicture({ route, target, limit, limitLine, chosen }: { route: Route; target: AssistItem['target']; limit: number; limitLine: boolean; chosen: boolean }) {
+  const W = 170, n = route.flybys.length;
+  const stops = route.flybys.map((f, i) => ({ f, x: 30 + ((i + 1) * (W - 60)) / (n + 1), y: i % 2 ? 62 : 22 }));
+  const pts = [{ x: 14, y: 42 }, ...stops.map(s => ({ x: s.x, y: s.y })), { x: W - 16, y: 42 }];
+  const d = pts.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`).join(' ');
+  const yr = 9, yg = 2, maxYears = Math.max(route.years, limit);
+  const yearW = Math.min(yr, (W - 20) / maxYears - yg);
+  return (
+    <svg viewBox={`0 0 ${W} 104`} className="block w-full" aria-hidden="true">
+      <rect width={W} height={82} rx={8} fill="#0b1026" />
+      <path d={d} fill="none" stroke={chosen ? '#4ade80' : '#94a3b8'} strokeWidth={chosen ? 2.2 : 1.4} strokeDasharray={chosen ? undefined : '4 3'} data-route-path />
+      <circle cx={14} cy={42} r={6} fill="#4a90d9" />
+      {stops.map((s, i) => (
+        <g key={i} data-flyby={s.f}>
+          <circle cx={s.x} cy={s.y} r={6} fill={FLYBY_COLOR[s.f]} />
+          <path d={`M${s.x - 9} ${s.y} A9 9 0 0 1 ${s.x + 9} ${s.y}`} fill="none" stroke="#fde68a" strokeWidth={1} transform={s.y > 42 ? `rotate(180 ${s.x} ${s.y})` : undefined} />
+          <text x={s.x} y={s.y > 42 ? s.y + 18 : s.y - 11} fontSize={9} fill="#cbd5e1" textAnchor="middle">{FLYBY_NAME[s.f]}</text>
+        </g>
+      ))}
+      <circle cx={W - 16} cy={42} r={target === 'saturn' ? 7 : 8} fill={target === 'saturn' ? '#e9c46a' : '#d4a46a'} />
+      {target === 'saturn' && <ellipse cx={W - 16} cy={42} rx={11} ry={3} fill="none" stroke="#fde68a" />}
+      <g data-years={route.years}>
+        {Array.from({ length: route.years }, (_, i) => (
+          <rect key={i} x={10 + i * (yearW + yg)} y={88} width={yearW} height={9} rx={1.5} fill="#38bdf8" opacity={0.85} />
+        ))}
+      </g>
+      {limitLine && <line x1={10 + limit * (yearW + yg) - yg / 2} x2={10 + limit * (yearW + yg) - yg / 2} y1={84} y2={101} stroke="#f87171" strokeWidth={2} data-limit-line />}
+    </svg>
+  );
+}
+
+function CardLines({ lines, lever }: { lines: string[]; lever: string }) {
+  return (
+    <LuminaPanel accent="cyan" data-lever={lever} className="space-y-1 text-xs text-slate-300">
+      {lines.map(l => <p key={l}>{l}</p>)}
+    </LuminaPanel>
+  );
+}
+
+// ============================================================================
+// Graded surface (grades 2-5)
+// ============================================================================
+
+type LeverMemo = { item: string } & MissionLeverState;
+
+const MissionPlannerSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  MissionPlannerProps & { tutorOwned: boolean; useController: (options: ProgressOptions<MissionItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, overview, description, gradeLevel, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+
+  const items = useMemo(() => missionItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.title, data.gradeLevel]);
+  const stableInstanceId = useRef(instanceId || `mission-planner-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  const item: MissionItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [work, setWork] = useState<MissionWork>(emptyWork);
+  /** Workspace path: the checked wrong work, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverMemo, setLeverMemo] = useState<LeverMemo>({ item: '', ...NO_LEVERS });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
+
+  const lever: MissionLeverState = item && leverMemo.item === item.id ? leverMemo : NO_LEVERS;
+  const editLevers = (change: (s: MissionLeverState) => Partial<MissionLeverState>) => {
+    const id = item?.id ?? '';
+    setLeverMemo(m => { const s = m.item === id ? m : { item: id, ...NO_LEVERS }; return { ...s, ...change(s), item: id }; });
+  };
+  const leverOn = (id: string) => lever.pulled.includes(id);
+
+  const solvedNow = !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<MissionPlannerMetrics>({
+    primitiveType: 'mission-planner',
+    instanceId: resolvedInstanceId,
+    skillId, subskillId, objectiveId, exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
+  });
+
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
+  const aiPrimitiveData = useMemo(() => ({
+    title, gradeLevel: gradeLevel ?? 'unspecified', mode: item?.mode ?? 'farther_closer', itemIndex: currentIndex + 1,
+    totalItems: items.length, ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
+  }), [gradeLevel, item, currentIndex, items.length, title, currentAttempts]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'mission-planner', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: gradeLevel ? `Grade ${gradeLevel}` : undefined, enabled: !tutorOwned,
+  });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
+
+  const clearItem = () => { setWork(emptyWork()); setWrongShown(false); setFeedback(null); setScriptedWrongs(0); setScriptedReveal(false); };
+
+  openItem.current = (_index, retry) => {
+    if (retry) { setWork(emptyWork()); setWrongShown(false); setFeedback(null); editLevers(s => ({ wrongs: s.wrongs + 1 })); return; }
+    clearItem();
+  };
+
+  /** A spoken answer the observer credited: recorded as a correct tap records it, and shown the same way. */
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    setWork({ pick: keyOf(solved) }); setWrongShown(false);
+  };
+
+  // ── Handlers ──
+  const closed = revealed || wrongShown || learnerBlocked();
+  const tap = (i: number) => {
+    if (!item || closed || lever.dropped.includes(i)) return;
+    SoundManager.select();
+    setWork({ pick: i }); setFeedback(null);
+  };
+
+  /** Two choices reveal after one wrong try; more choices after two. */
+  const triesBeforeReveal = (it: MissionItem) => (optionCount(it) <= 2 ? 1 : 2);
+
+  const check = () => {
+    if (!item || closed || !workComplete(item, work)) return;
+    const correct = missionCorrect(item, work);
+    progress.commitCheck(describeMissionWork(item, work), correct, correct ? undefined : missionMiss(item, work));
+    if (correct) {
+      SoundManager.playCorrect(); tappedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} The answer is now explained on screen. Praise briefly.`);
+      return;
+    }
+    SoundManager.playIncorrect();
+    if (tutorOwned) {
+      editLevers(s => ({ picked: [...s.picked, work.pick!] }));
+      setWrongShown(true);
+      return;
+    }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= triesBeforeReveal(item)) {
+      setScriptedReveal(true);
+      setWork({ pick: keyOf(item) });
+      progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] The learner missed: ${askOf(item)} The answer is now on screen; explain it.`);
+      return;
+    }
+    setWork(emptyWork());
+    setFeedback('Not quite. Look again, and try once more.');
+    say(`[ANSWER_INCORRECT] ${describeMissionWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask what the learner noticed, without naming a choice.`);
+  };
+
+  const metrics = (): MissionPlannerMetrics => {
+    const right = items.filter(i => results.some(r => r.challengeId === i.id && r.correct));
+    return {
+      type: 'mission-planner',
+      challengeType: item?.mode ?? 'farther_closer',
+      itemsTotal: items.length,
+      itemsCorrect: right.length,
+      firstTryCorrect: results.filter(r => r.correct && r.attempts === 1).length,
+      checkedAnswers: results.reduce((s, r) => s + (r.attempts ?? 1), 0),
+    };
+  };
+
+  /** Scripted path: Next, and on the last item the session report. Only a first-try answer scores. */
+  const next = () => {
+    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct && r.attempts === 1).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 50, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
+  };
+
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), checkedAnswers: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
+  };
+
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || (isComplete && !solvedNow)) return;
+    const scene = workspaceScene(item, { work, solved: revealed });
+    const levers = revealed ? [] : missionLevers(item, lever);
+    const onScreen = leverFacts(item, lever);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (!l) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        if (id === DROP_LEVER) {
+          const far = dropTarget(item, lever);
+          if (far === null) return 'Nothing more can be greyed out here; too few would be left.';
+          editLevers(s => ({ pulled: [...s.pulled, id], dropped: [...s.dropped, far] }));
+          if (work.pick === far) setWork(emptyWork());
+          return true;
+        }
+        editLevers(s => ({ pulled: [...s.pulled, id] }));
+        return true;
+      },
+    };
+  });
+
+  // The workspace path keeps the last credited item on screen until the session is submitted.
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete && !solvedNow);
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: done || !item ? null : item.id,
+    label: 'The mission choices and your answer',
+    solved: revealed,
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
+  if (!items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title || 'Mission Planner'}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This planner has nothing to ask.</p></LuminaCardContent>
+      </LuminaCard>
+    );
+  }
+
+  // ── Render pieces ──
+  const keyIdx = item ? keyOf(item) : -1;
+  const optionState = (i: number): AnswerChoiceState => {
+    if (lever.dropped.includes(i)) return 'dimmed';
+    if (revealed) return i === keyIdx ? 'correct' : i === work.pick ? 'incorrect' : 'dimmed';
+    if (wrongShown && work.pick === i) return 'incorrect';
+    return work.pick === i ? 'selected' : 'idle';
+  };
+  const choice = (i: number, label: string, children: React.ReactNode, cls: string) => (
+    <LuminaAnswerChoice key={i} aria-label={label} state={optionState(i)}
+      disabled={closed || lever.dropped.includes(i)} data-dropped={lever.dropped.includes(i) || undefined}
+      className={cls} onClick={() => tap(i)}>
+      {children}
+    </LuminaAnswerChoice>
+  );
+  const grid = (n: number) => `grid gap-2 ${n > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`;
+
+  const renderChoices = (it: MissionItem) => {
+    if (it.mode === 'farther_closer') {
+      return (
+        <div className={grid(it.places.length)}>
+          {it.places.map((p, i) => choice(i, PLACE_NAME[p], (
+            <>
+              <PlacePicture place={p} />
+              <span className="text-sm font-semibold">{PLACE_NAME[p]}</span>
+            </>
+          ), 'flex flex-col items-center gap-1 p-2'))}
+        </div>
+      );
+    }
+    if (it.mode === 'pick_window') {
+      return (
+        <div className={grid(it.windows.length)}>
+          {it.windows.map((w, i) => choice(i, w.month, (
+            <>
+              <WindowPicture target={it.target} w={w} lines={leverOn(DISTANCE_LINES_LEVER)} path={revealed && i === keyIdx} />
+              <span className="text-sm font-semibold">{w.month}</span>
+            </>
+          ), 'flex flex-col items-stretch gap-1 p-1.5'))}
+        </div>
+      );
+    }
+    if (it.mode === 'pack_days') {
+      return (
+        <div className={grid(it.options.length)}>
+          {it.options.map((v, i) => choice(i, `${v} packs`, <span className="text-lg font-bold">{`${v} packs`}</span>, 'flex items-center justify-center p-3'))}
+        </div>
+      );
+    }
+    return (
+      <div className={grid(it.routes.length)}>
+        {it.routes.map((r, i) => choice(i, routeLabel(i), (
+          <>
+            <RoutePicture route={r} target={it.target} limit={it.limit} limitLine={leverOn(LIMIT_LINE_LEVER)} chosen={revealed && i === keyIdx} />
+            <span className="flex items-center justify-between gap-1 px-1 text-xs">
+              <span className="font-semibold">{routeLabel(i)}</span>
+              <span className="text-slate-300">{`${r.years} year${r.years === 1 ? '' : 's'}`}</span>
+            </span>
+          </>
+        ), 'flex flex-col items-stretch gap-1 p-1.5'))}
+      </div>
+    );
+  };
+
+  return (
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{`🛸 ${title || 'Mission Planner'}`}</LuminaCardTitle>
+        {!done && item && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {`${MODE_LABEL[item.mode]} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
+        )}
+        {(overview || description) && !done && <p className="text-sm text-slate-400">{overview || description}</p>}
+      </LuminaCardHeader>
+
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Planner complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} answered.`}
+          </LuminaFeedbackCard>
+        ) : item && (
+          <>
+            <div className="flex items-center gap-3">
+              <LuminaPrompt accent="cyan" className="flex-1">{askOf(item)}</LuminaPrompt>
+              {!tutorOwned && (
+                <ReadMeButton instruction={askOf(item)} ask="Look at the choices, then answer."
+                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
+                  className="flex-shrink-0" aria-label="Read the question to me" />
               )}
             </div>
-          );
-        })}
-      </div>
 
-      {/* Fuel gauge */}
-      {grade !== 'K' && grade !== '1' && (
-        <div className="mt-4 pt-3 border-t border-slate-700">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-slate-400">Payload mass</span>
-            <span className="text-xs text-slate-300">{Math.round(totalMassKg)} kg / {fuelConstraint * 1000} kg limit</span>
-          </div>
-          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${
-                fuelUsedPercent > 90 ? 'bg-red-500' : fuelUsedPercent > 70 ? 'bg-amber-500' : 'bg-green-500'
-              }`}
-              style={{ width: `${fuelUsedPercent}%` }}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-3">
+              {item.mode === 'pack_days' && <TripLine item={item} homeLeg={leverOn(HOME_LEG_LEVER)} crewRows={leverOn(CREW_ROWS_LEVER)} />}
+              {item.mode === 'pick_window' && <p className="text-center text-xs text-slate-400">{`The Sun, Earth (blue) and ${TARGET_NAME[item.target]}, in each month. Not to scale.`}</p>}
+              {item.mode === 'assist_tradeoff' && <p className="text-center text-xs text-slate-400">{`From Earth (left) to ${FAR_NAME[item.target]} (right). Each blue square is one year.`}</p>}
 
-// =============================================================================
-// Mission Clock Component
-// =============================================================================
+              {leverOn(FUEL_CARD_LEVER) && <CardLines lines={FUEL_CARD_LINES} lever="fuel-card" />}
+              {leverOn(ASSIST_CARD_LEVER) && <CardLines lines={ASSIST_CARD_LINES} lever="assist-card" />}
 
-const MissionClock: React.FC<{
-  travelDays: number;
-  progress: number;
-  isActive: boolean;
-  grade: string;
-}> = ({ travelDays, progress, isActive, grade }) => {
-  const elapsedDays = Math.round(travelDays * progress);
-  const remainingDays = travelDays - elapsedDays;
-
-  return (
-    <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-      <h4 className="text-sm font-semibold text-white mb-2">⏱️ Mission Clock</h4>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-blue-400">{elapsedDays}</div>
-          <div className="text-xs text-slate-400">Days Elapsed</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-amber-400">{remainingDays}</div>
-          <div className="text-xs text-slate-400">Days Left</div>
-        </div>
-      </div>
-      {isActive && (
-        <div className="mt-3">
-          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
-              style={{ width: `${progress * 100}%` }}
-            />
-          </div>
-          <div className="text-xs text-slate-400 text-center mt-1">
-            {Math.round(progress * 100)}% complete
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// =============================================================================
-// Main Component
-// =============================================================================
-
-const MissionPlanner: React.FC<MissionPlannerProps> = ({ data, className }) => {
-  const {
-    title,
-    description,
-    gradeLevel,
-    destinations = [],
-    missionType,
-    crewed,
-    showLaunchWindows,
-    showTrajectory,
-    supplyCalculator,
-    gravityAssistOption,
-    fuelConstraint,
-    missionClock,
-    launchWindows,
-    supplies,
-    hints = [],
-    funFact,
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
-
-  // Determine which phases are available based on grade
-  const availablePhases = useMemo<LearningPhase[]>(() => {
-    const phases: LearningPhase[] = ['explore'];
-    if (gradeLevel !== 'K') phases.push('plan');
-    if (supplyCalculator) phases.push('prepare');
-    phases.push('launch');
-    return phases;
-  }, [gradeLevel, supplyCalculator]);
-
-  // reader-fit 15A/S7: the instruction line, the destination names and the
-  // travel times are all text a K-1 child cannot read, and this primitive had
-  // NO channel to the tutor at all — the backend was handed the literal string
-  // "No specific scaffolding instructions for this primitive type."
-  const isPreReader = gradeLevel === 'K' || gradeLevel === '1';
-
-  // State
-  const [currentPhase, setCurrentPhase] = useState<LearningPhase>('explore');
-  const [completedPhases, setCompletedPhases] = useState<Set<LearningPhase>>(new Set());
-  const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
-  const [selectedLaunchWindow, setSelectedLaunchWindow] = useState<string | null>(null);
-  const [trajectoryType, setTrajectoryType] = useState<TrajectoryType>('direct');
-  const [packedSupplies, setPackedSupplies] = useState<Record<string, number>>({});
-  const [crewSize, setCrewSize] = useState(3);
-  const [missionActive, setMissionActive] = useState(false);
-  const [missionProgress, setMissionProgress] = useState(0);
-  const [missionComplete, setMissionComplete] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-  const [currentHint, setCurrentHint] = useState(0);
-
-  const missionTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // ---------------------------------------------------------------------------
-  // Tutor channel (reader-fit 15A/S7)
-  // ---------------------------------------------------------------------------
-  const phaseInstruction = PHASE_INSTRUCTIONS[currentPhase]?.[gradeLevel] ?? '';
-
-  // Flat object literal — a bag assembled behind statements makes tutor-test
-  // report every contextKey as "dynamic, verify at runtime".
-  const aiPrimitiveData = useMemo(() => ({
-    title,
-    gradeLevel,
-    currentPhase,
-    destinationNames: destinations.map(d => d.name).join(', '),
-    selectedDestination: destinations.find(d => d.id === selectedDestination)?.name ?? 'nothing yet',
-    missionType,
-    phaseInstruction,
-    destinationCount: destinations.length,
-  }), [title, gradeLevel, currentPhase, destinations, selectedDestination, missionType, phaseInstruction]);
-
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
-    primitiveType: 'mission-planner',
-    instanceId: instanceId || `mission-planner-${title}`,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: isPreReader ? 'kindergarten' : 'elementary',
-  });
-
-  // `silent` suppresses only the chat-transcript entry; the tutor still speaks.
-  const readAloud = useCallback((text: string) => {
-    if (!text) return;
-    sendText(
-      `[MISSION_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
-      { silent: true },
-    );
-  }, [sendText]);
-
-  // ORIENT — fires once so a non-reader learns the task without having to ask.
-  const hasOrientedRef = useRef(false);
-  useEffect(() => {
-    if (hasOrientedRef.current) return;
-    hasOrientedRef.current = true;
-    sendText(
-      `[MISSION_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
-      + `a space mission planner: "${title}". They choose a place in space to fly to. `
-      + `Tell them what to do in child words. There is NO wrong destination — never imply one is correct.`,
-      { silent: true },
-    );
-  }, [sendText, isPreReader, title]);
-
-  // The instruction line changes when the phase does, and a non-reader cannot
-  // see that it changed. Skips the first run — ORIENT already covered it.
-  const lastPhaseRef = useRef(currentPhase);
-  useEffect(() => {
-    if (lastPhaseRef.current === currentPhase) return;
-    lastPhaseRef.current = currentPhase;
-    sendText(
-      `[MISSION_PHASE_CHANGED] The screen just moved to the "${currentPhase}" step and now reads: `
-      + `"${phaseInstruction}". SAY that aloud in child words. Do not tell them what to choose.`,
-      { silent: true },
-    );
-  }, [sendText, currentPhase, phaseInstruction]);
-
-  // Evaluation
-  const {
-    submitResult,
-    hasSubmitted,
-    resetAttempt,
-  } = usePrimitiveEvaluation<MissionPlannerMetrics>({
-    primitiveType: 'mission-planner',
-    instanceId: instanceId || `mission-planner-${Date.now()}`,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit,
-  });
-
-  // Derived values
-  const selectedDest = useMemo(
-    () => destinations.find((d) => d.id === selectedDestination),
-    [destinations, selectedDestination]
-  );
-
-  const travelDays = useMemo(() => {
-    if (!selectedDest) return 0;
-    let days = selectedDest.travelDaysDirect;
-    if (trajectoryType === 'gravity_assist' && selectedDest.travelDaysAssist) {
-      days = selectedDest.travelDaysAssist;
-    }
-    const window = launchWindows?.find((w) => w.id === selectedLaunchWindow);
-    if (window) {
-      days = Math.round(days * window.travelTimeMultiplier);
-    }
-    return days;
-  }, [selectedDest, trajectoryType, selectedLaunchWindow, launchWindows]);
-
-  const suppliesReady = useMemo(() => {
-    if (!supplyCalculator || !supplies) return true;
-    const neededDays = travelDays * (crewed ? 2 : 1);
-    return supplies.filter((s) => s.required).every((s) => (packedSupplies[s.id] || 0) >= neededDays);
-  }, [supplyCalculator, supplies, travelDays, crewed, packedSupplies]);
-
-  // Phase navigation
-  const advancePhase = useCallback(() => {
-    setCompletedPhases((prev) => new Set(prev).add(currentPhase));
-    const currentIndex = availablePhases.indexOf(currentPhase);
-    if (currentIndex < availablePhases.length - 1) {
-      setCurrentPhase(availablePhases[currentIndex + 1]);
-    }
-  }, [currentPhase, availablePhases]);
-
-  const canAdvance = useMemo(() => {
-    switch (currentPhase) {
-      case 'explore':
-        return selectedDestination !== null;
-      case 'plan':
-        if (showLaunchWindows && !selectedLaunchWindow) return false;
-        return true;
-      case 'prepare':
-        return suppliesReady;
-      case 'launch':
-        return false; // handled by launch button
-      default:
-        return false;
-    }
-  }, [currentPhase, selectedDestination, showLaunchWindows, selectedLaunchWindow, suppliesReady]);
-
-  // Launch mission simulation
-  const launchMission = useCallback(() => {
-    setMissionActive(true);
-    setMissionProgress(0);
-
-    const duration = 8000; // 8 second animation
-    const startTime = Date.now();
-
-    const tick = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(1, elapsed / duration);
-      setMissionProgress(progress);
-
-      if (progress < 1) {
-        missionTimerRef.current = setTimeout(tick, 50);
-      } else {
-        setMissionActive(false);
-        setMissionComplete(true);
-
-        // Submit evaluation
-        if (!hasSubmitted) {
-          const score = calculateScore();
-          const metrics: MissionPlannerMetrics = {
-            type: 'mission-planner',
-            destination: selectedDestination!,
-            missionType,
-            trajectoryType,
-            crewed,
-            travelDays,
-            suppliesPacked: suppliesReady,
-            launchWindowSelected: selectedLaunchWindow !== null,
-            optimalLaunchWindow: launchWindows?.find((w) => w.id === selectedLaunchWindow)?.optimal ?? false,
-            gravityAssistUsed: trajectoryType === 'gravity_assist',
-            fuelEfficiency: calculateFuelEfficiency(),
-            phasesCompleted: completedPhases.size + 1, // +1 for launch
-            totalPhases: availablePhases.length,
-            missionSuccess: true,
-          };
-
-          submitResult(true, score, metrics, {
-            studentWork: {
-              destination: selectedDestination,
-              trajectoryType,
-              launchWindow: selectedLaunchWindow,
-              packedSupplies,
-              crewSize,
-            },
-          });
-        }
-      }
-    };
-
-    tick();
-  }, [
-    hasSubmitted, selectedDestination, missionType, trajectoryType, crewed,
-    travelDays, suppliesReady, selectedLaunchWindow, launchWindows,
-    completedPhases, availablePhases, submitResult, packedSupplies, crewSize,
-  ]);
-
-  // Cleanup timer
-  useEffect(() => {
-    return () => {
-      if (missionTimerRef.current) clearTimeout(missionTimerRef.current);
-    };
-  }, []);
-
-  const calculateScore = useCallback((): number => {
-    let score = 50; // Base score for completing
-    if (selectedDestination) score += 10;
-    if (suppliesReady) score += 15;
-    if (selectedLaunchWindow) {
-      const window = launchWindows?.find((w) => w.id === selectedLaunchWindow);
-      score += window?.optimal ? 15 : 5;
-    }
-    if (trajectoryType === 'gravity_assist' && gravityAssistOption) score += 10;
-    return Math.min(100, score);
-  }, [selectedDestination, suppliesReady, selectedLaunchWindow, launchWindows, trajectoryType, gravityAssistOption]);
-
-  const calculateFuelEfficiency = useCallback((): number => {
-    if (!selectedDest) return 0;
-    const baseDays = selectedDest.travelDaysDirect;
-    const actualDays = travelDays;
-    if (actualDays <= baseDays) return 100;
-    return Math.max(0, Math.round((baseDays / actualDays) * 100));
-  }, [selectedDest, travelDays]);
-
-  // Reset
-  const handleReset = useCallback(() => {
-    setCurrentPhase('explore');
-    setCompletedPhases(new Set());
-    setSelectedDestination(null);
-    setSelectedLaunchWindow(null);
-    setTrajectoryType('direct');
-    setPackedSupplies({});
-    setMissionActive(false);
-    setMissionProgress(0);
-    setMissionComplete(false);
-    resetAttempt();
-  }, [resetAttempt]);
-
-  const handleSupplyChange = useCallback((supplyId: string, days: number) => {
-    setPackedSupplies((prev) => ({ ...prev, [supplyId]: days }));
-  }, []);
-
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: (instanceId || `mission-planner-${title}`),
-    scopeId: hasSubmitted ? null : currentPhase,
-    label: 'The mission controls',
-    solved: false,
-    tutorSpeaking: isAudioPlaying && activePrimitiveId === (instanceId || `mission-planner-${title}`),
-  });
-
-  return (
-    <div className={`bg-gradient-to-br from-slate-900 via-indigo-950/50 to-slate-900 rounded-2xl border border-slate-700/50 overflow-hidden ${className || ''}`}>
-      {/* Header */}
-      <div className="px-6 py-4 bg-slate-800/40 border-b border-slate-700/50">
-        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-          <span>🛸</span> {title}
-        </h3>
-        <p className="text-sm text-slate-400 mt-1">{description}</p>
-      </div>
-
-      <div className="p-6">
-        {/* Phase Indicator */}
-        <PhaseIndicator
-          currentPhase={currentPhase}
-          phases={availablePhases}
-          completedPhases={completedPhases}
-        />
-
-        {/* Phase Instruction */}
-        <div className="mb-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 flex items-center gap-3">
-          <p className={`flex-1 text-blue-300 ${isPreReader ? 'text-base' : 'text-sm'}`}>
-            {phaseInstruction}
-          </p>
-          {isPreReader && (
-            <LuminaReadAloud
-              iconOnly
-              size="sm"
-              aria-label="Hear what to do"
-              onClick={() => readAloud(phaseInstruction)}
-            />
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left: Solar System Map */}
-          <div>
-            <SolarSystemMap
-              destinations={destinations}
-              selectedDestination={selectedDestination}
-              trajectoryType={trajectoryType}
-              showTrajectory={showTrajectory && currentPhase !== 'explore'}
-              showGravityAssist={gravityAssistOption}
-              missionProgress={missionProgress}
-              missionActive={missionActive}
-              grade={gradeLevel}
-            />
-
-            {/* Fun fact */}
-            {funFact && (
-              <div className="mt-3 p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                <p className="text-xs text-purple-300">💡 {funFact}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Right: Controls Panel */}
-          <div className="space-y-4">
-            {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-            {pip.store && !hasSubmitted && <div {...pip.dock} />}
-            <div {...pip.workspace} className="space-y-4">
-            {/* EXPLORE Phase: Destination Selection */}
-            {currentPhase === 'explore' && (
-              <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-                <h4 className="text-sm font-semibold text-white mb-3">
-                  {gradeLevel === 'K' ? '🪐 Where do you want to go?' : '🎯 Select Destination'}
-                </h4>
-                <div className="space-y-2">
-                  {destinations.map((dest) => (
-                    <button
-                      key={dest.id}
-                      onClick={() => {
-                        setSelectedDestination(dest.id);
-                        sendText(
-                          `[MISSION_DESTINATION_SELECTED] The student chose "${dest.name}". `
-                          + `Say its name and ONE thing about it they can picture. `
-                          + `Never suggest a different one would have been better.`,
-                          { silent: true },
-                        );
-                      }}
-                      className={`w-full text-left p-3 rounded-lg transition-all ${
-                        selectedDestination === dest.id
-                          ? 'bg-blue-600/30 border-blue-500/50 border'
-                          : 'bg-slate-700/30 border-slate-600/30 border hover:bg-slate-700/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-6 h-6 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: dest.color }}
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-white">{dest.name}</div>
-                          <div className="text-xs text-slate-400">{dest.description}</div>
-                          {gradeLevel !== 'K' && (
-                            <div className="text-xs text-slate-500 mt-0.5">
-                              Travel time: ~{formatDays(dest.travelDaysDirect, gradeLevel)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                {selectedDest && (
-                  <div className="mt-3 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-                    <p className="text-xs text-indigo-300">🌟 {selectedDest.funFact}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* PLAN Phase: Launch Window + Trajectory */}
-            {currentPhase === 'plan' && (
-              <>
-                {/* Launch Windows */}
-                {showLaunchWindows && launchWindows && (
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-                    <h4 className="text-sm font-semibold text-white mb-3">📅 Launch Window</h4>
-                    <div className="space-y-2">
-                      {launchWindows.map((window) => (
-                        <button
-                          key={window.id}
-                          onClick={() => setSelectedLaunchWindow(window.id)}
-                          className={`w-full text-left p-3 rounded-lg transition-all ${
-                            selectedLaunchWindow === window.id
-                              ? 'bg-blue-600/30 border-blue-500/50 border'
-                              : 'bg-slate-700/30 border-slate-600/30 border hover:bg-slate-700/50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-sm font-medium text-white">{window.label}</div>
-                              <div className="text-xs text-slate-400">{window.description}</div>
-                            </div>
-                            {window.optimal && (
-                              <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">
-                                Best!
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Trajectory Type */}
-                {gravityAssistOption && selectedDest?.assistPlanet && (
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-                    <h4 className="text-sm font-semibold text-white mb-3">🛤️ Flight Path</h4>
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => setTrajectoryType('direct')}
-                        className={`w-full text-left p-3 rounded-lg transition-all ${
-                          trajectoryType === 'direct'
-                            ? 'bg-blue-600/30 border-blue-500/50 border'
-                            : 'bg-slate-700/30 border-slate-600/30 border hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <div className="text-sm font-medium text-white">Direct Route</div>
-                        <div className="text-xs text-slate-400">
-                          Straight to {selectedDest.name} • ~{formatDays(selectedDest.travelDaysDirect, gradeLevel)}
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => setTrajectoryType('gravity_assist')}
-                        className={`w-full text-left p-3 rounded-lg transition-all ${
-                          trajectoryType === 'gravity_assist'
-                            ? 'bg-blue-600/30 border-blue-500/50 border'
-                            : 'bg-slate-700/30 border-slate-600/30 border hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <div className="text-sm font-medium text-white">
-                          Gravity Assist via {selectedDest.assistPlanet}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          Use {selectedDest.assistPlanet}'s gravity for a speed boost! • ~{formatDays(selectedDest.travelDaysAssist || selectedDest.travelDaysDirect, gradeLevel)}
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Travel time summary */}
-                {selectedDest && (
-                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-                    <h4 className="text-sm font-semibold text-white mb-2">📊 Mission Summary</h4>
-                    <div className="grid grid-cols-2 gap-3 text-center">
-                      <div>
-                        <div className="text-lg font-bold text-blue-400">{formatDays(travelDays, gradeLevel)}</div>
-                        <div className="text-xs text-slate-400">Travel Time</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold text-purple-400">{selectedDest.distanceFromSunAU} AU</div>
-                        <div className="text-xs text-slate-400">Distance from Sun</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* PREPARE Phase: Supply Calculator */}
-            {currentPhase === 'prepare' && supplies && (
-              <SupplyCalculator
-                supplies={supplies}
-                travelDays={travelDays}
-                crewed={crewed}
-                crewSize={crewSize}
-                packedSupplies={packedSupplies}
-                onSupplyChange={handleSupplyChange}
-                grade={gradeLevel}
-                fuelConstraint={fuelConstraint}
-              />
-            )}
-
-            {/* LAUNCH Phase: Mission Control */}
-            {currentPhase === 'launch' && (
-              <div className="space-y-4">
-                {!missionActive && !missionComplete && (
-                  <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 text-center">
-                    <h4 className="text-lg font-bold text-white mb-2">🚀 Ready for Launch!</h4>
-                    <p className="text-sm text-slate-400 mb-4">
-                      Destination: {selectedDest?.name} • {formatDays(travelDays, gradeLevel)}
-                    </p>
-                    <button
-                      onClick={launchMission}
-                      disabled={missionActive}
-                      className="px-8 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 transition-all text-lg"
-                    >
-                      🔥 LAUNCH! 🔥
-                    </button>
-                  </div>
-                )}
-
-                {(missionActive || missionComplete) && missionClock && (
-                  <MissionClock
-                    travelDays={travelDays}
-                    progress={missionProgress}
-                    isActive={missionActive}
-                    grade={gradeLevel}
-                  />
-                )}
-
-                {missionComplete && (
-                  <div className="bg-green-500/10 rounded-xl p-6 border border-green-500/30 text-center">
-                    <div className="text-4xl mb-2">🎉</div>
-                    <h4 className="text-lg font-bold text-green-400 mb-2">Mission Complete!</h4>
-                    <p className="text-sm text-slate-300">
-                      You made it to {selectedDest?.name}!
-                      {gradeLevel !== 'K' && ` Your trip took ${formatDays(travelDays, gradeLevel)}.`}
-                    </p>
-                    {hasSubmitted && (
-                      <button
-                        onClick={handleReset}
-                        className="mt-4 px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all"
-                      >
-                        Plan Another Mission
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
+              {renderChoices(item)}
+              {item.mode === 'farther_closer' && leverOn(ASK_ARROW_LEVER) && !revealed && <AskArrow ask={item.ask} />}
+              {revealed && item.mode === 'farther_closer' && <DistanceStrip places={item.places} />}
             </div>
 
-            {/* Navigation buttons */}
-            {currentPhase !== 'launch' && (
-              <div className="flex gap-3">
-                {availablePhases.indexOf(currentPhase) > 0 && (
-                  <button
-                    onClick={() => {
-                      const idx = availablePhases.indexOf(currentPhase);
-                      setCurrentPhase(availablePhases[idx - 1]);
-                    }}
-                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all text-sm"
-                  >
-                    ← Back
-                  </button>
-                )}
-                <button
-                  onClick={advancePhase}
-                  disabled={!canAdvance}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all text-sm"
-                >
-                  {canAdvance ? 'Next →' : 'Complete this step first'}
-                </button>
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={closed || !workComplete(item, work)} onClick={check}>
+                  Check Answer
+                </LuminaActionButton>
               </div>
             )}
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {revealText(item)}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
 
-            {/* Hints */}
-            {hints.length > 0 && (
-              <div className="mt-2">
-                <button
-                  onClick={() => {
-                    setShowHint(true);
-                    setCurrentHint((prev) => (prev + 1) % hints.length);
-                  }}
-                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  💡 Need a hint?
-                </button>
-                {showHint && (
-                  <div className="mt-2 p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
-                    <p className="text-xs text-amber-300">{hints[currentHint]}</p>
-                  </div>
-                )}
+            {!tutorOwned && revealed && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
               </div>
             )}
-          </div>
-        </div>
-      </div>
-    </div>
+          </>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const MissionPlannerBound = withWorkspaceController<MissionPlannerProps, ProgressOptions<MissionItem>, Progress>(
+  'mission-planner', MissionPlannerSurface, useScriptedProgress, useWorkspaceProgressFor('mission-planner'));
+
+// ============================================================================
+// K-1: the ungraded planning story (user ruling 10-16). Nothing is scored or submitted.
+// ============================================================================
+
+type StoryStep = 'choose' | 'pack' | 'fly' | 'arrived';
+const STORY_PACK = [
+  { id: 'food', icon: '🍎', name: 'Food' },
+  { id: 'water', icon: '💧', name: 'Water' },
+  { id: 'air', icon: '🫧', name: 'Air' },
+] as const;
+const STORY_SAY: Record<StoryStep, string> = {
+  choose: 'Where shall our spaceship fly? Pick a place.',
+  pack: 'Astronauts need food, water and air. Tap them to put them in the ship, then press Fly.',
+  fly: 'Off we go!',
+  arrived: 'We made it! Want to fly somewhere else?',
+};
+const STORY_NAME: Record<StoryPlace, string> = { moon: 'The Moon', mars: 'Mars', jupiter: 'Jupiter' };
+
+function MissionStory({ data, className }: MissionPlannerProps) {
+  const { title, gradeLevel, instanceId } = data;
+  const places = useMemo<StoryPlace[]>(() => {
+    const asked = (data.story?.places ?? []).filter((p): p is StoryPlace => p in STORY_TRIP);
+    return asked.length >= 2 ? asked : storyPlaces(gradeLevel);
+  }, [data.story?.places, gradeLevel]);
+  const stableId = useRef(instanceId || `mission-planner-story-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableId.current;
+  const [step, setStep] = useState<StoryStep>('choose');
+  const [place, setPlace] = useState<StoryPlace | null>(null);
+  const [packed, setPacked] = useState<string[]>([]);
+  const [flown, setFlown] = useState(false);
+
+  const aiPrimitiveData = useMemo(() => ({
+    title, gradeLevel: gradeLevel ?? 'K', mode: 'story (ungraded: nothing is right or wrong)',
+    ask: `${STORY_SAY[step]} Places: ${places.map(p => STORY_NAME[p]).join(', ')}. Chosen: ${place ? STORY_NAME[place] : 'nothing yet'}.`,
+  }), [title, gradeLevel, step, places, place]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'mission-planner', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData, gradeLevel: 'kindergarten',
+  });
+  const tell = (text: string) => sendText(text, { silent: true });
+
+  const oriented = useRef(false);
+  useEffect(() => {
+    if (oriented.current) return;
+    oriented.current = true;
+    tell(`[MISSION_ORIENT] A pre-reader who cannot read any text opened a space-trip story: "${title}". They pick a place to `
+      + `fly to (${places.map(p => STORY_NAME[p]).join(' or ')}). Nothing here is right or wrong and nothing is scored. Say what to do in child words.`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // The flight takes a moment on screen, then the arrival.
+  useEffect(() => {
+    if (step !== 'fly') return;
+    const raf = requestAnimationFrame(() => setFlown(true));
+    const t = setTimeout(() => {
+      setStep('arrived');
+      if (place) tell(`[MISSION_ARRIVED] The ship reached ${STORY_NAME[place]}. Say, without numbers: "${STORY_TRIP[place]}"`);
+    }, 2600);
+    return () => { cancelAnimationFrame(raf); clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  const choose = (p: StoryPlace) => {
+    SoundManager.select();
+    setPlace(p); setStep('pack');
+    tell(`[MISSION_DESTINATION_SELECTED] The child picked ${STORY_NAME[p]}. Say its name and one thing about it they can picture. Any place is a fine choice.`);
+  };
+  const togglePack = (id: string) => { SoundManager.select(); setPacked(s => (s.includes(id) ? s.filter(x => x !== id) : [...s, id])); };
+  const fly = () => { SoundManager.playCorrect(); setFlown(false); setStep('fly'); };
+  const again = () => { setPlace(null); setPacked([]); setFlown(false); setStep('choose'); };
+
+  const pip = useWorkspacePipSurface({
+    instanceId: resolvedInstanceId,
+    scopeId: 'story',
+    label: 'The space trip story',
+    solved: step === 'arrived',
+    tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
+  });
+
+  const farX = place === 'moon' ? 120 : place === 'mars' ? 220 : 290;
+  return (
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{`🛸 ${title || 'Space Trip'}`}</LuminaCardTitle>
+      </LuminaCardHeader>
+      <LuminaCardContent className="space-y-4">
+        <div className="flex items-center gap-3">
+          <LuminaPrompt accent="cyan" className="flex-1">{STORY_SAY[step]}</LuminaPrompt>
+          <ReadMeButton instruction={STORY_SAY[step]} ask="Then wait." speaking={isAudioPlaying}
+            onAskTutor={m => sendText?.(m)} tag="[MISSION_READ_ALOUD]" className="flex-shrink-0" aria-label="Read it to me" />
+        </div>
+        {pip.store && <div {...pip.dock} />}
+        <div {...pip.workspace} className="space-y-3" data-story-step={step}>
+          {step === 'choose' && (
+            <div className={`grid gap-2 ${places.length > 2 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {places.map(p => (
+                <LuminaAnswerChoice key={p} aria-label={STORY_NAME[p]} state="idle" className="flex flex-col items-center gap-1 p-3" onClick={() => choose(p)}>
+                  <PlacePicture place={p} size={64} />
+                  <span className="text-sm font-semibold">{STORY_NAME[p]}</span>
+                </LuminaAnswerChoice>
+              ))}
+            </div>
+          )}
+          {step === 'pack' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                {STORY_PACK.map(s => (
+                  <LuminaAnswerChoice key={s.id} aria-label={s.name} state={packed.includes(s.id) ? 'selected' : 'idle'}
+                    className="flex flex-col items-center gap-1 p-3" onClick={() => togglePack(s.id)}>
+                    <span aria-hidden="true" className="text-3xl">{s.icon}</span>
+                    <span className="text-sm">{s.name}</span>
+                  </LuminaAnswerChoice>
+                ))}
+              </div>
+              <div className="flex justify-center">
+                <LuminaActionButton action="next" onClick={fly}>🚀 Fly!</LuminaActionButton>
+              </div>
+            </div>
+          )}
+          {(step === 'fly' || step === 'arrived') && place && (
+            <svg viewBox="0 0 320 120" className="block w-full rounded-xl bg-[#0b1026]" role="img" aria-label={`The ship flying to ${STORY_NAME[place]}`} data-story-flight>
+              <circle cx={30} cy={70} r={16} fill="#4a90d9" />
+              <g transform={`translate(${farX - 28} 42)`}><PlacePicture place={place} size={56} /></g>
+              <path d={`M46 66 Q${(46 + farX) / 2} 18 ${farX - 22} 64`} fill="none" stroke="#94a3b8" strokeDasharray="4 4" />
+              <text fontSize={20} style={{ transition: 'transform 2.4s ease-in-out', transform: `translate(${flown ? farX - 40 : 40}px, ${flown ? 60 : 64}px)` }} data-ship>🚀</text>
+              <text x={8} y={112} fontSize={10} fill="#cbd5e1">{packed.map(id => STORY_PACK.find(s => s.id === id)?.icon).join(' ')}</text>
+            </svg>
+          )}
+          {step === 'arrived' && place && (
+            <div className="space-y-3">
+              <LuminaFeedbackCard status="insight" label={`${STORY_NAME[place]}!`}>{STORY_TRIP[place]}</LuminaFeedbackCard>
+              <div className="flex justify-center">
+                <LuminaActionButton action="next" onClick={again}>Fly somewhere else</LuminaActionButton>
+              </div>
+            </div>
+          )}
+        </div>
+      </LuminaCardContent>
+    </LuminaCard>
+  );
+}
+
+/** Grades 2-5: the graded planner on the workspace. K-1: the ungraded story, which never mounts the workspace. */
+const MissionPlanner: React.FC<MissionPlannerProps> = (props) =>
+  (isStoryGrade(props.data.gradeLevel) ? <MissionStory {...props} /> : <MissionPlannerBound {...props} />);
 
 export default MissionPlanner;

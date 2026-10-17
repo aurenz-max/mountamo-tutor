@@ -286,6 +286,8 @@ import { choiceLabel as orbitChoiceLabel, isTapItem as orbitTapItem, orbitHarnes
   from '../../primitives/visual-primitives/astronomy/orbitWorkspace';
 import { optionLabel as rocketOptionLabel, rocketHarnessAnswers, rocketItems }
   from '../../primitives/visual-primitives/astronomy/rocketWorkspace';
+import { missionHarnessAnswers, missionItems, optionLabel as missionOptionLabel }
+  from '../../primitives/visual-primitives/astronomy/missionWorkspace';
 import { reactionHarnessAnswers, reactionItems } from '../../primitives/visual-primitives/chemistry/reactionLabWorkspace';
 import { phHarnessAnswers, phItems } from '../../primitives/visual-primitives/chemistry/phExplorerWorkspace';
 import { fewerChoices as phFewerChoices, practiceParent as phPracticeParent } from '../../primitives/visual-primitives/chemistry/phExplorerLevers';
@@ -1163,7 +1165,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const from = Math.max(0, Number(String(ctx.demand?.step ?? '1').split(' ')[0]) - 1);
       return percentHarnessSteps(c, from, intent === 'wrong' ? 'wrong' : 'correct').flatMap((s): DriverInput[] => s.kind === 'place'
         ? [{ type: 'write', label: 'Percent on the bar', text: String(s.percent) }, { type: 'check' }]
-        : [{ type: 'choose', label: s.label }, { type: 'check' }]);
+        : s.kind === 'amount' ? [{ type: 'write', label: 'Amount in dollars', text: s.amount }, { type: 'check' }]
+          : [{ type: 'choose', label: s.label }, { type: 'check' }]);
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
@@ -4189,6 +4192,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       if (!item) throw new Error(`No current rocket-builder item ${ctx.itemId}`);
       const answers = rocketHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
       return [{ type: 'choose', label: rocketOptionLabel(item, work.pick!) }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'mission-planner': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/astronomy/MissionPlanner.tsx',
+    instanceId: 'mission-planner',
+    defaults: { grade: 'Grade 4', mode: 'farther_closer', di: false, topic: 'Planning a trip to the Moon, Mars and beyond' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE', 'READ_CHALLENGE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode taps one option by its aria-label (the place, the month, the number of packs, or the route), then presses
+    // Check. A wrong answer shows the mode's first-listed miss the item can. K-1 is an ungraded story that never binds.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = missionItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error(`No current mission-planner item ${ctx.itemId}`);
+      const answers = missionHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      return [{ type: 'choose', label: missionOptionLabel(item, work.pick!) }, { type: 'check' }];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

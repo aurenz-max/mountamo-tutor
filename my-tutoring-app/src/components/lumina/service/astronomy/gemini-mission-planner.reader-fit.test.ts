@@ -1,25 +1,12 @@
 /**
- * Reader-fit: mission-planner grade resolution + rung stamp — 15A / S7.
+ * Reader-fit: mission-planner, re-based on the 2026-10-16 rebuild.
  *
- * The S2 (orbit-mechanics-lab) TRIPLE, all three present here:
- *
- *   1. PROSE GRADE — `const gradeLevel = ctx.gradeContext` fed a dozen
- *      comparisons and three lookup maps.
- *   2. LEXICAL COMPARE that survives a correct resolver — `gradeLevel >= '2'`
- *      is TRUE for 'K' because 'K' (0x4B) sorts above '2' (0x32). Fixing only
- *      the resolver would have switched the supply calculator and a crewed
- *      mission ON at Kindergarten. A grep for the resolver finds only bug 1.
- *      (Bitten here, so this is NOT the S3 case where the same rewrite was a
- *      documented no-op.)
- *   3. THE RUNG WAS NEVER STAMPED — `gradeLevel` is in the response schema, so
- *      Gemini fills it, and it gets it wrong: probed pre-fix, a **grade 4**
- *      request returned `gradeLevel: '1'`. `MissionPlanner.tsx` band-gates on
- *      `data.gradeLevel` in a dozen places, so a Grade 4 student was served the
- *      Grade 1 screen.
- *
- * Driven through the real generator with Gemini stubbed (the S3 technique): a
- * reply that OMITS every grade-shaped field is the only way to cover the
- * degrade path, which is where bug 2 lives.
+ * Item 15A / S7 (2026-08) found the grade rung read from prose, compared as a string ('K' >= '2' is true) and never
+ * stamped. Those rulings still hold, re-stated against the rebuilt planner:
+ *   1. The grade rung comes from the canonical grade, never from prose; the resolved rung is stamped on the data.
+ *   2. K and Grade 1 get the ungraded story whatever the pin (user ruling 10-16); grades 2-5 get code-built items.
+ *   3. Gemini writes the title and overview only (the triage leaks: travel days, the optimal window and the
+ *      multipliers were all Gemini's, and the window descriptions stated the answer).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -27,175 +14,73 @@ const generateContentMock = vi.fn();
 vi.mock('../geminiClient', () => ({
   ai: { models: { generateContent: (...a: unknown[]) => generateContentMock(...a) } },
 }));
+vi.mock('../evalMode', async (orig) => ({ ...(await orig() as object), resolveEvalModes: vi.fn(async () => null) }));
 
-import {
-  generateMissionPlanner,
-  missionPlannerGradeFromGrade,
-  missionPlannerGradeFromProse,
-  missionRungIndex,
-} from './gemini-mission-planner';
-import type { GenerationContext } from '../generation/generationContext';
+import { generateMissionPlanner, missionPlannerGradeFromGrade, missionRungIndex } from './gemini-mission-planner';
 import { ASTRONOMY_CATALOG } from '../manifest/catalog/astronomy';
+import { defaultModes, isStoryGrade, validMissionItem } from '../../primitives/visual-primitives/astronomy/missionWorkspace';
+import type { GenerationContext } from '../generation/generationContext';
 
-const K_PROSE = 'kindergarten students (ages 5-6) - Use clear, simple language';
-const G4_PROSE = 'grade 4 students (ages 9-10) - Use grade-appropriate language';
-
-/** A reply that omits every grade-shaped field, forcing the degrade path. */
-const bareReply = () => ({
-  text: JSON.stringify({
-    title: 'Space Trip',
-    description: 'Pick a place.',
-    gradeLevel: '1', // Gemini's echo — deliberately WRONG for most cases here
-    destinations: [],
-  }),
-});
-
-const ctx = (grade: string | undefined, prose: string): GenerationContext =>
-  ({
-    componentId: 'mission-planner',
-    instanceId: 'mp-1',
-    topic: 'Going to the Moon',
-    gradeLevel: grade === 'K' ? 'kindergarten' : 'elementary',
-    gradeContext: prose,
-    grade,
-    objective: {},
-    scope: {},
-    raw: {},
-  } as unknown as GenerationContext);
+const ctx = (over: Partial<GenerationContext>): GenerationContext =>
+  ({ topic: 'Planning a trip to Mars', gradeContext: 'grade 4 students (ages 9-10)', raw: {}, ...over } as GenerationContext);
 
 beforeEach(() => {
   generateContentMock.mockReset();
-  generateContentMock.mockResolvedValue(bareReply());
+  generateContentMock.mockResolvedValue({ text: JSON.stringify({ title: 'Mission Control', overview: 'Plan your mission.' }) });
 });
 
-describe('missionPlannerGradeFromGrade — canonical first', () => {
-  it('maps kindergarten spellings to K', () => {
-    for (const g of ['K', 'k', 'Kindergarten', 'PRESCHOOL']) {
-      expect(missionPlannerGradeFromGrade(g)).toBe('K');
-    }
-  });
-  it('maps numerals and clamps above 5', () => {
-    expect(missionPlannerGradeFromGrade('1')).toBe('1');
-    expect(missionPlannerGradeFromGrade('5')).toBe('5');
-    expect(missionPlannerGradeFromGrade('8')).toBe('5');
-  });
-  it('returns null on nothing usable so the prose fallback can stand', () => {
-    expect(missionPlannerGradeFromGrade(undefined)).toBeNull();
-    expect(missionPlannerGradeFromGrade('kindergarten students (ages 5-6)')).toBeNull();
-  });
-  it('the prose fallback actually parses prose', () => {
-    expect(missionPlannerGradeFromProse(K_PROSE)).toBe('K');
-    expect(missionPlannerGradeFromProse(G4_PROSE)).toBe('4');
-  });
-});
-
-describe('missionRungIndex — ordinal, because string compare is broken for K', () => {
-  it("proves the bug it replaces: 'K' >= '2' is lexically TRUE", () => {
-    // This is why fixing the resolver alone would have made K WORSE.
-    expect('K' >= '2').toBe(true);
-    expect(missionRungIndex('K') >= 2).toBe(false);
-  });
-  it('orders K below every numeral', () => {
+describe('mission-planner: grade resolution', () => {
+  it('canonical grade, K below every numbered grade, 6+ tops out at 5', () => {
+    for (const g of ['K', 'k', 'kindergarten']) expect(missionPlannerGradeFromGrade(g)).toBe('K');
+    expect(missionPlannerGradeFromGrade('7')).toBe('5');
+    expect(missionPlannerGradeFromGrade('')).toBeNull();
     expect(missionRungIndex('K')).toBe(0);
-    expect(missionRungIndex('1')).toBe(1);
-    expect(missionRungIndex('5')).toBe(5);
+    expect(missionRungIndex('2')).toBe(2);
+  });
+  it('the story grades are K and 1 only', () => {
+    expect(['K', '1', 'Kindergarten', 'Grade 1'].map(isStoryGrade)).toEqual([true, true, true, true]);
+    expect(['2', 'Grade 3', '5'].map(isStoryGrade)).toEqual([false, false, false]);
   });
 });
 
-describe('mission-planner — the rung is resolved and STAMPED', () => {
-  it("overrides Gemini's echo: a grade 4 request no longer returns '1'", async () => {
-    const out = await generateMissionPlanner(ctx('4', G4_PROSE));
-    expect(out.gradeLevel).toBe('4');
+describe('mission-planner: the generator', () => {
+  it('stamps the canonical rung (a grade 4 request is not served the grade 1 screen) and builds keyed items', async () => {
+    const d = await generateMissionPlanner(ctx({ grade: '4', gradeContext: 'grade 1 students' }));
+    expect(d.gradeLevel).toBe('4');
+    expect(d.challengeTypes).toEqual(defaultModes('4'));
+    expect(d.items!.length).toBe(8);
+    for (const i of d.items!) expect(validMissionItem(i)).toBe(true);
   });
-
-  it('stamps K at kindergarten', async () => {
-    expect((await generateMissionPlanner(ctx('K', K_PROSE))).gradeLevel).toBe('K');
+  it('K gets the story even with a pin: no items, no modes', async () => {
+    const d = await generateMissionPlanner(ctx({ grade: 'K', targetEvalMode: 'pick_window' }));
+    expect(d.gradeLevel).toBe('K');
+    expect(d.items).toEqual([]);
+    expect(d.challengeTypes).toEqual([]);
+    expect(d.story!.places).toEqual(['moon', 'mars']);
   });
-
-  it('falls back to prose when there is no canonical grade', async () => {
-    expect((await generateMissionPlanner(ctx(undefined, G4_PROSE))).gradeLevel).toBe('4');
+  it('asks Gemini for the title only: no destinations, windows, supplies or overview', async () => {
+    await generateMissionPlanner(ctx({ grade: '3' }));
+    const schema = generateContentMock.mock.calls[0][0].config.responseSchema;
+    expect(Object.keys(schema.properties)).toEqual(['title']);
   });
-});
-
-describe('mission-planner — the K degrade path (where the lexical bug lived)', () => {
-  it('leaves the adult instruments OFF at K', async () => {
-    const out = await generateMissionPlanner(ctx('K', K_PROSE));
-    expect(out.supplyCalculator).toBe(false);
-    expect(out.crewed).toBe(false);
-    expect(out.showTrajectory).toBe(false);
-    expect(out.showLaunchWindows).toBe(false);
-    expect(out.gravityAssistOption).toBe(false);
-    expect(out.missionClock).toBe(false);
-  });
-
-  it('gives K a flyby and the loosest fuel constraint', async () => {
-    const out = await generateMissionPlanner(ctx('K', K_PROSE));
-    expect(out.missionType).toBe('flyby');
-    expect(out.fuelConstraint).toBe(100);
-  });
-
-  it('gives K only 2 destinations, per the catalog K rung', async () => {
-    const out = await generateMissionPlanner(ctx('K', K_PROSE));
-    expect(out.destinations).toHaveLength(2);
-  });
-
-  it('the ladder still climbs — grade 4 turns the instruments back on', async () => {
-    const out = await generateMissionPlanner(ctx('4', G4_PROSE));
-    expect(out.supplyCalculator).toBe(true);
-    expect(out.crewed).toBe(true);
-    expect(out.showTrajectory).toBe(true);
-    expect(out.showLaunchWindows).toBe(true);
-    expect(out.gravityAssistOption).toBe(true);
-    expect(out.missionType).toBe('return');
-    expect(out.fuelConstraint).toBe(50);
-  });
-
-  it('grade 2 sits between them (supplies on, launch windows off)', async () => {
-    const out = await generateMissionPlanner(ctx('2', 'grade 2 students'));
-    expect(out.supplyCalculator).toBe(true);
-    expect(out.showLaunchWindows).toBe(false);
-    expect(out.gravityAssistOption).toBe(false);
+  it('a failed framing call still yields a working lesson', async () => {
+    generateContentMock.mockRejectedValueOnce(new Error('down'));
+    const d = await generateMissionPlanner(ctx({ grade: '2' }));
+    expect(d.title).toBeTruthy();
+    expect(d.challengeTypes).toEqual(['farther_closer', 'pick_window']);
   });
 });
 
-describe('mission-planner — catalog scaffold reaches a non-reader', () => {
-  const entry = ASTRONOMY_CATALOG.find((e) => e.id === 'mission-planner');
-
-  it('has a tutoring block at all (it was one of the 26 mute primitives)', () => {
-    expect(entry?.tutoring).toBeTruthy();
+describe('mission-planner: catalog', () => {
+  const entry = ASTRONOMY_CATALOG.find(c => c.id === 'mission-planner')!;
+  it('the workspace binds grades 2-5 only; K-1 is described as an ungraded story', () => {
+    expect(entry.teachingWorkspace!.grades).toEqual(['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5']);
+    expect(entry.constraints).toMatch(/Kindergarten and Grade 1 MAY be routed here only as an ungraded story/);
+    expect(entry.tutoring!.aiDirectives!.map(d => d.instruction).join(' ')).not.toMatch(/NO wrong destination/);
   });
-
-  it('carries the cap-override clause', () => {
-    const d = (entry?.tutoring?.aiDirectives ?? []).find((x) => /PRE-READER READ-ALOUD/i.test(x.title));
-    expect(d?.instruction).toMatch(/OVERRIDES any instruction to keep it to one sentence/i);
-  });
-
-  it('forbids manufacturing a wrong destination, but still protects the real answer', () => {
-    const d = (entry?.tutoring?.aiDirectives ?? []).find((x) => /NO WRONG DESTINATION/i.test(x.title));
-    expect(d?.instruction).toMatch(/never imply one destination is the correct one/i);
-    // …and the launch-window phase DOES have an answer, which must stay protected.
-    expect(d?.instruction).toMatch(/do not narrow it by elimination/i);
-  });
-
-  it('bans numbers at K-1 and lifts the ban from grade 2', () => {
-    const d = (entry?.tutoring?.aiDirectives ?? []).find((x) => /NO NUMBERS AT K-1/i.test(x.title));
-    expect(d?.instruction).toMatch(/do NOT say kilometres, miles, tons, AU, or a count of days/i);
-    expect(d?.instruction).toMatch(/From grade 2 up the numbers ARE the objective/i);
-  });
-
-  it('names every moment tag the component emits', () => {
-    const blob = JSON.stringify(entry?.tutoring ?? {});
-    for (const tag of [
-      'MISSION_ORIENT',
-      'MISSION_PHASE_CHANGED',
-      'MISSION_DESTINATION_SELECTED',
-      'MISSION_READ_ALOUD',
-    ]) {
-      expect(blob).toContain(tag);
-    }
-  });
-
-  it('has no handlebars conditionals', () => {
-    expect(JSON.stringify(entry?.tutoring ?? {})).not.toMatch(/\{\{#/);
+  it('every contextKey referenced in the task description is declared', () => {
+    const keys = entry.tutoring!.contextKeys ?? [];
+    const referenced = (entry.tutoring!.taskDescription.match(/\{\{\w+\}\}/g) ?? []).map(m => m.slice(2, -2));
+    for (const k of referenced) expect(keys).toContain(k);
   });
 });

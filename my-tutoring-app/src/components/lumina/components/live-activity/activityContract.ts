@@ -122,6 +122,7 @@ import { constellationBuilderLiveDomain } from './adapters/constellationBuilderL
 import { telescopeSimulatorLiveDomain } from './adapters/telescopeSimulatorLive';
 import { orbitMechanicsLabLiveDomain } from './adapters/orbitMechanicsLabLive';
 import { rocketBuilderLiveDomain } from './adapters/rocketBuilderLive';
+import { missionPlannerLiveDomain } from './adapters/missionPlannerLive';
 import { phExplorerLiveDomain } from './adapters/phExplorerLive';
 import { gasLawsSimulatorLiveDomain } from './adapters/gasLawsSimulatorLive';
 import { equationBalancerLiveDomain } from './adapters/equationBalancerLive';
@@ -296,6 +297,7 @@ export const LIVE_ADAPTERS = {
   'telescope-simulator': workspaceAdapter('telescope-simulator', telescopeSimulatorLiveDomain),
   'orbit-mechanics-lab': workspaceAdapter('orbit-mechanics-lab', orbitMechanicsLabLiveDomain),
   'rocket-builder': workspaceAdapter('rocket-builder', rocketBuilderLiveDomain),
+  'mission-planner': workspaceAdapter('mission-planner', missionPlannerLiveDomain),
   'ph-explorer': workspaceAdapter('ph-explorer', phExplorerLiveDomain),
   'gas-laws-simulator': workspaceAdapter('gas-laws-simulator', gasLawsSimulatorLiveDomain),
   'equation-balancer': workspaceAdapter('equation-balancer', equationBalancerLiveDomain),

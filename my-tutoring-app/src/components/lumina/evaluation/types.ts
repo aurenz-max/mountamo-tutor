@@ -1321,26 +1321,12 @@ export interface OrbitMechanicsLabMetrics extends BasePrimitiveMetrics {
 export interface MissionPlannerMetrics extends BasePrimitiveMetrics {
   type: 'mission-planner';
 
-  // Mission configuration
-  destination: string;            // Selected destination id
-  missionType: string;            // flyby, orbit, landing, return
-  trajectoryType: string;         // direct or gravity_assist
-  crewed: boolean;                // Whether mission is crewed
-
-  // Planning quality
-  travelDays: number;             // Calculated travel time
-  suppliesPacked: boolean;        // Whether sufficient supplies were packed
-  launchWindowSelected: boolean;  // Whether a launch window was chosen
-  optimalLaunchWindow: boolean;   // Whether the optimal window was selected
-  gravityAssistUsed: boolean;     // Whether gravity assist trajectory was chosen
-  fuelEfficiency: number;         // 0-100, how efficient the fuel usage was
-
-  // Phase completion
-  phasesCompleted: number;        // Number of learning phases completed
-  totalPhases: number;            // Total available phases
-
-  // Overall outcome
-  missionSuccess: boolean;        // Whether mission reached destination
+  // Rebuilt 2026-10-16: code-built choices at grades 2-5 (the K-1 story submits nothing).
+  challengeType: 'farther_closer' | 'pick_window' | 'pack_days' | 'assist_tradeoff';
+  itemsTotal: number;             // Items in the session
+  itemsCorrect: number;           // Items answered correctly (any try)
+  firstTryCorrect: number;        // Items answered correctly on the first try (the scored ones)
+  checkedAnswers: number;         // Checked answers (attempts) across the session
 }
 
 export interface TelescopeSimulatorMetrics extends BasePrimitiveMetrics {
