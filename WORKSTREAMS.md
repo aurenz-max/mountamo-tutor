@@ -21,7 +21,7 @@ queue item (a defect class) · `qa/<lane>/` (run evidence) · here, as a row (st
 
 | Item | State |
 |---|---|
-| Branch | `ship/2026-08-10-judged-loop` pushed; `main` = 56fbda8c (10-14), branch 44 ahead after the 10-17 ship (fast-forward owed) |
+| Branch | `ship/2026-08-10-judged-loop` pushed; `main` = 56fbda8c (10-14), branch 38 ahead after the 10-17 ship (fast-forward owed) |
 | Tree | Shipped 10-17 (ea253f49..HEAD: C15/C18/C19, 8.1f, ecosystem-diorama, dialogue credit, KC-3, science-K fixes, 4.2 step 0). Left out: `backend/tests/tutor_live/replay/*.json` (R2 B1 replay run output, belongs in ignored `qa/tutor-reports/`), `my-tutoring-app/sizes.txt` scratch |
 | Gates | `typecheck:lumina` 0; full tsc 770 baseline (09-29, re-measure) |
 | Human checks | 134 open, next free #185 (`my-tutoring-app/qa/HUMAN-CHECKS.md`); 10-08..10-15 browser debt still lives in queues |
