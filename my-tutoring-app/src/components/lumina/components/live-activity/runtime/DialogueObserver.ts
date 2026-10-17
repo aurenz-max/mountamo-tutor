@@ -13,7 +13,6 @@ const hasSpokenWords = (text: string) => /[^\s!-/:-@[-`{-~]/.test(text.replace(/
 /** Observes tutor feedback and commits only the mounted observer capabilities. */
 export class DialogueObserver {
   private generation = 0;
-  private abort: AbortController | null = null;
   private text = '';
   private priorTutor = '';
   private priorTutorScope = '';
@@ -25,18 +24,20 @@ export class DialogueObserver {
   private closed = false;
   private waitingForAudio = false;
   private audioPending = false;
-  private cuedResponse = '';
-  /** Observations of a barge-in-cut reply. New input does not cancel them; only close() does. */
-  private durable = new Set<AbortController>();
-  pending = false;
+  /** The item (scope key) the host has asked the tutor to give a plain verdict on, until a verdict records. Keyed to
+   *  the item, not one utterance: the learner talking over the request must not turn the confirmation into a fresh answer. */
+  private cuedItem = '';
+  /** Readings in flight. New input does not cancel them; only close() does. */
+  private readings = new Set<AbortController>();
+  get pending() { return this.readings.size > 0; }
   constructor(private snapshot: () => RuntimeSnapshot, private classify: DialogueClassifier,
     private execute: (command: TutorCommand) => Promise<string | undefined>,
     private report: (event: Record<string, unknown>) => void,
     private acceptsMissFromWords: (responseId: string) => boolean = () => false) {}
   private key() { return snapshotScopeKey(this.snapshot()); }
   private cancel() {
-    if (!this.closed && (this.pending || this.waitingForAudio)) this.status('cancelled', 'new_input_or_interruption');
-    this.generation++; this.abort?.abort(); this.abort = null; this.pending = false; this.waitingForAudio = false;
+    if (!this.closed && this.waitingForAudio) this.status('cancelled', 'new_input_or_interruption');
+    this.generation++; this.waitingForAudio = false;
   }
   private status(status: string, reason: string) {
     const s = this.snapshot();
@@ -68,7 +69,7 @@ export class DialogueObserver {
   }
   end(audioPending: boolean) { this.ended = true; this.audio(audioPending); }
   stateChanged() { if (this.ended && !this.consumed) this.audio(this.audioPending); }
-  audio(pending: boolean, durable = false) {
+  audio(pending: boolean) {
     this.audioPending = pending;
     if (this.closed || !this.ended || this.consumed) return;
     if (pending) {
@@ -91,36 +92,39 @@ export class DialogueObserver {
       ...(w.expectedAnswer !== undefined ? { expectedAnswer: w.expectedAnswer } : {}),
       ...(this.priorTutorScope === this.key() ? { priorTutor: this.priorTutor.slice(-4000) } : {}),
       ...(w.pendingResponse ? { pendingResponse: w.pendingResponse } : {}),
-      // The reply that follows the host's plain-verdict request for this same answer.
-      ...(w.pendingResponse && this.cuedResponse === w.pendingResponse.id ? { confirming: true } : {}),
+      // A reply after the host's plain-verdict request for this item.
+      ...(w.pendingResponse && this.cuedItem === this.key() ? { confirming: true } : {}),
       tutor: this.text.slice(-4000), lastResponse: w.lastResponse,
       activity: { responseSource: s.task.evidence.recentResponses.at(-1)?.source ?? null,
         attemptNumber: s.task.evidence.attemptNumber, objects: w.objects, demonstration: w.demonstration,
         facts: s.task.demand, assistance: { level: s.task.support.level, answerExposure: s.task.support.answerExposure } } };
-    void this.observe(request, durable);
+    // Every reading of a finished reply is durable (2026-10-17 knowledge-check): what the tutor said stays said, so
+    // learner speech, a new tutor turn or a revision after it does not discard the reading. Only the item moving on,
+    // or close(), does.
+    void this.observe(request);
   }
   /** A barge-in stops playback; it does not unsay the words the tutor already spoke. The cut reply is
    *  judged as it stands (JEV decides whether the feedback finished), and the input that cut it, often
    *  echo or noise transcribed as "¿Qué?", does not discard that judgement. 2026-10-11 di-shapes: three
    *  affirmed answers were never credited because a barge-in landed after "That's exactly right". */
   interrupt() {
-    if (!this.closed && !this.consumed && hasSpokenWords(this.text)) { this.ended = true; this.audio(false, true); }
+    if (!this.closed && !this.consumed && hasSpokenWords(this.text)) { this.ended = true; this.audio(false); }
     this.learnerStart(); this.ended = false;
   }
-  close() { this.closed = true; this.durable.forEach(a => a.abort()); this.durable.clear(); this.interrupt(); }
-  private async observe(request: DialogueRequest, durable = false, retried = false) {
+  close() { this.closed = true; this.readings.forEach(a => a.abort()); this.readings.clear(); this.interrupt(); }
+  private async observe(request: DialogueRequest, retried = false) {
     const generation = this.generation, abort = new AbortController();
     let timedOut = false;
-    // A durable observation is not discarded when a later exchange begins.
-    const live = () => durable || generation === this.generation;
-    if (durable) this.durable.add(abort); else { this.abort = abort; this.pending = true; }
+    this.readings.add(abort);
     this.report({ type: 'dialogue_observation', ...abstain('completed_exchange'), status: 'observing', scope: request.scope, input: request });
     const timer = setTimeout(() => { timedOut = true; abort.abort(); }, OBSERVATION_TIMEOUT_MS);
     try {
       const decision = await this.classify(request, abort.signal);
-      if (this.closed || !live() || abort.signal.aborted) return;
-      const state = this.snapshot();
-      const current = sameItemScope(state, request.scope) && state.revision === request.scope.revision && state.status === 'active';
+      if (this.closed || abort.signal.aborted) return;
+      const state = this.snapshot(), itemKey = snapshotScopeKey(state);
+      // Same item, still active. The revision is not compared: learner speech and re-renders move it without
+      // changing what is being judged.
+      const current = sameItemScope(state, request.scope) && state.status === 'active';
       let status: string | undefined = current ? 'abstained' : 'stale';
       const spoken = !!request.pendingResponse && request.activity?.facts.response === 'speech';
       // A below-gate "not credited" resolution may only ever reopen the item, never credit it.
@@ -134,8 +138,8 @@ export class DialogueObserver {
         && decision.confidence >= .9 && decision.confidence <= 1;
       const transition = transitionValid ? decision.transition : 'none';
       const action = spoken ? { type: 'workspace' as const, operation: 'apply_tutor_verdict', input: { dialogue: {
-        responseId: request.pendingResponse!.id, verdict: decision.verdict as 'correct' | 'incorrect',
-        transition, tutor: request.tutor,
+        responseId: request.pendingResponse!.id, responseText: request.pendingResponse!.text,
+        verdict: decision.verdict as 'correct' | 'incorrect', transition, tutor: request.tutor,
       } } } : { type: decision.transition as 'advance' | 'retry' };
       let runtimeReason = !current ? 'Activity scope or revision changed.'
         : decision.accepted !== true ? `JEV abstained: ${decision.reason}`
@@ -151,11 +155,11 @@ export class DialogueObserver {
       // Recheck verdict authority and thresholds at the client boundary.
       if (runtimeReason === null) {
         status = await this.execute({ sessionEpoch: request.scope.sessionEpoch, instanceId: request.scope.instanceId,
-          itemId: request.scope.itemId, expectedRevision: request.scope.revision,
+          itemId: request.scope.itemId, expectedRevision: state.revision,
           commandId: `dialogue:${request.scope.sessionEpoch}:${generation}:${request.scope.revision}`,
           action });
         runtimeReason = status === 'visible' ? 'Action applied and visible.' : `Action receipt: ${status ?? 'unavailable'}.`;
-        if (status === 'visible' && transition === 'advance' && live() && !this.closed) {
+        if (status === 'visible' && transition === 'advance' && !this.closed) {
           // Words the learner began after a barge-in belong to the next exchange.
           if (generation === this.generation) this.learner = '';
           const next = this.snapshot();
@@ -169,10 +173,10 @@ export class DialogueObserver {
       // A wrong spoken answer is known from the learner's words: the workspace records it as not credited when the
       // lesson's mode allows it and `spoken_miss` named a miss for this very response (asked first, read-only, so
       // nothing is offered that would be refused). The tutor never has to say "not yet"; its affirmation still credits.
-      if (status === 'abstained' && spoken && decision.creditsNothing === true && live() && !this.closed
+      if (status === 'abstained' && spoken && decision.creditsNothing === true && !this.closed
           && this.acceptsMissFromWords(request.pendingResponse!.id)) {
         const words = await this.execute({ sessionEpoch: request.scope.sessionEpoch, instanceId: request.scope.instanceId,
-          itemId: request.scope.itemId, expectedRevision: request.scope.revision,
+          itemId: request.scope.itemId, expectedRevision: this.snapshot().revision,
           commandId: `dialogue:${request.scope.sessionEpoch}:${generation}:${request.scope.revision}:words`,
           action: { type: 'workspace', operation: 'apply_tutor_verdict', input: { dialogue: {
             responseId: request.pendingResponse!.id, verdict: 'incorrect', transition: 'retry', tutor: request.tutor, fromWords: true } } } });
@@ -181,26 +185,27 @@ export class DialogueObserver {
           runtimeReason = "Not credited from the learner's words: the reply credited nothing and spoken_miss named a miss.";
         }
       }
+      if (status === 'visible' && this.cuedItem === itemKey) this.cuedItem = '';
       // A settled tutor turn that recorded nothing leaves the assignment open with nobody holding the
       // conversation: the tutor believes it finished, and the runtime knows it did not. USER RULING 09-24:
-      // no answered item waits in silence. Once per learner turn, ask the tutor to say plainly whether the
-      // answer is right; that reply is judged at the gate. This grants no credit and prescribes no wording.
+      // no answered item waits in silence. Once per open request on this item, ask the tutor to say plainly whether
+      // the answer is right; every reply after it is read as that confirmation until a verdict records.
+      // This grants no credit and prescribes no wording.
       if (current && spoken && (decision.replyFinished ?? decision.feedbackComplete) === true && status !== 'visible'
-          && this.cuedResponse !== request.pendingResponse!.id && generation === this.generation && !this.closed) {
-        this.cuedResponse = request.pendingResponse!.id;
+          && this.snapshot().task?.workspace?.pendingResponse && this.cuedItem !== itemKey && !this.closed) {
+        this.cuedItem = itemKey;
         this.report({ type: 'text', scripted: false, source: 'dialogue_open_assignment',
           content: "liveRuntime did not record your last reply as a verdict on the learner's answer, so the current task is "
             + "still open. Tell the learner plainly, in your own words, whether they have solved the current task." });
       }
       if (!this.closed) this.report({ type: 'dialogue_observation', scope: request.scope, input: request, ...decision, status, runtimeReason });
     } catch {
-      if (!live() || this.closed) return;
+      if (this.closed) return;
       this.report({ type: 'dialogue_observation', scope: request.scope, ...abstain(timedOut ? 'timeout' : 'unavailable'), status: 'abstained' });
       // The exchange is consumed, so nothing else would judge it: a timed-out reading is asked once more (2026-10-13
       // pulse check: the first reading of a session timed out on a cold route and a credited answer sat open).
-      if (timedOut && !retried) void this.observe(request, durable, true);
+      if (timedOut && !retried) void this.observe(request, true);
     }
-    // A retry already owns `abort`/`pending`; only the reading that still owns them releases them.
-    finally { clearTimeout(timer); this.durable.delete(abort); if (!durable && generation === this.generation && this.abort === abort) { this.pending = false; this.abort = null; } }
+    finally { clearTimeout(timer); this.readings.delete(abort); }
   }
 }

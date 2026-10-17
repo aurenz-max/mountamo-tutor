@@ -39,6 +39,8 @@ export interface WorkspaceLever {
 }
 export interface WorkspaceInput { targets?: string[]; lever?: string; dialogue?: {
   responseId: string; verdict: 'correct' | 'incorrect'; transition: 'none' | 'retry' | 'advance'; tutor: string;
+  /** What the judged utterance said. A credit may name an earlier utterance on this item than the one now pending. */
+  responseText?: string;
   /** Not credited from the learner's words (RP-2): the workspace commits it only on a named miss in an allowed mode. */
   fromWords?: true;
 } }
@@ -475,6 +477,8 @@ export function validWorkspaceInput(v: unknown): v is WorkspaceInput {
     && (v.lever === undefined || v.targets === undefined && v.dialogue === undefined && id(v.lever))
     && (v.dialogue === undefined || v.targets === undefined && object(v.dialogue)
       && (exactKeys(v.dialogue, ['responseId', 'verdict', 'transition', 'tutor'])
+        || exactKeys(v.dialogue, ['responseId', 'responseText', 'verdict', 'transition', 'tutor'])
+          && typeof v.dialogue.responseText === 'string' && v.dialogue.responseText.length <= 2000
         || exactKeys(v.dialogue, ['responseId', 'verdict', 'transition', 'tutor', 'fromWords']) && v.dialogue.fromWords === true
           && v.dialogue.verdict === 'incorrect' && v.dialogue.transition === 'retry')
       && id(v.dialogue.responseId)

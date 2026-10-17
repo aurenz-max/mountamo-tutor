@@ -41,14 +41,20 @@ it('waits for completed speech AND drained playback; passes assignment and separ
   expect(runtimePacket(s.state).choices).toEqual([]);
 });
 
-it.each(['new learner', 'interruption', 'close', 'new output', 'stale revision', 'stale item', 'stopped'])('discards pending decisions after %s', async event => {
+// What the tutor said stays said (2026-10-17): later input or a moved revision does not discard the reading of it.
+it.each(['new learner', 'interruption', 'new output', 'moved revision'])('still commits a finished reply after %s', async event => {
   const s = setup(); let resolve!: (decision: DialogueDecision) => void;
   s.classify.mockImplementation(() => new Promise(r => { resolve = r; })); s.turn();
   if (event === 'new learner') s.observer.learnerStart();
   if (event === 'interruption') s.observer.interrupt();
-  if (event === 'close') s.observer.close();
   if (event === 'new output') s.observer.output('Wait, let us talk.');
-  if (event === 'stale revision') s.replace({ ...s.state, revision: s.state.revision + 1 });
+  if (event === 'moved revision') s.replace({ ...s.state, revision: s.state.revision + 1 });
+  resolve(success); await settle(); expect(s.execute).toHaveBeenCalledOnce();
+});
+it.each(['close', 'stale item', 'stopped'])('discards pending decisions after %s', async event => {
+  const s = setup(); let resolve!: (decision: DialogueDecision) => void;
+  s.classify.mockImplementation(() => new Promise(r => { resolve = r; })); s.turn();
+  if (event === 'close') s.observer.close();
   if (event === 'stale item') s.replace({ ...s.state, task: { ...s.state.task!, itemId: 'other' } });
   if (event === 'stopped') s.replace({ ...s.state, status: 'stopped' });
   resolve(success); await settle(); expect(s.execute).not.toHaveBeenCalled();
@@ -229,4 +235,34 @@ it('a timed-out reading that then succeeds commits the verdict', async () => {
   s.turn(); await vi.advanceTimersByTimeAsync(4000); await settle();
   expect(s.execute).toHaveBeenCalledOnce();
   expect(s.observer.pending).toBe(false);
+});
+
+// 2026-10-17 knowledge-check (library): the learner spoke twice, the tutor affirmed, and nothing recorded. The reading
+// was keyed to one utterance, one revision and one exchange; the item was the thing to judge.
+const withPending = (s: ReturnType<typeof setup>, id: string, revision = s.state.revision + 1) => s.replace({ ...s.state, revision,
+  task: { ...s.state.task!, workspace: { ...s.state.task!.workspace!, pendingResponse: { id, text: 'library' } } } });
+
+it('credits an affirmed answer although the learner spoke again and the revision moved while it was read', async () => {
+  const s = setup(true); let resolve!: (decision: DialogueDecision) => void;
+  s.classify.mockImplementation(() => new Promise(r => { resolve = r; })); s.turn();
+  s.observer.learnerText('library', true); withPending(s, 'turn-2');
+  resolve({ ...success, verdictConfidence: .99 }); await settle();
+  expect(s.execute).toHaveBeenCalledOnce();
+  expect((s.execute.mock.calls as unknown[][])[0][0]).toMatchObject({ expectedRevision: s.state.revision + 1,
+    action: { input: { dialogue: { responseId: 'turn-1', responseText: 'three', verdict: 'correct' } } } });
+});
+
+it('holds the plain-verdict request for the item, so a confirmation after new learner speech still records', async () => {
+  const s = setup(true);
+  s.classify.mockResolvedValueOnce({ verdict: 'none', transition: 'none', confidence: 0, verdictConfidence: 0, feedbackComplete: false,
+    replyFinished: true, grounded: 0, accepted: false, reason: 'confirm_credit', ms: 200 });
+  s.turn(); await settle();
+  expect(cues(s.report)).toHaveLength(1);
+  // The learner talks over the cue; a new utterance is pending when the tutor confirms.
+  s.observer.hostTurn(); s.observer.learnerText('yeah', true); withPending(s, 'turn-2');
+  s.classify.mockResolvedValueOnce({ verdict: 'correct', transition: 'advance', confidence: .7, verdictConfidence: .7,
+    feedbackComplete: false, replyFinished: true, grounded: 1, accepted: true, reason: 'confirmed_by_tutor', resolution: 'confirmed_by_tutor', ms: 200 });
+  s.observer.output('You correctly identified that the library is where you borrow books.'); s.observer.end(false); await settle();
+  expect((s.classify.mock.calls[1] as unknown[])[0]).toMatchObject({ confirming: true, pendingResponse: { id: 'turn-2' } });
+  expect(s.execute).toHaveBeenCalledOnce();
 });

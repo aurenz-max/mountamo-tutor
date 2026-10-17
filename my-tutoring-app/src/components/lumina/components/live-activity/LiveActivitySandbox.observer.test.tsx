@@ -202,9 +202,9 @@ it.each([false, true].flatMap(shapes => ['while audio drains', 'while JEV respon
   if (timing === 'recognized new words') await h.say('Wait, can you help?');
   if (timing === 'confirmed interruption') act(() => seam.event({ type: 'runtime_interrupted' }));
   await h.decide();
-  const cancelled = ['recognized new words', 'confirmed interruption'].includes(timing);
-  expect(seam.runtime.getSnapshot().task.itemId === first).toBe(cancelled);
-  expect(seam.runtime.getSnapshot().task.workspace.attempts).toHaveLength(cancelled ? 0 : 1);
+  // A finished reply stays said (2026-10-17 knowledge-check): words or an interruption after it do not undo the credit.
+  expect(seam.runtime.getSnapshot().task.itemId).not.toBe(first);
+  expect(seam.runtime.getSnapshot().task.workspace.attempts).toHaveLength(1);
 });
 
 it('records incorrect tutor feedback and retries, while help and encouragement remain ungraded', async () => {

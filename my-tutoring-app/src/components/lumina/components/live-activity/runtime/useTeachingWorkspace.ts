@@ -291,8 +291,14 @@ export function useTeachingWorkspace(options: TeachingWorkspaceOptions) {
           action: { type: 'workspace', operation: 'apply_tutor_verdict' },
           description: 'Record observed tutor feedback for this spoken turn and its settled transition.',
           execute: input => {
-            const d = input?.dialogue, speech = pendingSpeech.current;
-            if (!d || !speech || d.responseId !== speech.id || (d.transition === 'advance' && d.verdict !== 'correct')) return false;
+            const d = input?.dialogue, pending = pendingSpeech.current;
+            if (!d || !pending || (d.transition === 'advance' && d.verdict !== 'correct')) return false;
+            // The tutor credited what it heard, and the learner may have spoken again before the reading landed
+            // (2026-10-17 knowledge-check). A credit stands on the utterance it judged. A correction of an earlier
+            // utterance does not override a newer answer still waiting for feedback.
+            const speech = d.responseId === pending.id ? pending
+              : d.verdict === 'correct' && d.responseText !== undefined ? { id: d.responseId, text: d.responseText } : null;
+            if (!speech) return false;
             // Only a reading of THIS answer that has already landed; a late one is dropped, never attached afterwards.
             const miss = d.verdict !== 'correct' && spokenMiss.current?.speechId === speech.id ? spokenMiss.current.miss ?? undefined : undefined;
             // RP-2: a verdict from the learner's words stands only on a named miss, in a mode whose pilot allows it.
