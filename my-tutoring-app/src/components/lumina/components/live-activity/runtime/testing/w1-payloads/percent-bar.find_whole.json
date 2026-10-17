@@ -1,184 +1,183 @@
 {
- "source": "qa/tutor-reports/percent-bar-runtime-find_whole-payload-2026-10-09.json",
+ "source": "qa/tutor-reports/percent-bar-runtime-find_whole-payload-2026-10-16.json",
  "primitiveId": "percent-bar",
  "evalMode": "find_whole",
  "data": {
-  "title": "Mastering Totals with Tax and Tip",
-  "description": "Practice calculating added tip and tax amounts, and find the final totals on extended percent bars for real-world financial scenarios.",
+  "title": "Finding the Whole: Discounts, Tax, and Tips",
+  "description": "Practice finding the original whole amount when given a partial value and its corresponding percentage in real-world pricing scenarios.",
   "challenges": [
    {
     "id": "pb-1",
-    "type": "addition",
-    "scenario": "A store buys an item for $40 and adds a 18% markup.",
+    "type": "whole_of",
+    "scenario": "Sam has saved $30. That is 75% of the cost of a new bike.",
     "wholeValue": 40,
-    "wholeValueLabel": "Cost ($)",
-    "question": "Step 1 \u2014 the markup: what percent of the cost is the markup? Place it on the bar.",
-    "targetPercent": 118,
-    "maxPercent": 150,
+    "wholeValueLabel": "Bike cost ($)",
+    "question": "Step 1 \u2014 the $30 is 75% of the whole. Mark 75% on the bar.",
+    "targetPercent": 75,
     "steps": [
      {
       "kind": "place",
-      "prompt": "Step 1 \u2014 the markup: what percent of the cost is the markup? Place it on the bar.",
+      "prompt": "Step 1 \u2014 the $30 is 75% of the whole. Mark 75% on the bar.",
       "wholeValue": 40,
-      "wholeValueLabel": "Cost ($)",
-      "targetPercent": 18,
+      "wholeValueLabel": "Bike cost ($)",
+      "targetPercent": 75,
       "maxPercent": 100,
-      "valueLabel": "Markup ($)",
-      "recapLabel": "Markup",
-      "hint": "The markup rate is stated in the scenario \u2014 18%. Place 18%; the value shows it in dollars."
+      "recapLabel": "Marked",
+      "wholeUnknown": true,
+      "knownPart": 30,
+      "hint": "75% means 75 out of every 100. Slide the bar to 75%."
      },
      {
-      "kind": "place",
-      "prompt": "Step 2 \u2014 the total: including the markup, the total is what percent of the cost? Place the TOTAL on the bar.",
-      "wholeValue": 40,
-      "wholeValueLabel": "Cost ($)",
-      "targetPercent": 118,
-      "maxPercent": 150,
-      "valueLabel": "Total ($)",
-      "hint": "Add the markup to the whole: 100% + 18% = 118%."
+      "kind": "amount",
+      "prompt": "Step 2 \u2014 the whole bar is 100%. How much does the bike cost? Type the amount.",
+      "percent": 75,
+      "whole": 40,
+      "part": 30,
+      "unknown": "whole",
+      "wholeValueLabel": "Bike cost ($)",
+      "hint": "$30 is three quarters, so one quarter is $30 \u00f7 3. The whole is four quarters."
      }
     ],
-    "hint": "The markup rate is stated in the scenario \u2014 18%. Place 18%; the value shows it in dollars.",
+    "hint": "75% means 75 out of every 100. Slide the bar to 75%.",
     "context": {
-     "problemType": "addition",
+     "problemType": "whole_of",
      "initialValue": 40,
-     "changeRate": 18,
-     "discountFactor": 1.18,
-     "finalValue": 47.2
+     "changeRate": 0,
+     "discountFactor": 0.75,
+     "finalValue": 30
     }
    },
    {
     "id": "pb-2",
-    "type": "addition",
-    "scenario": "An online order of $100 adds a 18% delivery fee.",
-    "wholeValue": 100,
-    "wholeValueLabel": "Order ($)",
-    "question": "Step 1 \u2014 the delivery fee: what percent of the order is the delivery fee? Place it on the bar.",
-    "targetPercent": 118,
-    "maxPercent": 150,
+    "type": "whole_of",
+    "scenario": "Dana left a $5 tip. The tip was 25% of the bill.",
+    "wholeValue": 20,
+    "wholeValueLabel": "Bill ($)",
+    "question": "Step 1 \u2014 the $5 is 25% of the whole. Mark 25% on the bar.",
+    "targetPercent": 25,
     "steps": [
      {
       "kind": "place",
-      "prompt": "Step 1 \u2014 the delivery fee: what percent of the order is the delivery fee? Place it on the bar.",
-      "wholeValue": 100,
-      "wholeValueLabel": "Order ($)",
-      "targetPercent": 18,
+      "prompt": "Step 1 \u2014 the $5 is 25% of the whole. Mark 25% on the bar.",
+      "wholeValue": 20,
+      "wholeValueLabel": "Bill ($)",
+      "targetPercent": 25,
       "maxPercent": 100,
-      "valueLabel": "Fee ($)",
-      "recapLabel": "Fee",
-      "hint": "The delivery fee rate is stated in the scenario \u2014 18%. Place 18%; the value shows it in dollars."
+      "recapLabel": "Marked",
+      "wholeUnknown": true,
+      "knownPart": 5,
+      "hint": "25% means 25 out of every 100. Slide the bar to 25%."
      },
      {
-      "kind": "place",
-      "prompt": "Step 2 \u2014 the total: including the delivery fee, the total is what percent of the order? Place the TOTAL on the bar.",
-      "wholeValue": 100,
-      "wholeValueLabel": "Order ($)",
-      "targetPercent": 118,
-      "maxPercent": 150,
-      "valueLabel": "Total ($)",
-      "hint": "Add the delivery fee to the whole: 100% + 18% = 118%."
+      "kind": "amount",
+      "prompt": "Step 2 \u2014 the whole bar is 100%. How much was the bill? Type the amount.",
+      "percent": 25,
+      "whole": 20,
+      "part": 5,
+      "unknown": "whole",
+      "wholeValueLabel": "Bill ($)",
+      "hint": "$5 is a quarter of the whole, and the whole is four quarters: $5 \u00d7 4."
      }
     ],
-    "hint": "The delivery fee rate is stated in the scenario \u2014 18%. Place 18%; the value shows it in dollars.",
+    "hint": "25% means 25 out of every 100. Slide the bar to 25%.",
     "context": {
-     "problemType": "addition",
-     "initialValue": 100,
-     "changeRate": 18,
-     "discountFactor": 1.18,
-     "finalValue": 118
+     "problemType": "whole_of",
+     "initialValue": 20,
+     "changeRate": 0,
+     "discountFactor": 0.25,
+     "finalValue": 5
     }
    },
    {
     "id": "pb-3",
-    "type": "addition",
-    "scenario": "You are buying a $60 item. The sales tax in your state is 5%.",
-    "wholeValue": 60,
-    "wholeValueLabel": "Price ($)",
-    "question": "Step 1 \u2014 the sales tax: what percent of the price is the sales tax? Place it on the bar.",
-    "targetPercent": 105,
-    "maxPercent": 150,
+    "type": "whole_of",
+    "scenario": "A coupon took $30 off a jacket. The coupon was 40% off.",
+    "wholeValue": 75,
+    "wholeValueLabel": "Original price ($)",
+    "question": "Step 1 \u2014 the $30 is 40% of the whole. Mark 40% on the bar.",
+    "targetPercent": 40,
     "steps": [
      {
       "kind": "place",
-      "prompt": "Step 1 \u2014 the sales tax: what percent of the price is the sales tax? Place it on the bar.",
-      "wholeValue": 60,
-      "wholeValueLabel": "Price ($)",
-      "targetPercent": 5,
+      "prompt": "Step 1 \u2014 the $30 is 40% of the whole. Mark 40% on the bar.",
+      "wholeValue": 75,
+      "wholeValueLabel": "Original price ($)",
+      "targetPercent": 40,
       "maxPercent": 100,
-      "valueLabel": "Tax ($)",
-      "recapLabel": "Tax",
-      "hint": "The sales tax rate is stated in the scenario \u2014 5%. Place 5%; the value shows it in dollars."
+      "recapLabel": "Marked",
+      "wholeUnknown": true,
+      "knownPart": 30,
+      "hint": "40% means 40 out of every 100. Slide the bar to 40%."
      },
      {
-      "kind": "place",
-      "prompt": "Step 2 \u2014 the total: including the sales tax, the total is what percent of the price? Place the TOTAL on the bar.",
-      "wholeValue": 60,
-      "wholeValueLabel": "Price ($)",
-      "targetPercent": 105,
-      "maxPercent": 150,
-      "valueLabel": "Total ($)",
-      "hint": "Add the sales tax to the whole: 100% + 5% = 105%."
+      "kind": "amount",
+      "prompt": "Step 2 \u2014 the whole bar is 100%. What was the jacket's original price? Type the amount.",
+      "percent": 40,
+      "whole": 75,
+      "part": 30,
+      "unknown": "whole",
+      "wholeValueLabel": "Original price ($)",
+      "hint": "40% is $30, so 10% is $30 \u00f7 4. The whole is ten of those."
      }
     ],
-    "hint": "The sales tax rate is stated in the scenario \u2014 5%. Place 5%; the value shows it in dollars.",
+    "hint": "40% means 40 out of every 100. Slide the bar to 40%.",
     "context": {
-     "problemType": "addition",
-     "initialValue": 60,
-     "changeRate": 5,
-     "discountFactor": 1.05,
-     "finalValue": 63
+     "problemType": "whole_of",
+     "initialValue": 75,
+     "changeRate": 0,
+     "discountFactor": 0.4,
+     "finalValue": 30
     }
    },
    {
     "id": "pb-4",
-    "type": "addition",
-    "scenario": "You are buying a $30 item. The sales tax in your state is 20%.",
-    "wholeValue": 30,
-    "wholeValueLabel": "Price ($)",
-    "question": "Step 1 \u2014 the sales tax: what percent of the price is the sales tax? Place it on the bar.",
-    "targetPercent": 120,
-    "maxPercent": 150,
+    "type": "whole_of",
+    "scenario": "The sales tax on a speaker was $19. The tax rate is 10%.",
+    "wholeValue": 190,
+    "wholeValueLabel": "Price before tax ($)",
+    "question": "Step 1 \u2014 the $19 is 10% of the whole. Mark 10% on the bar.",
+    "targetPercent": 10,
     "steps": [
      {
       "kind": "place",
-      "prompt": "Step 1 \u2014 the sales tax: what percent of the price is the sales tax? Place it on the bar.",
-      "wholeValue": 30,
-      "wholeValueLabel": "Price ($)",
-      "targetPercent": 20,
+      "prompt": "Step 1 \u2014 the $19 is 10% of the whole. Mark 10% on the bar.",
+      "wholeValue": 190,
+      "wholeValueLabel": "Price before tax ($)",
+      "targetPercent": 10,
       "maxPercent": 100,
-      "valueLabel": "Tax ($)",
-      "recapLabel": "Tax",
-      "hint": "The sales tax rate is stated in the scenario \u2014 20%. Place 20%; the value shows it in dollars."
+      "recapLabel": "Marked",
+      "wholeUnknown": true,
+      "knownPart": 19,
+      "hint": "10% means 10 out of every 100. Slide the bar to 10%."
      },
      {
-      "kind": "place",
-      "prompt": "Step 2 \u2014 the total: including the sales tax, the total is what percent of the price? Place the TOTAL on the bar.",
-      "wholeValue": 30,
-      "wholeValueLabel": "Price ($)",
-      "targetPercent": 120,
-      "maxPercent": 150,
-      "valueLabel": "Total ($)",
-      "hint": "Add the sales tax to the whole: 100% + 20% = 120%."
+      "kind": "amount",
+      "prompt": "Step 2 \u2014 the whole bar is 100%. What was the speaker's price before tax? Type the amount.",
+      "percent": 10,
+      "whole": 190,
+      "part": 19,
+      "unknown": "whole",
+      "wholeValueLabel": "Price before tax ($)",
+      "hint": "$19 is one tenth of the whole, and the whole is ten tenths: $19 \u00d7 10."
      }
     ],
-    "hint": "The sales tax rate is stated in the scenario \u2014 20%. Place 20%; the value shows it in dollars.",
+    "hint": "10% means 10 out of every 100. Slide the bar to 10%.",
     "context": {
-     "problemType": "addition",
-     "initialValue": 30,
-     "changeRate": 20,
-     "discountFactor": 1.2,
-     "finalValue": 36
+     "problemType": "whole_of",
+     "initialValue": 190,
+     "changeRate": 0,
+     "discountFactor": 0.1,
+     "finalValue": 19
     }
    }
   ],
   "showPercentLabels": true,
   "showValueLabels": true,
   "benchmarkLines": [
-   25,
-   50,
-   75
+   50
   ],
   "doubleBar": false,
-  "showCalculation": true
+  "showCalculation": true,
+  "supportTier": "medium"
  }
 }

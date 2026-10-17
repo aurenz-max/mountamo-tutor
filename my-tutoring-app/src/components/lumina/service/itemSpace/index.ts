@@ -15,6 +15,7 @@ import { BONDS_10 } from './bonds10';
 import { COMPARE_20, COMPARE_100 } from './compareStories';
 import { COMPARE_NUMBERS } from './compareNumbers';
 import { RATIO_MISSING_VALUE } from './ratioMissingValue';
+import { PERCENT_OF } from './percentOf';
 import { EQUIVALENCE_20 } from './equivalence20';
 import { FRACTION_ADD_SUB } from './fractionAddSub';
 import { FRACTION_EQUIVALENCE } from './fractionEquivalence';
@@ -39,7 +40,7 @@ const SPACES = {
   'two-step-equations': TWO_STEP_EQUATIONS, 'mult-multi-digit': MULT_MULTI_DIGIT,
   'mult-multi-digit-5': MULT_MULTI_DIGIT_5,
   'compare-20': COMPARE_20, 'compare-100': COMPARE_100, 'compare-numbers': COMPARE_NUMBERS,
-  'ratio-missing-value': RATIO_MISSING_VALUE,
+  'ratio-missing-value': RATIO_MISSING_VALUE, 'percent-of': PERCENT_OF,
   'fraction-compare': FRACTION_COMPARE, 'skip-count': SKIP_COUNT,
   'div-multi-digit': DIV_MULTI_DIGIT, 'div-multi-digit-5': DIV_MULTI_DIGIT_5,
   'clock-time': CLOCK_TIME, 'elapsed-time': ELAPSED_TIME, 'coin-sets': COIN_SETS, 'make-change': MAKE_CHANGE,

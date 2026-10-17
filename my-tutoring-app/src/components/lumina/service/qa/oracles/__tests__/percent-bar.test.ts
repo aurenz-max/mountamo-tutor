@@ -3,7 +3,7 @@ import { percentBarOracle } from '../percent-bar';
 
 /**
  * Seeded-violation tests for the percent-bar oracle. Clean fixtures trimmed from
- * real /api/lumina/eval-test generations (convert = comparison, find_whole =
+ * real /api/lumina/eval-test generations (convert = comparison, percent_total =
  * addition) plus one mutated fixture per implemented check class that MUST fire —
  * including a choice step whose correctOptionId isn't among the options AND a
  * choice whose key disagrees with the re-derived cheaper/pricier answer.
@@ -65,7 +65,7 @@ const comparisonClean = {
   ],
 };
 
-// ── addition / find_whole — real generation: step 2 total (~112%) on a 150 bar ──
+// ── addition / percent_total — real generation: step 2 total (~112%) on a 150 bar ──
 const additionClean = {
   title: 'Tax, Tip, and Totals',
   description: 'Place the added rate, then the new total.',
@@ -104,7 +104,7 @@ describe('percent-bar oracle', () => {
     expect(percentBarOracle.verify(comparisonClean, pbCtx).violations).toEqual([]);
   });
 
-  it('passes clean addition (find_whole) data with extended (150%) bars', () => {
+  it('passes clean addition (percent_total) data with extended (150%) bars', () => {
     expect(percentBarOracle.verify(additionClean, pbCtx).violations).toEqual([]);
   });
 
@@ -172,5 +172,39 @@ describe('percent-bar oracle', () => {
     data.challenges[0].steps[2].options = [];
     const v = percentBarOracle.verify(data, pbCtx).violations;
     expect(v.some((x) => x.check === 'schema' && x.where === 'pb-1.steps[2]')).toBe(true);
+  });
+});
+
+// ── find_part / find_whole: the amount step, built the way the generator builds it ──
+import { selectPercentBarChallenges } from '../../../math/gemini-percent-bar';
+
+describe('percent-bar oracle — amount steps (find_part, find_whole)', () => {
+  const session = (type: 'part_of' | 'whole_of', difficulty: string) =>
+    ({ title: 'Percents', description: '', challenges: selectPercentBarChallenges(type, 5, { difficulty }) });
+
+  it.each([['part_of', 'easy'], ['part_of', 'hard'], ['whole_of', 'easy'], ['whole_of', 'medium'], ['whole_of', 'hard']] as const)(
+    'passes generator-built %s sessions at %s', (type, difficulty) => {
+      for (let run = 0; run < 10; run++) {
+        const r = percentBarOracle.verify(session(type, difficulty), { ...pbCtx, evalMode: type === 'part_of' ? 'find_part' : 'find_whole' });
+        expect(r.violations).toEqual([]);
+        expect(r.uncheckedTypes).toEqual([]);
+        expect(r.checkedChallenges).toBe(5);
+      }
+    });
+
+  it('flags answer-key-desync — a part that is not the percent of the whole', () => {
+    const data = clone(session('part_of', 'medium'));
+    const step = data.challenges[0].steps![1] as unknown as Record<string, unknown>;
+    step.part = Number(step.part) + 1;
+    const v = percentBarOracle.verify(data, pbCtx).violations;
+    expect(v.some((x) => x.check === 'answer-key-desync' && x.where === `${data.challenges[0].id}.steps[1]`)).toBe(true);
+  });
+
+  it('flags answer-leak — a find-whole prompt that states the whole', () => {
+    const data = clone(session('whole_of', 'medium'));
+    const step = data.challenges[0].steps![1] as unknown as Record<string, unknown>;
+    data.challenges[0].scenario += ` The whole is $${step.whole}.`;
+    const v = percentBarOracle.verify(data, pbCtx).violations;
+    expect(v.some((x) => x.check === 'answer-leak')).toBe(true);
   });
 });

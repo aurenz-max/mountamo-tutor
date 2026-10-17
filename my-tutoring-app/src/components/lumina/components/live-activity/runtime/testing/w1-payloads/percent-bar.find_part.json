@@ -1,88 +1,175 @@
 {
- "source": "qa/tutor-reports/percent-bar-runtime-find_part-payload-2026-10-09.json",
+ "source": "qa/tutor-reports/percent-bar-runtime-find_part-payload-2026-10-16.json",
  "primitiveId": "percent-bar",
  "evalMode": "find_part",
  "data": {
-  "title": "Calculating Remaining Percentages in Discounts",
-  "description": "Practice determining the remaining percentage of an original price after a markdown by subtracting discount rates from one hundred percent.",
+  "title": "Real-World Percent Applications",
+  "description": "Practice calculating discounts, taxes, and tips by marking percentages on visual bars and finding the corresponding dollar amounts.",
   "challenges": [
    {
     "id": "pb-1",
-    "type": "subtraction",
-    "scenario": "A $20 backpack is on clearance \u2014 25% off.",
-    "wholeValue": 20,
-    "wholeValueLabel": "Original Price ($)",
-    "question": "What percent of the original price remains after the discount?",
-    "targetPercent": 75,
-    "hint": "Subtract the discount from 100%. 100 - 25 = ?",
+    "type": "part_of",
+    "scenario": "A bake sale raised $55. 80% of it goes to the animal shelter.",
+    "wholeValue": 55,
+    "wholeValueLabel": "Money raised ($)",
+    "question": "Step 1 \u2014 the whole bar is the $55. Mark 80% on the bar.",
+    "targetPercent": 80,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 the whole bar is the $55. Mark 80% on the bar.",
+      "wholeValue": 55,
+      "wholeValueLabel": "Money raised ($)",
+      "targetPercent": 80,
+      "maxPercent": 100,
+      "recapLabel": "Marked",
+      "hint": "80% means 80 out of every 100. Slide the bar to 80%."
+     },
+     {
+      "kind": "amount",
+      "prompt": "Step 2 \u2014 How many dollars go to the shelter? Type the amount.",
+      "percent": 80,
+      "whole": 55,
+      "part": 44,
+      "unknown": "part",
+      "wholeValueLabel": "Money raised ($)",
+      "hint": "Find 10% first ($55 \u00f7 10), then take 8 of those."
+     }
+    ],
+    "hint": "80% means 80 out of every 100. Slide the bar to 80%.",
     "context": {
-     "problemType": "subtraction",
-     "initialValue": 20,
-     "changeRate": -25,
-     "discountFactor": 0.75,
-     "finalValue": 15
+     "problemType": "part_of",
+     "initialValue": 55,
+     "changeRate": 0,
+     "discountFactor": 0.8,
+     "finalValue": 44
     }
    },
    {
     "id": "pb-2",
-    "type": "subtraction",
-    "scenario": "A bookstore has a 15% off coupon on a $120 book.",
+    "type": "part_of",
+    "scenario": "A concert ticket costs $120. You pay 75% of it now as a deposit.",
     "wholeValue": 120,
-    "wholeValueLabel": "Original Price ($)",
-    "question": "What percent of the price will you pay with the coupon? Place that percent on the bar.",
-    "targetPercent": 85,
-    "hint": "If 15% is removed, then 100% - 15% remains.",
+    "wholeValueLabel": "Ticket ($)",
+    "question": "Step 1 \u2014 the whole bar is the $120. Mark 75% on the bar.",
+    "targetPercent": 75,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 the whole bar is the $120. Mark 75% on the bar.",
+      "wholeValue": 120,
+      "wholeValueLabel": "Ticket ($)",
+      "targetPercent": 75,
+      "maxPercent": 100,
+      "recapLabel": "Marked",
+      "hint": "75% means 75 out of every 100. Slide the bar to 75%."
+     },
+     {
+      "kind": "amount",
+      "prompt": "Step 2 \u2014 How many dollars do you pay now? Type the amount.",
+      "percent": 75,
+      "whole": 120,
+      "part": 90,
+      "unknown": "part",
+      "wholeValueLabel": "Ticket ($)",
+      "hint": "Find 25% first ($120 \u00f7 4), then take three of them."
+     }
+    ],
+    "hint": "75% means 75 out of every 100. Slide the bar to 75%.",
     "context": {
-     "problemType": "subtraction",
+     "problemType": "part_of",
      "initialValue": 120,
-     "changeRate": -15,
-     "discountFactor": 0.85,
-     "finalValue": 102
+     "changeRate": 0,
+     "discountFactor": 0.75,
+     "finalValue": 90
     }
    },
    {
     "id": "pb-3",
-    "type": "subtraction",
-    "scenario": "A $100 backpack is on clearance \u2014 40% off.",
-    "wholeValue": 100,
-    "wholeValueLabel": "Original Price ($)",
-    "question": "What percent of the original price remains after the discount?",
-    "targetPercent": 60,
-    "hint": "Subtract the discount from 100%. 100 - 40 = ?",
+    "type": "part_of",
+    "scenario": "A bike costs $125. It is on sale for 40% off.",
+    "wholeValue": 125,
+    "wholeValueLabel": "Price ($)",
+    "question": "Step 1 \u2014 the whole bar is the $125. Mark 40% on the bar.",
+    "targetPercent": 40,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 the whole bar is the $125. Mark 40% on the bar.",
+      "wholeValue": 125,
+      "wholeValueLabel": "Price ($)",
+      "targetPercent": 40,
+      "maxPercent": 100,
+      "recapLabel": "Marked",
+      "hint": "40% means 40 out of every 100. Slide the bar to 40%."
+     },
+     {
+      "kind": "amount",
+      "prompt": "Step 2 \u2014 How many dollars is the discount? Type the amount.",
+      "percent": 40,
+      "whole": 125,
+      "part": 50,
+      "unknown": "part",
+      "wholeValueLabel": "Price ($)",
+      "hint": "Find 10% first ($125 \u00f7 10), then take 4 of those."
+     }
+    ],
+    "hint": "40% means 40 out of every 100. Slide the bar to 40%.",
     "context": {
-     "problemType": "subtraction",
-     "initialValue": 100,
-     "changeRate": -40,
-     "discountFactor": 0.6,
-     "finalValue": 60
+     "problemType": "part_of",
+     "initialValue": 125,
+     "changeRate": 0,
+     "discountFactor": 0.4,
+     "finalValue": 50
     }
    },
    {
     "id": "pb-4",
-    "type": "subtraction",
-    "scenario": "A bookstore has a 50% off coupon on a $40 book.",
-    "wholeValue": 40,
-    "wholeValueLabel": "Original Price ($)",
-    "question": "What percent of the price will you pay with the coupon? Place that percent on the bar.",
-    "targetPercent": 50,
-    "hint": "If 50% is removed, then 100% - 50% remains.",
+    "type": "part_of",
+    "scenario": "You earned $140 this month and save 90% of it.",
+    "wholeValue": 140,
+    "wholeValueLabel": "Earnings ($)",
+    "question": "Step 1 \u2014 the whole bar is the $140. Mark 90% on the bar.",
+    "targetPercent": 90,
+    "steps": [
+     {
+      "kind": "place",
+      "prompt": "Step 1 \u2014 the whole bar is the $140. Mark 90% on the bar.",
+      "wholeValue": 140,
+      "wholeValueLabel": "Earnings ($)",
+      "targetPercent": 90,
+      "maxPercent": 100,
+      "recapLabel": "Marked",
+      "hint": "90% means 90 out of every 100. Slide the bar to 90%."
+     },
+     {
+      "kind": "amount",
+      "prompt": "Step 2 \u2014 How many dollars do you save? Type the amount.",
+      "percent": 90,
+      "whole": 140,
+      "part": 126,
+      "unknown": "part",
+      "wholeValueLabel": "Earnings ($)",
+      "hint": "Find 10% first ($140 \u00f7 10), then take 9 of those."
+     }
+    ],
+    "hint": "90% means 90 out of every 100. Slide the bar to 90%.",
     "context": {
-     "problemType": "subtraction",
-     "initialValue": 40,
-     "changeRate": -50,
-     "discountFactor": 0.5,
-     "finalValue": 20
+     "problemType": "part_of",
+     "initialValue": 140,
+     "changeRate": 0,
+     "discountFactor": 0.9,
+     "finalValue": 126
     }
    }
   ],
   "showPercentLabels": true,
   "showValueLabels": true,
   "benchmarkLines": [
-   25,
-   50,
-   75
+   50
   ],
   "doubleBar": false,
-  "showCalculation": true
+  "showCalculation": true,
+  "supportTier": "medium"
  }
 }

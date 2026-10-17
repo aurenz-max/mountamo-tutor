@@ -18,6 +18,8 @@ import { workspaceBinding } from '../../../components/live-activity/lessonWorksp
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { PercentBarChallenge, PercentBarData } from './PercentBar';
 import { PERCENT_MISSES_BY_MODE, percentMiss } from './percentBarWorkspace';
+import { percentOfChallenge } from '../../../service/math/gemini-percent-bar';
+import { percentItems } from '../../../service/itemSpace/percentOf';
 
 beforeEach(() => { installRuntimeTimers(); });
 afterEach(() => { cleanup(); restoreRuntimeTimers(); });
@@ -57,22 +59,37 @@ const compare: PercentBarChallenge = { id: 'c1', type: 'comparison',
     { kind: 'choice', prompt: 'Step 3 — which is cheaper?', options: [{ id: 'A', label: 'Store A', sublabel: '$28.00' },
       { id: 'B', label: 'Store B', sublabel: '$30.00' }], correctOptionId: 'A', hint: 'Compare the prices.' },
   ] };
+const percentOf = (unknown: 'part' | 'whole', percent: number, whole: number, id: string) =>
+  percentOfChallenge(percentItems().find(it => it.unknown === unknown && it.percent === percent && it.whole === whole)!, id);
+/** find_part: 15% of $60 is $9. find_whole: $12 is 20% of $60. */
+const partOf = percentOf('part', 15, 60, 'p1');
+const wholeOf = percentOf('whole', 20, 60, 'w1');
 const bar = (challenges: PercentBarChallenge[]): PercentBarData => ({ title: 'Percents', description: '', challenges,
   showPercentLabels: true, showValueLabels: true, benchmarkLines: [25, 50, 75], showCalculation: true });
 
 /** `before`: steps answered right first (not commits); `wrong`: the miss; `right`: the rest from the missed step. */
-type Step = { place: number } | { choose: string };
+type Step = { place: number } | { choose: string } | { type: string };
 type Case = { mode: string; data: PercentBarData; before: Step[]; wrong: Step; miss: string; right: Step[]; secret: RegExp };
 const CASES: Case[] = [
   { mode: 'identify_percent', data: bar([direct]), before: [], wrong: { place: 70 }, miss: 'complement', right: [{ place: 30 }], secret: /12\.00/ },
-  { mode: 'find_part', data: bar([discount]), before: [], wrong: { place: 20 }, miss: 'placed_discount', right: [{ place: 80 }], secret: /\b80\b|32\.00/ },
-  { mode: 'find_whole', data: bar([tip]), before: [{ place: 15 }], wrong: { place: 15 }, miss: 'rate_not_total', right: [{ place: 115 }],
+  { mode: 'percent_remaining', data: bar([discount]), before: [], wrong: { place: 20 }, miss: 'placed_discount', right: [{ place: 80 }], secret: /\b80\b|32\.00/ },
+  { mode: 'percent_total', data: bar([tip]), before: [{ place: 15 }], wrong: { place: 15 }, miss: 'rate_not_total', right: [{ place: 115 }],
     secret: /\b115\b|92\.00/ },
   { mode: 'convert', data: bar([compare]), before: [{ place: 70 }, { place: 50 }], wrong: { choose: 'Store B $30.00' }, miss: 'bigger_discount',
     right: [{ choose: 'Store A $28.00' }], secret: /cheaper is|Store A is/i },
+  { mode: 'find_part', data: bar([partOf]), before: [{ place: 15 }], wrong: { type: '51' }, miss: 'rest_not_part', right: [{ type: '9' }],
+    secret: /\$9\b|\b9\.00|= 9\b/ },
+  { mode: 'find_whole', data: bar([wholeOf]), before: [{ place: 20 }], wrong: { type: '12' }, miss: 'part_as_whole', right: [{ type: '60' }],
+    secret: /\b60\b/ },
 ];
 const perform = (h: WorkspaceHarness, s: Step) => {
-  if ('place' in s) slide(h, s.place); else h.press(s.choose);
+  if ('place' in s) slide(h, s.place);
+  else if ('type' in s) act(() => {
+    const input = h.view.container.querySelector<HTMLInputElement>('input[aria-label="Amount in dollars"]');
+    expect(input, 'the amount box').toBeTruthy();
+    fireEvent.change(input!, { target: { value: s.type } });
+  });
+  else h.press(s.choose);
   check(h);
 };
 
@@ -110,12 +127,12 @@ it.each(CASES)('$mode: the bar and the options checked by the activity, no key p
     expect(h.view.container.textContent).not.toMatch(secret);
     // Input is closed until Try again.
     const open = Array.from(h.view.container.querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button'))
-      .filter(el => !el.disabled && /Percent on the bar|Store|Check Answer/.test((el.getAttribute('aria-label') ?? '') + el.textContent));
+      .filter(el => !el.disabled && /Percent on the bar|Amount in dollars|Store|Check Answer/.test((el.getAttribute('aria-label') ?? '') + el.textContent));
     expect(open).toEqual([]);
     const stepBefore = h.state().task!.demand.step;
     h.dispatch('retry');
     expect(h.state().task!.demand.step).toBe(stepBefore);
-    expect(String(h.state().task!.demand.learnerWork)).toMatch(/set to 0%|no option chosen/);
+    expect(String(h.state().task!.demand.learnerWork)).toMatch(/set to 0%|no option chosen|nothing typed/);
 
     for (const s of right) perform(h, s);
     expect(h.state().task!.evidence.correctness).toBe('correct');
@@ -127,7 +144,7 @@ it.each(CASES)('$mode: the bar and the options checked by the activity, no key p
   });
 
 it('the live host (no evaluation provider) never submits', async () => {
-  const h = mountWorkspace({ primitiveId: 'percent-bar', evalMode: 'find_part', data: bar([discount]) as unknown as Record<string, unknown> });
+  const h = mountWorkspace({ primitiveId: 'percent-bar', evalMode: 'percent_remaining', data: bar([discount]) as unknown as Record<string, unknown> });
   slide(h, 80); check(h);
   h.dispatch('advance'); h.confirmVisible();
   expect(h.state().status).toBe('completed');
@@ -136,7 +153,7 @@ it('the live host (no evaluation provider) never submits', async () => {
 });
 
 it('the tutor is told what is drawn: the step, the whole, the bar, the aids and what was found so far, never the percent', () => {
-  const h = mountWorkspace({ primitiveId: 'percent-bar', evalMode: 'find_whole',
+  const h = mountWorkspace({ primitiveId: 'percent-bar', evalMode: 'percent_total',
     data: { ...bar([tip]), showCalculation: false, benchmarkLines: [50] } as unknown as Record<string, unknown> });
   expect(h.state().task!.demand).toMatchObject({ step: '1 of 2', whole: '80 (Bill ($))', bar: '0% to 100%',
     onBar: expect.stringContaining('no calculation panel') });
@@ -144,6 +161,27 @@ it('the tutor is told what is drawn: the step, the whole, the bar, the aids and 
   expect(h.state().task!.demand).toMatchObject({ step: '2 of 2', bar: '0% to 150%, with a line at 100% marking the whole',
     foundSoFar: 'Tip 15% = 12', learnerWork: 'Step 2 of 2: the bar is set to 0% of 80' });
   expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/\b115\b|\b92\b/);
+});
+
+it('find_part / find_whole: no readout, panel or tick shows an amount, whatever the session config; the whole of a find-whole item is never named', () => {
+  for (const [mode, c] of [['find_part', partOf], ['find_whole', wholeOf]] as const) {
+    const h = mountWorkspace({ primitiveId: 'percent-bar', evalMode: mode,
+      data: { ...bar([c]), doubleBar: true } as unknown as Record<string, unknown> });
+    const text = () => h.view.container.textContent ?? '';
+    expect(text()).not.toMatch(/Calculation|Part Value|Actual Value/);
+    slide(h, c.targetPercent);
+    expect(text()).not.toMatch(/Calculation|Part Value|Actual Value/);
+    if (mode === 'find_whole') {
+      expect(text()).not.toMatch(/\b60\b/);
+      expect(text()).toContain('$12');
+      expect(JSON.stringify(h.state().task!.demand)).not.toMatch(/\b60\b/);
+    }
+    check(h);
+    expect(h.state().task!.demand).toMatchObject({ step: '2 of 2', bar: `filled to ${c.targetPercent}%, the percent marked on the step before` });
+    expect(text()).toContain('?');
+    expect(JSON.stringify(h.state().task!.demand)).not.toMatch(mode === 'find_part' ? /\b9\b/ : /\b60\b/);
+    cleanup();
+  }
 });
 
 it('percentMiss names the pattern the bar or the option shows', () => {
@@ -172,5 +210,6 @@ it('the adapter refuses a step its own check cannot read', () => {
   const validate = LIVE_ADAPTERS['percent-bar'].validate;
   expect(() => validate(bar([{ ...discount, targetPercent: 120 }]))).toThrow();
   expect(() => validate(bar([{ ...compare, steps: compare.steps!.map(s => s.kind === 'choice' ? { ...s, correctOptionId: 'C' } : s) }]))).toThrow();
-  expect(validate(bar([direct, discount, tip, compare]))).toBeTruthy();
+  expect(validate(bar([direct, discount, tip, compare, partOf, wholeOf]))).toBeTruthy();
+  expect(() => validate(bar([{ ...partOf, steps: partOf.steps!.map(s => s.kind === 'amount' ? { ...s, part: 10 } : s) }]))).toThrow();
 });

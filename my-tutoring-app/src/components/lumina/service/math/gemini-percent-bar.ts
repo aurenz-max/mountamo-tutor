@@ -7,6 +7,7 @@ import {
   PercentBarChallenge,
   PercentBarPlaceStep,
   PercentBarChoiceStep,
+  PercentBarAmountStep,
   PercentContext,
 } from "../../primitives/visual-primitives/math/PercentBar";
 
@@ -14,7 +15,10 @@ import {
 // pick happens at build time (the component only ever sees a resolved `hint`).
 type GenPlaceStep = PercentBarPlaceStep & { hintStrategy?: string };
 type GenChoiceStep = PercentBarChoiceStep & { hintStrategy?: string };
-type GenStep = GenPlaceStep | GenChoiceStep;
+type GenAmountStep = PercentBarAmountStep & { hintStrategy?: string };
+type GenStep = GenPlaceStep | GenChoiceStep | GenAmountStep;
+import { difficultyBand } from '../itemSpace';
+import { PERCENT_OF, percentKind, type PercentItem } from '../itemSpace/percentOf';
 import {
   resolveEvalModeConstraint,
   constrainChallengeTypeEnum,
@@ -58,6 +62,18 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
       + `Step 2 — same for good 2. Step 3 — choose which is cheaper / more expensive. `
       + `Teaches that a bigger % discount is NOT always the cheaper price. Grade 7-8 focus.`,
     schemaDescription: "'comparison' (compute two sale prices, then choose cheaper/pricier)",
+  },
+  part_of: {
+    promptDoc:
+      `"part_of": Find a percent of a quantity, in dollars (6.RP.3c). Step 1 — mark the percent on the bar (the whole bar `
+      + `is the stated whole). Step 2 — type the part in dollars: "15% of $60" → $9. No readout shows an amount. Grade 6-7.`,
+    schemaDescription: "'part_of' (mark the percent, then type the part in dollars)",
+  },
+  whole_of: {
+    promptDoc:
+      `"whole_of": Find the whole from a part and its percent (6.RP.3c). Step 1 — mark the percent the part is; the part's `
+      + `dollars ride the end of the fill. Step 2 — type the whole: "$12 is 20% of what?" → $60. Grade 6-7.`,
+    schemaDescription: "'whole_of' (mark the part's percent, then type the whole in dollars)",
   },
 };
 
@@ -103,7 +119,8 @@ const BENCHMARK_RATES = [25, 50, 75] as const;
  * easy→hard scaffolding gradient, per pinned challenge type.
  * identify_percent (direct) is the recognition mode: full aids + double bar +
  * calc panel + benchmark-only rates at easy, everything withdrawn at hard.
- * find_part/find_whole/convert: aids on + explicit hint → aids off, strategy hint.
+ * percent_remaining/percent_total/convert/find_part/find_whole: aids on + explicit hint → aids off, strategy hint
+ * (find_part and find_whole never show a value readout or the calculation panel at any tier: the amount is their answer).
  * INVARIANT: never changes the target percent or whole magnitude — rateClass
  * picks from the SAME pool (benchmark subset vs full), not a bigger number.
  */
@@ -173,7 +190,8 @@ function resolveSupportStructure(pinnedType: ChallengeType, tier: SupportTier): 
 const DEFAULT_INSTANCE_COUNT = 4;
 const MAX_INSTANCE_COUNT = 6;
 
-type ChallengeType = 'direct' | 'subtraction' | 'addition' | 'comparison';
+type ChallengeType = 'direct' | 'subtraction' | 'addition' | 'comparison' | 'part_of' | 'whole_of';
+const CHALLENGE_TYPES: readonly ChallengeType[] = ['direct', 'subtraction', 'addition', 'comparison', 'part_of', 'whole_of'];
 
 const randInt = (min: number, max: number): number =>
   Math.floor(Math.random() * (max - min + 1)) + min;
@@ -668,11 +686,122 @@ function buildComparison(): ChallengeSpec {
   };
 }
 
+// -- Percent-of modes (find_part, find_whole) ------------------------------------
+//
+// The numbers come from the percent-of item space (code lists every item, prices its difficulty from its structure, and
+// picks in the tier's band); these templates only frame them. The amount is the answer, so no prompt states it.
+
+/** `max`: the largest percent the context is real at (a 90% sales tax is not); absent = any percent. */
+interface PartTemplate { id: string; scenario: (whole: number, p: number) => string; label: string; ask: string; max?: number }
+
+const PART_OF_TEMPLATES: readonly PartTemplate[] = [
+  { id: 'bike-sale', scenario: (w, p) => `A bike costs $${w}. It is on sale for ${p}% off.`, label: 'Price ($)', ask: 'How many dollars is the discount?', max: 60 },
+  { id: 'lunch-tip', scenario: (w, p) => `Your lunch bill is $${w}. You leave a ${p}% tip.`, label: 'Bill ($)', ask: 'How many dollars is the tip?', max: 25 },
+  { id: 'savings', scenario: (w, p) => `You earned $${w} this month and save ${p}% of it.`, label: 'Earnings ($)', ask: 'How many dollars do you save?' },
+  { id: 'game-tax', scenario: (w, p) => `A video game costs $${w}. The sales tax is ${p}%.`, label: 'Price ($)', ask: 'How many dollars is the tax?', max: 12 },
+  { id: 'bake-sale', scenario: (w, p) => `A bake sale raised $${w}. ${p}% of it goes to the animal shelter.`, label: 'Money raised ($)', ask: 'How many dollars go to the shelter?' },
+  { id: 'deposit-now', scenario: (w, p) => `A concert ticket costs $${w}. You pay ${p}% of it now as a deposit.`, label: 'Ticket ($)', ask: 'How many dollars do you pay now?' },
+];
+
+const WHOLE_OF_TEMPLATES: readonly PartTemplate[] = [
+  { id: 'bike-goal', scenario: (a, p) => `Sam has saved $${a}. That is ${p}% of the cost of a new bike.`, label: 'Bike cost ($)', ask: 'How much does the bike cost?' },
+  { id: 'trip-fund', scenario: (a, p) => `The class has raised $${a}. That is ${p}% of its trip goal.`, label: 'Trip goal ($)', ask: 'What is the trip goal?' },
+  { id: 'coupon', scenario: (a, p) => `A coupon took $${a} off a jacket. The coupon was ${p}% off.`, label: 'Original price ($)', ask: 'What was the jacket\'s original price?', max: 60 },
+  { id: 'tip-bill', scenario: (a, p) => `Dana left a $${a} tip. The tip was ${p}% of the bill.`, label: 'Bill ($)', ask: 'How much was the bill?', max: 25 },
+  { id: 'camp-deposit', scenario: (a, p) => `You paid a $${a} deposit for camp. The deposit is ${p}% of the camp's price.`, label: 'Camp price ($)', ask: 'What is the camp\'s full price?' },
+  { id: 'speaker-tax', scenario: (a, p) => `The sales tax on a speaker was $${a}. The tax rate is ${p}%.`, label: 'Price before tax ($)', ask: 'What was the speaker\'s price before tax?', max: 12 },
+];
+
+/** The explicit hint names the route through an easy percent; it never states the amount. */
+function partHint(it: PercentItem): string {
+  const { percent: p, whole: w } = it;
+  switch (percentKind(p)) {
+    case 'tenth': return `10% is one tenth of the whole: $${w} ÷ 10.`;
+    case 'half': return `50% is half of the whole: $${w} ÷ 2.`;
+    case 'quarter': return `25% is a quarter of the whole: $${w} ÷ 4.`;
+    case 'threeQuarters': return `Find 25% first ($${w} ÷ 4), then take three of them.`;
+    case 'tens': return `Find 10% first ($${w} ÷ 10), then take ${p / 10} of those.`;
+    case 'fives': return `Find 10% ($${w} ÷ 10) and 5% (half of that), then build up to ${p}%.`;
+    default: return `Find 1% first ($${w} ÷ 100), then take ${p} of those.`;
+  }
+}
+
+function wholeHint(it: PercentItem): string {
+  const { percent: p, part: a } = it;
+  switch (percentKind(p)) {
+    case 'tenth': return `$${a} is one tenth of the whole, and the whole is ten tenths: $${a} × 10.`;
+    case 'half': return `$${a} is half of the whole, and the whole is two halves: $${a} × 2.`;
+    case 'quarter': return `$${a} is a quarter of the whole, and the whole is four quarters: $${a} × 4.`;
+    case 'threeQuarters': return `$${a} is three quarters, so one quarter is $${a} ÷ 3. The whole is four quarters.`;
+    case 'tens': return `${p}% is $${a}, so 10% is $${a} ÷ ${p / 10}. The whole is ten of those.`;
+    case 'fives': return `${p}% is $${a}, so 5% is $${a} ÷ ${p / 5}. The whole is twenty of those.`;
+    default: return `${p}% is $${a}, so 1% is $${a} ÷ ${p}. The whole is one hundred of those.`;
+  }
+}
+
+function buildPercentOf(it: PercentItem, template: PartTemplate): ChallengeSpec {
+  const { percent: p, whole: w, part: a } = it;
+  const findWhole = it.unknown === 'whole';
+  const markHint = `${p}% means ${p} out of every 100. Slide the bar to ${p}%.`;
+  const markStrategy = 'The percent is in the problem; the whole bar is 100%.';
+  const steps: GenStep[] = findWhole ? [
+    { kind: 'place', prompt: `Step 1 — the $${a} is ${p}% of the whole. Mark ${p}% on the bar.`, wholeValue: w,
+      wholeValueLabel: template.label, targetPercent: p, maxPercent: 100, recapLabel: 'Marked', wholeUnknown: true, knownPart: a,
+      hint: markHint, hintStrategy: markStrategy },
+    { kind: 'amount', prompt: `Step 2 — the whole bar is 100%. ${template.ask} Type the amount.`, percent: p, whole: w, part: a,
+      unknown: 'whole', wholeValueLabel: template.label, hint: wholeHint(it),
+      hintStrategy: 'How many of the filled part fit in the whole bar? Find a small percent first, then build up to 100%.' },
+  ] : [
+    { kind: 'place', prompt: `Step 1 — the whole bar is the $${w}. Mark ${p}% on the bar.`, wholeValue: w,
+      wholeValueLabel: template.label, targetPercent: p, maxPercent: 100, recapLabel: 'Marked', hint: markHint, hintStrategy: markStrategy },
+    { kind: 'amount', prompt: `Step 2 — ${template.ask} Type the amount.`, percent: p, whole: w, part: a, unknown: 'part',
+      wholeValueLabel: template.label, hint: partHint(it),
+      hintStrategy: `Find an easy percent of the whole first, like 10%, then build up to ${p}%.` },
+  ];
+  return {
+    scenario: template.scenario(findWhole ? a : w, p),
+    wholeValue: w,
+    wholeValueLabel: template.label,
+    question: steps[0].prompt,
+    targetPercent: p,
+    steps,
+    hint: steps[0].hint,
+    hintStrategy: markStrategy,
+    context: { problemType: findWhole ? 'whole_of' : 'part_of', initialValue: w, changeRate: 0, discountFactor: p / 100, finalValue: a },
+  };
+}
+
+/** One find-part / find-whole challenge on the first template, as the session builds it (for tests and probes). */
+export function percentOfChallenge(it: PercentItem, id: string, strategy = false): PercentBarChallenge {
+  const spec = buildPercentOf(it, (it.unknown === 'part' ? PART_OF_TEMPLATES : WHOLE_OF_TEMPLATES).find((t) => t.max === undefined)!);
+  const steps = spec.steps!.map(({ hintStrategy, ...rest }) => (strategy && hintStrategy ? { ...rest, hint: hintStrategy } : rest));
+  return { id, type: spec.context.problemType, scenario: spec.scenario, wholeValue: spec.wholeValue, wholeValueLabel: spec.wholeValueLabel,
+    question: spec.question, targetPercent: spec.targetPercent, steps, hint: strategy ? spec.hintStrategy : spec.hint, context: spec.context };
+}
+
+/** `n` items of one unknown in the tier's band (the whole space with no tier), each on its own template. */
+function selectPercentOfSpecs(type: 'part_of' | 'whole_of', n: number, difficulty?: string): ChallengeSpec[] {
+  const unknown = type === 'part_of' ? 'part' : 'whole';
+  const [lo, hi] = difficultyBand(difficulty) ?? [-Infinity, Infinity];
+  const accept = (it: PercentItem) => it.unknown === unknown;
+  let picks = PERCENT_OF.pick(n, lo, hi, Math.random, accept);
+  if (picks.length < n) picks = [...picks, ...PERCENT_OF.pick(n - picks.length, -Infinity, Infinity, Math.random, accept)];
+  const templates = shuffle([...(type === 'part_of' ? PART_OF_TEMPLATES : WHOLE_OF_TEMPLATES)]);
+  const used = new Map<string, number>();
+  return picks.map((it) => {
+    // The least-used template that is real at this percent (every list has ones with no cap).
+    const fits = templates.filter((t) => t.max === undefined || it.percent <= t.max);
+    const t = fits.reduce((a, b) => ((used.get(b.id) ?? 0) < (used.get(a.id) ?? 0) ? b : a));
+    used.set(t.id, (used.get(t.id) ?? 0) + 1);
+    return buildPercentOf(it, t);
+  });
+}
+
 // -- Pool service entry --------------------------------------------------------
 
 /** rateClass only reaches `direct` (the only mode with the benchmark-vs-any
  *  structural lever); the others ignore it. */
-const BUILDERS: Record<ChallengeType, (rateClass: 'benchmark' | 'any') => ChallengeSpec> = {
+const BUILDERS: Record<Exclude<ChallengeType, 'part_of' | 'whole_of'>, (rateClass: 'benchmark' | 'any') => ChallengeSpec> = {
   direct: (rateClass) => buildDirect(rateClass),
   subtraction: () => buildSubtraction(),
   addition: () => buildAddition(),
@@ -686,25 +815,28 @@ function challengeKey(spec: ChallengeSpec): string {
 export function selectPercentBarChallenges(
   challengeType: ChallengeType,
   count: number = DEFAULT_INSTANCE_COUNT,
-  opts?: { rateClass?: 'benchmark' | 'any'; hintExplicitness?: 'explicit' | 'strategy' },
+  opts?: { rateClass?: 'benchmark' | 'any'; hintExplicitness?: 'explicit' | 'strategy'; difficulty?: string },
 ): PercentBarChallenge[] {
   const target = Math.max(1, Math.min(MAX_INSTANCE_COUNT, count));
   const rateClass = opts?.rateClass ?? 'any';
   const useStrategyHint = opts?.hintExplicitness === 'strategy';
-  const builder = BUILDERS[challengeType];
-  const seen = new Set<string>();
   const specs: ChallengeSpec[] = [];
 
-  for (let i = 0; i < target * 6 && specs.length < target; i++) {
-    const spec = builder(rateClass);
-    const key = challengeKey(spec);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    specs.push(spec);
+  if (challengeType === 'part_of' || challengeType === 'whole_of') {
+    specs.push(...selectPercentOfSpecs(challengeType, target, opts?.difficulty));
+  } else {
+    const builder = BUILDERS[challengeType];
+    const seen = new Set<string>();
+    for (let i = 0; i < target * 6 && specs.length < target; i++) {
+      const spec = builder(rateClass);
+      const key = challengeKey(spec);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      specs.push(spec);
+    }
+    // Fallback — if the pool can't produce N distinct, fill with possible repeats.
+    while (specs.length < target) specs.push(builder(rateClass));
   }
-
-  // Fallback — if the pool can't produce N distinct, fill with possible repeats.
-  while (specs.length < target) specs.push(builder(rateClass));
 
   // Shuffle so order is not template-aligned.
   return shuffle(specs).map((spec, i) => {
@@ -750,7 +882,7 @@ const percentBarSchema: Schema = {
     },
     challengeType: {
       type: Type.STRING,
-      enum: ["direct", "subtraction", "addition", "comparison"],
+      enum: [...CHALLENGE_TYPES],
       description:
         "Difficulty tier of the session. The system uses this to build the per-challenge scenarios. All challenges in the session share this type.",
     },
@@ -858,7 +990,7 @@ Return ONLY the wrapper fields described above.
   }
 
   // Validate challengeType
-  const validTypes: ChallengeType[] = ['direct', 'subtraction', 'addition', 'comparison'];
+  const validTypes = CHALLENGE_TYPES;
   let challengeType: ChallengeType = validTypes.includes(wrapper.challengeType as ChallengeType)
     ? (wrapper.challengeType as ChallengeType)
     : (evalConstraint?.allowedTypes[0] as ChallengeType) ?? 'direct';
@@ -871,9 +1003,11 @@ Return ONLY the wrapper fields described above.
     : null;
 
   // Build challenges from the local pool service
-  const challenges = selectPercentBarChallenges(challengeType, config?.instanceCount, sessionScaffold
-    ? { rateClass: sessionScaffold.rateClass, hintExplicitness: sessionScaffold.hintExplicitness }
-    : undefined);
+  // find_part / find_whole also take their numbers from the tier's band of the percent-of space.
+  const challenges = selectPercentBarChallenges(challengeType, config?.instanceCount, {
+    ...(sessionScaffold ? { rateClass: sessionScaffold.rateClass, hintExplicitness: sessionScaffold.hintExplicitness } : {}),
+    difficulty: supportTier ?? undefined,
+  });
 
   const data: PercentBarData = {
     title: wrapper.title,
@@ -905,7 +1039,7 @@ Return ONLY the wrapper fields described above.
   }
 
   const summary = challenges
-    .map((c) => `${c.targetPercent}%@${c.wholeValue}`)
+    .map((c) => `${c.targetPercent}%@${c.wholeValue}${c.context.problemType === 'whole_of' ? `(part ${c.context.finalValue})` : ''}`)
     .join(', ');
   console.log(`[PercentBar] Final: challengeType=${challengeType}, instances=${challenges.length} [${summary}]`);
 

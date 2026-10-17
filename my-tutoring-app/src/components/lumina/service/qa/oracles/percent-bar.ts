@@ -70,11 +70,19 @@ import { asRecordArray, checkAnswerVariety, parseScopeCeiling } from './helpers'
  * fire on the intended stimulus, worse than an honest gap. Leak/quality (and the
  * hint-explicitness tier contract) stay with /eval-test.
  *
- * uncheckedTypes: records any step `kind` that is neither 'place' nor 'choice'
- * (the two the component knows), and any challenge `type` outside the four modes.
+ * uncheckedTypes: records any step `kind` that is not 'place', 'choice' or 'amount', and any challenge `type` outside
+ * the six the component knows.
+ *
+ * AMOUNT steps (part_of = find_part, whole_of = find_whole, added 10-16 for 8.1f): the learner types the part or the
+ * whole. The oracle re-derives it from percent × whole = part (answer-key-desync when it does not hold or is not a
+ * whole number of cents), checks the step's percent is the one the step before marks, and — the one leak these modes
+ * can have — that no prompt or scenario of the challenge states the amount the step hides (answer-leak).
  */
 
-const KNOWN_CHALLENGE_TYPES = new Set(['direct', 'subtraction', 'addition', 'comparison']);
+const KNOWN_CHALLENGE_TYPES = new Set(['direct', 'subtraction', 'addition', 'comparison', 'part_of', 'whole_of']);
+/** `n` appears in `text` as a whole number token (60 in "$60", not in "160" or "6.05"). */
+const numberIn = (text: string, n: number) =>
+  (text.replace(/\bStep \d+/gi, '').match(/\d+(?:\.\d+)?/g) ?? []).some((token) => Number(token) === n);
 // Default bar ceiling when a place step names no maxPercent (PercentBar.tsx:308).
 const DEFAULT_MAX_PERCENT = 100;
 
@@ -245,6 +253,32 @@ export const percentBarOracle: ContentOracle = {
                 });
               }
             }
+          }
+        } else if (kind === 'amount') {
+          const { percent, whole, part, unknown } = step as Record<string, unknown>;
+          if (!isFiniteNumber(percent) || !isFiniteNumber(whole) || !isFiniteNumber(part) || (unknown !== 'part' && unknown !== 'whole')) {
+            violations.push({ check: 'schema', where: `${id}.steps[${s}]`, detail: `amount step needs numeric percent/whole/part and unknown part|whole; got ${JSON.stringify(step)}` });
+            continue;
+          }
+          challengeChecked = true;
+          sigParts.push(`a:${percent}@${whole}/${part}/${unknown}`);
+          const derived = (percent * whole) / 100;
+          if (Math.abs(derived - part) > 1e-9 || Math.abs(Math.round(part * 100) - part * 100) > 1e-6 || part <= 0) {
+            violations.push({ check: 'answer-key-desync', where: `${id}.steps[${s}]`,
+              detail: `${percent}% of ${whole} is ${derived}, but the step's part is ${part} — the typed answer would be judged against the wrong amount` });
+          }
+          const marked = rawSteps.slice(0, s).filter((x): x is Record<string, unknown> => typeof x === 'object' && x !== null && (x as Record<string, unknown>).kind === 'place');
+          const markedPercent = marked.length ? marked[marked.length - 1].targetPercent : undefined;
+          if (markedPercent !== undefined && markedPercent !== percent) {
+            violations.push({ check: 'answer-key-desync', where: `${id}.steps[${s}]`,
+              detail: `the bar is fixed at ${percent}% but the step before marks ${String(markedPercent)}%` });
+          }
+          const hidden = unknown === 'part' ? part : whole;
+          const texts = [String(c.scenario ?? ''), String(c.question ?? ''),
+            ...rawSteps.map((x) => (typeof x === 'object' && x !== null ? String((x as Record<string, unknown>).prompt ?? '') : ''))];
+          const leakAt = texts.find((t) => numberIn(t, hidden));
+          if (leakAt !== undefined) {
+            violations.push({ check: 'answer-leak', where: `${id}.steps[${s}]`, detail: `the ${unknown} (${hidden}) is stated on screen: "${leakAt}"` });
           }
         } else {
           // A step kind the component cannot render — honest coverage gap.

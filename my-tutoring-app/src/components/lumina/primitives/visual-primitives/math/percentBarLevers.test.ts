@@ -6,11 +6,14 @@ import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { PercentBarChallenge, PercentBarChallengeType } from './PercentBar';
+import { percentOfChallenge } from '../../../service/math/gemini-percent-bar';
+import { percentItems } from '../../../service/itemSpace/percentOf';
 import {
-  ADDED_MODEL_LEVER, COMPARE_MODEL_LEVER, DISCOUNT_MODEL_LEVER, FILL_NAMES_LEVER, SIMPLER_LEVER, TENTHS_LEVER, VALUE_BAR_LEVER,
+  ADDED_MODEL_LEVER, COMPARE_MODEL_LEVER, DISCOUNT_MODEL_LEVER, FILL_NAMES_LEVER, PART_COPIES_LEVER, SIMPLER_LEVER, TENTHS_LEVER,
+  VALUE_BAR_LEVER,
   leverFacts, leverTextLeaks, percentLevers, practiceLeaks, simplerPercent,
 } from './percentBarLevers';
-import { PERCENT_MISSES_BY_MODE, challengeSteps, percentMiss, stepCorrect } from './percentBarWorkspace';
+import { PERCENT_MISSES_BY_MODE, amountTarget, challengeSteps, percentMiss, stepCorrect } from './percentBarWorkspace';
 
 const ctx = { problemType: 'direct' as const, initialValue: 0, changeRate: 0, discountFactor: 0, finalValue: 0 };
 const place = (prompt: string, whole: number, target: number, max = 100, recap?: string) =>
@@ -36,10 +39,15 @@ function items(type: PercentBarChallengeType): PercentBarChallenge[] {
         { kind: 'choice', prompt: 'Step 3 — which is cheaper?', options: [{ id: 'A', label: 'A', sublabel: `$${pa.toFixed(2)}` },
           { id: 'B', label: 'B', sublabel: `$${pb.toFixed(2)}` }], correctOptionId: pa < pb ? 'A' : 'B', hint: '' }] });
   }
+  if (type === 'part_of' || type === 'whole_of') {
+    const unknown = type === 'part_of' ? 'part' : 'whole';
+    percentItems().filter(it => it.unknown === unknown).filter((_, i) => i % 5 === 0)
+      .forEach(it => out.push(percentOfChallenge(it, `${type}-${it.percent}-${it.whole}`)));
+  }
   return out;
 }
 const MODES: Array<[string, PercentBarChallengeType]> = [
-  ['identify_percent', 'direct'], ['find_part', 'subtraction'], ['find_whole', 'addition'], ['convert', 'comparison']];
+  ['identify_percent', 'direct'], ['find_part', 'part_of'], ['percent_remaining', 'subtraction'], ['percent_total', 'addition'], ['find_whole', 'whole_of'], ['convert', 'comparison']];
 
 describe('simplify builder', () => {
   it.each(MODES)('%s: same mode and step count, its own id and scenario, no step percent near the item\'s, solvable, deterministic',
@@ -55,6 +63,10 @@ describe('simplify builder', () => {
         expect(challengeSteps(s)).toHaveLength(challengeSteps(c).length);
         // Each practice step is answerable on its own bar.
         challengeSteps(s).forEach((step, i) => {
+          if (step.kind === 'amount') {
+            expect(stepCorrect(s, { stepIndex: i, percent: 0, selected: null, amount: String(amountTarget(step)) })).toBe(true);
+            return;
+          }
           if (step.kind !== 'place') return;
           expect(step.targetPercent).toBeLessThanOrEqual(step.maxPercent ?? 100);
           expect(stepCorrect(s, { stepIndex: i, percent: step.targetPercent, selected: null })).toBe(true);
@@ -70,6 +82,20 @@ describe('simplify builder', () => {
     expect(simplerPercent(items('direct').find(c => c.targetPercent === 25)!)).toBeNull();
     expect(simplerPercent(items('subtraction').find(c => c.targetPercent === 50)!)).toBeNull();
     expect(simplerPercent(items('addition').find(c => c.targetPercent === 110)!)).toBeNull();
+    expect(simplerPercent(items('part_of').find(c => c.targetPercent === 10)!)).toBeNull();
+    expect(simplerPercent(items('whole_of').find(c => c.targetPercent === 50)!)).toBeNull();
+  });
+
+  it("a find-whole practice problem never uses the item's whole, and its answer is not the item's", () => {
+    for (const c of items('whole_of')) {
+      const s = simplerPercent(c);
+      if (!s) continue;
+      const [mine] = challengeSteps(c).filter(x => x.kind === 'amount');
+      const [theirs] = challengeSteps(s).filter(x => x.kind === 'amount');
+      if (mine?.kind !== 'amount' || theirs?.kind !== 'amount') throw new Error('no amount step');
+      expect(theirs.whole).not.toBe(mine.whole);
+      expect(amountTarget(theirs)).not.toBe(amountTarget(mine));
+    }
   });
 
   it('the leak rule refuses the learner\'s own percent, its scenario and a lost step', () => {
@@ -115,9 +141,21 @@ describe('declarations', () => {
     ['addition', 'a-15-80', 1, 85, null, 'took_off_rate', ADDED_MODEL_LEVER],
     ['comparison', 'c-40-60', 0, 30, null, 'placed_discount', FILL_NAMES_LEVER],
     ['comparison', 'c-40-60', 2, 0, 'B', 'bigger_discount', COMPARE_MODEL_LEVER],
+    ['part_of', 'part_of-15-60', 0, 85, null, 'complement', FILL_NAMES_LEVER],
+    ['part_of', 'part_of-15-60', 1, 0, '51', 'rest_not_part', FILL_NAMES_LEVER],
+    ['part_of', 'part_of-15-60', 1, 0, '15', 'percent_as_amount', TENTHS_LEVER],
+    ['part_of', 'part_of-15-60', 1, 0, '6', 'tenth_only', TENTHS_LEVER],
+    ['part_of', 'part_of-15-60', 1, 0, '30', 'too_high', TENTHS_LEVER],
+    ['whole_of', 'whole_of-20-60', 1, 0, '2.4', 'percent_of_part', PART_COPIES_LEVER],
+    ['whole_of', 'whole_of-20-60', 1, 0, '120', 'part_times_ten', TENTHS_LEVER],
+    ['whole_of', 'whole_of-20-60', 1, 0, '48', 'rest_not_whole', FILL_NAMES_LEVER],
+    ['whole_of', 'whole_of-20-60', 1, 0, '12', 'part_as_whole', PART_COPIES_LEVER],
+    ['whole_of', 'whole_of-20-60', 1, 0, '58', 'near_miss', TENTHS_LEVER],
   ] as const)('%s %s step %d at %d / %s: %s, then %s', (type, id, stepIndex, percent, selected, miss, lever) => {
-    const c = byId(type, id);
-    expect(percentMiss(c, { stepIndex, percent, selected })).toBe(miss);
+    const c = byId(type, id) ?? percentOfChallenge(percentItems().find(it => `${type}-${it.percent}-${it.whole}` === id
+      && it.unknown === (type === 'part_of' ? 'part' : 'whole'))!, id);
+    const amountStep = challengeSteps(c)[stepIndex]?.kind === 'amount';
+    expect(percentMiss(c, amountStep ? { stepIndex, percent, selected: null, amount: selected ?? '' } : { stepIndex, percent, selected })).toBe(miss);
     const levers = percentLevers(c, [], { valueBarShown: false });
     expect(nextLever(levers, miss)).toBe(lever);
   });

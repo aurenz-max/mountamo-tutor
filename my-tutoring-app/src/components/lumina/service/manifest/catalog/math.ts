@@ -1529,13 +1529,16 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         + 'shows what is still paid; a tax, tip or fee is added on top, so a total lands past the 100% line; a bigger percent '
         + 'off is not always the lower price, so compare the prices found, not the discounts. Ask what the scenario states '
         + 'and where that sits between 0% and 100%. When the labels or the calculation panel are hidden, do not supply what '
-        + 'they would show. Read the scenario and each step aloud. You cannot move the bar, choose, or press Check.',
+        + 'they would show. Read the scenario and each step aloud. You cannot move the bar, choose, or press Check. '
+        + 'On a find-part or find-whole item the learner marks the percent, then types an amount in dollars: never say the '
+        + 'amount, and on a find-whole item never say the whole. Teach from the bar: the whole bar is 100%, the filled part '
+        + 'is the percent; find an easy percent (10%, 50%) first and build from it.',
       // Every mode declares levers (`percentBarLevers.ts`); every miss is answered by a help lever on every item.
       levers: true,
       // The activity's own check (`percentMiss`), every mode.
       misses: { ...PERCENT_MISSES_BY_MODE },
     },
-    description: 'Multi-challenge percent-bar session (3-6 percent problems of the same difficulty tier). Each challenge gives a scenario (test score, discount, tax, comparison) and the student drags the bar to the target percent. The generator pre-builds each scenario deterministically; the catalog must NOT supply specific numbers or scenarios. Grade 5-8 percent concepts.',
+    description: 'Multi-challenge percent-bar session (3-6 percent problems of the same difficulty tier). Each challenge gives a scenario (test score, discount, tax, comparison, a percent of an amount, a whole from its part) and the student drags the bar to the target percent, and in find-part / find-whole types the amount in dollars. The generator pre-builds each scenario deterministically; the catalog must NOT supply specific numbers or scenarios. Grade 5-8 percent concepts.',
     constraints: 'The generator pre-selects every scenario (wholeValue, question, targetPercent, hint) per session — the manifest must NOT supply specific numbers, scenarios, questions, or target percents. The manifest may set instanceCount (default 4, max 6), showPercentLabels, showValueLabels, benchmarkLines, doubleBar, and the targetEvalMode.',
     affordances: { representation: ['pictorial', 'symbolic'], answers: ['manipulate'], role: 'apply', minutes: 5 },
     evalModes: [
@@ -1549,6 +1552,15 @@ export const MATH_CATALOG: ComponentDefinition[] = [
       },
       {
         evalMode: 'find_part',
+        label: 'Find a Percent of an Amount (Tier 3)',
+        beta: 3.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['part_of'],
+        description: 'Find a percent of a quantity in dollars (15% of $60): mark the percent on the bar, then type the part. No readout shows an amount (6.RP.3c).',
+      },
+      {
+        // Was find_part until 10-16 (8.1f): it asks the percent still paid, not a part. No calibration was stored.
+        evalMode: 'percent_remaining',
         label: 'Find Remaining / Discount (Tier 3)',
         beta: 3.5,
         scaffoldingMode: 3,
@@ -1556,12 +1568,21 @@ export const MATH_CATALOG: ComponentDefinition[] = [
         description: 'Compute 100 - discount to find the percent of original price that remains.',
       },
       {
-        evalMode: 'find_whole',
+        // Was find_whole until 10-16 (8.1f): it asks the percent with a fee added, not a whole.
+        evalMode: 'percent_total',
         label: 'Find the Total with Tax / Tip (Tier 4)',
         beta: 4.5,
         scaffoldingMode: 4,
         challengeTypes: ['addition'],
         description: 'Two steps on the bar: place the added rate (tip/tax — value shows the dollars), then place the new total (100% + rate, bar extends past 100%).',
+      },
+      {
+        evalMode: 'find_whole',
+        label: 'Find the Whole from a Part (Tier 4)',
+        beta: 5.0,
+        scaffoldingMode: 4,
+        challengeTypes: ['whole_of'],
+        description: 'Find the whole when a part and its percent are given ($12 is 20% of what?): mark the percent, then type the whole. The whole is never shown (6.RP.3c).',
       },
       {
         evalMode: 'convert',

@@ -2,7 +2,7 @@ import type { PercentBarData } from '../../../primitives/visual-primitives/math/
 import { challengeSteps, workspaceAssignment } from '../../../primitives/visual-primitives/math/percentBarWorkspace';
 import { workspaceOpening, type WorkspaceDomain } from './adapterContract';
 
-const TYPES = ['direct', 'subtraction', 'addition', 'comparison'];
+const TYPES = ['direct', 'subtraction', 'addition', 'comparison', 'part_of', 'whole_of'];
 
 /** Reject a percent-bar lesson whose challenges cannot be attempted. */
 export function validatePercentBarData(value: unknown): PercentBarData {
@@ -15,7 +15,9 @@ export function validatePercentBarData(value: unknown): PercentBarData {
   for (const c of d.challenges) {
     const ok = challengeSteps(c).every(s => s.kind === 'place'
       ? Number.isFinite(s.targetPercent) && s.targetPercent >= 0 && s.targetPercent <= (s.maxPercent ?? 100) && s.wholeValue > 0
-      : Array.isArray(s.options) && s.options.some(o => o.id === s.correctOptionId));
+      : s.kind === 'amount'
+        ? s.whole > 0 && s.part > 0 && Math.abs((s.percent * s.whole) / 100 - s.part) < 0.005
+        : Array.isArray(s.options) && s.options.some(o => o.id === s.correctOptionId));
     if (!ok) throw new Error(`A percent-bar ${c.type} challenge cannot be answered as generated.`);
   }
   return d;

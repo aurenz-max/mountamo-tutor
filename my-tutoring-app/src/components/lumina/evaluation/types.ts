@@ -731,7 +731,7 @@ export interface DoubleNumberLineMetrics extends BasePrimitiveMetrics {
 
 export interface PercentBarMetrics extends BasePrimitiveMetrics {
   type: 'percent-bar';
-  challengeType: 'direct' | 'subtraction' | 'addition' | 'comparison';
+  challengeType: 'direct' | 'subtraction' | 'addition' | 'comparison' | 'part_of' | 'whole_of';
   totalChallenges: number;
   correctCount: number;
   attemptsCount: number;          // Total tries across all challenges

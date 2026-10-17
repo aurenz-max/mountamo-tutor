@@ -51,8 +51,8 @@ const mount = (mode: string, c: PercentBarChallenge) => {
   return h;
 };
 
-it('find_part: the parts of the bar are named in the same commit, with no digit; the next attempt records the lever; a repeat pull changes nothing', () => {
-  const h = mount('find_part', discount);
+it('percent_remaining: the parts of the bar are named in the same commit, with no digit; the next attempt records the lever; a repeat pull changes nothing', () => {
+  const h = mount('percent_remaining', discount);
   expect(levers(h)).toEqual([['value_bar', false], ['tenths', false], ['fill_names', false], ['discount_model', false], ['simpler_problem', false]]);
   slide(h, 30); check(h);
   expect(attempts(h).at(-1)).toMatchObject({ correct: false, miss: 'placed_discount' });
@@ -70,7 +70,7 @@ it('find_part: the parts of the bar are named in the same commit, with no digit;
 });
 
 it('every help lever draws without a digit or any of the item\'s numbers', () => {
-  const h = mount('find_part', discount);
+  const h = mount('percent_remaining', discount);
   slide(h, 30); check(h);
   for (const id of ['value_bar', 'tenths', 'discount_model']) expect(h.dispatch('pull_lever', { lever: id }).status).toBe('committed');
   expect(q(h, '[data-lever="tenths"]')).toHaveLength(9);
@@ -98,7 +98,7 @@ it('convert: a bar lever is refused on the compare step with nothing changed; th
 });
 
 it('the simpler problem is ungraded practice of the same kind; the full item comes back blank and is credited after', () => {
-  const h = mount('find_part', discount);
+  const h = mount('percent_remaining', discount);
   slide(h, 30); check(h);
   const r = h.dispatch('pull_lever', { lever: 'simpler_problem' });
   expect(r.status).toBe('committed');

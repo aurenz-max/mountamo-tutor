@@ -13,6 +13,7 @@ import {
   LuminaActionButton,
   LuminaButton,
   LuminaFeedbackCard,
+  LuminaInput,
   type FeedbackStatus,
 } from '../../../ui';
 import {
@@ -31,19 +32,21 @@ import { withWorkspaceController } from '../../../components/live-activity/runti
 import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import {
-  challengeSteps, describePercentWork, percentMiss, stepCorrect, workspaceAssignment, workspaceScene,
+  amountsHidden, challengeSteps, describePercentWork, parseAmount, percentMiss, stepCorrect, workspaceAssignment, workspaceScene,
   type PercentWork,
 } from './percentBarWorkspace';
 import {
-  ADDED_MODEL_LEVER, BAR_LEVERS, COMPARE_MODEL_LEVER, DISCOUNT_MODEL_LEVER, FILL_NAMES_LEVER, TENTHS_LEVER, VALUE_BAR_LEVER,
-  isPracticePercent, leverFacts, percentLevers, simplerPercent,
+  ADDED_MODEL_LEVER, BAR_LEVERS, COMPARE_MODEL_LEVER, DISCOUNT_MODEL_LEVER, FILL_NAMES_LEVER, PART_COPIES_LEVER, TENTHS_LEVER,
+  VALUE_BAR_LEVER, isPracticePercent, leverFacts, percentLevers, simplerPercent,
 } from './percentBarLevers';
 
 // ============================================================================
 // Data Types (Single Source of Truth)
 // ============================================================================
 
-export type PercentBarChallengeType = 'direct' | 'subtraction' | 'addition' | 'comparison';
+/** part_of (find_part): find a percent of a whole, in dollars. whole_of (find_whole): find the whole from a part and its
+ *  percent. Both mark the percent on the bar, then type the amount; no readout shows an amount. */
+export type PercentBarChallengeType = 'direct' | 'subtraction' | 'addition' | 'comparison' | 'part_of' | 'whole_of';
 
 export interface PercentContext {
   problemType: PercentBarChallengeType;
@@ -60,7 +63,7 @@ export interface PercentContext {
  * PLACEMENT or a tap-to-CHOOSE decision. Single-step challenges omit `steps`
  * and the component synthesises one place-step from the legacy fields.
  */
-export type PercentBarStepKind = 'place' | 'choice';
+export type PercentBarStepKind = 'place' | 'choice' | 'amount';
 
 export interface PercentBarPlaceStep {
   kind: 'place';
@@ -77,6 +80,25 @@ export interface PercentBarPlaceStep {
   /** Short identifier shown in the "established so far" recap card on later steps
    *  (e.g. 'Markup', 'Store A'). Lets a later step reference what was just found. */
   recapLabel?: string;
+  /** find_whole: the whole is the answer, so nothing on screen or in the scene names it. */
+  wholeUnknown?: boolean;
+  /** find_whole: the given part, written at the end of the filled part as the bar moves. */
+  knownPart?: number;
+  hint: string;
+}
+
+/**
+ * Type the amount (find_part, find_whole). The bar is fixed at the percent the step before marked; the whole is
+ * written at the bar's end and the part at the end of the filled part, and the unknown one is a "?".
+ */
+export interface PercentBarAmountStep {
+  kind: 'amount';
+  prompt: string;
+  percent: number;
+  whole: number;
+  part: number;
+  unknown: 'part' | 'whole';
+  wholeValueLabel: string;
   hint: string;
 }
 
@@ -95,7 +117,7 @@ export interface PercentBarChoiceStep {
   hint: string;
 }
 
-export type PercentBarStep = PercentBarPlaceStep | PercentBarChoiceStep;
+export type PercentBarStep = PercentBarPlaceStep | PercentBarChoiceStep | PercentBarAmountStep;
 
 export interface PercentBarChallenge {
   id: string;
@@ -152,6 +174,8 @@ const CHALLENGE_TYPE_LABEL: Record<PercentBarChallengeType, string> = {
   subtraction: 'Discount',
   addition: 'Tax / Tip',
   comparison: 'Compare',
+  part_of: 'Find the Part',
+  whole_of: 'Find the Whole',
 };
 
 const PHASE_CONFIG: Record<PercentBarChallengeType, PhaseConfig> = {
@@ -159,6 +183,8 @@ const PHASE_CONFIG: Record<PercentBarChallengeType, PhaseConfig> = {
   subtraction: { label: 'Discount', icon: '🏷️', accentColor: 'purple' },
   addition: { label: 'Tax / Tip', icon: '💰', accentColor: 'cyan' },
   comparison: { label: 'Compare', icon: '⚖️', accentColor: 'amber' },
+  part_of: { label: 'Find the Part', icon: '🧩', accentColor: 'emerald' },
+  whole_of: { label: 'Find the Whole', icon: '🎯', accentColor: 'purple' },
 };
 
 /**
@@ -187,6 +213,30 @@ const FEEDBACK_STATUS: Record<'success' | 'error' | 'info', FeedbackStatus> = {
   error: 'incorrect',
   info: 'insight',
 };
+
+/**
+ * find_part / find_whole: bar-model brackets under the bar. One spans the filled part, one the whole bar, each
+ * labelled at its middle with the amount the problem gives, or "?" for the one the learner finds.
+ */
+function AmountBrackets({ fill, part, whole, className = '' }:
+  { fill: number; part: string | null; whole: string; className?: string }) {
+  const bracket = 'border-x border-b border-current h-2 rounded-b';
+  return (
+    <div className={`space-y-1 text-sm font-mono ${className}`} data-testid="bar-amounts">
+      {part !== null && (
+        <div className="text-emerald-300 transition-all duration-150" style={{ width: `${Math.max(fill, 0)}%` }}>
+          <div className={bracket} />
+          {/* A narrow part keeps its label from the bar's left edge, so it never runs off the card. */}
+          <div className={`${fill < 20 ? 'text-left' : 'text-center'} whitespace-nowrap`}>{fill > 0 ? <>part: {part}</> : null}</div>
+        </div>
+      )}
+      <div className="text-slate-300">
+        <div className={bracket} />
+        <div className="text-center">whole: {whole}</div>
+      </div>
+    </div>
+  );
+}
 
 // ============================================================================
 // Props
@@ -284,10 +334,13 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [stepAttempts, setStepAttempts] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  /** The amount typed on an amount step (find_part, find_whole). */
+  const [amountText, setAmountText] = useState('');
   /** Values the student has locked in on earlier steps of THIS challenge, shown
-   *  as a recap card on later steps (e.g. the markup found before the total). */
+   *  as a recap card on later steps (e.g. the markup found before the total). No value on a find-part or find-whole
+   *  item: the amount is the next step's answer. */
   const [established, setEstablished] = useState<
-    { label: string; percent: number; value: number }[]
+    { label: string; percent: number; value: number | null }[]
   >([]);
 
   // Refs
@@ -320,6 +373,13 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const isMultiStep = steps.length > 1;
   const placeStep = currentStep?.kind === 'place' ? currentStep : null;
   const choiceStep = currentStep?.kind === 'choice' ? currentStep : null;
+  const amountStep = currentStep?.kind === 'amount' ? currentStep : null;
+  /** find_part / find_whole: the amount is what the learner produces, so no readout, panel, tick value or second bar
+   *  in the whole's units shows one, whatever the session config says. */
+  const hideAmounts = amountsHidden(challengeType);
+  const valueLabelsOn = showValueLabels && !hideAmounts;
+  const calculationOn = showCalculation && !hideAmounts;
+  const doubleBarOn = doubleBar && !hideAmounts;
 
   const wholeValue = placeStep?.wholeValue ?? currentChallenge?.wholeValue ?? 100;
   const wholeValueLabel = placeStep?.wholeValueLabel ?? currentChallenge?.wholeValueLabel ?? 'Total';
@@ -340,6 +400,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   const resetStep = () => {
     setCurrentPercent(0);
     setSelectedOption(null);
+    setAmountText('');
     setFeedback('');
     setFeedbackType('');
     setShowHint(false);
@@ -548,13 +609,18 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
       setFeedbackType('info');
       return;
     }
+    if (currentStep.kind === 'amount' && parseAmount(amountText) === null) {
+      setFeedback('Type an amount in dollars, then check your answer.');
+      setFeedbackType('info');
+      return;
+    }
 
     const attempts = stepAttempts + 1;
     setStepAttempts(attempts);
 
     const isLastStep = currentStepIndex >= steps.length - 1;
     const stepLabel = isMultiStep ? `Step ${currentStepIndex + 1}/${steps.length}: ` : '';
-    const work: PercentWork = { stepIndex: currentStepIndex, percent: currentPercent, selected: selectedOption };
+    const work: PercentWork = { stepIndex: currentStepIndex, percent: currentPercent, selected: selectedOption, amount: amountText };
     const response = describePercentWork(currentChallenge, work);
     const correct = stepCorrect(currentChallenge, work);
     const accuracy = currentStep.kind === 'place' ? getAccuracyScore(currentPercent, currentStep.targetPercent) : correct ? 100 : 0;
@@ -580,6 +646,15 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
           + tierRevealClause(supportTier, currentChallenge.type),
           { silent: true },
         );
+      } else if (currentStep.kind === 'amount') {
+        setFeedback(`${stepLabel}Not quite. Look at what the whole bar stands for and what the filled part stands for, then try again.`);
+        setFeedbackType('error');
+        sendText(
+          `[ANSWER_INCORRECT] ${stepLabel}Student typed ${amountText}. Attempt ${attempts}. `
+          + `Help them reason from the bar without naming the amount.`
+          + tierRevealClause(supportTier, currentChallenge.type),
+          { silent: true },
+        );
       } else {
         setFeedback(`${stepLabel}Not quite — recheck the prices you found, then choose again.`);
         setFeedbackType('error');
@@ -600,7 +675,8 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
     if (currentStep.kind === 'place') {
       // Record what was just established so later steps can recap it.
-      const estValue = (currentStep.targetPercent / 100) * currentStep.wholeValue;
+      // find_part / find_whole: the amount is the next step's answer, so the recap and the feedback name the percent only.
+      const estValue = hideAmounts ? null : (currentStep.targetPercent / 100) * currentStep.wholeValue;
       const estLabel =
         currentStep.recapLabel ??
         (currentStep.valueLabel ? currentStep.valueLabel.replace(/\s*\(\$\)\s*$/, '') : 'Established');
@@ -610,10 +686,13 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
       ]);
       const partValue = ((currentStep.targetPercent / 100) * currentStep.wholeValue).toFixed(2);
       setFeedback(
-        currentChallenge.type === 'addition' && currentStep.targetPercent > 100
+        hideAmounts ? `${stepLabel}${currentStep.targetPercent}% is marked on the bar.`
+        : currentChallenge.type === 'addition' && currentStep.targetPercent > 100
           ? `${stepLabel}Total = ${currentStep.targetPercent}% of ${currentStep.wholeValue} = ${partValue} (whole + added).`
           : `${stepLabel}${currentStep.targetPercent}% of ${currentStep.wholeValue} = ${partValue}.`,
       );
+    } else if (currentStep.kind === 'amount') {
+      setFeedback(`${stepLabel}Yes: ${currentStep.percent}% of $${currentStep.whole} is $${currentStep.part}.`);
     } else {
       const chosen = currentStep.options.find((o) => o.id === selectedOption);
       setFeedback(`${stepLabel}Correct — ${chosen?.label ?? 'that option'}${chosen?.sublabel ? ` (${chosen.sublabel})` : ''}.`);
@@ -645,7 +724,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentChallenge, currentStep, currentStepIndex, steps, isMultiStep,
-    currentPercent, selectedOption, stepAttempts, supportTier,
+    currentPercent, selectedOption, amountText, stepAttempts, supportTier, hideAmounts,
     finalizeChallenge, sendText, progress.commitCheck,
   ]);
 
@@ -751,11 +830,12 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
   useLayoutEffect(() => {
     if (!tutorOwned || !currentChallenge || !sessionChallenge) return;
     const scene = workspaceScene(currentChallenge, {
-      stepIndex: currentStepIndex, percent: currentPercent, selected: selectedOption, established,
-      showPercentLabels, showValueLabels, showCalculation, benchmarkLines, doubleBar: doubleBar || leverOn(VALUE_BAR_LEVER),
+      stepIndex: currentStepIndex, percent: currentPercent, selected: selectedOption, amount: amountText, established,
+      showPercentLabels, showValueLabels: valueLabelsOn, showCalculation: calculationOn, benchmarkLines,
+      doubleBar: doubleBarOn || leverOn(VALUE_BAR_LEVER),
     });
     const onScreen = practice ? '' : leverFacts(sessionChallenge, pulledLevers);
-    const levers = practice ? [] : percentLevers(sessionChallenge, pulledLevers, { valueBarShown: doubleBar });
+    const levers = practice ? [] : percentLevers(sessionChallenge, pulledLevers, { valueBarShown: doubleBarOn });
     workspace.current = {
       ...scene,
       facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}),
@@ -765,7 +845,9 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
         const lever = levers.find((l) => l.id === id);
         if (practice || !lever) return `No lever ${id} on this item.`;
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
-        if (BAR_LEVERS.includes(id) && !placeStep) return 'The bar is not on screen on this step: the learner is choosing an option.';
+        if (BAR_LEVERS.includes(id) && choiceStep) return 'The bar is not on screen on this step: the learner is choosing an option.';
+        if (id === VALUE_BAR_LEVER && amountStep) return 'On this step the bar is fixed and its amounts are written on it; try tenths or part_copies.';
+        if (id === PART_COPIES_LEVER && !amountStep) return 'The part is not marked yet: part_copies works on the step where the learner types the whole.';
         const pulled = { item: sessionChallenge.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
           const easier = simplerPercent(sessionChallenge);
@@ -869,7 +951,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                 >
                   <span className="text-xs font-semibold text-slate-200">{e.label}</span>
                   <span className="text-xs font-mono text-emerald-300">{e.percent}%</span>
-                  <span className="text-xs font-mono text-slate-400">= ${e.value.toFixed(2)}</span>
+                  {e.value !== null && <span className="text-xs font-mono text-slate-400">= ${e.value.toFixed(2)}</span>}
                 </div>
               ))}
             </div>
@@ -888,7 +970,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                 <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Current Percentage</div>
                 <div className="text-3xl font-bold text-emerald-400">{currentPercent}%</div>
               </div>
-              {showValueLabels && (
+              {valueLabelsOn && (
                 <>
                   <div className="text-center">
                     <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{partValueLabel}</div>
@@ -973,7 +1055,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                           {benchmark}%
                         </div>
                       )}
-                      {hoveredBenchmark === benchmark && showValueLabels && (
+                      {hoveredBenchmark === benchmark && valueLabelsOn && (
                         <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-emerald-600 text-white text-xs rounded whitespace-nowrap pointer-events-none z-20">
                           {((benchmark / 100) * wholeValue).toFixed(2)}
                         </div>
@@ -988,6 +1070,13 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                     </>
                   )}
                 </div>
+
+                {/* find_part / find_whole: the amounts the problem gives, written on the bar; the unknown one is "?". */}
+                {hideAmounts && (
+                  <AmountBrackets className="mt-8" fill={(currentPercent / maxPercent) * 100}
+                    part={placeStep?.knownPart !== undefined ? `$${placeStep.knownPart}` : null}
+                    whole={placeStep?.wholeUnknown ? '?' : `$${wholeValue}`} />
+                )}
 
                 {/* `fill_names` lever: the filled part and the empty part named in words, following the learner's bar. */}
                 {leverOn(FILL_NAMES_LEVER) && (
@@ -1004,7 +1093,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
               </div>
 
               {/* `value_bar` lever: a second bar in the whole's own units, moving with the percent bar, labelled at its ends. */}
-              {leverOn(VALUE_BAR_LEVER) && !doubleBar && (
+              {leverOn(VALUE_BAR_LEVER) && !doubleBarOn && (
                 <div className="relative mt-8" data-lever="value-bar">
                   <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-2">
                     The same bar in {/\(\$\)/.test(wholeValueLabel) ? 'dollars' : wholeValueLabel.replace(/^total\s+/i, '').toLowerCase()}
@@ -1022,7 +1111,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
               )}
 
               {/* Double bar: actual value bar */}
-              {doubleBar && (
+              {doubleBarOn && (
                 <div className="relative mt-8">
                   <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-2">
                     Actual Value (0 - {wholeValue})
@@ -1043,7 +1132,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
                           className="absolute top-0 h-full w-px bg-slate-400/40"
                           style={{ left: `${pct}%` }}
                         >
-                          {showValueLabels && (
+                          {valueLabelsOn && (
                             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs text-slate-500 font-mono">
                               {value % 1 === 0 ? value : value.toFixed(1)}
                             </div>
@@ -1058,7 +1147,7 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
 
             {/* Calculation Display — gated: withdrawn at the hard support tier so it
                 can't be used to dial the answer value instead of placing the percent. */}
-            {showCalculation && (
+            {calculationOn && (
               <LuminaPanel className="text-center">
                 <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">Calculation</div>
                 <div className="text-lg font-mono">
@@ -1074,6 +1163,65 @@ const PercentBarSurface = ({ data, className, runtimePlanItemId, tutorOwned, use
               </LuminaPanel>
             )}
           </>
+        )}
+
+        {/* ---- AMOUNT step (find_part, find_whole): the bar fixed at the marked percent, then type the amount ---- */}
+        {amountStep && !allChallengesComplete && (
+          <div className="w-full max-w-3xl mx-auto px-4 py-6 space-y-3">
+            <div className="relative h-14 bg-slate-700/60 rounded-xl shadow-inner overflow-hidden border border-white/10" data-pip-object="bar">
+              <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-l-xl"
+                style={{ width: `${amountStep.percent}%` }} />
+              {leverOn(TENTHS_LEVER) && Array.from({ length: 9 }, (_, i) => (i + 1) * 10).map((p) => (
+                <div key={`tenth-${p}`} data-lever="tenths" aria-hidden="true"
+                  className="absolute top-0 h-full w-0.5 bg-cyan-300/60 z-10 pointer-events-none" style={{ left: `${p}%` }} />
+              ))}
+              {/* `part_copies` lever: the filled part's length laid end to end along the bar, unlabelled. */}
+              {leverOn(PART_COPIES_LEVER) && Array.from({ length: Math.ceil(100 / amountStep.percent) - 1 }, (_, i) => (i + 1) * amountStep.percent)
+                .filter((p) => p < 100).map((p) => (
+                  <div key={`copy-${p}`} data-lever="part-copies" aria-hidden="true"
+                    className="absolute top-0 h-full w-1 bg-amber-300/70 z-10 pointer-events-none" style={{ left: `${p}%` }} />
+                ))}
+              {benchmarkLines.map((b) => (
+                <div key={`b-${b}`} className="absolute top-0 h-full w-px bg-slate-400/40 z-10" style={{ left: `${b}%` }} />
+              ))}
+            </div>
+            {leverOn(FILL_NAMES_LEVER) && (
+              <div data-lever="fill-names" className="flex h-6 text-[11px] font-semibold rounded overflow-hidden border border-white/10">
+                <div className="bg-emerald-500/30 text-emerald-100 flex items-center justify-center overflow-hidden whitespace-nowrap"
+                  style={{ width: `${amountStep.percent}%` }}>the part</div>
+                <div className="flex-1 bg-slate-700/40 text-slate-300 flex items-center justify-center overflow-hidden whitespace-nowrap">
+                  the rest of the whole</div>
+              </div>
+            )}
+            <AmountBrackets fill={amountStep.percent}
+              part={amountStep.unknown === 'part' ? '?' : `$${amountStep.part}`}
+              whole={amountStep.unknown === 'whole' ? '?' : `$${amountStep.whole}`} />
+            {showPercentLabels && (
+              <div className="relative h-5 text-xs font-mono text-slate-500">
+                <span className="absolute left-0">0%</span>
+                <span className="absolute -translate-x-1/2" style={{ left: `${amountStep.percent}%` }}>{amountStep.percent}%</span>
+                <span className="absolute right-0">100%</span>
+              </div>
+            )}
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <span className="text-lg text-slate-300">$</span>
+              <LuminaInput
+                type="text"
+                inputMode="decimal"
+                aria-label="Amount in dollars"
+                className="w-32 text-center text-lg"
+                value={amountText}
+                disabled={inputClosed}
+                onChange={(e) => {
+                  if (inputClosed || learnerBlocked()) return;
+                  setAmountText(e.target.value);
+                  setFeedback('');
+                  setFeedbackType('');
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCheckAnswer(); }}
+              />
+            </div>
+          </div>
         )}
 
         {/* Lever pictures outside the item: no number of the item, no digit at all. */}

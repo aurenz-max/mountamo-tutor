@@ -340,7 +340,7 @@
   "parameter-explorer.predict-value": {
     "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
   },
-  "percent-bar.find_part": {
+  "percent-bar.percent_remaining": {
     "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
   },
   "percent-bar.identify_percent": {
