@@ -65,8 +65,8 @@ function conditionsOf(c: RampChallenge): Set<InvestigationVariable> {
   const out = new Set<InvestigationVariable>();
   if ('scenarios' in c) for (const k of changedRampVariables(c.scenarios.a, c.scenarios.b)) if (KEY_VARIABLE[k]) out.add(KEY_VARIABLE[k]);
   if ('variable' in c) out.add(c.variable);
-  // A load swap (wheel or box) is about rolling against sliding: a surface model would answer it.
-  if (c.mode === 'compare_conditions' && c.changedVariable === 'load') out.add('surface');
+  // A saved load swap (wheel or box) is about rolling against sliding: a surface model would answer it.
+  if (c.mode === 'compare_conditions' && c.changedVariable === 'load' && c.scenarios.a.loadType !== c.scenarios.b.loadType) out.add('surface');
   if (c.mode === 'compare_conditions' && c.changedVariable !== 'load') out.add(c.changedVariable);
   return out;
 }

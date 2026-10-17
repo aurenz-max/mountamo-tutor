@@ -66,7 +66,7 @@ The child builds with plain blocks (small, plank, long, tall, big, triangle, whe
 ${menu}
 
 Pick the ${SHIPPED} scenes that fit the lesson best (any ${SHIPPED} if none fit). For each, write a title and a goal.
-The goal keeps the scene's job exactly (what must be reached, crossed, covered, kept apart or built) and names the scenery's characters, because the child sees them on the board. ${k2
+The goal keeps the scene's job exactly (what must be reached, crossed, covered, kept apart or built) and names the scenery's characters, because the child sees them on the board. Keep who does what from the default goal: the character that moves or is helped stays the same one, and the title names that character. ${k2
     ? 'Simple words a 5-year-old understands when read aloud; one idea; 1-2 short sentences.'
     : 'Up to 2 sentences. You may add ONE extra demand the child can see in a block build (for example "with a window" or "at least two blocks wide").'}
 Say what the build must do, never how to build it: no block counts, no positions.`,

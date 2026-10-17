@@ -200,17 +200,20 @@ const CHALLENGE_POOL: RampChallenge[] = [
   ...buildRampInvestigations(),
   // compare_conditions: matched pairs change exactly one causal variable.
   {
-    id: 'compare-wheel-box',
-    title: 'Wheel or Box?',
+    // 'load' changes the weight only. A wheel/box pair cannot be fair here: the force
+    // model has no rolling term, so a wheel only differs through frictionLevel and the
+    // pair changed two things (RL-C1).
+    id: 'compare-light-heavy',
+    title: 'Light or Heavy?',
     mode: 'compare_conditions',
     changedVariable: 'load',
     scenarios: {
-      a: scenario('Wheel on a smooth ramp', 25, 4, 'wheel', 'low'),
-      b: scenario('Box on the same ramp', 25, 4, 'box', 'medium'),
+      a: scenario('Heavy box', 25, 6, 'box', 'medium'),
+      b: scenario('Light box', 25, 2, 'box', 'medium'),
     },
-    brief: 'The loads have the same weight and climb the same ramp. Which setup needs less push?',
-    hint: 'Rolling contact usually resists motion less than a sliding surface.',
-    explainOnSolve: 'The wheel has less resistance, so less of the push is spent overcoming friction.',
+    brief: 'Same box, same ramp, same slope. Only the weight is different. Which one needs less push?',
+    hint: 'Think about which box is harder to lift.',
+    explainOnSolve: 'The lighter box has less gravity pulling it down the ramp and less friction, so it needs less push.',
   },
   {
     id: 'compare-steep-gentle',

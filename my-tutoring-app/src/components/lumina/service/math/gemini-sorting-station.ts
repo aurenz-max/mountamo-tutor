@@ -803,6 +803,43 @@ function cardFaults(objects: { label: string; emoji?: string }[]): string[] {
 }
 
 /**
+ * Why this card gives its bin away, or null (SST-L1). A card whose picture IS a bin's
+ * picture is matched by eye ("Sweet Apple" 🍎 beside the Food bin's 🍎). On a category or
+ * type sort a card whose label contains a bin's word is matched by ear ("Fresh Water Drop"
+ * into Water). Color, shape and size labels describe what the picture shows, so they stay.
+ */
+export function binLeak(
+  obj: { label: string; emoji?: string },
+  categories: { label: string; bucketEmoji?: string }[],
+  sortAttr: string,
+): string | null {
+  const picture = normalizePicture(obj.emoji ?? '');
+  const sameAs = categories.find(k => k.bucketEmoji && picture && normalizePicture(k.bucketEmoji) === picture);
+  if (sameAs) return `"${obj.label}" shows the ${sameAs.label} bin's picture ${obj.emoji}`;
+  if (sortAttr !== 'category' && sortAttr !== 'type') return null;
+  // A compound counts: "Waterfall" says Water, "Seafood" says Food. Only for bin words of 4+ letters,
+  // so a short word ("hot") is matched whole and never inside another word.
+  const words = labelNouns(obj.label);
+  for (const k of categories) {
+    const binWords = labelNouns(k.label).filter(w => w.length >= 3);
+    const hit = binWords.find(b => words.some(w => w === b || (b.length >= 4 && (w.startsWith(b) || w.endsWith(b)))));
+    if (hit) return `"${obj.label}" contains the bin word "${hit}"`;
+  }
+  return null;
+}
+
+/** The challenge without its bin-leaking cards. The fault check after it owns the floor. */
+function dropBinLeaks(ch: SortingStationChallenge): SortingStationChallenge {
+  const cats = ch.categories ?? [];
+  const objects = ch.objects.filter(o => {
+    const leak = binLeak(o, cats, ch.sortingAttribute ?? '');
+    if (leak) console.log(`[SortingStation] ${ch.type} ${ch.id}: dropped card — ${leak}`);
+    return !leak;
+  });
+  return objects.length === ch.objects.length ? ch : { ...ch, objects };
+}
+
+/**
  * Why this challenge cannot be asked as drawn, or null when it can. Every fault here is
  * a demand the prompt already states and the draw missed, and every one of them costs
  * the child the task rather than making it easier: a group the objective named is gone,
@@ -822,6 +859,8 @@ function sortChallengeFault(
   if (ch.objects.length < min) {
     return `${ch.objects.length} objects is under the ${gradeBand} floor of ${min}`;
   }
+  const emptyBin = (ch.categories ?? []).find(k => !ch.objects.some(o => objectMatchesRuleLocal(o, k.rule)));
+  if (emptyBin) return `bin "${emptyBin.label}" has no card left`;
   const faults = cardFaults(ch.objects);
   if (faults.length > 0) {
     return faults.join('; ');
@@ -937,6 +976,7 @@ Generate exactly ${count} challenges. Each challenge needs:
 - Objects MUST have at least 2 distinct values for the sortingAttribute so there are 2+ groups
 - categoryEmojis: one entry per distinct sortingAttribute value (one per bin) giving a single emoji that stands for that WHOLE group, so a pre-reader can tell the bins apart. Pick a general symbol for the group, NEVER reuse an object's own emoji (e.g. 'need' → 🏠, 'want' → 🎁, 'living' → 🌱, 'non-living' → 🪨).
 - Use familiar kid-friendly emojis and examples that belong to the objective; do not introduce an unrelated theme just for variety
+- No object label contains a group's name ("Puddle", not "Fresh Water Drop", in a Water group), and no object uses a group's emoji. Such cards are removed.
 `;
 
   const draw = async (): Promise<{ title?: string; description?: string; challenges: SortingStationChallenge[] }> => {
@@ -976,7 +1016,7 @@ Generate exactly ${count} challenges. Each challenge needs:
   // the required-groups block is already in the prompt, which is what makes a second
   // sample worth taking.
   const keep = (challenges: SortingStationChallenge[]): SortingStationChallenge[] =>
-    challenges.filter((ch) => {
+    challenges.map(dropBinLeaks).filter((ch) => {
       const fault = sortChallengeFault(ch, namedCategories, gradeBand);
       if (fault) console.log(`[SortingStation] ${sortType} REJECT ${ch.id} — ${fault}`);
       return !fault;

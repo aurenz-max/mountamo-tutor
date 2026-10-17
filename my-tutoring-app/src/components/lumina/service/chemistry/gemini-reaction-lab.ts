@@ -499,6 +499,19 @@ const CHALLENGE_TYPE_DOCS: Record<string, ChallengeTypeDoc> = {
   },
 };
 
+/**
+ * Challenge types a kindergartner is never asked (RXL-K1). The chemical/physical distinction is grade 2
+ * (2-PS1-4); balance and conservation are 6-8. A K probe served "physical change or chemical change?".
+ */
+export const K_EXCLUDED_REACTION_TYPES = ["classify", "balance", "conservation"];
+
+/** True for a kindergarten objective: canonical grade first, then the normalized grade key. */
+export function isKindergartenReaction(grade: string | undefined, gradeLevel: string): boolean {
+  const g = (grade ?? "").trim().toUpperCase();
+  if (g) return g === "K" || g === "KINDERGARTEN" || g === "0";
+  return /kinder|preschool/i.test(gradeLevel ?? "");
+}
+
 /** The challenge types a pin allows: one mode, a blend ('a|b'), or null for mixed / no pin. */
 function pinnedChallengeTypes(targetEvalMode: string | undefined): { types: string[]; label: string } | null {
   const keys = (targetEvalMode ?? "").split("|").map((k) => k.trim()).filter((k) => k && k !== "mixed");
@@ -603,27 +616,45 @@ export const generateReactionLab = async (ctx: GenerationContext): Promise<React
       "Particle view must show correct reactant and product molecules.",
   };
 
-  const pinned = pinnedChallengeTypes(ctx.targetEvalMode);
+  const isK = isKindergartenReaction(ctx.grade, ctx.gradeLevel);
+  const pinnedRaw = pinnedChallengeTypes(ctx.targetEvalMode);
+  // At K the excluded types leave every mode; a pin that keeps nothing falls back to the K-allowed set.
+  const kTypes = (types: string[]) => types.filter((t) => !K_EXCLUDED_REACTION_TYPES.includes(t));
+  const pinned = pinnedRaw && isK
+    ? (kTypes(pinnedRaw.types).length ? { ...pinnedRaw, types: kTypes(pinnedRaw.types) } : null)
+    : pinnedRaw;
+  const allowedTypes = pinned?.types ?? (isK ? kTypes(Object.keys(CHALLENGE_TYPE_DOCS)) : null);
+  const kindergartenRule = isK
+    ? `
+KINDERGARTEN RULES (override the band text above):
+- Never use the words "chemical change", "physical change", "reaction", "atoms", "molecules" or "particles" anywhere a child sees or hears.
+- Every challenge has 3 short picture-able options a tutor can read aloud. No typed answers.
+- "explain" asks why in a child's words (e.g. "the soap pushed the colours away"), never at the particle level.`
+    : "";
   const challengeRule = pinned
     ? `5. Provide 3-5 challenges, EVERY one of type ${pinned.types.map((t) => `"${t}"`).join(" or ")} (eval mode ${pinned.label}). No other challenge type.
 ${pinned.types.map((t) => `   - ${CHALLENGE_TYPE_DOCS[t]?.promptDoc ?? t}`).join("\n")}`
-    : `5. Provide 3-5 challenges sequenced by difficulty:
+    : isK
+      ? `5. Provide 3-4 challenges: start with a "predict" challenge, then "observe" or "identify_signs", and at most one "explain". Never "classify", "balance" or "conservation".`
+      : `5. Provide 3-5 challenges sequenced by difficulty:
    - Start with a "predict" challenge (what do you think will happen?)
    - Middle challenges: "observe", "identify_signs", or "classify"
    - End with harder challenges: "explain", "balance", or "conservation"`;
-  const schema = pinned ? constrainChallengeTypeEnum(reactionLabSchema, pinned.types, CHALLENGE_TYPE_DOCS) : reactionLabSchema;
+  const schema = allowedTypes ? constrainChallengeTypeEnum(reactionLabSchema, allowedTypes, CHALLENGE_TYPE_DOCS) : reactionLabSchema;
 
   const generationPrompt = `Create a Reaction Lab experiment about "${topic}" for ${gradeBand} students.
 ${intent ? `\nTeaching intent: ${intent}` : ""}
 
 GRADE BAND REQUIREMENTS (${gradeBand}):
 ${gradeBandDescriptions[gradeBand]}
+${kindergartenRule}
 
 GENERAL REQUIREMENTS:
 1. Choose a REAL, safe experiment that students could actually perform (or safely simulate virtually).
 2. Include 2-4 substances with accurate physical descriptions (state, color, amount).
 3. The reaction must have at least 2 observable signs of change.
 4. Always include a realWorldConnection — explain where this reaction happens in everyday life.
+   The title names the materials, never the result: "Soap and Milk", not "Baking Soda Volcano" or "Fizz Explosion" (the predict challenge asks what will happen).
 ${challengeRule}
 6. Every narration field should be wonder-driven (e.g. "Amazing! You just witnessed a chemical reaction — the same kind that makes bread rise!").
 7. Animation effects should match the actual reaction (e.g. acid-base → bubbles + foam, oxidation → colorShift).
@@ -827,11 +858,12 @@ Use the right answer format for each challenge type:
       });
     }
 
-    // A pinned mode keeps only its own challenge types (the schema enum already asks for them).
-    if (pinned && result.challenges) {
-      result.challenges = result.challenges.filter((c) => pinned.types.includes(c.type));
+    // A pinned mode keeps only its own challenge types (the schema enum already asks for them); at K the
+    // excluded types are dropped whatever the pin.
+    if (allowedTypes && result.challenges) {
+      result.challenges = result.challenges.filter((c) => allowedTypes.includes(c.type));
       if (!result.challenges.length) {
-        throw new Error(`reaction-lab: no ${pinned.types.join("/")} challenge generated for the pinned mode`);
+        throw new Error(`reaction-lab: no ${allowedTypes.join("/")} challenge generated${isK ? " for kindergarten" : " for the pinned mode"}`);
       }
     }
 

@@ -40,6 +40,8 @@ The child CANNOT read. A tutor reads every script and every question + option al
 - Each knowledge check asks for the MAIN IDEA or ONE key detail of THAT segment's script. One short spoken sentence, MAX 12 words.
 - options: exactly 3, each 1-4 words, a CONCRETE thing a 5-year-old can picture. No abstract phrases. The wording must not leak the answer.
 - optionAEmoji/optionBEmoji/optionCEmoji: REQUIRED — one DISTINCT emoji per option, same order, clearly depicting it. The emoji is the answer surface; it must stand alone without the text.
+- The picture must not pick the answer by itself. All 3 options are the SAME KIND of answer to the question: for "What do bears do in winter?" all three are things a bear could do (sleep in a den, catch fish, climb a tree), never a bear picture beside a fish and an eagle. No option pictures the animal, person or thing the question names unless every option does.
+- Distractors are plausible answers to the question, not absurd ones. "What do birds build in spring?" with "cold snowmen" and "big campfires" is answered by common sense; use things an animal could build or gather (a nest, a den, a dam). A child who did not listen should not be able to pick the answer from common sense alone.
 - scripts: warm storyteller voice, very simple words, concrete images ("as big as a school bus").`,
   },
   listen_for_details: {

@@ -71,7 +71,8 @@ describe('leak rules', () => {
         expect(own).not.toContain(changed[0]);
       }
       // A rolling-against-sliding swap is not modelled by a surface change.
-      if (c.mode === 'compare_conditions' && c.changedVariable === 'load') expect(model.variable).not.toBe('surface');
+      if (c.mode === 'compare_conditions' && c.changedVariable === 'load' && c.scenarios.a.loadType !== c.scenarios.b.loadType) expect(model.variable).not.toBe('surface');
+      if (c.mode === 'compare_conditions' && c.changedVariable === 'load' && c.scenarios.a.loadWeight !== c.scenarios.b.loadWeight) expect(model.variable).not.toBe('mass');
       if (c.mode === 'compare_conditions' && c.changedVariable !== 'load') expect(model.variable).not.toBe(c.changedVariable);
     }
   });

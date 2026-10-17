@@ -383,6 +383,20 @@ const SURFACES: ArenaSurface[] = ['ice', 'wood', 'carpet', 'grass'];
 // GENERATOR FUNCTION
 // ============================================================================
 
+/**
+ * K or 1-5 from the canonical grade, else the normalized grade key ("kindergarten").
+ * Never from gradeContext prose: the K prose has no "grade" in it, so a prose regex
+ * served kindergarten the grade 1 config (PPA-G1). Above 5 reads as 5, unknown as 1.
+ */
+export function resolvePushPullGrade(grade: string | undefined, gradeLevel: string): string {
+  const g = (grade ?? '').trim().toUpperCase() || (/kinder|preschool/i.test(gradeLevel) ? 'K' : gradeLevel.match(/\d+/)?.[0] ?? '');
+  if (g === 'K' || g === 'KINDERGARTEN') return 'K';
+  const n = parseInt(g, 10);
+  if (isNaN(n)) return '1';
+  if (n <= 0) return 'K';
+  return String(Math.min(n, 5));
+}
+
 type PushPullArenaConfig = Partial<{
     targetEvalMode?: string;
     /** Per-component support tier from the manifest ('easy'|'medium'|'hard'). Second axis: difficulty = how much scaffolding within the mode. NEVER changes numbers. */
@@ -393,7 +407,6 @@ export const generatePushPullArena = async (
   ctx: GenerationContext,
 ): Promise<PushPullArenaData> => {
   const { topic } = ctx;
-  const gradeLevel = ctx.gradeContext;
   const config = ctx.raw as PushPullArenaConfig;
   // Per-primitive intent: the SPECIFIC objective the manifest assigned to THIS card.
   // Steers the authored title/description/instruction/question wording only — the
@@ -406,10 +419,7 @@ LEARNING FOCUS: The broad subject is "${topic}", but THIS activity must specific
 Foreground this focus in the title, description, and each challenge's instruction/question wording.
 Do not reveal the answer to any challenge the student will be asked.`
     : "";
-  // Parse grade
-  const gradeMatch = gradeLevel.match(/grade\s*(\d|K)/i)?.[1]?.toUpperCase() || '1';
-  const validGrades = ['K', '1', '2', '3', '4', '5'];
-  const finalGrade = validGrades.includes(gradeMatch) ? gradeMatch : '1';
+  const finalGrade = resolvePushPullGrade(ctx.grade, ctx.gradeLevel);
   const gradeConfig = GRADE_CONFIGS[finalGrade] || GRADE_CONFIGS['1'];
 
   // Resolve eval mode constraint

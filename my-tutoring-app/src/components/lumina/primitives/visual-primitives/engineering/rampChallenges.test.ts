@@ -53,6 +53,13 @@ describe('ramp challenge pool -- physics contract', () => {
         expect(a.loadType).toBe(b.loadType);
         expect(a.angle).not.toBe(b.angle);
       }
+      if (challenge.changedVariable === 'load') {
+        // RL-C1: the pool's load pair changed loadType AND frictionLevel.
+        expect(a.angle).toBe(b.angle);
+        expect(a.frictionLevel).toBe(b.frictionLevel);
+        expect(a.loadType).toBe(b.loadType);
+        expect(a.loadWeight).not.toBe(b.loadWeight);
+      }
       if (challenge.changedVariable === 'surface') {
         expect(a.loadWeight).toBe(b.loadWeight);
         expect(a.angle).toBe(b.angle);

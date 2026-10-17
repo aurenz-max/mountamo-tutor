@@ -111,6 +111,22 @@ describe('named target ownership through the generation boundary', () => {
     expect(data.items.some(i => i.stimulusText === '_')).toBe(false);
   });
 
+  it('a pin re-read does not spend a regular planning attempt (DSP-K1)', async () => {
+    // unsupported -> re-read; the re-read plan is rejected by review; the third plan passes.
+    generateContent.mockResolvedValueOnce(reply({ task: 'unsupported', closedSet: false, targets: [] }));
+    generateContent.mockResolvedValueOnce(reply(named([target('+', 'plus sign')])));
+    generateContent.mockResolvedValueOnce(reply({ valid: false, reason: 'The equal sign is missing.' }));
+    acceptPlan();
+    const data = await gen();
+    expect(new Set(data.items.map(i => i.stimulusText))).toEqual(new Set(['+', '=']));
+    expect(generateContent).toHaveBeenCalledTimes(5);
+  });
+
+  it('a second unsupported after the re-read still ships nothing', async () => {
+    generateContent.mockResolvedValue(reply({ task: 'unsupported', closedSet: false, targets: [] }));
+    expect((await gen()).items).toEqual([]);
+  });
+
   it('exhausted plan reviews produce an empty session, never an unscoped fallback', async () => {
     for (let i = 0; i < 2; i++) {
       generateContent.mockResolvedValueOnce(reply(named([target('+', 'equal sign')])));

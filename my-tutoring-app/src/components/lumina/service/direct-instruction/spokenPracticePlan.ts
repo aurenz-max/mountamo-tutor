@@ -179,7 +179,11 @@ export async function planSpokenPractice(
   const sources = [objectiveText, intent, topic].filter((s): s is string => Boolean(s));
   const context = JSON.stringify({ topic, gradeLevel, objectiveText, intent });
   let feedback = '';
-  for (let attempt = 0; attempt < 2; attempt++) {
+  // Two planning attempts. The pin re-read below is an extra one: on the K seasons objective the
+  // first plan was `unsupported` in 7 of 8 draws, so a re-read that spent a regular attempt left a
+  // single try, and one review rejection after it emptied the session (DSP-K1).
+  let budget = 2;
+  for (let attempt = 0; attempt < budget; attempt++) {
     try {
       const response = await ai.models.generateContent({
         model: PLAN_MODEL,
@@ -245,7 +249,10 @@ ${feedback}`,
       // against that pin before the refusal stands (the pattern-rule objective
       // drew `unsupported` on 1 of 3 fresh plans while its pin said
       // explain_concept). A second `unsupported` still ships nothing.
+      // A second `unsupported` is the refusal: it is still reviewed, but no further plan is drawn.
+      if (!plannedMode && attempt > 0) budget = attempt + 1;
       if (!plannedMode && allowedModes?.length === 1 && attempt === 0) {
+        budget = 3;
         throw new Error(`Task unsupported conflicts with the requested mode ${allowedModes[0]}. Re-read the `
           + 'objective against that task\'s definition; plan it only if the learner action truly fits, '
           + 'otherwise answer unsupported again.');
@@ -295,7 +302,7 @@ Do not approve merely because quotes occur in the input. Return valid and a shor
       console.warn(`[DiSpokenPractice] plan attempt ${attempt + 1}: ${feedback}`);
     }
   }
-  throw new Error('No verified spoken-practice plan after two attempts');
+  throw new Error(`No verified spoken-practice plan after ${budget} attempts`);
 }
 
 /** Repetition is intentional DI practice. The model supplies a checked mapping

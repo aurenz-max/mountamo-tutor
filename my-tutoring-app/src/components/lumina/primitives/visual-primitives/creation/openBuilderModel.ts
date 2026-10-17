@@ -103,7 +103,7 @@ const MENU_SCENES: Record<MenuSceneId, BuilderScene> = {
   },
   'cliff-steps': {
     id: 'cliff-steps', title: 'Up to the Kitten',
-    goal: 'The kitten is stuck up high! Build steps so the bunny can hop all the way up.',
+    goal: 'The bunny wants to play with the kitten on top of the cliff. Build steps so the bunny can hop all the way up!',
     sceneNote: 'A tall cliff on the right, 5 rows high, with a kitten on top. A bunny sits on the ground at the left.',
     terrain: Array.from({ length: COLS }, (_, c) => (c >= 9 ? 5 : 0)),
     props: [{ emoji: '🐱', col: 10, row: 5, size: 2, label: 'a kitten' },
@@ -164,7 +164,7 @@ const PRACTICE_SCENES: Record<PracticeSceneId, BuilderScene> = {
   },
   ledge: {
     id: 'ledge', title: 'Up to the Chick',
-    goal: 'The chick is up on a low ledge! Build steps so the bunny can hop up to it.',
+    goal: 'The bunny wants to say hi to the chick on the ledge. Build steps so the bunny can hop up!',
     sceneNote: 'A low ledge on the right, 2 rows high, with a chick on top. A bunny sits on the ground at the left.',
     terrain: Array.from({ length: COLS }, (_, c) => (c >= 9 ? 2 : 0)),
     props: [{ emoji: '🐥', col: 10, row: 2, size: 1, label: 'a chick' },
