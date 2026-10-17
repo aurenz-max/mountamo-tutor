@@ -171,7 +171,7 @@ export interface ConstructionSite {
   dispose(): void;
 }
 
-export const SITE_VIEW = { t: V(2.6, 1.2, 0), th: 1.22, ph: 0.98, r: 22 };
+export const SITE_VIEW = { t: V(3.0, 1.2, 0.8), th: 0.85, ph: 1.0, r: 22 };
 
 export function buildConstructionSite(opts: { company: string; anisotropy?: number }): ConstructionSite {
   const aniso = opts.anisotropy ?? 4;
@@ -407,7 +407,7 @@ export function buildConstructionSite(opts: { company: string; anisotropy?: numb
   const bed = new THREE.Group(); bed.position.set(HINGE_X, 1.2, 0); body.add(bed);
   const plateCanvas = document.createElement('canvas'); plateCanvas.width = 512; plateCanvas.height = 256;
   const plateTex = new THREE.CanvasTexture(plateCanvas); plateTex.colorSpace = THREE.SRGBColorSpace; textures.push(plateTex);
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), std(0xffffff, 0.6, 0.0, { map: plateTex }));
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.85), std(0xffffff, 0.6, 0.0, { map: plateTex }));
   let plateTons: number | null | undefined;
   const mounds: THREE.Mesh[] = [];
   const moundSmooth = new THREE.SphereGeometry(0.5, 20, 12, 0, TAU, 0, Math.PI / 2);

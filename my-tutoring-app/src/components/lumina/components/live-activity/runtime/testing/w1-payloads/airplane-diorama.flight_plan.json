@@ -1,0 +1,62 @@
+{
+ "source": "qa/eval-reports/airplane-diorama-flight-plan-2026-10-15 (real generation, grades 3-5, flight_plan pin)",
+ "primitiveId": "airplane-diorama",
+ "evalMode": "flight_plan",
+ "data": {
+  "title": "Fuel For The Trip",
+  "description": "Come help us load up the tanks for our next big journey in the sky.",
+  "challenges": [
+   {
+    "id": "ap-1",
+    "type": "flight_plan",
+    "from": "Cloudville",
+    "to": "Sunnyside",
+    "cargo": "a basket of sweet apples",
+    "units": "km",
+    "distance": 3500,
+    "perTank": 500,
+    "spare": 1,
+    "instruction": "Fly a basket of sweet apples from Cloudville to Sunnyside, 3,500 km away. Each tank of fuel flies 500 km. Load enough tanks for the trip plus 1 spare tank, then press Fly."
+   },
+   {
+    "id": "ap-2",
+    "type": "flight_plan",
+    "from": "Starport",
+    "to": "Moon Valley",
+    "cargo": "the mail bags",
+    "units": "km",
+    "distance": 300,
+    "perTank": 100,
+    "spare": 1,
+    "instruction": "Fly the mail bags from Starport to Moon Valley, 300 km away. Each tank of fuel flies 100 km. Load enough tanks for the trip plus 1 spare tank, then press Fly."
+   },
+   {
+    "id": "ap-3",
+    "type": "flight_plan",
+    "from": "Breezy Bay",
+    "to": "Pine Hill",
+    "cargo": "a friendly bear plush",
+    "units": "km",
+    "distance": 1000,
+    "perTank": 250,
+    "spare": 1,
+    "instruction": "Fly a friendly bear plush from Breezy Bay to Pine Hill, 1,000 km away. Each tank of fuel flies 250 km. Load enough tanks for the trip plus 1 spare tank, then press Fly."
+   },
+   {
+    "id": "ap-4",
+    "type": "flight_plan",
+    "from": "River Town",
+    "to": "Green Valley",
+    "cargo": "the fresh bakery bread",
+    "units": "km",
+    "distance": 1000,
+    "perTank": 200,
+    "spare": 1,
+    "instruction": "Fly the fresh bakery bread from River Town to Green Valley, 1,000 km away. Each tank of fuel flies 200 km. Load enough tanks for the trip plus 1 spare tank, then press Fly."
+   }
+  ],
+  "challengeType": "flight_plan",
+  "gradeBand": "3-5",
+  "airlineName": "Skybound"
+ }
+}
