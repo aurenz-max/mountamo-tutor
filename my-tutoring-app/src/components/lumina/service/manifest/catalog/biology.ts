@@ -9,6 +9,7 @@ import { ComponentDefinition } from '../../../types';
 import type { HabitatMiss, SpokenHabitatMiss } from '../../../primitives/visual-primitives/biology/habitatDioramaWorkspace';
 import type { HabitatBuildMiss } from '../../../primitives/visual-primitives/biology/habitatBuild';
 import { missLists } from './missLists';
+import type { EcosystemMiss } from '../../../primitives/visual-primitives/biology/ecosystemModel';
 import type { FoodChainMiss, FoodWebMiss } from '../../../primitives/visual-primitives/biology/foodWebWorkspace';
 import type { CycleMiss } from '../../../primitives/visual-primitives/biology/lifeCycleSequencerWorkspace';
 import type { SortMiss } from '../../../primitives/visual-primitives/biology/classificationSorterWorkspace';
@@ -344,6 +345,51 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     description: 'Interactive layered anatomy diagram of a biological system where students toggle layers (skeletal, muscular, circulatory, etc.), click organs for detailed information, and trace pathways through systems (blood flow, nerve signals, food digestion). The PRIMARY anatomy primitive for teaching human body systems. PERFECT for teaching structure-function relationships, how organs work together, and understanding physiological processes. Features SVG-based layered body diagram with clickable organ hotspots, toggleable system layers, detailed organ function cards with fun facts, and guided pathway tracing (e.g., "Journey of a Meal" through digestive system, "Path of Blood" through circulatory system). Zoom capability for detailed regions. ESSENTIAL for grades 2-8 anatomy, physiology, and health lessons. Students explore by toggling layers to see different systems, clicking organs to learn functions, and following step-by-step pathways to understand processes.',
     constraints: 'Use for grades 2-8 anatomy and physiology lessons. Supports all major body systems: digestive, circulatory, respiratory, nervous, skeletal, muscular, immune, endocrine, reproductive, urinary. Grade 2-4: Simple vocabulary, 4-6 main organs, basic pathways (3-5 steps), familiar analogies (stomach is like a blender). Grade 5-6: Scientific terminology, 6-8 organs, moderate pathways (5-7 steps), structure-function relationships. Grade 7-8: Medical terminology, 8-10+ organs with supporting structures, complex pathways (7-10+ steps), cellular/molecular detail. Perfect for anatomy units, health education, systems thinking, and understanding how body parts work together. Works great for compare/contrast (how digestive and circulatory systems interact), process understanding (how digestion works), and building mental models of body systems.',
     affordances: { representation: 'pictorial', answers: ['tap'], role: 'visualize', minutes: 6 },
+  },
+  {
+    id: 'ecosystem-diorama',
+    description: 'A 3D island in a glass tank that runs like a real little world: a sun that crosses the sky and warms what it shines on, weather (sun, clouds, rain, snow, wind), seasons, plants, and animals (bear, bird, squirrel, deer). Students investigate in it: run a fair sun test and read picture thermometers (sunlight warms surfaces; dark and light, sun and shade); give a plant the sunlight, water and soil it needs and watch it grow or droop (what plants need); bring winter and move each animal to where it spends the winter (hibernate in a den, fly south, stored nuts in a tree, stay and find food); play a month of weather into a picture weather log and name the season from it; compare two weather logs for two months or places; and design shade to keep an ice pop cool in the sun. Perfect for lessons on weather and seasons, weather patterns and graphs, plants and animals and their needs, how animals and plants change with the seasons, sunlight and heat, and simple engineering design. ESSENTIAL for K-2 science: K-PS3-1, K-PS3-2, K-LS1-1, K-ESS2-1, K-ESS3-1, and seasonal change.',
+    constraints: 'Grades K-5 (built for K-2). Each session is 5 items of one task, or 6 mixed (one of each). Code picks every pair, record, plant, animal, cover and result. The manifest must NOT supply items or say any answer. No numbers or temperatures are shown: thermometers are pictures with five marks; weather logs are pictures.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: ['apply'], minutes: 7 },
+    evalModes: [
+      { evalMode: 'plant_needs', label: 'Plant Needs', beta: -1.5, scaffoldingMode: 1, challengeTypes: ['plant_needs'],
+        description: 'Give a potted plant sunlight, water and soil (and nothing an animal needs), or fix a drooping one, then watch it grow' },
+      { evalMode: 'sun_test', label: 'Sun Test', beta: -1.0, scaffoldingMode: 1, challengeTypes: ['sun_test'],
+        description: 'Run a fair sun test on two things that differ in one way: guess, move the sun across the sky, then tap the one the thermometers show got warmer' },
+      { evalMode: 'season_behavior', label: 'Animals in Winter', beta: -0.5, scaffoldingMode: 2, challengeTypes: ['season_behavior'],
+        description: 'Bring winter to the island and move each animal to where it spends the winter (den, south, tree hollow, meadow)' },
+      { evalMode: 'season_from_log', label: 'Season from a Weather Log', beta: 0.0, scaffoldingMode: 2, challengeTypes: ['season_from_log'],
+        description: 'Play a month of weather into a picture log, then name the season and the most common weather that shows it' },
+      { evalMode: 'compare_logs', label: 'Compare Weather Logs', beta: 0.5, scaffoldingMode: 3, challengeTypes: ['compare_logs'],
+        description: 'Play two months or places into two weather logs, then say which had more of a weather or which was warmer' },
+      { evalMode: 'keep_it_cool', label: 'Keep It Cool', beta: 1.0, scaffoldingMode: 4, challengeTypes: ['keep_it_cool'],
+        description: 'Build shade over a treat in the sun (umbrella, leaf roof, the hut; a clear sheet does not work) so the thermometer stays below the cool line all day' },
+    ],
+    supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
+      guidance: 'The world runs what the learner sets up and the activity judges; never give an answer before the learner works '
+        + 'it out. Sun test: the learner taps a guess, drags the sun across the sky (or presses Let the day go by), then taps the '
+        + 'thing that got warmer; that tap is the check. The guess is never graded; compare it with what happened afterwards. Never '
+        + 'say which thing got warmer or which red line is higher, and never say before the test that dark, sunny or sandy things '
+        + 'get warmer; ask the learner to compare the two red lines. Each test changes one thing; name what is the same and what is '
+        + 'different. Plant needs: Watch it grow is the check; never name what the plant is missing; ask what plants need to grow, '
+        + 'and after it grows, why it did not need a den or berries. Winter: the learner brings winter, moves each animal to a '
+        + 'winter place and presses Done; never say where an animal goes; ask what is hard about winter for that animal (cold, no '
+        + 'food). Weather log: the log is the evidence; never name the season or say which weather happened most; ask the learner '
+        + 'to count the rows. Compare logs: never say which log answers the question; ask the learner to count the same weather in '
+        + 'both logs. Keep it cool: the end of the day is the check; many designs work; never pick the cover; ask what blocks '
+        + 'sunlight, and after a clear sheet fails, why. This is a pretend sun in a tank: never tell the learner to look at the sun.',
+      // Each task's own check: `readMiss`, `plantNeedsMiss`, `winterMiss`, `seasonLogMiss`, `compareMiss`, `coolMiss`.
+      misses: missLists<EcosystemMiss>({
+        plant_needs: ['no_sun', 'no_water', 'no_soil', 'gave_animal_things'],
+        sun_test: ['picked_cooler'],
+        season_behavior: ['wrong_place'],
+        season_from_log: ['wrong_season', 'present_not_most'],
+        compare_logs: ['picked_fewer', 'picked_colder'],
+        keep_it_cool: ['no_shade', 'clear_cover'],
+      }),
+    },
   },
   {
     id: 'habitat-diorama',

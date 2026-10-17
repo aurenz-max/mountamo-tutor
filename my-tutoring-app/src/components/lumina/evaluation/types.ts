@@ -3342,6 +3342,21 @@ export interface AirplaneDioramaMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface EcosystemDioramaMetrics extends BasePrimitiveMetrics {
+  type: 'ecosystem-diorama';
+  challengeType: 'plant_needs' | 'sun_test' | 'season_behavior' | 'season_from_log' | 'compare_logs' | 'keep_it_cool';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+  /** Tests whose guess (made before the sun moved) matched what the thermometers showed. Session-level: the
+   *  prediction practice, recorded but never part of the score. */
+  guessesMatched: number;
+}
+
 export interface ConstructionSiteDioramaMetrics extends BasePrimitiveMetrics {
   type: 'construction-site-diorama';
   challengeType: 'load_truck';
@@ -3857,6 +3872,7 @@ export type PrimitiveMetrics =
   | TrainYardMetrics
   | AirplaneDioramaMetrics
   | ConstructionSiteDioramaMetrics
+  | EcosystemDioramaMetrics
   // Creation
   | OpenBuilderMetrics
   // Assessment

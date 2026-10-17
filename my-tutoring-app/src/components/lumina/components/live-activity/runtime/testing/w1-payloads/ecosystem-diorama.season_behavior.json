@@ -1,0 +1,63 @@
+{
+ "source": "qa/tutor-reports/ecosystem-diorama-runtime-season_behavior-payload-2026-10-17.json",
+ "primitiveId": "ecosystem-diorama",
+ "evalMode": "season_behavior",
+ "data": {
+  "title": "Finding Winter Animal Homes",
+  "description": "Help the animals get ready for the cold winter by placing them where they belong.",
+  "challenges": [
+   {
+    "id": "eco-1",
+    "type": "season_behavior",
+    "animals": [
+     "deer",
+     "bear"
+    ],
+    "instruction": "It is summer on the island. Bring winter, then help the deer and the bear: tap an animal, then tap where it spends the winter."
+   },
+   {
+    "id": "eco-2",
+    "type": "season_behavior",
+    "animals": [
+     "squirrel",
+     "deer",
+     "bird"
+    ],
+    "instruction": "It is summer on the island. Bring winter, then help the squirrel, the deer and the bird: tap an animal, then tap where it spends the winter."
+   },
+   {
+    "id": "eco-3",
+    "type": "season_behavior",
+    "animals": [
+     "bear",
+     "deer",
+     "bird"
+    ],
+    "instruction": "It is summer on the island. Bring winter, then help the bear, the deer and the bird: tap an animal, then tap where it spends the winter."
+   },
+   {
+    "id": "eco-4",
+    "type": "season_behavior",
+    "animals": [
+     "bear",
+     "squirrel",
+     "deer"
+    ],
+    "instruction": "It is summer on the island. Bring winter, then help the bear, the squirrel and the deer: tap an animal, then tap where it spends the winter."
+   },
+   {
+    "id": "eco-5",
+    "type": "season_behavior",
+    "animals": [
+     "bear",
+     "deer",
+     "bird"
+    ],
+    "instruction": "It is summer on the island. Bring winter, then help the bear, the deer and the bird: tap an animal, then tap where it spends the winter."
+   }
+  ],
+  "challengeType": "season_behavior",
+  "gradeBand": "K-2",
+  "islandName": "Frosty Cove"
+ }
+}

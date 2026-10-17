@@ -1,0 +1,69 @@
+{
+ "source": "qa/tutor-reports/ecosystem-diorama-runtime-keep_it_cool-payload-2026-10-17.json",
+ "primitiveId": "ecosystem-diorama",
+ "evalMode": "keep_it_cool",
+ "data": {
+  "title": "Keeping Things Cool",
+  "description": "Come help us build cozy shade to see what happens when the bright sun shines down!",
+  "challenges": [
+   {
+    "id": "eco-1",
+    "type": "keep_it_cool",
+    "thing": "snowman",
+    "covers": [
+     "clear sheet",
+     "leaf roof",
+     "umbrella"
+    ],
+    "instruction": "The snowman is out on the sunny sand. Build something to keep it cool all day, so the red line stays below the blue cool line. Then move the sun across the sky."
+   },
+   {
+    "id": "eco-2",
+    "type": "keep_it_cool",
+    "thing": "chocolate bar",
+    "covers": [
+     "hut",
+     "umbrella",
+     "clear sheet"
+    ],
+    "instruction": "The chocolate bar is out on the sunny sand. Build something to keep it cool all day, so the red line stays below the blue cool line. Then move the sun across the sky."
+   },
+   {
+    "id": "eco-3",
+    "type": "keep_it_cool",
+    "thing": "ice pop",
+    "covers": [
+     "clear sheet",
+     "leaf roof",
+     "hut"
+    ],
+    "instruction": "The ice pop is out on the sunny sand. Build something to keep it cool all day, so the red line stays below the blue cool line. Then move the sun across the sky."
+   },
+   {
+    "id": "eco-4",
+    "type": "keep_it_cool",
+    "thing": "snowman",
+    "covers": [
+     "clear sheet",
+     "hut",
+     "leaf roof"
+    ],
+    "instruction": "The snowman is out on the sunny sand. Build something to keep it cool all day, so the red line stays below the blue cool line. Then move the sun across the sky."
+   },
+   {
+    "id": "eco-5",
+    "type": "keep_it_cool",
+    "thing": "chocolate bar",
+    "covers": [
+     "clear sheet",
+     "hut",
+     "umbrella"
+    ],
+    "instruction": "The chocolate bar is out on the sunny sand. Build something to keep it cool all day, so the red line stays below the blue cool line. Then move the sun across the sky."
+   }
+  ],
+  "challengeType": "keep_it_cool",
+  "gradeBand": "K-2",
+  "islandName": "Sunny Isle"
+ }
+}

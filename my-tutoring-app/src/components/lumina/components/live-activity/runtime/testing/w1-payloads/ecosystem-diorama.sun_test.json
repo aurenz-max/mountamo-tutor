@@ -1,0 +1,124 @@
+{
+ "source": "qa/tutor-reports/ecosystem-diorama-runtime-sun_test-payload-2026-10-17.json",
+ "primitiveId": "ecosystem-diorama",
+ "evalMode": "sun_test",
+ "data": {
+  "title": "The Sun Test",
+  "description": "Help us move the sun across the sky and test what gets warm on the island.",
+  "challenges": [
+   {
+    "id": "eco-1",
+    "type": "sun_test",
+    "variable": "colour",
+    "left": {
+     "kind": "stone",
+     "colour": "dark",
+     "place": "sun",
+     "name": "the dark stone",
+     "spot": "sunLeft"
+    },
+    "right": {
+     "kind": "stone",
+     "colour": "light",
+     "place": "sun",
+     "name": "the pale stone",
+     "spot": "sunRight"
+    },
+    "warmer": "left",
+    "difference": "Only the colour is different.",
+    "instruction": "The dark stone and the pale stone sit in the same tank all day. Only the colour is different. Which one will get warmer? Tap it to make your guess, then move the sun across the sky."
+   },
+   {
+    "id": "eco-2",
+    "type": "sun_test",
+    "variable": "place",
+    "left": {
+     "kind": "stone",
+     "colour": "natural",
+     "place": "sun",
+     "name": "the stone in the sun",
+     "spot": "sunLeft"
+    },
+    "right": {
+     "kind": "stone",
+     "colour": "natural",
+     "place": "shade",
+     "name": "the stone in the shade hut",
+     "spot": "hut"
+    },
+    "warmer": "left",
+    "difference": "Only the place is different: one is in the sun, one is in the shade hut.",
+    "instruction": "The stone in the sun and the stone in the shade hut sit in the same tank all day. Only the place is different: one is in the sun, one is in the shade hut. Which one will get warmer? Tap it to make your guess, then move the sun across the sky."
+   },
+   {
+    "id": "eco-3",
+    "type": "sun_test",
+    "variable": "material",
+    "left": {
+     "kind": "sand",
+     "colour": "natural",
+     "place": "sun",
+     "name": "the cup of sand",
+     "spot": "sunLeft"
+    },
+    "right": {
+     "kind": "water",
+     "colour": "natural",
+     "place": "sun",
+     "name": "the cup of water",
+     "spot": "sunRight"
+    },
+    "warmer": "left",
+    "difference": "Only what is in the cup is different.",
+    "instruction": "The cup of sand and the cup of water sit in the same tank all day. Only what is in the cup is different. Which one will get warmer? Tap it to make your guess, then move the sun across the sky."
+   },
+   {
+    "id": "eco-4",
+    "type": "sun_test",
+    "variable": "colour",
+    "left": {
+     "kind": "paper",
+     "colour": "dark",
+     "place": "sun",
+     "name": "the black paper",
+     "spot": "sunLeft"
+    },
+    "right": {
+     "kind": "paper",
+     "colour": "light",
+     "place": "sun",
+     "name": "the white paper",
+     "spot": "sunRight"
+    },
+    "warmer": "left",
+    "difference": "Only the colour is different.",
+    "instruction": "The black paper and the white paper sit in the same tank all day. Only the colour is different. Which one will get warmer? Tap it to make your guess, then move the sun across the sky."
+   },
+   {
+    "id": "eco-5",
+    "type": "sun_test",
+    "variable": "place",
+    "left": {
+     "kind": "sand",
+     "colour": "natural",
+     "place": "shade",
+     "name": "the sand in the shade hut",
+     "spot": "hut"
+    },
+    "right": {
+     "kind": "sand",
+     "colour": "natural",
+     "place": "sun",
+     "name": "the sand in the sun",
+     "spot": "sunRight"
+    },
+    "warmer": "right",
+    "difference": "Only the place is different: one is in the sun, one is in the shade hut.",
+    "instruction": "The sand in the shade hut and the sand in the sun sit in the same tank all day. Only the place is different: one is in the sun, one is in the shade hut. Which one will get warmer? Tap it to make your guess, then move the sun across the sky."
+   }
+  ],
+  "challengeType": "sun_test",
+  "gradeBand": "K-2",
+  "islandName": "Sunny Isle"
+ }
+}

@@ -116,6 +116,7 @@ import ClassificationSorter from '../primitives/visual-primitives/biology/Classi
 import LifeCycleSequencer from '../primitives/visual-primitives/biology/LifeCycleSequencer';
 import BodySystemExplorer from '../primitives/visual-primitives/biology/BodySystemExplorer';
 import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiorama';
+import EcosystemDiorama from '../primitives/visual-primitives/biology/EcosystemDiorama';
 import CompareContrast from '../primitives/visual-primitives/biology/CompareContrast';
 import ProcessAnimator from '../primitives/visual-primitives/biology/ProcessAnimator';
 import MicroscopeViewer from '../primitives/visual-primitives/biology/MicroscopeViewer';
@@ -1372,6 +1373,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
     supportsEvaluation: false, // Exploratory anatomy tool (could add evaluation later)
   },
 
+  'ecosystem-diorama': {
+    component: EcosystemDiorama,
+    sectionTitle: 'Island Tank',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
   'habitat-diorama': {
     component: HabitatDiorama,
     sectionTitle: 'Habitat Diorama',

@@ -1,0 +1,313 @@
+{
+ "source": "qa/tutor-reports/ecosystem-diorama-runtime-compare_logs-payload-2026-10-17.json",
+ "primitiveId": "ecosystem-diorama",
+ "evalMode": "compare_logs",
+ "data": {
+  "title": "Sunlight Weather Detective",
+  "description": "Come help us explore sunny weather and find out how the bright sun changes our favorite outdoor places!",
+  "challenges": [
+   {
+    "id": "eco-1",
+    "type": "compare_logs",
+    "a": {
+     "label": "January at Palm Beach",
+     "days": [
+      "sunny",
+      "sunny",
+      "sunny",
+      "cloudy",
+      "sunny",
+      "sunny",
+      "rainy",
+      "rainy",
+      "cloudy",
+      "sunny",
+      "sunny",
+      "sunny",
+      "rainy",
+      "rainy",
+      "sunny",
+      "sunny",
+      "sunny",
+      "sunny",
+      "rainy",
+      "sunny"
+     ]
+    },
+    "b": {
+     "label": "January on Snowy Hill",
+     "days": [
+      "cloudy",
+      "cloudy",
+      "snowy",
+      "cloudy",
+      "snowy",
+      "snowy",
+      "snowy",
+      "snowy",
+      "windy",
+      "cloudy",
+      "cloudy",
+      "snowy",
+      "snowy",
+      "snowy",
+      "cloudy",
+      "snowy",
+      "windy",
+      "snowy",
+      "sunny",
+      "sunny"
+     ]
+    },
+    "ask": {
+     "kind": "more",
+     "weather": "sunny"
+    },
+    "answer": "a",
+    "instruction": "Play both months in the tank and watch two weather logs fill: January at Palm Beach and January on Snowy Hill. Then: Which one had more sunny days?"
+   },
+   {
+    "id": "eco-2",
+    "type": "compare_logs",
+    "a": {
+     "label": "January in our town",
+     "days": [
+      "cloudy",
+      "sunny",
+      "sunny",
+      "snowy",
+      "snowy",
+      "snowy",
+      "snowy",
+      "snowy",
+      "snowy",
+      "cloudy",
+      "snowy",
+      "snowy",
+      "sunny",
+      "cloudy",
+      "sunny",
+      "snowy",
+      "cloudy",
+      "snowy",
+      "windy",
+      "snowy"
+     ]
+    },
+    "b": {
+     "label": "April in our town",
+     "days": [
+      "cloudy",
+      "rainy",
+      "rainy",
+      "cloudy",
+      "windy",
+      "cloudy",
+      "rainy",
+      "sunny",
+      "rainy",
+      "windy",
+      "sunny",
+      "cloudy",
+      "rainy",
+      "rainy",
+      "rainy",
+      "rainy",
+      "rainy",
+      "rainy",
+      "sunny",
+      "rainy"
+     ]
+    },
+    "ask": {
+     "kind": "warmer"
+    },
+    "answer": "b",
+    "instruction": "Play both months in the tank and watch two weather logs fill: January in our town and April in our town. Then: Which one was warmer?"
+   },
+   {
+    "id": "eco-3",
+    "type": "compare_logs",
+    "a": {
+     "label": "July in our town",
+     "days": [
+      "sunny",
+      "sunny",
+      "sunny",
+      "sunny",
+      "cloudy",
+      "rainy",
+      "cloudy",
+      "sunny",
+      "sunny",
+      "cloudy",
+      "sunny",
+      "sunny",
+      "sunny",
+      "cloudy",
+      "sunny",
+      "sunny",
+      "sunny",
+      "sunny",
+      "rainy",
+      "cloudy"
+     ]
+    },
+    "b": {
+     "label": "January in our town",
+     "days": [
+      "snowy",
+      "snowy",
+      "cloudy",
+      "snowy",
+      "cloudy",
+      "sunny",
+      "snowy",
+      "snowy",
+      "snowy",
+      "snowy",
+      "sunny",
+      "snowy",
+      "snowy",
+      "snowy",
+      "snowy",
+      "windy",
+      "cloudy",
+      "cloudy",
+      "sunny",
+      "cloudy"
+     ]
+    },
+    "ask": {
+     "kind": "more",
+     "weather": "snowy"
+    },
+    "answer": "b",
+    "instruction": "Play both months in the tank and watch two weather logs fill: July in our town and January in our town. Then: Which one had more snowy days?"
+   },
+   {
+    "id": "eco-4",
+    "type": "compare_logs",
+    "a": {
+     "label": "October in our town",
+     "days": [
+      "sunny",
+      "windy",
+      "windy",
+      "cloudy",
+      "rainy",
+      "windy",
+      "rainy",
+      "sunny",
+      "cloudy",
+      "windy",
+      "cloudy",
+      "windy",
+      "windy",
+      "sunny",
+      "windy",
+      "windy",
+      "cloudy",
+      "sunny",
+      "sunny",
+      "cloudy"
+     ]
+    },
+    "b": {
+     "label": "April in our town",
+     "days": [
+      "rainy",
+      "rainy",
+      "cloudy",
+      "sunny",
+      "rainy",
+      "rainy",
+      "cloudy",
+      "rainy",
+      "cloudy",
+      "sunny",
+      "rainy",
+      "rainy",
+      "cloudy",
+      "rainy",
+      "windy",
+      "rainy",
+      "sunny",
+      "rainy",
+      "cloudy",
+      "sunny"
+     ]
+    },
+    "ask": {
+     "kind": "more",
+     "weather": "rainy"
+    },
+    "answer": "b",
+    "instruction": "Play both months in the tank and watch two weather logs fill: October in our town and April in our town. Then: Which one had more rainy days?"
+   },
+   {
+    "id": "eco-5",
+    "type": "compare_logs",
+    "a": {
+     "label": "July in our town",
+     "days": [
+      "sunny",
+      "cloudy",
+      "sunny",
+      "rainy",
+      "sunny",
+      "sunny",
+      "windy",
+      "sunny",
+      "cloudy",
+      "sunny",
+      "sunny",
+      "sunny",
+      "rainy",
+      "cloudy",
+      "rainy",
+      "cloudy",
+      "sunny",
+      "sunny",
+      "sunny",
+      "sunny"
+     ]
+    },
+    "b": {
+     "label": "October in our town",
+     "days": [
+      "sunny",
+      "windy",
+      "cloudy",
+      "cloudy",
+      "windy",
+      "rainy",
+      "cloudy",
+      "windy",
+      "windy",
+      "windy",
+      "windy",
+      "windy",
+      "rainy",
+      "sunny",
+      "sunny",
+      "cloudy",
+      "sunny",
+      "windy",
+      "sunny",
+      "cloudy"
+     ]
+    },
+    "ask": {
+     "kind": "more",
+     "weather": "sunny"
+    },
+    "answer": "a",
+    "instruction": "Play both months in the tank and watch two weather logs fill: July in our town and October in our town. Then: Which one had more sunny days?"
+   }
+  ],
+  "challengeType": "compare_logs",
+  "gradeBand": "K-2",
+  "islandName": "Sunny Bay Isle"
+ }
+}

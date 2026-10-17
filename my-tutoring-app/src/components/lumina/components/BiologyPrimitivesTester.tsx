@@ -8,6 +8,7 @@ import ClassificationSorter from '../primitives/visual-primitives/biology/Classi
 import LifeCycleSequencer from '../primitives/visual-primitives/biology/LifeCycleSequencer';
 import BodySystemExplorer from '../primitives/visual-primitives/biology/BodySystemExplorer';
 import HabitatDiorama from '../primitives/visual-primitives/biology/HabitatDiorama';
+import EcosystemDiorama from '../primitives/visual-primitives/biology/EcosystemDiorama';
 import CompareContrast from '../primitives/visual-primitives/biology/CompareContrast';
 import ProcessAnimator from '../primitives/visual-primitives/biology/ProcessAnimator';
 import MicroscopeViewer from '../primitives/visual-primitives/biology/MicroscopeViewer';
@@ -23,12 +24,15 @@ import {
   useEvaluationContext,
 } from '../evaluation';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
+import { TesterWorkspace } from './live-activity/TesterWorkspace';
+import { getComponentById } from '../service/manifest/catalog';
+import type { ComponentId } from '../types';
 
 interface BiologyPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer' | 'adaptation-investigator' | 'food-web-builder' | 'cell-builder' | 'inheritance-lab' | 'dna-explorer' | 'protein-folder' | 'energy-cycle-engine';
+type PrimitiveType = 'organism-card' | 'species-profile' | 'classification-sorter' | 'life-cycle-sequencer' | 'body-system-explorer' | 'habitat-diorama' | 'bio-compare-contrast' | 'bio-process-animator' | 'microscope-viewer' | 'adaptation-investigator' | 'food-web-builder' | 'cell-builder' | 'inheritance-lab' | 'dna-explorer' | 'protein-folder' | 'energy-cycle-engine' | 'ecosystem-diorama';
 type GradeLevel = 'toddler' | 'preschool' | 'kindergarten' | 'elementary' | 'middle-school' | 'high-school' | 'undergraduate' | 'graduate' | 'phd';
 
 const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: string; topic: string }> = [
@@ -48,6 +52,7 @@ const PRIMITIVE_OPTIONS: Array<{ value: PrimitiveType; label: string; icon: stri
   { value: 'dna-explorer', label: 'DNA Explorer', icon: '🔬', topic: 'DNA structure and base pairing' },
   { value: 'protein-folder', label: 'Protein Folder', icon: '🧪', topic: 'Protein folding and structure' },
   { value: 'energy-cycle-engine', label: 'Energy Cycle Engine', icon: '⚡', topic: 'Photosynthesis and cellular respiration' },
+  { value: 'ecosystem-diorama', label: 'Island Tank (3D)', icon: '🏝️', topic: 'The sun warms things up: dark and light, sun and shade' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -218,6 +223,15 @@ const PrimitiveRenderer: React.FC<{
           }}
         />
       );
+    case 'ecosystem-diorama':
+      return (
+        <EcosystemDiorama
+          data={{
+            ...(data as Parameters<typeof EcosystemDiorama>[0]['data']),
+            instanceId: (data as { instanceId: string }).instanceId,
+          }}
+        />
+      );
     case 'energy-cycle-engine':
       return (
         <EnergyCycleEngine
@@ -331,6 +345,11 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedData, setGeneratedData] = useState<unknown>(null);
+  // A one-mode family pins its mode in the tester workspace; a ladder family pins the picked task ("mixed" binds unpinned).
+  const familyModes = getComponentById(selectedPrimitive as ComponentId)?.evalModes ?? [];
+  const [familyMode, setFamilyMode] = useState('mixed');
+  const pinnedMode = familyMode !== 'mixed' && familyModes.some(m => m.evalMode === familyMode) ? familyMode
+    : familyModes.length === 1 ? familyModes[0].evalMode : null;
   // One instance id per generated preview: evaluation, tutoring and Pip's surface
   // all key on it, so it must not change when the helper re-renders.
   const previewInstanceId = useMemo(
@@ -363,11 +382,13 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
         selectedPrimitive === 'dna-explorer' ? 'DNA structure and base pairing' :
         selectedPrimitive === 'protein-folder' ? 'Hemoglobin and sickle cell disease' :
         selectedPrimitive === 'energy-cycle-engine' ? 'Photosynthesis and cellular respiration' :
+        selectedPrimitive === 'ecosystem-diorama' ? 'Weather, seasons, plants and animals on an island' :
         'Monarch Butterfly';
       const currentTopic = topic.trim() || defaultTopic;
 
       // Build config based on primitive type
       const config: Record<string, unknown> = {};
+      if (pinnedMode && familyModes.length > 1) config.targetEvalMode = pinnedMode;
       if (selectedPrimitive === 'body-system-explorer') {
         // For body system explorer, extract the system from the topic
         const systemMatch = currentTopic.toLowerCase().match(/(digestive|circulatory|respiratory|nervous|skeletal|muscular|immune|endocrine|reproductive|urinary)/);
@@ -467,6 +488,17 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
                 ))}
               </div>
             </div>
+
+            {familyModes.length > 1 && (
+              <div>
+                <label htmlFor="biology-task" className="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Task</label>
+                <select id="biology-task" value={familyMode} onChange={event => { setFamilyMode(event.target.value); setGeneratedData(null); }}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white">
+                  <option value="mixed">Mixed (intent picks)</option>
+                  {familyModes.map(mode => <option key={mode.evalMode} value={mode.evalMode}>{mode.label}</option>)}
+                </select>
+              </div>
+            )}
 
             {/* Grade Level Selector */}
             <div>
@@ -612,10 +644,16 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
             {generatedData != null && (
               <div className="space-y-6">
                 <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
-                  <PrimitiveRenderer
-                    componentId={selectedPrimitive}
-                    data={{ ...(generatedData as object), instanceId: previewInstanceId }}
-                  />
+                  {/* A family bound to the teaching workspace previews inside the tester workspace with the offline
+                      runtime (free); outside it, a workspace-only family shows its needs-the-tutor card. */}
+                  <TesterWorkspace primitiveId={selectedPrimitive} instanceId={previewInstanceId} evalMode={pinnedMode}
+                    offline data={generatedData} topic={topic || PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)?.topic || ''}
+                    gradeLevel={selectedGrade}>
+                    <PrimitiveRenderer
+                      componentId={selectedPrimitive}
+                      data={{ ...(generatedData as object), instanceId: previewInstanceId }}
+                    />
+                  </TesterWorkspace>
                   <CuratorCompanion />
                 </div>
               </div>

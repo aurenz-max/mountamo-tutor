@@ -3813,6 +3813,21 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
   },
+  'ecosystem-diorama': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/biology/EcosystemDiorama.tsx',
+    instanceId: 'tank',
+    defaults: { grade: 'Kindergarten', mode: 'sun_test', di: false, topic: 'The sun warms things up' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // The guess, the sun drag and the reading are taps and a drag on meshes of the 3D tank (WebGL), which the dry
+    // sweep's jsdom cannot draw; EcosystemDiorama.workspace.test.tsx drives the commit through a stubbed scene.
+    inputsFor: (intent) => {
+      if (intent === 'warmup') return [];
+      throw new Error('Ecosystem-diorama sun_test is taps and a sun drag on the 3D tank, not driven at W1');
+    },
+    probes: { mounted: { selector: '[data-ecosystem-scene]' } },
+  },
   'habitat-diorama': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/biology/HabitatDiorama.tsx',

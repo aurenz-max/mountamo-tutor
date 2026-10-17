@@ -24,6 +24,7 @@ import { generateClassificationSorter } from '../../biology/gemini-classificatio
 import { generateLifeCycleSequencer } from '../../biology/gemini-life-cycle-sequencer';
 import { generateBodySystemExplorer } from '../../biology/gemini-body-system-explorer';
 import { generateHabitatDiorama } from '../../biology/gemini-habitat-diorama';
+import { generateEcosystemDiorama } from '../../biology/gemini-ecosystem-diorama';
 import { generateCompareContrast } from '../../biology/gemini-compare-contrast';
 import { generateCompareContrastWithImages, generateCompareContrastWithImagesFromTopic } from '../../biology/gemini-compare-contrast-with-images';
 import { generateProcessAnimator } from '../../biology/gemini-process-animator';
@@ -207,6 +208,12 @@ registerContextGenerator('body-system-explorer', async (ctx) => ({
  * - 3-5: Food chains (6-8 organisms, introduce symbiosis, simple disruption scenario)
  * - 6-8: Complex food webs (8-10 organisms, all relationship types, trophic cascade scenarios)
  */
+registerContextGenerator('ecosystem-diorama', async (ctx) => ({
+  type: 'ecosystem-diorama',
+  instanceId: ctx.instanceId,
+  data: await generateEcosystemDiorama(ctx),
+}));
+
 registerContextGenerator('habitat-diorama', async (ctx) => ({
   type: 'habitat-diorama',
   instanceId: ctx.instanceId,

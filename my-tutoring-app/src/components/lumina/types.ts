@@ -1664,6 +1664,7 @@ export type ComponentId =
   | 'life-cycle-sequencer' // Interactive temporal sequencing for life cycles, cellular processes, and ecological cycles (K-8)
   | 'body-system-explorer' // Interactive layered anatomy diagram with organ details and pathway tracing (grades 2-8)
   | 'habitat-diorama'    // Interactive ecosystem explorer with organisms, relationships, and environmental features (K-8)
+  | 'ecosystem-diorama'  // 3D island in a glass tank: sun, weather, seasons, plants and animals run by code (K-5 science)
   | 'bio-compare-contrast' // Side-by-side or Venn diagram comparison of biological entities (organisms, cells, organs, processes, biomes) (K-8)
   | 'bio-process-animator' // Step-through animation of biological processes with narrated stages and checkpoint questions (grades 2-8)
   | 'microscope-viewer'   // Simulated microscope experience with zoom levels, labeling tasks, and guided observation prompts (grades 3-8)
@@ -2353,6 +2354,7 @@ export type { TransportChallengeData } from './primitives/visual-primitives/engi
 export type { TrainYardData } from './primitives/visual-primitives/engineering/TrainYard';
 export type { AirplaneDioramaData } from './primitives/visual-primitives/engineering/AirplaneDiorama';
 export type { ConstructionSiteDioramaData } from './primitives/visual-primitives/engineering/ConstructionSiteDiorama';
+export type { EcosystemDioramaData } from './primitives/visual-primitives/biology/EcosystemDiorama';
 export type { OpenBuilderData } from './primitives/visual-primitives/creation/OpenBuilder';
 export type { ConstructionSequencePlannerData } from './primitives/visual-primitives/engineering/ConstructionSequencePlanner';
 

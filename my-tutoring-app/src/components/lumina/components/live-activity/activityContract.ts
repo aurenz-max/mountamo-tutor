@@ -93,6 +93,7 @@ import { factFileLiveDomain } from './adapters/factFileLive';
 import { pushPullArenaLiveDomain } from './adapters/pushPullArenaLive';
 import { raceTrackLabLiveDomain } from './adapters/raceTrackLabLive';
 import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
+import { ecosystemDioramaLiveDomain } from './adapters/ecosystemDioramaLive';
 import { foodWebBuilderLiveDomain } from './adapters/foodWebBuilderLive';
 import { lifeCycleSequencerLiveDomain } from './adapters/lifeCycleSequencerLive';
 import { classificationSorterLiveDomain } from './adapters/classificationSorterLive';
@@ -268,6 +269,7 @@ export const LIVE_ADAPTERS = {
   'push-pull-arena': workspaceAdapter('push-pull-arena', pushPullArenaLiveDomain),
   'race-track-lab': workspaceAdapter('race-track-lab', raceTrackLabLiveDomain),
   'habitat-diorama': workspaceAdapter('habitat-diorama', habitatDioramaLiveDomain),
+  'ecosystem-diorama': workspaceAdapter('ecosystem-diorama', ecosystemDioramaLiveDomain),
   'food-web-builder': workspaceAdapter('food-web-builder', foodWebBuilderLiveDomain),
   'life-cycle-sequencer': workspaceAdapter('life-cycle-sequencer', lifeCycleSequencerLiveDomain),
   'classification-sorter': workspaceAdapter('classification-sorter', classificationSorterLiveDomain),

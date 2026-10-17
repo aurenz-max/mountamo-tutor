@@ -1,0 +1,81 @@
+{
+ "source": "qa/tutor-reports/ecosystem-diorama-runtime-plant_needs-payload-2026-10-17.json",
+ "primitiveId": "ecosystem-diorama",
+ "evalMode": "plant_needs",
+ "data": {
+  "title": "Help the Plants Grow",
+  "description": "Each plant needs your help. Give it what it needs, then watch it grow!",
+  "challenges": [
+   {
+    "id": "eco-1",
+    "type": "plant_needs",
+    "plant": "bean plant",
+    "variant": "grow",
+    "start": {
+     "spot": "sun",
+     "fill": "empty",
+     "watered": false,
+     "extras": []
+    },
+    "instruction": "Here is a little bean plant seedling and an empty pot. Give it everything it needs to grow, and nothing it does not need. Then press Watch it grow."
+   },
+   {
+    "id": "eco-2",
+    "type": "plant_needs",
+    "plant": "sunflower",
+    "variant": "fix",
+    "start": {
+     "spot": "sun",
+     "fill": "pebbles",
+     "watered": false,
+     "extras": [
+      "berries"
+     ]
+    },
+    "instruction": "This sunflower is drooping. Find what it is missing and fix it, then press Watch it grow."
+   },
+   {
+    "id": "eco-3",
+    "type": "plant_needs",
+    "plant": "daisy",
+    "variant": "grow",
+    "start": {
+     "spot": "sun",
+     "fill": "empty",
+     "watered": false,
+     "extras": []
+    },
+    "instruction": "Here is a little daisy seedling and an empty pot. Give it everything it needs to grow, and nothing it does not need. Then press Watch it grow."
+   },
+   {
+    "id": "eco-4",
+    "type": "plant_needs",
+    "plant": "tomato plant",
+    "variant": "fix",
+    "start": {
+     "spot": "hut",
+     "fill": "soil",
+     "watered": false,
+     "extras": []
+    },
+    "instruction": "This tomato plant is drooping. Find what it is missing and fix it, then press Watch it grow."
+   },
+   {
+    "id": "eco-5",
+    "type": "plant_needs",
+    "plant": "bean plant",
+    "variant": "grow",
+    "start": {
+     "spot": "sun",
+     "fill": "empty",
+     "watered": false,
+     "extras": []
+    },
+    "instruction": "Here is a little bean plant seedling and an empty pot. Give it everything it needs to grow, and nothing it does not need. Then press Watch it grow."
+   }
+  ],
+  "challengeType": "plant_needs",
+  "gradeBand": "K-2",
+  "islandName": "Sunny Sprout Isle"
+ }
+}

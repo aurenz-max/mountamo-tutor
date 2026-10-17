@@ -102,6 +102,24 @@
   "airplane-diorama.find_part": {
     "J1-drivable": "by design: the answer is a tap on a mesh of the 3D jet (WebGL), which jsdom cannot draw; AirplaneDiorama.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
   },
+  "ecosystem-diorama.plant_needs": {
+    "J1-drivable": "by design: the 3D tank (WebGL) cannot be drawn by jsdom; EcosystemDiorama.modes.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
+  },
+  "ecosystem-diorama.season_behavior": {
+    "J1-drivable": "by design: the 3D tank (WebGL) cannot be drawn by jsdom; EcosystemDiorama.modes.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
+  },
+  "ecosystem-diorama.season_from_log": {
+    "J1-drivable": "by design: the 3D tank (WebGL) cannot be drawn by jsdom; EcosystemDiorama.modes.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
+  },
+  "ecosystem-diorama.compare_logs": {
+    "J1-drivable": "by design: the 3D tank (WebGL) cannot be drawn by jsdom; EcosystemDiorama.modes.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
+  },
+  "ecosystem-diorama.keep_it_cool": {
+    "J1-drivable": "by design: the 3D tank (WebGL) cannot be drawn by jsdom; EcosystemDiorama.modes.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
+  },
+  "ecosystem-diorama.sun_test": {
+    "J1-drivable": "by design: the guess, the sun drag and the reading are taps and a drag on the 3D tank (WebGL), which jsdom cannot draw; EcosystemDiorama.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
+  },
   "construction-site-diorama.load_truck": {
     "J1-drivable": "by design: each scoop is a tap on the 3D excavator (WebGL), which jsdom cannot draw; ConstructionSiteDiorama.workspace.test.tsx drives the commit through a stubbed scene, the browser drive through the canvas"
   },
