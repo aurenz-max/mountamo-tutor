@@ -238,8 +238,15 @@ ${insetType
   have to see.`}
 - Each option is a single concrete, picturable thing (1-3 words) that a
   kindergartner knows.
+- The child must be able to work the answer out from what they already know or
+  what is drawn. Never ask how long, big, or heavy something is in units unless
+  the things are drawn; for "which needs more / is easier", say every condition
+  (the same load, the same size) so exactly one option is right.
 - Provide an "emoji" for EVERY option — one obvious emoji that depicts that
   option (e.g. cat → 🐱, hat → 🎩, dog → 🐶, three → 3️⃣). Emoji is REQUIRED.
+  The child chooses by the picture, so it must show that thing, never a
+  neighbouring object (a wheel for a doorknob) or a hand gesture standing for a
+  number of something else. If no emoji shows an option, choose another option.
 - Never state, spell, or describe the answer inside the question (no "the shape
   with 3 sides" when the answer is triangle).
 - For sound/rhyme/phonics topics, options must be picturable OBJECTS with emoji,
@@ -1653,7 +1660,7 @@ const reviewLessonFor = (topic: string, gradeLevel: string, preciseGrade?: strin
  * with the reviewer's notes. A redraw is kept unless its own review is worse than the original's. Without Jev the
  * problems ship as generated.
  */
-async function reviewAndRedraw(
+export async function reviewAndRedraw(
   results: Array<ProblemData | null>,
   lesson: ReviewLesson,
   redraw: (index: number, notes: string[]) => Promise<ProblemData | null>,
@@ -1673,14 +1680,28 @@ async function reviewAndRedraw(
   failing.forEach((i, k) => { if (redrawn[k]) next[i] = redrawn[k]; });
   const second = await reviewKnowledgeCheckSet(present.map((i) => next[i]!), lesson);
   const kept: number[] = [];
+  // The review of the version that ships: the redraw's when it is kept, else the original's.
+  const final = new Map(failing.map((i) => [i, reviewOf(first, i)]));
   failing.forEach((i, k) => {
     if (!redrawn[k]) return;
     const after = second ? reviewOf(second, i) : null;
     if (after && after.notes.length > reviewOf(first, i).notes.length) next[i] = results[i];
-    else kept.push(i);
+    else {
+      kept.push(i);
+      if (after) final.set(i, after);
+      else final.delete(i); // the redraw was never reviewed: nothing says it still blocks
+    }
   });
+  // A problem with no single right answer is dropped, not shipped, as long as the set keeps at least one problem.
+  const dropped: number[] = [];
+  for (const i of failing) {
+    if (!final.get(i)?.blocking || next.filter(Boolean).length <= 1) continue;
+    next[i] = null;
+    dropped.push(i);
+  }
   console.log('[KC Review] redraws kept:', kept.length, 'of', failing.length,
-    second ? `; still failing after redraw: ${failing.filter((i) => !reviewOf(second, i).pass).length}` : '');
+    second ? `; still failing after redraw: ${failing.filter((i) => !reviewOf(second, i).pass).length}` : '',
+    dropped.length ? `; dropped with no single right answer: ${dropped.join(', ')}` : '');
   return next;
 }
 

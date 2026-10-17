@@ -102,6 +102,19 @@ export function reviewQuestions(view: ProblemView, earlierCount: number): Record
           + 'evidence, not this.',
       } },
   };
+  if (view.type === 'multiple_choice') {
+    questions.solvable = { type: 'choice', instructions:
+      'A learner in `lesson.grade` who has learned `lesson.topic` answers `problem` using only what it says (`problem.ask`) '
+      + 'and what is shown (`problem.shown_on_screen` and the pictures in `problem.choices`), plus what that lesson teaches '
+      + 'and everyday experience. Can they work out `problem.correct_answer` and tell that no other choice is as right?',
+      criteria: {
+        one_answer: 'Yes: what is said and shown, with what the lesson teaches, picks out the correct answer over every other choice.',
+        missing_information: 'No: the answer depends on a size, length, amount, position or picture that is neither said nor '
+          + 'shown, so the learner can only guess.',
+        several_answers: 'No: another choice is as defensible as the key, or the key is wrong, because the question leaves '
+          + 'out a condition (what is being moved or lifted, compared with what) or everyday experience points to another choice.',
+      } };
+  }
   (view.wrong_answers ?? []).forEach((_, i) => {
     questions[`tempting_${i}`] = { type: 'noul', instructions:
       `A learner in \`lesson.grade\` who half-understands \`lesson.topic\` answers \`problem\`. Might they pick `
@@ -128,12 +141,19 @@ export const REVIEW_THRESHOLDS = {
   repeats: 0.8,
   /** A problem fails only when its MOST tempting wrong answer is below this: every wrong answer is absurd. */
   tempting: 0.25,
+  /** `missing_information` + `several_answers` at or above this: no single right answer. */
+  unsolvable: 0.5,
 };
 
 export interface ProblemReview {
   pass: boolean;
   /** Plain sentences for the redraw: what to change. */
   notes: string[];
+  /**
+   * The learner cannot answer it as asked: the answer needs something not said or shown, or several choices fit.
+   * Unlike the other notes, a problem still blocking after its redraw is dropped rather than shipped.
+   */
+  blocking: boolean;
   givesAway: number;
   evidence: { choice: string; p: number };
   /** 1-based index of the earlier problem this repeats, or null. */
@@ -162,6 +182,17 @@ export function decideReview(view: ProblemView, answers: Record<string, any>, vi
     notes.push('The picture or box on screen states the answer, so the learner can copy it. Show evidence the learner must '
       + 'reason from, and keep the answer out of it.');
   }
+  const solP = (choice: string): number => answers.solvable?.probabilities?.[choice] ?? 0;
+  const missing = solP('missing_information');
+  const several = solP('several_answers');
+  const blocking = missing + several >= t.unsolvable;
+  if (blocking) {
+    notes.push(missing >= several
+      ? 'The learner cannot work the answer out: it depends on a size, length or amount that is neither said nor shown. '
+        + 'Ask about things the learner already knows or can see in the choice pictures.'
+      : 'More than one choice can be defended. Name every condition the answer depends on and keep everything the same '
+        + 'except the one thing asked about, so exactly one choice is right and the others are clearly wrong.');
+  }
   const rep = answers.repeats;
   let repeats: number | null = null;
   if (rep && rep.choice !== 'none' && (rep.probabilities?.[rep.choice] ?? 0) >= t.repeats) {
@@ -177,7 +208,7 @@ export function decideReview(view: ProblemView, answers: Record<string, any>, vi
     notes.push('Every wrong choice is easy to rule out. Use wrong choices of the same kind as the answer that a learner '
       + 'with a common misunderstanding would pick.');
   }
-  return { pass: notes.length === 0, notes, givesAway, evidence, repeats, temptingCount, maxTempting, wrongTotal };
+  return { pass: notes.length === 0, notes, blocking, givesAway, evidence, repeats, temptingCount, maxTempting, wrongTotal };
 }
 
 export const reviewState = (lesson: ReviewLesson, views: ProblemView[], index: number) => ({

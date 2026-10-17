@@ -17,6 +17,7 @@ Rerun: `node scripts/kc-review-calibrate.mjs` with `IN=<saved sets json>` and `O
 | evidence agrees | Choice | contradicts / gives_answer at >= 0.5 | choices missing from the picture, a number line without the fraction asked, an emoji row with a "fourth vehicle" |
 | repeats an earlier problem | Choice over earlier problems | >= 0.8 | three "which one digs?" items in one K set |
 | a wrong answer is tempting | Noul per wrong answer | fail when the most tempting < 0.25 | kite / sailboat / letter / hat distractors |
+| one right answer (MCQ only, added 2026-10-17, **blocking**) | Choice | missing_information + several_answers >= 0.5 | "how many hands long" with nothing drawn, "which handle needs more muscle" ([report](../knowledge-check-solvable-2026-10-17.md)) |
 
 **Misses (both borderline):** a comparison picture missing two choices scored `agrees` 0.55; an MCQ restating an
 earlier sort scored `same_as` 0.60.
