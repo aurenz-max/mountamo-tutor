@@ -20,7 +20,6 @@ import {
   RefreshCw,
   Sparkles,
   Star,
-  Zap,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -39,7 +38,6 @@ const BLOCK_TYPE_CONFIG: Record<BlockType, {
 }> = {
   lesson: { label: 'New Lesson', icon: BookOpen },
   practice: { label: 'Practice', icon: Brain },
-  retest: { label: 'Mastery Check', icon: Zap },
   pulse: { label: 'Daily Pulse', icon: Activity },
 };
 
@@ -87,7 +85,8 @@ function CurrentBlockCard({
   showStartAction: boolean;
   onStart: (block: LessonBlock) => void;
 }) {
-  const primaryGoal = block.subskills[0]?.subskill_name;
+  const primaryGoal = block.subskills[0]
+    && (block.subskills[0].parent_label || block.subskills[0].subskill_name);
   const additionalGoals = block.subskills.slice(1);
 
   return (
@@ -132,7 +131,7 @@ function CurrentBlockCard({
                 </summary>
                 <ul className="mt-2 space-y-1.5 border-l border-white/10 pl-3 text-xs leading-relaxed text-slate-500">
                   {additionalGoals.map((subskill, index) => (
-                    <li key={`${subskill.subskill_id}-${index}`}>{subskill.subskill_name}</li>
+                    <li key={`${subskill.subskill_id}-${index}`}>{subskill.parent_label || subskill.subskill_name}</li>
                   ))}
                 </ul>
               </details>

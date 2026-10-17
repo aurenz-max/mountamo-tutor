@@ -159,7 +159,6 @@ class DaySnapshot:
     # Morning: what the platform served
     plan_subskills: List[Dict[str, Any]] = field(default_factory=list)
     # [{subskill_id, skill_id, type, verb, subject}]
-    retests_due_morning: int = 0
     targets: List[Dict[str, Any]] = field(default_factory=list)
     # selector objectives: [{subskillId, skillId, verb, kind, reason, pCorrect}]
 
@@ -314,23 +313,8 @@ class FullLoopRunner:
         pulse_engine: PulseEngine,
         seed: Optional[int] = None,
         grade_loader: Optional[Any] = None,
-        retests: bool = True,
-        fill_from: Optional[str] = None,
-        model_gates: bool = True,
     ):
         self.fs = mem_fs
-        # retests=False: the planner sees no lifecycle retests due (the memory
-        # model's Pulse reviews are the only review channel). The morning
-        # census still counts what WOULD have been due.
-        self._retests_due = mem_fs.get_mastery_retests_due
-        self.retests = retests
-        # fill_from: a retests-on run directory; each day the freed slots are
-        # as many as that run (same child, same seed) spent on retests
-        self.fill_from = fill_from
-        if not retests:
-            async def _none_due(*_a, **_k):
-                return []
-            mem_fs.get_mastery_retests_due = _none_due
         self.engine = pulse_engine
         self.seed = seed
         # async (graph_subject_id, grade_level) -> bool. Fetches a grade's
@@ -367,7 +351,7 @@ class FullLoopRunner:
         # subject); no graph -> observe() returns None and the loop runs as before.
         from app.services.learner_model.service import LearnerStateService
         self.learner_state = LearnerStateService(mem_fs, graph_source=_published_learner_graph, background=False)
-        self.learner_state.lifecycle_engine = self.mastery if model_gates else None
+        self.learner_state.lifecycle_engine = self.mastery
         self.competency.learner_state_service = self.learner_state
         pulse_engine.learner_state = self.learner_state
         self.analytics.learner_state = self.learner_state   # the one selection brain
@@ -540,6 +524,7 @@ class FullLoopRunner:
                                                          subskill_id=item.subskill_id)
             else:
                 score = student.answer(item)
+            lc0 = await self.fs.get_mastery_lifecycle(profile.student_id, item.subskill_id)
             result = await self.engine.process_result(
                 student_id=profile.student_id,
                 session_id=session_resp.session_id,
@@ -553,7 +538,8 @@ class FullLoopRunner:
                 ),
                 now_override=virtual_now,
             )
-            if result.gate_update and result.gate_update.new_gate > result.gate_update.old_gate:
+            lc1 = await self.fs.get_mastery_lifecycle(profile.student_id, item.subskill_id)
+            if (lc1 or {}).get("current_gate", 0) > (lc0 or {}).get("current_gate", 0):
                 gate_advances += 1
             # the engine's P(right) on the item served (observe runs inline here):
             # what the calibration check compares with the child's answers
@@ -678,13 +664,6 @@ class FullLoopRunner:
 
             # 1. MORNING — what would the platform serve today?
             try:
-                due = await self._retests_due(
-                    profile.student_id, virtual_now.isoformat()
-                )
-                day.retests_due_morning = len(due)
-            except Exception:
-                pass
-            try:
                 plan = await self.planning.get_daily_session_plan(
                     profile.student_id, force_refresh=True
                 )
@@ -740,27 +719,6 @@ class FullLoopRunner:
                     }
                     for t in day.targets if t.get("subskillId")
                 ]
-            slots = 0
-            if not self.retests and self.fill_from:
-                import json as _json
-                ref = next(Path(self.fill_from).glob(f"G*/loop_{profile.name.replace(' ', '_')}_*.json"), None)
-                if ref is not None:
-                    rd = _json.loads(ref.read_text(encoding="utf-8"))["days"]
-                    if day_num <= len(rd):
-                        slots = sum(p["type"] in ("retest", "review") for p in rd[day_num - 1]["plan_subskills"])
-            if slots:
-                # the slots the retests would have taken go to the selector's
-                # learning picks (the C5 plan), so both arms practise as much
-                have = {t["subskill_id"] for t in work}
-                extra = await self.analytics.select_session_targets(
-                    profile.student_id, subject=subjects[0], count=4 + slots)
-                for o in extra.get("objectives", []):
-                    sid = o.get("subskillId")
-                    if sid and sid not in have and len(work) < len(day.plan_subskills) + slots:
-                        have.add(sid)
-                        work.append({"subskill_id": sid, "skill_id": self._skill_for_subskill(sid, o.get("skillId")),
-                                     "type": "fill", "verb": o.get("verb") or "identify",
-                                     "subject": base_subject_key(subjects[0])})
             if work:
                 n, scores, by_subject, day.lesson_log = await self._do_lesson_work(
                     profile, students, work

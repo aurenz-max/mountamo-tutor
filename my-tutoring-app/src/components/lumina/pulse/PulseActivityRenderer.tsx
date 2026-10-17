@@ -21,7 +21,6 @@ import type {
   PulseItemSpec,
   PulseBand,
   PulseResultResponse,
-  GateProgress,
   IrtProbabilityData,
   LeapfrogEvent,
   RecentPrimitive,
@@ -68,7 +67,8 @@ interface RendererState {
   currentIndex: number;
   items: ItemState[];
   streamingMessage: string;
-  latestGateProgress: GateProgress | null;
+  /** θ of the last answered item's skill (Earned Level); cleared when the subskill changes */
+  latestTheta: number | null;
   latestIrt: IrtProbabilityData | null;
   latestSigma: number | null;
   leapfrogs: LeapfrogEvent[];
@@ -115,7 +115,7 @@ function initState(specs: PulseItemSpec[]): RendererState {
       backendResult: null,
     })),
     streamingMessage: 'Preparing your activities...',
-    latestGateProgress: null,
+    latestTheta: null,
     latestIrt: null,
     latestSigma: null,
     leapfrogs: [],
@@ -168,14 +168,14 @@ function reducer(state: RendererState, action: RendererAction): RendererState {
         durationMs: state.pendingEval?.durationMs ?? null,
         backendResult: action.response,
       };
-      const gateProgress = action.response.gate_progress ?? state.latestGateProgress;
+      const theta = action.response.theta_update?.new_theta ?? state.latestTheta;
       const nextSpec = items[idx + 1]?.spec;
       const currentSpec = items[idx].spec;
       const shouldClearGate = nextSpec && nextSpec.subskill_id !== currentSpec.subskill_id;
       return {
         ...state,
         items,
-        latestGateProgress: shouldClearGate ? null : gateProgress,
+        latestTheta: shouldClearGate ? null : theta,
         latestIrt: action.response.irt ?? state.latestIrt,
         latestSigma: action.response.theta_update?.sigma ?? state.latestSigma,
         pendingEval: null,
@@ -445,7 +445,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
       void captureMisconception(evalResult, { sessionId, subskillId, gradeLevel });
       void captureLearningObservation(evalResult, { studentId, subskillId, gradeLevel });
 
-      console.log(`${LOG} Backend response for item ${state.currentIndex + 1}: theta=${response.theta_update.new_theta.toFixed(2)} gate=${response.gate_update?.new_gate ?? '-'} complete=${response.session_progress.is_complete}`);
+      console.log(`${LOG} Backend response for item ${state.currentIndex + 1}: theta=${response.theta_update.new_theta.toFixed(2)} complete=${response.session_progress.is_complete}`);
 
       dispatch({ type: 'SUBMIT_COMPLETE', response });
 
@@ -714,17 +714,17 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
                       <p className="text-slate-400 leading-relaxed">Item difficulty on a 0-10 scale. Higher means harder</p>
                     </TooltipContent>
                   </Tooltip>
-                  {state.latestGateProgress && (
+                  {state.latestTheta != null && (
                     <>
                       <span className="text-slate-700">&middot;</span>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="text-indigo-400/70 cursor-help border-b border-dotted border-indigo-500/30">
-                            EL {state.latestGateProgress.theta.toFixed(1)}
+                            EL {state.latestTheta.toFixed(1)}
                           </span>
                         </TooltipTrigger>
                         <TooltipContent className="backdrop-blur-xl bg-slate-900/90 border-white/10 text-slate-200 text-xs max-w-[240px] px-3 py-2">
-                          <p className="font-semibold text-indigo-300 mb-1">Earned Level {state.latestGateProgress.theta.toFixed(2)}</p>
+                          <p className="font-semibold text-indigo-300 mb-1">Earned Level {state.latestTheta.toFixed(2)}</p>
                           <p className="text-slate-500 text-[10px] mb-1 font-mono">{formatSkillLabel(currentSpec.subskill_id)}</p>
                           <p className="text-slate-400 leading-relaxed">Your ability estimate for this skill. Activities are matched to this level in real-time</p>
                         </TooltipContent>
@@ -734,8 +734,8 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
                 </div>
               </TooltipProvider>
 
-              {state.latestGateProgress && (
-                <GateProgressIndicator gateProgress={state.latestGateProgress} skillLabel={formatSkillLabel(currentSpec.subskill_id)} />
+              {currentSpec.p_mastered != null && (
+                <MasteryIndicator pMastered={currentSpec.p_mastered} skillLabel={formatSkillLabel(currentSpec.subskill_id)} />
               )}
             </div>
 
@@ -746,7 +746,7 @@ export const PulseActivityRenderer: React.FC<PulseActivityRendererProps> = ({
               sessionContext={sessionFrontierContext ?? undefined}
               isColdStart={isColdStart}
               irt={state.latestIrt ?? undefined}
-              gateProgress={state.latestGateProgress ?? undefined}
+              pMastered={currentSpec.p_mastered}
               sigma={state.latestSigma ?? undefined}
             />
 
@@ -1100,58 +1100,36 @@ function ChallengeDots({ mode }: { mode: number }) {
 // Sub-component: Gate progress indicator
 // ---------------------------------------------------------------------------
 
-const GATE_COLORS = [
-  'bg-slate-500', 'bg-emerald-400', 'bg-sky-400', 'bg-violet-400', 'bg-amber-400',
-];
-
-function GateProgressIndicator({ gateProgress, skillLabel }: { gateProgress: GateProgress; skillLabel?: string }) {
-  const { current_gate, theta, next_gate_theta, thresholds } = gateProgress;
-  const g4 = thresholds.g4;
-
-  let progressPct = 100;
-  if (current_gate < 4 && next_gate_theta != null) {
-    const gateValues = [0, thresholds.g1, thresholds.g2, thresholds.g3, thresholds.g4];
-    const floor = gateValues[current_gate];
-    const range = next_gate_theta - floor;
-    progressPct = range > 0 ? Math.min(100, Math.max(0, ((theta - floor) / range) * 100)) : 100;
-  }
+// The learner model's P(mastered) for the item's subskill as the model stood when
+// the item was picked: the verdict that sets the mastery gate (C18, 10-16). The θ
+// gate pill it replaced showed an IRT gate the model overwrote after every answer.
+function MasteryIndicator({ pMastered, skillLabel }: { pMastered: number; skillLabel?: string }) {
+  const pct = Math.round(pMastered * 100);
 
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 cursor-help">
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4].map((g) => (
-                <div key={g} className={`w-2 h-2 rounded-full transition-colors ${g <= current_gate ? GATE_COLORS[g] : 'bg-white/10'}`} />
-              ))}
-            </div>
             <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-              Gate {current_gate}/4
+              Mastery
             </span>
-            {current_gate < 4 && (
-              <div className="w-12 h-1 rounded-full bg-white/10 overflow-hidden">
-                <motion.div
-                  className={`h-full rounded-full ${GATE_COLORS[current_gate + 1]}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.6, ease: 'easeOut' }}
-                />
-              </div>
-            )}
-            <span className="text-[10px] font-mono text-slate-500">
-              {theta.toFixed(1)}/{g4.toFixed(1)}
-            </span>
+            <div className="w-12 h-1 rounded-full bg-white/10 overflow-hidden">
+              <motion.div
+                className={`h-full rounded-full ${pMastered >= 0.8 ? 'bg-amber-400' : 'bg-sky-400'}`}
+                initial={{ width: 0 }}
+                animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+              />
+            </div>
+            <span className="text-[10px] font-mono text-slate-500">{pct}%</span>
           </div>
         </TooltipTrigger>
         <TooltipContent className="backdrop-blur-xl bg-slate-900/90 border-white/10 text-slate-200 text-xs max-w-[240px] px-3 py-2">
-          <p className="font-semibold text-slate-100 mb-1">Mastery Gate {current_gate}/4</p>
+          <p className="font-semibold text-slate-100 mb-1">{pct}% likely mastered</p>
           {skillLabel && <p className="text-slate-500 text-[10px] mb-1 font-mono">{skillLabel}</p>}
           <p className="text-slate-400 leading-relaxed">
-            Each gate requires stronger evidence of understanding.
-            {current_gate < 4 && next_gate_theta != null
-              ? ` Next gate at ${next_gate_theta.toFixed(1)} (you're at ${theta.toFixed(1)})`
-              : ' Full mastery reached!'}
+            How sure the learner model is that you have this skill, from every answer so far.
           </p>
         </TooltipContent>
       </Tooltip>

@@ -6,7 +6,7 @@ import type { SubskillMasteryEntry, SubjectMasterySummary, SubskillForecast, Uni
 // Constants
 // ---------------------------------------------------------------------------
 
-export const GATE_LABELS = ['Not Started', 'Initial Mastery', 'Retest 1', 'Retest 2', 'Durable Mastery'];
+export const GATE_LABELS = ['Not Started', 'Emerging', 'Developing', 'Proficient', 'Mastered'];
 export const GATE_COLORS = [
   'bg-slate-600',
   'bg-amber-500',

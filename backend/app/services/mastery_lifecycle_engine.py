@@ -1,29 +1,21 @@
 """
-Mastery Lifecycle Engine — LCB Gate + Earned Stability Model (PRD §16)
+Mastery Lifecycle Engine — the per-subskill practice record and the gate writer.
 
-Gates are derived from the LOWER CONFIDENCE BOUND of blended P(correct)
-via derive_gate_from_irt(): skill-level θ/σ (IRT) blended with the
-subskill's own evidence record (Jeffreys-smoothed pass rate over
-evidence_n effective observations). A 1-2 observation record cannot clear
-gate 4 regardless of the point estimate — evidence volume is required.
-
-Gate 4 = accuracy demonstrated at curriculum-required difficulty.
-MASTERED additionally requires stability ≥ 30 days, and stability only
-compounds on passed evals spaced ≥ 1 day apart (_update_stability) —
-so mastery = accuracy + evidence volume + retention over calendar time.
-Massed single-session volume can reach gate 4 but never mastered.
+The learner model sets every gate (C13, 10-16): `LearnerStateService` calls
+`apply_model_states` after each answer with the model's gate, retention state
+and memory stability. This engine no longer derives a gate or schedules
+retests (retired C15, 10-16); `process_eval_result` keeps the practice record
+the readers still use (passes/fails, evidence_n, lesson_eval_count, the
+actuarial completion factor) and creates the doc the model's sync writes onto.
 
 Entry point:  process_eval_result()
-Called from:   CompetencyService.update_competency_from_problem() as a hook
-
-State model:
-  not_started  → active   (IRT-derived gate >= 1)
-  active       → mastered (gate == 4 AND earned stability ≥ 30 days)
+Called from:   CompetencyService.update_competency_from_problem() and
+               PulseEngine.submit_item(), before the learner model's sync.
 """
 
 import logging
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional
 
 # Maximum gate_history entries to retain per lifecycle document.
@@ -35,30 +27,26 @@ from ..models.calibration import DEFAULT_STUDENT_THETA
 from ..models.mastery_lifecycle import (
     CREDIBILITY_STANDARD,
     DECAY_RATE,
-    GATE_CREDIBILITY_K,
-    GATE_MIN_EVIDENCE,
-    GATE_P_THRESHOLDS,
-    GATE_REF_FRACTIONS,
-    GATE_SIGMA_THRESHOLDS,
     GATE_TO_STABILITY,
     INITIAL_STABILITY,
-    JEFFREYS_ALPHA,
     MASTERY_STABILITY_THRESHOLD,
     MASTERY_THRESHOLD,
-    RETEST_INTERVALS,
-    STABILITY_CAP,
-    STABILITY_GROWTH_PARTIAL,
     STABILITY_GROWTH_STRONG,
-    STABILITY_SHRINK_FAIL,
-    STABILITY_SPACING_MIN_DAYS,
     THETA_DECAY_FLOOR_FACTOR,
     GateHistoryEntry,
-    MasteryGate,
     MasteryLifecycle,
 )
-from ..services.calibration_engine import CalibrationEngine, p_correct
 
 logger = logging.getLogger(__name__)
+
+# The fields process_eval_result owns. It merge-writes only these on an existing
+# doc, so a stale read can never put back a gate the model's sync replaced.
+_RECORD_FIELDS = (
+    "passes", "fails", "evidence_n", "review_count", "last_reviewed",
+    "lesson_eval_count", "subskill_pass_rate", "blended_pass_rate",
+    "credit_per_pass", "completion_pct", "estimated_remaining_attempts",
+    "subject", "skill_id", "updated_at",
+)
 
 
 # ------------------------------------------------------------------
@@ -116,79 +104,10 @@ def derive_retention_state(lifecycle_dict: Dict[str, Any]) -> tuple[str, float]:
         return "active", GATE_TO_STABILITY.get(gate, INITIAL_STABILITY)
 
 
-def derive_gate_from_irt(
-    theta: float,
-    sigma: float,
-    item_beta: float,
-    avg_a: float = 1.4,
-    empirical_p: Optional[float] = None,
-    n_observations: float = 0.0,
-    gate_reference_beta: Optional[float] = None,
-) -> tuple[int, str, float]:
-    """
-    Pure function: derive mastery gate from blended P(correct), subject to a
-    per-gate MINIMUM EVIDENCE requirement on this subskill.
-
-    Gate pass condition:
-        P_blend ≥ GATE_P_THRESHOLDS[gate]
-        AND n ≥ GATE_MIN_EVIDENCE[gate]          (subskill effective obs)
-        AND sigma ≤ GATE_SIGMA_THRESHOLDS[gate]  (skill-level confidence)
-
-    P_blend = Z·p̃ + (1−Z)·P_irt with Z = n/(n+K) and Jeffreys-smoothed
-    p̃ = (successes + 0.5)/(n + 1) — a small perfect record cannot claim 1.0.
-
-    The minimum-evidence ladder is the actuarial full-credibility standard:
-    a 1-2 observation record cannot clear gate 4 no matter how high the
-    point estimate. σ pools per SKILL (siblings collapse it), so the
-    per-subskill n is what makes evidence volume matter; the σ ceiling
-    still guards fresh/leapfrog-seeded skills (σ starts at 1.5 there).
-
-    Gate 4 uses `gate_reference_beta` (the hardest curriculum-assigned
-    mode's β) when available. Gates 1-3 use `item_beta` (the tested mode).
-
-    Checks gates 4→3→2→1 (highest first) and returns the highest passed gate.
-    No side effects, no stored state. NOTE: retention_state returned is at
-    most "active" — the MASTERED flip is owned by the engine (gate 4 AND
-    earned stability ≥ MASTERY_STABILITY_THRESHOLD), never by this function.
-
-    Returns (gate, retention_state, p_blended).
-    """
-    n = max(0.0, float(n_observations or 0.0))
-    z_cred = n / (n + GATE_CREDIBILITY_K) if n > 0 else 0.0
-
-    # Jeffreys-smoothed empirical rate (None when no evidence)
-    p_emp_j: Optional[float] = None
-    if empirical_p is not None and n > 0:
-        p_emp_j = (empirical_p * n + JEFFREYS_ALPHA) / (n + 2 * JEFFREYS_ALPHA)
-        p_emp_j = min(1.0, max(0.0, p_emp_j))
-
-    def blended(beta: float) -> float:
-        p_irt = p_correct(theta, avg_a, beta)
-        if p_emp_j is not None:
-            return z_cred * p_emp_j + (1.0 - z_cred) * p_irt
-        return p_irt
-
-    sig = sigma if sigma is not None else 999.0
-
-    for gate in (4, 3, 2, 1):
-        # G4: check against hardest curriculum-assigned β (if available)
-        # G1-3: check against the tested item's β
-        beta = (
-            gate_reference_beta if gate == 4 and gate_reference_beta is not None
-            else item_beta
-        )
-        if (blended(beta) >= GATE_P_THRESHOLDS[gate]
-                and n >= GATE_MIN_EVIDENCE[gate]
-                and sig <= GATE_SIGMA_THRESHOLDS[gate]):
-            return gate, "active", blended(beta)
-
-    return 0, "not_started", blended(item_beta)
-
-
 class MasteryLifecycleEngine:
     """
-    Stateless service that processes eval results and maintains the
-    mastery_lifecycle subcollection in Firestore.
+    Stateless service that keeps the mastery_lifecycle subcollection's practice
+    record and writes the learner model's gates onto it.
     """
 
     def __init__(self, firestore_service: FirestoreService):
@@ -210,65 +129,38 @@ class MasteryLifecycleEngine:
         timestamp: Optional[str] = None,
         *,
         prefetched_lifecycle: Optional[Dict] = None,
-        prefetched_ability: Optional[Dict] = None,
         prefetched_global_pass_rate: Optional[float] = None,
-        theta: Optional[float] = None,
-        sigma: Optional[float] = None,
-        item_beta: Optional[float] = None,
-        primitive_type: Optional[str] = None,
-        avg_a: Optional[float] = None,
-        gate_reference_beta: Optional[float] = None,
         evidence_n: float = 1.0,
     ) -> Dict[str, Any]:
         """
-        Process a single evaluation event and update the mastery lifecycle.
+        Record one evaluation on the subskill's lifecycle doc. Writes no gate,
+        retention state, stability or gate history: the learner model owns those
+        (`apply_model_states`). Creates the doc on a first answer so the model's
+        sync has one to write onto.
 
         Args:
-            student_id: Student identifier.
-            subskill_id: The subskill that was evaluated.
-            subject: Subject name (e.g. "Mathematics").
-            skill_id: Parent skill identifier.
             score: Raw score on 0-10 scale.
             source: "lesson" or "practice".
             timestamp: ISO-8601 timestamp (defaults to now).
             prefetched_lifecycle: Pre-loaded lifecycle doc to skip a Firestore read.
-            prefetched_ability: Pre-loaded ability doc to skip a Firestore read
-                for skill_beta_median computation.
             prefetched_global_pass_rate: Pre-loaded global practice pass rate to
-                skip a Firestore read. Useful when processing multiple items in
-                a session — the rate barely changes within one session.
-            theta: Freshly-updated student ability (from CalibrationEngine).
-            sigma: Freshly-updated uncertainty (from CalibrationEngine).
-            primitive_type: Primitive type for beta range lookup (2PL gate checks).
-            avg_a: Average discrimination for the skill's items (2PL gate checks).
-            gate_reference_beta: Hardest curriculum-assigned β for this subskill.
-                Used for Gate 4 checks instead of item_beta so mastery is judged
-                against the difficulty the curriculum requires.
+                skip a Firestore read (it barely changes within one session).
             evidence_n: Effective observation count for this eval (>= 1.0).
                 Multi-part primitives contribute more than a single problem
-                (CalibrationEngine.effective_evidence). Accumulates on the
-                lifecycle doc and drives the credibility blend + LCB gate.
+                (CalibrationEngine.effective_evidence).
 
         Returns:
-            Updated mastery lifecycle dict.
+            The updated lifecycle dict.
         """
         # Event time follows the storage layer's virtual clock when set
-        # (pulse-agent loop mode advances `virtual_now` per simulated day so
-        # retest due-dates land on the virtual timeline). Production
-        # FirestoreService has no such attribute → wall clock, unchanged;
-        # the isinstance guard keeps MagicMock stores (unit tests) there too.
+        # (pulse-agent loop mode advances `virtual_now` per simulated day).
+        # Production FirestoreService has no such attribute -> wall clock; the
+        # isinstance guard keeps MagicMock stores (unit tests) there too.
         _vn = getattr(self.firestore, "virtual_now", None)
         now = _vn if isinstance(_vn, datetime) else datetime.now(timezone.utc)
         ts = timestamp or now.isoformat()
         passed = score >= MASTERY_THRESHOLD
 
-        logger.info(
-            f"[MASTERY_ENGINE] Processing eval: student={student_id}, "
-            f"subskill={subskill_id}, score={score}, source={source}, "
-            f"passed={passed}, theta={theta}, sigma={sigma}"
-        )
-
-        # Fetch or initialise the lifecycle document (skip read if pre-fetched)
         if prefetched_lifecycle is not None:
             existing = prefetched_lifecycle
         else:
@@ -276,99 +168,49 @@ class MasteryLifecycleEngine:
 
         if existing is None:
             lifecycle = MasteryLifecycle(
-                student_id=student_id,
-                subskill_id=subskill_id,
-                subject=subject,
-                skill_id=skill_id,
+                student_id=student_id, subskill_id=subskill_id,
+                subject=subject, skill_id=skill_id,
             )
         else:
             lifecycle = MasteryLifecycle(**existing)
-
-        # Lazy migration: derive retention_state from gate if not set
-        if not lifecycle.retention_state or lifecycle.retention_state == "not_started":
-            rs, stab = derive_retention_state(lifecycle.model_dump())
-            if rs != "not_started" or lifecycle.current_gate > 0:
-                lifecycle.retention_state = rs
-                if lifecycle.stability == 0.0 and stab > 0:
-                    lifecycle.stability = stab
-                if lifecycle.last_reviewed is None and lifecycle.updated_at:
-                    lifecycle.last_reviewed = lifecycle.updated_at
-
-        # Ensure metadata is current
         if subject and not lifecycle.subject:
             lifecycle.subject = subject
         if skill_id and not lifecycle.skill_id:
             lifecycle.skill_id = skill_id
 
-        # Compute skill beta median for theta-based checks (if theta available)
-        skill_beta_median: Optional[float] = None
-        if theta is not None and sigma is not None:
-            ability_doc = prefetched_ability
-            if ability_doc is None:
-                ability_doc = await self.firestore.get_student_ability(student_id, skill_id)
-            skill_beta_median = CalibrationEngine.compute_skill_beta_median(ability_doc)
+        # Pass/fail record — continuous weight scaled by effective evidence: a
+        # 7-part primitive moves it more than one true/false. A score of 8.5
+        # contributes 0.85n to passes and 0.15n to fails.
+        ev_n = max(1.0, float(evidence_n or 1.0))
+        weight = score / 10.0
+        lifecycle.passes += weight * ev_n
+        lifecycle.fails += (1.0 - weight) * ev_n
+        lifecycle.evidence_n += ev_n
+        lifecycle.review_count += 1
+        lifecycle.last_reviewed = ts
+        # Passed lesson evals (the curriculum map's "lessons" column reads it).
+        if source == "lesson" and passed:
+            lifecycle.lesson_eval_count += 1
 
-        # item_beta is passed directly from the caller (the mode's actual β)
-
-        # Unified eval path — no lesson/practice split.
-        # All evals route through the practice handler, which handles
-        # activation (not_started → active) and gate advancement in one pass.
         if prefetched_global_pass_rate is not None:
             global_rate = prefetched_global_pass_rate
         else:
             global_rate_data = await self.firestore.get_global_practice_pass_rate(student_id)
             global_rate = global_rate_data.get("global_practice_pass_rate", 0.8)
-        lifecycle = self._handle_practice_eval(
-            lifecycle, score, passed, ts, now, global_rate,
-            theta=theta, sigma=sigma, item_beta=item_beta, avg_a=avg_a,
-            skill_beta_median=skill_beta_median,
-            gate_reference_beta=gate_reference_beta,
-            evidence_n=evidence_n,
-        )
-
-        # Track lesson completions here — the unified path above no longer
-        # routes through _handle_lesson_eval, which used to own this counter,
-        # so without this the count stays frozen for all new work (the
-        # curriculum map's "lessons" column reads it). Same semantics as the
-        # old handler: passed lesson evals only.
-        if source == "lesson" and passed:
-            lifecycle.lesson_eval_count += 1
-
-        # Append to gate history (capped to prevent unbounded doc growth)
-        lifecycle.gate_history.append(
-            GateHistoryEntry(
-                gate=lifecycle.current_gate,
-                timestamp=ts,
-                score=score,
-                passed=passed,
-                source=source,
-                theta=theta,
-                sigma=sigma,
-            )
-        )
-        if len(lifecycle.gate_history) > MAX_GATE_HISTORY:
-            lifecycle.gate_history = lifecycle.gate_history[-MAX_GATE_HISTORY:]
-
-        # Update timestamp
+        lifecycle = self._recalculate_completion_factor(lifecycle, global_rate)
         lifecycle.updated_at = now.isoformat()
 
-        # Persist
+        doc = lifecycle.model_dump()
         await self.firestore.upsert_mastery_lifecycle(
-            student_id, subskill_id, lifecycle.model_dump()
+            student_id, subskill_id,
+            doc if existing is None else {k: doc[k] for k in _RECORD_FIELDS},
         )
-
         logger.info(
-            f"[MASTERY_ENGINE] Result: retention_state={lifecycle.retention_state}, "
-            f"stability={lifecycle.stability:.1f}, "
-            f"gate={lifecycle.current_gate}, "
+            f"[MASTERY_ENGINE] Recorded eval: student={student_id}, subskill={subskill_id}, "
+            f"score={score}, source={source}, n={lifecycle.evidence_n:.1f}, "
             f"completion={lifecycle.completion_pct:.3f}"
         )
-
-        result = lifecycle.model_dump()
-        # Include transient blended-P context (not persisted to Firestore)
-        result["_last_irt_p"] = getattr(lifecycle, "_last_irt_p", None)
-        result["_last_empirical_p"] = getattr(lifecycle, "_last_empirical_p", None)
-        return result
+        return doc
 
     async def apply_model_states(self, student_id: int, updates: List[Dict[str, Any]]) -> int:
         """Set gates from the learner model (C12, 10-16). Each update carries the
@@ -398,355 +240,6 @@ class MasteryLifecycleEngine:
                  "gate_source": "learner_model", "updated_at": now})
             n += 1
         return n
-
-    # ------------------------------------------------------------------
-    # Lesson-mode handler (Gate 0 → 1 / not_started → active)
-    # ------------------------------------------------------------------
-
-    def _handle_lesson_eval(
-        self,
-        lifecycle: MasteryLifecycle,
-        score: float,
-        passed: bool,
-        timestamp: str,
-        theta: Optional[float] = None,
-        sigma: Optional[float] = None,
-        skill_beta_median: Optional[float] = None,
-        min_beta: Optional[float] = None,
-        max_beta: Optional[float] = None,
-        avg_a: Optional[float] = None,
-    ) -> MasteryLifecycle:
-        """Handle a lesson-mode evaluation. Only affects not_started → active transition.
-
-        Uses derive_gate_from_irt() when IRT data is available (single code path).
-        Falls back to legacy 3-eval score check only when no IRT data exists.
-        """
-
-        if lifecycle.retention_state != "not_started":
-            logger.info(
-                f"[MASTERY_ENGINE] Lesson eval for {lifecycle.subskill_id} "
-                f"at state={lifecycle.retention_state} — no lifecycle effect"
-            )
-            return lifecycle
-
-        # Track lesson eval count (for display/legacy compat)
-        if passed:
-            lifecycle.lesson_eval_count += 1
-
-        # --- IRT-derived gate check ---
-        if (theta is not None and sigma is not None
-                and min_beta is not None and max_beta is not None):
-            irt_gate, irt_rs, irt_p = derive_gate_from_irt(
-                theta, sigma, min_beta, avg_a or 1.4,
-            )
-
-            if irt_gate >= 1:
-                self._activate_retention(lifecycle, timestamp, theta, sigma, skill_beta_median)
-                logger.info(
-                    f"[MASTERY_ENGINE] ACTIVE (IRT) for {lifecycle.subskill_id} — "
-                    f"gate={irt_gate}, P={irt_p:.3f}, θ={theta:.2f}, σ={sigma:.3f}"
-                )
-            else:
-                logger.info(
-                    f"[MASTERY_ENGINE] IRT gate check not met for {lifecycle.subskill_id} — "
-                    f"P={irt_p:.3f}, θ={theta:.2f}, σ={sigma:.3f}"
-                )
-        else:
-            logger.warning(
-                f"[MASTERY_ENGINE] No IRT data for lesson eval on {lifecycle.subskill_id} — "
-                f"no lifecycle effect (θ={theta}, σ={sigma}, min_β={min_beta}, max_β={max_beta})"
-            )
-
-        return lifecycle
-
-    def _activate_retention(
-        self,
-        lifecycle: MasteryLifecycle,
-        timestamp: str,
-        theta: Optional[float] = None,
-        sigma: Optional[float] = None,
-        skill_beta_median: Optional[float] = None,
-    ) -> None:
-        """Transition from not_started to active (replaces Gate 0→1 + retest scheduling)."""
-        # Retention model state
-        lifecycle.retention_state = "active"
-        lifecycle.stability = INITIAL_STABILITY
-        lifecycle.last_reviewed = timestamp
-        lifecycle.last_stability_growth = timestamp
-        lifecycle.review_count = 0
-
-        # Backward-compat gate fields
-        lifecycle.current_gate = MasteryGate.INITIAL_MASTERY
-        lifecycle.completion_pct = 0.25
-        lifecycle.gate_mode = "probability" if theta is not None else "legacy"
-
-        if theta is not None:
-            lifecycle.theta_at_gate_entry = theta
-        if sigma is not None:
-            lifecycle.sigma_at_gate_entry = sigma
-        if skill_beta_median is not None:
-            lifecycle.gate_theta_threshold = skill_beta_median
-
-        # Legacy retest fields — kept for any consumers still reading them
-        base_interval, _ = RETEST_INTERVALS[(1, 2)]
-        retest_date = datetime.fromisoformat(timestamp) + timedelta(days=base_interval)
-        lifecycle.next_retest_eligible = retest_date.isoformat()
-        lifecycle.retest_interval_days = base_interval
-
-    # ------------------------------------------------------------------
-    # Practice-mode handler — Stability updates (replaces Gates 1-4)
-    # ------------------------------------------------------------------
-
-    def _handle_practice_eval(
-        self,
-        lifecycle: MasteryLifecycle,
-        score: float,
-        passed: bool,
-        timestamp: str,
-        now: datetime,
-        global_pass_rate: float,
-        *,
-        theta: Optional[float] = None,
-        sigma: Optional[float] = None,
-        item_beta: Optional[float] = None,
-        avg_a: Optional[float] = None,
-        skill_beta_median: Optional[float] = None,
-        gate_reference_beta: Optional[float] = None,
-        evidence_n: float = 1.0,
-    ) -> MasteryLifecycle:
-        """
-        Unified eval handler — activation + gate advancement in one pass.
-
-        Gate is derived from the LCB of blended P via derive_gate_from_irt().
-        Gates 1-3 check the item's actual β; Gate 4 checks gate_reference_beta
-        (the hardest curriculum-assigned mode) when available.
-
-        Gate 4 is an ACCURACY statement ("demonstrated at required difficulty,
-        with enough evidence"). The MASTERED flip additionally requires earned
-        stability ≥ MASTERY_STABILITY_THRESHOLD — stability only compounds on
-        passed evals spaced ≥ STABILITY_SPACING_MIN_DAYS apart, so mastery
-        means retention over calendar time, never massed single-session volume.
-        """
-        was_not_started = lifecycle.retention_state == "not_started"
-        ev_n = max(1.0, float(evidence_n or 1.0))
-
-        # Track pass/fail for actuarial completion factor (continuous weight,
-        # scaled by effective evidence: a 7-part primitive moves the record
-        # more than one true/false). A score of 8.5 contributes 0.85·n to
-        # passes and 0.15·n to fails.
-        weight = score / 10.0
-        lifecycle.passes += weight * ev_n
-        lifecycle.fails += (1.0 - weight) * ev_n
-
-        prev_reviewed = lifecycle.last_reviewed
-        lifecycle.last_reviewed = timestamp
-        lifecycle.review_count += 1
-        lifecycle.evidence_n += ev_n
-
-        # --- IRT-derived gate (primary path) ---
-        if (theta is not None and sigma is not None
-                and item_beta is not None):
-            a = avg_a or 1.4
-
-            old_gate = lifecycle.current_gate
-            old_rs = lifecycle.retention_state
-
-            # Empirical pass rate + effective evidence for the LCB blend.
-            # Legacy docs predate evidence_n — fall back to review_count.
-            total_attempts = lifecycle.passes + lifecycle.fails
-            emp_p = (lifecycle.passes / total_attempts) if total_attempts > 0 else None
-            n_obs = lifecycle.evidence_n if lifecycle.evidence_n > 0 else float(
-                lifecycle.review_count
-            )
-
-            irt_gate, irt_rs, irt_p = derive_gate_from_irt(
-                theta, sigma, item_beta, a,
-                empirical_p=emp_p,
-                n_observations=n_obs,
-                gate_reference_beta=gate_reference_beta,
-            )
-
-            # Stash blended-P context for callers (not persisted to Firestore)
-            lifecycle._last_irt_p = irt_p
-            lifecycle._last_empirical_p = emp_p
-
-            # Activate retention if not_started and IRT qualifies
-            if was_not_started and irt_gate >= 1:
-                self._activate_retention(lifecycle, timestamp, theta, sigma, skill_beta_median)
-                logger.info(
-                    f"[MASTERY_ENGINE] ACTIVATED (IRT) {lifecycle.subskill_id} — "
-                    f"P={irt_p:.3f}, θ={theta:.2f}, σ={sigma:.3f}"
-                )
-            elif was_not_started:
-                # IRT doesn't qualify yet — skip gate advancement
-                logger.info(
-                    f"[MASTERY_ENGINE] IRT gate check not met for {lifecycle.subskill_id} — "
-                    f"P={irt_p:.3f}, θ={theta:.2f}, σ={sigma:.3f}"
-                )
-                return lifecycle
-
-            # IRT-derived gate can only advance or hold — never regress on a
-            # single eval. A bad score lowers θ (via CalibrationEngine), which
-            # naturally lowers the derived gate on the NEXT eval. This prevents
-            # jarring gate drops from momentary slips.
-            if irt_gate > lifecycle.current_gate:
-                lifecycle.current_gate = irt_gate
-
-            # Earned stability: multipliers compound only on evals spaced
-            # ≥ STABILITY_SPACING_MIN_DAYS since the last stability update
-            # (activation counts as the first update). Same-day repeats are
-            # recorded as evidence but never move stability.
-            self._update_stability(lifecycle, score, timestamp, prev_reviewed)
-
-            # Mastered = accuracy at required difficulty (gate 4, LCB-passed)
-            # AND retention verified over calendar time (earned stability).
-            # Once mastered, never demoted here — decay/σ-diffusion govern
-            # any future re-surfacing, not label regression.
-            if (lifecycle.retention_state != "mastered"
-                    and lifecycle.current_gate >= 4
-                    and lifecycle.stability >= MASTERY_STABILITY_THRESHOLD):
-                lifecycle.retention_state = "mastered"
-
-            if lifecycle.retention_state == "mastered":
-                lifecycle.next_retest_eligible = None
-                lifecycle.retest_interval_days = 0
-            else:
-                retest_days = max(1, round(lifecycle.stability))
-                retest_date = datetime.fromisoformat(timestamp) + timedelta(
-                    days=retest_days,
-                )
-                lifecycle.next_retest_eligible = retest_date.isoformat()
-                lifecycle.retest_interval_days = retest_days
-
-            logger.info(
-                f"[MASTERY_ENGINE] IRT update for "
-                f"{lifecycle.subskill_id}: gate {old_gate}→{lifecycle.current_gate}, "
-                f"state {old_rs}→{lifecycle.retention_state}, "
-                f"P={irt_p:.3f}, θ={theta:.2f}, σ={sigma:.3f}, score={score}, "
-                f"S={lifecycle.stability:.1f}, n={lifecycle.evidence_n:.1f}"
-            )
-
-        else:
-            if was_not_started:
-                logger.warning(
-                    f"[MASTERY_ENGINE] No IRT data for eval on not_started "
-                    f"{lifecycle.subskill_id} — cannot activate "
-                    f"(θ={theta}, σ={sigma}, item_beta={item_beta})"
-                )
-                return lifecycle
-            logger.warning(
-                f"[MASTERY_ENGINE] No IRT data for eval on "
-                f"{lifecycle.subskill_id} — no gate update "
-                f"(θ={theta}, σ={sigma}, item_beta={item_beta})"
-            )
-
-        # Recalculate actuarial completion factor
-        lifecycle = self._recalculate_completion_factor(lifecycle, global_pass_rate)
-
-        return lifecycle
-
-    # ------------------------------------------------------------------
-    # Earned stability (PRD §16 — spaced retention, replaces gate→stability)
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _update_stability(
-        lifecycle: MasteryLifecycle,
-        score: float,
-        timestamp: str,
-        prev_reviewed: Optional[str],
-    ) -> None:
-        """
-        Spaced stability update. Growth multipliers (×2.5 strong / ×1.5
-        partial) compound scaled by how much of the current interval elapsed:
-
-            mult_eff = 1 + (mult − 1) × min(1, elapsed / stability)
-
-        so an on-schedule review earns the full multiplier, an early review
-        earns partial credit, and same-session repeats (elapsed <
-        STABILITY_SPACING_MIN_DAYS) earn nothing. Failed recall (< 7.0)
-        halves stability (floored at INITIAL_STABILITY), also at most once
-        per spacing window. This is the ONLY writer of stability growth —
-        gates no longer grant stability.
-        """
-        if lifecycle.retention_state == "mastered":
-            return
-        if lifecycle.stability <= 0:
-            return  # not activated yet
-
-        anchor = lifecycle.last_stability_growth or prev_reviewed
-        if not anchor:
-            # Legacy doc with no usable anchor: start the spacing clock now.
-            lifecycle.last_stability_growth = timestamp
-            return
-        try:
-            elapsed = (
-                datetime.fromisoformat(timestamp) - datetime.fromisoformat(anchor)
-            ).total_seconds() / 86400.0
-        except ValueError:
-            lifecycle.last_stability_growth = timestamp
-            return
-
-        if elapsed < STABILITY_SPACING_MIN_DAYS:
-            return
-
-        if score >= MASTERY_THRESHOLD:
-            mult = STABILITY_GROWTH_STRONG
-        elif score >= 7.0:
-            mult = STABILITY_GROWTH_PARTIAL
-        else:
-            mult = None  # failed recall
-
-        if mult is not None:
-            spacing_credit = min(1.0, elapsed / max(lifecycle.stability, 0.001))
-            mult_eff = 1.0 + (mult - 1.0) * spacing_credit
-            lifecycle.stability = min(STABILITY_CAP, lifecycle.stability * mult_eff)
-        else:
-            lifecycle.stability = max(
-                INITIAL_STABILITY, lifecycle.stability * STABILITY_SHRINK_FAIL
-            )
-        lifecycle.last_stability_growth = timestamp
-
-    # ------------------------------------------------------------------
-    # Probability-based gate check (2PL/3PL ADAPT model)
-    # Only used for Gate 0→1 (not_started → active) now.
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _check_probability_gate(
-        target_gate: int,
-        theta: float,
-        sigma: float,
-        min_beta: float,
-        max_beta: float,
-        avg_a: float = 1.4,
-    ) -> bool:
-        """
-        Check if a student passes a gate using P(correct) at a reference difficulty.
-
-        Gate pass condition:
-          P(correct | ref_b, avg_a) >= p_threshold  AND  sigma <= sigma_max
-
-        Where ref_b = min_beta + (max_beta - min_beta) * ref_fraction.
-        """
-        p_threshold = GATE_P_THRESHOLDS.get(target_gate, 0.90)
-        ref_fraction = GATE_REF_FRACTIONS.get(target_gate, 1.0)
-        sigma_max = GATE_SIGMA_THRESHOLDS.get(target_gate, 0.8)
-
-        ref_beta = min_beta + (max_beta - min_beta) * ref_fraction
-        p = p_correct(theta, avg_a, ref_beta)
-
-        gate_passed = p >= p_threshold and sigma <= sigma_max
-
-        logger.info(
-            f"[MASTERY_ENGINE] Probability gate check: gate={target_gate}, "
-            f"P(correct)={p:.3f} vs threshold={p_threshold}, "
-            f"ref_beta={ref_beta:.2f} (fraction={ref_fraction}), "
-            f"sigma={sigma:.3f} vs max={sigma_max}, avg_a={avg_a:.2f} "
-            f"→ {'PASS' if gate_passed else 'FAIL'}"
-        )
-
-        return gate_passed
 
     # ------------------------------------------------------------------
     # Actuarial completion factor (PRD Section 4)

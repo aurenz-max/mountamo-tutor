@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import type { PulseBand, ItemFrontierContext, SessionFrontierContext, IrtProbabilityData, GateProgress } from './types';
+import type { PulseBand, ItemFrontierContext, SessionFrontierContext, IrtProbabilityData } from './types';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -15,8 +15,8 @@ interface FrontierContextCardProps {
   isColdStart?: boolean;
   /** IRT probability data from the most recent result */
   irt?: IrtProbabilityData;
-  /** Gate progress from the most recent result */
-  gateProgress?: GateProgress;
+  /** The learner model's P(mastered) for this item's subskill, from the item spec */
+  pMastered?: number | null;
   /** Current sigma (uncertainty) */
   sigma?: number;
 }
@@ -43,12 +43,6 @@ function confidenceLabel(sigma: number): { label: string; color: string } {
   return { label: 'Low', color: 'text-slate-500' };
 }
 
-const GATE_LABELS: Record<number, string> = {
-  1: 'Emerging',
-  2: 'Developing',
-  3: 'Proficient',
-  4: 'Mastered',
-};
 
 // ---------------------------------------------------------------------------
 // Unit Progress Ring (SVG donut)
@@ -143,15 +137,13 @@ function ConfidenceIndicator({ sigma }: { sigma: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// Gate Readiness (P(correct) at next gate's reference difficulty)
+// Mastery readiness: the learner model's P(mastered) for the subskill, the same
+// verdict that sets the mastery gate (C18, 10-16). The IRT gate it replaced was
+// overwritten by the model a moment after every answer.
 // ---------------------------------------------------------------------------
 
-function GateReadiness({ gateProgress, irt }: { gateProgress: GateProgress; irt?: IrtProbabilityData }) {
-  const nextGate = gateProgress.next_gate;
-  if (!nextGate || !irt) return null;
-
-  const pct = Math.round(irt.p_correct * 100);
-  const gateLabel = GATE_LABELS[nextGate] || `Gate ${nextGate}`;
+function MasteryReadiness({ pMastered }: { pMastered: number }) {
+  const pct = Math.round(pMastered * 100);
 
   return (
     <div className="flex items-center gap-1.5">
@@ -164,7 +156,7 @@ function GateReadiness({ gateProgress, irt }: { gateProgress: GateProgress; irt?
         />
       </div>
       <span className="text-[10px] text-slate-400 whitespace-nowrap">
-        {pct}% ready for {gateLabel}
+        {pct}% likely mastered
       </span>
     </div>
   );
@@ -229,11 +221,11 @@ function FrontierContent({ ctx, irt }: { ctx: ItemFrontierContext; irt?: IrtProb
   );
 }
 
-function CurrentContent({ ctx, irt, sigma, gateProgress }: {
+function CurrentContent({ ctx, irt, sigma, pMastered }: {
   ctx: ItemFrontierContext;
   irt?: IrtProbabilityData;
   sigma?: number;
-  gateProgress?: GateProgress;
+  pMastered?: number | null;
 }) {
   return (
     <div className="space-y-2">
@@ -266,7 +258,7 @@ function CurrentContent({ ctx, irt, sigma, gateProgress }: {
           <UnitProgressRing mastered={ctx.unit_mastered} total={ctx.unit_total} />
         )}
       </div>
-      {gateProgress && <GateReadiness gateProgress={gateProgress} irt={irt} />}
+      {pMastered != null && <MasteryReadiness pMastered={pMastered} />}
     </div>
   );
 }
@@ -326,7 +318,7 @@ export const FrontierContextCard: React.FC<FrontierContextCardProps> = ({
   sessionContext,
   isColdStart = false,
   irt,
-  gateProgress,
+  pMastered,
   sigma,
 }) => {
   // Don't render if no context available
@@ -349,7 +341,7 @@ export const FrontierContextCard: React.FC<FrontierContextCardProps> = ({
         <ColdStartContent />
       ) : itemContext ? (
         band === 'frontier' ? <FrontierContent ctx={itemContext} irt={irt} /> :
-        band === 'current' ? <CurrentContent ctx={itemContext} irt={irt} sigma={sigma} gateProgress={gateProgress} /> :
+        band === 'current' ? <CurrentContent ctx={itemContext} irt={irt} sigma={sigma} pMastered={pMastered} /> :
         <ReviewContent ctx={itemContext} irt={irt} />
       ) : null}
     </motion.div>

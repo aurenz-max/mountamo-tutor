@@ -1018,6 +1018,9 @@ export interface ObjectiveData {
   text: string;
   verb: 'identify' | 'explain' | 'create' | 'analyze' | 'compare' | 'apply' | 'evaluate';
   icon: string;
+  /** Plain sentence for display (curriculum parent_summary). Screens show it;
+   *  generators read `text`, the authoring description. */
+  label?: string;
   /** Curriculum IDs carried by preBuiltObjectives (group / recommended /
    *  daily-plan lessons). Each objective is a distinct subskill — submissions
    *  must attribute to THEIR objective's subskill, not the lesson-level one. */

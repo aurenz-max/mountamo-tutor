@@ -110,7 +110,7 @@ const hydrated = (s: PulseItemSpec, input: ItemInput) => ({ manifestItem: { inst
   difficulty: 'medium', visualPrimitive: { componentId: input.family, intent: s.description, successCriteria: { description: '' },
     targetEvalMode: 'mode' in input ? input.mode : FAMILIES[input.family].mode },
   standardProblem: null }, visualData: input.data ?? FAMILIES[input.family].data });
-const response = (complete: boolean) => ({ theta_update: { new_theta: 2, sigma: 1 }, gate_update: null, gate_progress: null,
+const response = (complete: boolean) => ({ theta_update: { new_theta: 2, sigma: 1 },
   irt: null, leapfrog: null, session_progress: { is_complete: complete } });
 
 let stream = 0;

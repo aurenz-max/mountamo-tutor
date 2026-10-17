@@ -46,7 +46,6 @@ class TestCostModel(unittest.TestCase):
         # Constants were chosen so typical block sizes match the old flat costs
         self.assertEqual(block_cost_minutes(BlockType.LESSON, 4), 18)
         self.assertEqual(block_cost_minutes(BlockType.PRACTICE, 3), 10)
-        self.assertEqual(block_cost_minutes(BlockType.RETEST, 1), 5)
 
     def test_singleton_lesson_cheaper_than_five_pack(self):
         self.assertLess(
@@ -110,65 +109,34 @@ class TestMergeUp(unittest.TestCase):
         sizes = sorted(len(b.subskills) for b in blocks)
         self.assertEqual(sizes, [3, 4])  # not 2+5
 
-    def test_retests_never_merge_with_teaching(self):
-        candidates = [
-            _cand("A1", skill="Skill One"),
-            _cand("R1", skill="Skill Two", ctype="review", gate=2, days_overdue=3),
-        ]
-        blocks = LessonGroupService.group_subskills_into_blocks(candidates)
-        self.assertEqual(len(blocks), 2)
-        types = {b.type for b in blocks}
-        self.assertIn(BlockType.RETEST, types)
-        self.assertIn(BlockType.LESSON, types)
+    def test_review_at_any_gate_is_practice_not_retest(self):
+        # Retests are retired (C15): a review is practice whatever the gate
+        blocks = LessonGroupService.group_subskills_into_blocks(
+            [_cand("R1", ctype="review", gate=2, days_overdue=3)])
+        self.assertEqual([b.type for b in blocks], [BlockType.PRACTICE])
+        self.assertEqual(blocks[0].subskills[0].status, "review")
 
 
 class TestPulseBeat(unittest.TestCase):
-    def test_split_diverts_retests_then_confirms(self):
+    def test_split_diverts_confirms_only(self):
         candidates = [
             _cand("R1", ctype="review", gate=2, days_overdue=1),
-            _cand("R2", ctype="review", gate=1, days_overdue=9),
             _cand("C1", selection_kind="confirm"),
             _cand("L1", selection_kind="learn"),
             _cand("N1"),
         ]
         pulse, rest = LessonGroupService.split_pulse_candidates(candidates)
-        pulse_ids = [p["skill_id"] for p in pulse]
-        # Most overdue retest first, then the other retest, then confirm
-        self.assertEqual(pulse_ids, ["R2", "R1", "C1"])
-        rest_ids = {r["skill_id"] for r in rest}
-        self.assertEqual(rest_ids, {"L1", "N1"})
-
-    def test_split_caps_and_overflows(self):
-        candidates = [
-            _cand(f"R{i}", ctype="review", gate=1, days_overdue=i) for i in range(6)
-        ]
-        pulse, rest = LessonGroupService.split_pulse_candidates(candidates)
-        self.assertEqual(len(pulse), PULSE_BEAT_MAX_ITEMS)
-        self.assertEqual(len(rest), 2)
+        # retests are retired (C15): a due review is no longer measurement
+        self.assertEqual([p["skill_id"] for p in pulse], ["C1"])
+        self.assertEqual({r["skill_id"] for r in rest}, {"R1", "L1", "N1"})
 
     def test_confirm_overflow_is_deferred_not_taught(self):
-        candidates = [_cand(f"R{i}", ctype="review", gate=1, days_overdue=i) for i in range(4)]
-        candidates += [_cand("C1", selection_kind="confirm"), _cand("L1", selection_kind="learn")]
+        candidates = [_cand(f"C{i}", selection_kind="confirm") for i in range(PULSE_BEAT_MAX_ITEMS + 1)]
+        candidates.append(_cand("L1", selection_kind="learn"))
         pulse, rest = LessonGroupService.split_pulse_candidates(candidates)
-        self.assertNotIn("C1", [p["skill_id"] for p in pulse])
+        self.assertEqual(len(pulse), PULSE_BEAT_MAX_ITEMS)
         # a confirm never becomes a "New Lesson" block
         self.assertEqual([r["skill_id"] for r in rest], ["L1"])
-
-    def test_retests_do_not_use_up_subject_lesson_minutes(self):
-        # Math's due retests must not spend Math's lesson minutes: otherwise
-        # Science takes the whole lesson budget and Math teaches nothing.
-        retests = LessonGroupService.group_subskills_into_blocks(
-            [_cand(f"R{i}", skill=f"S{i}", ctype="review", gate=2, days_overdue=1) for i in range(3)])
-        math = LessonGroupService.group_subskills_into_blocks([_cand(f"M{i}", unit="Unit B") for i in range(3)])
-        sci = LessonGroupService.group_subskills_into_blocks(
-            [_cand(f"S{k}{i}", subject="Science", unit=f"Unit {k}") for k in "CD" for i in range(3)])
-        lesson_min = math[0].estimated_minutes
-        retest_min = sum(b.estimated_minutes for b in retests)
-        plan = LessonGroupService.build_session_plan(
-            student_id=1, candidate_blocks=retests + math + sci,
-            budget_minutes=max(4 * lesson_min, 2 * retest_min), review_cap_pct=0.5,
-            subject_budgets={"Math": max(retest_min, lesson_min), "Science": 2 * lesson_min})
-        self.assertIn("Math", {b.subject for b in plan.blocks if b.type == BlockType.LESSON})
 
     def test_learn_targets_never_diverted(self):
         candidates = [_cand("L1", selection_kind="learn"), _cand("L2", selection_kind="learn")]
@@ -204,6 +172,26 @@ class TestPulseBeat(unittest.TestCase):
         self.assertGreaterEqual(len(plan.blocks), 2)
         self.assertEqual(plan.blocks[0].type, BlockType.PULSE)
         self.assertEqual(plan.blocks[0].block_index, 1)
+
+
+class TestSubjectShares(unittest.TestCase):
+    def test_share_smaller_than_one_block_still_gets_one(self):
+        # 1004 on 10-17: math's 7.1m share vs a 9m lesson left math out and
+        # the release pass gave the minutes to a second reading lesson.
+        la = LessonGroupService.group_subskills_into_blocks(
+            [_cand("LA1", subject="LANGUAGE_ARTS", unit="U1", skill="S1"),
+             _cand("LA2", subject="LANGUAGE_ARTS", unit="U2", skill="S2")])
+        math = LessonGroupService.group_subskills_into_blocks(
+            [_cand("M1", subject="MATHEMATICS", unit="U3", skill="S3")])
+        math_minutes = math[0].estimated_minutes
+        plan = LessonGroupService.build_session_plan(
+            student_id=1,
+            candidate_blocks=la + math,
+            budget_minutes=sum(b.estimated_minutes for b in la),
+            subject_budgets={"LANGUAGE_ARTS": la[0].estimated_minutes + 1,
+                             "MATHEMATICS": math_minutes - 2},
+        )
+        self.assertIn("MATHEMATICS", {b.subject for b in plan.blocks})
 
 
 if __name__ == "__main__":

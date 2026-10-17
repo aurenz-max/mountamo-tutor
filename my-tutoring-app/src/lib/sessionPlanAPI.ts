@@ -16,8 +16,8 @@ import { authApi } from './authApiClient';
 export type BloomLevel = 'identify' | 'explain' | 'apply';
 // 'pulse' = the daily measurement beat: one ~4-min first block absorbing due
 // mastery checks + IRT-confirmed targets (may span subjects).
-export type BlockType  = 'lesson' | 'practice' | 'retest' | 'pulse';
-export type SkillStatus = 'new' | 'practice' | 'review' | 'retest' | 'mastered';
+export type BlockType  = 'lesson' | 'practice' | 'pulse';
+export type SkillStatus = 'new' | 'practice' | 'review' | 'mastered';
 
 export interface BlockSubskill {
   subskill_id:   string;
@@ -27,6 +27,8 @@ export interface BlockSubskill {
   /** Own subject — pulse blocks may span subjects; fall back to block.subject. */
   subject?:      string;
   subskill_name: string;
+  /** Plain sentence for display (curriculum parent_summary); plans before 10-17 lack it. */
+  parent_label?: string;
   bloom_phase:   BloomLevel;
   gate:          number;
   status:        SkillStatus;

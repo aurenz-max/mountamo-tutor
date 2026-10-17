@@ -86,7 +86,7 @@ MAX_GROUP_SIZE = 5
 MIN_GROUP_SIZE = 2
 
 # The daily pulse beat holds at most this many measurement items (~4-6 min
-# at the pulse cost model). Overflow keeps the normal retest/lesson path.
+# at the pulse cost model).
 PULSE_BEAT_MAX_ITEMS = 4
 
 
@@ -148,9 +148,6 @@ class LessonGroupService:
               root of daily-plan fragmentation)
             - 2–5 subskills per block; larger clusters are chunked evenly
             - Ordered by Bloom's level within each block
-            - Mastery retests never merge with teaching work — a check is
-              measurement, not instruction (most are absorbed upstream by
-              the daily pulse beat; overflow keeps dedicated blocks)
         """
         if not candidates:
             return []
@@ -167,27 +164,14 @@ class LessonGroupService:
         blocks: List[LessonBlock] = []
 
         for (subject, unit_title), skills in domain_buckets.items():
-            retest_pool: List[Dict[str, Any]] = []
-            teach_pool: List[Dict[str, Any]] = []
-            for s in skills:
-                status = cls._status_from_type(
-                    s.get("type", "new"), s.get("mastery_gate") or 0
-                )
-                (retest_pool if status == "retest" else teach_pool).append(s)
-
             def skill_buckets(items: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
                 b: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
                 for s in items:
                     b[s.get("skill_description") or unit_title].append(s)
                 return b
 
-            # Retests: per-skill chunking, no merging
-            for skill_key, group in skill_buckets(retest_pool).items():
-                for chunk in cls._chunk_evenly(group):
-                    blocks.append(cls._build_block(chunk, subject, unit_title, skill_key))
-
-            # Teaching work: skill buckets, then merge-up so singletons combine
-            merged = cls._merge_up(list(skill_buckets(teach_pool).values()))
+            # Skill buckets, then merge-up so singletons combine
+            merged = cls._merge_up(list(skill_buckets(skills).values()))
             for group in merged:
                 # Merged groups may span skills — title falls back to the unit
                 keys = {s.get("skill_description") or unit_title for s in group}
@@ -266,6 +250,7 @@ class LessonGroupService:
                 skill_id=s.get("parent_skill_id") or "",
                 subject=s.get("subject", ""),
                 subskill_name=desc,
+                parent_label=s.get("parent_summary") or "",
                 bloom_phase=bloom,
                 gate=gate,
                 status=status,
@@ -275,13 +260,8 @@ class LessonGroupService:
         subskills.sort(key=lambda x: _BLOOM_ORDER.get(x.bloom_phase, 2))
 
         # Determine block type
-        has_retest = any(s.status == "retest" for s in subskills)
-        all_review  = all(s.status in ("review", "retest") for s in subskills)
-        block_type  = (
-            BlockType.RETEST   if has_retest  else
-            BlockType.PRACTICE if all_review  else
-            BlockType.LESSON
-        )
+        all_review = all(s.status == "review" for s in subskills)
+        block_type = BlockType.PRACTICE if all_review else BlockType.LESSON
 
         # Linear cost model: base + marginal × n, so a merged 5-pack and a
         # genuine singleton are priced by what they actually contain.
@@ -311,13 +291,9 @@ class LessonGroupService:
         # Human-readable title
         title = cls._make_title(skill_key, unit_title)
 
-        # Priority score: retests > reviews > new; more overdue = higher priority
+        # Priority score: reviews > new; more overdue = higher priority
         max_overdue = max((s.get("days_overdue", 0) for s in skills), default=0)
-        priority = (
-            1000 + max_overdue if block_type == BlockType.RETEST   else
-             500 + max_overdue if block_type == BlockType.PRACTICE else
-             0
-        )
+        priority = 500 + max_overdue if block_type == BlockType.PRACTICE else 0
 
         return LessonBlock(
             block_id=block_id,
@@ -344,26 +320,19 @@ class LessonGroupService:
         candidates: List[Dict[str, Any]],
     ) -> tuple:
         """
-        Divert measurement work into the daily pulse beat: due mastery
-        retests (most overdue first), then the IRT selector's "confirm"
-        targets — subskills the model already believes are ready, where the
-        block's only job is to produce the gate-advancing evidence.
+        Divert measurement work into the daily pulse beat: the selector's
+        "confirm" targets — subskills the model already believes are ready,
+        where the block's only job is to produce evidence.
 
-        Returns (pulse_items, remaining). Retest overflow beyond
-        PULSE_BEAT_MAX_ITEMS keeps the dedicated retest block path. Confirm
-        overflow is dropped: it is measurement, and as a teaching block it
+        Returns (pulse_items, remaining). Confirm overflow beyond
+        PULSE_BEAT_MAX_ITEMS is dropped: it is measurement, and as a teaching block it
         shipped as a "New Lesson" on a skill the model believes is known.
         The selector offers it again tomorrow. "learn" targets are never
         diverted — they are instruction, not measurement.
         """
-        retests = [
-            c for c in candidates
-            if cls._status_from_type(c.get("type", "new"), c.get("mastery_gate") or 0) == "retest"
-        ]
-        retests.sort(key=lambda c: -c.get("days_overdue", 0))
         confirms = [c for c in candidates if c.get("selection_kind") == "confirm"]
 
-        pulse = (retests + confirms)[:PULSE_BEAT_MAX_ITEMS]
+        pulse = confirms[:PULSE_BEAT_MAX_ITEMS]
         pulse_ids = {id(c) for c in pulse}
         overflow_confirms = {id(c) for c in confirms if id(c) not in pulse_ids}
         if overflow_confirms:
@@ -393,6 +362,7 @@ class LessonGroupService:
                 skill_id=s.get("parent_skill_id") or "",
                 subject=s.get("subject", ""),
                 subskill_name=desc,
+                parent_label=s.get("parent_summary") or "",
                 # Measurement asks the student to produce, not to meet the
                 # material — every pulse item runs at the apply level.
                 bloom_phase=BloomLevel.APPLY,
@@ -453,7 +423,7 @@ class LessonGroupService:
         if gate >= 4:
             return "mastered"
         if item_type == "review":
-            return "retest" if gate >= 1 else "review"
+            return "review"
         if item_type == "practice":
             return "practice"
         return "new"
@@ -489,15 +459,13 @@ class LessonGroupService:
         Fill the daily time budget with lesson blocks.
 
         Priority order (PRD §3.3):
-          1. Retest blocks (most overdue first)
+          1. The pulse beat
           2. Practice/review blocks (up to review_cap_pct of budget)
           3. New lesson blocks (fill remaining intro budget)
 
         subject_budgets (pace-aware allocation) caps how many minutes each
         subject may claim, so a subject with little remaining work can't
-        crowd out one that's behind. RETEST blocks are exempt — spaced
-        retention timing belongs to the mastery lifecycle, not the pacer.
-        A subject with unused budget releases it in a final global pass so
+        crowd out one that's behind. A subject with unused budget releases it in a final global pass so
         thin supply in one subject never strands total capacity.
 
         Returns a DailySessionPlan with 4–5 blocks shaped per PRD §3.4.
@@ -515,10 +483,6 @@ class LessonGroupService:
 
         # Partition and sort by priority
         pulses    = [b for b in candidate_blocks if b.type == BlockType.PULSE]
-        retests   = sorted(
-            [b for b in candidate_blocks if b.type == BlockType.RETEST],
-            key=lambda b: -b.priority_score,
-        )
         practices = sorted(
             [b for b in candidate_blocks if b.type == BlockType.PRACTICE],
             key=lambda b: -b.priority_score,
@@ -545,6 +509,11 @@ class LessonGroupService:
             cap = norm_budgets.get(key)
             if cap is None:
                 return True
+            # A subject's first block always fits: a share smaller than one
+            # block (math 7.1m vs a 9m lesson) otherwise left the subject out
+            # and the release pass gave its minutes to a second block elsewhere.
+            if subject_used[key] == 0 and cap > 0:
+                return True
             return subject_used[key] + block.estimated_minutes <= cap
 
         # 0. The pulse beat always ships — it is the day's measurement beat
@@ -555,16 +524,7 @@ class LessonGroupService:
             selected.append(block)
             review_minutes_used += block.estimated_minutes
 
-        # 1. Fill retests first (counted against review budget; exempt from
-        #    subject caps — retention timing is lifecycle's, not the pacer's).
-        #    Not charged to the subject's minutes either: charging them let a
-        #    subject's due retests use up its cap, so none of its new lessons fit.
-        for block in retests:
-            if review_minutes_used + block.estimated_minutes <= review_budget:
-                selected.append(block)
-                review_minutes_used += block.estimated_minutes
-
-        # 2. Fill practice reviews (up to review cap, within subject budgets)
+        # 1. Fill practice reviews (up to review cap, within subject budgets)
         for block in practices:
             if (review_minutes_used + block.estimated_minutes <= review_budget
                     and subject_fits(block)):
@@ -575,7 +535,7 @@ class LessonGroupService:
         if practices and review_minutes_used >= review_budget:
             warnings.append("Review cap reached — some reviews deferred to tomorrow")
 
-        # 3. Fill new lessons with what the reviews left: the review cap bounds
+        # 2. Fill new lessons with what the reviews left: the review cap bounds
         #    reviews, it does not reserve minutes, so unused review time teaches
         #    (with retests retired the review share is mostly empty, 10-16).
         intro_budget = budget_minutes - review_minutes_used
@@ -586,7 +546,7 @@ class LessonGroupService:
                 intro_minutes_used += block.estimated_minutes
                 subject_used[cls._subject_key(block.subject)] += block.estimated_minutes
 
-        # 3b. Release pass: if subject caps left global budget on the table
+        # 2b. Release pass: if subject caps left global budget on the table
         #     (a capped subject had supply, another had none), refill ignoring
         #     subject caps. Global review-cap and intro-budget still hold.
         if subject_budgets:
@@ -647,7 +607,7 @@ class LessonGroupService:
           - Pulse beat first — the day opens on its measurement beat
           - Front-load new lessons (highest attention window)
           - Alternate subjects — never same subject back-to-back
-          - Weave pattern: lesson → practice/retest → lesson → ...
+          - Weave pattern: lesson → practice → lesson → ...
         """
         if len(blocks) <= 1:
             return list(blocks)
@@ -655,7 +615,6 @@ class LessonGroupService:
         pulses    = [b for b in blocks if b.type == BlockType.PULSE]
         lessons   = [b for b in blocks if b.type == BlockType.LESSON]
         practices = [b for b in blocks if b.type == BlockType.PRACTICE]
-        retests   = [b for b in blocks if b.type == BlockType.RETEST]
 
         last_subject: Optional[str] = None
         ordered: List[LessonBlock] = list(pulses)
@@ -669,9 +628,7 @@ class LessonGroupService:
                     return lst.pop(i)
             return lst.pop(0) if lst else None
 
-        # Pool of non-lesson blocks: retests first (mid-session placement),
-        # then practices
-        others = list(retests) + list(practices)
+        others = list(practices)
 
         while lessons or others:
             # Add a new lesson if available (front-load)
@@ -681,7 +638,7 @@ class LessonGroupService:
                     ordered.append(b)
                     last_subject = b.subject
 
-            # Add one review/retest block
+            # Add one review block
             if others:
                 b = pop_different(others)
                 if b:

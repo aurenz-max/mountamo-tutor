@@ -225,6 +225,11 @@ class PulseAgentRunner:
                 duration_ms=5000,  # Synthetic — fixed duration
             )
 
+            # the learner model sets the gate (observe runs inline here): read it
+            # off the lifecycle doc before and after the answer (C15)
+            lc = await self.engine.firestore.get_mastery_lifecycle(profile.student_id, item.subskill_id)
+            gate_before = lc.get("current_gate", 0) if lc else 0
+
             result_resp: PulseResultResponse = await self.engine.process_result(
                 student_id=profile.student_id,
                 session_id=session_id,
@@ -255,16 +260,8 @@ class PulseAgentRunner:
             old_theta = result_resp.theta_update.old_theta
             new_theta = result_resp.theta_update.new_theta
             theta_delta = new_theta - old_theta
-            if result_resp.gate_update:
-                gate_before = result_resp.gate_update.old_gate
-                gate_after = result_resp.gate_update.new_gate
-            else:
-                # No gate change — look up current gate from lifecycle
-                lc = await self.engine.firestore.get_mastery_lifecycle(
-                    profile.student_id, item.subskill_id,
-                )
-                gate_before = lc.get("current_gate", 0) if lc else 0
-                gate_after = gate_before
+            lc = await self.engine.firestore.get_mastery_lifecycle(profile.student_id, item.subskill_id)
+            gate_after = lc.get("current_gate", 0) if lc else 0
             leapfrog_fired = result_resp.leapfrog is not None
 
             # Compact per-item line
@@ -302,8 +299,6 @@ class PulseAgentRunner:
                 p_correct=irt.p_correct if irt else None,
                 item_information=irt.item_information if irt else None,
                 discrimination_a=irt.discrimination_a if irt else None,
-                p_blended=irt.p_blended if irt else None,
-                empirical_p=irt.empirical_p if irt else None,
                 # Frontier context
                 dag_distance=fc.dag_distance if fc else None,
                 ancestors_if_passed=fc.ancestors_if_passed if fc else None,

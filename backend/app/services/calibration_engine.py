@@ -30,16 +30,12 @@ from ..models.calibration import (
     THETA_GRID_STEP,
     THETA_PROCESS_NOISE,
     ItemCalibration,
-    PrimitiveGateProgress,
     StudentAbility,
     ThetaHistoryEntry,
-    compute_gate_from_theta,
-    compute_gate_thresholds,
 )
 from .calibration.problem_type_registry import (
     get_item_discrimination,
     get_item_key,
-    get_primitive_beta_range,
     get_prior_beta,
 )
 
@@ -198,10 +194,7 @@ class CalibrationEngine:
             ),
         )
 
-        # 6. Compute per-primitive gate progress
-        gate_progress = self.get_gate_progress(primitive_type, ability.theta)
-
-        # 7. Compute P(correct) and item information at current θ
+        # 6. Compute P(correct) and item information at current θ
         p_corr = p_correct(
             ability.theta, item_cal.discrimination_a,
             item_cal.calibrated_beta, item_cal.guessing_c,
@@ -216,8 +209,7 @@ class CalibrationEngine:
             f"(Z={item_cal.credibility_z:.3f}, a={item_cal.discrimination_a:.2f}), "
             f"student_theta={ability.theta:.2f}, "
             f"P(correct)={p_corr:.3f}, I(θ)={info:.3f}, "
-            f"EL={ability.earned_level:.1f}, "
-            f"gate={gate_progress.current_gate}/4"
+            f"EL={ability.earned_level:.1f}"
         )
 
         return {
@@ -232,7 +224,6 @@ class CalibrationEngine:
             "p_correct": round(p_corr, 4),
             "item_information": round(info, 4),
             "evidence_n": round(evidence_n, 2),
-            "gate_progress": gate_progress.model_dump(),
             "ability_doc": ability.model_dump(),
             "item_calibration_doc": item_cal.model_dump(),
         }
@@ -275,37 +266,6 @@ class CalibrationEngine:
         if n % 2 == 1:
             return betas[n // 2]
         return (betas[n // 2 - 1] + betas[n // 2]) / 2.0
-
-    # ------------------------------------------------------------------
-    # Per-primitive gate progress (PRD §6.5.4)
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def get_gate_progress(
-        primitive_type: str, theta: float
-    ) -> PrimitiveGateProgress:
-        """Compute gate progress for a student's theta on a given primitive."""
-        min_beta, max_beta = get_primitive_beta_range(primitive_type)
-        thresholds = compute_gate_thresholds(min_beta, max_beta)
-        current_gate = compute_gate_from_theta(theta, thresholds)
-
-        next_gate = None
-        next_gate_theta = None
-        gate_values = [thresholds.g1, thresholds.g2, thresholds.g3, thresholds.g4]
-        if current_gate < 4:
-            next_gate = current_gate + 1
-            next_gate_theta = gate_values[current_gate]
-
-        return PrimitiveGateProgress(
-            primitive_type=primitive_type,
-            current_gate=current_gate,
-            thresholds=thresholds,
-            theta=theta,
-            next_gate=next_gate,
-            next_gate_theta=next_gate_theta,
-            min_beta=min_beta,
-            max_beta=max_beta,
-        )
 
     # ------------------------------------------------------------------
     # Item calibration update (PRD §5.2)

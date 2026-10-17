@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/accordion';
 import { GateProgressDots } from '../PlannerDashboard/MasteryComponents';
 import type { StudentMetrics, SkillData, SubskillData } from '@/lib/studentAnalyticsAPI';
-import { pct, masteryColor, gateStatusBadge, isRetestOverdue } from './helpers';
+import { pct, masteryColor, gateStatusBadge } from './helpers';
 import { MasteryBar } from './shared';
 
 export function CurriculumPanel({ metrics }: { metrics: StudentMetrics }) {
@@ -92,7 +92,6 @@ function SubskillList({ subskills }: { subskills: SubskillData[] }) {
         const gate = ss.current_gate ?? 0;
         const completionPct = Math.round((ss.completion_pct ?? 0) * 100);
         const status = gateStatusBadge(ss);
-        const overdue = isRetestOverdue(ss.next_retest_eligible);
         const passes = ss.passes ?? 0;
         const fails = ss.fails ?? 0;
 
@@ -123,11 +122,6 @@ function SubskillList({ subskills }: { subskills: SubskillData[] }) {
             {/* Stats */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-[10px] text-slate-500">{ss.attempt_count} att</span>
-              {overdue && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border bg-red-500/20 border-red-500/30 text-red-400">
-                  Retest due
-                </span>
-              )}
               <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${status.bg} ${status.text}`}>
                 {status.label}
               </span>

@@ -238,9 +238,6 @@ class TestDailyPlan(unittest.TestCase):
         # No mastery lifecycle records
         self.firestore.get_all_mastery_lifecycles = AsyncMock(return_value=[])
 
-        # No mastery retests due
-        self.firestore.get_mastery_retests_due = AsyncMock(return_value=[])
-
         # Curriculum: one subject with 20 subskills
         self.curriculum_service.get_available_subjects = AsyncMock(return_value=["Math"])
         # The planner reads the grade-scoped curriculum (7.0).
@@ -263,7 +260,7 @@ class TestDailyPlan(unittest.TestCase):
         return asyncio.run(coro)
 
     def test_no_reviews_all_new(self):
-        """With no retests due, all slots go to new skills."""
+        """Every slot goes to new skills (reviews are Pulse items)."""
         plan = self._run(self.service.get_daily_plan(student_id=1))
         self.assertEqual(plan.review_slots, 0)
         self.assertGreater(plan.new_slots, 0)
@@ -271,17 +268,19 @@ class TestDailyPlan(unittest.TestCase):
         for s in plan.sessions:
             self.assertEqual(s["type"], "new")
 
-    def test_due_retests_are_not_planned(self):
-        """Lifecycle retests are retired (C12, 10-16): a due retest takes no slot;
-        reviews are single Pulse items the memory model schedules."""
+    def test_legacy_retest_fields_are_ignored(self):
+        """Lifecycle retests are retired (C13/C15, 10-16): a doc still carrying
+        a past-due `next_retest_eligible` takes no slot and breaks nothing."""
         yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
-        self.firestore.get_mastery_retests_due = AsyncMock(return_value=[
+        self.firestore.get_all_mastery_lifecycles = AsyncMock(return_value=[
             {
                 "subskill_id": "R1",
                 "subject": "Math",
                 "current_gate": 1,
+                "retention_state": "active",
                 "completion_pct": 0.25,
                 "next_retest_eligible": yesterday,
+                "retest_interval_days": 3,
             }
         ])
 

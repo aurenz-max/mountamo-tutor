@@ -48,7 +48,7 @@ export const ObjectiveBadge: React.FC<ObjectiveBadgeProps> = ({
           <div
             key={obj.id}
             className="group relative"
-            title={obj.text}
+            title={obj.label || obj.text}
           >
             <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 border border-blue-400/30 rounded-md text-xs hover:bg-blue-500/30 transition-colors cursor-help">
               <span className="text-sm">{getVerbIcon(obj.icon)}</span>
@@ -64,7 +64,7 @@ export const ObjectiveBadge: React.FC<ObjectiveBadgeProps> = ({
                   {obj.verb} Objective
                 </div>
                 <p className="text-xs text-white leading-relaxed">
-                  {obj.text}
+                  {obj.label || obj.text}
                 </p>
               </div>
             </div>
@@ -93,7 +93,7 @@ export const ObjectiveBadge: React.FC<ObjectiveBadgeProps> = ({
                 {obj.verb}
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                {obj.text}
+                {obj.label || obj.text}
               </p>
             </div>
           </div>

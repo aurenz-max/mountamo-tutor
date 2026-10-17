@@ -236,17 +236,13 @@ class IrtProbabilityData(BaseModel):
     item_information: float = Field(description="Fisher information at current theta")
     discrimination_a: float = Field(description="Item discrimination parameter")
     guessing_c: float = Field(default=0.0, description="Guessing floor")
-    p_blended: Optional[float] = Field(default=None, description="Credibility-blended P used for gate checks")
-    empirical_p: Optional[float] = Field(default=None, description="Empirical pass rate (score/10 weighted)")
 
 
 class PulseResultResponse(BaseModel):
     """Returned after each item result."""
     item_id: str
     theta_update: ThetaUpdate
-    gate_update: Optional[GateUpdate] = None
     leapfrog: Optional[LeapfrogEvent] = None
-    gate_progress: Optional[Dict[str, Any]] = None
     irt: Optional[IrtProbabilityData] = None
     session_progress: Dict[str, Any] = Field(default_factory=dict)
 

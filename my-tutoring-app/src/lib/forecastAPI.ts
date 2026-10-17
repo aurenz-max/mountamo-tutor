@@ -48,21 +48,12 @@ export interface UnitForecast {
   past_year_end: boolean;
 }
 
-export interface ReviewLoad {
-  due_per_week:     number;
-  subsumed:         number;   // exercised by active dependents — free
-  riders:           number;   // folded into nearby lessons at marginal cost
-  dedicated_blocks: number;   // orphan leaves — real block cost
-  graph_coverage:   number;
-}
-
 export interface SubjectForecast {
   subject:                   string;
   total_subskills:           number;
   remaining_subskills:       number;
   allocated_minutes_per_day: number;
   weekly_rate:               RateBand;
-  review_load:               ReviewLoad;
   projected_finish:          EtaBand;
   units:                     UnitForecast[];
   subskill_etas:             SubskillEta[];

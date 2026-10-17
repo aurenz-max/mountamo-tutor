@@ -10,7 +10,6 @@ export const SessionRow: React.FC<{
 
   const reasonLabels: Record<string, { label: string; color: string }> = {
     scheduled_review: { label: 'Scheduled', color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
-    mastery_retest: { label: 'Mastery Retest', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
     behind_pace: { label: 'Behind Pace', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
     next_in_sequence: { label: 'Next Up', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
   };

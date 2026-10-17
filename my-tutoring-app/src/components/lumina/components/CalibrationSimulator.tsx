@@ -99,7 +99,8 @@ function effectiveTheta(
  *   P = Z × P_empirical + (1 - Z) × P_irt
  *
  * Checks gates 4→3→2→1 (highest first), returns the highest passed gate.
- * This is the TypeScript mirror of backend derive_gate_from_irt().
+ * Mirrors the retired backend derive_gate_from_irt() (deleted C15, 10-16): the
+ * learner model sets production gates now. Kept for this simulator only.
  */
 function deriveGateFromIrt(
   theta: number, _sigma: number,

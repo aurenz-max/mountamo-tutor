@@ -7,8 +7,8 @@ Outputs Markdown that can be saved to files or printed to console.
 
 Includes IRT decision context: P(correct), Fisher information, item difficulty,
 and commentary explaining why the unified utility scorer chose each item
-(utility = information × urgency) and how the IRT-derived gates
-(derive_gate_from_irt) match observed behavior.
+(utility = information × urgency) and how the learner model's gates match
+observed behavior.
 """
 
 from __future__ import annotations
@@ -152,8 +152,8 @@ def _session_irt_commentary(s: SessionSnapshot) -> List[str]:
 
     # 5. Gate advance vs score mismatch (gate > 0 only — at gate 0 all bands
     #    now route through the lesson handler, so this would be a real issue)
-    #    Gates advance via derive_gate_from_irt(theta, sigma, min_beta, max_beta, avg_a)
-    #    which checks P(correct) at reference difficulties with σ thresholds.
+    #    The learner model sets gates (LearnerStateService._gate_updates):
+    #    its P(right) rung, gate 4 at P(mastered) >= 0.8.
     high_scores_no_gate = [
         it for it in s.items
         if it.score >= 9.0 and it.gate_before == it.gate_after and it.gate_before > 0
@@ -161,9 +161,8 @@ def _session_irt_commentary(s: SessionSnapshot) -> List[str]:
     if high_scores_no_gate:
         notes.append(
             f"**High scores, no gate progress:** {len(high_scores_no_gate)} items scored "
-            f"9.0+ but gate didn't advance. Gates are IRT-derived via "
-            f"derive_gate_from_irt — check P(correct) at reference difficulties "
-            f"and σ thresholds."
+            f"9.0+ but gate didn't advance. The learner model sets gates — check "
+            f"its P(right) and P(mastered) on the subskill."
         )
 
     return notes

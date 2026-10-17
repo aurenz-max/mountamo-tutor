@@ -165,8 +165,10 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     },
     "percent-bar": {
         "identify_percent": PriorConfig(2.5, "Pictorial: find percentage of a number"),
-        "find_part":        PriorConfig(3.5, "Pictorial: discount/decrease problems"),
-        "find_whole":       PriorConfig(4.5, "Transitional: tax/tip/markup problems"),
+        "find_part":        PriorConfig(3.0, "Pictorial: find a percent of a quantity, type the part in dollars"),
+        "percent_remaining": PriorConfig(3.5, "Pictorial: discount/decrease problems (was find_part until 10-16)"),
+        "percent_total":    PriorConfig(4.5, "Transitional: tax/tip/markup problems (was find_whole until 10-16)"),
+        "find_whole":       PriorConfig(5.0, "Transitional: find the whole from a part and its percent"),
         "convert":          PriorConfig(5.5, "Symbolic: compare percentages across contexts"),
     },
     "fraction-bar": {
@@ -993,6 +995,14 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "life-cycle-sequencer": {
         "sequence": PriorConfig(3.0, "Order every stage of a life cycle or process"),
         "default":  PriorConfig(3.0, "Sequence biological life stages"),
+    },
+    "ecosystem-diorama": {
+        "plant_needs":     PriorConfig(-1.5, "Give a potted plant sunlight, water and soil, then watch it grow"),
+        "sun_test":        PriorConfig(-1.0, "Run a fair sun test in the island tank and read which thing got warmer"),
+        "season_behavior": PriorConfig(-0.5, "Move each animal to where it spends the winter"),
+        "season_from_log": PriorConfig(0.0, "Name the season from a month of picture weather and the weather that shows it"),
+        "compare_logs":    PriorConfig(0.5, "Compare two picture weather logs: more of a weather, or warmer"),
+        "keep_it_cool":    PriorConfig(1.0, "Design shade that keeps a treat below the cool line while the sun crosses the sky"),
     },
     "habitat-diorama": {
         "observe": PriorConfig(2.5, "Identify an organism from an ecological clue"),

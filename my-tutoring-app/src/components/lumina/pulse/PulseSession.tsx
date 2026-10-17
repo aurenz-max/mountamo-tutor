@@ -645,9 +645,12 @@ function PulseSummaryCard({ summary, leapfrogs, isColdStart, onDone, onPlayAgain
             </div>
           )}
 
-          {/* Skills Advanced — show which skills leveled up */}
-          {summary && summary.skills_advanced.length > 0 && (
-            <SkillsAdvancedSection skillsAdvanced={summary.skills_advanced} />
+          {/* Gate moves this session (the learner model's gate now vs the gate in force at the start) */}
+          {summary && summary.skills_advanced.some((gu) => gu.new_gate > gu.old_gate) && (
+            <SkillsAdvancedSection skillsAdvanced={summary.skills_advanced.filter((gu) => gu.new_gate > gu.old_gate)} />
+          )}
+          {summary && summary.skills_advanced.some((gu) => gu.new_gate < gu.old_gate) && (
+            <SkillsAdvancedSection fell skillsAdvanced={summary.skills_advanced.filter((gu) => gu.new_gate < gu.old_gate)} />
           )}
 
           {summary && summary.theta_changes.length > 0 && (
@@ -839,13 +842,17 @@ function LeapfrogDetail({ leapfrog }: { leapfrog: LeapfrogEvent }) {
 
 const GATE_LABELS: Record<number, string> = {
   0: 'Not started',
-  1: 'Initial mastery',
-  2: 'Retest 1',
-  3: 'Retest 2',
+  1: 'Emerging',
+  2: 'Developing',
+  3: 'Proficient',
   4: 'Mastered',
 };
 
-function SkillsAdvancedSection({ skillsAdvanced }: { skillsAdvanced: PulseSessionSummary['skills_advanced'] }) {
+function SkillsAdvancedSection({ skillsAdvanced, fell = false }: { skillsAdvanced: PulseSessionSummary['skills_advanced']; fell?: boolean }) {
+  // A model gate can fall (C18): those rows list under "Needs more practice", never as an advance.
+  const tone = fell
+    ? { head: 'text-amber-400', border: 'border-amber-500/15', name: 'text-amber-300', to: 'text-amber-400', arrow: 'text-amber-500' }
+    : { head: 'text-emerald-400', border: 'border-emerald-500/15', name: 'text-emerald-300', to: 'text-emerald-400', arrow: 'text-emerald-500' };
   // Group by parent skill
   const grouped = new Map<string, { skill_description: string; advances: typeof skillsAdvanced }>();
   for (const gu of skillsAdvanced) {
@@ -860,25 +867,25 @@ function SkillsAdvancedSection({ skillsAdvanced }: { skillsAdvanced: PulseSessio
 
   return (
     <div className="space-y-2 mt-4">
-      <h4 className="text-[10px] uppercase tracking-widest font-mono text-emerald-400 flex items-center gap-2">
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <h4 className={`text-[10px] uppercase tracking-widest font-mono ${tone.head} flex items-center gap-2`}>
+        <svg className={`w-3.5 h-3.5 ${fell ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
         </svg>
-        Skills Advanced
+        {fell ? 'Needs more practice' : 'Skills Advanced'}
       </h4>
       {Array.from(grouped.entries()).map(([skillId, { skill_description, advances }]) => (
-        <div key={skillId} className="glass-panel rounded-lg border border-emerald-500/15 px-4 py-2 text-left">
-          <div className="text-sm text-emerald-300 font-medium">{skill_description}</div>
+        <div key={skillId} className={`glass-panel rounded-lg border ${tone.border} px-4 py-2 text-left`}>
+          <div className={`text-sm ${tone.name} font-medium`}>{skill_description}</div>
           {advances.map((gu) => (
             <div key={gu.subskill_id} className="flex items-center gap-2 mt-1">
               <span className="text-xs text-slate-500 font-mono">{formatSkillId(gu.subskill_id)}</span>
               <span className="text-[10px] text-slate-600">
                 {GATE_LABELS[gu.old_gate] ?? `Gate ${gu.old_gate}`}
               </span>
-              <svg className="w-3 h-3 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-3 h-3 ${tone.arrow} shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
-              <span className="text-[10px] text-emerald-400 font-medium">
+              <span className={`text-[10px] ${tone.to} font-medium`}>
                 {GATE_LABELS[gu.new_gate] ?? `Gate ${gu.new_gate}`}
               </span>
             </div>
@@ -938,7 +945,7 @@ function IrtInsightsSection({ irt }: { irt: SessionIrtSummary }) {
 }
 
 function FrontierDeltaSection({ summary, leapfrogs }: { summary: PulseSessionSummary; leapfrogs: LeapfrogEvent[] }) {
-  const gateAdvances = summary.skills_advanced.length;
+  const gateAdvances = summary.skills_advanced.filter((gu) => gu.new_gate > gu.old_gate).length;
   const leapfrogSkills = leapfrogs.reduce((sum, lf) => sum + lf.inferred_skills.length, 0);
   const totalUnlocked = gateAdvances + leapfrogSkills;
   const skillProgress = summary.skill_progress ?? [];

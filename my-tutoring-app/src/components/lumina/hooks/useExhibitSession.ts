@@ -42,6 +42,8 @@ export interface GenerateOptions {
    */
   preBuiltObjectives?: Array<{
     id: string; text: string; verb: string; icon: string;
+    /** Display sentence (parent_summary); generators read `text`. */
+    label?: string;
     subskillId?: string; skillId?: string;
     /** Canonical curriculum grade ('K'|'1'..'12') — flows to generators as ctx.grade. */
     grade?: string;

@@ -199,7 +199,7 @@ export const ObjectiveComponentMap: React.FC<ObjectiveComponentMapProps> = ({
                       text-sm leading-relaxed transition-colors
                       ${isSelected || isHighlighted ? 'text-white' : 'text-slate-300'}
                     `}>
-                      {objective.text}
+                      {objective.label || objective.text}
                     </p>
                   </div>
                 </div>

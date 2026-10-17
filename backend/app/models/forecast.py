@@ -52,27 +52,12 @@ class UnitForecast(BaseModel):
     past_year_end: bool = False   # pessimistic scenario misses year end
 
 
-class ReviewLoad(BaseModel):
-    """
-    Retest triage (see planner design §3b): due retests split by graph
-    position instead of all becoming dedicated blocks. graph_coverage is the
-    observed fraction of this subject's subskills that have dependents —
-    the structural ceiling on subsumption.
-    """
-    due_per_week:     float
-    subsumed:         float   # active dependent exercises it — free
-    riders:           float   # folded into nearby lessons at marginal cost
-    dedicated_blocks: float   # orphan leaves — the only real block cost
-    graph_coverage:   float
-
-
 class SubjectForecast(BaseModel):
     subject:                   str
     total_subskills:           int
     remaining_subskills:       int
     allocated_minutes_per_day: float
     weekly_rate:               RateBand
-    review_load:               ReviewLoad
     projected_finish:          EtaBand
     units:                     List[UnitForecast] = Field(default_factory=list)
     subskill_etas:             List[SubskillEta] = Field(default_factory=list)

@@ -37,11 +37,6 @@ export function gateStatusBadge(ss: SubskillData) {
   return { label: 'Locked', bg: 'bg-slate-700/20 border-slate-700/30', text: 'text-slate-600' };
 }
 
-export function isRetestOverdue(nextRetestEligible: string | null | undefined): boolean {
-  if (!nextRetestEligible) return false;
-  try { return new Date(nextRetestEligible) < new Date(); } catch { return false; }
-}
-
 export function bandSuccessLabel(rate: number | null): string {
   if (rate == null) return '—';
   return `${Math.round(rate * 100)}%`;

@@ -265,9 +265,6 @@ export default function ForecastTimeline({ studentId }: Props) {
                     {parseISO(s.projected_finish.best) < scrubStart ? 'done by then 🎉' : '—'}
                   </p>
                 )}
-                <p className="mt-1.5 text-[10px] text-slate-500 [font-variant-numeric:tabular-nums]">
-                  ≈{s.review_load.due_per_week.toFixed(0)} reviews/wk · {s.review_load.dedicated_blocks.toFixed(1)} need their own block
-                </p>
               </div>
             );
           })}

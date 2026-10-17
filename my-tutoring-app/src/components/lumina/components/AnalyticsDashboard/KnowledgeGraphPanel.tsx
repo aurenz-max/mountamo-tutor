@@ -46,7 +46,7 @@ const NODE_STATUS_STYLES: Record<string, { bg: string; text: string; label: stri
 
 const CATEGORY_META: Record<GroupCategory, { label: string; color: string; description: string }> = {
   frontier:    { label: 'Now Crafting', color: 'amber', description: 'Skills with unlocked subskills ready to learn' },
-  in_review:   { label: 'Retesting',   color: 'cyan',  description: 'Skills in the review / retest cycle' },
+  in_review:   { label: 'Practising',  color: 'cyan',  description: 'Skills at gates 1-3: learning, not yet mastered' },
   mastered:    { label: 'Completed',    color: 'emerald', description: 'All subskills at gate 4 or inferred' },
   not_started: { label: 'Up Next',      color: 'slate', description: 'Unlocked but not yet attempted' },
   locked:      { label: 'Locked',       color: 'slate', description: 'Prerequisites not yet met' },

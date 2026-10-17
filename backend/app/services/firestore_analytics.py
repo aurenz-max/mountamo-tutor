@@ -322,7 +322,6 @@ class FirestoreAnalyticsService:
         passes = lc.get("passes", 0)
         fails = lc.get("fails", 0)
         lesson_eval_count = lc.get("lesson_eval_count", 0)
-        next_retest_eligible = lc.get("next_retest_eligible", None)
         estimated_remaining_attempts = lc.get("estimated_remaining_attempts", 0)
 
         # Readiness: unlocked in learning paths OR already progressing (gate > 0)
@@ -362,7 +361,6 @@ class FirestoreAnalyticsService:
             "passes": passes,
             "fails": fails,
             "lesson_eval_count": lesson_eval_count,
-            "next_retest_eligible": next_retest_eligible,
             "estimated_remaining_attempts": estimated_remaining_attempts,
         }
 
@@ -1720,8 +1718,7 @@ class FirestoreAnalyticsService:
                             ab.get("total_items_seen", 0) or 0
                         )
                         # P(correct) at this subskill's reference difficulty —
-                        # the hardest curriculum-assigned eval mode's β (the
-                        # same reference derive_gate_from_irt uses for Gate 4),
+                        # the hardest curriculum-assigned eval mode's β,
                         # falling back to the student's tested-item β median.
                         # θ is per-SKILL, so this is what actually varies
                         # per subskill and what gate thresholds are checked
@@ -1818,12 +1815,15 @@ class FirestoreAnalyticsService:
         subject: str,
         grade: Optional[str] = None,
         count: int = 4,
+        learn_only: bool = True,
     ) -> Dict[str, Any]:
         """
         Pick the next lesson's target subskills: the learner model's picks
         (`LearnerStateService.select`), the same brain that assembles Pulse
         sessions, learning picks only (`learn_only`): reviews and probes of
         mastered subskills are single Pulse items, not lessons.
+        `learn_only=False` also returns those reviews and probes (kind
+        "confirm"); the daily planner reads them for its Pulse beat.
 
         `grade` (a per-subject promotion override) moves the exposure window;
         default is the student's grade of record. A subject with no learner
@@ -1837,7 +1837,7 @@ class FirestoreAnalyticsService:
             from app.services.learner_model.service import LearnerStateService
             self.learner_state = LearnerStateService(self.fs)
         sel = await self.learner_state.select(
-            student_id, subject, count=count, grade=grade, learn_only=True,
+            student_id, subject, count=count, grade=grade, learn_only=learn_only,
         )
         if sel is None:
             return {"student_id": student_id, "subject": subject, "grade": grade,

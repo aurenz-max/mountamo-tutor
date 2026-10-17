@@ -31,7 +31,6 @@ class SkillLifecycleStatus(str, Enum):
 class SessionReason(str, Enum):
     """Why a session appears in the daily plan."""
     SCHEDULED_REVIEW = "scheduled_review"
-    MASTERY_RETEST = "mastery_retest"  # 4-gate mastery retest (PRD §3)
     BEHIND_PACE = "behind_pace"
     NEXT_IN_SEQUENCE = "next_in_sequence"
     BOTTLENECK_ADVANCE = "bottleneck_advance"  # Dependency bottleneck (PRD §7.2)
@@ -101,24 +100,6 @@ class WeeklyPlanResponse(BaseModel):
 # Daily plan response (PRD Section 5.2)
 # ---------------------------------------------------------------------------
 
-class ReviewSessionItem(BaseModel):
-    """A review (mastery retest) session in today's daily plan."""
-    skill_id: str
-    subject: str
-    skill_name: str
-    type: str = "review"
-    reason: SessionReason
-    priority: int
-    completion_factor: float
-    days_overdue: int = 0
-    mastery_gate: Optional[int] = None  # Current gate (1-3)
-    session_category: SessionCategory = SessionCategory.INTERLEAVED
-    # Enrichment fields (resolved from curriculum)
-    unit_title: Optional[str] = None
-    skill_description: Optional[str] = None
-    subskill_description: Optional[str] = None
-
-
 class NewSkillSessionItem(BaseModel):
     """A new skill in today's daily plan."""
     skill_id: str
@@ -150,7 +131,7 @@ class DailyPlanResponse(BaseModel):
     review_slots: int = 0
     new_slots: int = 0
     week_progress: Dict[str, SubjectWeekProgress] = Field(default_factory=dict)
-    sessions: List[dict] = Field(default_factory=list)  # Union of review and new items
+    sessions: List[dict] = Field(default_factory=list)  # NewSkillSessionItem dicts
     warnings: List[str] = Field(default_factory=list)
 
 

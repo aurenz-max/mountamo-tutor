@@ -459,11 +459,11 @@ class PulseEngine:
                 guessing_c=cal_result.get("guessing_c", 0.0),
             )
 
-        # 4. Update mastery gate — pass pre-fetched lifecycle + ability to avoid re-reads
-        gate_update = None
+        # 4. Practice record on the lifecycle doc (no gate: the learner model
+        #    sets it in 4b, C15 10-16) — pass the pre-fetched doc to skip a read
         eval_source = self._get_eval_source(band, old_gate)
 
-        mastery_result = await self.mastery.process_eval_result(
+        await self.mastery.process_eval_result(
             student_id=student_id,
             subskill_id=subskill_id,
             subject=subject,
@@ -472,32 +472,13 @@ class PulseEngine:
             source=eval_source,
             timestamp=now.isoformat(),
             prefetched_lifecycle=old_lifecycle,
-            prefetched_ability=cal_result.get("ability_doc"),
             prefetched_global_pass_rate=prefetched_global_pass_rate,
-            theta=new_theta,
-            sigma=cal_result.get("sigma"),
-            item_beta=cal_result.get("calibrated_beta"),
-            primitive_type=result.primitive_type,
-            avg_a=cal_result.get("discrimination_a"),
-            gate_reference_beta=item_spec.get("gate_reference_beta"),
         )
 
-        # Attach blended-P context to IRT data (from gate derivation)
-        if irt_data is not None:
-            irt_data.p_blended = mastery_result.get("_last_irt_p")
-            irt_data.empirical_p = mastery_result.get("_last_empirical_p")
-
-        new_gate = mastery_result.get("current_gate", old_gate)
-        if new_gate != old_gate:
-            gate_update = GateUpdate(
-                subskill_id=subskill_id,
-                old_gate=old_gate,
-                new_gate=new_gate,
-            )
-
-        # 4b. Learner state: the model that chooses the next items (never raises).
-        # Leapfrog is retired: the graph infers ancestors of a shown subskill
-        # itself, and confirm picks check what it infers.
+        # 4b. Learner state: the model that chooses the next items and sets the
+        # mastery gate (never raises). The session summary reports its gate
+        # moves (`_gate_changes`). Leapfrog is retired: the graph infers
+        # ancestors of a shown subskill itself, and confirm picks check what it infers.
         attempt_id = f"{session_id}:{result.item_id}"
         if self.learner_state is not None:
             await self.learner_state.submit(
@@ -523,8 +504,6 @@ class PulseEngine:
         items[item_index]["theta_update"] = theta_update.model_dump()
         if irt_data:
             items[item_index]["irt"] = irt_data.model_dump()
-        if gate_update:
-            items[item_index]["gate_update"] = gate_update.model_dump()
 
         completed_count = sum(1 for it in items if it.get("score") is not None)
         total_count = len(items)
@@ -609,9 +588,7 @@ class PulseEngine:
         return PulseResultResponse(
             item_id=result.item_id,
             theta_update=theta_update,
-            gate_update=gate_update,
             leapfrog=leapfrog,
-            gate_progress=cal_result.get("gate_progress"),
             irt=irt_data,
             session_progress={
                 "items_completed": completed_count,
@@ -631,6 +608,50 @@ class PulseEngine:
         if not session:
             raise ValueError(f"Pulse session {session_id} not found")
         return session
+
+    async def _gate_changes(self, student_id, since: Optional[str], subskill_ids: List[str],
+                            node_map: Dict[str, Dict]) -> List[GateUpdate]:
+        """The model's gate now against the gate in force when the session began, for
+        each served subskill whose gate moved (C18, 10-16). Before = the latest
+        gate_history entry earlier than the session, not the max: model gates can
+        fall, and a fall is reported as one (old_gate > new_gate). Same rule as the
+        lesson close-out (`get_subskill_progress_delta`)."""
+        if not subskill_ids or not student_id:
+            return []
+        if self.learner_state is not None:
+            await self.learner_state.drain()  # the answers' background gate syncs
+
+        def _ts(v):
+            try:
+                dt = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+                return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+            except (TypeError, ValueError):
+                return None
+
+        since_dt = _ts(since)
+        try:
+            docs = await self.firestore.get_mastery_lifecycles_batch(student_id, subskill_ids)
+        except Exception as e:
+            logger.warning(f"[PULSE] Could not read lifecycles for summary gates: {e}")
+            return []
+        out: List[GateUpdate] = []
+        for sid in subskill_ids:
+            lc = docs.get(sid) or {}
+            gate_before, before_ts = 0, None
+            for gh in lc.get("gate_history", []):
+                ts = _ts(gh.get("timestamp"))
+                if ts and since_dt and ts < since_dt and (before_ts is None or ts >= before_ts):
+                    gate_before, before_ts = gh.get("gate", 0), ts
+            gate_now = lc.get("current_gate", 0)
+            if gate_now == gate_before:
+                continue
+            node = node_map.get(sid, {})
+            out.append(GateUpdate(
+                subskill_id=sid, old_gate=gate_before, new_gate=gate_now,
+                skill_id=node.get("skill_id", "") or lc.get("skill_id", ""),
+                skill_description=node.get("skill_description", node.get("parent_label", "")),
+            ))
+        return out
 
     async def get_session_summary(self, session_id: str) -> PulseSessionSummary:
         """Aggregate completed session results into summary."""
@@ -681,23 +702,18 @@ class PulseEngine:
                 skill_description=node.get("skill_description", node.get("parent_label", "")),
             )
 
-        # Aggregate θ changes and gate updates from scored items
+        # Aggregate θ changes from scored items
         theta_changes: List[ThetaUpdate] = []
-        skills_advanced: List[GateUpdate] = []
         for it in scored_items:
             tu = it.get("theta_update")
             if tu:
                 theta_changes.append(ThetaUpdate(**tu))
-            gu = it.get("gate_update")
-            if gu:
-                node = node_map.get(gu.get("subskill_id", ""), {})
-                skills_advanced.append(GateUpdate(
-                    subskill_id=gu["subskill_id"],
-                    old_gate=gu["old_gate"],
-                    new_gate=gu["new_gate"],
-                    skill_id=node.get("skill_id", ""),
-                    skill_description=node.get("skill_description", node.get("parent_label", "")),
-                ))
+
+        skills_advanced = await self._gate_changes(
+            student_id, session.get("created_at"),
+            list(dict.fromkeys(it["subskill_id"] for it in scored_items if it.get("subskill_id"))),
+            node_map,
+        )
 
         # Leapfrogs — enrich with skill details
         leapfrogs: List[LeapfrogEvent] = []

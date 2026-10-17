@@ -222,7 +222,6 @@ class JourneyRecorder:
                 "passes": lc.get("passes", 0),
                 "fails": lc.get("fails", 0),
                 "lesson_eval_count": lc.get("lesson_eval_count", 0),
-                "next_retest_eligible": lc.get("next_retest_eligible"),
                 "gate_mode": lc.get("gate_mode", ""),
             }
 

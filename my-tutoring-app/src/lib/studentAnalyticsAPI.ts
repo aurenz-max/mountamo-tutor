@@ -81,7 +81,6 @@ export interface SubskillData {
   passes?: number;
   fails?: number;
   lesson_eval_count?: number;
-  next_retest_eligible?: string | null;
   estimated_remaining_attempts?: number;
 }
 

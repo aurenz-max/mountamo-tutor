@@ -466,13 +466,8 @@ class CompetencyService:
                 logger.error(f"🔍 COMPETENCY_SERVICE: Both competency database updates failed")
             
             # --- Calibration engine hook: IRT item β / student θ (Difficulty PRD §5–6) ---
-            # MUST run before mastery lifecycle so theta/sigma are fresh when gates are checked.
             # Only fires for Lumina primitives (primitive_type is not None).
             # Skip for diagnostic source (same as mastery lifecycle).
-            cal_theta = None
-            cal_sigma = None
-            cal_disc_a = None
-            cal_item_beta = None
             cal_evidence_n = 1.0
             if self.calibration_engine and source != "diagnostic" and primitive_type:
                 try:
@@ -487,18 +482,14 @@ class CompetencyService:
                         evidence_parts=evidence_parts,
                         first_try=first_try,
                     )
-                    cal_theta = cal_result.get("student_theta")
-                    cal_sigma = cal_result.get("sigma")
-                    cal_disc_a = cal_result.get("discrimination_a")
-                    cal_item_beta = cal_result.get("calibrated_beta")
                     cal_evidence_n = cal_result.get("evidence_n") or 1.0
                     logger.info(f"✅ COMPETENCY_SERVICE: Calibration engine processed submission")
                 except Exception as cal_err:
                     logger.error(f"⚠️ COMPETENCY_SERVICE: Calibration engine error (non-fatal): {cal_err}")
 
-            # --- Mastery lifecycle hook: 4-gate mastery model (ADAPT probability-based) ---
-            # Skip for diagnostic source — diagnostic seeds mastery in bulk at completion.
-            # Receives freshly-updated theta/sigma/a from calibration above.
+            # --- Mastery lifecycle hook: the practice record (the learner model
+            # sets the gate in its hook below, C15 10-16). Skip for diagnostic
+            # source — diagnostic seeds mastery in bulk at completion.
             if self.mastery_lifecycle_engine and source != "diagnostic":
                 try:
                     await self.mastery_lifecycle_engine.process_eval_result(
@@ -508,11 +499,6 @@ class CompetencyService:
                         skill_id=skill_id,
                         score=score,
                         source=source,
-                        theta=cal_theta,
-                        sigma=cal_sigma,
-                        item_beta=cal_item_beta,
-                        primitive_type=primitive_type,
-                        avg_a=cal_disc_a,
                         evidence_n=cal_evidence_n,
                     )
                     logger.info(f"✅ COMPETENCY_SERVICE: Mastery lifecycle engine processed eval")

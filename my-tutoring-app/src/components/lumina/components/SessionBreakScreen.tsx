@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Activity, BookOpen, Brain, Clock, Coffee, Play, ChevronRight, Sparkles, TrendingUp, Zap } from 'lucide-react';
+import { Activity, BookOpen, Brain, Clock, Coffee, Play, ChevronRight, Sparkles, TrendingUp } from 'lucide-react';
 import { prettySubject, type LessonBlock, type BlockType } from '@/lib/sessionPlanAPI';
 import { analyticsApi, type SessionProgressTarget } from '@/lib/studentAnalyticsAPI';
 
@@ -39,13 +39,6 @@ const BLOCK_TYPE_META: Record<BlockType, {
     badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
     tileClass: 'bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-amber-500/25 text-amber-300',
     ringClass: 'ring-amber-500/20',
-  },
-  retest: {
-    label: 'Mastery Check',
-    icon: Zap,
-    badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
-    tileClass: 'bg-gradient-to-br from-rose-500/20 to-pink-500/20 border-rose-500/25 text-rose-300',
-    ringClass: 'ring-rose-500/20',
   },
   pulse: {
     label: 'Daily Pulse',
@@ -141,7 +134,7 @@ export default function SessionBreakScreen({
   // description is best-effort and can be empty, and a raw subskill ID must
   // never reach the student.
   const subskillNameById = new Map(
-    completedBlock.subskills.map(ss => [ss.subskill_id, ss.subskill_name]),
+    completedBlock.subskills.map(ss => [ss.subskill_id, ss.parent_label || ss.subskill_name]),
   );
   const rowName = (row: SessionProgressTarget) =>
     subskillNameById.get(row.subskillId) || row.description || 'One of today’s skills';
@@ -174,7 +167,6 @@ export default function SessionBreakScreen({
   const headline = (() => {
     switch (completedBlock.type) {
       case 'pulse':    return 'Pulse done — evidence locked in!';
-      case 'retest':   return `${doneSubject} mastery check complete!`;
       case 'practice': return `Great ${doneSubject} practice!`;
       default:         return `Great work on your ${doneSubject} lesson!`;
     }
@@ -187,10 +179,6 @@ export default function SessionBreakScreen({
     switch (nextBlock.type) {
       case 'pulse':
         return 'Next up: a quick Daily Pulse to lock in your progress.';
-      case 'retest':
-        return sameSubject
-          ? `Next, a quick mastery check on ${title} — show what stuck!`
-          : `Next we hop over to ${nextSubject} for a quick mastery check on ${title}.`;
       case 'practice':
         return sameSubject
           ? `Staying with ${nextSubject} — time to practice ${title}.`
@@ -443,7 +431,7 @@ export default function SessionBreakScreen({
                       key={sk.subskill_id}
                       className="text-xs px-2 py-0.5 rounded bg-white/5 text-slate-400 border border-white/5"
                     >
-                      {sk.subskill_name}
+                      {sk.parent_label || sk.subskill_name}
                     </span>
                   ))}
                 </div>

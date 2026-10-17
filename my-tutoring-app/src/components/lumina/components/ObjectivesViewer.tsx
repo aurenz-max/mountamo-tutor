@@ -6,6 +6,7 @@ import { SpotlightCard } from './SpotlightCard';
 interface LearningObjective {
   id: string;
   text: string;
+  label?: string;
   verb: string;
   icon: string;
 }
@@ -152,7 +153,7 @@ export const ObjectivesViewer: React.FC<ObjectivesViewerProps> = ({ objectives, 
 
                 {/* Objective Text */}
                 <p className="text-slate-200 text-sm leading-relaxed flex-1">
-                  {objective.text}
+                  {objective.label || objective.text}
                 </p>
 
                 {/* Hover Indicator */}

@@ -1078,22 +1078,6 @@ class InMemoryFirestoreService:
             completed.append(block_id)
         return True
 
-    async def get_mastery_retests_due(
-        self, student_id: int, before_date: str
-    ) -> List[Dict[str, Any]]:
-        """Mirror of FirestoreService.get_mastery_retests_due: lifecycles with
-        next_retest_eligible <= before_date and gate in [1, 4)."""
-        self._read_count += 1
-        results = []
-        for data in self._mastery_lifecycles.get(student_id, {}).values():
-            eligible = data.get("next_retest_eligible")
-            if not eligible or str(eligible) > before_date:
-                continue
-            gate = data.get("current_gate", 0)
-            if 1 <= gate < 4:
-                results.append(copy.deepcopy(data))
-        return results
-
     async def get_school_year_config(self) -> Optional[Dict[str, Any]]:
         """School-year window for the planner's pacing math.
 

@@ -82,7 +82,6 @@ class SubskillModel(BaseModel):
     passes: float = 0.0
     fails: float = 0.0
     lesson_eval_count: int = 0
-    next_retest_eligible: Optional[str] = None
     estimated_remaining_attempts: int = 0
 
 class SkillModel(BaseModel):

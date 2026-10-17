@@ -1,7 +1,7 @@
 """
 Mastery Lifecycle API Endpoints
 
-Read-only endpoints for querying the 4-gate mastery lifecycle state
+Endpoints for querying the mastery lifecycle state (gates set by the learner model)
 per student per subskill (PRD Section 6.2).
 """
 
@@ -15,6 +15,7 @@ from ...core.middleware import get_user_context
 from ...dependencies import get_firestore_service, get_mastery_lifecycle_engine
 from ...db.firestore_service import FirestoreService
 from ...services.mastery_lifecycle_engine import MasteryLifecycleEngine
+from ...models.mastery_lifecycle import GATE_TO_STABILITY, MASTERY_STABILITY_THRESHOLD
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -147,57 +148,27 @@ async def _seed_subskill_to_gate(
     now: datetime,
 ) -> Dict:
     """
-    Simulate evaluation events to advance a subskill to the target gate.
-
-    Uses backdated timestamps so the engine's retest eligibility checks pass.
-    Sprinkles in occasional practice fails for realism.
+    Seed a subskill at the target gate: a practice record of 2 + target_gate
+    answers, then the gate written the way the learner model writes it
+    (`apply_model_states`; retests and the IRT gate are retired, C15 10-16).
     """
-    evals_sent = 0
-
-    async def _send(score: float, src: str, ts_str: str):
-        nonlocal evals_sent
-        await engine.process_eval_result(
+    n = 2 + target_gate
+    doc = None
+    for i in range(n):
+        doc = await engine.process_eval_result(
             student_id=student_id, subskill_id=subskill_id,
             subject=subject, skill_id=skill_id,
-            score=score, source=src, timestamp=ts_str,
+            score=9.5 if i % 4 != 3 else 6.5, source="practice",
+            timestamp=(now - timedelta(days=3 * (n - i))).isoformat(),
         )
-        evals_sent += 1
-
-    def _result(final_gate: int) -> Dict:
-        return {"subskill_id": subskill_id, "subject": subject, "skill_id": skill_id,
-                "target_gate": target_gate, "final_gate": final_gate, "evals_sent": evals_sent}
-
-    # --- Gate 0: send 1-2 lesson evals (not enough for Gate 1) ---
-    if target_gate == 0:
-        for i in range(2):
-            await _send(9.5, "lesson", (now - timedelta(days=30 - i)).isoformat())
-        return _result(0)
-
-    # --- Gate 1+: need 3 lesson evals >= 9.0 ---
-    for i in range(3):
-        await _send(9.5, "lesson", (now - timedelta(days=30 - i)).isoformat())
-
-    if target_gate == 1:
-        return _result(1)
-
-    # --- Gate 2+: practice fail then pass after 3-day interval ---
-    await _send(7.0, "practice", (now - timedelta(days=25)).isoformat())
-    await _send(9.5, "practice", (now - timedelta(days=20)).isoformat())
-
-    if target_gate == 2:
-        return _result(2)
-
-    # --- Gate 3+: practice pass after 7-day interval ---
-    await _send(9.5, "practice", (now - timedelta(days=10)).isoformat())
-
-    if target_gate == 3:
-        return _result(3)
-
-    # --- Gate 4: fail then pass after 14-day interval ---
-    await _send(6.5, "practice", (now - timedelta(days=5)).isoformat())
-    await _send(9.5, "practice", now.isoformat())
-
-    return _result(4)
+    if target_gate > 0:
+        stability = GATE_TO_STABILITY.get(target_gate, 0.0)
+        await engine.apply_model_states(student_id, [{
+            "doc": doc, "gate": target_gate, "stability": stability, "pc": 0.9,
+            "retention_state": "mastered" if target_gate == 4 and stability >= MASTERY_STABILITY_THRESHOLD else "active",
+        }])
+    return {"subskill_id": subskill_id, "subject": subject, "skill_id": skill_id,
+            "target_gate": target_gate, "final_gate": target_gate, "evals_sent": n}
 
 
 # ==========================================================================
@@ -222,10 +193,8 @@ async def submit_eval_result(
     engine: MasteryLifecycleEngine = Depends(get_mastery_lifecycle_engine),
 ):
     """
-    Record a practice or lesson evaluation result and advance the mastery gate
-    if the student meets the threshold (score >= 9.0/10).
-
-    Called by the frontend after a student completes a mastery gate session.
+    Record a practice or lesson evaluation result on the subskill's practice
+    record. Sets no gate: the learner model owns gates (C13/C15, 10-16).
     """
     try:
         result = await engine.process_eval_result(
@@ -263,7 +232,7 @@ async def get_all_mastery_lifecycles(
     """
     Get all mastery lifecycle documents for a student.
 
-    Returns the gate state, completion factor, and retest schedule for
+    Returns the gate state and completion factor for
     every subskill the student has interacted with.
     """
     try:
@@ -334,38 +303,6 @@ async def get_mastery_forecast(
         raise
     except Exception as e:
         logger.error(f"Error getting mastery forecast for student {student_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/{student_id}/retests/due")
-async def get_mastery_retests_due(
-    student_id: int,
-    user_context: dict = Depends(get_user_context),
-    firestore: FirestoreService = Depends(get_firestore_service),
-):
-    """
-    Get all subskills that have a mastery retest due (next_retest_eligible <= now).
-
-    Used by the planner and frontend to show pending retests.
-    """
-    try:
-        if not firestore:
-            raise HTTPException(status_code=503, detail="Firestore service unavailable")
-
-        now_iso = datetime.now(timezone.utc).isoformat()
-        retests = await firestore.get_mastery_retests_due(student_id, now_iso)
-
-        return {
-            "student_id": student_id,
-            "count": len(retests),
-            "retests_due": retests,
-            "checked_at": now_iso,
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting mastery retests due for student {student_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -454,7 +391,7 @@ async def get_mastery_lifecycle(
     """
     Get the mastery lifecycle for a specific student + subskill.
 
-    Returns gate state, completion factor, pass rate, retest schedule,
+    Returns gate state, completion factor, pass rate,
     and full gate history.
     """
     try:

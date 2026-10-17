@@ -1,38 +1,24 @@
 """
 Mastery Lifecycle Data Models
 
-Implements the stability-based retention model (PRD §16), replacing Gates 1-4
-with continuous forgetting + spaced review.  Each subskill follows:
+One doc per student and subskill. The learner model writes the gate, retention
+state and memory stability (`MasteryLifecycleEngine.apply_model_states`, C13
+10-16); `process_eval_result` keeps the practice record beside them. Retests
+and the IRT gate derivation are retired (C15, 10-16): old docs still carry
+`next_retest_eligible` / `retest_interval_days` / `gate_mode`, which nothing
+writes or reads (extra fields are ignored on load).
 
-  not_started  (Gate 0 — student hasn't been introduced)
-    → active   (Gate 1 — initial mastery achieved, retention tracked via stability)
-    → mastered (stability > 30 days — long-term retention verified)
-
-Gate 0→1 transition preserved for initial mastery verification.
-Reviews surface by information value (P < 0.85), never blocking progression.
-Stability grows with successful reviews (×2.5/×1.5/×0.5).
+  not_started  (gate 0 — no answer yet)
+    → active   (gates 1-4 — the model's P(right) rung, 4 at P(mastered) >= 0.8)
+    → mastered (gate 4 and memory stability >= MASTERY_STABILITY_THRESHOLD days)
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from enum import IntEnum
 from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
-
-
-# ---------------------------------------------------------------------------
-# Enums
-# ---------------------------------------------------------------------------
-
-class MasteryGate(IntEnum):
-    """The four mastery gates (plus not-started)."""
-    NOT_STARTED = 0
-    INITIAL_MASTERY = 1
-    RETEST_1 = 2
-    RETEST_2 = 3
-    RETEST_3 = 4
 
 
 # ---------------------------------------------------------------------------
@@ -73,7 +59,7 @@ class MasteryLifecycle(BaseModel):
 
     # Gate state
     current_gate: int = Field(
-        default=MasteryGate.NOT_STARTED,
+        default=0,
         ge=0, le=4,
         description="Current mastery gate (0-4)",
     )
@@ -91,66 +77,35 @@ class MasteryLifecycle(BaseModel):
     # Workload forecast
     estimated_remaining_attempts: int = Field(default=4, ge=0)
 
-    # Retest scheduling
-    next_retest_eligible: Optional[str] = Field(
-        default=None,
-        description="ISO-8601 timestamp — earliest the planner may schedule a retest",
-    )
-    retest_interval_days: int = Field(default=3, ge=0)
-
-    # Gate 1 lesson eval tracking (requires 3 lesson evals ≥ 90%)
+    # Passed lesson evals (the curriculum map's "lessons" column)
     lesson_eval_count: int = Field(
         default=0, ge=0,
         description="Count of lesson-mode evals scoring ≥ 90% for this subskill",
     )
 
-    # Theta-based gate tracking (ADAPT model — replaces score-based gates)
-    gate_mode: str = Field(
-        default="legacy",
-        description="Gate advancement mode: 'legacy' (3-evals-at-9.0) or 'theta' (confidence-based)",
-    )
-    theta_at_gate_entry: Optional[float] = Field(
-        default=None, description="Student theta when gate was last advanced",
-    )
-    sigma_at_gate_entry: Optional[float] = Field(
-        default=None, description="Student sigma when gate was last advanced",
-    )
-    gate_theta_threshold: Optional[float] = Field(
-        default=None, description="Skill beta median used for gate threshold computation",
-    )
-
-    # Retention model (PRD §16 — replaces Gates 1-4)
+    # Retention state + memory stability (written by the learner model)
     retention_state: str = Field(
         default="not_started",
         description="Retention state: 'not_started' | 'active' | 'mastered'",
     )
     stability: float = Field(
         default=0.0, ge=0.0,
-        description="Memory strength in days — how long before P drops below target",
+        description="The learner model's memory stability in days",
     )
     last_reviewed: Optional[str] = Field(
         default=None,
-        description="ISO-8601 timestamp of last stability-updating review",
+        description="ISO-8601 timestamp of the last answer on this subskill",
     )
     review_count: int = Field(
         default=0, ge=0,
-        description="Number of stability-updating reviews completed",
+        description="Number of answers recorded on this subskill",
     )
     evidence_n: float = Field(
         default=0.0, ge=0.0,
         description=(
             "Accumulated EFFECTIVE observation count for this subskill "
             "(multi-part primitives contribute >1 per submission via the "
-            "testlet discount). Drives the credibility blend + LCB gate; "
-            "falls back to review_count for legacy docs."
-        ),
-    )
-    last_stability_growth: Optional[str] = Field(
-        default=None,
-        description=(
-            "ISO-8601 timestamp of the last SPACED stability update. Growth "
-            "multipliers only compound when >= STABILITY_SPACING_MIN_DAYS "
-            "have elapsed since this — same-session repeats never compound."
+            "testlet discount)."
         ),
     )
 
@@ -173,98 +128,24 @@ class MasteryLifecycle(BaseModel):
 # Mastery threshold: score ≥ 9.0/10 = 90%
 MASTERY_THRESHOLD = 9.0
 
-# Minimum lesson evals required to clear Gate 1
-GATE_1_MIN_LESSON_EVALS = 3
-
 # Credibility standard for blending (PRD 4.3)
 CREDIBILITY_STANDARD = 10
 
-# Spaced retest intervals (PRD 5.1)
-RETEST_INTERVALS = {
-    # gate_transition: (base_interval_days, failed_reset_days)
-    (1, 2): (3, 3),
-    (2, 3): (7, 3),
-    (3, 4): (14, 7),
-}
-
 # ---------------------------------------------------------------------------
-# Theta-based gate constants (ADAPT model — legacy theta-offset mode)
+# The learner model's gate rungs: gates 1-3 are the highest P(right) rung the
+# model's P(right) on the typical item clears (LearnerStateService._gate_updates).
 # ---------------------------------------------------------------------------
 
-# Sigma thresholds per gate — confidence requirement tightens at higher gates.
-# Lower sigma = more confident estimate. Must have sigma BELOW this value to advance.
-GATE_SIGMA_THRESHOLDS = {
-    1: 1.5,   # Gate 0→1: "probably passes easy items"
-    2: 1.2,   # Gate 1→2: "likely passes medium items"
-    3: 1.0,   # Gate 2→3: "strong chance at hard items"
-    4: 0.8,   # Gate 3→4: "near-certain at everything"
-}
-
-# Theta must exceed skill_beta_median + offset for each gate.
-# (Legacy mode — replaced by P(correct) thresholds in probability mode)
-GATE_THETA_OFFSETS = {
-    1: 0.0,   # Gate 0→1: theta > skill beta median
-    2: 0.0,   # Gate 1→2: retention check (same threshold)
-    3: 0.5,   # Gate 2→3: slightly above median
-    4: 0.5,   # Gate 3→4: same as G3
-}
-
-# ---------------------------------------------------------------------------
-# Probability-based gate constants (2PL/3PL ADAPT model)
-#
-# Gate pass: P(correct | ref_b, avg_a) >= p_threshold AND sigma <= sigma_max
-# ref_b = min_beta + (max_beta - min_beta) * ref_fraction
-# ---------------------------------------------------------------------------
-
-# P(correct) thresholds per gate
+# P(right) per gate (the model sets gate 4 from P(mastered) >= 0.8)
 GATE_P_THRESHOLDS = {
-    1: 0.70,  # Gate 0→1: 70% chance at easiest mode
-    2: 0.75,  # Gate 1→2: 75% chance at mid difficulty
-    3: 0.80,  # Gate 2→3: 80% chance at hard difficulty
-    4: 0.90,  # Gate 3→4: 90% chance at hardest mode
-}
-
-# Credibility constant for blending empirical P with IRT P in gate checks.
-# Z = n / (n + K).  At K=10: Z=0.5 after 10 observations, Z=0.75 after 30.
-# Matches CREDIBILITY_STANDARD used in the actuarial completion factor.
-GATE_CREDIBILITY_K = 10
-
-# ---------------------------------------------------------------------------
-# Per-gate minimum evidence — the actuarial full-credibility standard
-#
-# Gates pass on the blended POINT estimate (LCB-vs-threshold was tried and
-# rejected 2026-07-14: strong students average ~0.90-0.92 score fraction,
-# right AT the gate-4 threshold, so a lower bound demands absurd n — required
-# n scales with 1/margin² and the margin is ~0.02). Instead, each gate
-# requires a minimum EFFECTIVE observation count on THIS subskill before it
-# can pass at all. σ pools per skill (siblings collapse it; 2026-07-14
-# baseline: 36-54% of subskills arrive at their first eval with σ already
-# ≤ 0.8), so this per-subskill n is the lever that makes evidence volume
-# matter. Multi-part primitives contribute >1 effective observation
-# (CalibrationEngine.effective_evidence): gate 4 ≈ two 7-part primitives
-# or eight single problems.
-# ---------------------------------------------------------------------------
-GATE_MIN_EVIDENCE = {
-    1: 1.0,   # activation: one real observation
-    2: 2.0,
-    3: 4.0,
-    4: 8.0,   # accuracy-at-required-difficulty needs a real evidence record
-}
-
-# Jeffreys prior pseudo-counts for the empirical pass-rate estimate:
-# p̃ = (passes + 0.5) / (n + 1). Keeps a 1-for-1 record from claiming p=1.0.
-JEFFREYS_ALPHA = 0.5
-
-# Reference difficulty fraction within the primitive's beta range
-GATE_REF_FRACTIONS = {
-    1: 0.0,   # Easiest mode (min β)
-    2: 0.5,   # Mid difficulty
-    3: 0.8,   # 80th percentile β
-    4: 1.0,   # Hardest mode (max β)
+    1: 0.70,
+    2: 0.75,
+    3: 0.80,
+    4: 0.90,
 }
 
 # ---------------------------------------------------------------------------
-# Retention model constants (PRD §16 — replaces Gates 1-4)
+# Retention model constants
 # ---------------------------------------------------------------------------
 
 # Initial memory stability after first mastery (Gate 0→1 cleared)
@@ -287,29 +168,8 @@ TARGET_RETENTION = 0.85
 # Current-band filter: items above this P are trivial busywork — skip them
 TRIVIAL_THRESHOLD = 0.95
 
-# Stability growth multipliers based on review score
-STABILITY_GROWTH_STRONG = 2.5   # score >= 9.0 — strong recall
-STABILITY_GROWTH_PARTIAL = 1.5  # score >= 7.0 — partial recall
-STABILITY_SHRINK_FAIL = 0.5     # score < 7.0 — failed recall, review sooner
-
-# Spacing requirement for stability updates: growth (and shrink) multipliers
-# only apply when at least this many days have elapsed since the last
-# stability update. Same-session grinding CANNOT compound stability — this is
-# what makes "mastered" mean retention over calendar time, not massed volume.
-STABILITY_SPACING_MIN_DAYS = 1.0
-
-# Stability ceiling (days) — bounds retest intervals for mastered-track items
-STABILITY_CAP = 90.0
-
-# Ability-aware fast-track: if the model predicts P(correct) >= this threshold
-# on the hardest available mode, the student demonstrably knows the material.
-# Skip intermediate stability gates by flooring stability at FAST_TRACK_STABILITY.
-# Path: S=3.0 → 18.75 → 46.9 (mastered) — 3 evals instead of 4.
-FAST_TRACK_P_THRESHOLD = 0.95
-FAST_TRACK_STABILITY = 18.75    # gate 3 equivalent (skips gates 1→2→3)
-FAST_TRACK_SIGMA_MAX = 1.0      # σ must be below this for fast-track to fire;
-                                # leapfrog-inferred skills start at σ=1.5 and
-                                # need real practice to shrink below 1.0
+# Assumed strong-recall growth per review, for the mastery ETA projection
+STABILITY_GROWTH_STRONG = 2.5
 
 # Stability above this → mastered (equivalent to old Gate 4)
 MASTERY_STABILITY_THRESHOLD = 30.0  # days

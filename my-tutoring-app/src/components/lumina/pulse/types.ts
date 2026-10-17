@@ -92,6 +92,8 @@ export interface PulseItemSpec {
   selection_kind?: 'learn' | 'confirm' | null;
   selection_reason?: string | null;
   p_right?: number | null;
+  /** Learner-model P(mastered) on the subskill when the item was picked (the gate's verdict). */
+  p_mastered?: number | null;
   /** The subskill's own grade ("Kindergarten", "1", ...). */
   grade?: string | null;
 }
@@ -170,24 +172,6 @@ export interface SkillUnlockProgress {
   unlocked_subskills: number;
 }
 
-export interface GateThresholds {
-  g1: number;
-  g2: number;
-  g3: number;
-  g4: number;
-}
-
-export interface GateProgress {
-  primitive_type: string;
-  current_gate: number;   // 0-4
-  thresholds: GateThresholds;
-  theta: number;
-  next_gate: number | null;
-  next_gate_theta: number | null;
-  min_beta: number;
-  max_beta: number;
-}
-
 /** IRT probability data returned with each result */
 export interface IrtProbabilityData {
   p_correct: number;         // P(correct) at current theta
@@ -199,9 +183,7 @@ export interface IrtProbabilityData {
 export interface PulseResultResponse {
   item_id: string;
   theta_update: ThetaUpdate;
-  gate_update?: GateUpdate;
   leapfrog?: LeapfrogEvent;
-  gate_progress?: GateProgress;
   irt?: IrtProbabilityData;
   session_progress: {
     items_completed: number;

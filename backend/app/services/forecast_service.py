@@ -32,7 +32,6 @@ from ..models.forecast import (
     EtaBand,
     ForecastDrift,
     RateBand,
-    ReviewLoad,
     StudentForecast,
     SubjectForecast,
     SubskillEta,
@@ -47,14 +46,6 @@ logger = logging.getLogger(__name__)
 # them to observed velocity variance.
 OPTIMISTIC_MULT = 1.15
 PESSIMISTIC_MULT = 0.75
-
-# Retest echo: each introduced subskill returns for gate checks at roughly
-# wk +1 / +2 / +4 (mastery lifecycle intervals) → ~3 due retests per intro.
-RETEST_ECHO = 3.0
-
-# Triage split of non-subsumed retests (see design §3b): most fold into
-# nearby lessons as riders; the rest are orphan leaves needing blocks.
-RIDER_SHARE = 0.6
 
 # How many frontier picks per subject carry the live selector's order.
 SELECTOR_HEAD = 8
@@ -125,7 +116,7 @@ def project(
 
     Each subjects_state entry:
       subject, total, remaining_ordered: [{subskill_id, description, skill_id,
-      unit_title, unit_order, order_basis, reason}], graph_coverage
+      unit_title, unit_order, order_basis, reason}]
     """
     n_weeks = len(weeks)
     total_remaining = sum(len(s["remaining_ordered"]) for s in subjects_state) or 1
@@ -182,19 +173,6 @@ def project(
                 reason=r.get("reason", ""),
             ))
 
-        # --- retention triage (§3b) ---
-        cov = st.get("graph_coverage", 0.0)
-        due = r_best * RETEST_ECHO
-        subsumed = due * cov
-        rest = due - subsumed
-        review = ReviewLoad(
-            due_per_week=round(due, 1),
-            subsumed=round(subsumed, 1),
-            riders=round(rest * RIDER_SHARE, 1),
-            dedicated_blocks=round(rest * (1 - RIDER_SHARE), 1),
-            graph_coverage=round(cov, 2),
-        )
-
         finish_best_f = n_rem / r_best
         if n_rem / r_pess > year_end_f:
             warnings.append(
@@ -209,7 +187,6 @@ def project(
                 optimistic=round(r_opt, 2), best=round(r_best, 2),
                 pessimistic=round(r_pess, 2),
             ),
-            review_load=review,
             projected_finish=EtaBand(
                 optimistic=week_date(weeks, n_rem / r_opt).isoformat(),
                 best=week_date(weeks, finish_best_f).isoformat(),
@@ -394,12 +371,10 @@ class ForecastService:
                 r["sub_order"],
             ))
 
-            with_deps = sum(1 for n in nodes if n.get("dependent_ids"))
             subjects_state.append({
                 "subject": subj,
                 "total": len(nodes),
                 "remaining_ordered": head + tail,
-                "graph_coverage": with_deps / len(nodes),
             })
 
         subject_forecasts, required, warnings = project(

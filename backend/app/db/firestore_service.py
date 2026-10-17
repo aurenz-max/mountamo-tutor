@@ -2020,33 +2020,6 @@ class FirestoreService:
             logger.error(f"Error upserting mastery lifecycle: {e}")
             raise
 
-    async def get_mastery_retests_due(
-        self,
-        student_id: int,
-        before_date: str
-    ) -> List[Dict[str, Any]]:
-        """Get subskills whose mastery retest is due (next_retest_eligible <= before_date).
-
-        Firestore compound queries with range filters on multiple fields require
-        composite indexes.  We filter on next_retest_eligible in-query (single
-        range filter) and apply the gate filter client-side to avoid index issues.
-        """
-        try:
-            query = (
-                self._mastery_lifecycle_subcollection(student_id)
-                .where('next_retest_eligible', '<=', before_date)
-            )
-            results = []
-            for doc in query.stream():
-                data = doc.to_dict()
-                gate = data.get('current_gate', 0)
-                if 1 <= gate < 4:
-                    results.append(data)
-            return results
-        except Exception as e:
-            logger.error(f"Error getting mastery retests due: {e}")
-            return []
-
     async def get_all_mastery_lifecycles(
         self,
         student_id: int,

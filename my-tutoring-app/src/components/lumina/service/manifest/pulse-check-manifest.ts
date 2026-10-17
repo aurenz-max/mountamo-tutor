@@ -24,6 +24,9 @@ import { enrichManifestWithLayout } from './flattenManifest';
 export interface PulseObjective {
   id: string;
   text: string;
+  /** Plain sentence for display (curriculum parent_summary). Screens show it;
+   *  generators read `text`, the authoring description. */
+  label?: string;
   verb: string;
   icon: string;
   subskillId?: string;
@@ -95,6 +98,7 @@ export const buildPulseBrief = (
   objectives: objectives.map(o => ({
     id: o.id,
     text: o.text,
+    label: o.label,
     verb: (['identify', 'explain', 'create', 'analyze', 'compare', 'apply', 'evaluate']
       .includes(o.verb) ? o.verb : 'apply') as IntroBriefingData['objectives'][number]['verb'],
     icon: o.icon || '🎯',

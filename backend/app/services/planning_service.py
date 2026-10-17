@@ -31,10 +31,8 @@ from ..models.planning import (
     MonthlyPlanResponse,
     MonthlyWarning,
     NewSkillSessionItem,
-    ReviewSessionItem,
     SchoolBreak,
     SchoolYearConfig,
-    SessionCategory,
     SessionReason,
     SubjectCurrentState,
     SubjectMonthlyProjection,
@@ -220,7 +218,6 @@ class PlanningService:
         # 5. Compute per-subject stats
         subjects_stats: Dict[str, SubjectWeeklyStats] = {}
         warnings: List[str] = []
-        total_in_pipeline = 0
 
         for subj in subject_names:
             # Get total subskills from curriculum
@@ -248,7 +245,6 @@ class PlanningService:
                 if PlanningService._derive_retention_state(lc) == "active"
             )
 
-            total_in_pipeline += in_review + learning_count
 
             stats = SubjectWeeklyStats(
                 total_skills=total_subskills,
@@ -267,9 +263,9 @@ class PlanningService:
             if behind_by > 0:
                 warnings.append(f"{subj}: {behind_by} skills behind expected pace")
 
-        # Estimate sustainable new per day from current pipeline load
-        estimated_daily_review_load = round(total_in_pipeline / 5.0, 1)
-        sustainable = max(0.0, capacity - estimated_daily_review_load)
+        # Reviews are Pulse items the memory model schedules, not planned
+        # sessions (lifecycle retests retired, C15 10-16): every slot can teach
+        sustainable = float(capacity)
 
         return WeeklyPlanResponse(
             student_id=str(student_id),
@@ -298,15 +294,14 @@ class PlanningService:
         Produces per-subject trajectories with optimistic / best-estimate /
         pessimistic confidence bands and early-warning flags.
 
-        Pipeline delay model (PRD §5.5, mastery lifecycle intervals 3d/7d/14d):
-          Optimistic:    4 weeks (ceil(24 days / 7), perfect — no failures)
-          Best estimate: 5 weeks (ceil(30 days / 7), typical — ~1 failure)
-          Pessimistic:   6 weeks (ceil(40 days / 7), struggling — 2+ failures)
+        Pipeline delay model: weeks from introduction to mastered, from the
+        memory stability a subskill needs (MASTERY_STABILITY_THRESHOLD days).
 
-        Capacity model (PRD §3.2):
-          Each new introduction costs 3 lesson eval sessions.
-          Each retest costs 1 session.
-          Total daily load for N new/day: 3N (lessons) + 3N (retests) = 6N
+        Capacity model (PRD §3.2): each new introduction costs 3 lesson
+        sessions. Reviews are single Pulse items the memory model schedules
+        (lifecycle retests retired, C15 10-16), so they take no planned sessions;
+        projectedReviewsDue counts the reviews the stored memory stability puts
+        in each week, for display.
         """
         today = self._now().date()
 
@@ -440,18 +435,7 @@ class PlanningService:
                 # --- Reviews due this week ---
                 known_this_week = known_reviews_by_week.get(w, 0)
 
-                # Estimated reviews from skills introduced in prior weeks.
-                # Mastery lifecycle retests (PRD §2.1): 1 session each at
-                #   week +1 (Gate 1→2, 3d), +2 (Gate 2→3, 7d), +4 (Gate 3→4, 14d)
-                estimated_reviews = 0
-                for intro_week_idx, intro_count in enumerate(new_introductions_by_week):
-                    if intro_count <= 0:
-                        continue
-                    weeks_since_intro = w - (intro_week_idx + 1)
-                    if weeks_since_intro in (1, 2, 4):
-                        estimated_reviews += intro_count
-
-                projected_reviews_due = known_this_week + estimated_reviews
+                projected_reviews_due = known_this_week
 
                 # --- Closures: pipeline delay model ---
                 existing_closures = existing_closures_by_week.get(w, 0)
@@ -478,7 +462,7 @@ class PlanningService:
                 closures_for_inventory = round(closures_best_f)
 
                 # --- New skill capacity (PRD §3.2: each intro = 3 lesson sessions) ---
-                session_budget = max(0, weekly_capacity - projected_reviews_due)
+                session_budget = weekly_capacity
                 max_intros_from_budget = session_budget // sessions_per_intro
                 new_introductions = min(max_intros_from_budget, pacing_target, not_started)
                 not_started = max(0, not_started - new_introductions)
@@ -567,10 +551,11 @@ class PlanningService:
         """
         Compute today's prioritised session queue.
 
-        Step 1: Build review queue from mastery retests due (single source).
-        Step 2: Determine capacity for new skills.
-        Step 3: Select new skills using knowledge graph / curriculum sequence.
-        Step 4: Merge and return.
+        Every slot goes to new skills: lifecycle retests are retired (C13/C15,
+        10-16) and reviews are single Pulse items the memory model schedules
+        (LearnerStateService.select).
+        Step 1: Select new skills using knowledge graph / curriculum sequence.
+        Step 2: Enrich and return.
         """
         today = self._now().date()
         today_str = today.isoformat()
@@ -580,22 +565,9 @@ class PlanningService:
         planning = await self.firestore.get_student_planning_fields(student_id)
         capacity = planning.get("daily_session_capacity", DEFAULT_CAPACITY)
 
-        # ---- Step 1: Review queue ----
-        # Lifecycle retests are retired (C11/C12, 10-16): reviews are single
-        # Pulse items the memory model schedules (LearnerStateService.select),
-        # so every slot goes to learning. Retests kept 94-100% as much a week
-        # later on 10% of the review items; the slots they took teach more.
-        review_queue: List[Dict[str, Any]] = []
+        new_skill_slots = capacity
 
-        # ---- Step 2: Capacity allocation ----
-        max_review_slots = math.floor(capacity * 0.85)
-        actual_review_slots = min(len(review_queue), max_review_slots)
-        new_skill_slots = capacity - actual_review_slots
-
-        # Trim review queue to allocated slots
-        review_queue = review_queue[:actual_review_slots]
-
-        # ---- Step 3: Select new skills (with gate-blocking — PRD §7.1) ----
+        # ---- Step 1: Select new skills (with gate-blocking — PRD §7.1) ----
         weekly_plan = await self.get_weekly_plan(student_id)
         new_skills: List[Dict[str, Any]] = []
 
@@ -705,10 +677,8 @@ class PlanningService:
                 if allocated >= new_skill_slots:
                     break
 
-        # ---- Step 4: Enrich with curriculum names ----
+        # ---- Step 2: Enrich with curriculum names ----
         session_subjects = set()
-        for r in review_queue:
-            session_subjects.add(r.get("subject", ""))
         for n in new_skills:
             session_subjects.add(n.get("subject", ""))
         session_subjects.discard("")
@@ -716,7 +686,7 @@ class PlanningService:
         curriculum_lookup = await self._build_curriculum_lookup(session_subjects)
 
         # Diagnostic: log IDs that couldn't be enriched
-        all_session_ids = [r.get("skill_id", "") for r in review_queue] + [n["skill_id"] for n in new_skills]
+        all_session_ids = [n["skill_id"] for n in new_skills]
         unresolved = [sid for sid in all_session_ids if sid and sid not in curriculum_lookup]
         if unresolved:
             from collections import Counter
@@ -734,48 +704,24 @@ class PlanningService:
                 f"LA keys sample: {la_sample}"
             )
 
-        # ---- Step 5: Interleave and return (PRD §8) ----
-        interleaved = self._interleave_sessions(review_queue, new_skills, capacity)
-
         sessions: List[dict] = []
-        for item in interleaved:
+        for priority, item in enumerate(new_skills, start=1):
             sid = item.get("skill_id", "")
             meta = curriculum_lookup.get(sid, {})
-            category = SessionCategory(item.get("session_category", SessionCategory.INTERLEAVED.value))
-
-            if item.get("type") == "new":
-                sessions.append(
-                    NewSkillSessionItem(
-                        skill_id=sid,
-                        subject=item.get("subject", ""),
-                        skill_name=meta.get("subskill_description") or item.get("skill_name", sid),
-                        reason=SessionReason(item.get("reason", SessionReason.NEXT_IN_SEQUENCE.value)),
-                        priority=item["priority"],
-                        prerequisites_met=item.get("prerequisites_met", True),
-                        bottleneck=item.get("bottleneck", False),
-                        session_category=category,
-                        unit_title=meta.get("unit_title"),
-                        skill_description=meta.get("skill_description"),
-                        subskill_description=meta.get("subskill_description"),
-                    ).model_dump()
-                )
-            else:
-                sessions.append(
-                    ReviewSessionItem(
-                        skill_id=sid,
-                        subject=item.get("subject", ""),
-                        skill_name=meta.get("subskill_description") or item.get("skill_name", sid),
-                        reason=SessionReason.MASTERY_RETEST,
-                        priority=item["priority"],
-                        completion_factor=item.get("completion_factor", 0.0),
-                        days_overdue=item.get("days_overdue", 0),
-                        mastery_gate=item.get("mastery_gate"),
-                        session_category=category,
-                        unit_title=meta.get("unit_title"),
-                        skill_description=meta.get("skill_description"),
-                        subskill_description=meta.get("subskill_description"),
-                    ).model_dump()
-                )
+            sessions.append(
+                NewSkillSessionItem(
+                    skill_id=sid,
+                    subject=item.get("subject", ""),
+                    skill_name=meta.get("subskill_description") or item.get("skill_name", sid),
+                    reason=SessionReason(item.get("reason", SessionReason.NEXT_IN_SEQUENCE.value)),
+                    priority=priority,
+                    prerequisites_met=item.get("prerequisites_met", True),
+                    bottleneck=item.get("bottleneck", False),
+                    unit_title=meta.get("unit_title"),
+                    skill_description=meta.get("skill_description"),
+                    subskill_description=meta.get("subskill_description"),
+                ).model_dump()
+            )
 
         # Week progress
         week_progress: Dict[str, SubjectWeekProgress] = {}
@@ -787,17 +733,13 @@ class PlanningService:
             )
 
         warnings: List[str] = []
-        if len(review_queue) > max_review_slots:
-            warnings.append("Review backlog exceeds daily capacity — no new skills today")
-        if actual_review_slots >= capacity:
-            warnings.append("Capacity overload: all slots consumed by reviews")
 
         return DailyPlanResponse(
             student_id=str(student_id),
             date=today_str,
             day_of_week=day_names[today.weekday()],
             capacity=capacity,
-            review_slots=actual_review_slots,
+            review_slots=0,
             new_slots=len(new_skills),
             week_progress=week_progress,
             sessions=sessions,
@@ -905,7 +847,7 @@ class PlanningService:
                 plan.total_subskills = sum(len(b.subskills) for b in plan.blocks)
                 statuses = [ss.status for b in plan.blocks for ss in b.subskills]
                 plan.new_subskills = sum(1 for s in statuses if s == "new")
-                plan.review_subskills = sum(1 for s in statuses if s in ("review", "retest"))
+                plan.review_subskills = sum(1 for s in statuses if s == "review")
             final_ids = {b.block_id for b in plan.blocks}
             plan.completed_block_ids = [bid for bid in completed_ids if bid in final_ids]
 
@@ -970,7 +912,7 @@ class PlanningService:
           - Caps review time at 50% of budget (PRD §3.3)
 
         PRD §3 Planning Engine flow:
-          1. Collect due mastery retests + unlocked new subskills
+          1. Collect the selector's picks + unlocked new subskills
           2. Enrich with curriculum metadata (unit, skill, subskill names)
           3. Group into LessonBlocks by domain + Bloom's taxonomy
           4. Fill time budget in priority order
@@ -1136,6 +1078,43 @@ class PlanningService:
                         if added >= 20:   # cap per subject; time budget handles final selection
                             break
 
+        # --- Step 1c: The daily Pulse beat's reviews ---
+        # The learning picks above are learn-only, so the beat needs its own
+        # read: the model's review/probe picks (kind "confirm") per subject,
+        # taken one subject at a time so every subject gets a retrieval item
+        # each day. A subject with nothing mastered contributes none.
+        if self.analytics and self.learning_paths:
+            from .lesson_group_service import PULSE_BEAT_MAX_ITEMS
+            reviews_by_subject: List[List[Dict[str, Any]]] = []
+            for subj in weekly_plan.subjects:
+                if pace_by_subject and subj not in pace_by_subject:
+                    continue    # no curriculum graph (skipped above too)
+                try:
+                    targets = await self.analytics.select_session_targets(
+                        student_id, subj,
+                        grade=self._subject_grade(subj, student_grade, grade_overrides),
+                        count=PULSE_BEAT_MAX_ITEMS, learn_only=False,
+                    )
+                except Exception as e:
+                    logger.warning(f"[SESSION_PLAN] Review read failed for {subj}: {e}")
+                    continue
+                reviews_by_subject.append([
+                    {
+                        "skill_id":         o["subskillId"],
+                        "subject":          subj,
+                        "type":             "practice",
+                        "mastery_gate":     o.get("currentGate", 0),
+                        "selection_verb":   o.get("verb"),
+                        "selection_kind":   "confirm",
+                        "selection_reason": o.get("reason"),
+                    }
+                    for o in targets.get("objectives", []) if o.get("kind") == "confirm"
+                ])
+            for rank in range(PULSE_BEAT_MAX_ITEMS):
+                for picks in reviews_by_subject:
+                    if rank < len(picks):
+                        all_candidates.append(picks[rank])
+
         # One subskill, one block a day.
         seen_ids: set = set()
         deduped: List[Dict[str, Any]] = []
@@ -1185,6 +1164,7 @@ class PlanningService:
                 "parent_skill_id":      meta.get("skill_id", ""),
                 "skill_description":    meta.get("skill_description"),
                 "subskill_description": meta.get("subskill_description"),
+                "parent_summary":       meta.get("parent_summary") or "",
             })
         if dropped:
             logger.warning(
@@ -1531,15 +1511,6 @@ class PlanningService:
         )
         return next_grade
 
-    def _compute_days_overdue(self, ml: Dict[str, Any]) -> int:
-        """Days elapsed since a mastery lifecycle retest was due."""
-        today = self._now().date()
-        retest_eligible = ml.get("next_retest_eligible", "")
-        try:
-            return max(0, (today - date.fromisoformat(retest_eligible[:10])).days)
-        except (ValueError, TypeError):
-            return 0
-
     # ====================================================================
     # Helpers
     # ====================================================================
@@ -1636,6 +1607,7 @@ class PlanningService:
                                 "skill_id": skill_id,
                                 "skill_description": skill_desc,
                                 "subskill_description": ss_desc,
+                                "parent_summary": subskill.get("parent_summary") or "",
                             }
         return lookup
 
@@ -1647,154 +1619,6 @@ class PlanningService:
             for skill in unit.get("skills", []):
                 count += len(skill.get("subskills", []))
         return count
-
-    # ====================================================================
-    # Session Interleaving (PRD Section 8)
-    # ====================================================================
-
-    @staticmethod
-    def _alternate_subjects(reviews: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Reorder reviews so consecutive items differ in subject when possible.
-
-        Uses a greedy approach: at each step, pick the item from the subject
-        with the most remaining items that differs from the last-placed subject.
-        Falls back to same-subject when no alternative exists (PRD §8, Rule 4).
-        """
-        if len(reviews) <= 1:
-            return list(reviews)
-
-        from collections import defaultdict, deque
-
-        by_subject: Dict[str, deque] = defaultdict(deque)
-        for r in reviews:
-            by_subject[r.get("subject", "")].append(r)
-
-        result: List[Dict[str, Any]] = []
-        last_subject: Optional[str] = None
-
-        while any(len(q) > 0 for q in by_subject.values()):
-            candidates = sorted(
-                ((subj, q) for subj, q in by_subject.items() if len(q) > 0),
-                key=lambda x: -len(x[1]),
-            )
-
-            placed = False
-            for subj, q in candidates:
-                if subj != last_subject:
-                    result.append(q.popleft())
-                    last_subject = subj
-                    placed = True
-                    break
-
-            if not placed:
-                for subj, q in candidates:
-                    if len(q) > 0:
-                        result.append(q.popleft())
-                        last_subject = subj
-                        break
-
-        return result
-
-    def _interleave_sessions(
-        self,
-        review_queue: List[Dict[str, Any]],
-        new_skills: List[Dict[str, Any]],
-        capacity: int,
-    ) -> List[Dict[str, Any]]:
-        """
-        Build an interleaved session sequence per PRD Section 8.
-
-        Output order:
-          1. Interleaved body: [new_block, review, review, new_block, ...]
-             - Reviews in queue order (most-overdue retest first)
-             - New skill blocks front-loaded in first 60% of total sessions
-             - Reviews subject-alternated
-          2. Tail: remaining reviews after the 60% boundary
-
-        Each returned item has 'session_category' and 'priority' set.
-        """
-        REVIEWS_PER_NEW_BLOCK = 2
-
-        # Tag types for downstream identification
-        for item in review_queue:
-            item.setdefault("type", "review")
-        for item in new_skills:
-            item.setdefault("type", "new")
-
-        # Subject-alternate reviews
-        alternated = self._alternate_subjects(review_queue)
-
-        # Fatigue boundary (PRD §8.4)
-        total = len(alternated) + len(new_skills)
-        front_boundary = math.ceil(total * 0.60) if total > 0 else 0
-
-        result: List[Dict[str, Any]] = []
-
-        # Interleaved body
-        rev_iter = iter(alternated)
-        new_iter = iter(new_skills)
-        rev_done = False
-        new_done = False
-
-        while not (rev_done and new_done):
-            past_boundary = len(result) >= front_boundary
-
-            # Place a new-skill block if within front 60%
-            if not new_done and not past_boundary:
-                try:
-                    n = next(new_iter)
-                    n["session_category"] = SessionCategory.INTERLEAVED.value
-                    result.append(n)
-                except StopIteration:
-                    new_done = True
-
-            # Place up to REVIEWS_PER_NEW_BLOCK reviews
-            placed = 0
-            while placed < REVIEWS_PER_NEW_BLOCK and not rev_done:
-                cat = (
-                    SessionCategory.TAIL.value
-                    if len(result) >= front_boundary
-                    else SessionCategory.INTERLEAVED.value
-                )
-                try:
-                    r = next(rev_iter)
-                    r["session_category"] = cat
-                    result.append(r)
-                    placed += 1
-                except StopIteration:
-                    rev_done = True
-                    break
-
-            # Drain remaining new skills if reviews exhausted
-            if rev_done and not new_done:
-                for n in new_iter:
-                    cat = (
-                        SessionCategory.TAIL.value
-                        if len(result) >= front_boundary
-                        else SessionCategory.INTERLEAVED.value
-                    )
-                    n["session_category"] = cat
-                    result.append(n)
-                new_done = True
-
-            # Drain remaining reviews if new skills exhausted
-            if new_done and not rev_done:
-                for r in rev_iter:
-                    cat = (
-                        SessionCategory.TAIL.value
-                        if len(result) >= front_boundary
-                        else SessionCategory.INTERLEAVED.value
-                    )
-                    r["session_category"] = cat
-                    result.append(r)
-                rev_done = True
-
-        # Assign sequential priority
-        for i, item in enumerate(result):
-            item["priority"] = i + 1
-
-        return result
 
     # ====================================================================
     # Skill Progress Panel — 3-Layer "Crafting" Projection

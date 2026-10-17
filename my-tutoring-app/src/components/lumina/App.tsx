@@ -309,6 +309,7 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
       ? block.subskills.map(ss => ({
           id: ss.subskill_id,
           text: ss.subskill_name,
+          label: ss.parent_label || undefined,
           verb: ss.bloom_phase.charAt(0).toUpperCase() + ss.bloom_phase.slice(1),
           icon: '🎯',
           // Carry the real IDs so personalization keys into β per subskill
@@ -332,7 +333,6 @@ function LuminaApp({ initialTopic, initialGrade }: AppProps) {
     const typeNoun: Record<string, string> = {
       lesson: 'lesson',
       practice: 'practice block',
-      retest: 'mastery check',
       pulse: 'Daily Pulse check',
     };
     const blockIdx = sessionBlocks.findIndex(b => b.block_id === block.block_id);

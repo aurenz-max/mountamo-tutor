@@ -27,10 +27,9 @@ class BloomLevel(str, Enum):
 class BlockType(str, Enum):
     LESSON   = "lesson"    # New introduction — full Bloom's cycle (~18 min)
     PRACTICE = "practice"  # Review at practice depth (~10 min)
-    RETEST   = "retest"    # Mastery gate assessment (~5 min)
     PULSE    = "pulse"     # Daily measurement beat (~4 min, first block):
-                           # absorbs due mastery checks + selector confirm
-                           # targets into one quick evidence-producing block
+                           # the selector's confirm targets in one quick
+                           # evidence-producing block
 
 
 # ---------------------------------------------------------------------------
@@ -46,9 +45,12 @@ class BlockSubskill(BaseModel):
     # reads (session-progress deltas) can't rely on the block's subject.
     subject:       str = ""
     subskill_name: str
+    # Plain sentence for children and parents (curriculum `parent_summary`);
+    # display only. subskill_name stays the authoring text generation reads.
+    parent_label:  str = ""
     bloom_phase:   BloomLevel
     gate:          int = 0   # Current mastery gate (0–4)
-    status:        str = "new"  # "new" (first lesson) | "practice" | "review" | "retest" | "mastered"
+    status:        str = "new"  # "new" (first lesson) | "practice" | "review" | "mastered"
 
 
 class BloomPhase(BaseModel):
@@ -70,7 +72,6 @@ class LessonBlock(BaseModel):
     Corresponds to one 'block' in the PRD §4 session structure:
       - LESSON  → full 3-phase Bloom's cycle  (~18 min)
       - PRACTICE → review at reduced depth     (~10 min)
-      - RETEST  → mastery gate check           (~5 min)
     """
     block_id:          str
     block_index:       int            # 1-based display order
@@ -197,25 +198,22 @@ PRIMITIVE_TIME_DEFAULTS: Dict[str, float] = {
 BLOCK_DURATION_MINUTES: Dict[str, int] = {
     BlockType.LESSON:   18,
     BlockType.PRACTICE: 10,
-    BlockType.RETEST:   5,
     BlockType.PULSE:    4,
 }
 
 # Linear block cost model: minutes = base + marginal × n_subskills.
 # Constants are ASSUMED — chosen so typical block sizes reproduce the old
-# flat durations (lesson×4→18, practice×3→10, retest×1→5) — until the block
+# flat durations (lesson×4→18, practice×3→10) — until the block
 # time ledger (BlockTimeEntry) accumulates enough observations to fit real
 # ones. Fitting those constants from telemetry is the ledger's whole point.
 BLOCK_COST_BASE_MINUTES: Dict[str, float] = {
     BlockType.LESSON:   6.0,
     BlockType.PRACTICE: 4.0,
-    BlockType.RETEST:   3.5,
     BlockType.PULSE:    2.0,
 }
 BLOCK_COST_MARGINAL_MINUTES: Dict[str, float] = {
     BlockType.LESSON:   3.0,
     BlockType.PRACTICE: 2.0,
-    BlockType.RETEST:   1.5,
     BlockType.PULSE:    1.0,
 }
 
