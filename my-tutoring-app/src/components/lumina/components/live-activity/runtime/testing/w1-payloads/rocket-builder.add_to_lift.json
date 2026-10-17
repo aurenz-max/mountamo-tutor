@@ -1,0 +1,192 @@
+{
+ "source": "qa/tutor-reports/rocket-builder-runtime-add_to_lift-payload-2026-10-16.json",
+ "primitiveId": "rocket-builder",
+ "evalMode": "add_to_lift",
+ "data": {
+  "title": "Ready for Lift-Off?",
+  "overview": "You will choose a part to add and predict if the rocket will leave the pad.",
+  "gradeLevel": "2",
+  "challengeTypes": [
+   "add_to_lift"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "add_to_lift-1",
+    "mode": "add_to_lift",
+    "rocket": {
+     "color": "red",
+     "parts": [
+      {
+       "kind": "engine",
+       "push": 8,
+       "weight": 2
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "cargo",
+       "weight": 2
+      },
+      {
+       "kind": "capsule",
+       "weight": 2
+      }
+     ]
+    },
+    "options": [
+     {
+      "kind": "tank",
+      "weight": 2
+     },
+     {
+      "kind": "engine",
+      "push": 7,
+      "weight": 5,
+      "color": "blue"
+     },
+     {
+      "kind": "engine",
+      "push": 5,
+      "weight": 1,
+      "color": "green"
+     }
+    ]
+   },
+   {
+    "id": "add_to_lift-2",
+    "mode": "add_to_lift",
+    "rocket": {
+     "color": "red",
+     "parts": [
+      {
+       "kind": "engine",
+       "push": 4,
+       "weight": 1
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "capsule",
+       "weight": 2
+      }
+     ]
+    },
+    "options": [
+     {
+      "kind": "engine",
+      "push": 5,
+      "weight": 2,
+      "color": "purple"
+     },
+     {
+      "kind": "engine",
+      "push": 2,
+      "weight": 2,
+      "color": "blue"
+     },
+     {
+      "kind": "tank",
+      "weight": 2
+     }
+    ]
+   },
+   {
+    "id": "add_to_lift-3",
+    "mode": "add_to_lift",
+    "rocket": {
+     "color": "red",
+     "parts": [
+      {
+       "kind": "engine",
+       "push": 5,
+       "weight": 1
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "capsule",
+       "weight": 1
+      }
+     ]
+    },
+    "options": [
+     {
+      "kind": "tank",
+      "weight": 2
+     },
+     {
+      "kind": "engine",
+      "push": 4,
+      "weight": 2,
+      "color": "blue"
+     },
+     {
+      "kind": "engine",
+      "push": 6,
+      "weight": 5,
+      "color": "purple"
+     }
+    ]
+   },
+   {
+    "id": "add_to_lift-4",
+    "mode": "add_to_lift",
+    "rocket": {
+     "color": "red",
+     "parts": [
+      {
+       "kind": "engine",
+       "push": 5,
+       "weight": 2
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "capsule",
+       "weight": 1
+      }
+     ]
+    },
+    "options": [
+     {
+      "kind": "engine",
+      "push": 3,
+      "weight": 1,
+      "color": "blue"
+     },
+     {
+      "kind": "engine",
+      "push": 5,
+      "weight": 2,
+      "color": "green"
+     },
+     {
+      "kind": "tank",
+      "weight": 2
+     }
+    ]
+   }
+  ]
+ }
+}

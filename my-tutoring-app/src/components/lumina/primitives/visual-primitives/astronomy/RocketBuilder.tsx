@@ -1,90 +1,92 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import * as d3 from 'd3';
-import { usePrimitiveEvaluation, PrimitiveEvaluationResult } from '../../../evaluation';
+/**
+ * Rocket Builder: rockets made of parts, each part with its weight drawn as blocks and each engine its push as arrows,
+ * and one prediction per eval mode (rebuilt 2026-10-16 under the 10-15 ruling; the old builder showed a live
+ * Thrust/Weight panel, printed the ratio in its failure line, and scored a third-launch success 100).
+ * - can_it_lift: say or tap whether the rocket lifts off the pad.
+ * - add_to_lift: say or tap the one part that makes a grounded rocket lift off.
+ * - on_budget: say or tap the rocket that lifts off and costs no more than the budget.
+ * - reach_target: say or tap the rocket that flies highest (or least high).
+ *
+ * Every item is built and keyed by code from one toy flight model (`rocketWorkspace.ts`). Nothing launches before the
+ * answer is checked, and no total, ratio or readout is drawn. Two paths, chosen by `withWorkspaceController`: the
+ * scripted path (tester, no tutor) has its own Next and up to two tries before a reveal; the workspace path (W1, plain
+ * shape) commits every check through `progress.commitCheck` with a named miss, takes a spoken answer judged by the
+ * tutor, and lets the runtime move on. The levers live in `rocketLevers.ts`.
+ */
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { usePrimitiveEvaluation, type PrimitiveEvaluationResult } from '../../../evaluation';
 import type { RocketBuilderMetrics } from '../../../evaluation/types';
-import { SoundManager } from '../../../utils/SoundManager';
 import { useLuminaAI } from '../../../hooks/useLuminaAI';
+import { SoundManager } from '../../../utils/SoundManager';
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
-import { LuminaReadAloud } from '../../../ui';
+import { ReadMeButton } from '../../shared/ReadMeButton';
+import {
+  LuminaActionButton,
+  LuminaAnswerChoice,
+  LuminaCard,
+  LuminaCardContent,
+  LuminaCardHeader,
+  LuminaCardTitle,
+  LuminaFeedbackCard,
+  LuminaPanel,
+  LuminaPrompt,
+  LuminaSectionLabel,
+  type AnswerChoiceState,
+} from '../../../ui';
+import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
+import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+  from '../../../components/live-activity/runtime/useWorkspaceProgress';
+import {
+  askOf, COLOR_HEX, describeRocketWork, emptyWork, flightOf, isManyItem, keyOf, LIFT_CHOICES, LIFT_TEXT, lifts,
+  optionCount, optionLabel, partLabel, revealText, rocketCorrect, rocketItems, rocketLabel, rocketMiss, withPart,
+  workComplete, workspaceAssignment, workspaceScene,
+  type Part, type Rocket, type RocketItem, type RocketMode, type RocketTier, type RocketWork,
+} from './rocketWorkspace';
+import {
+  COUNT_LEVER, DROP_LEVER, dropTarget, FUEL_CARD_LEVER, FUEL_CARD_LINES, LIFT_CARD_LEVER, LIFT_CARD_LINE, leverFacts,
+  NO_LEVERS, OWN_WEIGHT_LEVER, OWN_WEIGHT_LINE, rocketLevers, type RocketLeverState,
+} from './rocketLevers';
 
-// =============================================================================
-// Type Definitions - Single Source of Truth
-// =============================================================================
+// ============================================================================
+// Data Types (single source of truth; the generator imports them)
+// ============================================================================
 
+export type { RocketItem, RocketMode, RocketTier };
+
+/** Legacy part shape (the pre-rebuild parts library); `types.ts` re-exports it. Ignored by the rebuilt builder. */
 export interface RocketComponent {
   id: string;
   name: string;
   type: 'capsule' | 'fuel_tank' | 'engine' | 'booster' | 'fins' | 'fairing' | 'payload';
   massKg: number;
-  // Engine-specific properties
   thrustKN?: number;
-  specificImpulse?: number; // Isp in seconds (efficiency)
-  burnTimeSeconds?: number;
-  // Fuel tank properties
   propellantMassKg?: number;
-  // Visual properties
-  widthUnits: number;
-  heightUnits: number;
-  color: string;
-  description: string;
+  widthUnits?: number;
+  heightUnits?: number;
+  color?: string;
+  description?: string;
   cost?: number;
-}
-
-export interface RocketStage {
-  id: string;
-  components: string[]; // Component IDs in order (bottom to top)
-}
-
-export interface LaunchResult {
-  success: boolean;
-  maxAltitudeKm: number;
-  reachedOrbit: boolean;
-  stagingEvents: Array<{
-    timeSeconds: number;
-    altitudeKm: number;
-    stageDropped: number;
-  }>;
-  flightProfile: Array<{
-    timeSeconds: number;
-    altitudeKm: number;
-    velocityMs: number;
-    accelerationG: number;
-    massKg: number;
-    thrustKN: number;
-    dragKN: number;
-  }>;
-  failureReason?: string;
 }
 
 export interface RocketBuilderData {
   title: string;
-  description: string;
+  /** One neutral sentence under the title; never states what makes a rocket lift off or fly higher. */
+  overview?: string;
+  description?: string;
+  /** Grade rung 'K'..'5'. */
+  gradeLevel?: string;
+  /** The eval modes this session asks, in order. */
+  challengeTypes?: RocketMode[];
+  /** config.difficulty: the structural band the items were built at. */
+  difficulty?: RocketTier;
+  /** The items, built and keyed by code at generation; absent or invalid: rebuilt from the fields above. */
+  items?: RocketItem[];
 
-  // Available components for building
-  availableComponents: RocketComponent[];
-
-  // Challenge configuration
-  maxStages: number;
-  targetAltitudeKm: number;
-  targetOrbit: boolean;
-
-  // Display options
-  showTWR: boolean;
-  showFuelGauge: boolean;
-  showForces: boolean;
-  atmosphereModel: 'simple' | 'realistic';
-  guidedMode: boolean;
-  budget?: number;
-  simulationSpeed: number;
-
-  // Grade-appropriate content
-  gradeLevel: 'K' | '1' | '2' | '3' | '4' | '5';
-  learningFocus: string;
-  hints: string[];
-
-  // Evaluation props (optional, auto-injected by ManifestOrderRenderer)
+  // Evaluation props (auto-injected by ManifestOrderRenderer)
   instanceId?: string;
   skillId?: string;
   subskillId?: string;
@@ -96,1357 +98,548 @@ export interface RocketBuilderData {
 interface RocketBuilderProps {
   data: RocketBuilderData;
   className?: string;
+  runtimePlanItemId?: string;
+  runtimeEvalMode?: string;
 }
 
-// =============================================================================
-// Constants
-// =============================================================================
+const MODE_LABEL: Record<RocketMode, string> = {
+  can_it_lift: 'Will it lift off?', add_to_lift: 'Add one part', on_budget: 'On budget', reach_target: 'Which flies highest?',
+};
 
-const GRAVITY = 9.81; // m/s^2
-const KARMAN_LINE_KM = 100; // Edge of space
-const LEO_ALTITUDE_KM = 200; // Low Earth Orbit
-const ORBITAL_VELOCITY_MS = 7800; // Approximate LEO orbital velocity
+// ============================================================================
+// Drawing a rocket: parts bottom-up, weight blocks and push arrows (and coins) beside each part
+// ============================================================================
+
+const BODY_X = 14;
+const BODY_W = 40;
+const ICON_X = BODY_X + BODY_W + 10;
+const ICON = 9;
+const PART_H: Record<Part['kind'], number> = { engine: 24, tank: 34, cargo: 24, capsule: 28 };
+const SKY = 150;
+const PAD = 14;
+const PANEL_W = 214;
+
+interface Marks { count: boolean; coins: boolean; ownWeight?: boolean }
+
+/** The rows of icons one part carries: weight blocks, push arrows, coins. */
+const rowsOf = (p: Part, coins: boolean) => 1 + (p.push ? 1 : 0) + (coins && p.cost ? 1 : 0);
+const bandH = (p: Part, coins: boolean) => Math.max(PART_H[p.kind], rowsOf(p, coins) * (ICON + 3) + 4);
+
+function Blocks({ n, x, y, outlined }: { n: number; x: number; y: number; outlined?: boolean }) {
+  return (
+    <g data-weight={n}>
+      {Array.from({ length: n }, (_, i) => <rect key={i} x={x + i * (ICON + 2)} y={y} width={ICON} height={ICON} rx={1.5} fill="#94a3b8" stroke="#0f172a" strokeWidth={0.6} />)}
+      {outlined && <rect x={x - 2} y={y - 2} width={n * (ICON + 2) + 2} height={ICON + 4} rx={3} fill="none" stroke="#f87171" strokeWidth={1.4} strokeDasharray="3 2" data-own-weight />}
+    </g>
+  );
+}
+
+function Arrows({ n, x, y }: { n: number; x: number; y: number }) {
+  return (
+    <g data-push={n}>
+      {Array.from({ length: n }, (_, i) => {
+        const cx = x + i * (ICON + 2) + ICON / 2;
+        return <polygon key={i} fill="#fb923c"
+          points={`${cx},${y} ${cx - ICON / 2},${y + 5} ${cx - 1.5},${y + 5} ${cx - 1.5},${y + ICON} ${cx + 1.5},${y + ICON} ${cx + 1.5},${y + 5} ${cx + ICON / 2},${y + 5}`} />;
+      })}
+    </g>
+  );
+}
+
+function Coins({ n, x, y }: { n: number; x: number; y: number }) {
+  return (
+    <g data-coins={n}>
+      {Array.from({ length: n }, (_, i) => <circle key={i} cx={x + i * (ICON + 2) + ICON / 2} cy={y + ICON / 2} r={ICON / 2} fill="#facc15" stroke="#a16207" strokeWidth={0.8} />)}
+    </g>
+  );
+}
+
+/** The icon rows beside one part (shared by the rocket and the add_to_lift option pictures). */
+function PartIcons({ p, x, y, marks }: { p: Part; x: number; y: number; marks: Marks }) {
+  let row = y;
+  const out: React.ReactNode[] = [];
+  const num = (n: number, at: number, len: number) => marks.count
+    ? <text key={`n${at}`} x={x + len * (ICON + 2) + 4} y={at + ICON - 1} fontSize={10} fill="#e2e8f0" data-count>{n}</text> : null;
+  out.push(<Blocks key="w" n={p.weight} x={x} y={row} outlined={marks.ownWeight} />, num(p.weight, row, p.weight));
+  row += ICON + 3;
+  if (p.push) { out.push(<Arrows key="p" n={p.push} x={x} y={row} />, num(p.push, row, p.push)); row += ICON + 3; }
+  if (marks.coins && p.cost) { out.push(<Coins key="c" n={p.cost} x={x} y={row} />, num(p.cost, row, p.cost)); }
+  return <g>{out}</g>;
+}
+
+/** One part's body, drawn in a box of the band's height. */
+function PartBody({ p, y, h, tint }: { p: Part; y: number; h: number; tint: string }) {
+  const x = BODY_X, w = BODY_W, ph = PART_H[p.kind], top = y + (h - ph) / 2;
+  if (p.kind === 'engine') {
+    return <g>
+      <path d={`M${x + 8} ${top} L${x + w - 8} ${top} L${x + w} ${top + ph} L${x} ${top + ph} Z`} fill={p.color ? COLOR_HEX[p.color] : '#f59e0b'} stroke="#0f172a" strokeWidth={0.8} />
+    </g>;
+  }
+  if (p.kind === 'capsule') {
+    return <path d={`M${x} ${top + ph} L${x} ${top + ph * 0.45} Q${x + w / 2} ${top - 4} ${x + w} ${top + ph * 0.45} L${x + w} ${top + ph} Z`} fill={tint} stroke="#0f172a" strokeWidth={0.8} />;
+  }
+  if (p.kind === 'tank') {
+    return <g>
+      <rect x={x} y={top} width={w} height={ph} rx={3} fill="#3b82f6" stroke="#0f172a" strokeWidth={0.8} />
+      <rect x={x + 4} y={top + 4} width={w - 8} height={ph - 8} rx={2} fill="#93c5fd" opacity={0.6} />
+    </g>;
+  }
+  return <g>
+    <rect x={x + 2} y={top} width={w - 4} height={ph} rx={2} fill="#a16207" stroke="#0f172a" strokeWidth={0.8} />
+    <line x1={x + 2} y1={top + ph / 2} x2={x + w - 2} y2={top + ph / 2} stroke="#78350f" />
+  </g>;
+}
+
+type Launch = 'up' | 'stays' | null;
 
 /**
- * Picture-primary part glyphs for K-1.
- *
- * At those grades the part cards carried the ONLY information a child could use
- * to choose — and it was "500 kg • 50 kN thrust • 100 kg fuel". A five-year-old
- * cannot read any of that, so the card became a coin flip. The glyph makes the
- * part recognisable without reading (PRE contract rule 3).
+ * One rocket on its pad, in its own SVG. `launch` starts once the answer is checked: up by `rise` (0-1 of the sky), or a
+ * shake on the pad. The drawing never states a total.
  */
-const COMPONENT_EMOJI: Record<string, string> = {
-  capsule: '🧑‍🚀',
-  fuel_tank: '🛢️',
-  engine: '🔥',
-  booster: '🚀',
-  fins: '🔻',
-  fairing: '🔺',
-  payload: '📦',
-};
-
-/** Child-sized names for the part groups; the raw type slugs are dev vocabulary. */
-const COMPONENT_TYPE_LABEL: Record<string, string> = {
-  capsule: 'Where you sit',
-  fuel_tank: 'Fuel',
-  engine: 'Pushers',
-  booster: 'Extra push',
-  fins: 'Fins',
-  fairing: 'Nose cone',
-  payload: 'Cargo',
-};
-
-// Component visual colors
-const COMPONENT_COLORS: Record<string, string> = {
-  capsule: '#E74C3C',
-  fuel_tank: '#3498DB',
-  engine: '#F39C12',
-  booster: '#E67E22',
-  fins: '#95A5A6',
-  fairing: '#BDC3C7',
-  payload: '#9B59B6',
-};
-
-// =============================================================================
-// Main Component
-// =============================================================================
-
-const RocketBuilder: React.FC<RocketBuilderProps> = ({ data, className = '' }) => {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const flightSvgRef = useRef<SVGSVGElement>(null);
-
-  // State
-  const [stages, setStages] = useState<RocketStage[]>([{ id: 'stage-1', components: [] }]);
-  const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
-  const [isLaunching, setIsLaunching] = useState(false);
-  const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
-  const [flightProgress, setFlightProgress] = useState(0);
-  const [showHint, setShowHint] = useState(false);
-  const [currentHint, setCurrentHint] = useState(0);
-  const [attemptCount, setAttemptCount] = useState(0);
-
-  // Destructure evaluation props
-  const {
-    instanceId,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onEvaluationSubmit,
-  } = data;
-
-  // Initialize evaluation hook
-  const {
-    submitResult,
-    hasSubmitted,
-    resetAttempt,
-  } = usePrimitiveEvaluation<RocketBuilderMetrics>({
-    primitiveType: 'rocket-builder',
-    instanceId: instanceId || `rocket-builder-${Date.now()}`,
-    skillId,
-    subskillId,
-    objectiveId,
-    exhibitId,
-    onSubmit: onEvaluationSubmit,
+function RocketPanel({ rocket, marks, launch, rise, out, label }: {
+  rocket: Rocket; marks: Marks; launch: Launch; rise: number; out?: boolean; label?: string;
+}) {
+  const bands = rocket.parts.map(p => bandH(p, marks.coins));
+  const stackH = bands.reduce((s, h) => s + h, 0);
+  const H = SKY + stackH + PAD + 6;
+  const tint = COLOR_HEX[rocket.color];
+  const move = useRef<SVGElement>(null);
+  useEffect(() => { (move.current as unknown as { beginElement?: () => void } | null)?.beginElement?.(); }, [launch, rise]);
+  let y = SKY + stackH;
+  const parts = rocket.parts.map((p, i) => {
+    y -= bands[i];
+    const top = y;
+    return (
+      <g key={i} data-part={p.kind}>
+        <PartBody p={p} y={top} h={bands[i]} tint={tint} />
+        {rocket.staged && i > 0 && p.kind !== 'capsule' && rocket.parts[i - 1].kind === 'tank' && (
+          <line x1={BODY_X - 4} x2={BODY_X + BODY_W + 4} y1={top + bands[i]} y2={top + bands[i]} stroke="#fbbf24" strokeWidth={1.5} strokeDasharray="3 2" />
+        )}
+        <PartIcons p={p} x={ICON_X} y={top + 2} marks={marks} />
+      </g>
+    );
   });
-
-  // =============================================================================
-  // Computed Values
-  // =============================================================================
-
-  const componentMap = useMemo(() => {
-    const map = new Map<string, RocketComponent>();
-    (data.availableComponents || []).forEach(c => map.set(c.id, c));
-    return map;
-  }, [data.availableComponents]);
-
-  const rocketStats = useMemo(() => {
-    let totalMassKg = 0;
-    let totalPropellantKg = 0;
-    let totalThrustKN = 0;
-    let totalCost = 0;
-    let componentCount = 0;
-
-    stages.forEach(stage => {
-      stage.components.forEach(compId => {
-        const comp = componentMap.get(compId);
-        if (comp) {
-          totalMassKg += comp.massKg;
-          if (comp.propellantMassKg) totalPropellantKg += comp.propellantMassKg;
-          if (comp.thrustKN) totalThrustKN += comp.thrustKN;
-          if (comp.cost) totalCost += comp.cost;
-          componentCount++;
-        }
-      });
-    });
-
-    const totalWeight = totalMassKg * GRAVITY / 1000; // kN
-    const thrustToWeight = totalWeight > 0 ? totalThrustKN / totalWeight : 0;
-    const canLift = thrustToWeight > 1;
-
-    // Simplified delta-v calculation (Tsiolkovsky rocket equation)
-    const avgIsp = 300; // Average Isp assumption
-    const dryMass = totalMassKg - totalPropellantKg;
-    const deltaV = dryMass > 0 ? avgIsp * GRAVITY * Math.log(totalMassKg / dryMass) : 0;
-
-    return {
-      totalMassKg,
-      totalPropellantKg,
-      totalThrustKN,
-      totalCost,
-      componentCount,
-      thrustToWeight,
-      canLift,
-      deltaV,
-    };
-  }, [stages, componentMap]);
-
-  const budgetRemaining = data.budget ? data.budget - rocketStats.totalCost : null;
-  const overBudget = budgetRemaining !== null && budgetRemaining < 0;
-
-  // ===========================================================================
-  // PRE / EMERGING band gate
-  // ===========================================================================
-
-  /**
-   * At K-1 the interaction underneath is genuinely K-fit — tap a part, it lands
-   * on the rocket, press launch, watch — but the screen around it was not:
-   * every part card carried "500 kg • 50 kN thrust", the stats panel showed
-   * total mass and thrust unconditionally, the header printed a literal
-   * "GRADE K" developer badge, and a failed launch explained itself as
-   * "(TWR: 0.85)". `data.gradeLevel` was read in exactly ONE place in this
-   * entire file: to render that badge.
-   */
-  const isPreReader = data.gradeLevel === 'K' || data.gradeLevel === '1';
-
-  const resolvedInstanceId = useMemo(
-    () => instanceId || `rocket-builder-${Date.now()}`,
-    [instanceId],
+  // Up by its share of the sky; `out`: on past the top of the view.
+  const dy = launch === 'up' ? -Math.max(8, rise * (SKY - 12)) - (out ? stackH + 40 : 0) : 0;
+  return (
+    <svg viewBox={`0 0 ${PANEL_W} ${H}`} className="block w-full select-none rounded-xl bg-gradient-to-b from-[#0b1026] to-[#1e293b]"
+      role="img" aria-label={label ?? 'A rocket on its launch pad'} data-launch={launch ?? 'none'}>
+      {rocket.staged && (
+        <text x={6} y={14} fontSize={10} fill="#fde68a" data-staged>drops empty tanks</text>
+      )}
+      <rect x={0} y={SKY + stackH} width={PANEL_W} height={PAD + 6} fill="#334155" />
+      <rect x={BODY_X - 6} y={SKY + stackH} width={BODY_W + 12} height={5} fill="#64748b" />
+      <g>
+        {launch === 'up' && <ellipse cx={BODY_X + BODY_W / 2} cy={SKY + stackH + 10} rx={BODY_W / 3} ry={14} fill="#fb923c" opacity={0.85} />}
+        {parts}
+        {launch === 'up' && (
+          <animateTransform ref={move as never} attributeName="transform" type="translate" from="0 0" to={`0 ${dy}`} dur="2.2s" begin="indefinite" fill="freeze" />
+        )}
+        {launch === 'stays' && (
+          <animateTransform ref={move as never} attributeName="transform" type="translate" values="0 0; -2 0; 2 0; -2 0; 0 0" dur="0.5s" repeatCount={3} begin="indefinite" />
+        )}
+      </g>
+      {launch === 'stays' && <ellipse cx={BODY_X + BODY_W / 2} cy={SKY + stackH + 2} rx={BODY_W} ry={6} fill="#94a3b8" opacity={0.35} />}
+    </svg>
   );
+}
 
-  const builtPartNames = useMemo(
-    () => stages
-      .flatMap(s => s.components)
-      .map(id => componentMap.get(id)?.name)
-      .filter(Boolean)
-      .join(', ') || 'nothing yet',
-    [stages, componentMap],
+/** add_to_lift: one part that could be added, as a small picture with its blocks and arrows. */
+function PartPicture({ p, marks }: { p: Part; marks: Marks }) {
+  const h = bandH(p, false) + 4;
+  return (
+    <svg width={170} height={h} viewBox={`0 0 170 ${h}`} aria-hidden="true">
+      <PartBody p={p} y={2} h={h - 4} tint="#cbd5e1" />
+      <PartIcons p={p} x={ICON_X} y={4} marks={marks} />
+    </svg>
   );
+}
 
-  /** What a child can SEE the last flight do, in words the tutor may repeat. */
-  const flightOutcome = useMemo(() => {
-    if (isLaunching) return 'launching right now';
-    if (!launchResult) return 'has not launched yet';
-    if (launchResult.success) return 'flew all the way up and made it';
-    if (launchResult.maxAltitudeKm <= 0) return 'did not lift off the ground';
-    return 'went up but came back down before the goal';
-  }, [isLaunching, launchResult]);
+function LiftCard() {
+  const box = (x: number, push: number, weight: number, rises: boolean) => (
+    <g>
+      <rect x={x} y={rises ? 18 : 40} width={36} height={22} rx={3} fill="#a16207" />
+      {Array.from({ length: weight }, (_, i) => <rect key={i} x={x + 42 + i * 9} y={rises ? 20 : 42} width={7} height={7} fill="#94a3b8" />)}
+      {Array.from({ length: push }, (_, i) => <polygon key={i} points={`${x + 45.5 + i * 9},${rises ? 30 : 52} ${x + 42 + i * 9},${rises ? 37 : 59} ${x + 49 + i * 9},${rises ? 37 : 59}`} fill="#fb923c" />)}
+      {rises && <path d={`M${x + 18} 14 L${x + 18} 4`} stroke="#4ade80" strokeWidth={2} />}
+      <rect x={x - 4} y={62} width={44} height={4} fill="#475569" />
+    </g>
+  );
+  return (
+    <LuminaPanel accent="cyan" data-lever="lift-card" className="space-y-2 text-center text-xs text-slate-300">
+      <svg width={260} height={70} viewBox="0 0 260 70" aria-label="Two boxes: one with more push than weight rises, one with push equal to weight stays down" className="mx-auto">
+        {box(6, 5, 3, true)}
+        {box(140, 4, 4, false)}
+      </svg>
+      <p>{LIFT_CARD_LINE}</p>
+    </LuminaPanel>
+  );
+}
 
-  // Flat object literal on purpose: assembled behind local statements,
-  // `tutor-test` reports every contextKey as "dynamic — verify at runtime".
-  const aiPrimitiveData = useMemo(() => ({
-    title: data.title,
-    gradeLevel: data.gradeLevel ?? 'unspecified',
-    partNames: (data.availableComponents || []).map(c => c.name).join(', '),
-    builtParts: builtPartNames,
-    partCount: rocketStats.componentCount,
-    missionGoal: data.targetOrbit ? 'reach orbit' : `reach ${data.targetAltitudeKm} km up`,
-    launchCount: attemptCount,
-    flightOutcome,
-    learningFocus: data.learningFocus ?? '',
-  }), [
-    data.title, data.gradeLevel, data.availableComponents, data.targetOrbit,
-    data.targetAltitudeKm, data.learningFocus,
-    builtPartNames, rocketStats.componentCount, attemptCount, flightOutcome,
-  ]);
+function FuelCard() {
+  return (
+    <LuminaPanel accent="cyan" data-lever="fuel-card" className="space-y-1 text-xs text-slate-300">
+      {FUEL_CARD_LINES.map(l => <p key={l}>{l}</p>)}
+    </LuminaPanel>
+  );
+}
 
-  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+// ============================================================================
+// Component
+// ============================================================================
+
+type LeverMemo = { item: string } & RocketLeverState;
+
+const RocketBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
+  RocketBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<RocketItem>) => Progress }) => {
+  const workspace = useRef<TeachingWorkspace | null>(null);
+  const { title, overview, description, gradeLevel, instanceId, skillId, subskillId, objectiveId, exhibitId, onEvaluationSubmit } = data;
+
+  const items = useMemo(() => rocketItems(data),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.items, data.challengeTypes, data.difficulty, data.title, data.gradeLevel]);
+  const stableInstanceId = useRef(instanceId || `rocket-builder-${Date.now()}`);
+  const resolvedInstanceId = instanceId || stableInstanceId.current;
+
+  // ── Progress: the runtime moves the index on the workspace path (callbacks bound below) ──
+  const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
+  const solvedAloud = useRef<(index: number) => void>(() => {});
+  const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
+  const progress = useController({
+    challenges: items,
+    getChallengeId: i => i.id,
+    instanceId: resolvedInstanceId, objectiveId, planItemId: runtimePlanItemId,
+    workspace, assignment: workspaceAssignment,
+    onItemOpened: (index, retry) => openItem.current(index, retry),
+    onSolved: index => solvedAloud.current(index),
+    onFinished: result => finish.current(result),
+  });
+  const { currentIndex, currentAttempts, results, isComplete } = progress;
+  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+
+  const item: RocketItem | undefined = items[Math.min(currentIndex, Math.max(items.length - 1, 0))];
+  const [work, setWork] = useState<RocketWork>(emptyWork);
+  /** add_to_lift: the checked part, on the rocket and launched. */
+  const [flown, setFlown] = useState<RocketWork | null>(null);
+  /** Workspace path: the checked wrong work, shown until Try again. */
+  const [wrongShown, setWrongShown] = useState(false);
+  const [scriptedWrongs, setScriptedWrongs] = useState(0);
+  const [scriptedReveal, setScriptedReveal] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [leverMemo, setLeverMemo] = useState<LeverMemo>({ item: '', ...NO_LEVERS });
+  const [submitted, setSubmitted] = useState(false);
+  const tappedCorrect = useRef<string | null>(null);
+
+  const lever: RocketLeverState = item && leverMemo.item === item.id ? leverMemo : NO_LEVERS;
+  const editLevers = (change: (s: RocketLeverState) => Partial<RocketLeverState>) => {
+    const id = item?.id ?? '';
+    setLeverMemo(m => { const s = m.item === id ? m : { item: id, ...NO_LEVERS }; return { ...s, ...change(s), item: id }; });
+  };
+  const leverOn = (id: string) => lever.pulled.includes(id);
+
+  const solvedNow = !!item && results.some(r => r.challengeId === item.id && r.correct);
+  const revealed = solvedNow || scriptedReveal;
+
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<RocketBuilderMetrics>({
     primitiveType: 'rocket-builder',
     instanceId: resolvedInstanceId,
-    primitiveData: aiPrimitiveData,
-    gradeLevel: data.gradeLevel,
+    skillId, subskillId, objectiveId, exhibitId,
+    onSubmit: onEvaluationSubmit as ((result: PrimitiveEvaluationResult) => void) | undefined,
   });
 
-  // `silent` suppresses only the chat-transcript entry; the socket payload is
-  // unchanged, so the tutor still speaks. A non-silent post would read as if the
-  // child had typed the machine prompt.
-  const readAloud = useCallback((text: string) => {
-    if (!text) return;
-    sendText(
-      `[ROCKET_READ_ALOUD] The young learner tapped "read it to me" and cannot read the screen. `
-      + `Read this aloud, word for word, warmly and slowly: "${text}". Then wait.`,
-      { silent: true },
-    );
-  }, [sendText]);
+  // ── Scripted tutor only: its context carries no key; the workspace tutor reads the scene instead ──
+  const aiPrimitiveData = useMemo(() => ({
+    gradeLevel: gradeLevel ?? 'unspecified', mode: item?.mode ?? 'can_it_lift', itemIndex: currentIndex + 1,
+    totalItems: items.length, ask: item ? askOf(item) : title, attemptNumber: currentAttempts + 1,
+  }), [gradeLevel, item, currentIndex, items.length, title, currentAttempts]);
+  const { sendText, isAudioPlaying, activePrimitiveId } = useLuminaAI({
+    primitiveType: 'rocket-builder', instanceId: resolvedInstanceId, primitiveData: aiPrimitiveData,
+    gradeLevel: gradeLevel ? (gradeLevel === 'K' ? 'Kindergarten' : `Grade ${gradeLevel}`) : undefined, enabled: !tutorOwned,
+  });
+  const say = (text: string) => { if (!tutorOwned) sendText(text, { silent: true }); };
 
-  // ORIENT — fires once so a non-reader learns the task without asking.
-  const hasOrientedRef = useRef(false);
-  useEffect(() => {
-    if (hasOrientedRef.current) return;
-    hasOrientedRef.current = true;
-    sendText(
-      `[ROCKET_ORIENT] A ${isPreReader ? 'pre-reader who cannot read any text' : 'student'} just opened `
-      + `a rocket builder. Parts available: ${(data.availableComponents || []).map(c => c.name).join(', ')}. `
-      + `${isPreReader
-        ? 'They tap a part picture ONCE to add it to their rocket, then press the big launch button. '
-          + 'Tell them what to do in child words, warmly. Do NOT list which parts they need yet, and never speak a number or a measurement.'
-        : 'They pick components, stack stages, then launch. Tell them what to do.'}`,
-      { silent: true },
-    );
-  }, [sendText, isPreReader, data.availableComponents]);
+  const clearItem = () => { setWork(emptyWork()); setFlown(null); setWrongShown(false); setFeedback(null); setScriptedWrongs(0); setScriptedReveal(false); };
 
-  // FEEDBACK — one beat per settled flight, so the child hears what happened.
-  const lastReportedLaunchRef = useRef<number>(-1);
-  useEffect(() => {
-    if (!launchResult || isLaunching) return;
-    if (lastReportedLaunchRef.current === attemptCount) return;
-    lastReportedLaunchRef.current = attemptCount;
+  openItem.current = (_index, retry) => {
+    if (retry) { setWork(emptyWork()); setFlown(null); setWrongShown(false); setFeedback(null); editLevers(s => ({ wrongs: s.wrongs + 1 })); return; }
+    clearItem();
+  };
 
-    sendText(
-      `[ROCKET_LAUNCH_RESULT] The rocket ${flightOutcome}. `
-      + `Say in ONE short sentence what it did, using only what they can see. `
-      + `Do not name the exact part they are missing while they still have tries left. `
-      + `Invite them to change one thing and launch again.`,
-      { silent: true },
-    );
-  }, [launchResult, isLaunching, attemptCount, flightOutcome, sendText]);
+  /** A spoken answer the observer credited: recorded as a correct tap records it, and shown the same way. */
+  solvedAloud.current = (index) => {
+    const solved = items[index];
+    if (!solved || tappedCorrect.current === solved.id || results.some(r => r.challengeId === solved.id && r.correct)) return;
+    progress.mergeResult({ challengeId: solved.id, correct: true, attempts: currentAttempts + 1 });
+    const keyWork = { pick: keyOf(solved) };
+    setWork(keyWork); setFlown(keyWork); setWrongShown(false);
+  };
 
-  // =============================================================================
-  // Component Library by Category
-  // =============================================================================
+  // ── Handlers ──
+  const closed = revealed || wrongShown || learnerBlocked();
+  const tap = (i: number) => {
+    if (!item || closed || lever.dropped.includes(i)) return;
+    SoundManager.select();
+    setWork({ pick: i }); setFlown(null); setFeedback(null);
+  };
 
-  const componentsByType = useMemo(() => {
-    const grouped: Record<string, RocketComponent[]> = {};
-    (data.availableComponents || []).forEach(comp => {
-      if (!grouped[comp.type]) grouped[comp.type] = [];
-      grouped[comp.type].push(comp);
-    });
-    return grouped;
-  }, [data.availableComponents]);
+  /** Two choices reveal after one wrong try; more choices after two. */
+  const triesBeforeReveal = (it: RocketItem) => (optionCount(it) <= 2 ? 1 : 2);
 
-  // =============================================================================
-  // Flight Simulation
-  // =============================================================================
-
-  const simulateFlight = useCallback((): LaunchResult => {
-    const flightProfile: LaunchResult['flightProfile'] = [];
-    const stagingEvents: LaunchResult['stagingEvents'] = [];
-
-    let altitude = 0; // meters
-    let velocity = 0; // m/s
-    let time = 0; // seconds
-    let currentStageIndex = stages.length - 1; // Start from bottom stage
-
-    // Build stage data
-    const stageData = stages.map(stage => {
-      let mass = 0;
-      let propellant = 0;
-      let thrust = 0;
-      let burnTime = 0;
-
-      stage.components.forEach(compId => {
-        const comp = componentMap.get(compId);
-        if (comp) {
-          mass += comp.massKg;
-          if (comp.propellantMassKg) propellant += comp.propellantMassKg;
-          if (comp.thrustKN) thrust += comp.thrustKN;
-          if (comp.burnTimeSeconds) burnTime = Math.max(burnTime, comp.burnTimeSeconds);
-        }
-      });
-
-      return { mass, propellant, thrust, burnTime, fuelRemaining: propellant };
-    });
-
-    // Total mass including all stages
-    let totalMass = stageData.reduce((sum, s) => sum + s.mass, 0);
-
-    if (totalMass === 0 || stageData[currentStageIndex].thrust === 0) {
-      return {
-        success: false,
-        maxAltitudeKm: 0,
-        reachedOrbit: false,
-        stagingEvents: [],
-        flightProfile: [],
-        failureReason: 'No engines or fuel! Add engines and fuel tanks to launch.',
-      };
+  const check = () => {
+    if (!item || closed || !workComplete(item, work)) return;
+    const correct = rocketCorrect(item, work);
+    progress.commitCheck(describeRocketWork(item, work), correct, correct ? undefined : rocketMiss(item, work));
+    if (correct || item.mode === 'add_to_lift') setFlown({ ...work });
+    if (correct) {
+      SoundManager.playCorrect(); tappedCorrect.current = item.id;
+      say(`[ANSWER_CORRECT] The learner answered: ${askOf(item)} The launch now shows on screen. Praise briefly.`);
+      return;
     }
-
-    // Check TWR at launch
-    const initialTWR = stageData[currentStageIndex].thrust * 1000 / (totalMass * GRAVITY);
-    if (initialTWR < 1) {
-      return {
-        success: false,
-        maxAltitudeKm: 0,
-        reachedOrbit: false,
-        stagingEvents: [],
-        flightProfile: [],
-        failureReason: `Not enough thrust! Your rocket needs more power to lift off. (TWR: ${initialTWR.toFixed(2)})`,
-      };
+    SoundManager.playIncorrect();
+    if (tutorOwned) {
+      editLevers(s => ({ picked: [...s.picked, work.pick!] }));
+      setWrongShown(true);
+      return;
     }
-
-    const dt = 0.5; // Time step in seconds
-    let maxAltitude = 0;
-    let enginesCutoff = false;
-
-    while (time < 600 && altitude >= 0 && !enginesCutoff) { // Max 10 minutes
-      const currentStage = stageData[currentStageIndex];
-
-      // Calculate forces
-      let thrust = currentStage.thrust * 1000; // Convert to N
-
-      // Fuel consumption
-      if (currentStage.fuelRemaining > 0 && thrust > 0) {
-        const fuelRate = currentStage.propellant / Math.max(currentStage.burnTime, 60);
-        currentStage.fuelRemaining -= fuelRate * dt;
-        if (currentStage.fuelRemaining <= 0) {
-          currentStage.fuelRemaining = 0;
-
-          // Stage separation
-          if (currentStageIndex > 0) {
-            stagingEvents.push({
-              timeSeconds: time,
-              altitudeKm: altitude / 1000,
-              stageDropped: stages.length - currentStageIndex,
-            });
-            totalMass -= currentStage.mass;
-            currentStageIndex--;
-          } else {
-            thrust = 0;
-            enginesCutoff = true;
-          }
-        }
-      } else if (currentStage.fuelRemaining <= 0) {
-        thrust = 0;
-        if (currentStageIndex > 0) {
-          totalMass -= currentStage.mass;
-          currentStageIndex--;
-        } else {
-          enginesCutoff = true;
-        }
-      }
-
-      // Gravity
-      const gravity = GRAVITY * totalMass;
-
-      // Drag (simplified atmospheric model)
-      let drag = 0;
-      if (data.atmosphereModel === 'simple') {
-        const airDensity = altitude < 100000 ? 1.225 * Math.exp(-altitude / 8500) : 0;
-        const dragCoeff = 0.3;
-        const crossSection = 10; // m^2 approximation
-        drag = 0.5 * airDensity * velocity * velocity * dragCoeff * crossSection;
-      }
-
-      // Net acceleration
-      const netForce = thrust - gravity - drag;
-      const acceleration = netForce / totalMass;
-
-      // Update state
-      velocity += acceleration * dt;
-      altitude += velocity * dt;
-      time += dt;
-
-      // Ground collision
-      if (altitude < 0 && velocity < 0) {
-        altitude = 0;
-        velocity = 0;
-        break;
-      }
-
-      maxAltitude = Math.max(maxAltitude, altitude);
-
-      // Record flight profile (every 2 seconds)
-      if (Math.floor(time) % 2 === 0) {
-        flightProfile.push({
-          timeSeconds: Math.floor(time),
-          altitudeKm: altitude / 1000,
-          velocityMs: velocity,
-          accelerationG: acceleration / GRAVITY,
-          massKg: totalMass,
-          thrustKN: thrust / 1000,
-          dragKN: drag / 1000,
-        });
-      }
-
-      // Check if reached orbit
-      if (altitude / 1000 >= LEO_ALTITUDE_KM && velocity >= ORBITAL_VELOCITY_MS * 0.8) {
-        break;
-      }
+    const wrongs = scriptedWrongs + 1;
+    setScriptedWrongs(wrongs);
+    if (wrongs >= triesBeforeReveal(item)) {
+      setScriptedReveal(true);
+      const keyWork = { pick: keyOf(item) };
+      setWork(keyWork); setFlown(keyWork);
+      progress.recordResult({ challengeId: item.id, correct: false, attempts: currentAttempts + 1 });
+      say(`[ANSWER_REVEALED] The learner missed: ${askOf(item)} The answer and its launch are now on screen; explain them.`);
+      return;
     }
+    if (item.mode !== 'add_to_lift') setWork(emptyWork());
+    setFeedback(item.mode === 'add_to_lift' ? 'The rocket still stays on the pad. Look again, and try once more.' : 'Not quite. Look again, and try once more.');
+    say(`[ANSWER_INCORRECT] ${describeRocketWork(item, work)} for: ${askOf(item)} It is wrong. You are not told the answer: ask what the learner noticed, without naming a choice.`);
+  };
 
-    const maxAltitudeKm = maxAltitude / 1000;
-    const reachedOrbit = maxAltitudeKm >= LEO_ALTITUDE_KM && velocity >= ORBITAL_VELOCITY_MS * 0.8;
-    const reachedSpace = maxAltitudeKm >= KARMAN_LINE_KM;
-    const success = data.targetOrbit ? reachedOrbit : maxAltitudeKm >= data.targetAltitudeKm;
-
-    let failureReason: string | undefined;
-    if (!success) {
-      if (maxAltitudeKm < 10) {
-        failureReason = 'Rocket barely got off the ground. Try adding more engines or fuel!';
-      } else if (maxAltitudeKm < KARMAN_LINE_KM) {
-        failureReason = `Reached ${maxAltitudeKm.toFixed(1)} km but didn't make it to space (100 km). Add more fuel!`;
-      } else if (data.targetOrbit && !reachedOrbit) {
-        failureReason = `Reached space but not enough speed for orbit. Need more delta-v!`;
-      } else {
-        failureReason = `Reached ${maxAltitudeKm.toFixed(1)} km but target is ${data.targetAltitudeKm} km.`;
-      }
-    }
-
+  const metrics = (): RocketBuilderMetrics => {
+    const right = items.filter(i => results.some(r => r.challengeId === i.id && r.correct));
     return {
-      success,
-      maxAltitudeKm,
-      reachedOrbit,
-      stagingEvents,
-      flightProfile,
-      failureReason,
+      type: 'rocket-builder',
+      challengeType: item?.mode ?? 'can_it_lift',
+      itemsTotal: items.length,
+      itemsCorrect: right.length,
+      firstTryCorrect: results.filter(r => r.correct && r.attempts === 1).length,
+      launchAttempts: results.reduce((s, r) => s + (r.attempts ?? 1), 0),
     };
-  }, [stages, componentMap, data.atmosphereModel, data.targetOrbit, data.targetAltitudeKm]);
-
-  // =============================================================================
-  // Event Handlers
-  // =============================================================================
-
-  const addComponentToStage = (componentId: string, stageIndex: number) => {
-    if (stages.length <= stageIndex) return;
-
-    const comp = componentMap.get(componentId);
-    if (!comp) return;
-
-    // Check budget
-    if (budgetRemaining !== null && comp.cost && budgetRemaining < comp.cost) {
-      SoundManager.invalid();
-      return;
-    }
-
-    SoundManager.snap();
-    setStages(prev => {
-      const newStages = [...prev];
-      newStages[stageIndex] = {
-        ...newStages[stageIndex],
-        components: [...newStages[stageIndex].components, componentId],
-      };
-      return newStages;
-    });
-
-    // The tutor's voice IS the part label for a non-reader. Fired here rather
-    // than from an effect on `stages`, so it cannot double-emit — and NOT from
-    // inside the setState updater above, which React runs during render.
-    sendText(
-      `[ROCKET_PART_ADDED] The student added the "${comp.name}" to their rocket. `
-      + `Say its name and ONE short child-sized thing it does. `
-      + `Do not list numbers, do not say whether the rocket is ready, and do not ask a question.`,
-      { silent: true },
-    );
   };
 
-  const removeComponentFromStage = (componentIndex: number, stageIndex: number) => {
-    setStages(prev => {
-      const newStages = [...prev];
-      newStages[stageIndex] = {
-        ...newStages[stageIndex],
-        components: newStages[stageIndex].components.filter((_, i) => i !== componentIndex),
-      };
-      return newStages;
-    });
+  /** Scripted path: Next, and on the last item the session report. Only a first-try answer scores. */
+  const next = () => {
+    if (progress.advance()) { clearItem(); say(`[NEXT_ITEM] Item ${currentIndex + 2} of ${items.length}: ${askOf(items[currentIndex + 1])}`); return; }
+    if (hasSubmitted || submitted || progress.recordsEvaluation === false) return;
+    const score = items.length ? Math.round((results.filter(r => r.correct && r.attempts === 1).length / items.length) * 100) : 0;
+    setSubmitted(true);
+    submitResult(score >= 50, score, metrics(), { challengeResults: results });
+    say(`[ALL_COMPLETE] The learner finished all ${items.length} items. Celebrate briefly.`);
   };
 
-  const addStage = () => {
-    if (stages.length >= data.maxStages) return;
-    setStages(prev => [...prev, { id: `stage-${prev.length + 1}`, components: [] }]);
+  finish.current = (result) => {
+    if (hasSubmitted || progress.recordsEvaluation === false || !items.length) return;
+    setSubmitted(true);
+    submitResult(result.passed, result.accuracy, { ...metrics(), launchAttempts: result.teachingAttempts.length },
+      { challengeResults: result.outcomes, learningResponses: result.learningResponses,
+        teachingAttempts: result.teachingAttempts, assistanceProvenance: result.assistanceProvenance },
+      undefined, result.diagnosisEvidence);
   };
 
-  const removeStage = (stageIndex: number) => {
-    if (stages.length <= 1) return;
-    setStages(prev => prev.filter((_, i) => i !== stageIndex));
-  };
-
-  const handleLaunch = async () => {
-    if (isLaunching || overBudget) {
-      SoundManager.invalid();
-      return;
-    }
-
-    SoundManager.tap();
-    setIsLaunching(true);
-    setLaunchResult(null);
-    setFlightProgress(0);
-    setAttemptCount(prev => prev + 1);
-
-    const result = simulateFlight();
-
-    // Animate flight progress
-    const duration = Math.min(result.flightProfile.length * 100, 5000);
-    const startTime = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      setFlightProgress(progress);
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        setLaunchResult(result);
-        setIsLaunching(false);
-
-        const willSubmit = result.success || attemptCount >= 2;
-        // Per-attempt flight feedback. Skip when this attempt also submits —
-        // CelebrationLayer fires correct/incorrect on submit, avoiding a double.
-        if (!willSubmit) {
-          if (result.success) {
-            SoundManager.playCorrect();
-          } else {
-            SoundManager.playIncorrect();
-          }
+  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  useLayoutEffect(() => {
+    if (!tutorOwned || !item || (isComplete && !solvedNow)) return;
+    const scene = workspaceScene(item, { work: flown ?? work, solved: revealed, flown: !!flown });
+    const levers = revealed ? [] : rocketLevers(item, lever);
+    const onScreen = leverFacts(item, lever);
+    workspace.current = {
+      ...scene,
+      facts: { ...scene.facts, ...(onScreen ? { onScreen } : {}) },
+      levers,
+      // A synchronous commit (the workspace runs it inside flushSync): the screen changes before this returns.
+      pullLever: (id) => {
+        const l = levers.find(x => x.id === id);
+        if (!l) return `No lever ${id} on this item.`;
+        if (l.pulled) return `${id} is already on screen.`;
+        if (id === DROP_LEVER) {
+          const far = dropTarget(item, lever);
+          if (far === null) return 'Nothing more can be greyed out here; too few would be left.';
+          editLevers(s => ({ pulled: [...s.pulled, id], dropped: [...s.dropped, far] }));
+          if (work.pick === far) setWork(emptyWork());
+          return true;
         }
-
-        // Submit evaluation on first successful attempt or after 3+ attempts
-        if (willSubmit) {
-          const metrics: RocketBuilderMetrics = {
-            type: 'rocket-builder',
-            targetAltitudeKm: data.targetAltitudeKm,
-            achievedAltitudeKm: result.maxAltitudeKm,
-            targetOrbitRequired: data.targetOrbit,
-            achievedOrbit: result.reachedOrbit,
-            goalMet: result.success,
-            totalMassKg: rocketStats.totalMassKg,
-            propellantMassKg: rocketStats.totalPropellantKg,
-            totalThrustKN: rocketStats.totalThrustKN,
-            thrustToWeightRatio: rocketStats.thrustToWeight,
-            deltaVMs: rocketStats.deltaV,
-            stagesUsed: stages.length,
-            componentsUsed: rocketStats.componentCount,
-            stagingEventsCount: result.stagingEvents.length,
-            budgetUsed: rocketStats.totalCost,
-            budgetLimit: data.budget,
-            withinBudget: !overBudget,
-            launchAttempts: attemptCount + 1,
-            hintsUsed: currentHint,
-          };
-
-          const score = result.success ? 100 : Math.min(90, (result.maxAltitudeKm / data.targetAltitudeKm) * 100);
-
-          submitResult(result.success, score, metrics, {
-            studentWork: { stages, launchResult: result },
-          });
-        }
-      }
+        editLevers(s => ({ pulled: [...s.pulled, id] }));
+        return true;
+      },
     };
+  });
 
-    requestAnimationFrame(animate);
-  };
-
-  const handleReset = () => {
-    setStages([{ id: 'stage-1', components: [] }]);
-    setLaunchResult(null);
-    setFlightProgress(0);
-    resetAttempt();
-  };
-
-  const nextHint = () => {
-    setShowHint(true);
-    setCurrentHint(prev => Math.min(prev + 1, data.hints.length - 1));
-  };
-
-  // =============================================================================
-  // Render Rocket in SVG
-  // =============================================================================
-
-  useEffect(() => {
-    if (!svgRef.current) return;
-
-    const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
-
-    const width = 300;
-    const height = 400;
-    const unitSize = 20;
-
-    // Background
-    svg.append('rect')
-      .attr('width', width)
-      .attr('height', height)
-      .attr('fill', 'rgba(15, 23, 42, 0.8)')
-      .attr('rx', 8);
-
-    // Launch pad
-    svg.append('rect')
-      .attr('x', 50)
-      .attr('y', height - 30)
-      .attr('width', 200)
-      .attr('height', 30)
-      .attr('fill', '#4a5568');
-
-    svg.append('rect')
-      .attr('x', 120)
-      .attr('y', height - 40)
-      .attr('width', 60)
-      .attr('height', 10)
-      .attr('fill', '#2d3748');
-
-    // Draw rocket stages (bottom to top)
-    let yPosition = height - 50;
-
-    stages.forEach((stage, stageIndex) => {
-      const stageGroup = svg.append('g')
-        .attr('class', `stage-${stageIndex}`);
-
-      // Draw components in stage (bottom to top within stage)
-      stage.components.forEach((compId, compIndex) => {
-        const comp = componentMap.get(compId);
-        if (!comp) return;
-
-        const compHeight = comp.heightUnits * unitSize;
-        const compWidth = comp.widthUnits * unitSize;
-        yPosition -= compHeight;
-
-        const compGroup = stageGroup.append('g')
-          .attr('transform', `translate(${width / 2}, ${yPosition})`)
-          .style('cursor', 'pointer')
-          .on('click', () => removeComponentFromStage(compIndex, stageIndex));
-
-        // Component body
-        if (comp.type === 'capsule') {
-          // Capsule shape (dome top)
-          compGroup.append('path')
-            .attr('d', `
-              M ${-compWidth / 2} ${compHeight}
-              L ${-compWidth / 2} ${compHeight * 0.3}
-              Q ${-compWidth / 2} 0 0 0
-              Q ${compWidth / 2} 0 ${compWidth / 2} ${compHeight * 0.3}
-              L ${compWidth / 2} ${compHeight}
-              Z
-            `)
-            .attr('fill', comp.color)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 1);
-        } else if (comp.type === 'engine') {
-          // Engine bell shape
-          compGroup.append('path')
-            .attr('d', `
-              M ${-compWidth / 3} 0
-              L ${-compWidth / 2} ${compHeight}
-              L ${compWidth / 2} ${compHeight}
-              L ${compWidth / 3} 0
-              Z
-            `)
-            .attr('fill', comp.color)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 1);
-
-          // Engine nozzle
-          compGroup.append('ellipse')
-            .attr('cx', 0)
-            .attr('cy', compHeight)
-            .attr('rx', compWidth / 2)
-            .attr('ry', compHeight * 0.15)
-            .attr('fill', '#1a1a2e');
-        } else if (comp.type === 'fins') {
-          // Triangular fins
-          const finWidth = compWidth * 0.6;
-          compGroup.append('path')
-            .attr('d', `
-              M ${-compWidth / 2 - finWidth} ${compHeight}
-              L ${-compWidth / 2} 0
-              L ${-compWidth / 2} ${compHeight}
-              Z
-            `)
-            .attr('fill', comp.color)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 1);
-
-          compGroup.append('path')
-            .attr('d', `
-              M ${compWidth / 2 + finWidth} ${compHeight}
-              L ${compWidth / 2} 0
-              L ${compWidth / 2} ${compHeight}
-              Z
-            `)
-            .attr('fill', comp.color)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 1);
-        } else if (comp.type === 'fairing') {
-          // Pointed fairing
-          compGroup.append('path')
-            .attr('d', `
-              M ${-compWidth / 2} ${compHeight}
-              L ${-compWidth / 2} ${compHeight * 0.3}
-              L 0 0
-              L ${compWidth / 2} ${compHeight * 0.3}
-              L ${compWidth / 2} ${compHeight}
-              Z
-            `)
-            .attr('fill', comp.color)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 1);
-        } else {
-          // Default rectangular shape for tanks, boosters, payload
-          compGroup.append('rect')
-            .attr('x', -compWidth / 2)
-            .attr('y', 0)
-            .attr('width', compWidth)
-            .attr('height', compHeight)
-            .attr('fill', comp.color)
-            .attr('stroke', 'white')
-            .attr('stroke-width', 1)
-            .attr('rx', 3);
-
-          // Fuel level indicator for fuel tanks
-          if (comp.type === 'fuel_tank' && comp.propellantMassKg) {
-            compGroup.append('rect')
-              .attr('x', -compWidth / 2 + 2)
-              .attr('y', 2)
-              .attr('width', compWidth - 4)
-              .attr('height', (compHeight - 4) * 0.9)
-              .attr('fill', 'rgba(52, 211, 153, 0.6)')
-              .attr('rx', 2);
-          }
-        }
-
-        // Component label
-        compGroup.append('text')
-          .attr('x', compWidth / 2 + 8)
-          .attr('y', compHeight / 2)
-          .attr('fill', 'white')
-          .attr('font-size', '10px')
-          .attr('dominant-baseline', 'middle')
-          .text(comp.name);
-      });
-
-      // Stage separator line
-      if (stageIndex > 0 && stage.components.length > 0) {
-        svg.append('line')
-          .attr('x1', 80)
-          .attr('x2', 220)
-          .attr('y1', yPosition + stages[stageIndex].components.reduce((h, id) => {
-            const c = componentMap.get(id);
-            return h + (c ? c.heightUnits * unitSize : 0);
-          }, 0))
-          .attr('y2', yPosition + stages[stageIndex].components.reduce((h, id) => {
-            const c = componentMap.get(id);
-            return h + (c ? c.heightUnits * unitSize : 0);
-          }, 0))
-          .attr('stroke', '#f59e0b')
-          .attr('stroke-width', 2)
-          .attr('stroke-dasharray', '4 2');
-      }
-    });
-
-    // Flame animation during launch
-    if (isLaunching && flightProgress < 1) {
-      const flameGroup = svg.append('g')
-        .attr('transform', `translate(${width / 2}, ${height - 50})`);
-
-      // Animated flame
-      const flameHeight = 30 + Math.random() * 20;
-      flameGroup.append('ellipse')
-        .attr('cx', 0)
-        .attr('cy', flameHeight / 2)
-        .attr('rx', 15)
-        .attr('ry', flameHeight)
-        .attr('fill', 'url(#flameGradient)');
-    }
-
-    // Gradient definitions
-    const defs = svg.append('defs');
-
-    const flameGradient = defs.append('radialGradient')
-      .attr('id', 'flameGradient')
-      .attr('cx', '50%')
-      .attr('cy', '0%')
-      .attr('r', '100%');
-
-    flameGradient.append('stop')
-      .attr('offset', '0%')
-      .attr('stop-color', '#fff7ed');
-    flameGradient.append('stop')
-      .attr('offset', '30%')
-      .attr('stop-color', '#fdba74');
-    flameGradient.append('stop')
-      .attr('offset', '70%')
-      .attr('stop-color', '#f97316');
-    flameGradient.append('stop')
-      .attr('offset', '100%')
-      .attr('stop-color', '#ea580c')
-      .attr('stop-opacity', '0');
-
-  }, [stages, componentMap, isLaunching, flightProgress]);
-
-  // =============================================================================
-  // Flight Profile Visualization
-  // =============================================================================
-
-  useEffect(() => {
-    if (!flightSvgRef.current || !launchResult) return;
-
-    const svg = d3.select(flightSvgRef.current);
-    svg.selectAll('*').remove();
-
-    const width = 400;
-    const height = 200;
-    const margin = { top: 20, right: 20, bottom: 40, left: 50 };
-    const innerWidth = width - margin.left - margin.right;
-    const innerHeight = height - margin.top - margin.bottom;
-
-    const g = svg.append('g')
-      .attr('transform', `translate(${margin.left},${margin.top})`);
-
-    // Scales
-    const xScale = d3.scaleLinear()
-      .domain([0, d3.max(launchResult.flightProfile, d => d.timeSeconds) || 100])
-      .range([0, innerWidth]);
-
-    const yScale = d3.scaleLinear()
-      .domain([0, Math.max(d3.max(launchResult.flightProfile, d => d.altitudeKm) || 100, data.targetAltitudeKm)])
-      .range([innerHeight, 0]);
-
-    // Grid lines
-    g.append('g')
-      .attr('class', 'grid')
-      .attr('transform', `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale).ticks(5).tickSize(-innerHeight).tickFormat(() => ''))
-      .selectAll('line')
-      .attr('stroke', 'rgba(255,255,255,0.1)');
-
-    g.append('g')
-      .attr('class', 'grid')
-      .call(d3.axisLeft(yScale).ticks(5).tickSize(-innerWidth).tickFormat(() => ''))
-      .selectAll('line')
-      .attr('stroke', 'rgba(255,255,255,0.1)');
-
-    // Target altitude line
-    g.append('line')
-      .attr('x1', 0)
-      .attr('x2', innerWidth)
-      .attr('y1', yScale(data.targetAltitudeKm))
-      .attr('y2', yScale(data.targetAltitudeKm))
-      .attr('stroke', '#10b981')
-      .attr('stroke-width', 2)
-      .attr('stroke-dasharray', '5 3');
-
-    g.append('text')
-      .attr('x', innerWidth - 5)
-      .attr('y', yScale(data.targetAltitudeKm) - 5)
-      .attr('fill', '#10b981')
-      .attr('font-size', '10px')
-      .attr('text-anchor', 'end')
-      .text(`Target: ${data.targetAltitudeKm} km`);
-
-    // Karman line (edge of space)
-    if (KARMAN_LINE_KM <= (d3.max(launchResult.flightProfile, d => d.altitudeKm) || 0) * 1.2) {
-      g.append('line')
-        .attr('x1', 0)
-        .attr('x2', innerWidth)
-        .attr('y1', yScale(KARMAN_LINE_KM))
-        .attr('y2', yScale(KARMAN_LINE_KM))
-        .attr('stroke', '#8b5cf6')
-        .attr('stroke-width', 1)
-        .attr('stroke-dasharray', '3 3');
-
-      g.append('text')
-        .attr('x', 5)
-        .attr('y', yScale(KARMAN_LINE_KM) - 5)
-        .attr('fill', '#8b5cf6')
-        .attr('font-size', '9px')
-        .text('Space (100 km)');
-    }
-
-    // Flight path line
-    const line = d3.line<typeof launchResult.flightProfile[0]>()
-      .x(d => xScale(d.timeSeconds))
-      .y(d => yScale(d.altitudeKm))
-      .curve(d3.curveMonotoneX);
-
-    g.append('path')
-      .datum(launchResult.flightProfile)
-      .attr('fill', 'none')
-      .attr('stroke', launchResult.success ? '#22c55e' : '#ef4444')
-      .attr('stroke-width', 2)
-      .attr('d', line);
-
-    // Staging events
-    launchResult.stagingEvents.forEach((event, i) => {
-      g.append('circle')
-        .attr('cx', xScale(event.timeSeconds))
-        .attr('cy', yScale(event.altitudeKm))
-        .attr('r', 5)
-        .attr('fill', '#f59e0b');
-
-      g.append('text')
-        .attr('x', xScale(event.timeSeconds) + 8)
-        .attr('y', yScale(event.altitudeKm) + 4)
-        .attr('fill', '#f59e0b')
-        .attr('font-size', '9px')
-        .text(`Stage ${event.stageDropped} sep`);
-    });
-
-    // Axes
-    g.append('g')
-      .attr('transform', `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(xScale).ticks(5))
-      .selectAll('text')
-      .attr('fill', 'white');
-
-    g.append('g')
-      .call(d3.axisLeft(yScale).ticks(5))
-      .selectAll('text')
-      .attr('fill', 'white');
-
-    // Axis labels
-    svg.append('text')
-      .attr('x', width / 2)
-      .attr('y', height - 5)
-      .attr('fill', 'white')
-      .attr('font-size', '11px')
-      .attr('text-anchor', 'middle')
-      .text('Time (seconds)');
-
-    svg.append('text')
-      .attr('transform', 'rotate(-90)')
-      .attr('x', -height / 2)
-      .attr('y', 15)
-      .attr('fill', 'white')
-      .attr('font-size', '11px')
-      .attr('text-anchor', 'middle')
-      .text('Altitude (km)');
-
-  }, [launchResult, data.targetAltitudeKm]);
-
-  // =============================================================================
-  // Render
-  // =============================================================================
-
+  // The workspace path keeps the last credited item on screen (its launch) until the session is submitted.
+  const done = hasSubmitted || submitted || (tutorOwned && isComplete && !solvedNow);
   const pip = useWorkspacePipSurface({
     instanceId: resolvedInstanceId,
-    scopeId: 'rocket',
-    label: 'The parts and your rocket',
-    solved: !!launchResult?.success,
+    scopeId: done || !item ? null : item.id,
+    label: 'The rockets and your answer',
+    solved: revealed,
     tutorSpeaking: isAudioPlaying && activePrimitiveId === resolvedInstanceId,
   });
 
-  return (
-    <div className={`w-full ${className}`}>
-      <div className="max-w-7xl mx-auto glass-panel rounded-3xl border border-white/10 p-8 relative overflow-hidden shadow-2xl">
-        {/* Ambient background glow */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-[180px] opacity-10 bg-orange-500" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[150px] opacity-10 bg-blue-500" />
+  if (!items.length) {
+    return (
+      <LuminaCard className={className}>
+        <LuminaCardHeader><LuminaCardTitle>{title || 'Rocket Builder'}</LuminaCardTitle></LuminaCardHeader>
+        <LuminaCardContent><p className="text-sm text-slate-400">This builder has nothing to ask.</p></LuminaCardContent>
+      </LuminaCard>
+    );
+  }
 
-        <div className="relative z-10">
-          {/* Header — the mono badges and the literal GRADE readout are
-              developer chrome, and "GRADE K" was the ONLY use of gradeLevel in
-              this component before the band pass. */}
-          <div className="mb-6">
-            {!isPreReader && (
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400">Spaceflight:</span>
-                <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-orange-500/20 text-orange-300 border-orange-500/30">
-                  BUILD & LAUNCH
-                </span>
-                <span className="text-[10px] uppercase tracking-widest px-2 py-1 rounded-full font-mono border bg-blue-500/20 text-blue-300 border-blue-500/30">
-                  GRADE {data.gradeLevel}
-                </span>
+  // ── Render pieces ──
+  const marks = (coins: boolean): Marks => ({ count: leverOn(COUNT_LEVER), coins });
+  const optionState = (i: number): AnswerChoiceState => {
+    if (lever.dropped.includes(i)) return 'dimmed';
+    const key = item ? keyOf(item) : -1;
+    if (revealed) return i === key ? 'correct' : i === work.pick ? 'incorrect' : 'dimmed';
+    if (wrongShown && work.pick === i) return 'incorrect';
+    return work.pick === i ? 'selected' : 'idle';
+  };
+
+  const renderSingle = (it: Extract<RocketItem, { mode: 'can_it_lift' | 'add_to_lift' }>) => {
+    const added = it.mode === 'add_to_lift' && flown?.pick != null ? it.options[flown.pick] : null;
+    const rocket = added ? withPart(it.rocket, added) : it.rocket;
+    const launched = it.mode === 'can_it_lift' ? revealed : !!flown;
+    const launch: Launch = launched ? (lifts(rocket) ? 'up' : 'stays') : null;
+    return (
+      <div className="mx-auto w-full max-w-[300px]">
+        <RocketPanel rocket={rocket} marks={marks(false)} launch={launch} rise={1} out label="The rocket on its launch pad" />
+      </div>
+    );
+  };
+
+  const renderChoices = (it: RocketItem) => {
+    if (it.mode === 'can_it_lift') {
+      return (
+        <div className="grid grid-cols-2 gap-2">
+          {LIFT_CHOICES.map((c, i) => (
+            <LuminaAnswerChoice key={c} aria-label={LIFT_TEXT[c]} state={optionState(i)} disabled={closed}
+              className="flex items-center justify-center gap-2 p-3 font-semibold" onClick={() => tap(i)}>
+              <span aria-hidden="true" className="text-2xl">{c === 'lifts' ? '🚀⬆' : '🚀▁'}</span>
+              <span>{LIFT_TEXT[c]}</span>
+            </LuminaAnswerChoice>
+          ))}
+        </div>
+      );
+    }
+    if (it.mode === 'add_to_lift') {
+      return (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {it.options.map((p, i) => (
+            <LuminaAnswerChoice key={i} aria-label={partLabel(p)} state={optionState(i)}
+              disabled={closed || lever.dropped.includes(i)} data-dropped={lever.dropped.includes(i) || undefined}
+              className="flex flex-col items-center gap-1 p-2" onClick={() => tap(i)}>
+              <PartPicture p={p} marks={{ count: leverOn(COUNT_LEVER), coins: false, ownWeight: leverOn(OWN_WEIGHT_LEVER) }} />
+              <span className="text-sm font-semibold">{partLabel(p)}</span>
+            </LuminaAnswerChoice>
+          ))}
+        </div>
+      );
+    }
+    const many = it;
+    const launched = revealed;
+    const h = many.rockets.map(flightOf);
+    const top = Math.max(...h, 1e-9);
+    return (
+      <div className={`grid gap-2 ${many.rockets.length > 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
+        {many.rockets.map((r, i) => (
+          <LuminaAnswerChoice key={r.color} aria-label={rocketLabel(r)} state={optionState(i)}
+            disabled={closed || lever.dropped.includes(i)} data-dropped={lever.dropped.includes(i) || undefined}
+            className="flex flex-col items-stretch gap-1 p-1" onClick={() => tap(i)}>
+            <RocketPanel rocket={r} marks={marks(many.mode === 'on_budget')} label={rocketLabel(r)}
+              launch={launched ? (lifts(r) ? 'up' : 'stays') : null}
+              rise={many.mode === 'reach_target' ? h[i] / top : 1} out={many.mode === 'on_budget'} />
+            <span className="flex items-center justify-center gap-2 text-sm font-semibold">
+              <span className="inline-block h-3 w-3 rounded-full" style={{ background: COLOR_HEX[r.color] }} />
+              {rocketLabel(r)}
+            </span>
+          </LuminaAnswerChoice>
+        ))}
+      </div>
+    );
+  };
+
+  const isPre = gradeLevel === 'K' || gradeLevel === '1';
+  const flightLine = item?.mode === 'add_to_lift' && flown?.pick != null && !revealed
+    ? `The ${partLabel(item.options[flown.pick]).toLowerCase()} is on, and the rocket still stays on the pad.` : null;
+
+  return (
+    <LuminaCard className={className}>
+      <LuminaCardHeader>
+        <LuminaCardTitle>{`🚀 ${title || 'Rocket Builder'}`}</LuminaCardTitle>
+        {!done && item && !isPre && (
+          <LuminaSectionLabel accent="cyan" size="sm">
+            {`${MODE_LABEL[item.mode]} · item ${Math.min(currentIndex, items.length - 1) + 1} of ${items.length}`}
+          </LuminaSectionLabel>
+        )}
+        {(overview || description) && !done && !isPre && <p className="text-sm text-slate-400">{overview || description}</p>}
+      </LuminaCardHeader>
+
+      <LuminaCardContent className="space-y-4">
+        {done ? (
+          <LuminaFeedbackCard status="insight" label="Builder complete">
+            {`${results.filter(r => r.correct).length} of ${items.length} answered.`}
+          </LuminaFeedbackCard>
+        ) : item && (
+          <>
+            <div className="flex items-center gap-3">
+              <LuminaPrompt accent="cyan" className="flex-1">{askOf(item)}</LuminaPrompt>
+              {!tutorOwned && (
+                <ReadMeButton instruction={askOf(item)} ask="Look at the rocket, then answer."
+                  speaking={isAudioPlaying} onAskTutor={m => sendText?.(m)} tag="[READ_CHALLENGE]"
+                  className="flex-shrink-0" aria-label="Read the question to me" />
+              )}
+            </div>
+
+            {pip.store && <div {...pip.dock} />}
+            <div {...pip.workspace} className="space-y-3">
+              {!isManyItem(item) && renderSingle(item)}
+              {flightLine && <p className="text-center text-sm text-amber-200" data-flight-result>{flightLine}</p>}
+
+              {leverOn(LIFT_CARD_LEVER) && <LiftCard />}
+              {leverOn(FUEL_CARD_LEVER) && <FuelCard />}
+              {leverOn(OWN_WEIGHT_LEVER) && <p className="text-center text-xs text-rose-200" data-lever="own-weight">{OWN_WEIGHT_LINE}</p>}
+
+              {renderChoices(item)}
+            </div>
+
+            {!revealed && (
+              <div className="flex justify-center">
+                <LuminaActionButton action="check" disabled={closed || !workComplete(item, work)} onClick={check}>
+                  {item.mode === 'add_to_lift' ? 'Add it and check' : 'Check Answer'}
+                </LuminaActionButton>
               </div>
             )}
-            <div className="flex items-start gap-3">
-              <div className="flex-1">
-                <h3 className={`font-light text-white mb-2 ${isPreReader ? 'text-4xl' : 'text-3xl'}`}>{data.title}</h3>
-                <p className="text-slate-300 leading-relaxed">{data.description}</p>
+            {revealed && (
+              <LuminaFeedbackCard status={solvedNow ? 'correct' : 'insight'} label={solvedNow ? undefined : 'The answer'}>
+                {revealText(item)}
+              </LuminaFeedbackCard>
+            )}
+            {!revealed && wrongShown && <LuminaFeedbackCard status="incorrect">That is not it.</LuminaFeedbackCard>}
+            {!revealed && feedback && <LuminaFeedbackCard status="incorrect">{feedback}</LuminaFeedbackCard>}
+
+            {!tutorOwned && revealed && (
+              <div className="flex justify-end">
+                <LuminaActionButton action="next" onClick={next}>{currentIndex < items.length - 1 ? 'Next →' : 'Finish'}</LuminaActionButton>
               </div>
-              {isPreReader && (
-                <LuminaReadAloud
-                  iconOnly
-                  size="lg"
-                  accent="cyan"
-                  speaking={isAudioPlaying}
-                  aria-label="Read this to me"
-                  className="flex-shrink-0"
-                  onClick={() => readAloud(`${data.title}. ${data.description}`)}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Mission Objective — an altitude in km is unreadable at K-1, and the
-              goal is carried by the tutor's voice there instead. */}
-          {!isPreReader && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">🎯</span>
-                <div>
-                  <div className="text-sm font-medium text-blue-300 uppercase tracking-wide">Mission Objective</div>
-                  <div className="text-white">
-                    {data.targetOrbit
-                      ? `Reach orbit at ${LEO_ALTITUDE_KM} km altitude`
-                      : `Reach ${data.targetAltitudeKm} km altitude`}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {pip.store && <div {...pip.dock} className={`${pip.dock.className} mb-6`} />}
-          {/* Main Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div {...pip.workspace} className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Component Library */}
-            <div className="lg:col-span-1 space-y-4">
-              {!isPreReader && (
-                <div className="text-sm font-medium text-slate-300 uppercase tracking-wide mb-3">
-                  Component Library
-                </div>
-              )}
-
-              {Object.entries(componentsByType).map(([type, components]) => (
-                <div key={type} className="glass-panel rounded-xl border border-white/10 p-3">
-                  <div className="text-xs font-medium text-slate-400 uppercase mb-2 flex items-center gap-2">
-                    <span className="w-3 h-3 rounded" style={{ backgroundColor: COMPONENT_COLORS[type] }} />
-                    {isPreReader ? (COMPONENT_TYPE_LABEL[type] ?? type.replace('_', ' ')) : `${type.replace('_', ' ')}s`}
-                  </div>
-                  <div className={isPreReader ? 'flex flex-wrap gap-2' : 'space-y-2'}>
-                    {components.map(comp => (
-                      <button
-                        key={comp.id}
-                        onClick={() => addComponentToStage(comp.id, stages.length - 1)}
-                        disabled={isLaunching || (budgetRemaining !== null && comp.cost != null && budgetRemaining < comp.cost)}
-                        aria-label={comp.name}
-                        className={isPreReader
-                          ? 'flex flex-col items-center justify-center gap-1 w-24 h-24 rounded-2xl border-2 bg-white/5 hover:bg-white/15 active:scale-95 border-white/20 transition-all disabled:opacity-50'
-                          : `w-full text-left p-2 rounded-lg border transition-all ${
-                              selectedComponent === comp.id
-                                ? 'border-blue-500 bg-blue-500/20'
-                                : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
-                            } disabled:opacity-50 disabled:cursor-not-allowed`}
-                      >
-                        {isPreReader ? (
-                          <>
-                            <span className="text-4xl leading-none" aria-hidden="true">
-                              {COMPONENT_EMOJI[comp.type] ?? '🔧'}
-                            </span>
-                            <span className="text-[11px] text-slate-200 leading-tight text-center px-1">
-                              {comp.name}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-white">{comp.name}</span>
-                              {comp.cost && (
-                                <span className="text-xs text-amber-400">${comp.cost}</span>
-                              )}
-                            </div>
-                            {/* Masses, thrusts and fuel figures: grade 2+ only. */}
-                            <div className="text-xs text-slate-400 mt-1">
-                              {comp.massKg.toLocaleString()} kg
-                              {comp.thrustKN && ` • ${comp.thrustKN} kN thrust`}
-                              {comp.propellantMassKg && ` • ${comp.propellantMassKg} kg fuel`}
-                            </div>
-                          </>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-              {/* Hints — a disclosure to READ at grade 2+, a thing you HEAR below it */}
-              {data.guidedMode && data.hints.length > 0 && (
-                isPreReader ? (
-                  <LuminaReadAloud
-                    size="lg"
-                    accent="cyan"
-                    speaking={isAudioPlaying}
-                    label="Tell me what to do"
-                    className="w-full"
-                    onClick={() => readAloud(data.hints.join(' '))}
-                  />
-                ) : (
-                  <button
-                    onClick={nextHint}
-                    className="w-full p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-sm hover:bg-amber-500/20 transition-colors"
-                  >
-                    💡 Need a hint?
-                  </button>
-                )
-              )}
-
-              {!isPreReader && showHint && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                  <div className="text-amber-300 text-sm">{data.hints[currentHint]}</div>
-                </div>
-              )}
-            </div>
-
-            {/* Rocket Builder */}
-            <div className="lg:col-span-1">
-              {!isPreReader && (
-                <div className="text-sm font-medium text-slate-300 uppercase tracking-wide mb-3">
-                  Your Rocket
-                </div>
-              )}
-
-              {/* Stage Controls — "staging" is grade 3+ vocabulary and the K rung
-                  is maxStages: 1, so the control and its N/M counter are pure
-                  chrome for a pre-reader. */}
-              {!isPreReader && (
-                <div className="flex items-center gap-2 mb-3">
-                  <button
-                    onClick={addStage}
-                    disabled={stages.length >= data.maxStages || isLaunching}
-                    className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 text-sm hover:bg-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    + Add Stage
-                  </button>
-                  <span className="text-xs text-slate-400">
-                    {stages.length}/{data.maxStages} stages
-                  </span>
-                </div>
-              )}
-
-              {/* Rocket SVG */}
-              <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
-                <svg ref={svgRef} width={300} height={400} className="w-full" />
-              </div>
-
-              {/* Stats Panel — kg, kN, a ratio and a dollar budget. None of it is
-                  readable at K-1, and Total Mass / Total Thrust rendered
-                  unconditionally, so `showTWR: false` never hid the panel. */}
-              {!isPreReader && (
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs text-slate-400">Total Mass</div>
-                  <div className="text-lg font-light text-white">
-                    {rocketStats.totalMassKg.toLocaleString()} kg
-                  </div>
-                </div>
-                <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                  <div className="text-xs text-slate-400">Total Thrust</div>
-                  <div className="text-lg font-light text-white">
-                    {rocketStats.totalThrustKN.toLocaleString()} kN
-                  </div>
-                </div>
-                {data.showTWR && (
-                  <div className={`p-3 rounded-xl border ${
-                    rocketStats.canLift
-                      ? 'bg-green-500/10 border-green-500/30'
-                      : 'bg-red-500/10 border-red-500/30'
-                  }`}>
-                    <div className="text-xs text-slate-400">Thrust/Weight</div>
-                    <div className={`text-lg font-light ${rocketStats.canLift ? 'text-green-400' : 'text-red-400'}`}>
-                      {rocketStats.thrustToWeight.toFixed(2)}
-                      {!rocketStats.canLift && ' ⚠️'}
-                    </div>
-                  </div>
-                )}
-                {data.showFuelGauge && (
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                    <div className="text-xs text-slate-400">Propellant</div>
-                    <div className="text-lg font-light text-white">
-                      {rocketStats.totalPropellantKg.toLocaleString()} kg
-                    </div>
-                  </div>
-                )}
-                {data.budget && (
-                  <div className={`p-3 rounded-xl border col-span-2 ${
-                    overBudget
-                      ? 'bg-red-500/10 border-red-500/30'
-                      : 'bg-white/5 border-white/10'
-                  }`}>
-                    <div className="text-xs text-slate-400">Budget</div>
-                    <div className={`text-lg font-light ${overBudget ? 'text-red-400' : 'text-white'}`}>
-                      ${rocketStats.totalCost.toLocaleString()} / ${data.budget.toLocaleString()}
-                      {overBudget && ' - Over budget!'}
-                    </div>
-                  </div>
-                )}
-              </div>
-              )}
-
-              {/* Launch Button */}
-              <div className="mt-4 flex gap-2">
-                <button
-                  onClick={handleLaunch}
-                  disabled={isLaunching || rocketStats.componentCount === 0 || overBudget}
-                  className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                    isLaunching
-                      ? 'bg-orange-500/50 text-orange-200 cursor-wait'
-                      : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-orange-500/25'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {isLaunching ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="animate-pulse">🚀</span>
-                      {/* A percentage readout is a number in the child's field. */}
-                      {!isPreReader && `Launching... ${Math.round(flightProgress * 100)}%`}
-                    </span>
-                  ) : (
-                    isPreReader ? <span className="text-3xl leading-none">🚀</span> : '🚀 Launch!'
-                  )}
-                </button>
-                <button
-                  onClick={handleReset}
-                  disabled={isLaunching}
-                  aria-label={isPreReader ? 'Start over' : undefined}
-                  className="px-4 py-3 rounded-xl bg-slate-700/50 text-slate-300 hover:bg-slate-700 transition-colors disabled:opacity-50"
-                >
-                  {isPreReader ? <span className="text-3xl leading-none" aria-hidden="true">↺</span> : 'Reset'}
-                </button>
-              </div>
-            </div>
-
-            </div>
-
-            {/* Results Panel */}
-            <div className="lg:col-span-1">
-              {!isPreReader && (
-                <div className="text-sm font-medium text-slate-300 uppercase tracking-wide mb-3">
-                  Flight Results
-                </div>
-              )}
-
-              {launchResult ? (
-                <div className="space-y-4">
-                  {/* Success/Failure Banner */}
-                  <div className={`p-4 rounded-xl border ${
-                    launchResult.success
-                      ? 'bg-green-500/10 border-green-500/30'
-                      : 'bg-red-500/10 border-red-500/30'
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">
-                        {launchResult.success ? '🎉' : '💥'}
-                      </span>
-                      <div>
-                        <div className={`text-lg font-medium ${
-                          launchResult.success ? 'text-green-400' : 'text-red-400'
-                        }`}>
-                          {launchResult.success ? 'Mission Success!' : 'Mission Failed'}
-                        </div>
-                        {!isPreReader && (
-                          <div className="text-sm text-slate-300">
-                            Max Altitude: {launchResult.maxAltitudeKm.toFixed(1)} km
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {/* The failure prose carries a raw TWR figure and kilometre
-                        readings ("Reached 12.3 km but target is 15 km").
-                        At K-1 the tutor says what happened instead. */}
-                    {!isPreReader && launchResult.failureReason && (
-                      <div className="mt-3 text-sm text-slate-300 bg-black/20 p-2 rounded-lg">
-                        {launchResult.failureReason}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Flight Profile Graph — a labelled altitude/time plot; a
-                      chart with axes is grade 2+ reading. */}
-                  {!isPreReader && (
-                    <div className="glass-panel rounded-xl border border-white/10 p-3">
-                      <div className="text-xs font-medium text-slate-400 uppercase mb-2">
-                        Flight Profile
-                      </div>
-                      <svg ref={flightSvgRef} width={400} height={200} className="w-full" />
-                    </div>
-                  )}
-
-                  {/* Flight Statistics — "Staging Events" is grade 3+ vocabulary
-                      and a score ledger is explicitly out at PRE (rule 7). */}
-                  {!isPreReader && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                        <div className="text-xs text-slate-400">Staging Events</div>
-                        <div className="text-lg font-light text-white">
-                          {launchResult.stagingEvents.length}
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                        <div className="text-xs text-slate-400">Orbit Achieved</div>
-                        <div className={`text-lg font-light ${launchResult.reachedOrbit ? 'text-green-400' : 'text-slate-400'}`}>
-                          {launchResult.reachedOrbit ? 'Yes! 🛰️' : 'No'}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Attempt Counter */}
-                  {!isPreReader && (
-                    <div className="text-center text-sm text-slate-400">
-                      Attempt #{attemptCount}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="glass-panel rounded-xl border border-white/10 p-8 text-center">
-                  <div className="text-4xl mb-4">🚀</div>
-                  {!isPreReader && (
-                    <>
-                      <div className="text-slate-300 mb-2">Build your rocket and launch!</div>
-                      <div className="text-sm text-slate-400">
-                        Add components from the library, then click Launch to see how high you can go.
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Learning Focus — teacher-facing prose ("Students will discover
-                  that…"), written about the child rather than to them. */}
-              {!isPreReader && (
-                <div className="mt-4 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                  <div className="text-xs font-medium text-purple-300 uppercase mb-2">
-                    Learning Focus
-                  </div>
-                  <div className="text-sm text-slate-300">
-                    {data.learningFocus}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            )}
+          </>
+        )}
+      </LuminaCardContent>
+    </LuminaCard>
   );
 };
+
+// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
+const RocketBuilder = withWorkspaceController<RocketBuilderProps, ProgressOptions<RocketItem>, Progress>(
+  'rocket-builder', RocketBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('rocket-builder'));
 
 export default RocketBuilder;

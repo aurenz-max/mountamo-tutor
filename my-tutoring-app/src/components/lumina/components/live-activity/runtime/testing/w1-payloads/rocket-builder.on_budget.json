@@ -1,0 +1,435 @@
+{
+ "source": "qa/tutor-reports/rocket-builder-runtime-on_budget-payload-2026-10-16.json",
+ "primitiveId": "rocket-builder",
+ "evalMode": "on_budget",
+ "data": {
+  "title": "Build Your Rocket Today",
+  "overview": "You will choose the rocket that stays within the coin budget.",
+  "gradeLevel": "3",
+  "challengeTypes": [
+   "on_budget"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "on_budget-1",
+    "mode": "on_budget",
+    "budget": 6,
+    "rockets": [
+     {
+      "color": "blue",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 7,
+        "weight": 1,
+        "cost": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 1,
+        "cost": 2
+       }
+      ]
+     },
+     {
+      "color": "red",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 8,
+        "weight": 1,
+        "cost": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "cargo",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 2,
+        "cost": 2
+       }
+      ]
+     },
+     {
+      "color": "yellow",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 6,
+        "weight": 1,
+        "cost": 3
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "cargo",
+        "weight": 1,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 2,
+        "cost": 1
+       }
+      ]
+     },
+     {
+      "color": "green",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 6,
+        "weight": 2,
+        "cost": 3
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 2,
+        "cost": 1
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "on_budget-2",
+    "mode": "on_budget",
+    "budget": 7,
+    "rockets": [
+     {
+      "color": "green",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 2,
+        "weight": 2,
+        "cost": 3
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 1,
+        "cost": 2
+       }
+      ]
+     },
+     {
+      "color": "yellow",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 8,
+        "weight": 2,
+        "cost": 4
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 2,
+        "cost": 2
+       }
+      ]
+     },
+     {
+      "color": "red",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 6,
+        "weight": 1,
+        "cost": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "cargo",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 1,
+        "cost": 2
+       }
+      ]
+     },
+     {
+      "color": "blue",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 8,
+        "weight": 2,
+        "cost": 3
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 1,
+        "cost": 2
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "on_budget-3",
+    "mode": "on_budget",
+    "budget": 6,
+    "rockets": [
+     {
+      "color": "red",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 8,
+        "weight": 2,
+        "cost": 4
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 2,
+        "cost": 2
+       }
+      ]
+     },
+     {
+      "color": "yellow",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 7,
+        "weight": 2,
+        "cost": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 2,
+        "cost": 2
+       }
+      ]
+     },
+     {
+      "color": "blue",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 2,
+        "weight": 1,
+        "cost": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 1,
+        "cost": 1
+       }
+      ]
+     },
+     {
+      "color": "green",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 3,
+        "weight": 1,
+        "cost": 4
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 2,
+        "cost": 2
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "on_budget-4",
+    "mode": "on_budget",
+    "budget": 7,
+    "rockets": [
+     {
+      "color": "yellow",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 8,
+        "weight": 2,
+        "cost": 3
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 1,
+        "cost": 2
+       }
+      ]
+     },
+     {
+      "color": "green",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 5,
+        "weight": 1,
+        "cost": 4
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "cargo",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 1,
+        "cost": 1
+       }
+      ]
+     },
+     {
+      "color": "red",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 8,
+        "weight": 2,
+        "cost": 4
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 1
+       },
+       {
+        "kind": "cargo",
+        "weight": 1,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 2,
+        "cost": 2
+       }
+      ]
+     },
+     {
+      "color": "blue",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 2,
+        "weight": 2,
+        "cost": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2,
+        "cost": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 1,
+        "cost": 1
+       },
+       {
+        "kind": "capsule",
+        "weight": 2,
+        "cost": 1
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

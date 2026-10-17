@@ -284,6 +284,8 @@ import { choiceLabel as telescopeChoiceLabel, isTapItem as telescopeTapItem, sky
   from '../../primitives/visual-primitives/astronomy/telescopeWorkspace';
 import { choiceLabel as orbitChoiceLabel, isTapItem as orbitTapItem, orbitHarnessAnswers, orbitItems, tapLabel as orbitTapLabel }
   from '../../primitives/visual-primitives/astronomy/orbitWorkspace';
+import { optionLabel as rocketOptionLabel, rocketHarnessAnswers, rocketItems }
+  from '../../primitives/visual-primitives/astronomy/rocketWorkspace';
 import { reactionHarnessAnswers, reactionItems } from '../../primitives/visual-primitives/chemistry/reactionLabWorkspace';
 import { phHarnessAnswers, phItems } from '../../primitives/visual-primitives/chemistry/phExplorerWorkspace';
 import { fewerChoices as phFewerChoices, practiceParent as phPracticeParent } from '../../primitives/visual-primitives/chemistry/phExplorerLevers';
@@ -4169,6 +4171,24 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       const answers = orbitHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
       if (orbitTapItem(item)) return [{ type: 'choose', label: orbitTapLabel(item, work.pick!) }, { type: 'check' }];
       return [{ type: 'choose', label: orbitChoiceLabel(item, work.choice!) }, { type: 'check' }];
+    },
+    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
+  },
+  'rocket-builder': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/astronomy/RocketBuilder.tsx',
+    instanceId: 'rocket-builder',
+    defaults: { grade: 'Grade 4', mode: 'can_it_lift', di: false, topic: 'What a rocket needs to lift off' },
+    leakTokens: ['ANSWER_CORRECT', 'ANSWER_INCORRECT', 'ANSWER_REVEALED', 'NEXT_ITEM', 'ALL_COMPLETE', 'READ_CHALLENGE'],
+    prompts: WORKSPACE_PROMPTS,
+    // Every mode taps one option by its aria-label (the lift-off answer, the part, or the rocket's colour), then presses
+    // the check. A wrong answer shows the mode's first-listed miss the item can.
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const item = rocketItems(ctx.data as never).find(i => i.id === ctx.itemId);
+      if (!item) throw new Error(`No current rocket-builder item ${ctx.itemId}`);
+      const answers = rocketHarnessAnswers(item), work = intent === 'wrong' ? answers.plainWrong : answers.correct;
+      return [{ type: 'choose', label: rocketOptionLabel(item, work.pick!) }, { type: 'check' }];
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },

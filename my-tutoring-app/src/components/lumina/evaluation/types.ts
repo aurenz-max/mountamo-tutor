@@ -1273,33 +1273,12 @@ export interface MoonPhasesLabMetrics extends BasePrimitiveMetrics {
 export interface RocketBuilderMetrics extends BasePrimitiveMetrics {
   type: 'rocket-builder';
 
-  // Goal achievement
-  targetAltitudeKm: number;       // Mission target altitude
-  achievedAltitudeKm: number;     // Actual maximum altitude reached
-  targetOrbitRequired: boolean;   // Whether orbit was required
-  achievedOrbit: boolean;         // Whether orbit was achieved
-  goalMet: boolean;               // Did student meet the mission objective
-
-  // Rocket design
-  totalMassKg: number;            // Total rocket mass at launch
-  propellantMassKg: number;       // Total propellant mass
-  totalThrustKN: number;          // Total thrust at launch
-  thrustToWeightRatio: number;    // TWR at launch
-  deltaVMs: number;               // Estimated delta-v in m/s
-
-  // Staging
-  stagesUsed: number;             // Number of stages in design
-  componentsUsed: number;         // Total components placed
-  stagingEventsCount: number;     // Number of staging separations during flight
-
-  // Budget (if applicable)
-  budgetUsed?: number;            // Total cost of components
-  budgetLimit?: number;           // Budget constraint (if any)
-  withinBudget: boolean;          // Did they stay within budget
-
-  // Attempt tracking
-  launchAttempts: number;         // Number of launch attempts
-  hintsUsed: number;              // Number of hints requested
+  // Rebuilt 2026-10-16: code-built prediction items (can_it_lift, add_to_lift, on_budget, reach_target).
+  challengeType: 'can_it_lift' | 'add_to_lift' | 'on_budget' | 'reach_target';
+  itemsTotal: number;             // Items in the session
+  itemsCorrect: number;           // Items answered correctly (any try)
+  firstTryCorrect: number;        // Items answered correctly on the first try (the scored ones)
+  launchAttempts: number;         // Checked answers (attempts) across the session
 }
 
 export interface OrbitMechanicsLabMetrics extends BasePrimitiveMetrics {

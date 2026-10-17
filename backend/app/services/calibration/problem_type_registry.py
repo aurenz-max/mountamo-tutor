@@ -1105,7 +1105,12 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     # -----------------------------------------------------------------
     # Astronomy primitives
     # -----------------------------------------------------------------
-    "rocket-builder":             {"default": PriorConfig(4.5, "Design and launch rocket")},
+    "rocket-builder": {
+        "can_it_lift":  PriorConfig(1.5, "Predict whether a rocket lifts off from its parts' weight blocks and push arrows"),
+        "add_to_lift":  PriorConfig(2.5, "Choose the one part to add so a grounded rocket lifts off"),
+        "on_budget":    PriorConfig(3.5, "Choose the rocket that lifts off and costs no more than a coin budget"),
+        "reach_target": PriorConfig(5.0, "Predict which rocket flies highest: fuel, engine, weight, dropped tanks"),
+    },
     "orbit-mechanics-lab": {
         "pick_speed":   PriorConfig(1.5, "Tap the sideways push that makes a rocket fall back, circle or fly away"),
         "orbit_speed":  PriorConfig(2.5, "Tap the fastest/slowest rocket, or shortest/longest trip, by track distance"),

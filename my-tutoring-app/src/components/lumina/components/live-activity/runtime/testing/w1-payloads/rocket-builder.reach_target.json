@@ -1,0 +1,475 @@
+{
+ "source": "qa/tutor-reports/rocket-builder-runtime-reach_target-payload-2026-10-16.json",
+ "primitiveId": "rocket-builder",
+ "evalMode": "reach_target",
+ "data": {
+  "title": "Predict the Highest Flying Rocket",
+  "overview": "You will choose which of the different rockets will travel the highest.",
+  "gradeLevel": "5",
+  "challengeTypes": [
+   "reach_target"
+  ],
+  "difficulty": "hard",
+  "items": [
+   {
+    "id": "reach_target-1",
+    "mode": "reach_target",
+    "ask": "highest",
+    "rockets": [
+     {
+      "color": "green",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 12,
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ],
+      "staged": true
+     },
+     {
+      "color": "red",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 10,
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ]
+     },
+     {
+      "color": "blue",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 10,
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ]
+     },
+     {
+      "color": "yellow",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 12,
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "reach_target-2",
+    "mode": "reach_target",
+    "ask": "highest",
+    "rockets": [
+     {
+      "color": "yellow",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 13,
+        "weight": 1
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ],
+      "staged": true
+     },
+     {
+      "color": "green",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 13,
+        "weight": 1
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ]
+     },
+     {
+      "color": "blue",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 10,
+        "weight": 1
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ]
+     },
+     {
+      "color": "red",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 10,
+        "weight": 1
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "reach_target-3",
+    "mode": "reach_target",
+    "ask": "highest",
+    "rockets": [
+     {
+      "color": "green",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 13,
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 1
+       }
+      ],
+      "staged": true
+     },
+     {
+      "color": "blue",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 11,
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 1
+       }
+      ]
+     },
+     {
+      "color": "red",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 13,
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 1
+       }
+      ]
+     },
+     {
+      "color": "yellow",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 11,
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 1
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "reach_target-4",
+    "mode": "reach_target",
+    "ask": "highest",
+    "rockets": [
+     {
+      "color": "blue",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 13,
+        "weight": 1
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 3
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ]
+     },
+     {
+      "color": "yellow",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 13,
+        "weight": 1
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 3
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ]
+     },
+     {
+      "color": "green",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 15,
+        "weight": 1
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ]
+     },
+     {
+      "color": "red",
+      "parts": [
+       {
+        "kind": "engine",
+        "push": 15,
+        "weight": 1
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "tank",
+        "weight": 2
+       },
+       {
+        "kind": "cargo",
+        "weight": 3
+       },
+       {
+        "kind": "capsule",
+        "weight": 2
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

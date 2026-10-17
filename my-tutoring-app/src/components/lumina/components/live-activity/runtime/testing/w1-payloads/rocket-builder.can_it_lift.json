@@ -1,0 +1,124 @@
+{
+ "source": "qa/tutor-reports/rocket-builder-runtime-can_it_lift-payload-2026-10-16.json",
+ "primitiveId": "rocket-builder",
+ "evalMode": "can_it_lift",
+ "data": {
+  "title": "Build and Launch a Rocket",
+  "overview": "You will choose which rockets will lift off the launch pad.",
+  "gradeLevel": "K",
+  "challengeTypes": [
+   "can_it_lift"
+  ],
+  "difficulty": "medium",
+  "items": [
+   {
+    "id": "can_it_lift-1",
+    "mode": "can_it_lift",
+    "rocket": {
+     "color": "red",
+     "parts": [
+      {
+       "kind": "engine",
+       "push": 7,
+       "weight": 1
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "cargo",
+       "weight": 3
+      },
+      {
+       "kind": "capsule",
+       "weight": 1
+      }
+     ]
+    }
+   },
+   {
+    "id": "can_it_lift-2",
+    "mode": "can_it_lift",
+    "rocket": {
+     "color": "red",
+     "parts": [
+      {
+       "kind": "engine",
+       "push": 8,
+       "weight": 1
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "capsule",
+       "weight": 1
+      }
+     ]
+    }
+   },
+   {
+    "id": "can_it_lift-3",
+    "mode": "can_it_lift",
+    "rocket": {
+     "color": "red",
+     "parts": [
+      {
+       "kind": "engine",
+       "push": 6,
+       "weight": 1
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "cargo",
+       "weight": 3
+      },
+      {
+       "kind": "capsule",
+       "weight": 1
+      }
+     ]
+    }
+   },
+   {
+    "id": "can_it_lift-4",
+    "mode": "can_it_lift",
+    "rocket": {
+     "color": "red",
+     "parts": [
+      {
+       "kind": "engine",
+       "push": 9,
+       "weight": 1
+      },
+      {
+       "kind": "tank",
+       "weight": 2
+      },
+      {
+       "kind": "cargo",
+       "weight": 2
+      },
+      {
+       "kind": "capsule",
+       "weight": 2
+      }
+     ]
+    }
+   }
+  ]
+ }
+}
