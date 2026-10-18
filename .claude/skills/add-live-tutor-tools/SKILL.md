@@ -10,6 +10,8 @@ description: >-
   Pip animation, voice capture, or phoneme-level spoken-production judging.
 ---
 
+> **Paid Gemini runs are the user's (USER RULING 2026-10-17).** Wherever this skill says to run a Live journey (`run_*.py`) or `tutor_replay.py`, do not run it: a hook blocks it. Finish the free checks, then give the user the exact command, its request count, and the question it answers. See `backend/tests/tutor_live/LIVE_TESTING.md`.
+
 # Add Live Tutor Tools
 
 Make one primitive or evaluation mode a truthful workspace for the live tutor.
@@ -145,23 +147,37 @@ below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
    - `LiveRun` has no runner-only members (`stimulusTapped`, and `hearStimulus` or
      `runtimeControls` are optional). Hide a control that calls one when it is absent: with the
      tutor, the learner asks the tutor to repeat.
-3. **Adapter** `adapters/<x>Live.ts`: only a `WorkspaceDomain`, `{ validate, initialState }`,
-   with `initialState` from `workspaceOpening({ title, task, total })`. Delete the old mode list,
-   copy and `RUNNER_GUIDANCE`. Register `workspaceAdapter('<id>', <x>LiveDomain)` in
-   `activityContract.ts`.
-4. **Catalog**: `teachingWorkspace: { grades, guidance }` on the entry. Leave `description` and
+3. **Card + boss** beside the component: the boss framework, `../review-live-wiring/references/boss-framework.md`
+   (canonical since 2026-10-18; guards in `components/live-activity/boss.test.ts`). `<x>.card.ts` holds the facts
+   the catalog reads: per-mode wiring and misses, `words`, `audio`, `levers: true`. `<x>.boss.ts` holds the
+   behavior. **Choose a preset first:**
+   - spoken + tutor-judged: `SPOKEN` modes and `spokenBoss({ speech: { ask, key, misses, say } })`, model
+     `direct-instruction/diSpokenPractice.{card,boss}.ts`;
+   - one tap the activity checks: `TAP_ONE` and `tapBoss({ choice: { ask, targets } })`, model
+     `biology/classificationSorter.{card,boss}.ts`;
+   - otherwise bespoke `defineBoss`, model `biology/cellBuilder.{card,boss}.ts` (board).
+
+   The preset builds the assignment the component passes on (`<x>Boss.assignment`) and the harness play. A spoken
+   key is `spokenKeyText(...)`. Levers are one `leverSet` on the boss (`bossLevers.ts`; `/add-support-tiers` designs them). Write no prose guidance: `ROTATION_DOCTRINE`
+   writes the rules from the card, and `special` holds only facts this primitive has (a rule true of every board or
+   every spoken mode goes in the doctrine). The component is workspace-only (`withWorkspaceOnly`; no scripted fallback).
+   Register `bossAdapter(<x>Boss)` in `activityContract.ts`, and delete any `adapters/<x>Live.ts`, the old mode
+   list, copy and `RUNNER_GUIDANCE`. Print the card with `node scripts/boss-card.mjs <id>`. A family still on
+   `teachingWorkspace.guidance` moves to a card + boss when it is next touched; lower `PROSE_GUIDANCE_FAMILIES`
+   and the ratchets in `boss.test.ts` in the same slice. Close with `/review-live-wiring <id>`.
+4. **Catalog**: `...bossEntry(<x>Card)` on the entry; it writes `teachingWorkspace` and `audioInput`, never by hand. Leave `description` and
    `constraints` alone unless the workspace makes a sentence false (the manifest reads the description).
    The `tutoring` block follows the export: with `withWorkspaceOnly` no session receives it, so move
    anything still true into guidance, misses or levers and delete it in this slice; with
    `withWorkspaceController` the scripted fallback still sends it, so keep it until that fallback is
    retired. Mapping and test re-base: `.claude/skills/add-tutoring-scaffold/references/workspace-migration.md`
    (WB-5: a block left "alone" stayed a month after word-builder went workspace-only). Guidance is the
-   domain's sentences only: what checks the answer, what is hidden and why, what the tutor must
-   say that the screen does not show, and what the tutor cannot do.
-5. **Journey row** in `liveJourneySpec.ts`: `execution: 'workspace'`, `defaults.di: false`, `prompts:
-   WORKSPACE_PROMPTS`, and `inputsFor` that finds the current item by `ctx.itemId`. A spoken item
-   answers with `spokenExpected(ctx, intent)` when the answer is a number, otherwise with the
-   domain's `*HarnessAnswers(item).correct` / `.plainWrong`. A gesture item goes through the real
+   boss card's facts only; a sentence the rotation already says is not repeated in `special`.
+5. **Journey row**: `bossJourney(<x>Boss)` in `liveJourneySpec.ts`. It finds the current item in `items(data)` by
+   `ctx.itemId` and calls `drive.play(right, item, ctx)`. An easier practice item rebuilt from its parent needs
+   `drive.current`. The component's legacy cue tags go in `drive.leakTokens`. On the presets the play is built: a
+   spoken item says `speech.say(item).correct` / `.plainWrong`, and a tap item touches `choice.targets(item, data)`.
+   A bespoke gesture item goes through the real
    controls: `choose` (button text or `aria-label`), `touch` (`data-pip-object`), `place`, or
    `write` (text into the input with that `aria-label`). A wrong gesture is a complete wrong
    answer. A phase the row cannot drive throws with its name.
@@ -169,8 +185,8 @@ below instead of step 2; steps 1, 3, 4, 5 and the checks are the same.
 Grep `components/live-activity` tests (including `runtime/`) for the id. Expected-id lists
 (`lessonWorkspacePlan.test.ts`) gain it. A family with a gesture check also names its misses (handoff 20):
 a pure `<x>Miss(item, work)` returning an exported union beside the check, passed to `commitCheck` /
-`commitGesture`, and `teachingWorkspace.misses: missLists<Union>({ mode: [...] })` in the catalog. A spoken item lists its known wrong
-answers instead (handoff 20 Part B): `<x>SpokenMisses(item): KnownMiss[]` on the assignment's `misses`, concrete for the
+`commitGesture`, and the mode's `misses` on the card (a boss family; legacy: `teachingWorkspace.misses: missLists<Union>(...)`). A spoken item lists its known wrong
+answers instead (handoff 20 Part B): `<x>SpokenMisses(item): KnownMiss[]`, given to `spokenBoss` as `speech.misses`, concrete for the
 item, the scene fact stated before the learner's answer, most specific first (`offByMisses`/`numberMisses` in
 `runtime/spokenMissContract.ts`); open-ended modes list none. The runtime asks `spoken_miss` and a not-credited verdict
 records the named one. Gate: the sweep with `SPOKEN_MISS_OUT=<f>` (J8) and `scripts/spoken-miss-probe.mjs --requests <f>`,
@@ -241,13 +257,20 @@ primitive's own, mounting through `mountWorkspace` (`runtime/testing/workspaceHa
 from `liveRuntimeSeams`): an `it.each` over every catalog mode on hand-built items (the payloads
 rarely cover every mode), the spoken key published and the gesture key not, a wrong commit that Try
 again reopens and what it clears, a right one that completes once. (b) The primitive's existing tests and
-`components/live-activity`, `typecheck:lumina` 0, full `tsc` not above baseline, the dry journey
-`runtime/journeySweep.test.tsx` (J1-J8 on the new payloads) and `catalog/misses.test.ts`. (c) Tutor
-replay instead of a smoke drive (`backend/tests/tutor_live/LIVE_TESTING.md`, "Tutor replay, how"):
-record the family's moments and run `tutor_replay.py --primitive <id> --samples 5`, with `--observe`
-on a spoken mode. Read the replies, not only the table: a tutor that never says what the screen
-withholds is a finding. A failed replay is recorded in the queue row, then fixed, or the row moves to
-W2 or BLOCKED. No Live run, except 1 `--audio` for a mode judged from real speech sounds. Do not
+the shared contract, via `npm run test:primitive -- <id>` (~1 min: own tests, `workspaceContract` and the dry
+journey J1-J8 filtered to its payloads, `lessonWorkspacePlan`, `catalog/misses.test.ts`), `typecheck:lumina` 0,
+full `tsc` not above baseline. The whole `components/live-activity` suite (10-15 min) is only for a change to
+shared framework (`live-activity/runtime/`, the adapter contract), never per primitive. That is the
+whole gate. (c) **No tutor replay per primitive (USER RULING 2026-10-17).** What the tutor says is
+decided by the shared doctrine, which is already proven; a new binding only adds its own payload, and
+the free checks above cover that (the answer must not be in a scene fact, state note, lever text or task
+text before the try). Replay is for a change to the SHARED doctrine, host messages or tool
+descriptions, and the user runs it (`LIVE_TESTING.md`). **Boss path (USER RULING 2026-10-18): one sample, breadth.** A family
+moved to a boss records its moments (free) and hands the user ONE `--samples 1` replay command, not as its gate
+but as a breadth signal on the shared rotation. A miss is fixed once on the shared path (`ROTATION_DOCTRINE`,
+`WORKSPACE_DOCTRINE`, `boss.ts`), never by re-sampling or by a per-primitive sentence unless the fact is that
+primitive's alone. If a binding needs a primitive-specific
+instruction to the tutor, write the command and the question in the queue row for the user. Do not
 widen W1 to pass one row.
 
 **Shared files.** Every adoption edits `activityContract.ts`, the catalog and
@@ -331,8 +354,8 @@ spoken answer: "0 in each part" or "0 on the frame" beside a credited "three" re
 contradiction and drops a clear credit under the gate (number-bond and ten-frame W1, 2026-09-23; LA-13's
 `counted: 0`). Publish board counts only where the board is what the item asks about.
 
-Adapter guidance is the catalog entry's `teachingWorkspace.guidance`: write only the domain's sentences (task
-constraints, which targets exist, what the tutor cannot do) and let `WORKSPACE_DOCTRINE` in
+Adapter guidance is written by `ROTATION_DOCTRINE` from the boss card (legacy families: the catalog's
+`teachingWorkspace.guidance`), then `WORKSPACE_DOCTRINE` in
 `adapters/adapterContract.ts` carry teaching ownership, help, showing, crediting and
 progression for every adopter. A change to that doctrine is a framework correction: make it
 there, once, and measure every adopter. Keep it in guidance, which the mount receipt echoes
@@ -370,9 +393,8 @@ contracts only where they can restore the same item safely; withhold unsupported
 
 ## 4. Mount only the verified surface
 
-Declare `teachingWorkspace` in the catalog entry and register the family's `WorkspaceDomain`
-with `workspaceAdapter` (one line in `activityContract.ts`); the adapter's ownership, modes,
-copy and guidance follow from the catalog, and rendering needs no change. Pass exact
+Spread `...bossEntry(<x>Card)` into the catalog entry and register `bossAdapter(<x>Boss)`
+(one line in `activityContract.ts`); the adapter's ownership, modes, copy and guidance follow from the card and boss, and rendering needs no change. Pass exact
 `objectiveId`, `planItemId` and resolved `runtimeEvalMode`; never infer the mode from a flattened
 interaction label. Validate generated data against the
 actual renderer and task gates. Advertise only verified modes.
@@ -432,9 +454,9 @@ and one smoke drive. The steps below are for W2 and for new DI or framework work
    case. False help or stop requests must be 0. Any other failed case, including a missed request, is a finding
    to report, not a blocker.
    Then run real JEV semantic cases and the tier `backend/tests/tutor_live/LIVE_TESTING.md` sets:
-   a new adoption's gate is the sweep, its miss table and a tutor replay (`tutor_replay.py`, 5 samples,
-   `--observe` on spoken modes), with Live only for timing, real audio or tool-call narration; a later
-   fix runs only its change type's row. Use a saved generated payload. A
+   a new adoption's gate is the sweep and its miss table (free). Tutor replay and Live are user-run and
+   only for a shared-doctrine change, timing, real audio or tool-call narration; a later fix runs only
+   its change type's row. Use a saved generated payload. A
    progression-only run does not certify demonstrations. Mocked observer decisions
    prove lifecycle mechanics, not semantic classification or real model behavior.
 5. Inspect every transcript and receipt. The journey sends its help and example prompts

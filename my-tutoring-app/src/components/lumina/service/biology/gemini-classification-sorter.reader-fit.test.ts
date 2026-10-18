@@ -23,6 +23,7 @@ import {
   classificationBandFromProse,
 } from './gemini-classification-sorter';
 import { BIOLOGY_CATALOG } from '../manifest/catalog/biology';
+import { LIVE_ADAPTERS } from '../../components/live-activity/activityContract';
 
 describe('classification-sorter — reader-fit scaffold + band resolution', () => {
   describe('classificationBandFromGrade — canonical grade wins', () => {
@@ -75,48 +76,32 @@ describe('classification-sorter — reader-fit scaffold + band resolution', () =
     });
   });
 
-  describe('catalog tutoring scaffold exists and is pre-reader safe', () => {
-    const entry = BIOLOGY_CATALOG.find((c) => c.id === 'classification-sorter')!;
+  // The catalog tutoring block this once pinned never reached a bound session (`tutoring: null`), and its
+  // [SORT_*] tags belonged to a retired runner. The rules a non-reader depends on now ride in the guidance the
+  // tutor receives: the shared rotation, filled from the sorter's boss card.
+  describe('the guidance the tutor receives keeps the pre-reader and answer rules', () => {
+    const guidance = LIVE_ADAPTERS['classification-sorter'].guidance;
 
-    it('exists and has a tutoring block (was the SCAFFOLD-GAP)', () => {
-      expect(entry).toBeDefined();
-      expect(entry.tutoring).toBeDefined();
+    it('is built from a boss card, not prose', () => {
+      expect(BIOLOGY_CATALOG.find((c) => c.id === 'classification-sorter')!.teachingWorkspace?.card?.modes.sort)
+        .toEqual({ answer: 'tap', judge: 'activity', flow: 'one-at-a-time' });
     });
 
-    it('defines all three scaffolding levels and common struggles', () => {
-      expect(entry.tutoring!.scaffoldingLevels.level1).toBeTruthy();
-      expect(entry.tutoring!.scaffoldingLevels.level2).toBeTruthy();
-      expect(entry.tutoring!.scaffoldingLevels.level3).toBeTruthy();
-      expect(entry.tutoring!.commonStruggles!.length).toBeGreaterThanOrEqual(3);
+    it('says the rule, groups and card freely and reads them aloud for a non-reader', () => {
+      expect(guidance).toMatch(/The sorting rule, the group names and the card’s name are the question/);
+      expect(guidance).toMatch(/read the instruction and every label aloud for a learner who cannot read/);
+      expect(guidance).toMatch(/The learner's job is to tap the group each card belongs in/);
     });
 
-    it('carries the pre-reader read-aloud directive that survives the lesson cap', () => {
-      const preReader = (entry.tutoring!.aiDirectives ?? [])
-        .find((d) => /PRE-READER/i.test(d.title));
-      expect(preReader).toBeDefined();
-      expect(preReader!.instruction).toMatch(/OVERRIDES/);
-      expect(preReader!.instruction).toMatch(/SORT_ORIENT/);
-      expect(preReader!.instruction).toMatch(/SORT_ITEM_STAGED/);
-      // The staged-item beat must NOT leak the destination group.
-      expect(preReader!.instruction).toMatch(/Do NOT say which group/i);
+    it('never names the group, by elimination or by the deciding fact', () => {
+      expect(guidance).toMatch(/which group a card goes in against the lesson's key, which you are not told; that is the answer/);
+      expect(guidance).toMatch(/Never rule a choice out/);
+      expect(guidance).toMatch(/or state the one fact that decides it/);
+      expect(guidance).toMatch(/whether the card’s thing has it is the deciding fact/);
     });
 
-    it('has an explicit answer-discipline directive separating question from answer', () => {
-      const discipline = (entry.tutoring!.aiDirectives ?? [])
-        .find((d) => /ANSWER DISCIPLINE/i.test(d.title));
-      expect(discipline).toBeDefined();
-      // The rule and group names are the QUESTION; the correct group is the ANSWER.
-      expect(discipline!.instruction).toMatch(/never name it/i);
-      expect(discipline!.instruction).toMatch(/elimination/i);
-    });
-
-    it('covers the boundary-case struggle the catalog itself mandates', () => {
-      const struggles = JSON.stringify(entry.tutoring!.commonStruggles);
-      expect(struggles).toMatch(/bat|penguin|dolphin|platypus/i);
-    });
-
-    it('uses no {{#if}} handlebars — interpolate_template renders them literally', () => {
-      expect(JSON.stringify(entry.tutoring)).not.toMatch(/\{\{#/);
+    it('keeps the boundary-case steer', () => {
+      expect(guidance).toMatch(/bat, a penguin/);
     });
   });
 });

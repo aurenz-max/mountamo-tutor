@@ -96,8 +96,8 @@ import { habitatDioramaLiveDomain } from './adapters/habitatDioramaLive';
 import { ecosystemDioramaLiveDomain } from './adapters/ecosystemDioramaLive';
 import { foodWebBuilderLiveDomain } from './adapters/foodWebBuilderLive';
 import { lifeCycleSequencerLiveDomain } from './adapters/lifeCycleSequencerLive';
-import { classificationSorterLiveDomain } from './adapters/classificationSorterLive';
-import { cellBuilderLiveDomain } from './adapters/cellBuilderLive';
+import { classificationSorterBoss } from '../../primitives/visual-primitives/biology/classificationSorter.boss';
+import { cellBuilderBoss } from '../../primitives/visual-primitives/biology/cellBuilder.boss';
 import { towerStackerLiveDomain } from './adapters/towerStackerLive';
 import { gearTrainBuilderLiveDomain } from './adapters/gearTrainBuilderLive';
 import { matterExplorerLiveDomain } from './adapters/matterExplorerLive';
@@ -149,7 +149,7 @@ import { openBuilderLiveDomain } from './adapters/openBuilderLive';
 import { shapeBuilderLiveDomain } from './adapters/shapeBuilderLive';
 import { shapeComposerLiveDomain } from './adapters/shapeComposerLive';
 import { diShapesLiveDomain } from './adapters/diShapesLive';
-import { diSpokenPracticeLiveDomain } from './adapters/diSpokenPracticeLive';
+import { diSpokenPracticeBoss } from '../../primitives/visual-primitives/direct-instruction/diSpokenPractice.boss';
 import { diDiceRollLiveDomain } from './adapters/diDiceRollLive';
 import { diDeductionLiveDomain } from './adapters/diDeductionLive';
 import { diWorkedProcedureLiveDomain } from './adapters/diWorkedProcedureLive';
@@ -171,7 +171,7 @@ import { opinionBuilderLiveDomain } from './adapters/opinionBuilderLive';
 import { patternBuilderLiveDomain } from './adapters/patternBuilderLive';
 import { strategyPickerLiveDomain } from './adapters/strategyPickerLive';
 import { polygonAreaBuilderLiveDomain } from './adapters/polygonAreaBuilderLive';
-import { workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
+import { bossAdapter, workspaceAdapter, type LiveActivityAdapter } from './adapters/adapterContract';
 
 export type { LiveActivityAdapter } from './adapters/adapterContract';
 // Re-exported for `activityContract.test.ts`; everything else reads `LIVE_ADAPTERS[id]`.
@@ -272,8 +272,8 @@ export const LIVE_ADAPTERS = {
   'ecosystem-diorama': workspaceAdapter('ecosystem-diorama', ecosystemDioramaLiveDomain),
   'food-web-builder': workspaceAdapter('food-web-builder', foodWebBuilderLiveDomain),
   'life-cycle-sequencer': workspaceAdapter('life-cycle-sequencer', lifeCycleSequencerLiveDomain),
-  'classification-sorter': workspaceAdapter('classification-sorter', classificationSorterLiveDomain),
-  'cell-builder': workspaceAdapter('cell-builder', cellBuilderLiveDomain),
+  'classification-sorter': bossAdapter(classificationSorterBoss),
+  'cell-builder': bossAdapter(cellBuilderBoss),
   'tower-stacker': workspaceAdapter('tower-stacker', towerStackerLiveDomain),
   'gear-train-builder': workspaceAdapter('gear-train-builder', gearTrainBuilderLiveDomain),
   'matter-explorer': workspaceAdapter('matter-explorer', matterExplorerLiveDomain),
@@ -325,7 +325,7 @@ export const LIVE_ADAPTERS = {
   'shape-builder': workspaceAdapter('shape-builder', shapeBuilderLiveDomain),
   'shape-composer': workspaceAdapter('shape-composer', shapeComposerLiveDomain),
   'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),
-  'di-spoken-practice': workspaceAdapter('di-spoken-practice', diSpokenPracticeLiveDomain),
+  'di-spoken-practice': bossAdapter(diSpokenPracticeBoss),
   'di-dice-roll': workspaceAdapter('di-dice-roll', diDiceRollLiveDomain),
   'di-deduction': workspaceAdapter('di-deduction', diDeductionLiveDomain),
   'di-worked-procedure': workspaceAdapter('di-worked-procedure', diWorkedProcedureLiveDomain),

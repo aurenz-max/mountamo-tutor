@@ -12,8 +12,9 @@ import { missLists } from './missLists';
 import type { EcosystemMiss } from '../../../primitives/visual-primitives/biology/ecosystemModel';
 import type { FoodChainMiss, FoodWebMiss } from '../../../primitives/visual-primitives/biology/foodWebWorkspace';
 import type { CycleMiss } from '../../../primitives/visual-primitives/biology/lifeCycleSequencerWorkspace';
-import type { SortMiss } from '../../../primitives/visual-primitives/biology/classificationSorterWorkspace';
-import type { CellBuilderMiss } from '../../../primitives/visual-primitives/biology/cellBuilderWorkspace';
+import { classificationSorterCard } from '../../../primitives/visual-primitives/biology/classificationSorter.card';
+import { bossEntry } from '../../../components/live-activity/boss';
+import { cellBuilderCard } from '../../../primitives/visual-primitives/biology/cellBuilder.card';
 
 export const BIOLOGY_CATALOG: ComponentDefinition[] = [
   {
@@ -156,70 +157,6 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
     description: 'Interactive drag-and-drop classification activity where students categorize organisms or characteristics into labeled bins. The CORE "is it a ___?" primitive for biology. Handles binary sorts (vertebrate/invertebrate, producer/consumer), multi-category sorts (mammal/reptile/amphibian/bird/fish, kingdoms), and property-based sorts (has bones/no bones, warm-blooded/cold-blooded, makes own food/eats food). PERFECT for teaching classification skills, taxonomic thinking, characteristic discrimination, and decision-making based on biological criteria. Includes helpful hints on incorrect placements and tracks first-attempt accuracy. Can be hierarchical (Kingdom → Phylum → Class) at grades 6-8. ESSENTIAL for K-8 biology whenever students need to practice sorting, classifying, or discriminating between organisms based on characteristics.',
     constraints: 'Use for K-8 students learning classification, taxonomy, or characteristic-based sorting. K-2: Binary sorts only (2 categories, 6-8 items, simple language). 3-5: Multi-category sorts (3-5 categories, 8-10 items, introduces scientific vocabulary). 6-8: Complex or hierarchical sorts (3-6 categories, 10-12 items, formal classification systems). Always include 1-3 "boundary case" items (platypus, bat, dolphin, penguin) that challenge student thinking. Perfect for formative assessment and skill-building. Works for any classification topic: animal classes, kingdoms, habitats, diets, adaptations, life cycles, plant types, etc.',
     affordances: { representation: 'symbolic', reader: 'none', answers: ['tap', 'manipulate'], role: 'apply', minutes: 5 },
-    tutoring: {
-      taskDescription:
-        'Student is sorting things into groups in "{{title}}". The rule is: {{sortingRule}}. '
-        + 'Groups: {{categoryLabels}}. They have placed {{correctCount}} of {{totalItems}} correctly. '
-        + 'Right now they are working on: {{currentItemLabel}}. '
-        + 'At K-1 ONE item is staged at a time and they tap a group to place it; older students drag items into bins.',
-      contextKeys: [
-        'title',
-        'sortingRule',
-        'categoryLabels',
-        'currentItemLabel',
-        'correctCount',
-        'totalItems',
-        'gradeBand',
-        'lastPlacementCorrect',
-      ],
-      scaffoldingLevels: {
-        level1: '"Look at this one carefully. Which group do you think it goes in?"',
-        level2: '"Remember the rule: {{sortingRule}}. Think about {{currentItemLabel}} — does it fit that rule or not?"',
-        level3: '"Let us check {{currentItemLabel}} against the rule one part at a time. Picture it in your head. Now look at each group and ask: does this one match?"',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Student places items quickly without checking them against the rule',
-          response: '"Slow down for this one. Say the rule out loud with me, then look at what you are holding. Does it match?"',
-        },
-        {
-          pattern: 'Student is stuck on a boundary case (bat, penguin, dolphin, platypus)',
-          response: '"This one is tricky on purpose — it looks like it belongs in one group but it does not. Do not go by how it looks. Go by the rule."',
-        },
-        {
-          pattern: 'Student gets one wrong and starts guessing the other groups at random',
-          response: '"Wait — you do not have to guess. Think about what you know about this one first, then pick. What is one thing you are sure about?"',
-        },
-        {
-          pattern: 'Student cannot tell why a placement was wrong',
-          response: '"Look at the group you picked and say what all the things in it have in common. Now look at yours — is it the same or different?"',
-        },
-        {
-          pattern: 'A pre-reader cannot read the item names, the group names, or the rule',
-          response: '"Never ask them to read. Say the item aloud, say the group names aloud, and say the rule in child words. They tap a group to answer — the words are yours to speak."',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'PRE-READER READ-ALOUD (kindergarten and grade 1)',
-          instruction:
-            'A pre-reader CANNOT read the item cards, the group names, the rule badge, or the instructions. Your voice is the only channel. '
-            + 'When you receive [SORT_ORIENT], say in one or two warm child-sized sentences what the sorting rule is and that they tap a group to put the thing in it. '
-            + 'Reading this aloud IS your greeting — this OVERRIDES any instruction to keep it to one sentence or to be brief. '
-            + 'When you receive [SORT_ITEM_STAGED], say ONLY the name of the item that just came on stage, clearly. Do NOT say which group it belongs in. '
-            + 'When you receive [SORT_READ_ALOUD], read aloud, word for word, exactly the text the message gives you, then wait. '
-            + 'Always name the groups by their labels when they ask — that is the question, not the answer.',
-        },
-        {
-          title: 'ANSWER DISCIPLINE',
-          instruction:
-            'The correct group for an item is the ANSWER. Never name it, never hint at it by elimination ("it is not the other one"), '
-            + 'and never read the item\'s hint text aloud before they have tried. '
-            + 'The sorting RULE and the GROUP NAMES are the question — say those freely and as often as they need. '
-            + 'After a wrong placement, ask them what they notice about the item; do not narrow to the answer.',
-        },
-      ],
-    },
     // One task identity (/add-eval-modes single-mode): each item into its group by the rule. Backend prior 2.5.
     evalModes: [
       {
@@ -231,19 +168,8 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         description: 'Put each organism or trait into the group the sorting rule says it belongs in.',
       },
     ],
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'One card at a time comes on stage under the sorting rule and the group cards. The learner taps the group '
-        + 'the card belongs in, and the activity checks it against the lesson’s key, which you are not told. The rule and '
-        + 'the group names are the question: say them freely, and say the card’s name aloud for a learner who cannot read. '
-        + 'Never name the group a card goes in, and never rule a group out ("it is not that one"). When the rule is a '
-        + 'feature a thing has or lacks, saying whether the card’s thing has it is the answer too. Ask what the learner '
-        + 'knows about the thing on the card and whether that fits the rule. You cannot tap or place for the learner.',
-      // Help levers only (`classificationSorterLevers.ts`); every miss is answered by card_clue or group_meaning.
-      levers: true,
-      // The activity's own check (`sortMiss`).
-      misses: missLists<SortMiss>({ sort: ['repeated_group', 'parent_group', 'sibling_group', 'wrong_group'] }),
-    },
+    // How it is wired to the live tutor: `classificationSorter.card.ts` (behavior: `classificationSorter.boss.ts`).
+    ...bossEntry(classificationSorterCard),
     supportsEvaluation: true,
   },
   {
@@ -710,29 +636,8 @@ export const BIOLOGY_CATALOG: ComponentDefinition[] = [
         description: 'Reason from a specialized cell mission to relative organelle abundance and biological tradeoffs.',
       },
     ],
-    teachingWorkspace: {
-      grades: ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8'],
-      guidance: 'Each mission is one board over the same cell, checked by the activity against the lesson’s key, which you '
-        + 'are not told. Stock the cell: the learner taps Keep or Reject on every structure. Build the model: they tap a '
-        + 'structure in the bay, then a region. Wire the jobs: they tap a structure, then the job card it does. Tune the '
-        + 'cell: they pick Few, Some, Many or Abundant for every structure. When every card has an answer they press Check '
-        + 'mission. After a wrong check the board shows only how many are right, and you are not told which. You know the '
-        + 'biology, but never use it to point at a card: do not name a structure, region, job or level to look at again, '
-        + 'or point at one by what it does ("what keeps the cell upright"), do not suggest a swap, and do not say how many '
-        + 'structures do not belong. Never say whether a structure belongs '
-        + 'in this cell, which region or job card goes with a structure, or how much of one this cell needs, and never '
-        + 'confirm one card before the check. Asking about the whole board (what does this cell do all day?), or what a '
-        + 'region or a level means, is teaching. You cannot tap or place for the learner.',
-      // Every mode publishes levers (`cellBuilderLevers.ts`); every miss is answered by a help lever and fewer_structures.
-      levers: true,
-      // The activity's own check (`cellMiss`).
-      misses: missLists<CellBuilderMiss>({
-        cell_inventory: ['kept_impostor', 'rejected_needed', 'kept_and_rejected'],
-        organelle_placement: ['cytoplasm_distributed_swap', 'core_network_swap', 'one_misplaced', 'several_misplaced'],
-        structure_function: ['two_swapped', 'several_wrong'],
-        cell_specialization: ['too_little', 'too_much', 'both_ways'],
-      }),
-    },
+    // How it is wired to the live tutor: `cellBuilder.card.ts` (behavior: `cellBuilder.boss.ts`).
+    ...bossEntry(cellBuilderCard),
     supportsEvaluation: true,
   },
   {

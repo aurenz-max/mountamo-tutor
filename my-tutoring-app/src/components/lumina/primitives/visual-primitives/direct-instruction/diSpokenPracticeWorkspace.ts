@@ -12,7 +12,8 @@
  * gone. The generator gates (`findAnswerLeaks`, `findChoiceMenuDefects`, `findConceptDefects`) still
  * decide what ships, so the ask never contains the answer.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
 import { offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { DI_SPOKEN_PRACTICE_MODES } from './diSpokenPracticeModes';
 import { conceptAffirmForm, numberWordFor, type SpokenPracticeItem } from './diSpokenPracticeScript';
@@ -24,21 +25,12 @@ const quoted = (words: readonly string[]) => words.map(word => `"${word}"`).join
 export const spokenPracticeAskFor = (item: SpokenPracticeItem): string => item.ask;
 
 /** The key as the observer judges it: the answer, what else counts, and what does not. */
-export function spokenPracticeKey(item: SpokenPracticeItem): string {
-  const rule = item.acceptRule.trim() ? ` ${item.acceptRule.trim()}` : '';
-  const miss = item.signatureError.trim() ? ` ${item.signatureError.trim()}` : '';
-  if (item.mode === 'explain_concept') {
-    const examples = [item.expectedAnswer, ...item.alternates].map(a => a.trim()).filter(Boolean);
-    return `An explanation in the learner's own words that means: "${conceptAffirmForm(item.conceptStatement ?? '')}" `
-      + `For example ${quoted(examples)}, or any wording with that idea. Judge the meaning, not the words: `
-      + 'the same words inside a sentence that means the opposite or a different idea are wrong, and so are '
-      + `"${item.stimulusText}" read back, a bare number, or just the name of what is shown.${rule}${miss}`;
-  }
-  const also = item.alternates.length ? ` (also accept ${quoted(item.alternates)})` : '';
-  const menu = item.mode === 'compare_choice' && item.choices?.length
-    ? ` The learner chooses one word from ${quoted(item.choices)}; any other word does not answer the question.` : '';
-  return `"${item.expectedAnswer}"${also}.${menu}${rule}${miss}`;
-}
+export const spokenPracticeKey = (item: SpokenPracticeItem): string => spokenKeyText({
+  answer: item.expectedAnswer, alsoAccept: item.alternates, acceptRule: item.acceptRule, signatureError: item.signatureError,
+  ...(item.mode === 'compare_choice' && item.choices?.length ? { menu: item.choices } : {}),
+  ...(item.mode === 'explain_concept' ? { meaning: { idea: conceptAffirmForm(item.conceptStatement ?? ''),
+    notIt: `"${item.stimulusText}" read back, a bare number, or just the name of what is shown` } } : {}),
+});
 
 /** What a wrong spoken answer shows on the two bounded modes (handoff 20 Part B). */
 export type SpokenPracticeMiss = OffByMiss | 'skipped_a_number' | 'other_menu_word' | 'said_same' | 'said_thing_name'
@@ -101,12 +93,6 @@ export function spokenPracticeSpokenMisses(item: SpokenPracticeItem): KnownMiss[
     ...(a && b ? [{ id: 'said_thing_name', pattern: `${fact} The learner names a picture (${a} or ${b}) and says no word from the menu.`,
       examples: [a] }] : []),
   ];
-}
-
-export function spokenPracticeAssignment(item: SpokenPracticeItem): TeachingAssignment {
-  const misses = spokenPracticeSpokenMisses(item);
-  return { id: item.id, task: spokenPracticeAskFor(item), response: 'speech', expectedAnswer: spokenPracticeKey(item),
-    ...(misses.length ? { misses } : {}) };
 }
 
 /** What the screen shows, without the answer: a count item never prints its numeral, a picture to name is

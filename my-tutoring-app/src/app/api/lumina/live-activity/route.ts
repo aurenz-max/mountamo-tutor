@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateComponentContent } from '@/components/lumina/service/geminiService';
 import { generatedActivityState, gradeRefusal, parseActivityRequest, validateGeneratedActivity } from '@/components/lumina/components/live-activity/activityContract';
-import { getComponentById } from '@/components/lumina/service/manifest/catalog';
 
 export async function POST(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') return new NextResponse(null, { status: 404 });
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
     }, args.topic, gradeLevel);
     const data = validateGeneratedActivity(args.primitiveId, result?.data);
     return NextResponse.json({ instanceId, data: { ...data, instanceId },
-      initialState: generatedActivityState(args.primitiveId, data), tutoring: getComponentById(args.primitiveId)?.tutoring });
+      initialState: generatedActivityState(args.primitiveId, data) });
   } catch (error) {
     console.error('[Live activity] Generation failed:', error);
     return NextResponse.json({ error: 'The activity could not be generated. Please try again.' }, { status: 502 });

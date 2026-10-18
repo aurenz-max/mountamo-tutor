@@ -37,13 +37,13 @@ cd "<abs>/backend" && venv/Scripts/python -m uvicorn app.main:app --reload --rel
 
 ## Primitives
 
-When building new primitives, always use the Gemini generator pattern — never hardcode test data. Follow the established registration pattern: component, types, catalog entry, generator, and tester. `/primitive` is the executable checklist; `ADDING_PRIMITIVES.md` is the human reference behind it, not a second list to follow. Create all files before moving to verification.
+Every primitive gets a registered generator — never hardcode test data in the component or tester. The generator need not call Gemini: a **code-only generator** (Fork C in `/primitive`) builds every item from eval mode, difficulty and a seed, and is the first choice when code can author the content well (a simulation, a world, an item space). Whatever the fork, content must vary across runs and fit the lesson it is placed in; a code-only primitive gets topic fit from a catalog entry scoped to the skills it was built for. Follow the established registration pattern: component, types, catalog entry, generator, and tester. `/primitive` is the executable checklist; `ADDING_PRIMITIVES.md` is the human reference behind it, not a second list to follow. Create all files before moving to verification.
 
 When Gemini schemas are too complex (6+ types, deeply nested), the LLM will produce malformed JSON. Simplify schemas proactively to 3-4 types max and reduce redundancy.
 
 **Lifecycle:** primitives are built in layers, not one pass — `/primitive` births L0, each `/add-*` skill raises one layer (L5 voice = `/add-live-tutor-tools`, the shared tutor/JEV workspace; it owns migrating the legacy `/add-di-loop` packs and may edit them in place), `/eval-test` closes every layer. Ladder, detection signals, and which skill owns which rung: `my-tutoring-app/src/components/lumina/docs/PRIMITIVE_LIFECYCLE.md`.
 
-**Key skills:** `/primitive` (birth L0), `/add-eval-modes` (wire IRT), `/eval-test` (verify, agent-judged), `/oracle-test` (verify, code-judged content contracts — CI-able), `/eval-fix` (fix issues).
+**Key skills:** `/primitive` (birth L0), `/add-eval-modes` (wire IRT), `/eval-test` (verify, agent-judged), `/oracle-test` (verify, code-judged content contracts — CI-able), `/eval-fix` (fix issues), `/review-live-wiring` (check a primitive's tutor wiring against the boss framework: `<x>.card.ts` + `<x>.boss.ts` on a preset, guarded by `live-activity/boss.test.ts`).
 
 **Contract-first edits:** one primitive serves many skills; an edit for skill N must not ablate what skills 1..N−1 depend on. Before modifying an existing primitive's component or generator, read `my-tutoring-app/src/components/lumina/docs/contracts/<primitive-id>.md` if it exists (`/primitive-contract` derives/refreshes it; `--check` runs the edit guard). If the new demand contradicts an existing requirement, fork (eval-mode split → band gate → config axis → variant) — never edit in place over a conflict.
 

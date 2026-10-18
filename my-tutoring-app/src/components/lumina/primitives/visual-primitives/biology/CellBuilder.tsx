@@ -22,7 +22,6 @@ import {
 } from '../../../ui';
 import { SoundManager } from '../../../utils/SoundManager';
 import {
-  Activity,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -36,8 +35,8 @@ import {
 import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { withWorkspaceController } from '../../../components/live-activity/runtime/withTeachingWorkspace';
-import { useScriptedProgress, useWorkspaceProgressFor, type Progress, type ProgressOptions }
+import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
+import { useWorkspaceProgressFor }
   from '../../../components/live-activity/runtime/useWorkspaceProgress';
 import {
   boardCards, boardComplete, boardJobs, boardScore, cardRight, cellMiss, describeCellWork, EMPTY_WORK, jobCardText, jobTarget,
@@ -45,7 +44,7 @@ import {
   type CellMission, type CellWork,
 } from './cellBuilderWorkspace';
 import {
-  blankCellKinds, cellLevers, fewerStructures, HINTS_LEVER, hintLine, JOBS_LEVER, jobLine, leverFact,
+  blankCellKinds, CELL_LEVERS, HINTS_LEVER, hintLine, JOBS_LEVER, jobLine,
   levelLegend, LEVELS_LEVER,
 } from './cellBuilderLevers';
 
@@ -185,8 +184,9 @@ export { resolveCellBuilderPhases };
 type Checked = Record<Phase, boolean>;
 const NONE_CHECKED: Checked = { cell_inventory: false, organelle_placement: false, structure_function: false, cell_specialization: false };
 
-const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, useController }:
-  CellBuilderProps & { tutorOwned: boolean; useController: (options: ProgressOptions<CellMission>) => Progress }) => {
+const useCellProgress = useWorkspaceProgressFor('cell-builder');
+
+const CellBuilderSurface = ({ data, className, runtimePlanItemId }: CellBuilderProps) => {
   const workspace = useRef<TeachingWorkspace | null>(null);
   const {
     title,
@@ -217,10 +217,10 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
 
   const stableInstanceId = useRef(instanceId ?? `cell-builder-${Date.now()}`);
 
-  // ── Mission progress. On the workspace path the runtime moves the index. ──
+  // ── Mission progress: the runtime moves the index. ──
   const openItem = useRef<(index: number, retry: boolean) => void>(() => {});
   const finish = useRef<(result: TeachingEvaluationResult) => void>(() => {});
-  const progress = useController({
+  const progress = useCellProgress({
     challenges: missions,
     getChallengeId: m => m.id,
     instanceId: stableInstanceId.current, objectiveId, planItemId: runtimePlanItemId,
@@ -230,8 +230,8 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   });
   const phaseIndex = Math.min(progress.currentIndex, Math.max(missions.length - 1, 0));
   const sessionMission = missions[phaseIndex] ?? { id: 'cell_inventory', phase: 'cell_inventory' as const };
-  /** Workspace path: a checked board stays closed until Try again or Next challenge on the shell. */
-  const learnerBlocked = () => tutorOwned && progress.canAttempt === false;
+  /** A checked board stays closed until Try again or Next challenge on the shell. */
+  const learnerBlocked = () => progress.canAttempt === false;
 
   // Levers (`cellBuilderLevers.ts`), keyed by the session mission they were pulled on, and the smaller practice board.
   const [leverState, setLeverState] = useState<{ item: string; pulled: string[] }>({ item: '', pulled: [] });
@@ -242,7 +242,7 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   const leverOn = (id: string) => !practice && pulledLevers.includes(id);
   const cards = boardCards(board, mission);
 
-  const { submitResult, hasSubmitted, resetAttempt } = usePrimitiveEvaluation<CellBuilderMetrics>({
+  const { submitResult, hasSubmitted } = usePrimitiveEvaluation<CellBuilderMetrics>({
     primitiveType: 'cell-builder',
     instanceId: stableInstanceId.current,
     skillId,
@@ -304,10 +304,10 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
     setPhaseChecked(prev => ({ ...prev, [phase]: false }));
   };
 
-  /** Whether the board's answers are locked: checked, or (workspace) closed until Try again. */
+  /** Whether the board's answers are locked: checked, or closed until Try again. */
   const locked = phaseChecked[currentPhase] || learnerBlocked();
-  /** Per-card right/wrong marks and corrective reveals: after any scripted check, after a right workspace check. */
-  const marks = phaseChecked[currentPhase] && (!tutorOwned || checkedRight[currentPhase]);
+  /** Per-card right/wrong marks and corrective reveals: only after a right check. */
+  const marks = phaseChecked[currentPhase] && checkedRight[currentPhase];
 
   const placeOrganelle = useCallback((organelleId: string, zone: CellZone) => {
     if (locked) return;
@@ -431,14 +431,7 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       placements: place.placements, matchConnections: match.matchConnections, quantityAnswers: qty.quantityAnswers } };
   };
 
-  const handleSubmit = () => {
-    if (hasSubmitted) return;
-    const { metrics, overall, allCorrect, studentWork } = buildMetrics(() => work, phaseChecked);
-    submitResult(overall >= 75, overall, metrics, { studentWork });
-    setFeedback(allCorrect ? 'Mission complete. This cell is ready to work.' : `Mission score: ${overall}%.`);
-  };
-
-  // Workspace path, under a lesson's evaluation provider only: the scored session, from each mission's first answer.
+  // Under a lesson's evaluation provider only: the scored session, from each mission's first answer.
   finish.current = (result) => {
     if (hasSubmitted || progress.recordsEvaluation === false) return;
     const done: Checked = { ...NONE_CHECKED, ...Object.fromEntries(phases.map(p => [p, true])) };
@@ -449,45 +442,22 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
       undefined, result.diagnosisEvidence);
   };
 
+  /** Clear this board only; the session's missions and attempts stay the runtime's. */
   const handleReset = () => {
-    if (tutorOwned) {
-      // Workspace path: clear this board only; the session's missions and attempts stay the runtime's.
-      if (!learnerBlocked() && !phaseChecked[currentPhase]) clearPhase(currentPhase);
-      return;
-    }
-    progress.reset();
-    setSortDecisions({});
-    setPlacements({});
-    setSelectedOrganelle(null);
-    setDragOverZone(null);
-    setSelectedMatchOrganelle(null);
-    setMatchConnections({});
-    setQuantityAnswers({});
-    setPhaseChecked(NONE_CHECKED);
-    setCheckedRight(NONE_CHECKED);
-    setFeedback(null);
-    firstWork.current = {};
-    resetAttempt();
-  };
-
-  const advance = () => {
-    setFeedback(null);
-    progress.advance();
+    if (!learnerBlocked() && !phaseChecked[currentPhase]) clearPhase(currentPhase);
   };
 
   const currentComplete = phaseChecked[currentPhase];
-  const isFinalPhase = phaseIndex === phases.length - 1;
   const canCheck = boardComplete(board, mission, work);
 
   const modeTabs = phases.map((phase) => ({ value: phase, label: PHASE_LABELS[phase] }));
   const cellTypeLabel = `${cellType.charAt(0).toUpperCase()}${cellType.slice(1)} cell`;
 
-  // ── Workspace path: what the tutor and the observer are shown, republished every render ──
+  // ── What the tutor and the observer are shown, republished every render ──
   useLayoutEffect(() => {
-    if (!tutorOwned) return;
     const scene = workspaceScene(board, mission, work, shownJobs.map(j => j.organelleId));
-    const onScreen = leverFact(board, practice ? null : sessionMission, pulledLevers);
-    const levers = practice ? [] : cellLevers(board, sessionMission, pulledLevers);
+    const onScreen = practice ? '' : CELL_LEVERS.onScreen(sessionMission, { board }, pulledLevers);
+    const levers = practice ? [] : CELL_LEVERS.declare(sessionMission, { board }, pulledLevers);
     workspace.current = {
       ...scene,
       ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
@@ -498,7 +468,7 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         if (lever.pulled) return `${id} is already pulled; its change is on screen.`;
         const pulled = { item: sessionMission.id, pulled: [...pulledLevers, id] };
         if (lever.kind === 'simplify') {
-          const smaller = fewerStructures(board, sessionMission);
+          const smaller = CELL_LEVERS.simpler(sessionMission, { board }, id);
           if (!smaller) return 'This board is too small to shrink; try a help lever.';
           setLeverState(pulled); clearPhase(smaller.phase); setPractice(smaller);
           return { practice: workspaceAssignment(board, smaller) };
@@ -786,15 +756,13 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
         </div>
 
         {feedback && (
-          <LuminaFeedbackCard status="insight" label={hasSubmitted ? 'Cell report' : 'Mission checked'} teachingNote={!tutorOwned && currentComplete && !hasSubmitted ? 'Your first committed answer is what counts; the reveal is for learning, not rescoring.' : undefined}>
+          <LuminaFeedbackCard status="insight" label={hasSubmitted ? 'Cell report' : 'Mission checked'}>
             {feedback}
           </LuminaFeedbackCard>
         )}
 
         <div className="flex flex-wrap items-center gap-2 border-t border-white/5 pt-4">
           {!currentComplete && !hasSubmitted && <LuminaActionButton action="check" disabled={!canCheck || learnerBlocked()} onClick={checkCurrentPhase}>Check mission</LuminaActionButton>}
-          {!tutorOwned && currentComplete && !isFinalPhase && !hasSubmitted && <LuminaActionButton action="next" onClick={advance}>Next mission</LuminaActionButton>}
-          {!tutorOwned && currentComplete && isFinalPhase && !hasSubmitted && <LuminaActionButton action="check" onClick={handleSubmit}><Activity className="mr-2 h-4 w-4" />Run cell report</LuminaActionButton>}
           <LuminaButton tone="subtle" onClick={handleReset} className="ml-auto"><RotateCcw className="mr-1 h-4 w-4" />Reset</LuminaButton>
         </div>
 
@@ -810,8 +778,7 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId, tutorOwned, us
   );
 };
 
-// The workspace path never mounts the scripted progress, whose Next would compete with the observer.
-const CellBuilder = withWorkspaceController<CellBuilderProps, ProgressOptions<CellMission>, Progress>(
-  'cell-builder', CellBuilderSurface, useScriptedProgress, useWorkspaceProgressFor('cell-builder'));
+// Taught only on the workspace: a mount with no tutor renders the shared "needs the tutor" card (2026-10-18).
+const CellBuilder = withWorkspaceOnly<CellBuilderProps>('cell-builder', CellBuilderSurface, props => props.data.title);
 
 export default CellBuilder;

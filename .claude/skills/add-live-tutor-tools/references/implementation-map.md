@@ -1,3 +1,5 @@
+> **Paid Gemini runs are the user's (USER RULING 2026-10-17).** Wherever this skill says to run a Live journey (`run_*.py`) or `tutor_replay.py`, do not run it: a hook blocks it. Finish the free checks, then give the user the exact command, its request count, and the question it answers. See `backend/tests/tutor_live/LIVE_TESTING.md`.
+
 # Implementation map and repeatable commands
 
 Resolve repository paths from the Lumina repo root. `L` below means
@@ -45,13 +47,13 @@ Under `L/components/live-activity/`, inspect `adapters/tenFrameLive.ts`,
 and objective/plan metadata. A workspace uses `canAdvance: false` even though its teaching owner
 is the tutor.
 
-**A workspace family is declared in the catalog, once.** The entry carries
-`teachingWorkspace: { guidance, grades }` (`service/manifest/catalog/*.ts`; the manifest prompt
-never reads it). `workspaceAdapter(id, domain)` builds the live adapter from that plus the entry's
-`evalModes`: modes, picker copy, ownership, lesson start and guidance (domain sentences +
-`WORKSPACE_DOCTRINE`). The family's `adapters/<x>Live.ts` supplies only a `WorkspaceDomain`:
-`validate` and the mount `initialState` (`workspaceOpening` for the standard one). Register it with
-one line in `activityContract.ts`. `liveRenderers.tsx` renders every family through the primitive
+**A workspace family is a card and a boss** (since 2026-10-18; `../../review-live-wiring/references/boss-framework.md`).
+The catalog entry spreads `...bossEntry(<x>Card)` (`teachingWorkspace` + `audioInput`; the manifest prompt never
+reads it). `bossAdapter(<x>Boss)` builds the live adapter through `workspaceAdapter`: modes, picker copy, ownership,
+lesson start, guidance (`ROTATION_DOCTRINE` from the card + `WORKSPACE_DOCTRINE`) and the mount state from the boss's
+`items`/`ask`. Register it with one line in `activityContract.ts` and `bossJourney(<x>Boss)` in `liveJourneySpec.ts`.
+Legacy (161 families, ratcheted): `teachingWorkspace: { guidance, grades }` prose plus an `adapters/<x>Live.ts`
+`WorkspaceDomain` (`validate`, `initialState`); move one to a card + boss when you next touch it. `liveRenderers.tsx` renders every family through the primitive
 registry with the lesson's mount props; it has no per-family rows.
 
 Shared helpers do the rest:

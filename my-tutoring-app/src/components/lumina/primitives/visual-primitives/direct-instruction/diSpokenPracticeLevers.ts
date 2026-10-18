@@ -17,7 +17,8 @@
  * explain_concept: `model_explain` (a spare with a DIFFERENT concept); simplify `easier_item`. Neither when every spare
  *   has the item's concept (a named-concept session): the model's sentence would be the answer.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { diSpokenPracticeCard } from './diSpokenPractice.card';
 import { PRACTICE_WORDS } from '../literacy/cvcSpellerLevers';
 import { numberWordFor, type SpokenPracticeItem } from './diSpokenPracticeScript';
 
@@ -199,85 +200,66 @@ export function easierItemFor(item: SpokenPracticeItem, items: readonly SpokenPr
 
 // ── declarations ────────────────────────────────────────────────────────────
 
-/** The model lever of an item's mode, if one passes. */
-function modelLever(item: SpokenPracticeItem, items: readonly SpokenPracticeItem[], spares: readonly SpokenPracticeItem[]): string | null {
-  switch (item.mode) {
-    case 'count_and_say': return countModelFor(item, items) ? MODEL_COUNT : null;
-    case 'compare_choice': return wordModelFor(item, items) ? WORD_MODEL : null;
-    case 'read_aloud': return readModelFor(item, items) ? MODEL_READ : null;
-    case 'say_answer': return answerModelFor(item, items, spares) ? MODEL_ANSWER : null;
-    case 'explain_concept': return answerModelFor(item, items, spares) ? MODEL_EXPLAIN : null;
-    default: return null;
-  }
-}
+/** What the levers read beyond the item: the session's items and the generator's spares (R3). */
+export interface SpokenLeverContext { items: readonly SpokenPracticeItem[]; spares: readonly SpokenPracticeItem[] }
 
-export const MODE_MISSES: Readonly<Record<string, readonly string[]>> = {
-  count_and_say: ['skipped_a_number', ...OFF_BY],
-  compare_choice: ['other_menu_word', 'said_same', 'said_thing_name'],
-  read_aloud: ['misread', 'sounds_not_blended', 'letter_names', 'word_dropped'],
-  say_answer: ['signature_error', 'said_stimulus'],
-  explain_concept: ['read_back', 'named_only', 'bare_number', 'opposite_idea'],
-};
+const SAY = 'Say it as your turn ("My turn: …"), then ask the learner\'s own question again. Never apply it to their question.';
+const PRACTICE = 'Opens an easier one of the same kind first. It is not graded; the full question comes back after it.';
 
-export function spokenLevers(item: SpokenPracticeItem | null, pulled: readonly string[], items: readonly SpokenPracticeItem[],
-    spares: readonly SpokenPracticeItem[]): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly string[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers: [...answers], when, does });
-  const practice = 'Opens an easier one of the same kind first. It is not graded; the full question comes back after it.';
-  const misses = MODE_MISSES[item.mode] ?? [];
-  const out: WorkspaceLever[] = [];
-  const model = modelLever(item, items, spares);
-  const say = 'Say it as your turn ("My turn: …"), then ask the learner\'s own question again. Never apply it to their question.';
-  if (model === MODEL_COUNT) out.push(lever(MODEL_COUNT, 'help', 'both', misses, 'The learner gets the count wrong or does not know how to start.',
-    `Shows a small card with a DIFFERENT group of pictures (onScreen says how many). Say only its total as your turn; never count it aloud. ${say}`));
-  if (model === WORD_MODEL) out.push(lever(WORD_MODEL, 'help', 'both', misses, 'The learner says the wrong word, a picture\'s name, or does not know how to start.',
-    'Shows a card with one model pair for EACH menu word (onScreen names them). Say every one as your turn, in order ("My turn: this train is longer…"); never only one, and never point at the learner\'s pictures. Then ask their question again.'));
-  if (model === MODEL_READ) out.push(lever(MODEL_READ, 'help', 'both', misses, 'The learner misreads the print or does not know how to start.',
-    `Shows a small card with a DIFFERENT word (onScreen gives it). Read it as your turn. Never read or sound out the learner's print. ${say}`));
-  if (model === MODEL_ANSWER) out.push(lever(MODEL_ANSWER, 'help', 'both', misses, 'The learner gives a wrong answer or does not know how to start.',
-    `Shows a small card with a DIFFERENT question of the same kind, solved (onScreen gives it). ${say}`));
-  if (model === MODEL_EXPLAIN) out.push(lever(MODEL_EXPLAIN, 'help', 'both', misses, 'The learner reads the example back, only names it, or does not know how to start.',
-    `Shows a small card with a DIFFERENT example and its idea in one sentence (onScreen gives it). ${say}`));
-  if (item.mode === 'count_and_say') {
-    out.push(lever(TOUCH_MARKS, 'help', 'shown', ['skipped_a_number', 'one_short', 'one_over'], 'The learner skips a picture or counts one twice.',
-      'Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers.'));
-    if (item.stimulusCount > 5) out.push(lever(FIVE_ROWS, 'help', 'shown', ['short_by_more', 'over_by_more'], 'The learner loses track in a big group.',
-      'Lays the same pictures out in rows of five. None added or taken away.'));
-    if (smallerGroupFor(item, items)) out.push(lever(SMALLER_GROUP, 'simplify', 'both', ['skipped_a_number', ...OFF_BY], 'This many is too many to count yet.', practice));
-  }
-  if (item.mode === 'compare_choice' && farPairFor(item, items)) out.push(lever(FAR_PAIR, 'simplify', 'both', ['other_menu_word', 'said_same'],
-    'These two are too close to tell apart yet.', practice));
-  if (item.mode === 'read_aloud') {
-    out.push(lever(SOUND_DOTS, 'help', 'shown', ['sounds_not_blended', 'letter_names', 'misread'], 'The learner sounds it out without blending, or misreads.',
-      'Puts a dot under each letter (or digit) of the print. Nothing is said or played.'));
-    if (words(item.stimulusText).length > 1) out.push(lever(WORD_UNDERLINE, 'help', 'shown', ['word_dropped'], 'The learner drops a word.',
-      'Draws a line under each printed word, left to right.'));
-    if (shortWordFor(item, items)) out.push(lever(SHORT_WORD, 'simplify', 'shown', ['misread', 'sounds_not_blended'], 'This print is too long to read yet.',
-      'Opens a shorter word first; the learner reads it, you do not. It is not graded; the full print comes back after it.'));
-  }
-  if (easierItemFor(item, items, spares)) out.push(lever(EASIER_ITEM, 'simplify', 'both', misses, 'This question is too hard yet.', practice));
-  return out;
-}
-
-/** What the pulled levers put on screen, as a scene fact. Gives the model; never this item's answer. */
-export function spokenLeverFacts(item: SpokenPracticeItem | null, pulled: readonly string[], items: readonly SpokenPracticeItem[],
-    spares: readonly SpokenPracticeItem[]): string {
-  if (!item) return '';
-  const count = pulled.includes(MODEL_COUNT) ? countModelFor(item, items) : null;
-  const pairs = pulled.includes(WORD_MODEL) ? wordModelFor(item, items) : null;
-  const read = pulled.includes(MODEL_READ) ? readModelFor(item, items) : null;
-  const spare = pulled.includes(MODEL_ANSWER) || pulled.includes(MODEL_EXPLAIN) ? answerModelFor(item, items, spares) : null;
-  return [
-    count && `Beside the pictures, a model card shows a different group: ${count.count} ${count.noun}, answered ${numberWordFor(count.count)}. It is not this group.`,
-    pairs && `Beside the pictures, a model card shows one pair for each menu word: ${pairs.map(p => `${p.a[0]} and ${p.b[0]}: "${p.word}" fits ${p.a[0]}`).join('; ')}. None is this pair.`,
-    read && `Beside the print, a model card shows a different ${isNumeral(read) ? 'numeral' : 'word'}: "${read}". It is not this print.`,
-    spare && (spare.mode === 'explain_concept'
-      ? `Beside the example, a model card shows a different one, "${spare.stimulusText}", explained: "${spare.conceptStatement}". It is not this example.`
-      : `Beside the question, a model card shows a different one, "${spare.ask}", answered "${spare.expectedAnswer}". It is not this question.`),
-    pulled.includes(TOUCH_MARKS) && 'The learner can tap each picture; a tapped picture gets a ring.',
-    pulled.includes(FIVE_ROWS) && 'The same pictures are laid out in rows of five.',
-    pulled.includes(SOUND_DOTS) && 'A dot sits under each printed letter or digit.',
-    pulled.includes(WORD_UNDERLINE) && 'A line sits under each printed word.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** Every lever of the pack, by type, in the order the tutor sees them. */
+export const SPOKEN_LEVERS = leverSet<SpokenPracticeItem, SpokenLeverContext>({
+  modeOf: item => item.mode,
+  missesOf: mode => diSpokenPracticeCard.modes[mode]?.misses ?? [],
+  specs: [
+    { id: MODEL_COUNT, type: 'model', modes: ['count_and_say'], answers: 'all',
+      when: 'The learner gets the count wrong or does not know how to start.',
+      does: `Shows a small card with a DIFFERENT group of pictures (onScreen says how many). Say only its total as your turn; never count it aloud. ${SAY}`,
+      content: (item, { items }) => countModelFor(item, items),
+      fact: (count: CountModel) => `Beside the pictures, a model card shows a different group: ${count.count} ${count.noun}, answered ${numberWordFor(count.count)}. It is not this group.` },
+    { id: WORD_MODEL, type: 'model', modes: ['compare_choice'], answers: 'all',
+      when: 'The learner says the wrong word, a picture\'s name, or does not know how to start.',
+      does: 'Shows a card with one model pair for EACH menu word (onScreen names them). Say every one as your turn, in order ("My turn: this train is longer…"); never only one, and never point at the learner\'s pictures. Then ask their question again.',
+      content: (item, { items }) => wordModelFor(item, items),
+      fact: (pairs: PairModel[]) => `Beside the pictures, a model card shows one pair for each menu word: ${pairs.map(p => `${p.a[0]} and ${p.b[0]}: "${p.word}" fits ${p.a[0]}`).join('; ')}. None is this pair.` },
+    { id: MODEL_READ, type: 'model', modes: ['read_aloud'], answers: 'all',
+      when: 'The learner misreads the print or does not know how to start.',
+      does: `Shows a small card with a DIFFERENT word (onScreen gives it). Read it as your turn. Never read or sound out the learner's print. ${SAY}`,
+      content: (item, { items }) => readModelFor(item, items),
+      fact: (read: string) => `Beside the print, a model card shows a different ${isNumeral(read) ? 'numeral' : 'word'}: "${read}". It is not this print.` },
+    { id: MODEL_ANSWER, type: 'model', modes: ['say_answer'], answers: 'all',
+      when: 'The learner gives a wrong answer or does not know how to start.',
+      does: `Shows a small card with a DIFFERENT question of the same kind, solved (onScreen gives it). ${SAY}`,
+      content: (item, { items, spares }) => answerModelFor(item, items, spares),
+      fact: (spare: SpokenPracticeItem) => `Beside the question, a model card shows a different one, "${spare.ask}", answered "${spare.expectedAnswer}". It is not this question.` },
+    { id: MODEL_EXPLAIN, type: 'model', modes: ['explain_concept'], answers: 'all',
+      when: 'The learner reads the example back, only names it, or does not know how to start.',
+      does: `Shows a small card with a DIFFERENT example and its idea in one sentence (onScreen gives it). ${SAY}`,
+      content: (item, { items, spares }) => answerModelFor(item, items, spares),
+      fact: (spare: SpokenPracticeItem) => `Beside the example, a model card shows a different one, "${spare.stimulusText}", explained: "${spare.conceptStatement}". It is not this example.` },
+    { id: TOUCH_MARKS, type: 'marks', modes: ['count_and_say'], answers: ['skipped_a_number', 'one_short', 'one_over'],
+      when: 'The learner skips a picture or counts one twice.',
+      does: 'Lets the learner tap each picture as they count it; a tapped picture gets a ring. No numbers.',
+      fact: 'The learner can tap each picture; a tapped picture gets a ring.' },
+    { id: FIVE_ROWS, type: 'layout', modes: ['count_and_say'], answers: ['short_by_more', 'over_by_more'],
+      when: 'The learner loses track in a big group.', does: 'Lays the same pictures out in rows of five. None added or taken away.',
+      offer: item => item.stimulusCount > 5, fact: 'The same pictures are laid out in rows of five.' },
+    { id: SMALLER_GROUP, type: 'easier', modes: ['count_and_say'], answers: ['skipped_a_number', ...OFF_BY],
+      when: 'This many is too many to count yet.', does: PRACTICE, content: (item, { items }) => smallerGroupFor(item, items) },
+    { id: FAR_PAIR, type: 'easier', modes: ['compare_choice'], answers: ['other_menu_word', 'said_same'],
+      when: 'These two are too close to tell apart yet.', does: PRACTICE, content: (item, { items }) => farPairFor(item, items) },
+    { id: SOUND_DOTS, type: 'marks', modes: ['read_aloud'], answers: ['sounds_not_blended', 'letter_names', 'misread'],
+      when: 'The learner sounds it out without blending, or misreads.',
+      does: 'Puts a dot under each letter (or digit) of the print. Nothing is said or played.',
+      fact: 'A dot sits under each printed letter or digit.' },
+    { id: WORD_UNDERLINE, type: 'marks', modes: ['read_aloud'], answers: ['word_dropped'],
+      when: 'The learner drops a word.', does: 'Draws a line under each printed word, left to right.',
+      offer: item => words(item.stimulusText).length > 1, fact: 'A line sits under each printed word.' },
+    { id: SHORT_WORD, type: 'easier', modes: ['read_aloud'], carrier: 'shown', answers: ['misread', 'sounds_not_blended'],
+      when: 'This print is too long to read yet.',
+      does: 'Opens a shorter word first; the learner reads it, you do not. It is not graded; the full print comes back after it.',
+      content: (item, { items }) => shortWordFor(item, items) },
+    { id: EASIER_ITEM, type: 'easier', modes: ['say_answer', 'explain_concept'], answers: 'all',
+      when: 'This question is too hard yet.', does: PRACTICE,
+      content: (item, { items, spares }) => easierItemFor(item, items, spares) },
+  ],
+});

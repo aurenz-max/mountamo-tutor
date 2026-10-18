@@ -21,10 +21,9 @@
  */
 import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
-import type { ClassificationItem } from '../../primitives/visual-primitives/biology/ClassificationSorter';
-import { sortHarnessTargets } from '../../primitives/visual-primitives/biology/classificationSorterWorkspace';
-import { cellHarnessInputs, type CellMission } from '../../primitives/visual-primitives/biology/cellBuilderWorkspace';
-import { fewerStructures as cellFewerStructures, practiceParent as cellPracticeParent } from '../../primitives/visual-primitives/biology/cellBuilderLevers';
+import { classificationSorterBoss } from '../../primitives/visual-primitives/biology/classificationSorter.boss';
+import type { Boss } from './boss';
+import { cellBuilderBoss } from '../../primitives/visual-primitives/biology/cellBuilder.boss';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
 import { simplerFromId as simplerShapeFromId } from '../../primitives/visual-primitives/math/shapeSorterLevers';
 import { simplerItem } from '../../primitives/visual-primitives/math/numberLineLevers';
@@ -317,7 +316,7 @@ import { easierComparisonChoice, maxWorkableAngle, minimumPushSetting, rampConcl
 import { practiceFromId as rampPracticeFromId } from '../../primitives/visual-primitives/engineering/rampLabLevers';
 import { diShapesHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diShapesWorkspace';
 import { BUILD_WITNESSES as SHAPE_BUILD_WITNESSES, WRONG_BUILD as WRONG_SHAPE_BUILD } from '../../primitives/visual-primitives/direct-instruction/diShapesBuild';
-import { diSpokenPracticeHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeWorkspace';
+import { diSpokenPracticeBoss } from '../../primitives/visual-primitives/direct-instruction/diSpokenPractice.boss';
 import { diDiceRollHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
 import { deductionItems, diDeductionHarnessAnswers } from '../../primitives/visual-primitives/direct-instruction/diDeductionWorkspace';
 import { diWorkedProcedureHarnessAnswers, workedProcedureItems } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
@@ -467,6 +466,24 @@ export interface LiveJourney {
 
 /** What a learner says to ask for each action on any shared-workspace surface. */
 const WORKSPACE_PROMPTS = { opening: 'What do I do?', hint: 'Can you help me?', example: 'Can you show me what you mean?' };
+
+/** The journey row of a boss (`boss.ts`): every field comes from its `drive`, and warmup asks for nothing. */
+const bossJourney = (boss: Boss): LiveJourney => ({
+  execution: 'workspace',
+  component: boss.drive.component,
+  instanceId: boss.drive.instanceId,
+  defaults: { ...boss.drive.defaults, di: false },
+  leakTokens: [...(boss.drive.leakTokens ?? [])],
+  prompts: WORKSPACE_PROMPTS,
+  inputsFor: (intent, ctx) => {
+    if (intent !== 'correct' && intent !== 'wrong') return [];
+    const item = boss.drive.current ? boss.drive.current(ctx)
+      : boss.items(ctx.data).find((i: { id?: string }) => i.id === ctx.itemId);
+    if (!item) throw new Error(`${boss.card.id}: no current item ${ctx.itemId}`);
+    return boss.drive.play(intent === 'correct', item, ctx);
+  },
+  probes: { mounted: { selector: boss.drive.mounted }, ...boss.drive.probes },
+});
 
 /** regrouping-workbench's current item; an easier practice problem (`~simpler`) is rebuilt from its parent with the same builder. */
 /** net-folder's current challenge and the solid it draws; an easier one (`~simpler`) is rebuilt from its parent. */
@@ -3087,24 +3104,7 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-shape-object="shape"]' }, reward: { selector: '[data-shape-credited]', kind: 'count' } },
   },
-  'di-spoken-practice': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/direct-instruction/DiSpokenPractice.tsx',
-    instanceId: 'spoken',
-    defaults: { grade: 'Grade 1', mode: 'compare_choice', di: false,
-      topic: 'Comparing lengths: longer and shorter' },
-    leakTokens: ['SAY_ITEM', 'SAY_MOVE', 'SAY_HEAR', 'SAY_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken answer per item: the key's own words, or a plainly different answer of the same kind.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const c = (ctx.data.items ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current di-spoken-practice item');
-      const answers = diSpokenPracticeHarnessAnswers(c);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-spoken-object="stimulus"]' }, reward: { selector: '[data-spoken-credited]', kind: 'count' } },
-  },
+  'di-spoken-practice': bossJourney(diSpokenPracticeBoss),
   'di-dice-roll': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/direct-instruction/DiDiceRoll.tsx',
@@ -3865,46 +3865,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="stimulus"]' } },
   },
-  'classification-sorter': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/biology/ClassificationSorter.tsx',
-    instanceId: 'sorter-bio',
-    defaults: { grade: 'Kindergarten', mode: 'sort', di: false, topic: 'Animals with wings and animals without wings' },
-    leakTokens: ['SORT_ORIENT', 'SORT_ITEM_STAGED', 'SORT_INCORRECT', 'SORT_READ_ALOUD', 'SORT_ITEM_TAP', 'SORT_ALL_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Each item is staged alone: tap its group card (wrong: the first other group).
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const item = (ctx.data.items ?? []).find((i: ClassificationItem) => i.id === ctx.itemId);
-      if (!item) throw new Error('No current classification-sorter item');
-      const targets = sortHarnessTargets(ctx.data.categories ?? [], item);
-      const target = intent === 'wrong' ? targets.wrong : targets.correct;
-      if (!target) throw new Error('classification-sorter: no wrong group to tap');
-      return [{ type: 'touch', target }];
-    },
-    probes: { mounted: { selector: '[data-pip-object="card"]' } },
-  },
-  'cell-builder': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/biology/CellBuilder.tsx',
-    instanceId: 'cell-builder',
-    defaults: { grade: 'Grade 6', mode: 'cell_inventory', di: false, topic: 'Animal and plant cell structures' },
-    leakTokens: [],
-    prompts: WORKSPACE_PROMPTS,
-    // Each mission is one board: answer every card from the key and press Check mission (wrong: the first card
-    // answered wrong). The smaller practice board is rebuilt from its parent with the same builder.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const parent = cellPracticeParent(ctx.itemId ?? '');
-      const phase = (parent ?? ctx.itemId) as CellMission['phase'];
-      const full: CellMission = { id: phase, phase };
-      const mission = parent ? cellFewerStructures(ctx.data as never, full) : full;
-      if (!mission || !['cell_inventory', 'organelle_placement', 'structure_function', 'cell_specialization'].includes(phase))
-        throw new Error(`No current cell-builder mission ${ctx.itemId}`);
-      return cellHarnessInputs(ctx.data as never, mission, intent === 'wrong');
-    },
-    probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
-  },
+  'classification-sorter': bossJourney(classificationSorterBoss),
+  'cell-builder': bossJourney(cellBuilderBoss),
   'food-web-builder': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/biology/FoodWebBuilder.tsx',

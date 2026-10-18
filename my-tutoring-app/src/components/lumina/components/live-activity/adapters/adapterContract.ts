@@ -12,7 +12,9 @@
  * route, so it must stay free of React; the sandbox keeps its own renderer
  * registry keyed by the same ids.
  */
-import type { TutoringScaffold } from '../../../types';
+import type { BossCard, BossMode, TutoringScaffold } from '../../../types';
+import { bossInteraction, type Boss } from '../boss';
+import type { LeverType } from '../bossLevers';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { UNGRADED_MODE } from '../pinnedModes';
 
@@ -100,6 +102,62 @@ export const WORKSPACE_DOCTRINE = 'You own the teaching: one step at a time, and
 export const LEVER_DOCTRINE = 'When the learner is stuck and pull_lever is offered, let the screen help before words: '
   + 'pull the lever in workspace.levers whose "when" fits, then talk about what changed. Here begin_help is for help in words only.';
 
+/**
+ * What a lever TYPE tells the tutor, once for every family that has one (`bossLevers.ts`). A boss's guidance carries
+ * the sentence of each type its lever set uses, so no card restates it in `special`.
+ */
+export const LEVER_TYPE_DOCTRINE: Partial<Record<LeverType, string>> = {
+  model: "A model lever shows a DIFFERENT item, solved: say it as your turn, then ask the learner's own question again. "
+    + "Never model the learner's own item; the model lever is your model.",
+};
+
+/** How one wiring is judged, in the tutor's terms. The card's modes pick these; no family writes them. */
+const JUDGED_BY: Record<BossMode['judge'], (answer: string) => string> = {
+  activity: answer => `The activity checks ${answer} against the lesson's key, which you are not told; that is the answer.`,
+  tutor: answer => `The learner answers out loud, and you judge ${answer} against the key the task gives you; the key is the answer, and it `
+    + 'names what else counts and the wrong answer that sounds right.',
+};
+const FLOW: Record<BossMode['flow'], string> = {
+  'one-at-a-time': '',
+  board: ' The learner answers every part, then checks the whole board; after a check you may say how many parts are right, never which. '
+    + 'Before the check, never confirm a part, say how many are wrong, suggest a swap, or point at one part to look at again, '
+    + 'by its name or by what it does; asking about the whole board (what the thing is for) is teaching.',
+};
+
+/**
+ * The rules every graded workspace family shares, filled from its boss card. These sentences used to be
+ * rewritten in each family's guidance (sorter: "never rule a group out"; sequencer: "never list more than two
+ * stages in order"; both: "say it aloud for a learner who cannot read", "you cannot tap for the learner").
+ * How a mode is judged comes from its wiring (`card.modes`): modes wired alike share one sentence, and a family
+ * whose modes differ gets one per wiring, named by mode.
+ */
+export const ROTATION_DOCTRINE = ({ modes, words }: BossCard) => {
+  const wirings = new Map<string, { mode: BossMode; names: string[] }>();
+  for (const [name, mode] of Object.entries(modes)) {
+    const key = `${mode.judge}|${mode.flow}`;
+    wirings.set(key, { mode, names: [...(wirings.get(key)?.names ?? []), name] });
+  }
+  const judged = Array.from(wirings.values()).map(({ mode, names }) =>
+    (wirings.size > 1 ? `In ${names.join(' and ')}: ` : '') + JUDGED_BY[mode.judge](words.answer) + FLOW[mode.flow]).join(' ');
+  const board = Object.values(modes).some(mode => mode.flow === 'board');
+  const named = Object.entries(modes).filter(([, mode]) => mode.moves);
+  const moves = named.map(([name, mode]) => (named.length > 1 || Object.keys(modes).length > 1 ? `In ${name}, the learner ` : 'The learner ')
+    + `${mode.moves}.`).join(' ');
+  return `The learner's job is to ${words.job}. ${moves ? `${moves} ` : ''}${judged} ${cap(words.question)} are the question: say them freely `
+    + 'and as often as needed, and read the instruction and every label aloud for a learner who cannot read, unless '
+    + 'reading it is the task: then the print is the answer, so let the learner read it first. Never rule a choice out ("it is not that one") or state the one fact that decides it. '
+    + 'Describing one thing on screen at a time is teaching; linking things the way the task asks is the answer. '
+    + `When the learner is stuck, ask the question again, then point to the part of the screen that matters${board ? ' (on a board, the whole board)' : ''}, then `
+    + 'ask what they know about it and whether it fits. You cannot do the task for the learner, in actions or in '
+    + 'words, or change what is on screen except with a tool you are offered.'
+    + `${words.special ? ` ${words.special}` : ''}`;
+};
+// Says only what WORKSPACE_DOCTRINE does not (it already forbids saying the answer and doing the step). When every
+// graded family is on a card, the two merge into one constant and `guidance` prose is deleted (the ratchet in
+// activityContract.test.ts).
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 /** A workspace family's guidance: its own domain facts, then the shared doctrine. */
 export const workspaceGuidance = (domain: string, levers = false) =>
   `${domain} ${WORKSPACE_DOCTRINE}${levers ? ` ${LEVER_DOCTRINE}` : ''}`;
@@ -169,8 +227,25 @@ export function workspaceAdapter<T>(primitiveId: string, domain: WorkspaceDomain
     copy: { label, checkbox: label, title: `Learn with ${label}`,
       lessons: ungraded ? [[UNGRADED_MODE, 'Teach'] as const] : (entry.evalModes ?? []).map(m => [m.evalMode, m.label] as const) },
     lessonStart: workspaceLessonStart(primitiveId, primitiveId),
-    guidance: ungraded ? `${declared.guidance} ${TEACHING_DOCTRINE}` : workspaceGuidance(declared.guidance, !!declared.levers),
+    guidance: declared.card
+      ? workspaceGuidance(ROTATION_DOCTRINE(declared.card), !!declared.levers)
+      : ungraded ? `${declared.guidance} ${TEACHING_DOCTRINE}` : workspaceGuidance(declared.guidance, !!declared.levers),
     validate: domain.validate,
     initialState: domain.initialState,
   };
+}
+
+/**
+ * A live adapter built from a boss (`boss.ts`). The catalog's `teachingWorkspace` is `bossEntry(boss.card)`, so
+ * `workspaceAdapter` reads the same card; the boss supplies validation and the opening state.
+ */
+export function bossAdapter<D extends { title: string }>(boss: Boss<D>): LiveActivityAdapter<D> {
+  const interaction = bossInteraction(boss.card);
+  const adapter = workspaceAdapter<D>(boss.card.id, { validate: boss.validate, initialState: data => {
+    const items = boss.items(data);
+    return { ...workspaceOpening({ title: data.title, task: boss.ask(items[0], data), total: items.length }), interaction };
+  } });
+  const types = new Set(boss.levers?.specs.map(s => s.type) ?? []);
+  const typed = Object.entries(LEVER_TYPE_DOCTRINE).filter(([type]) => types.has(type as LeverType)).map(([, line]) => line);
+  return typed.length ? { ...adapter, guidance: `${adapter.guidance} ${typed.join(' ')}` } : adapter;
 }

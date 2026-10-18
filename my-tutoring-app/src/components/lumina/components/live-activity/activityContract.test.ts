@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { initialActivityState, parseActivityRequest, validateActivityData, validateTenFrameData, validateShapeSorterData,
   generatedActivityState, LIVE_ADAPTERS, LIVE_PRIMITIVE_IDS, type LiveActivityAdapter } from './activityContract';
-import { getComponentById } from '../../service/manifest/catalog';
+import { getComponentById, UNIVERSAL_CATALOG } from '../../service/manifest/catalog';
+
+const PROSE_GUIDANCE_FAMILIES = 161;
 import { OFFER_GUIDANCE_MAX } from './adapters/adapterContract';
 
 export const fixture = () => ({ title: 'Subtraction within 10', range: { min: 0, max: 10 },
@@ -41,6 +43,12 @@ describe('live activity boundary', () => {
     expect(generatedActivityState('ten-frame', valid)).toMatchObject({ instruction: expect.stringContaining('How many more counters make ten?'), teachingOwner: 'tutor', totalChallenges: 1 });
     expect(() => validateTenFrameData({ ...data, challenges: [{ ...data.challenges[0], targetCount: 10 }] })).toThrow();
     expect(() => parseActivityRequest({ primitiveId: 'ten-frame', topic: 'Make ten', intent: 'Practice', mode: 'jump' })).toThrow();
+  });
+  // Boss-card ratchet (2026-10-18): prose `guidance` is the legacy path. This number only goes down; lower it
+  // when a family moves to a card, and delete `guidance` from the type when it reaches 0.
+  it('moves families from prose guidance to boss cards, never back', () => {
+    const prose = UNIVERSAL_CATALOG.filter(c => typeof c.teachingWorkspace?.guidance === 'string').length;
+    expect(prose).toBeLessThanOrEqual(PROSE_GUIDANCE_FAMILIES);
   });
   it.each(LIVE_PRIMITIVE_IDS)('%s declares its facts once and consistently', id => {
     const adapter: LiveActivityAdapter = LIVE_ADAPTERS[id];

@@ -48,4 +48,5 @@ The 2026-08-18 redesign is **compatible by eval-mode fork**. It preserves all fo
 
 ## History
 
+- 2026-10-18: boss framework — `cellBuilder.card.ts` + `cellBuilder.boss.ts` (bespoke: board); levers as one `CELL_LEVERS` set (byte-identical to the old `cellLevers`/`leverFact` on all four saved payloads); workspace-only (`withWorkspaceOnly`: the scripted Next/Run cell report path is deleted, an unbound mount shows NeedsTutor); the board rules left `special` for the shared `FLOW.board` sentence, which changes the tutor's guidance (one replay sample owed).
 - 2026-10-15: W1 workspace binding and levers (ROLLOUT C24, `/add-live-tutor-tools`, `/add-support-tiers`). Requirements 9-12 added; requirement 6 re-based for the workspace path (Try again exists there; the first committed board is still the scored evidence). Compatible: the scripted path keeps its lock, reveals, Next mission and Run cell report.

@@ -16,12 +16,13 @@
  *   full board back. The smaller board is part of the lesson's own cell (there is no other cell to build from at
  *   runtime), so the full board's later answer is recorded with the lever.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
 import type { CellBuilderData, OrganelleInfo } from './CellBuilder';
 import {
-  boardCards, boardJobs, CELL_MISSES, QUANTITY_LABELS, QUANTITY_OPTIONS, ZONE_LABELS, ZONE_NOTES,
+  boardCards, boardJobs, QUANTITY_LABELS, QUANTITY_OPTIONS, ZONE_LABELS, ZONE_NOTES,
   type CellMission, type CellMissionPhase,
 } from './cellBuilderWorkspace';
+import { CELL_MISSES } from './cellBuilder.card';
 import type { QuantityLevel } from '../../../evaluation/types';
 
 type Board = Pick<CellBuilderData, 'organelles' | 'functionMatches' | 'cellContext' | 'cellType'>;
@@ -121,54 +122,55 @@ export function fewerStructures(board: Board, mission: CellMission): CellMission
   return { id: `${mission.id}${FEWER}`, phase: mission.phase, only };
 }
 
-/** The levers on the current session board. A practice board has none. */
-export function cellLevers(board: Board, mission: CellMission | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!mission || isPractice(mission)) return [];
-  const cards = boardCards(board, mission);
-  const all = CELL_MISSES[mission.phase];
-  const lever = (id: string, kind: WorkspaceLever['kind'], when: string, does: string): WorkspaceLever =>
-    ({ id, kind, carrier: 'shown', pulled: pulled.includes(id), answers: all, when, does });
-  const half = (n: number) => cards.length > 0 && n * 2 >= cards.length;
-  const out: WorkspaceLever[] = [];
-  if (mission.phase === 'cell_inventory' && half(cards.filter(o => jobLine(o, mission.phase, board)).length)) {
-    out.push(lever(JOBS_LEVER, 'help', 'The learner does not know what some structures do, so cannot tell whether this cell needs them.',
-      'Shows under each structure card what that structure does. Words naming a kind of cell are blanked, so it never says where the structure is found.'));
-  }
-  if (mission.phase === 'organelle_placement' && half(cards.filter(o => jobLine(o, mission.phase, board)).length)) {
-    out.push(lever(JOBS_LEVER, 'help', 'The learner does not know what some structures do, so cannot reason about which region fits.',
-      'Shows under each structure in the bay what that structure does. Words naming a region are blanked, so it never names one.'));
-  }
-  if (mission.phase === 'structure_function' && half(cards.filter(o => hintLine(o, board)).length)) {
-    out.push(lever(HINTS_LEVER, 'help', 'The learner cannot picture what a structure is like, so cannot tell its job from the others.',
-      'Shows an everyday comparison under each structure (a factory, a gate). Words it shares with a job card are blanked, so it matches no card by its words.'));
-  }
-  if (mission.phase === 'cell_specialization') {
-    out.push(lever(LEVELS_LEVER, 'help', 'The learner reads the levels as counts, or cannot tell Many from Abundant.',
-      'Shows under the choices what each level means against a typical cell (Few: fewer than a typical cell has, up to Abundant). It names no structure.'));
-  }
-  if (fewerStructures(board, mission)) {
-    out.push(lever(FEWER_LEVER, 'simplify', 'The learner cannot hold the whole board at once.',
-      'Opens a smaller board first: the same mission on about half of the structures. It is not graded; the full board comes back after it, with the learner\'s work on it cleared.'));
-  }
-  return out;
-}
+/** What the levers read beyond the mission: the lesson's cell. */
+export interface CellLeverContext { board: Board }
 
-/** What the pulled levers put on screen, as a scene fact. Never a key. */
-export function leverFact(board: Board, mission: CellMission | null, pulled: readonly string[]): string {
-  if (!mission || isPractice(mission)) return '';
+type Lines = ReadonlyArray<readonly [string, string]>;
+/** Each card's line, when at least half the board's cards have one (a lever that helps on a few cards misleads). */
+function boardLines(board: Board, mission: CellMission, line: (o: OrganelleInfo) => string | null): Lines | null {
   const cards = boardCards(board, mission);
-  const parts: string[] = [];
-  if (pulled.includes(JOBS_LEVER)) {
-    const lines = cards.map(o => [o.name, jobLine(o, mission.phase, board)] as const).filter(([, l]) => l);
-    parts.push(`Under each structure, what it does: ${lines.map(([n, l]) => `${n}: "${l}"`).join('; ')}.`);
-  }
-  if (pulled.includes(HINTS_LEVER)) {
-    const lines = cards.map(o => [o.name, hintLine(o, board)] as const).filter(([, l]) => l);
-    parts.push(`Under each structure, an everyday comparison: ${lines.map(([n, l]) => `${n}: "${l}"`).join('; ')}.`);
-  }
-  if (pulled.includes(LEVELS_LEVER)) parts.push(`Under the level choices: ${levelLegend().join('; ')}.`);
-  return parts.join(' ');
+  const lines = cards.map(o => [o.name, line(o)] as const).filter((x): x is readonly [string, string] => !!x[1]);
+  return cards.length > 0 && lines.length * 2 >= cards.length ? lines : null;
 }
+const listed = (lines: Lines) => lines.map(([n, l]) => `${n}: "${l}"`).join('; ');
+/** A practice board has no levers. */
+const onSession = <T>(fn: (m: CellMission, ctx: CellLeverContext) => T) =>
+  (m: CellMission, ctx: CellLeverContext) => (isPractice(m) ? null : fn(m, ctx));
+const jobs = onSession((m, { board }) => boardLines(board, m, o => jobLine(o, m.phase, board)));
+const jobsFact = (lines: Lines) => `Under each structure, what it does: ${listed(lines)}.`;
+
+/** Every lever of the four missions, by type, in the order the tutor sees them. Every lever answers every miss. */
+export const CELL_LEVERS = leverSet<CellMission, CellLeverContext>({
+  modeOf: m => m.phase,
+  missesOf: mode => CELL_MISSES[mode as CellMissionPhase] ?? [],
+  // What a line must not name: on Build the model a region, on Wire the jobs a job card (each also has its own
+  // stem-level blanking rule above).
+  answersOf: (m, { board }) => m.phase === 'organelle_placement' ? Object.values(ZONE_LABELS)
+    : m.phase === 'structure_function' ? jobTexts(board, m) : [],
+  specs: [
+    { id: JOBS_LEVER, type: 'meaning', modes: ['cell_inventory'], carrier: 'shown', answers: 'all',
+      when: 'The learner does not know what some structures do, so cannot tell whether this cell needs them.',
+      does: 'Shows under each structure card what that structure does. Words naming a kind of cell are blanked, so it never says where the structure is found.',
+      content: jobs, fact: jobsFact },
+    { id: JOBS_LEVER, type: 'meaning', modes: ['organelle_placement'], carrier: 'shown', answers: 'all',
+      when: 'The learner does not know what some structures do, so cannot reason about which region fits.',
+      does: 'Shows under each structure in the bay what that structure does. Words naming a region are blanked, so it never names one.',
+      content: jobs, fact: jobsFact },
+    { id: HINTS_LEVER, type: 'clue', modes: ['structure_function'], carrier: 'shown', answers: 'all',
+      when: 'The learner cannot picture what a structure is like, so cannot tell its job from the others.',
+      does: 'Shows an everyday comparison under each structure (a factory, a gate). Words it shares with a job card are blanked, so it matches no card by its words.',
+      content: onSession((m, { board }) => boardLines(board, m, o => hintLine(o, board))),
+      fact: (lines: Lines) => `Under each structure, an everyday comparison: ${listed(lines)}.` },
+    { id: LEVELS_LEVER, type: 'meaning', modes: ['cell_specialization'], carrier: 'shown', answers: 'all',
+      when: 'The learner reads the levels as counts, or cannot tell Many from Abundant.',
+      does: 'Shows under the choices what each level means against a typical cell (Few: fewer than a typical cell has, up to Abundant). It names no structure.',
+      content: onSession(() => true), fact: `Under the level choices: ${levelLegend().join('; ')}.` },
+    { id: FEWER_LEVER, type: 'easier', carrier: 'shown', answers: 'all',
+      when: 'The learner cannot hold the whole board at once.',
+      does: 'Opens a smaller board first: the same mission on about half of the structures. It is not graded; the full board comes back after it, with the learner\'s work on it cleared.',
+      content: (m, { board }) => fewerStructures(board, m) },
+  ],
+});
 
 /** The job cards of a board, so a test can assert no lever line copies one. */
 export const jobTexts = (board: Board, mission: CellMission) => boardJobs(board, mission).map(j => j.functionDescription);

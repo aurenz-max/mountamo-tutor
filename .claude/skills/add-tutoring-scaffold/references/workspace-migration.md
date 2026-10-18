@@ -51,5 +51,5 @@ Then:
 2. Re-base any test that pinned the block's prose (`checkDiCatalogEntry`, scripted-correction rung
    tests, sentinel scans) to assert the block is absent. Log the re-base in the primitive's
    contract changelog (`docs/contracts/<id>.md`).
-3. Run the primitive's tests, `components/live-activity`, `service/manifest`, and
-   `typecheck:lumina`. A dead block reached no tutor, so deleting it needs no Live or replay run.
+3. Run `npm run test:primitive -- <id>` (its tests plus the contract and journey sweep filtered to it)
+   and `typecheck:lumina`. A dead block reached no tutor, so deleting it needs no Live or replay run.

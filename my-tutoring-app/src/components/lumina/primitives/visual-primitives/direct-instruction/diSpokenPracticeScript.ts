@@ -64,6 +64,7 @@ import {
   type SpokenPracticeMode,
   type StimulusKind,
 } from './diSpokenPracticeModes';
+import { containsPhrase, spokenKeyLeaks, tokenize } from '../../../components/live-activity/spokenKey';
 
 export type { AnswerSource, SpokenPracticeMode, StimulusKind } from './diSpokenPracticeModes';
 
@@ -311,19 +312,7 @@ export const deriveResponseClass = (
 
 // ── Answer-leak detection — the gate a bespoke pack cannot run ───────────────
 
-const tokenize = (value: string): string[] =>
-  value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
-
-/** Whole-token subsequence match, so "cat" hits "the cat sat" and not "catalog". */
-const containsPhrase = (haystack: string, needle: string): boolean => {
-  const hay = tokenize(haystack);
-  const need = tokenize(needle);
-  if (need.length === 0 || need.length > hay.length) return false;
-  for (let i = 0; i + need.length <= hay.length; i++) {
-    if (need.every((word, j) => hay[i + j] === word)) return true;
-  }
-  return false;
-};
+// `tokenize` and `containsPhrase` are the shared spoken key's (`spokenKey.ts`).
 
 export interface AnswerLeak {
   itemId: string;
@@ -344,7 +333,6 @@ export interface AnswerLeak {
 export function findAnswerLeaks(items: readonly SpokenPracticeItem[]): AnswerLeak[] {
   const leaks: AnswerLeak[] = [];
   for (const item of items) {
-    const answers = [item.expectedAnswer, ...item.alternates].filter((a) => a.trim());
     const surfaces: Array<{ field: AnswerLeak['field']; text: string }> = [];
     // The second exemption, and the only one that is not about `decode`: a
     // compare_choice ask CARRIES the menu, so it contains the answer by
@@ -363,13 +351,8 @@ export function findAnswerLeaks(items: readonly SpokenPracticeItem[]): AnswerLea
       surfaces.push({ field: 'stimulusText', text: item.stimulusText });
       surfaces.push({ field: 'stimulusText2', text: item.stimulusText2 ?? '' });
     }
-    for (const { field, text } of surfaces) {
-      for (const answer of answers) {
-        if (containsPhrase(text, answer)) {
-          leaks.push({ itemId: item.id, field, answer });
-          break;
-        }
-      }
+    for (const leak of spokenKeyLeaks({ answer: item.expectedAnswer, alsoAccept: item.alternates }, surfaces)) {
+      leaks.push({ itemId: item.id, ...leak });
     }
   }
   return leaks;

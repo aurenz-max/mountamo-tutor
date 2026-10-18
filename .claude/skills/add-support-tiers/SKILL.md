@@ -9,6 +9,8 @@ description: >-
   identity or harder-than-full content (/add-eval-modes, /lumina-densify-primitives).
 ---
 
+> **Paid Gemini runs are the user's (USER RULING 2026-10-17).** Wherever this skill says to run a Live journey (`run_*.py`) or `tutor_replay.py`, do not run it: a hook blocks it. Finish the free checks, then give the user the exact command, its request count, and the question it answers. See `backend/tests/tutor_live/LIVE_TESTING.md`.
+
 # Add Support Levers to a Primitive
 
 This skill gives a primitive the levers that let a learner who cannot do the item in front of them get part of it right and then finish the full item, **without leaving the primitive, the eval mode or the skill**. The manifest already picks the right primitive and mode for the objective; this skill makes that item teachable.
@@ -60,6 +62,8 @@ generator (Phase 6)                    config.difficulty → which levers start 
 > - **Live bench**: `run_live_runtime.py --lesson-entry --lever` (wrong answer, "I'm stuck", unprompted pull, practice item if any, full item credited with the lever recorded, lesson continues). A journey row whose simpler item is not a generated challenge rebuilds it in `inputsFor` with the same builder (see the number-line row).
 >
 > **Other primitives go one at a time** (handoff 18, Phase B), each through every phase here and its own `--lever` bench, and only after the user has seen the pilot report.
+>
+> **Declare levers as a lever set (2026-10-18; `components/live-activity/bossLevers.ts`, framework: `../review-live-wiring/references/boss-framework.md`).** On a boss family the levers module exports ONE `leverSet({ modeOf?, missesOf, answersOf?, specs })`, passed as `levers` on the boss. Each spec has an `id`, a stock `type` (`model` a different item solved · `easier` the practice item, which is the simplify kind · `clue` · `meaning` · `marks` · `layout` · `custom` with `why`), `answers` (`'all'` or miss ids), `when`, `does`, `content` (null = not offered), `offer` and `fact`. The set builds `declare`, `onScreen` and `simpler`; the component calls them (`bind(ctx)` for `DiTeachingStage`) and switches on a lever id only to DRAW it. `clue`/`meaning` words are leak-checked against `answersOf`. Models: `diSpokenPracticeLevers.ts` (`SPOKEN_LEVERS`, 13 levers over 5 modes) and `classificationSorterLevers.ts` (`SORT_LEVERS`). `boss.test.ts` fails a boss whose levers are outside a set, and a mode with a miss no lever answers. The number-line pilot above predates sets and is a legacy pattern (counted by the ratchet).
 
 ## When to use / not
 
@@ -117,8 +121,8 @@ The table's "failure" column is only useful if code can see it. For every failur
 
 - **A miss id per observable pattern.** The domain module exports a pure function from the item and the learner's work to a miss id (`jumpMiss` in `numberLineLevers.ts`: `one_short`, `one_past`, `off_by_more`, `wrong_direction`, `second_jump_off`). Name the PATTERN seen on screen, never a guessed cause: "one hop short" is a fact; "counted the start as hop 1" is the tutor's and the distiller's reading of it.
 - **The check reports it.** `progress.commitCheck(describe, correct, miss)` (or `commitGesture({ ..., miss })`); it lands on the attempt as `TeachingAttempt.miss` and reaches the tutor in the packet as a fact.
-- **Each lever declares the misses it answers** (`WorkspaceLever.answers`). The shared `nextLever(levers, miss)` picks the first open lever that answers the last miss, else help before simplify. No per-primitive choosing code.
-- **"This wrong answer, then this lever" is a unit test**: one `it.each` over the miss function and one over `nextLever(jumpLevers(...), miss)` (`numberLineLevers.test.ts`). Never a question for a live run: which lever comes next is code. A failure a check cannot observe (a spoken-only confusion) stays inferred and gets a lever by `when` text only; say so in the table.
+- **Each lever declares the misses it answers** (the spec's `answers`; `WorkspaceLever.answers` on the wire). The shared `nextLever(levers, miss)` picks the first open lever that answers the last miss, else help before simplify; spec order is the order the tutor sees. No per-primitive choosing code.
+- **"This wrong answer, then this lever" is a unit test**: one `it.each` over the miss function and one over `nextLever(LEVERS.declare(item, ctx, pulled), miss)` (`classificationSorterLevers.test.ts`; legacy: `numberLineLevers.test.ts`). Never a question for a live run: which lever comes next is code. A failure a check cannot observe (a spoken-only confusion) stays inferred and gets a lever by `when` text only; say so in the table.
 
 ## Phase 3: Contract check
 

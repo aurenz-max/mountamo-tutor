@@ -1,20 +1,16 @@
 /**
- * Classification sorter on the shared tutor/JEV teaching workspace, W1 minimal binding, plain shape
- * (qa/workspace-rollout/ROLLOUT.md). One mode, `sort`: each item of the lesson is one challenge, staged alone,
- * and the learner taps the group it belongs in.
+ * Classification sorter on the shared tutor/JEV teaching workspace. One mode, `sort`: each item of the lesson is one
+ * challenge, staged alone, and the learner taps the group it belongs in. How it is wired to the tutor is its boss
+ * (`classificationSorter.boss.ts`).
  *
- * Pure: the component, the adapter, the journey row and the tests read the same assignment, scene, check and
- * miss. The group an item belongs in (`correctCategoryId`) is checked by code and never reaches the tutor.
+ * Pure: the component, the boss and the tests read the same assignment, scene, check and miss. The group an item
+ * belongs in (`correctCategoryId`) is checked by code and never reaches the tutor.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { ClassificationCategory, ClassificationItem, ClassificationSorterData } from './ClassificationSorter';
 
 /** The ask for one item. Names the item and the rule; never a group. */
 export const sortAsk = (item: ClassificationItem) => `Which group does "${item.label}" go in?`;
-
-export function workspaceAssignment(item: ClassificationItem): TeachingAssignment {
-  return { id: item.id, task: sortAsk(item), response: 'gesture' };
-}
 
 /** The activity's own check. */
 export const sortMatches = (item: ClassificationItem, categoryId: string) => item.correctCategoryId === categoryId;
@@ -35,7 +31,6 @@ export function describeSort(item: ClassificationItem, categories: readonly Clas
  * - `wrong_group`: any other group.
  */
 export type SortMiss = 'repeated_group' | 'parent_group' | 'sibling_group' | 'wrong_group';
-export const SORT_MISSES: readonly SortMiss[] = ['repeated_group', 'parent_group', 'sibling_group', 'wrong_group'];
 
 export function sortMiss(item: ClassificationItem, categories: readonly ClassificationCategory[], placedIn: string,
   lastWrong: string | null = null): SortMiss | undefined {
@@ -81,9 +76,8 @@ export function workspaceScene(data: Pick<ClassificationSorterData, 'sortingRule
       ...(view.onScreen ? { onScreen: view.onScreen } : {}),
       ...(view.practice ? { practice: 'an easier practice card; it is not graded' } : {}),
       learnerWork: describeSort(item, data.categories, view.placedIn),
-      constraints: `${preReader ? 'The learner may not read: say the card, the rule and the group names aloud. ' : ''}`
-        + 'The learner answers on the screen by tapping a group card; the activity checks the placement itself. '
-        + 'You cannot tap or place for the learner.',
+      // What to do about it is the shared rotation's (ROTATION_DOCTRINE); the scene states only the fact.
+      ...(preReader ? { reader: 'the learner may not read' } : {}),
     },
   };
 }

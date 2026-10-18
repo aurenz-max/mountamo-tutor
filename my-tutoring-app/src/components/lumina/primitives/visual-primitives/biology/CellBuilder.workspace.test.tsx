@@ -19,10 +19,11 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { getComponentById } from '../../../service/manifest/catalog';
 import type { CellBuilderData, OrganelleInfo } from './CellBuilder';
 import {
-  boardCards, CELL_MISSES, cellHarnessInputs, cellMiss, namesOwnRegion, EMPTY_WORK, jobCardText, workspaceAssignment, type CellMission, type CellMissionPhase,
+  boardCards, cellHarnessInputs, cellMiss, namesOwnRegion, EMPTY_WORK, jobCardText, workspaceAssignment, type CellMission, type CellMissionPhase,
 } from './cellBuilderWorkspace';
+import { CELL_MISSES } from './cellBuilder.card';
 import {
-  blankCellKinds, blankRegionWords, cellLevers, FEWER_LEVER, fewerStructures, HINTS_LEVER, hintLine, JOBS_LEVER, jobLine,
+  blankCellKinds, blankRegionWords, CELL_LEVERS, FEWER_LEVER, fewerStructures, HINTS_LEVER, hintLine, JOBS_LEVER, jobLine,
   LEVELS_LEVER, namesCellKind, namesRegion, sharesJobWords,
 } from './cellBuilderLevers';
 
@@ -186,7 +187,7 @@ describe('the lever rules', () => {
   it('every catalog miss of every mode has a lever, help before simplify', () => {
     const entry = getComponentById('cell-builder')!;
     for (const mode of MODES) {
-      const ls = cellLevers(board, { id: mode, phase: mode }, []);
+      const ls = CELL_LEVERS.declare({ id: mode, phase: mode }, { board: board }, []);
       expect([...entry.teachingWorkspace!.misses![mode]].sort()).toEqual([...CELL_MISSES[mode]].sort());
       for (const miss of CELL_MISSES[mode]) {
         expect(nextLever(ls, miss)).toBe(ls[0].id);
@@ -221,7 +222,7 @@ describe('the lever rules', () => {
       expect(small.only!.length).toBeGreaterThanOrEqual(2);
       expect(small.only!.length).toBeLessThan(mode === 'cell_inventory' ? ORGANELLES.length : 5);
       expect(fewerStructures(board, small)).toBeNull();
-      expect(cellLevers(board, small, [])).toEqual([]);
+      expect(CELL_LEVERS.declare(small, { board: board }, [])).toEqual([]);
     }
     const inv = fewerStructures(board, { id: 'cell_inventory', phase: 'cell_inventory' })!;
     expect(inv.only!.some(id => !ORGANELLES.find(x => x.id === id)!.belongsInCell)).toBe(true);
@@ -275,4 +276,23 @@ it('fewer_structures opens an ungraded smaller board; the full board comes back 
     ['cell_inventory', false], ['cell_inventory~fewer', true], ['cell_inventory', true]]);
   expect(attempts.at(-1)).toMatchObject({ assisted: true, levers: [FEWER_LEVER] });
   h.close();
+});
+
+// Moved from the deleted scripted path's render test (__tests__/CellBuilder.test.tsx).
+it('Tune the cell hides each structure’s reasoning before the check; Build the model shows every region and no answer', () => {
+  const tune = mount('cell_specialization');
+  expect(tune.view.container.textContent).not.toContain('Because.');
+  cleanup();
+  const build = mount('organelle_placement');
+  for (const region of ['Control center', 'Inner membrane network', 'Main storage', 'Cytoplasm', 'Distributed throughout', 'Cell boundary'])
+    expect(build.view.container.textContent).toContain(region);
+  expect(build.view.container.textContent).not.toMatch(/Nucleus → Control center|Mitochondria → Distributed throughout/);
+});
+
+it('a mount with no tutor renders the shared "needs the tutor" card, never a drill', async () => {
+  const { render } = await import('@testing-library/react');
+  const { default: CellBuilder } = await import('./CellBuilder');
+  const view = render(<CellBuilder data={data('cell_inventory')} />);
+  expect(view.container.textContent).toContain('This activity needs the tutor');
+  expect(view.container.textContent).not.toContain('Check mission');
 });

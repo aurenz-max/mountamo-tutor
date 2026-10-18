@@ -14,9 +14,9 @@
  * No simplify lever: the one simpler shape of a sort is fewer groups, and on the learner's own card that leaves a
  * choice of two that hands over the answer; any other card is a later graded item of the same lesson.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { classificationSorterCard } from './classificationSorter.card';
 import type { ClassificationCategory, ClassificationItem } from './ClassificationSorter';
-import type { SortMiss } from './classificationSorterWorkspace';
 
 export const MEANING_LEVER = 'group_meaning';
 export const CLUE_LEVER = 'card_clue';
@@ -72,36 +72,32 @@ export interface SortLeverView {
   sortedCount: number;
 }
 
-const ALL: readonly SortMiss[] = ['repeated_group', 'parent_group', 'sibling_group', 'wrong_group'];
+/** What the levers read beyond the card: the lesson's groups and the screen's state. */
+export interface SortLeverContext extends SortLeverView { categories: readonly ClassificationCategory[] }
 
-export function sortLevers(item: ClassificationItem | null, categories: readonly ClassificationCategory[],
-  view: SortLeverView, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, carrier: WorkspaceLever['carrier'], answers: readonly SortMiss[], when: string, does: string): WorkspaceLever =>
-    ({ id, kind: 'help', carrier, pulled: pulled.includes(id), answers, when, does });
-  return [
-    ...(!view.descriptionsShown && groupMeanings(categories, item) ? [lever(MEANING_LEVER, 'both', ALL,
-      'The learner does not know what the groups mean.',
-      'Shows under each group name what that group means. Say it aloud for a learner who cannot read.')] : []),
-    ...(cardClue(item, categories) ? [lever(CLUE_LEVER, 'both', ALL,
-      'The learner does not know what to look for in the thing on the card.',
-      'Shows a clue under the card about the thing on it; it names no group. Say it aloud for a learner who cannot read.')] : []),
-    ...(view.sortedCount > 0 ? [lever(MARKS_LEVER, 'shown', ['repeated_group', 'sibling_group', 'wrong_group'],
-      'The learner guesses without comparing the card with what is already sorted.',
-      'Rings the cards already sorted in each group, so the card can be compared with them.')] : []),
-  ];
-}
-
-/** What the pulled levers put on screen, as a scene fact. Never the card's group. */
-export function leverFact(item: ClassificationItem | null, categories: readonly ClassificationCategory[],
-  pulled: readonly string[]): string {
-  if (!item) return '';
-  const meanings = pulled.includes(MEANING_LEVER) ? groupMeanings(categories, item) : null;
-  const clue = pulled.includes(CLUE_LEVER) ? cardClue(item, categories) : null;
-  return [
-    // By position in the groups list, not by name: a fact that repeats a group name beside the card reads as a pointer.
-    meanings && `Under each group name, in the order of the groups: ${categories.map((c, i) => `${i + 1}. "${meanings[c.id]}"`).join(' ')}`,
-    clue && `Under the card, a clue: "${clue}".`,
-    pulled.includes(MARKS_LEVER) && 'The cards already sorted are ringed in their groups.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** The three help levers, by type, in the order the tutor sees them. Never the card's group. */
+export const SORT_LEVERS = leverSet<ClassificationItem, SortLeverContext>({
+  missesOf: () => classificationSorterCard.modes.sort.misses,
+  // The card's group is the answer no clue or meaning may name (`namesAGroup` is the stricter, stem-level rule).
+  answersOf: (item, { categories }) => categories.filter(c => c.id === item.correctCategoryId).map(c => c.label),
+  specs: [
+    { id: MEANING_LEVER, type: 'meaning', answers: 'all',
+      when: 'The learner does not know what the groups mean.',
+      does: 'Shows under each group name what that group means. Say it aloud for a learner who cannot read.',
+      offer: (_item, { descriptionsShown }) => !descriptionsShown,
+      content: (item, { categories }) => groupMeanings(categories, item),
+      // By position in the groups list, not by name: a fact that repeats a group name beside the card reads as a pointer.
+      fact: (meanings: Record<string, string>, _item, { categories }) =>
+        `Under each group name, in the order of the groups: ${categories.map((c, i) => `${i + 1}. "${meanings[c.id]}"`).join(' ')}` },
+    { id: CLUE_LEVER, type: 'clue', answers: 'all',
+      when: 'The learner does not know what to look for in the thing on the card.',
+      does: 'Shows a clue under the card about the thing on it; it names no group. Say it aloud for a learner who cannot read.',
+      content: (item, { categories }) => cardClue(item, categories),
+      fact: (clue: string) => `Under the card, a clue: "${clue}".` },
+    { id: MARKS_LEVER, type: 'marks', answers: ['repeated_group', 'sibling_group', 'wrong_group'],
+      when: 'The learner guesses without comparing the card with what is already sorted.',
+      does: 'Rings the cards already sorted in each group, so the card can be compared with them.',
+      offer: (_item, { sortedCount }) => sortedCount > 0,
+      fact: 'The cards already sorted are ringed in their groups.' },
+  ],
+});

@@ -1,11 +1,13 @@
 ---
 name: primitive
 description: >-
-  Birth a new Lumina primitive at L0 — component, types, catalog entry, Gemini
-  generator, and tester — in phases. Use when a curriculum demand has no primitive
+  Birth a new Lumina primitive at L0 — component, types, catalog entry, generator
+  (code-only or Gemini), and tester — in phases. Use when a curriculum demand has no primitive
   or the user asks to build, scaffold, or add a visual primitive. Not for raising an
   existing primitive's layer (the /add-* skills) or kit migration (/migrate-primitive).
 ---
+
+> **Paid Gemini runs are the user's (USER RULING 2026-10-17).** Wherever this skill says to run a Live journey (`run_*.py`) or `tutor_replay.py`, do not run it: a hook blocks it. Finish the free checks, then give the user the exact command, its request count, and the question it answers. See `backend/tests/tutor_live/LIVE_TESTING.md`.
 
 # Add New Lumina Primitive
 
@@ -155,10 +157,11 @@ export interface <Name>Data {
 
 **Schema decision — pool service vs orchestrator (REQUIRED before Phase 4):**
 
-Classify the per-challenge data BEFORE designing the schema. This determines whether the generator uses Fork A (pool service) or Fork B (orchestrator) per [PRD §4](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#generator-pick-a-fork):
+Classify the per-challenge data BEFORE designing the schema. This determines whether the generator uses Fork C (code-only), Fork A (pool service) or Fork B (orchestrator) per [PRD §4](../../../my-tutoring-app/src/components/lumina/docs/PRD_WITHIN_MODE_INSTANCE_DENSITY.md#generator-pick-a-fork). Ask Fork C first: if code can author the content well, no model call is the better generator.
 
 | Per-challenge data | Fork | Examples |
 |---|---|---|
+| **Code-authored** (the content is a world, simulation, or item space code builds fully — every item, answer and fixed label) | **C: Code-only** — no Gemini call. `registerContextGenerator` with a pure function of `ctx` (eval mode, `config.difficulty`, a seed) that returns N varied items; the catalog `description` names only the skills it was built for, so the manifest places it there and nowhere else | none yet — the first one is the pilot |
 | **Value-only** (a number, coordinate, target, matrix values) | **A: Pool service** — Gemini emits wrapper only; local code picks N values | `factor-tree`, `place-value-chart`, `area-model`, `matrix-display`, `slope-triangle`, `histogram`, `systems-equations` |
 | **Content-bearing** (word problem text, scenario context, label sets) | **B: Orchestrator** — N parallel Gemini calls; results merged | `bar-model`, `tape-diagram`, `coin-counter` |
 
@@ -276,7 +279,7 @@ After writing the component, note:
 - The **component file path** relative to lumina/
 - Whether it's **interactive** (needs evaluation + the workspace binding)
 - The **domain module** path (`<x>Workspace.ts`), the core mode's `response` (`gesture` / `speech`) and its named misses
-- The **guidance sentences** for `teachingWorkspace.guidance`: what checks the answer, what is hidden and why, what the tutor must say that the screen does not show, what the tutor cannot do (domain sentences only; the shared doctrine carries the rest)
+- The **card and boss** (`<x>.card.ts` + `<x>.boss.ts`; the framework: `../review-live-wiring/references/boss-framework.md`). **Pick the preset first**: spoken + tutor-judged → `SPOKEN` + `spokenBoss` (model `direct-instruction/diSpokenPractice.{card,boss}.ts`); one tap the activity checks → `TAP_ONE` + `tapBoss` (model `biology/classificationSorter.{card,boss}.ts`); anything else → bespoke `defineBoss` (model `biology/cellBuilder.{card,boss}.ts`). The card holds per mode how the learner answers, who judges, the flow, moves if the job does not say them, and misses; and the words (`job`, `answer`, `question`, an optional `special` for facts only this primitive has; a rule true of every board or spoken mode belongs in the shared doctrine). No prose guidance: the shared rotation writes the rules from the card. A spoken key is `spokenKeyText`, and its generator spreads `spokenKeyProperties`
 - **Additional challenge types the design implies** (birth-certificate ladder candidates for `/add-eval-modes` — NOT built now)
 - The **required fields per challenge type** — for each `render<Type>Challenge()` function in the component, list every data field it reads. This is the CONTRACT the generator must fulfill.
 
@@ -370,16 +373,16 @@ Tasks:
      supportsEvaluation: <true if interactive>,
      // Interactive only: the ONE core mode, so the workspace has a mode to pin.
      evalModes: [{ evalMode: '<coreType>', label: '<Core Mode Label>', beta: <prior>, scaffoldingMode: 1, challengeTypes: ['<coreType>'], description: '<what the mode asks>' }],
-     teachingWorkspace: { grades: [<grade labels>], guidance: '<guidance sentences from Phase 2c>' },
+     ...bossEntry(<x>Card),   // teachingWorkspace + audioInput from `<x>.card.ts`; never written by hand
    },
    ```
 
-3. Interactive only: add the matching prior to `backend/app/services/calibration/problem_type_registry.py` (`"<id>": { "<coreType>": PriorConfig(<prior>, "<label>") }`), and register the adapter: a `WorkspaceDomain` (`{ validate, initialState }`, `initialState` from `workspaceOpening`) in `components/live-activity/adapters/<x>Live.ts`, and `workspaceAdapter('<id>', <x>LiveDomain)` in `activityContract.ts`. Shape: `/add-live-tutor-tools` W1 step 3.
+3. Interactive only: add the matching prior to `backend/app/services/calibration/problem_type_registry.py` (`"<id>": { "<coreType>": PriorConfig(<prior>, "<label>") }`), and write the card `<x>.card.ts` (facts; it imports only types, `live-activity/boss` and other cards) and the boss `<x>.boss.ts` beside the component, on its preset (`spokenBoss` / `tapBoss` / bespoke `defineBoss`). Register it with `bossAdapter(<x>Boss)` in `activityContract.ts` and `bossJourney(<x>Boss)` in `liveJourneySpec.ts`. No `adapters/<x>Live.ts` and no hand-written journey row. Check it with `node scripts/boss-card.mjs <id>` and `/review-live-wiring <id>`; `boss.test.ts` fails on a missed registration.
 
 Rules:
 - `description` is the retrieval surface for BOTH manifest selection and /curriculum-fit — name the skill taught, the grade band, and the subject explicitly.
 - `evalModes` holds the core mode ONLY. Every further mode is /add-eval-modes' layer (it owns the ladder, `resolveEvalModes` and the mixed path).
-- Do NOT add a `tutoring` field. A workspace-only family sends `tutoring: null`, so a block would reach no tutor (WB-5). The tutor's primitive-specific text is `teachingWorkspace.guidance`.
+- Do NOT add a `tutoring` field. A workspace-only family sends `tutoring: null`, so a block would reach no tutor (WB-5). The tutor's primitive-specific text is the card's `words`.
 ```
 
 ### Subagent C: "Evaluation types & tester"
@@ -483,8 +486,14 @@ Tasks:
 ### Generator Agent Prompt Template
 
 ```
-Create a Gemini content generator for a Lumina primitive. This is the MOST CRITICAL file —
+Create a content generator for a Lumina primitive. This is the MOST CRITICAL file —
 it determines whether the primitive renders correctly or breaks silently.
+
+If Phase 2c chose Fork C (code-only): skip Task 2's schema and every Gemini step. Write
+`service/<domain>/<id>-generator.ts` exporting a pure `(ctx: GenerationContext) => <Name>Data`
+that reads eval mode, `config.difficulty` and a seed, builds N distinct items with code-computed
+answers, and register it with `registerContextGenerator`. Same Required Fields Contract, same
+validation. Verify variety by generating 10 times and confirming the items differ.
 
 ## Primitive Context
 
@@ -704,9 +713,9 @@ Then run the Pip surface test (and, for math, the helper attach test): `cd "<abs
 
 Run the checks in `/add-live-tutor-tools` → W1 → **Checks** after the generator is registered (it needs real content). In short:
 1. Save the core mode's payload: `backend/venv/Scripts/python.exe backend/tests/tutor_live/save_payload.py --primitive <id> --mode <coreType>` (one generation call, frontend on :3000, no Live session).
-2. Add the journey row in `liveJourneySpec.ts` (`execution: 'workspace'`, inputs through the real controls) and `<Name>.workspace.test.tsx` (spoken key published and gesture key not; a wrong commit that Try again reopens; a right one that completes once).
-3. `npm test -- src/components/lumina/components/live-activity src/components/lumina/service/manifest/catalog` — `workspaceContract.test.tsx`, the dry journey sweep and `misses.test.ts` must pass; `npm run typecheck:lumina` = 0.
-4. One tutor replay (`tutor_replay.py --primitive <id> --samples 5`, `--observe` for a spoken mode). Read the replies: a tutor that never says what the screen withholds is a finding. No Live run at birth.
+2. Fill the boss's `drive` (a preset builds `play`; a bespoke boss's `play(right, item, ctx)` goes through the real controls; `bossJourney` builds the row) and add `<Name>.workspace.test.tsx` (spoken key published and gesture key not; a wrong commit that Try again reopens; a right one that completes once).
+3. `npm run test:primitive -- <id>` (~1 min): its own tests, `workspaceContract.test.tsx` and the dry journey sweep filtered to its id, `lessonWorkspacePlan.test.ts` and `misses.test.ts` must pass; `npm run typecheck:lumina` = 0. Never run the whole `components/live-activity` suite (~5,800 tests, 10-15 min) for one primitive; it is only for a change to shared framework (`live-activity/runtime/`, the adapter contract).
+4. Record the moments (free), then hand the user ONE replay command at `--samples 1` (`--observe` for a spoken mode); agents never run it. A miss is fixed on the shared boss path, not by re-sampling (`LIVE_TESTING.md`, USER RULING 2026-10-18). No Live run at birth.
 
 ---
 
@@ -856,7 +865,7 @@ Print it in the report AND save a copy to `my-tutoring-app/qa/eval-reports/<id>-
 
 - Core task identity: `<coreType>`
 - Generator fork: <A pool service | B orchestrator>
-- Workspace binding: `<x>Workspace.ts`; response `<gesture|speech>`; misses <…>; guidance <n> chars; W1 checks <workspaceContract / <Name>.workspace.test / journey sweep / tutor replay: pass|fail>
+- Workspace binding: `<x>Workspace.ts` + `<x>.card.ts` + `<x>.boss.ts` on preset <spoken|tap|bespoke: why>; response `<gesture|speech>`; misses <…>; card printed by `boss-card.mjs`; `/review-live-wiring`: <all PASS | changes>; W1 checks <workspaceContract / <Name>.workspace.test / journey sweep / tutor replay: pass|fail>
 - Answer-leak audit: <what was walked, what got gated>
 - Design gate (Phase 2): <five one-liners — manipulation / simulation / production / timer / layout-leak — each "pass: <how>" or "exception: <justification shown to user>">
 - Curriculum home: <MATCH <skill-id> | MISS — <gap/description/scoping> + action taken>

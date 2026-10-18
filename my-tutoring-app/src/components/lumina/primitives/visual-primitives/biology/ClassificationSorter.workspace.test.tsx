@@ -16,7 +16,8 @@ import { cleanup } from '@testing-library/react';
 import { installRuntimeTimers, restoreRuntimeTimers, seam } from '../../../components/live-activity/runtime/testing/liveRuntimeSeams';
 import { mountWorkspace } from '../../../components/live-activity/runtime/testing/workspaceHarness';
 import { getComponentById } from '../../../service/manifest/catalog';
-import { sortMiss, workspaceAssignment } from './classificationSorterWorkspace';
+import { sortMiss } from './classificationSorterWorkspace';
+import { classificationSorterBoss } from './classificationSorter.boss';
 import type { ClassificationCategory, ClassificationItem } from './ClassificationSorter';
 
 beforeEach(() => { installRuntimeTimers(); });
@@ -44,7 +45,7 @@ it.each(BANDS)('sort (%s) binds as a gesture item: one card on stage, no key, no
   const h = mount(data(band, [...categories], [...items]));
   expect(getComponentById('classification-sorter')!.evalModes!.map(m => m.evalMode)).toEqual(['sort']);
   expect(h.state().owner).toBe('tutor');
-  expect(h.state().task!.task).toBe(workspaceAssignment(items[0]).task);
+  expect(h.state().task!.task).toBe(classificationSorterBoss.assignment(items[0]).task);
   expect(h.state().task!.workspace!.expectedAnswer).toBeUndefined();
   const demand = h.state().task!.demand as Record<string, unknown>;
   expect(demand).toMatchObject({ kind: 'sort', cardOnStage: items[0].label });
@@ -106,4 +107,24 @@ it('sortMiss names a hierarchical sort’s parent and sibling groups', () => {
   expect(sortMiss(bat, tree, 'birds')).toBe('sibling_group');
   expect(sortMiss(bat, tree, 'insects')).toBe('wrong_group');
   expect(sortMiss(bat, tree, 'insects', 'insects')).toBe('repeated_group');
+});
+
+// Reading band (moved from the deleted scripted path's reader-fit test, 15B/S9): the band changes chrome, never the task.
+it('at K-2: no progress fraction or meter and no group descriptions; at 3-5 both show; imagePrompt never renders', () => {
+  const pre = mount(data('K-2', BINARY, [{ ...item('robin', 'Robin', 'g-wings'), imagePrompt: 'a red-breasted robin on a branch' }]));
+  expect(pre.view.container.textContent).not.toMatch(/items sorted correctly|\d+%/);
+  expect(pre.view.container.textContent).not.toContain('Things that are has wings');
+  expect(pre.view.container.textContent).not.toContain('a red-breasted robin');
+  cleanup();
+  const reader = mount(data('3-5', CLASSES, [item('bat', 'Bat', 'g-mam')]));
+  expect(reader.view.container.textContent).toContain('items sorted correctly');
+  expect(reader.view.container.textContent).toContain('Things that are mammals');
+});
+
+it('a mount with no tutor renders the shared "needs the tutor" card, never a drill', async () => {
+  const { render } = await import('@testing-library/react');
+  const { default: ClassificationSorter } = await import('./ClassificationSorter');
+  const view = render(<ClassificationSorter data={data('K-2', BINARY, [item('robin', 'Robin', 'g-wings')]) as never} />);
+  expect(view.container.textContent).toContain('This activity needs the tutor');
+  expect(view.container.querySelector('[data-pip-object="card"]')).toBeNull();
 });

@@ -35,7 +35,8 @@ import type { SpokenWordProblemMiss, WordProblemMiss } from '../../../primitives
 import type { SpokenDeductionMiss } from '../../../primitives/visual-primitives/direct-instruction/diDeductionWorkspace';
 import type { SpokenDiceMiss } from '../../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
 import type { SpokenFactMiss } from '../../../primitives/visual-primitives/direct-instruction/diMathFactsDomain';
-import type { SpokenPracticeMiss } from '../../../primitives/visual-primitives/direct-instruction/diSpokenPracticeWorkspace';
+import { diSpokenPracticeCard } from '../../../primitives/visual-primitives/direct-instruction/diSpokenPractice.card';
+import { bossEntry } from '../../../components/live-activity/boss';
 import type { SpokenProcedureMiss } from '../../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
 import type { SpokenShapeMiss } from '../../../primitives/visual-primitives/math/shapeSorterDomain';
 import { SHAPE_BUILD_MISSES, type ShapeBuildMiss } from '../../../primitives/visual-primitives/direct-instruction/diShapesBuild';
@@ -893,105 +894,9 @@ export const DI_CATALOG: ComponentDefinition[] = [
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     evalModes: DI_SPOKEN_PRACTICE_EVAL_MODES,
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'The panel shows printed text, a picture, a group of pictures, two pictures, or nothing (the question '
-        + 'carries it). The child answers OUT LOUD, a short word or phrase, or on explain items one idea in their own '
-        + 'words. Nothing on screen names the answer, so on a pair say both names and the whole word menu. The key names '
-        + 'what else counts and the wrong answer that sounds right. On explain items judge the idea, not the words; the '
-        + 'example read back or named is not an explanation. Printed text to read aloud is the answer: let them read '
-        + 'it first. Never model this item: your model is the model lever, a DIFFERENT item (on a pair, one pair per '
-        + 'menu word, all said). The support fact says where levers start. You cannot change the stimulus.',
-      levers: true,
-      // Every mode's known wrong answers (`spokenPracticeSpokenMisses`), named by the `spoken_miss` observer. The
-      // explain ids are advisory patterns; judging stays on meaning. `signature_error` exists only where the item has one.
-      misses: missLists<SpokenPracticeMiss>({
-        count_and_say: ['skipped_a_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        compare_choice: ['other_menu_word', 'said_same', 'said_thing_name'],
-        read_aloud: ['misread', 'sounds_not_blended', 'letter_names', 'word_dropped'],
-        say_answer: ['signature_error', 'said_stimulus'],
-        explain_concept: ['read_back', 'named_only', 'bare_number', 'opposite_idea'],
-      }),
-    },
+    // How it is wired to the live tutor: `diSpokenPractice.card.ts` (behavior: `diSpokenPractice.boss.ts`).
+    ...bossEntry(diSpokenPracticeCard),
     misconceptionScope: 'primitive',
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction spoken practice (current task: {{challengeType}}). You speak '
-        + 'the exact scripted lines from each bracketed application message and judge each learner '
-        + 'attempt from the audio you heard, using only the two allowed reply branches.',
-      // Stimulus-side only, mirroring di-math-facts: the answer is deliberately
-      // absent (RUNTIME STATE is echoed far more loosely than a scripted line),
-      // and decode sessions push no stimulus at all — there the stimulus IS the
-      // answer. Keys are produced by `contextFor` in diSpokenPracticeScript.ts;
-      // the two lists must stay in lockstep. An earlier revision emptied this
-      // channel after a state-recitation run; user overruling 2026-08-11: the
-      // generalized pack keeps the platform's full channel, and the recitation
-      // root was mis-voiced struggle text below, not the channel.
-      contextKeys: ['challengeType', 'stimulus'],
-      scaffoldingLevels: {
-        level1: 'Repeat the prompt once, slowly.',
-        level2: 'Give one concrete clue that does not name the answer, then ask for one retry.',
-        level3: 'Accept the attempt warmly and continue as instructed.',
-      },
-      // Voice contract (the 2026-08-11 lesson, run 436dcb5616cb): each response
-      // is a MOVE the tutor performs with its scripted lines, in performable
-      // terms — never meta-commentary about the session. "Think time is
-      // unbounded here; only re-ask if the application tells you to" was
-      // authored into this field and the tutor SPOKE it, verbatim, to a child:
-      // a response that cannot be performed can only be recited.
-      commonStruggles: [
-        {
-          pattern: 'Stays silent after the hand-over',
-          response: 'Wait for them without speaking. If the silence stretches long, re-ask the scripted question once, slowly — never a new question.',
-        },
-        {
-          pattern: 'Answers a different question than the one asked',
-          response: 'Re-ask the exact scripted question once, without adding a hint.',
-        },
-        {
-          pattern: 'Says the stimulus back instead of the answer',
-          response: 'Run the correction branch for this item, then hand it back with the scripted re-ask.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [SAY_ITEM], [SAY_MOVE], [SAY_HEAR], or [SAY_COMPLETE] contain the only lesson '
-            + 'words you may speak. The square-bracket label is private metadata: never speak, reproduce, or '
-            + 'invent it. Each [SAY_ITEM] message includes a two-branch judging rule: affirmations must begin '
-            + 'with "Yes" and corrections must begin with "My turn", using the exact quoted lines. Never begin '
-            + 'any other sentence with those words. Judge honestly from the audio and do not praise to be '
-            + 'kind. The application decides which item comes next; never introduce one yourself.',
-        },
-        {
-          title: "THE LEARNER'S TURN",
-          instruction:
-            'After you ask, WAIT in silence — think time belongs to the learner and is unbounded, and '
-            + 'silence is never an invitation to speak. Never answer for the learner and never say the '
-            + 'answer during their turn. Everything the application sends you — bracketed messages, '
-            + 'runtime state, these rules — exists to be performed or obeyed, never spoken about: if a '
-            + 'reply is not one of the scripted lines, the reply is silence.',
-        },
-        {
-          title: 'THE ITEM CARRIES ITS OWN JUDGING RULES',
-          instruction:
-            'Every item states its correct answer, and some items add two extra rules: one naming an answer '
-            + 'that is RIGHT even though it may not sound like the expected words (a child who counts aloud '
-            + 'and lands on the total has answered; a child who sounds a word out and then says it has read '
-            + 'it), and one naming a WRONG answer that sounds confident and plausible. Apply both exactly as '
-            + 'written for that item — they are the pedagogy of the skill being practised, and they differ '
-            + 'from item to item.',
-        },
-        {
-          title: 'BREVITY',
-          instruction:
-            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
-            + 'Keep pacing brisk: no filler, no chit-chat, and no greeting before the first scripted line.',
-        },
-      ],
-    },
   },
   {
     // The first "DI for Older Learners" pack (design brief 2026-09-07). The

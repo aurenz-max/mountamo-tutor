@@ -1,13 +1,13 @@
 # Contract: classification-sorter
 
 - **Derived:** 2026-10-09, PARTIAL: written by the W1 workspace binding (ROLLOUT C14) for the workspace and lever requirements only. A full `/primitive-contract classification-sorter` derivation (consumers per curriculum skill, the K-2 reader-fit stage, the generator's band rules) is still owed.
-- **Component:** `src/components/lumina/primitives/visual-primitives/biology/ClassificationSorter.tsx` · **Workspace:** `classificationSorterWorkspace.ts` · **Levers:** `classificationSorterLevers.ts` · **Adapter:** `components/live-activity/adapters/classificationSorterLive.ts` · **Generator:** `service/biology/gemini-classification-sorter.ts` · **Catalog:** `service/manifest/catalog/biology.ts` (`classification-sorter`)
+- **Component:** `src/components/lumina/primitives/visual-primitives/biology/ClassificationSorter.tsx` · **Workspace:** `classificationSorterWorkspace.ts` · **Levers:** `classificationSorterLevers.ts` · **Card (facts the catalog reads):** `classificationSorter.card.ts` · **Boss (`tapBoss`; adapter, assignment and journey are built from it):** `classificationSorter.boss.ts` · **Generator:** `service/biology/gemini-classification-sorter.ts` · **Catalog:** `service/manifest/catalog/biology.ts` (`classification-sorter`)
 
 ## Requirements
 
 ### R0 — the reader-fit stage at K-2 is kept · OBSERVED (before this contract)
-- **Property:** at K-2 one item is staged at a time and a tap on a group places it; no progress fraction, no debug readout, no group description; `imagePrompt` is never rendered; the scripted cues never name an item's group.
-- **Probe:** `__tests__/ClassificationSorter.reader-fit.test.tsx` (11, unchanged and passing after the binding).
+- **Property:** at K-2 one item is staged at a time and a tap on a group places it; no progress fraction or meter, no group description; `imagePrompt` is never rendered. (Since 2026-10-18 every band is staged this way: the scripted pool is gone.)
+- **Probe:** `ClassificationSorter.workspace.test.tsx` (the reading-band test; the scripted reader-fit test was deleted with the scripted path).
 
 ### R1 — one mode, `sort`, binds the shared teaching workspace with no key reaching the tutor · OBSERVED (2026-10-09)
 - **Property:** the catalog's single eval mode `sort` (β 2.5, the backend's existing `default` prior; `problem_type_registry.py` keeps `default` for earlier sessions). Under a live tutor each item is one challenge, staged alone at every band (3-8 lose the free-order drag on this path only); a tap on a group card is the checked answer (`sortMatches`), and each wrong tap names a `SortMiss` (`repeated_group`, `parent_group`, `sibling_group`, `wrong_group`). Scene facts carry the rule, the group names, the card on stage and the credited cards in their bins, never the card's group. The generated hint is not shown on a miss (it can name the answer); Try again reopens the same card. The scripted path keeps its drag, its Submit and its cues.
@@ -23,4 +23,6 @@
 
 ## Changelog
 
+- 2026-10-18 (later): workspace-only (`withWorkspaceOnly`): the scripted drag-and-drop drill, its `[SORT_*]` cues, the hint flash and Submit are deleted; an unbound mount shows NeedsTutor. The reading-band rules (one card staged, no progress chrome or group descriptions at K-2, imagePrompt never rendered) moved to `ClassificationSorter.workspace.test.tsx`. Shared doctrine sentences changed the guidance (one replay sample owed).
+- 2026-10-18: moved onto the boss framework — card + `tapBoss` (the preset builds the gesture assignment and the harness tap); levers as one `SORT_LEVERS` set (`meaning`, `clue`, `marks`; ids, order, words and facts kept, so tutor input is byte-identical); `SORT_MISSES` lives in the card.
 - 2026-10-09: created with R0-R2 (eval mode `sort`, W1 plain-shape binding, levers).

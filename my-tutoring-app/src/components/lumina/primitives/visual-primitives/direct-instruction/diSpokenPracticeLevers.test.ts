@@ -5,7 +5,7 @@ import { findChoiceMenuDefects, type SpokenPracticeItem } from './diSpokenPracti
 import { spokenPracticeSpokenMisses } from './diSpokenPracticeWorkspace';
 import { EASIER_ITEM, FAR_PAIR, FIVE_ROWS, MODEL_ANSWER, MODEL_COUNT, MODEL_EXPLAIN, MODEL_READ, SHORT_WORD, SMALLER_GROUP, SOUND_DOTS,
   TOUCH_MARKS, WORD_MODEL, WORD_UNDERLINE, answerModelFor, countModelFor, easierItemFor, farPairFor, readModelFor, shortWordFor,
-  smallerGroupFor, spareLeaks, spokenLeverFacts, spokenLevers, wordModelFor } from './diSpokenPracticeLevers';
+  smallerGroupFor, spareLeaks, SPOKEN_LEVERS, wordModelFor } from './diSpokenPracticeLevers';
 import countP from '../../../components/live-activity/runtime/testing/w1-payloads/di-spoken-practice.count_and_say.json';
 import compareP from '../../../components/live-activity/runtime/testing/w1-payloads/di-spoken-practice.compare_choice.json';
 import readP from '../../../components/live-activity/runtime/testing/w1-payloads/di-spoken-practice.read_aloud.json';
@@ -40,8 +40,8 @@ describe('count_and_say', () => {
   });
 
   it('five_rows only above five', () => {
-    expect(spokenLevers(withCount(5), [], [withCount(5)], []).map(l => l.id)).not.toContain(FIVE_ROWS);
-    expect(spokenLevers(withCount(8), [], [withCount(8)], []).map(l => l.id)).toContain(FIVE_ROWS);
+    expect(SPOKEN_LEVERS.declare(withCount(5), { items: [withCount(5)], spares: [] }, []).map(l => l.id)).not.toContain(FIVE_ROWS);
+    expect(SPOKEN_LEVERS.declare(withCount(8), { items: [withCount(8)], spares: [] }, []).map(l => l.id)).toContain(FIVE_ROWS);
   });
 });
 
@@ -94,8 +94,8 @@ describe('read_aloud', () => {
   });
 
   it('word_underline only on two or more words', () => {
-    expect(spokenLevers(printed('cat'), [], [printed('cat')], []).map(l => l.id)).not.toContain(WORD_UNDERLINE);
-    expect(spokenLevers(printed('a red hat'), [], [printed('a red hat')], []).map(l => l.id)).toEqual([MODEL_READ, SOUND_DOTS, WORD_UNDERLINE, SHORT_WORD]);
+    expect(SPOKEN_LEVERS.declare(printed('cat'), { items: [printed('cat')], spares: [] }, []).map(l => l.id)).not.toContain(WORD_UNDERLINE);
+    expect(SPOKEN_LEVERS.declare(printed('a red hat'), { items: [printed('a red hat')], spares: [] }, []).map(l => l.id)).toEqual([MODEL_READ, SOUND_DOTS, WORD_UNDERLINE, SHORT_WORD]);
   });
 });
 
@@ -119,7 +119,7 @@ describe('say_answer and explain_concept: the generator\'s spares (R3)', () => {
   });
 
   it('with no spares there is no model and no easier item', () => {
-    expect(spokenLevers(SAY.items[0], [], SAY.items, []).map(l => l.id)).toEqual([]);
+    expect(SPOKEN_LEVERS.declare(SAY.items[0], { items: SAY.items, spares: [] }, []).map(l => l.id)).toEqual([]);
   });
 });
 
@@ -130,23 +130,23 @@ describe('starting positions and which lever answers which miss', () => {
     ['short_by_more', [MODEL_COUNT, TOUCH_MARKS], FIVE_ROWS],
     ['one_over', [MODEL_COUNT, TOUCH_MARKS, FIVE_ROWS], SMALLER_GROUP],
   ] as const)('count of 8: %s with %j → %s', (miss, pulled, expected) => {
-    expect(nextLever(spokenLevers(withCount(8), pulled, [withCount(8)], []), miss)).toBe(expected);
+    expect(nextLever(SPOKEN_LEVERS.declare(withCount(8), { items: [withCount(8)], spares: [] }, pulled), miss)).toBe(expected);
   });
 
   it('compare: the model first, then far_pair; say: the model, then the easier item', () => {
-    expect(nextLever(spokenLevers(COMPARE.items[0], [], COMPARE.items, []), 'other_menu_word')).toBe(WORD_MODEL);
-    expect(nextLever(spokenLevers(COMPARE.items[0], [WORD_MODEL], COMPARE.items, []), 'other_menu_word')).toBe(FAR_PAIR);
-    expect(nextLever(spokenLevers(SAY.items[0], [MODEL_ANSWER], SAY.items, SAY.spares), 'said_stimulus')).toBe(EASIER_ITEM);
+    expect(nextLever(SPOKEN_LEVERS.declare(COMPARE.items[0], { items: COMPARE.items, spares: [] }, []), 'other_menu_word')).toBe(WORD_MODEL);
+    expect(nextLever(SPOKEN_LEVERS.declare(COMPARE.items[0], { items: COMPARE.items, spares: [] }, [WORD_MODEL]), 'other_menu_word')).toBe(FAR_PAIR);
+    expect(nextLever(SPOKEN_LEVERS.declare(SAY.items[0], { items: SAY.items, spares: SAY.spares }, [MODEL_ANSWER]), 'said_stimulus')).toBe(EASIER_ITEM);
   });
 
   it('every catalog miss is answered on every saved payload, every named miss is listed, and no fact says the answer', () => {
     for (const { items, spares } of SAVED) {
       const mode = items[0].mode;
-      const answered = new Set(items.flatMap(i => spokenLevers(i, [], items, spares).flatMap(l => l.answers ?? [])));
+      const answered = new Set(items.flatMap(i => SPOKEN_LEVERS.declare(i, { items: items, spares: spares }, []).flatMap(l => l.answers ?? [])));
       for (const miss of CATALOG.misses![mode]) expect(answered.has(miss), `${mode}: ${miss}`).toBe(true);
       for (const i of items) {
         for (const m of spokenPracticeSpokenMisses(i)) expect(CATALOG.misses![mode], `${i.id} ${m.id}`).toContain(m.id);
-        const fact = spokenLeverFacts(i, spokenLevers(i, [], items, spares).map(l => l.id), items, spares);
+        const fact = SPOKEN_LEVERS.onScreen(i, { items: items, spares: spares }, SPOKEN_LEVERS.declare(i, { items: items, spares: spares }, []).map(l => l.id));
         if (mode !== 'compare_choice') expect(fact.toLowerCase(), i.id).not.toContain(`"${i.expectedAnswer.toLowerCase()}"`);
       }
     }

@@ -39,6 +39,7 @@
 
 import { Type, Schema } from '@google/genai';
 import { ai } from '../geminiClient';
+import { spokenKeyProperties } from '../spokenKeySchema';
 import { resolveEvalModes } from '../evalMode';
 import { createDiscretePool } from '../math/numberPoolService';
 import {
@@ -134,42 +135,18 @@ const itemSchema: Schema = {
         + 'printed text. Example of an AMBIGUOUS hand-over to avoid: "Your turn. What word?" after '
         + 'the tutor already said the word — prefer "Three what?".',
     },
-    expectedAnswer: {
-      type: Type.STRING,
-      description:
-        'What the child should SAY — 1 to 3 words, sayable by a five-year-old. For count_and_say '
+    // The key: the shared spoken key's fields (`spokenKeySchema.ts`), judged through `spokenKeyText`.
+    ...spokenKeyProperties(
+      'What the child should SAY — 1 to 3 words, sayable by a five-year-old. For count_and_say '
         + 'leave this empty; the count decides it. explain_concept: the PRIMARY ANCHOR — the shortest '
         + `correct wording of the idea, 1-${CONCEPT_ANCHOR_MAX_WORDS} words ("plus two", "both sides the same"); an example `
-        + 'for the judge, never a required wording.',
-    },
+        + 'for the judge, never a required wording.'),
     conceptStatement: {
       type: Type.STRING,
       description:
         `explain_concept ONLY: the idea in ONE sentence, ${CONCEPT_STATEMENT_MIN_WORDS}-${CONCEPT_STATEMENT_MAX_WORDS} words, true for THIS instance `
         + '("This pattern grows by adding two each time."). The judge holds it, and speaks it back as '
         + 'the affirmation. Empty string for every other mode.',
-    },
-    alsoAccept: {
-      type: Type.STRING,
-      description:
-        'Other answers that are equally correct, comma-separated (e.g. "sofa, settee"). Empty '
-        + 'string when there are none. NOT a list — one comma-separated string.',
-    },
-    acceptRule: {
-      type: Type.STRING,
-      description:
-        'A RIGHT answer for THIS skill that does not look right, written as an instruction to the '
-        + 'judge. Example (counting): "Counting aloud that ENDS on the answer counts as that '
-        + 'answer — the last number said tells the total." Example (blending): "Sounding the word '
-        + 'out and then saying it counts as the answer." Empty string if this skill has none.',
-    },
-    signatureError: {
-      type: Type.STRING,
-      description:
-        'A WRONG answer for THIS skill that sounds confident and right, written as an instruction '
-        + 'to the judge. Example (plurals): "The bare singular said back is NOT the answer." '
-        + 'Example (sound manipulation): "The starting word repeated unchanged is NOT the answer." '
-        + 'Empty string if this skill has none.',
     },
     correctionBody: {
       type: Type.STRING,

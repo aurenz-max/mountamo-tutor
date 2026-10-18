@@ -40,4 +40,7 @@ None open.
 
 ## Changelog
 
+- 2026-10-18 (later): the catalog `tutoring` block is deleted (bound sessions send `tutoring: null`; the live-activity route no longer echoes it). Four `special` sentences moved to the shared doctrine (`JUDGED_BY.tutor`: what the key names; the reading-is-the-answer rule; the screen rule; `LEVER_TYPE_DOCTRINE.model`), one was the meaning key's own text; this changes the guidance (one replay sample owed).
+- 2026-10-18: moved onto the boss framework — `diSpokenPractice.card.ts` (facts, catalog) + `diSpokenPractice.boss.ts` (`spokenBoss`); key via shared `spokenKeyText`, leak gate via `spokenKeyLeaks`, generator key fields via `spokenKeyProperties`; levers as one `SPOKEN_LEVERS` set. Tutor input byte-identical (R1-R6 unchanged; lever ids, order, words and facts kept).
+- 2026-10-17: explain_concept also serves why-questions about everyday scenes (social studies reasons, choose-and-give-the-reason); math instance shapes unchanged (explain probe 9/9). DSP-SS1.
 - 2026-10-03: derived (initial, static) with the DI lever slice. 6 requirements, 0 conflicts.

@@ -5,8 +5,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { nextLever } from '../../../components/live-activity/runtime/observerLever';
 import type { ClassificationCategory, ClassificationItem, ClassificationSorterData } from './ClassificationSorter';
-import { SORT_MISSES } from './classificationSorterWorkspace';
-import { CLUE_LEVER, MARKS_LEVER, MEANING_LEVER, blankGroupWords, cardClue, groupMeanings, leverFact, namesAGroup, sortLevers }
+import { SORT_MISSES } from './classificationSorter.card';
+import { CLUE_LEVER, MARKS_LEVER, MEANING_LEVER, blankGroupWords, cardClue, groupMeanings, namesAGroup, SORT_LEVERS }
   from './classificationSorterLevers';
 
 const cat = (id: string, label: string, description: string, parentId: string | null = null): ClassificationCategory =>
@@ -24,20 +24,20 @@ const PAYLOAD: ClassificationSorterData = JSON.parse(readFileSync(
 
 describe('which lever comes next', () => {
   it.each(SORT_MISSES.map(m => [m] as const))('pre-reader, after %s: the group meanings first', miss => {
-    expect(nextLever(sortLevers(BAT, WINGS, { descriptionsShown: false, sortedCount: 0 }, []), miss)).toBe(MEANING_LEVER);
+    expect(nextLever(SORT_LEVERS.declare(BAT, { categories: WINGS, descriptionsShown: false, sortedCount: 0 }, []), miss)).toBe(MEANING_LEVER);
   });
   it('then the card clue; the sorted marks only once a card is sorted, and never for a parent group', () => {
-    const levers = sortLevers(BAT, WINGS, { descriptionsShown: false, sortedCount: 2 }, [MEANING_LEVER]);
+    const levers = SORT_LEVERS.declare(BAT, { categories: WINGS, descriptionsShown: false, sortedCount: 2 }, [MEANING_LEVER]);
     expect(nextLever(levers, 'wrong_group')).toBe(CLUE_LEVER);
     expect(levers.find(l => l.id === MARKS_LEVER)!.answers).not.toContain('parent_group');
-    expect(sortLevers(BAT, WINGS, { descriptionsShown: false, sortedCount: 0 }, []).map(l => l.id)).not.toContain(MARKS_LEVER);
+    expect(SORT_LEVERS.declare(BAT, { categories: WINGS, descriptionsShown: false, sortedCount: 0 }, []).map(l => l.id)).not.toContain(MARKS_LEVER);
   });
   it('a reader band shows the descriptions already: no meaning lever', () => {
-    expect(sortLevers(DOLPHIN, CLASSES, { descriptionsShown: true, sortedCount: 0 }, []).map(l => l.id)).toEqual([CLUE_LEVER]);
+    expect(SORT_LEVERS.declare(DOLPHIN, { categories: CLASSES, descriptionsShown: true, sortedCount: 0 }, []).map(l => l.id)).toEqual([CLUE_LEVER]);
   });
   it('every lever is help, every miss is answered on every saved payload item', () => {
     for (const it of PAYLOAD.items) {
-      const levers = sortLevers(it, PAYLOAD.categories, { descriptionsShown: PAYLOAD.gradeBand !== 'K-2', sortedCount: 0 }, []);
+      const levers = SORT_LEVERS.declare(it, { categories: PAYLOAD.categories, descriptionsShown: PAYLOAD.gradeBand !== 'K-2', sortedCount: 0 }, []);
       expect(levers.every(l => l.kind === 'help')).toBe(true);
       for (const miss of SORT_MISSES) expect(levers.some(l => l.answers?.includes(miss)), `${it.id} ${miss}`).toBe(true);
     }
@@ -54,15 +54,15 @@ describe('leak rules', () => {
     const groups = it === DOLPHIN ? CLASSES : it === BAT ? WINGS : PAYLOAD.categories;
     const clue = cardClue(it, groups);
     if (clue) expect(namesAGroup(clue, groups)).toBe(false);
-    const fact = leverFact(it, groups, [CLUE_LEVER]);
+    const fact = SORT_LEVERS.onScreen(it, { categories: groups, descriptionsShown: false, sortedCount: 0 }, [CLUE_LEVER]);
     // The fact may say the group names as the question; the clue inside it may not.
     if (clue) expect(namesAGroup(fact.replace(/^Under the card, a clue: /, ''), groups)).toBe(false);
-    for (const l of sortLevers(it, groups, { descriptionsShown: false, sortedCount: 1 }, []))
+    for (const l of SORT_LEVERS.declare(it, { categories: groups, descriptionsShown: false, sortedCount: 1 }, []))
       expect(namesAGroup(`${l.when} ${l.does}`, groups), l.id).toBe(false);
   });
   it('a clue with nothing left after blanking is not offered', () => {
     expect(cardClue(item('x', 'Owl', 'w', 'Has wings!'), WINGS)).toBeNull();
-    expect(sortLevers(item('x', 'Owl', 'w', 'Has wings!'), WINGS, { descriptionsShown: true, sortedCount: 0 }, [])).toEqual([]);
+    expect(SORT_LEVERS.declare(item('x', 'Owl', 'w', 'Has wings!'), { categories: WINGS, descriptionsShown: true, sortedCount: 0 }, [])).toEqual([]);
   });
   it('group meanings never repeat a group name and are refused when one names the card', () => {
     const named = [cat('m', 'Mammals', 'Not Birds: Mammals like the bat'), cat('b', 'Birds', 'Feathers')];

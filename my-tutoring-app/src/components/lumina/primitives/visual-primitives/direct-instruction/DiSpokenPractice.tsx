@@ -18,11 +18,12 @@
 import React, { useMemo, useState } from 'react';
 import type { DiSpokenPracticeMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
+import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
 import { FIVE_ROWS, MODEL_ANSWER, MODEL_COUNT, MODEL_EXPLAIN, MODEL_READ, SOUND_DOTS, TOUCH_MARKS, WORD_MODEL, WORD_UNDERLINE,
-  answerModelFor, countModelFor, easierItemFor, farPairFor, readModelFor, shortWordFor, smallerGroupFor, spokenLeverFacts, spokenLevers, wordModelFor } from './diSpokenPracticeLevers';
+  answerModelFor, countModelFor, readModelFor, SPOKEN_LEVERS, wordModelFor } from './diSpokenPracticeLevers';
 import type { SpokenPracticeItem, SpokenPracticeMode } from './diSpokenPracticeScript';
-import { spokenPracticeAssignment, spokenPracticeScene } from './diSpokenPracticeWorkspace';
+import { spokenPracticeScene } from './diSpokenPracticeWorkspace';
+import { diSpokenPracticeBoss } from './diSpokenPractice.boss';
 import { DiModelCard } from './DiModelCard';
 
 export type { SpokenPracticeItem, SpokenPracticeMode } from './diSpokenPracticeScript';
@@ -168,15 +169,10 @@ const recapLabel = (item: SpokenPracticeItem, solved: boolean) =>
 export const DiSpokenPractice: React.FC<DiSpokenPracticeProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => data.items ?? [], [data.items]);
   const spares = useMemo(() => data.spares ?? [], [data.spares]);
-  const levers = useMemo<DiStageLevers<SpokenPracticeItem>>(() => ({
-    declare: (item, pulled) => spokenLevers(item, pulled, items, spares),
-    onScreen: (item, pulled) => spokenLeverFacts(item, pulled, items, spares),
-    simpler: (item, lever) => lever === 'smaller_group' ? smallerGroupFor(item, items) : lever === 'far_pair' ? farPairFor(item, items)
-      : lever === 'short_word' ? shortWordFor(item, items) : lever === 'easier_item' ? easierItemFor(item, items, spares) : null,
-  }), [items, spares]);
+  const levers = useMemo(() => SPOKEN_LEVERS.bind({ items, spares }), [items, spares]);
   return <DiTeachingStage<SpokenPracticeItem, DiSpokenPracticeMetrics> primitiveId="di-spoken-practice" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
-    assignment={spokenPracticeAssignment} scene={spokenPracticeScene} copy={COPY} levers={levers}
+    assignment={diSpokenPracticeBoss.assignment} scene={spokenPracticeScene} copy={COPY} levers={levers}
     stimulus={(item, marks, view) => <Stimulus key={item.id} item={item} marks={marks} view={view} items={items} spares={spares} />}
     trail={creditedAnswers} recapLabel={recapLabel}
     metrics={result => ({ type: 'di-spoken-practice', ...diStageMetrics(result, items, data.challengeType) })} />;

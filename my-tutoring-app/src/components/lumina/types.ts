@@ -1754,6 +1754,47 @@ export type ComponentId =
  * Keys reference fields in primitive_data at runtime.
  * Example: "Help student blend phonemes ({{patternType}} pattern)"
  */
+/** How the learner gives an answer in one eval mode: the curator's answer vocabulary (`AffordanceAnswer`). */
+export type BossAnswer = AffordanceAnswer;
+/** Who decides whether an answer is right: the activity's own check in code, or the tutor from the learner's words. */
+export type BossJudge = 'activity' | 'tutor';
+/** What one graded item is: a single answer, or a board of parts the learner fills and then checks together. */
+export type BossFlow = 'one-at-a-time' | 'board';
+
+/** How one eval mode is wired. `ROTATION_DOCTRINE` picks its sentences from these, so a fact here changes what the tutor is told. */
+export interface BossMode {
+  answer: BossAnswer;
+  judge: BossJudge;
+  flow: BossFlow;
+  /** The moves on screen, when the job does not already say them: "tap a structure in the bay, then a region". */
+  moves?: string;
+}
+
+/**
+ * The words of a boss card. Each is a short phrase that slots into `ROTATION_DOCTRINE`'s shared sentences; no rule
+ * is written here. What is on screen comes from the component's `workspaceScene`, so it is not restated.
+ */
+export interface BossWords {
+  /** What the learner does, as a verb phrase: "tap the group each card belongs in". */
+  job: string;
+  /** What is judged, which is the answer: "which group a card goes in". */
+  answer: string;
+  /** What the question is made of, which the tutor says freely: "the sorting rule, the group names and the card's name". */
+  question: string;
+  /** Only what the shared rules cannot know about this primitive. Optional, one or two sentences. */
+  special?: string;
+}
+
+/**
+ * A workspace primitive's boss card as the catalog carries it: how each mode is wired and the words the shared
+ * rotation is filled with. Written in the primitive's `<name>.card.ts` (`defineCard`), spread into the catalog with
+ * `bossEntry(card)`, never written in the catalog by hand.
+ */
+export interface BossCard {
+  modes: Readonly<Record<string, BossMode>>;
+  words: BossWords;
+}
+
 export interface TutoringScaffold {
   /** Template describing the task. Supports {{key}} interpolation from primitive_data. */
   taskDescription: string;
@@ -1975,7 +2016,12 @@ export interface ComponentDefinition {
    * Done. Such a family declares no eval modes and binds as `mixed` (user ruling 2026-09-24,
    * adaptation-investigator). `TEACHING_DOCTRINE` replaces `WORKSPACE_DOCTRINE` in its guidance.
    */
-  teachingWorkspace?: { guidance: string; grades: readonly string[]; ungraded?: true;
+  teachingWorkspace?: (
+    /** Legacy: this primitive's rules as prose, in front of the shared doctrine. */
+    | { guidance: string; card?: never }
+    /** The primitive's facts only; `ROTATION_DOCTRINE` turns them into the rules every family shares. */
+    | { card: BossCard; guidance?: never }
+  ) & { grades: readonly string[]; ungraded?: true;
     /** The primitive publishes in-item levers (`/add-support-tiers`): its guidance also carries `LEVER_DOCTRINE`. */
     levers?: true;
     /**

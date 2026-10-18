@@ -153,13 +153,6 @@ export type FunctionMiss = 'two_swapped' | 'several_wrong';
 export type QuantityMiss = 'too_little' | 'too_much' | 'both_ways';
 export type CellBuilderMiss = InventoryMiss | PlacementMiss | FunctionMiss | QuantityMiss;
 
-export const CELL_MISSES: Record<CellMissionPhase, readonly CellBuilderMiss[]> = {
-  cell_inventory: ['kept_impostor', 'rejected_needed', 'kept_and_rejected'],
-  organelle_placement: ['cytoplasm_distributed_swap', 'core_network_swap', 'one_misplaced', 'several_misplaced'],
-  structure_function: ['two_swapped', 'several_wrong'],
-  cell_specialization: ['too_little', 'too_much', 'both_ways'],
-};
-
 const pairIn = (a: CellZone | null | undefined, b: CellZone | null | undefined, pair: readonly CellZone[]) =>
   !!a && !!b && a !== b && pair.includes(a) && pair.includes(b);
 
