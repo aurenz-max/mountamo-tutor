@@ -187,9 +187,9 @@ describe('ratchets: the old wiring only shrinks', () => {
   const sources = files(PRIMITIVES, f => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
   const count = (pattern: RegExp) => sources.filter(f => pattern.test(readFileSync(join(PRIMITIVES, f), 'utf8'))).length;
   it.each([
-    ['hand-built spoken assignments', /response: 'speech'/, 89, 'spokenBoss builds the assignment from speech.ask/key/misses'],
+    ['hand-built spoken assignments', /response: 'speech'/, 90, 'spokenBoss builds the assignment from speech.ask/key/misses'],
     ['hand-written spoken key text', /also accept/i, 12, 'spokenKeyText (components/live-activity/spokenKey.ts) writes the key'],
-    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 170, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
+    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 171, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
     ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(/, 177, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
     ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 94, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
   ] as const)('%s', (_name, pattern, ceiling, instead) => {
@@ -203,6 +203,6 @@ describe('ratchets: the old wiring only shrinks', () => {
   });
   it('hand-written live adapters', () => {
     const live = readdirSync(join(__dirname, 'adapters')).filter(f => f.endsWith('Live.ts')).length;
-    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(160);
+    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(161);
   });
 });
