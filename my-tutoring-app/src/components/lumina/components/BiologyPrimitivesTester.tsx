@@ -24,7 +24,7 @@ import {
   useEvaluationContext,
 } from '../evaluation';
 import { LuminaAIProvider } from '@/contexts/LuminaAIContext';
-import { TesterWorkspace } from './live-activity/TesterWorkspace';
+import { TesterWorkspace, testerBinds } from './live-activity/TesterWorkspace';
 import { getComponentById } from '../service/manifest/catalog';
 import type { ComponentId } from '../types';
 
@@ -358,6 +358,8 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
     [generatedData],
   );
   const [error, setError] = useState<string | null>(null);
+  /** A bound family previews offline (real runtime and lever bench, free) or with the Live tutor (paid). */
+  const [tutorMode, setTutorMode] = useState<'offline' | 'live'>('offline');
 
   const selectedOption = PRIMITIVE_OPTIONS.find((p) => p.value === selectedPrimitive);
 
@@ -643,18 +645,30 @@ const BiologyPrimitivesTesterContent: React.FC<BiologyPrimitivesTesterProps> = (
 
             {generatedData != null && (
               <div className="space-y-6">
-                <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
-                  {/* A family bound to the teaching workspace previews inside the tester workspace with the offline
-                      runtime (free); outside it, a workspace-only family shows its needs-the-tutor card. */}
+                {testerBinds(selectedPrimitive, previewInstanceId, pinnedMode, generatedData) && (
+                  <div role="radiogroup" aria-label="Tutor" className="flex w-fit rounded-lg border border-slate-600 text-xs">
+                    {(['offline', 'live'] as const).map(m => (
+                      <button key={m} type="button" role="radio" aria-checked={tutorMode === m} onClick={() => setTutorMode(m)}
+                        className={`px-3 py-1 ${tutorMode === m ? 'bg-cyan-600/40 text-cyan-100' : 'text-slate-400'}`}>
+                        {m === 'offline' ? 'Offline levers (free)' : 'Live tutor (paid)'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div key={`${previewInstanceId}-${tutorMode}`} data-primitive-instance-id={previewInstanceId}>
+                  {/* A family bound to the teaching workspace previews inside the tester workspace, offline (free) or
+                      Live (paid); outside it, a workspace-only family shows its needs-the-tutor card. */}
                   <TesterWorkspace primitiveId={selectedPrimitive} instanceId={previewInstanceId} evalMode={pinnedMode}
-                    offline data={generatedData} topic={topic || PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)?.topic || ''}
+                    offline={tutorMode === 'offline'} data={generatedData} topic={topic || PRIMITIVE_OPTIONS.find(p => p.value === selectedPrimitive)?.topic || ''}
                     gradeLevel={selectedGrade}>
                     <PrimitiveRenderer
                       componentId={selectedPrimitive}
                       data={{ ...(generatedData as object), instanceId: previewInstanceId }}
                     />
+                    {/* Inside the workspace's unbound render only: a bound Live preview brings its own tutor face,
+                        and the offline bench has no session for one. */}
+                    <CuratorCompanion />
                   </TesterWorkspace>
-                  <CuratorCompanion />
                 </div>
               </div>
             )}

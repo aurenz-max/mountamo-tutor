@@ -27,6 +27,7 @@ export function TesterLeverBench({ binding, children }: { binding: LessonWorkspa
   const runtime = useMemo(() => new LiveLessonRuntime(`tester-bench-${binding.instanceId}`,
     { maxSupportLevel: 3, allowAnswerExposure: true, allowSupportArtifacts: false }), [binding.instanceId]);
   const [log, setLog] = useState<BenchEntry[]>([]);
+  const [open, setOpen] = useState(false);
   const transport = useRef<RuntimeTransport | null>(null);
   const push = (entry: Omit<BenchEntry, 'at'>) => setLog(l => [...l, { ...entry, at: Date.now() }].slice(-60));
   useLayoutEffect(() => {
@@ -52,11 +53,20 @@ export function TesterLeverBench({ binding, children }: { binding: LessonWorkspa
   } }), []);
   return <LiveRuntimeContext.Provider value={runtime}>
     <LiveRuntimeActiveContext.Provider value={true}>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className={`grid gap-4 ${open ? 'xl:grid-cols-[minmax(0,1fr)_320px]' : 'xl:grid-cols-[minmax(0,1fr)_auto]'}`}>
         <div className="min-w-0">
           <LiveRuntimeSurface runtime={runtime} learnerProgress={learnerProgress}>{children}</LiveRuntimeSurface>
         </div>
-        <LeverPanel runtime={runtime} binding={binding} transport={transport} log={log} push={push} clearLog={() => setLog([])} />
+        {/* A drawer, closed by default; the panel stays mounted so it keeps each item's tier-start levers. */}
+        <div className="flex items-start gap-2">
+          <button type="button" aria-expanded={open} onClick={() => setOpen(o => !o)} title={open ? 'Hide lever bench' : 'Show lever bench'}
+            className="rounded-lg border border-cyan-500/30 bg-slate-900/70 px-2 py-3 text-xs font-semibold text-cyan-200 hover:bg-slate-800 [writing-mode:vertical-rl]">
+            {open ? 'Hide levers ›' : '‹ Lever bench'}
+          </button>
+          <div className={open ? 'min-w-0 flex-1' : 'hidden'}>
+            <LeverPanel runtime={runtime} binding={binding} transport={transport} log={log} push={push} clearLog={() => setLog([])} />
+          </div>
+        </div>
       </div>
     </LiveRuntimeActiveContext.Provider>
   </LiveRuntimeContext.Provider>;
@@ -98,9 +108,9 @@ function LeverPanel({ runtime, binding, transport, log, push, clearLog }: {
   };
   const canPull = state.affordances.some(a => a.action.type === 'workspace' && a.action.operation === 'pull_lever');
 
-  return <aside aria-label="Lever bench" className="space-y-4 rounded-2xl border border-cyan-500/30 bg-slate-900/70 p-4 text-sm text-slate-200">
+  return <aside aria-label="Lever bench" className="space-y-3 rounded-2xl border border-cyan-500/30 bg-slate-900/70 p-3 text-xs text-slate-200">
     <div>
-      <h4 className="text-base font-bold text-cyan-200">Lever bench (offline, no tutor)</h4>
+      <h4 className="text-sm font-bold text-cyan-200">Lever bench (offline, no tutor)</h4>
       <p className="text-xs text-slate-400">Play the item. Wrong answers run the real ladder; the log shows what the tutor would be told.</p>
     </div>
 
