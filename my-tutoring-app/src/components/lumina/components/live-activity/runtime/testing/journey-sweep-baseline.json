@@ -358,6 +358,9 @@
   "parameter-explorer.predict-value": {
     "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
   },
+  "fraction-bar.compare": {
+    "J14-sayable-is-spoken": "qa/difficulty-demo/QUEUE.md 8.1t (VB-2): the sign is sayable (less than / equal to / greater than)"
+  },
   "percent-bar.percent_remaining": {
     "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-2: number/word answers become speech + acceptsGesture"
   },

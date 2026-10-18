@@ -2105,7 +2105,8 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     // Check, the denominator button and Check, then the bar part that shades up to the numerator and Submit Fraction.
     // A wrong answer is the wrong number at the current step (the denominator for the numerator, and back), or one
     // part over on the bar. build_equal: the first other way the bar can make, split directly or by halving every part
-    // of the target's split, shaded and "I'm done!" (wrong: one part too many, `one_off`).
+    // of the target's split, shaded and "I'm done!" (wrong: one part too many, `one_off`). compare: the item's
+    // relation sign and Check Answer (wrong: another sign).
     inputsFor: (intent, ctx) => {
       if (intent === 'warmup') return [];
       const [parentId, easier] = (ctx.itemId ?? '').split('~');
@@ -2128,6 +2129,11 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
         return [...split, ...Array.from({ length: shaded }, (_, i) => part(i)), { type: 'choose', label: "I'm done!" }];
       }
       const check: DriverInput = { type: 'choose', label: 'Check Answer' };
+      if (ctx.data.challengeType === 'compare') {
+        if (!c.relation) throw new Error(`fraction-bar compare ${c.id}: no relation`);
+        const sign = wrong ? (['<', '=', '>'] as const).find(r => r !== c.relation)! : c.relation;
+        return [{ type: 'choose', label: sign }, check];
+      }
       const pick = (value: number, choices: number[], other: number) => {
         if (!wrong) return String(value);
         return String(choices.includes(other) && other !== value ? other : choices.find(x => x !== value));
