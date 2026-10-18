@@ -32,7 +32,7 @@ import {
   Sparkles,
   Zap,
 } from 'lucide-react';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
@@ -480,18 +480,6 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId }: CellBuilderP
     };
   });
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and
-  // the child's touches; Pip points only at the workspace as a whole and never
-  // chooses, checks, or advances.
-  const pip = useWorkspacePipSurface({
-    instanceId: stableInstanceId.current,
-    scopeId: hasSubmitted ? null : mission.id,
-    label: 'The cell mission',
-    solved: currentComplete && cards.every(o => cardRight(o, currentPhase, work)),
-    tutorSpeaking: false,
-  });
-
   const jobsOn = leverOn(JOBS_LEVER);
   const hintsOn = leverOn(HINTS_LEVER);
   const levelsOn = leverOn(LEVELS_LEVER);
@@ -529,9 +517,9 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId }: CellBuilderP
           </div>
         </LuminaPrompt>
 
-        {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-        {pip.store && !hasSubmitted && <div {...pip.dock} />}
-        <div {...pip.workspace}>
+        {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the board as the region it outlines. */}
+        <PipDock />
+        <PipWorkspace>
         {currentPhase === 'cell_inventory' && (
           <div className="grid gap-3 sm:grid-cols-2">
             {cards.map((organelle) => {
@@ -753,7 +741,7 @@ const CellBuilderSurface = ({ data, className, runtimePlanItemId }: CellBuilderP
           </div>
         )}
 
-        </div>
+        </PipWorkspace>
 
         {feedback && (
           <LuminaFeedbackCard status="insight" label={hasSubmitted ? 'Cell report' : 'Mission checked'}>

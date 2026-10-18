@@ -16,6 +16,14 @@ elements with `usePipTargets` and publishes with `usePipSurface(() => …)`:
 `usePipSurface` re-runs the builder after every commit; the store ignores an
 unchanged surface, so builders are inline and carry no dependency list.
 
+## On a boss family: the runner publishes Pip (2026-10-18)
+
+A primitive on the boss framework wires no Pip. The workspace runner publishes it from the item on screen, whether it
+is solved and whether the session runs, with one rule for whether the tutor is speaking about this instance
+(`tutorSpeakingFor`); the component renders `<PipDock />` and `<PipWorkspace>` (`WorkspacePip.tsx`).
+`WorkspacePip.surface.test.tsx` checks every such boss. The hand-wired paths below are legacy (ratchet in
+`components/live-activity/boss.test.ts`) or the exception a leak audit argues for.
+
 ## Which surface Pip joins
 
 Decided by events, in `PipSurfaceStore`:

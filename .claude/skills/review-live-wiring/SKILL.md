@@ -69,9 +69,12 @@ Give each item a verdict: **PASS**, **CHANGE** (state the edit: file, what goes,
     bound mounts (`mountWorkspace`). Also a CHANGE: a catalog `tutoring` block on a boss family (bound sessions send
     `tutoring: null`), scene `constraints`/facts that repeat the boss's `moves` or the doctrine, and exports only a
     deleted adapter used.
-11. **Ratchets.** Compare the ratchet counts in `boss.test.ts` with the tree. A change that moved a family lowers
+11. **Pip.** The component renders `<PipDock />` and `<PipWorkspace>` and calls no `useWorkspacePipSurface`,
+    `usePipSurface` or `useLuminaAIContext` (a spoken pack on `DiTeachingStage` needs neither). Hand wiring is a CHANGE:
+    delete the hook, the hand-picked `tutorSpeaking` and the per-primitive surface test, and mark the two elements.
+12. **Ratchets.** Compare the ratchet counts in `boss.test.ts` with the tree. A change that moved a family lowers
     them in the same slice. A new instance is a CHANGE naming the framework piece to use.
-12. **Verification.** `test:primitive` green; the card and guidance printed. Decide whether the change altered the
+13. **Verification.** `test:primitive` green; the card and guidance printed. Decide whether the change altered the
     tutor's input:
     - Byte-identical guidance, lever words and key text: no Live needed. Say how you know (tests, a diff of
       `boss-card.mjs` output).

@@ -18,6 +18,15 @@ Make Pip share the learner's workspace for the primitive(s) in `$ARGUMENTS`, dri
 
 **Outcome:** the primitive publishes a surface (dock, visible targets, pose derived from its phases); Pip's single body appears in that dock as soon as the surface engages — in the helper and in a lesson, with or without a tutor session; Pip's gestures never disclose an answer, advance the runner, or grade; phase tests and a layout drive show it.
 
+## On a boss family: nothing to wire (2026-10-18)
+
+A primitive on the boss framework (`<x>.card.ts` + `<x>.boss.ts`, exported through `withWorkspaceOnly`) gets Pip
+from the workspace runner: render `<PipDock />` and `<PipWorkspace>` (`pip/WorkspacePip.tsx`) and stop. The runner
+supplies the item scope, solved and running; `tutorSpeakingFor` is the one speech rule; the pose is the classic
+whole-region policy. `pip/WorkspacePip.surface.test.tsx` is the test. Everything below is for legacy families still
+wiring Pip by hand (ratchet in `boss.test.ts`) and for the rare primitive whose leak audit needs finer targeting.
+Moving a legacy family onto a boss deletes its hand wiring and its surface test.
+
 ## How Pip attaches (the canonical path)
 
 **Primitive events → pure pose policy → surface store → one actor.** No step waits for a Gemini session.

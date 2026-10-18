@@ -117,8 +117,10 @@ export function mountWorkspace({ primitiveId, evalMode, data, instanceId = 'ws',
     expect(el, `no object ${pipObject}`).toBeTruthy();
     fireEvent.click(el!);
   });
+  /** Render again with the seams as they are now (the tutor started or stopped speaking). */
+  const rerender = () => act(() => { view.rerender(tree()); });
   return { runtime, transport, sent, view, state, offer, dispatch, confirmVisible, visible, settle, say, speak, feedback, tutorTools,
-    packet, press, touch, controls: () => controls, close: () => transport.close() };
+    packet, press, touch, rerender, controls: () => controls, close: () => transport.close() };
 }
 
 export type WorkspaceHarness = ReturnType<typeof mountWorkspace>;

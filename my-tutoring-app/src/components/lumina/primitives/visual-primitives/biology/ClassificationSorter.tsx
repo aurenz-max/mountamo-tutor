@@ -4,10 +4,9 @@ import type { ClassificationSorterMetrics } from '../../../evaluation/types';
 import { Lightbulb, CheckCircle2, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
 import { LuminaDropZone, type DropZoneState } from '../../../ui';
 import { SoundManager } from '../../../utils/SoundManager';
-import { useWorkspacePipSurface } from '../../../pip/useWorkspacePipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
 import type { TeachingWorkspace } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { TeachingEvaluationResult } from '../../../components/live-activity/runtime/useWorkspaceRunner';
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
@@ -309,18 +308,6 @@ const ClassificationSorterSurface = ({ data, className = '', runtimePlanItemId }
     };
   });
 
-  // ── Pip shared surface ───────────────────────────────────────────
-  // A projection of this item's check state, the tutor's speech on it, and the child's touches; Pip points only at
-  // the workspace as a whole and never chooses, checks, or advances.
-  const ai = useLuminaAIContext();
-  const pip = useWorkspacePipSurface({
-    instanceId: resolvedInstanceId,
-    scopeId: hasSubmitted ? null : (workspaceItem?.id ?? null),
-    label: 'The sorting groups and cards',
-    solved: totalItems > 0 && correctItems === totalItems,
-    tutorSpeaking: ai.isAudioPlaying && ai.activePrimitiveId === resolvedInstanceId,
-  });
-
   return (
     <div className={`w-full ${className}`}>
       <Card className="backdrop-blur-xl bg-slate-900/40 border-white/10 shadow-2xl mb-8">
@@ -369,9 +356,9 @@ const ClassificationSorterSurface = ({ data, className = '', runtimePlanItemId }
         </div>
       )}
 
-      {/* Pip's dock sits above the workspace, which it outlines as a region. */}
-      {pip.store && !hasSubmitted && <div {...pip.dock} />}
-      <div {...pip.workspace}>
+      {/* Pip comes from the workspace runner (`pip/WorkspacePip.tsx`): the dock above, the groups as the region it outlines. */}
+      <PipDock />
+      <PipWorkspace>
         <div className={`grid gap-6 mb-6 ${
           data.categories.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
           data.categories.length === 3 ? 'grid-cols-1 md:grid-cols-3' :
@@ -379,7 +366,7 @@ const ClassificationSorterSurface = ({ data, className = '', runtimePlanItemId }
         }`}>
           {data.categories.map(renderCategory)}
         </div>
-      </div>
+      </PipWorkspace>
     </div>
   );
 };

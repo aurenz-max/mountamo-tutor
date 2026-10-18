@@ -7,6 +7,7 @@ import { useWorkspaceRunner, type TeachingEvaluationResult } from './useWorkspac
 import { useEvaluationContext } from '../../../evaluation';
 import type { TeachingAssignment, TeachingWorkspace } from './useTeachingWorkspace';
 import type { TeachingSummary } from './TeachingSession';
+import { useRunnerPip } from '../../../pip/WorkspacePip';
 
 /**
  * `useChallengeProgress` on the shared teaching workspace, for a primitive with its own Check and
@@ -120,6 +121,11 @@ export function useWorkspaceProgressFor(primitiveId: string) {
     // Read at the call, as in `useScriptedProgress`.
     const current = useRef(run); current.current = run;
     const recordsEvaluation = !!useEvaluationContext();
+    // Pip comes from the runner, not the primitive: it publishes only where the surface renders <PipDock /> and
+    // <PipWorkspace> inside a bound mount (`pip/WorkspacePip.tsx`). A practice item is its own scope.
+    useRunnerPip({ instanceId: options.instanceId,
+      itemId: run.currentItem ? `${run.currentItem.id}${run.practice ? '~practice' : ''}` : null,
+      running: run.running, solved: run.currentSolved || !!run.practiceSolved });
     const isComplete = challenges.length > 0
       && challenges.every(ch => results.some(r => r.challengeId === getChallengeId(ch) && r.correct));
     return {

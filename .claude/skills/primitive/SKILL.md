@@ -296,7 +296,7 @@ This manifest is passed to the Generator Agent in Phase 4. It prevents the #1 so
 
 ### 2d. Wire the Pip surface
 
-Every interactive primitive is born with a Pip shared surface, so Pip joins its workspace from the primitive's own events — no tutor session involved. **`/add-pip-surface` is the single source of truth**: read its *How Pip attaches*, *Teaching contract* and *Phase 1 — Implement* sections now and follow them; do not reconstruct the wiring from memory or copy it here.
+Every interactive primitive is born on a boss, and **on a boss Pip is framework**: the workspace runner publishes it, and the component only renders `<PipDock />` (above the answer surface, below the instruction) and `<PipWorkspace>` around the answer surface (`pip/WorkspacePip.tsx`; `../review-live-wiring/references/boss-framework.md`). No Pip hook, no policy file, no surface test of its own: `pip/WorkspacePip.surface.test.tsx` covers every boss that marks the layout, and `boss.test.ts` fails a boss that wires Pip by hand. Steps 1-4 below apply only when the answer-leak audit shows the whole-region point is wrong for this primitive; then follow `/add-pip-surface` and say why in the birth certificate.
 
 1. **Decide targeting with the answer-leak audit.** For the core task, write down where Pip may point (where the child works — a gap, the object the ask names, a whole region) and where it must never point (anything that could be the answer). If every tappable thing is an answer choice, Pip points only at the region that holds them.
 2. **Policy** — pick the family reference from `/add-pip-surface` (judged spoken, judged hands, classic synchronous, classic async) and write `lumina/pip/<id>PipPose.ts` on `pipPhasePose`.

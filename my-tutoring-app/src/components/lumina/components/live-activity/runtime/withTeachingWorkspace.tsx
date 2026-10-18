@@ -7,6 +7,7 @@ import { NeedsTutor } from './NeedsTutor';
 import { WorkspacePin } from './workspacePin';
 import { PracticeCreditScope } from './practiceCredit';
 import { createWorkspaceSubmission, WorkspaceSubmissionContext } from '../../../evaluation/workspaceSubmission';
+import { PipSlot } from '../../../pip/pipSlot';
 
 /**
  * A bound surface's submission scope (handoff 19 slice 6): the primitive's own submission waits for the
@@ -69,14 +70,15 @@ export function withWorkspaceController<P extends { runtimeEvalMode?: string }, 
 /**
  * A family whose ONLY teaching path is the workspace (its scripted path is deleted, LA-14): a bound
  * mount renders the surface, which calls the workspace controller itself; anything else renders the
- * visible "needs the tutor" card, never a fallback drill.
+ * visible "needs the tutor" card, never a fallback drill. A bound mount also gets Pip from the runner
+ * (`PipSlot`): the surface marks `<PipDock />` and `<PipWorkspace>` and wires nothing else.
  */
 export function withWorkspaceOnly<P extends { runtimeEvalMode?: string; className?: string }>(primitiveId: string,
   Surface: React.ComponentType<P>, title: (props: P) => string | undefined): React.FC<P> {
   const Bound: React.FC<P> = props => {
     const runtime = useLiveRuntime();
     return runtime && catalogBindsWorkspace(primitiveId, props.runtimeEvalMode)
-      ? <WorkspacePin pin={props.runtimeEvalMode}><SubmissionScope><Surface {...props} /></SubmissionScope></WorkspacePin>
+      ? <WorkspacePin pin={props.runtimeEvalMode}><SubmissionScope><PipSlot><Surface {...props} /></PipSlot></SubmissionScope></WorkspacePin>
       : <NeedsTutor primitiveId={primitiveId} evalMode={props.runtimeEvalMode} title={title(props) || 'Activity'}
         className={props.className} />;
   };

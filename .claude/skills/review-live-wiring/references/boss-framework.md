@@ -35,6 +35,15 @@ mount shows, never the primitive. A card whose modes are all `SPOKEN` (or all `T
 A spoken component on the DI shell passes `assignment={<x>Boss.assignment}` and
 `levers={useMemo(() => LEVERS.bind(ctx), …)}` to `DiTeachingStage` — the shared spoken stage.
 
+**Pip is framework, not wiring.** The workspace runner publishes Pip from what it already knows (the item on
+screen, solved, running) and one shared rule for "the tutor is speaking about this instance" (`tutorSpeakingFor`,
+`pip/WorkspacePip.tsx`). The component only marks its layout: `<PipDock />` where the dock goes and
+`<PipWorkspace>` around the answer surface. No `useWorkspacePipSurface`, `usePipSurface` or `useLuminaAIContext` in
+a boss component, and no per-primitive Pip surface test: `pip/WorkspacePip.surface.test.tsx` runs the one contract
+over every boss that marks the layout. `DiTeachingStage` publishes Pip itself for every spoken pack. Pip points at
+the region as a whole, which never singles out an answer; a primitive that needs finer targeting is an exception to
+argue for, not a default.
+
 ## The spoken key
 
 One shape for every spoken answer (`spokenKey.ts`): `answer`, `alsoAccept[]`, `acceptRule?`, `signatureError?`, and
@@ -80,10 +89,11 @@ every tutor-judged mode in `JUDGED_BY.tutor`, of every lever of a type in `LEVER
 
 Per boss: one card and one boss per file, the boss on the card beside it; catalog = `bossEntry(card)`; card modes =
 catalog eval modes; adapter and journey rows present; leak tokens carried; card imports light; the component
-workspace-only; preset used when the wiring matches; levers declared once and answering every miss.
+workspace-only and wiring no Pip (markers only); preset used when the wiring matches; levers declared once and
+answering every miss.
 
 Ratchets over the source tree (lower the number in the change that moves a family):
-hand-built `response: 'speech'` assignments (90), hand-written "also accept" key text (12), levers built outside a
+Pip wired by hand in a primitive (177), hand-built `response: 'speech'` assignments (90), hand-written "also accept" key text (12), levers built outside a
 lever set (171), scripted fallbacks beside the workspace (94), hand-written key schema fields in generators (1),
 `adapters/*Live.ts` (161), and
 `PROSE_GUIDANCE_FAMILIES` in `activityContract.test.ts` (161).

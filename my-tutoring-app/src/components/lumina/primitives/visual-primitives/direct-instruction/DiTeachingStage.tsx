@@ -44,6 +44,7 @@ import { usePipSurface, usePipTargets } from '../../../pip/PipSurfaceContext';
 import { useSpeechScope } from '../../../pip/useSpeechScope';
 import { diStagePipPose } from '../../../pip/diStagePipPose';
 import { PIP_DOCK_CLASS } from '../../../pip/useWorkspacePipSurface';
+import { tutorSpeakingFor } from '../../../pip/WorkspacePip';
 import { practiceScore } from '../../../hooks/usePhaseResults';
 
 export interface DiStageData {
@@ -224,7 +225,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
   // A projection of committed workspace state onto the stimulus as a whole; Pip never answers,
   // judges, or advances. Audio belongs to this block only while a lesson is pointed at it.
   const ai = useLuminaAIContext();
-  const tutorSpeaking = ai.isAudioPlaying && (ai.sessionMode !== 'lesson' || ai.activePrimitiveId === instance.current);
+  const tutorSpeaking = tutorSpeakingFor(ai, instance.current);
   const speechOnItem = useSpeechScope(item.id, tutorSpeaking);
   const [cuedItemId, setCuedItemId] = useState<string | null>(null);
   useEffect(() => { if (speechOnItem) setCuedItemId(item.id); }, [speechOnItem, item.id]);
