@@ -9,6 +9,8 @@ import { leverTrigger } from './runtime/observerLever';
 import type { RuntimeSnapshot, WorkspaceLever } from './runtime/contract';
 import type { LessonWorkspaceItem } from './lessonWorkspacePlan';
 import { getComponentById } from '../../service/manifest/catalog';
+import { usePipScene } from '../../pip/PipSurfaceContext';
+import { PipSurfaceActor } from '../../pip/PipSurfaceActor';
 
 /** One line of what the host did or would have told the tutor. */
 interface BenchEntry { at: number; kind: 'pull' | 'tutor' | 'result' | 'progress'; text: string }
@@ -56,6 +58,7 @@ export function TesterLeverBench({ binding, children }: { binding: LessonWorkspa
       <div className={`grid gap-4 ${open ? 'xl:grid-cols-[minmax(0,1fr)_320px]' : 'xl:grid-cols-[minmax(0,1fr)_auto]'}`}>
         <div className="min-w-0">
           <LiveRuntimeSurface runtime={runtime} learnerProgress={learnerProgress}>{children}</LiveRuntimeSurface>
+          <BenchPip />
         </div>
         {/* A drawer, closed by default; the panel stays mounted so it keeps each item's tier-start levers. */}
         <div className="flex items-start gap-2">
@@ -70,6 +73,13 @@ export function TesterLeverBench({ binding, children }: { binding: LessonWorkspa
       </div>
     </LiveRuntimeActiveContext.Provider>
   </LiveRuntimeContext.Provider>;
+}
+
+/** Pip's body in the primitive's dock. Its surface comes from the primitive's own events and needs no session, so the
+ *  bench shows it as a lesson would (a Live preview gets it from the tutor companion instead). */
+function BenchPip() {
+  const { surface } = usePipScene();
+  return surface ? <PipSurfaceActor surface={surface} mood="happy" /> : null;
 }
 
 function LeverPanel({ runtime, binding, transport, log, push, clearLog }: {
