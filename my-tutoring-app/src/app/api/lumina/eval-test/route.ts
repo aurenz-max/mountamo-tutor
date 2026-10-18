@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UNIVERSAL_CATALOG } from '@/components/lumina/service/manifest/catalog';
 import { generateComponentContent } from '@/components/lumina/service/geminiService';
+import { withSpendSource } from '@/components/lumina/service/spend/spendMeter';
 import type { ComponentDefinition, EvalModeDefinition } from '@/components/lumina/types';
 
 /**
@@ -11,7 +12,7 @@ import type { ComponentDefinition, EvalModeDefinition } from '@/components/lumin
  *
  * Optional: &topic=X &gradeLevel=X
  */
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const componentId = searchParams.get('componentId');
   const evalMode = searchParams.get('evalMode');
@@ -191,7 +192,7 @@ export async function GET(request: NextRequest) {
  *
  * Returns streamed NDJSON so the dashboard can show results as they complete.
  */
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   const body = await request.json();
   const {
     tests,
@@ -467,4 +468,13 @@ function summarizeData(data: Record<string, unknown>): Record<string, unknown> {
   }
 
   return summary;
+}
+
+// A test route: its Gemini calls count against the automated daily cap, whoever started the server (spendMeter.ts).
+export async function GET(request: NextRequest) {
+  return withSpendSource('harness', new URL(request.url).searchParams.get('componentId') ?? 'eval-test', () => handleGet(request));
+}
+
+export async function POST(request: NextRequest) {
+  return withSpendSource('harness', 'eval-test', () => handlePost(request));
 }

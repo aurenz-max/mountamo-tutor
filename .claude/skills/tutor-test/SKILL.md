@@ -7,6 +7,8 @@ description: >-
   silent or off-script on one primitive.
 ---
 
+> **Paid Gemini runs are the user's (USER RULING 2026-10-17).** Wherever this skill says to run a Live journey (`run_*.py`) or `tutor_replay.py`, do not run it: a hook blocks it. Finish the free checks, then give the user the exact command, its request count, and the question it answers. See `backend/tests/tutor_live/LIVE_TESTING.md`.
+
 # Tutor Test — Verify the AI Tutoring Connection for a Primitive
 
 Confirm that a primitive's tutoring scaffold actually reaches the AI tutor intact: the catalog block is wired to a live `useLuminaAI` hook, every `{{key}}` and contextKey resolves against the component's real `primitiveData` bag, pedagogical moments fire, and nothing in the scaffold leaks answers. This is the QA gate for the L2 layer (`/add-tutoring-scaffold`), the way `/eval-test` gates L1.

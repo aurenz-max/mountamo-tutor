@@ -8,6 +8,8 @@ description: >-
   finding on. Not for topic/intent/grade scope, which is /topic-fidelity.
 ---
 
+> **Paid Gemini runs are the user's (USER RULING 2026-10-17).** Wherever this skill says to run a Live journey (`run_*.py`) or `tutor_replay.py`, do not run it: a hook blocks it. Finish the free checks, then give the user the exact command, its request count, and the question it answers. See `backend/tests/tutor_live/LIVE_TESTING.md`.
+
 # Reader Fit — Can a Student at THIS Reading Band Complete This?
 
 Take a primitive (or a whole generated lesson) and verify a student at a given

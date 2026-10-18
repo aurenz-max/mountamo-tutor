@@ -1,8 +1,10 @@
 import { GoogleGenAI } from '@google/genai';
 import 'server-only';
+import { meterClient } from './spend/spendMeter';
 
 if (!process.env.GEMINI_API_KEY) {
   throw new Error('GEMINI_API_KEY environment variable is not set');
 }
 
-export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Metered: every call is priced into the daily ledger and automated sources stop at their cap (spendMeter.ts).
+export const ai = meterClient(new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }));

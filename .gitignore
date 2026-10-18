@@ -105,3 +105,6 @@ my-tutoring-app/qa/**/*.gif
 my-tutoring-app/qa/**/*.webm
 my-tutoring-app/qa/**/*.wav
 my-tutoring-app/qa/**/*.html
+
+# Daily Gemini spend ledger (spendMeter.ts)
+.gemini-spend/

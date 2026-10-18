@@ -13,6 +13,8 @@ description: >-
   (/add-eval-modes).
 ---
 
+> **Paid Gemini runs are the user's (USER RULING 2026-10-17).** Wherever this skill says to run a Live journey (`run_*.py`) or `tutor_replay.py`, do not run it: a hook blocks it. Finish the free checks, then give the user the exact command, its request count, and the question it answers. See `backend/tests/tutor_live/LIVE_TESTING.md`.
+
 # Add a Word Space
 
 ## The outcome

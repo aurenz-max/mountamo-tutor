@@ -10,7 +10,8 @@
     "typecheck:lumina": "node scripts/typecheck-lumina.js",
     "audit:intent-contract": "node scripts/audit-intent-consumption.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:primitive": "node scripts/test-primitive.mjs"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.4",

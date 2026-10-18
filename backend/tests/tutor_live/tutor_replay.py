@@ -43,6 +43,7 @@ from app.services.live_runtime_tools import RUNTIME_INSTRUCTION, runtime_tool  #
 from replay_checks import CHECKS, score  # noqa: E402
 
 MODEL = 'gemini-3.8-flash'
+MAX_REQUESTS = 300
 REPORTS = ROOT / 'my-tutoring-app/qa/tutor-reports/replay'
 LESSON_ENTRY = '[LESSON_START] The current lesson workspace is mounted. Call observe_runtime for its task and ongoing state updates, then teach naturally.'
 DOCTRINE_FILE = 'my-tutoring-app/src/components/lumina/components/live-activity/adapters/adapterContract.ts'
@@ -349,7 +350,9 @@ async def main():
     parser.add_argument('moments_file', nargs='?', type=Path)
     parser.add_argument('--primitive', action='append', help='Only these families (repeatable)')
     parser.add_argument('--payload', action='append', help='Only these payload files (repeatable)')
-    parser.add_argument('--samples', type=int, default=5)
+    # 1 by default: 5 samples on every moment of every payload was ~11K paid requests a day on 10-15/10-16.
+    parser.add_argument('--samples', type=int, default=1)
+    parser.add_argument('--yes', action='store_true', help=f'Run even when the request count is over {MAX_REQUESTS}')
     parser.add_argument('--observe', action='store_true', help='Send spoken-answer replies to the real /api/lumina/observe-dialogue')
     parser.add_argument('--frontend', default='http://localhost:3000')
     parser.add_argument('--calibrate', nargs='+', type=Path, help='Saved Live run reports to replay and compare')
@@ -391,6 +394,11 @@ async def main():
     records = json.loads(args.moments_file.read_text(encoding='utf-8'))['records']
     records = [r for r in records if (not args.primitive or r['primitiveId'] in args.primitive)
                and (not args.payload or r['payload'] in args.payload) and r['moments']]
+    requests = sum(len(r['moments']) for r in records) * args.samples
+    print(f'{len(records)} payloads, {requests} paid {MODEL} requests (each resends instructions, tools and history)')
+    if requests > MAX_REQUESTS and not args.yes:
+        print(f'Refusing: over {MAX_REQUESTS}. Narrow with --primitive/--payload, lower --samples, or pass --yes.')
+        return 2
     results = await asyncio.gather(*(replay_record(api, r, args, gate) for r in records))
     table = rates(results)
     print_table(table, f'REPLAY {MODEL}, {len(records)} payloads x {args.samples} samples (missed / samples)')
@@ -408,7 +416,8 @@ async def main():
         report, run = REPORTS / f'{name}-{stamp}-r{run}.json', run + 1
     report.write_text(json.dumps({'model': MODEL, 'samples': args.samples, 'checks': CHECKS, 'rates': table, 'results': results}, indent=1), encoding='utf-8')
     print(report)
-    return 1 if any(missed for kind in table.values() for missed, _ in kind.values()) else 0
+    # A check fails at 3% or more of the samples it applied to; zero on a sampled model never converged (10-16).
+    return 1 if any(n and missed / n >= 0.03 for kind in table.values() for missed, n in kind.values()) else 0
 
 
 if __name__ == '__main__':

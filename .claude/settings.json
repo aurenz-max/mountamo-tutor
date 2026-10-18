@@ -5,5 +5,24 @@
       "Glob(**)",
       "Grep(**)"
     ]
+  },
+  "env": {
+    "LUMINA_AGENT": "1"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-paid-gemini.py\"",
+            "shell": "bash",
+            "onFailure": "block",
+            "statusMessage": "Checking for paid Gemini runs"
+          }
+        ]
+      }
+    ]
   }
 }
