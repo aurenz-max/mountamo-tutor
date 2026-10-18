@@ -1,0 +1,153 @@
+{
+ "source": "qa/tutor-reports/map-explorer-runtime-build_route-payload-2026-10-18.json",
+ "primitiveId": "map-explorer",
+ "evalMode": "build_route",
+ "data": {
+  "title": "Explore Your Neighborhood Map",
+  "description": "Use the compass rose to discover exciting new places all around the neighborhood!",
+  "challenges": [
+   {
+    "id": "map-1",
+    "type": "build_route",
+    "rotation": 0,
+    "fromId": "place-2",
+    "targetId": "place-8",
+    "hopMeters": 378,
+    "instruction": "Fly the helicopter from Aquarium to Train Station. Use the arrows to plan the trip, then press Land."
+   },
+   {
+    "id": "map-2",
+    "type": "build_route",
+    "rotation": 0,
+    "fromId": "place-6",
+    "targetId": "place-9",
+    "hopMeters": 339,
+    "instruction": "Fly the helicopter from Champ de Mars to School. Use the arrows to plan the trip, then press Land."
+   },
+   {
+    "id": "map-3",
+    "type": "build_route",
+    "rotation": 0,
+    "fromId": "place-1",
+    "targetId": "place-4",
+    "hopMeters": 335,
+    "instruction": "Fly the helicopter from Eiffel Tower to Library. Use the arrows to plan the trip, then press Land."
+   },
+   {
+    "id": "map-4",
+    "type": "build_route",
+    "rotation": 0,
+    "fromId": "place-5",
+    "targetId": "place-2",
+    "hopMeters": 440,
+    "instruction": "Fly the helicopter from Grocery Store to Aquarium. Use the arrows to plan the trip, then press Land."
+   },
+   {
+    "id": "map-5",
+    "type": "build_route",
+    "rotation": 0,
+    "fromId": "place-4",
+    "targetId": "place-7",
+    "hopMeters": 393,
+    "instruction": "Fly the helicopter from Library to Fire Station. Use the arrows to plan the trip, then press Land."
+   }
+  ],
+  "challengeType": "build_route",
+  "townMap": {
+   "name": "Eiffel Tower Area",
+   "city": "Paris, France",
+   "source": "google_maps",
+   "center": {
+    "lat": 48.857,
+    "lng": 2.3
+   },
+   "places": [
+    {
+     "id": "place-1",
+     "name": "Eiffel Tower",
+     "kind": "landmark",
+     "lat": 48.85837,
+     "lng": 2.29448,
+     "mapsUri": "https://maps.google.com/maps?cid=10222232094831998944"
+    },
+    {
+     "id": "place-2",
+     "name": "Aquarium",
+     "kind": "aquarium",
+     "lat": 48.86315,
+     "lng": 2.29175,
+     "fullName": "Aquarium de Paris",
+     "mapsUri": "https://maps.google.com/maps?cid=17909386749125346536"
+    },
+    {
+     "id": "place-3",
+     "name": "Playground",
+     "kind": "playground",
+     "lat": 48.8624,
+     "lng": 2.2885,
+     "fullName": "Jardin d'enfants du Trocad\u00e9ro",
+     "mapsUri": "https://maps.google.com/maps?cid=8913885614864019786"
+    },
+    {
+     "id": "place-4",
+     "name": "Library",
+     "kind": "library",
+     "lat": 48.85582,
+     "lng": 2.3082,
+     "fullName": "Library Am\u00e9lie",
+     "blurb": "You can sit in a cozy corner and read colorful picture books about magical adventures.",
+     "mapsUri": "https://maps.google.com/maps?cid=12354341799658788328"
+    },
+    {
+     "id": "place-5",
+     "name": "Grocery Store",
+     "kind": "store",
+     "lat": 48.8512,
+     "lng": 2.3054,
+     "fullName": "Carrefour City",
+     "blurb": "You can pick out a yummy fresh croissant or a sweet treat for your snack time!",
+     "mapsUri": "https://maps.google.com/maps?cid=15614595777209168561"
+    },
+    {
+     "id": "place-6",
+     "name": "Champ de Mars",
+     "kind": "park",
+     "lat": 48.8545,
+     "lng": 2.2985,
+     "fullName": "Bassins du Champ de Mars",
+     "mapsUri": "https://maps.google.com/maps?cid=1134727811425593167"
+    },
+    {
+     "id": "place-7",
+     "name": "Fire Station",
+     "kind": "fire_station",
+     "lat": 48.8475,
+     "lng": 2.2921,
+     "fullName": "Brigade de Sapeurs-Pompiers de Paris - Caserne Grenelle",
+     "blurb": "Brave firefighters keep the neighborhood safe and take care of big red trucks that go nee-naw!",
+     "mapsUri": "https://maps.google.com/maps?cid=17259507075600120701"
+    },
+    {
+     "id": "place-8",
+     "name": "Train Station",
+     "kind": "train_station",
+     "lat": 48.8529,
+     "lng": 2.2871,
+     "fullName": "Champ de Mars Tour Eiffel",
+     "blurb": "You can watch fast commuter trains zoom past on tracks to take people on exciting trips.",
+     "mapsUri": "https://maps.google.com/maps?cid=15125038003944427335"
+    },
+    {
+     "id": "place-9",
+     "name": "School",
+     "kind": "school",
+     "lat": 48.8637,
+     "lng": 2.3085,
+     "fullName": "The Bilingual Montessori School of Paris",
+     "blurb": "Kids here play games and learn how to speak two different languages with their friends!",
+     "mapsUri": "https://maps.google.com/maps?cid=11711881836769947319"
+    }
+   ]
+  }
+ }
+}

@@ -136,6 +136,7 @@ import { rampLabLiveDomain } from './adapters/rampLabLive';
 import { trainYardLiveDomain } from './adapters/trainYardLive';
 import { airplaneDioramaLiveDomain } from './adapters/airplaneDioramaLive';
 import { constructionSiteDioramaLiveDomain } from './adapters/constructionSiteDioramaLive';
+import { mapExplorerLiveDomain } from './adapters/mapExplorerLive';
 import { flightForcesExplorerLiveDomain } from './adapters/flightForcesExplorerLive';
 import { constructionSequencePlannerLiveDomain } from './adapters/constructionSequencePlannerLive';
 import { timelineExplorerLiveDomain } from './adapters/timelineExplorerLive';
@@ -312,6 +313,7 @@ export const LIVE_ADAPTERS = {
   'train-yard': workspaceAdapter('train-yard', trainYardLiveDomain),
   'airplane-diorama': workspaceAdapter('airplane-diorama', airplaneDioramaLiveDomain),
   'construction-site-diorama': workspaceAdapter('construction-site-diorama', constructionSiteDioramaLiveDomain),
+  'map-explorer': workspaceAdapter('map-explorer', mapExplorerLiveDomain),
   'flight-forces-explorer': workspaceAdapter('flight-forces-explorer', flightForcesExplorerLiveDomain),
   'construction-sequence-planner': workspaceAdapter('construction-sequence-planner', constructionSequencePlannerLiveDomain),
   'timeline-explorer': workspaceAdapter('timeline-explorer', timelineExplorerLiveDomain),

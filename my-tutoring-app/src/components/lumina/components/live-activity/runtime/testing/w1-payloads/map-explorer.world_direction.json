@@ -1,0 +1,57 @@
+{
+ "source": "qa/tutor-reports/map-explorer-runtime-world_direction-payload-2026-10-18.json",
+ "primitiveId": "map-explorer",
+ "evalMode": "world_direction",
+ "data": {
+  "title": "Explore the World Map",
+  "description": "Let us use our compass rose to discover amazing continents and oceans all around the globe!",
+  "challenges": [
+   {
+    "id": "map-1",
+    "type": "world_direction",
+    "rotation": 0,
+    "fromId": "antarctica",
+    "targetId": "southern",
+    "direction": "north",
+    "instruction": "Find the ocean just north of Antarctica."
+   },
+   {
+    "id": "map-2",
+    "type": "world_direction",
+    "rotation": 0,
+    "fromId": "south_america",
+    "targetId": "pacific",
+    "direction": "west",
+    "instruction": "Find the ocean just west of South America."
+   },
+   {
+    "id": "map-3",
+    "type": "world_direction",
+    "rotation": 0,
+    "fromId": "north_america",
+    "targetId": "atlantic",
+    "direction": "east",
+    "instruction": "Find the ocean just east of North America."
+   },
+   {
+    "id": "map-4",
+    "type": "world_direction",
+    "rotation": 0,
+    "fromId": "europe",
+    "targetId": "africa",
+    "direction": "south",
+    "instruction": "Find the continent just south of Europe."
+   },
+   {
+    "id": "map-5",
+    "type": "world_direction",
+    "rotation": 0,
+    "fromId": "europe",
+    "targetId": "asia",
+    "direction": "east",
+    "instruction": "Find the continent just east of Europe."
+   }
+  ],
+  "challengeType": "world_direction"
+ }
+}

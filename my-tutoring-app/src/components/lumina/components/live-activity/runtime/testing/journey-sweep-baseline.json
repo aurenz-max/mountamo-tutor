@@ -426,5 +426,17 @@
   },
   "two-way-table.marginal_distribution": {
     "J14-sayable-is-spoken": "qa/workspace-rollout/ROLLOUT.md VB-3: number/word answers become speech + acceptsGesture"
+  },
+  "map-explorer.find_by_direction": {
+    "J1-drivable": "by design: the answer is a tap on the live map (MapLibre, WebGL), which jsdom cannot draw; MapExplorer.workspace.test.tsx drives the commit through a stubbed map, the browser drive through the canvas and pins",
+    "J13-help-lever-keeps-item": "by design: the answer is a tap on the live map (MapLibre, WebGL), which jsdom cannot draw; MapExplorer.workspace.test.tsx drives the commit through a stubbed map, the browser drive through the canvas and pins"
+  },
+  "map-explorer.find_on_globe": {
+    "J1-drivable": "by design: the answer is a tap on the live map (MapLibre, WebGL), which jsdom cannot draw; MapExplorer.workspace.test.tsx drives the commit through a stubbed map, the browser drive through the canvas and pins",
+    "J13-help-lever-keeps-item": "by design: the answer is a tap on the live map (MapLibre, WebGL), which jsdom cannot draw; MapExplorer.workspace.test.tsx drives the commit through a stubbed map, the browser drive through the canvas and pins"
+  },
+  "map-explorer.world_direction": {
+    "J1-drivable": "by design: the answer is a tap on the live map (MapLibre, WebGL), which jsdom cannot draw; MapExplorer.workspace.test.tsx drives the commit through a stubbed map, the browser drive through the canvas and pins",
+    "J13-help-lever-keeps-item": "by design: the answer is a tap on the live map (MapLibre, WebGL), which jsdom cannot draw; MapExplorer.workspace.test.tsx drives the commit through a stubbed map, the browser drive through the canvas and pins"
   }
 }

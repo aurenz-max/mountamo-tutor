@@ -1,0 +1,153 @@
+{
+ "source": "qa/tutor-reports/map-explorer-runtime-find_by_direction-payload-2026-10-18.json",
+ "primitiveId": "map-explorer",
+ "evalMode": "find_by_direction",
+ "data": {
+  "title": "Explore Your Neighborhood Map",
+  "description": "Use the compass rose to discover exciting places all around our neighborhood!",
+  "challenges": [
+   {
+    "id": "map-1",
+    "type": "find_by_direction",
+    "rotation": 0,
+    "fromId": "place-2",
+    "targetId": "place-7",
+    "direction": "south",
+    "instruction": "What is south of de Young Museum? Tap it on the map."
+   },
+   {
+    "id": "map-2",
+    "type": "find_by_direction",
+    "rotation": 0,
+    "fromId": "place-5",
+    "targetId": "place-4",
+    "direction": "north",
+    "instruction": "What is north of Fire Station? Tap it on the map."
+   },
+   {
+    "id": "map-3",
+    "type": "find_by_direction",
+    "rotation": 0,
+    "fromId": "place-4",
+    "targetId": "place-6",
+    "direction": "west",
+    "instruction": "What is west of Richmond Library? Tap it on the map."
+   },
+   {
+    "id": "map-4",
+    "type": "find_by_direction",
+    "rotation": 0,
+    "fromId": "place-1",
+    "targetId": "place-7",
+    "direction": "south",
+    "instruction": "What is south of California Academy of Sciences? Tap it on the map."
+   },
+   {
+    "id": "map-5",
+    "type": "find_by_direction",
+    "rotation": 0,
+    "fromId": "place-5",
+    "targetId": "place-6",
+    "direction": "west",
+    "instruction": "What is west of Fire Station? Tap it on the map."
+   }
+  ],
+  "challengeType": "find_by_direction",
+  "townMap": {
+   "name": "Golden Gate Park Area",
+   "city": "San Francisco, California",
+   "source": "google_maps",
+   "center": {
+    "lat": 37.7694,
+    "lng": -122.47
+   },
+   "places": [
+    {
+     "id": "place-1",
+     "name": "California Academy of Sciences",
+     "kind": "museum",
+     "lat": 37.76986,
+     "lng": -122.4661,
+     "blurb": "You can walk inside a huge glass bubble filled with live butterflies.",
+     "mapsUri": "https://maps.google.com/maps?cid=1982859062306917049"
+    },
+    {
+     "id": "place-2",
+     "name": "de Young Museum",
+     "kind": "museum",
+     "lat": 37.77143,
+     "lng": -122.46865,
+     "blurb": "You can ride a giant twisting elevator up a tall tower.",
+     "mapsUri": "https://maps.google.com/maps?cid=7854251046532539466"
+    },
+    {
+     "id": "place-3",
+     "name": "Koret Playground",
+     "kind": "playground",
+     "lat": 37.76793,
+     "lng": -122.45899,
+     "fullName": "Koret Children's Quarter Playground",
+     "blurb": "This playground features a historic, hand-carved wooden carousel with painted animals.",
+     "mapsUri": "https://maps.google.com/maps?cid=8120128717736247222"
+    },
+    {
+     "id": "place-4",
+     "name": "Richmond Library",
+     "kind": "library",
+     "lat": 37.77977,
+     "lng": -122.46395,
+     "fullName": "Richmond / Senator Milton Marks Branch Library",
+     "blurb": "You can pick out colorful picture books and sit in a cozy corner.",
+     "mapsUri": "https://maps.google.com/maps?cid=1634971432032870280"
+    },
+    {
+     "id": "place-5",
+     "name": "Fire Station",
+     "kind": "fire_station",
+     "lat": 37.7774,
+     "lng": -122.46479,
+     "fullName": "San Francisco Fire Station 31",
+     "blurb": "Real firefighters live here and slide down a shiny pole when racing to help.",
+     "mapsUri": "https://maps.google.com/maps?cid=9187654783816090845"
+    },
+    {
+     "id": "place-6",
+     "name": "High School",
+     "kind": "school",
+     "lat": 37.78161,
+     "lng": -122.4831,
+     "fullName": "George Washington High School",
+     "blurb": "Older kids go here to learn big-kid subjects like art and science.",
+     "mapsUri": "https://maps.google.com/maps?cid=7899455729942288494"
+    },
+    {
+     "id": "place-7",
+     "name": "Safeway",
+     "kind": "store",
+     "lat": 37.76442,
+     "lng": -122.46617,
+     "fullName": "Safeway Pharmacy (7th Ave)",
+     "blurb": "The shelves are packed tall with yummy snacks and fresh fruit.",
+     "mapsUri": "https://maps.google.com/maps?cid=8227531578558722332"
+    },
+    {
+     "id": "place-8",
+     "name": "Victorian Area",
+     "kind": "landmark",
+     "lat": 37.76812,
+     "lng": -122.4533,
+     "fullName": "Stanyan Park Hotel Area (Historic Victorian Neighborhood)",
+     "blurb": "These old houses look like colorful dollhouses stacked right next to each other."
+    },
+    {
+     "id": "place-9",
+     "name": "Kezar Stadium",
+     "kind": "stadium",
+     "lat": 37.76632,
+     "lng": -122.45191,
+     "blurb": "Fast runners and soccer players practice on the giant green field."
+    }
+   ]
+  }
+ }
+}

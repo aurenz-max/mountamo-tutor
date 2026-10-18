@@ -19,6 +19,8 @@ import React, { useState, useMemo } from 'react';
 import { CuratorCompanion } from './CuratorCompanion';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
+import MapExplorer from '../primitives/visual-primitives/history/MapExplorer';
+import { TesterWorkspace } from './live-activity/TesterWorkspace';
 import { EvaluationProvider, useEvaluationContext } from '../evaluation';
 import type { PrimitiveEvaluationResult } from '../evaluation';
 import { getComponentById } from '../service/manifest/catalog';
@@ -28,7 +30,7 @@ interface HistoryPrimitivesTesterProps {
   onBack: () => void;
 }
 
-type PrimitiveType = 'era-explorer' | 'cause-effect-chain';
+type PrimitiveType = 'era-explorer' | 'cause-effect-chain' | 'map-explorer';
 type GradeLevel = 'kindergarten' | '1' | '2' | '3' | '4' | '5' | '6';
 
 const PRIMITIVE_OPTIONS: Array<{
@@ -39,6 +41,7 @@ const PRIMITIVE_OPTIONS: Array<{
 }> = [
   { value: 'era-explorer', label: 'Era Explorer', icon: '🏛️', topic: 'Life in pioneer times' },
   { value: 'cause-effect-chain', label: 'Cause & Effect Chain', icon: '🔗', topic: 'Why towns grew along the railroad' },
+  { value: 'map-explorer', label: 'Map Explorer', icon: '🧭', topic: 'Using a compass rose to find places on a map' },
 ];
 
 const GRADE_OPTIONS: Array<{ value: GradeLevel; label: string }> = [
@@ -78,6 +81,16 @@ const PrimitiveRenderer: React.FC<{
         <EraExplorer
           data={{
             ...(data as Parameters<typeof EraExplorer>[0]['data']),
+            instanceId: (data as { instanceId: string }).instanceId,
+            onEvaluationSubmit,
+          }}
+        />
+      );
+    case 'map-explorer':
+      return (
+        <MapExplorer
+          data={{
+            ...(data as Parameters<typeof MapExplorer>[0]['data']),
             instanceId: (data as { instanceId: string }).instanceId,
             onEvaluationSubmit,
           }}
@@ -137,6 +150,18 @@ const EvaluationResultsPanel: React.FC<{ lastResult: PrimitiveEvaluationResult |
         </div>
       )}
 
+      {metrics?.type === 'map-explorer' && (
+        <div className="grid grid-cols-2 gap-1 text-xs text-slate-400">
+          <span>Mode: {metrics.challengeType}</span>
+          <span>Correct: {metrics.correctCount}/{metrics.totalChallenges}</span>
+          <span>First try: {metrics.firstTryCount}</span>
+          <span>Attempts: {metrics.attemptsCount}</span>
+          <span>Avg attempts: {metrics.averageAttemptsPerChallenge.toFixed(1)}</span>
+          <span>Hints viewed: {metrics.hintsViewed}</span>
+          <span>Accuracy: {metrics.overallAccuracy.toFixed(0)}%</span>
+        </div>
+      )}
+
       {metrics?.type === 'era-explorer' && (
         <div className="grid grid-cols-2 gap-1 text-xs text-slate-400">
           <span>Mode: {metrics.challengeType}</span>
@@ -178,6 +203,10 @@ const HistoryPrimitivesTesterContent: React.FC<HistoryPrimitivesTesterProps> = (
   const [evalMode, setEvalMode] = useState('');
   /** '' = no tier, the untiered baseline. Otherwise the manifest's config.difficulty. */
   const [difficulty, setDifficulty] = useState('');
+  /** map-explorer: a real place for the town map (config.location); '' lets the generator choose a city. */
+  const [mapPlace, setMapPlace] = useState('');
+  /** map-explorer previews in the tester workspace: offline (real runtime and lever bench, free) or Live (paid). */
+  const [tutorMode, setTutorMode] = useState<'offline' | 'live'>('offline');
 
   const selectedOption = PRIMITIVE_OPTIONS.find((p) => p.value === selectedPrimitive);
   /**
@@ -210,6 +239,7 @@ const HistoryPrimitivesTesterContent: React.FC<HistoryPrimitivesTesterProps> = (
             config: {
               ...(evalMode ? { targetEvalMode: evalMode } : {}),
               ...(difficulty ? { difficulty } : {}),
+              ...(selectedPrimitive === 'map-explorer' && mapPlace.trim() ? { location: mapPlace.trim() } : {}),
             },
           },
         }),
@@ -332,6 +362,20 @@ const HistoryPrimitivesTesterContent: React.FC<HistoryPrimitivesTesterProps> = (
               </select>
             </div>
 
+            {selectedPrimitive === 'map-explorer' && (
+              <div>
+                <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-400">
+                  Map Place (Google Maps)
+                </label>
+                <input
+                  value={mapPlace}
+                  onChange={(e) => setMapPlace(e.target.value)}
+                  placeholder="e.g. downtown Chicago (blank = a famous city)"
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-500"
+                />
+              </div>
+            )}
+
             <div>
               <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-slate-400">
                 Topic
@@ -399,6 +443,33 @@ const HistoryPrimitivesTesterContent: React.FC<HistoryPrimitivesTesterProps> = (
             )}
 
             {generatedData != null && (
+              selectedPrimitive === 'map-explorer' ? (
+                <div className="space-y-3">
+                  <div role="radiogroup" aria-label="Tutor" className="flex w-fit rounded-lg border border-slate-600 text-xs">
+                    {(['offline', 'live'] as const).map(m => (
+                      <button key={m} type="button" role="radio" aria-checked={tutorMode === m} onClick={() => setTutorMode(m)}
+                        className={`px-3 py-1 ${tutorMode === m ? 'bg-cyan-600/40 text-cyan-100' : 'text-slate-400'}`}>
+                        {m === 'offline' ? 'Offline levers (free)' : 'Live tutor (paid)'}
+                      </button>
+                    ))}
+                  </div>
+                  <div key={`${previewInstanceId}-${tutorMode}`} data-primitive-instance-id={previewInstanceId}>
+                    {/* A one-mode family pins its mode; otherwise the tester's choice, and Auto binds unpinned. */}
+                    <TesterWorkspace primitiveId={selectedPrimitive} instanceId={previewInstanceId}
+                      evalMode={evalMode || (evalModes.length === 1 ? evalModes[0].evalMode : null)}
+                      offline={tutorMode === 'offline'} data={generatedData} topic={topic || selectedOption?.topic || ''}
+                      gradeLevel={selectedGrade} onEvaluationSubmit={setLastResult}>
+                      <PrimitiveRenderer
+                        componentId={selectedPrimitive}
+                        data={{ ...(generatedData as object), instanceId: previewInstanceId }}
+                        onEvaluationSubmit={setLastResult}
+                      />
+                      {/* Unbound render only: a bound Live preview brings its own tutor face. */}
+                      <CuratorCompanion />
+                    </TesterWorkspace>
+                  </div>
+                </div>
+              ) : (
               <div key={previewInstanceId} data-primitive-instance-id={previewInstanceId}>
                 <PrimitiveRenderer
                   componentId={selectedPrimitive}
@@ -407,6 +478,7 @@ const HistoryPrimitivesTesterContent: React.FC<HistoryPrimitivesTesterProps> = (
                 />
                 <CuratorCompanion />
               </div>
+              )
             )}
 
             {!isGenerating && generatedData == null && !error && (

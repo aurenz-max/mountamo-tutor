@@ -1,0 +1,47 @@
+{
+ "source": "qa/tutor-reports/map-explorer-runtime-find_on_globe-payload-2026-10-18.json",
+ "primitiveId": "map-explorer",
+ "evalMode": "find_on_globe",
+ "data": {
+  "title": "Spin the Globe",
+  "description": "Use your compass to explore the great continents and vast oceans on our big map.",
+  "challenges": [
+   {
+    "id": "map-1",
+    "type": "find_on_globe",
+    "rotation": 0,
+    "targetId": "europe",
+    "instruction": "Find Europe. Spin the globe to look around, then tap it."
+   },
+   {
+    "id": "map-2",
+    "type": "find_on_globe",
+    "rotation": 0,
+    "targetId": "south_america",
+    "instruction": "Find South America. Spin the globe to look around, then tap it."
+   },
+   {
+    "id": "map-3",
+    "type": "find_on_globe",
+    "rotation": 0,
+    "targetId": "asia",
+    "instruction": "Find Asia. Spin the globe to look around, then tap it."
+   },
+   {
+    "id": "map-4",
+    "type": "find_on_globe",
+    "rotation": 0,
+    "targetId": "north_america",
+    "instruction": "Find North America. Spin the globe to look around, then tap it."
+   },
+   {
+    "id": "map-5",
+    "type": "find_on_globe",
+    "rotation": 0,
+    "targetId": "indian",
+    "instruction": "Find the Indian Ocean. Spin the globe to look around, then tap it."
+   }
+  ],
+  "challengeType": "find_on_globe"
+ }
+}

@@ -3369,6 +3369,18 @@ export interface ConstructionSiteDioramaMetrics extends BasePrimitiveMetrics {
   averageAttemptsPerChallenge: number;
 }
 
+export interface MapExplorerMetrics extends BasePrimitiveMetrics {
+  type: 'map-explorer';
+  challengeType: 'find_by_direction' | 'name_direction' | 'build_route' | 'find_on_globe' | 'world_direction';
+  totalChallenges: number;
+  correctCount: number;
+  attemptsCount: number;
+  firstTryCount: number;
+  hintsViewed: number;
+  overallAccuracy: number;
+  averageAttemptsPerChallenge: number;
+}
+
 export interface TrainYardMetrics extends BasePrimitiveMetrics {
   type: 'train-yard';
   challengeType: 'match_car' | 'enough_cars' | 'enough_pull' | 'build_train';
@@ -3872,6 +3884,7 @@ export type PrimitiveMetrics =
   | TrainYardMetrics
   | AirplaneDioramaMetrics
   | ConstructionSiteDioramaMetrics
+  | MapExplorerMetrics
   | EcosystemDioramaMetrics
   // Creation
   | OpenBuilderMetrics

@@ -1744,6 +1744,7 @@ export type ComponentId =
   // History Primitives
   | 'cause-effect-chain'  // Build chains of historical cause and effect
   | 'era-explorer'        // Interactive historical era exploration
+  | 'map-explorer'        // Real-world maps: globe, continents and oceans, compass directions on a town map, routes
 
 /**
  * Tutoring scaffold metadata for AI-assisted learning.
@@ -2495,3 +2496,4 @@ export type { DigitalSkillsSimData } from './primitives/visual-primitives/core/D
 // History
 export type { CauseEffectChainData } from './primitives/visual-primitives/history/CauseEffectChain';
 export type { EraExplorerData } from './primitives/visual-primitives/history/EraExplorer';
+export type { MapExplorerData } from './primitives/visual-primitives/history/MapExplorer';

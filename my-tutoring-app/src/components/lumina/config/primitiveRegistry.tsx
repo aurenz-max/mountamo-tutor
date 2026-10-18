@@ -182,6 +182,7 @@ import GravityDropTower from '../primitives/visual-primitives/physics/GravityDro
 // History Primitives
 import CauseEffectChain from '../primitives/visual-primitives/history/CauseEffectChain';
 import EraExplorer from '../primitives/visual-primitives/history/EraExplorer';
+import MapExplorer from '../primitives/visual-primitives/history/MapExplorer';
 // Literacy Primitives (Wave 1 - K-6 ELA)
 import ParagraphArchitect from '../primitives/visual-primitives/literacy/ParagraphArchitect';
 import SentenceBuilder from '../primitives/visual-primitives/literacy/SentenceBuilder';
@@ -1978,6 +1979,15 @@ export const PRIMITIVE_REGISTRY: Record<ComponentId, PrimitiveConfig> = {
   'era-explorer': {
     component: EraExplorer,
     sectionTitle: 'Era Explorer',
+    showDivider: true,
+    dividerStyle: 'left',
+    allowMultiple: true,
+    containerClassName: 'max-w-6xl mx-auto mb-20',
+    supportsEvaluation: true,
+  },
+  'map-explorer': {
+    component: MapExplorer,
+    sectionTitle: 'Map Explorer',
     showDivider: true,
     dividerStyle: 'left',
     allowMultiple: true,

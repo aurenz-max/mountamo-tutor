@@ -12,6 +12,7 @@ import { registerContextGenerator } from '../contentRegistry';
 // History Generator Imports
 import { generateCauseEffectChain } from '../../history/gemini-cause-effect-chain';
 import { generateEraExplorer } from '../../history/gemini-era-explorer';
+import { generateMapExplorer } from '../../history/gemini-map-explorer';
 
 // ============================================================================
 // History Primitives Registration (K-6)
@@ -52,3 +53,10 @@ registerContextGenerator('cause-effect-chain', async (ctx) => ({
 // ============================================================================
 // Migration status: 2/2 history primitives registered
 // ============================================================================
+
+// Map Explorer (globe + continents/oceans; town maps of real places from Google Maps; compass directions, routes)
+registerContextGenerator('map-explorer', async (ctx) => ({
+  type: 'map-explorer',
+  instanceId: ctx.instanceId,
+  data: await generateMapExplorer(ctx),
+}));

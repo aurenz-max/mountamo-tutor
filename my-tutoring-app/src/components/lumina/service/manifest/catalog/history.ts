@@ -8,6 +8,7 @@
 import { ComponentDefinition } from '../../../types';
 import type { ChainMiss, SpokenChainMiss } from '../../../primitives/visual-primitives/history/causeEffectChainWorkspace';
 import type { SpokenEraMiss } from '../../../primitives/visual-primitives/history/eraExplorerWorkspace';
+import type { MapMiss } from '../../../primitives/visual-primitives/history/mapExplorerWorkspace';
 import { missLists } from './missLists';
 
 export const HISTORY_CATALOG: ComponentDefinition[] = [
@@ -310,6 +311,74 @@ export const HISTORY_CATALOG: ComponentDefinition[] = [
         era_sort: ['said_back_then', 'said_today', 'said_both'],
         era_compare: ['said_earlier', 'said_later', 'said_both', 'said_today'],
         cause_of_change: ['other_cause', 'said_what_changed'] }),
+    },
+  },
+  {
+    id: 'map-explorer',
+    description: 'Real-world maps and the compass. A spinnable globe that unrolls into a flat map of the world, with the seven continents (North America, South America, Europe, Africa, Asia, Australia, Antarctica) and the five oceans; and picture maps of real neighborhoods (real places from Google Maps, such as a school, a park, a library and a museum, laid out on city blocks) or a pretend town, each with a compass rose. Students find places using north, south, east and west, say which way one place is from another by tapping the compass, plan a bus trip block by block with compass directions, and find continents and oceans on the globe. Harder maps are turned so north is not up, so students must read the compass rose. Perfect for lessons on maps and globes, cardinal directions, the compass rose, location and spatial thinking, continents and oceans, and neighborhoods and communities. ESSENTIAL for K-3 social studies geography.',
+    constraints: 'Grades K-3. Each session is 4-5 asks on one map. Code lays out the map and writes every ask; the manifest must NOT name places, directions or answers. The intent may name a real city or neighborhood for the town map ("a map of downtown Chicago"); otherwise a well-known city is chosen.',
+    affordances: { representation: 'pictorial', reader: 'none', answers: ['tap'], role: ['visualize', 'apply'], minutes: 6 },
+    evalModes: [
+      {
+        evalMode: 'find_on_globe',
+        label: 'Find It on the Globe',
+        beta: -1.0,
+        scaffoldingMode: 1,
+        challengeTypes: ['find_on_globe'],
+        description: 'Spin a globe (or the flat world map) and tap a named continent or ocean; names appear only once found',
+      },
+      {
+        evalMode: 'find_by_direction',
+        label: 'Find by Direction',
+        beta: -0.5,
+        scaffoldingMode: 1,
+        challengeTypes: ['find_by_direction'],
+        description: 'On a town map with a compass rose, find and tap the place that is north, south, east or west of a named place',
+      },
+      {
+        evalMode: 'name_direction',
+        label: 'Which Way?',
+        beta: 0.0,
+        scaffoldingMode: 2,
+        challengeTypes: ['name_direction'],
+        description: 'On a town map, tap the compass arm that points from one named place to another (north, south, east or west)',
+      },
+      {
+        evalMode: 'world_direction',
+        label: 'Directions on the World',
+        beta: 0.5,
+        scaffoldingMode: 2,
+        challengeTypes: ['world_direction'],
+        description: 'On the world map, tap the continent or ocean just north, south, east or west of a named continent',
+      },
+      {
+        evalMode: 'build_route',
+        label: 'Plan the Trip',
+        beta: 1.0,
+        scaffoldingMode: 3,
+        challengeTypes: ['build_route'],
+        description: 'Plan a bus trip between two places on a town map with compass steps (two blocks north, then one block east), then press Go',
+      },
+    ],
+    supportsEvaluation: true,
+    teachingWorkspace: {
+      grades: ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3'],
+      guidance: 'The learner answers on the map, and the tap is the check: a place on the town map, an arm of the compass rose, '
+        + 'or land or water on the globe; on a trip, the arrows and Go. Directions come from the compass rose, never from up and '
+        + 'down on the screen: when the map is turned, north is not up, so ask the learner to find N on the compass first. Never '
+        + 'name the place, region or direction that answers the ask, and never say which places line up with each other; ask '
+        + 'which way the compass says, and what is on that side of the named place. A place counts as east, west, north or south '
+        + 'of another only when it is on the same street line. On the globe, continent and ocean names appear only once found, '
+        + 'so never name a continent by its colour or say where to spin. After a check the screen says what the learner tapped '
+        + 'and where it is; the tutor may talk about that.',
+      misses: missLists<MapMiss>({
+        find_on_globe: ['other_continent', 'water_not_land', 'land_not_water', 'other_ocean', 'sea_not_ocean'],
+        find_by_direction: ['screen_direction', 'opposite_way', 'turned_way', 'reference_place', 'other_place'],
+        name_direction: ['screen_direction', 'opposite_way', 'turned_way'],
+        world_direction: ['reference_place', 'opposite_way', 'turned_way', 'other_continent', 'water_not_land',
+          'land_not_water', 'other_ocean', 'sea_not_ocean'],
+        build_route: ['route_mirrored', 'route_wrong_end'],
+      }),
     },
   },
 ];

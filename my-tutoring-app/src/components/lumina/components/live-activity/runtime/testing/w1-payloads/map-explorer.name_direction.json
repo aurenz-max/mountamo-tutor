@@ -1,0 +1,156 @@
+{
+ "source": "qa/tutor-reports/map-explorer-runtime-name_direction-payload-2026-10-18.json",
+ "primitiveId": "map-explorer",
+ "evalMode": "name_direction",
+ "data": {
+  "title": "Explore Our Neighborhood Map",
+  "description": "Join us on a fun journey to use the compass rose and explore all the exciting spots on our map!",
+  "challenges": [
+   {
+    "id": "map-1",
+    "type": "name_direction",
+    "rotation": 0,
+    "fromId": "place-1",
+    "targetId": "place-2",
+    "direction": "south",
+    "instruction": "Which way is Metropolitan Market Queen Anne from Queen Anne Library? Tap the compass."
+   },
+   {
+    "id": "map-2",
+    "type": "name_direction",
+    "rotation": 0,
+    "fromId": "place-5",
+    "targetId": "place-8",
+    "direction": "west",
+    "instruction": "Which way is Climate Pledge from Denny Park? Tap the compass."
+   },
+   {
+    "id": "map-3",
+    "type": "name_direction",
+    "rotation": 0,
+    "fromId": "place-7",
+    "targetId": "place-5",
+    "direction": "north",
+    "instruction": "Which way is Denny Park from Fire Station? Tap the compass."
+   },
+   {
+    "id": "map-4",
+    "type": "name_direction",
+    "rotation": 0,
+    "fromId": "place-3",
+    "targetId": "place-4",
+    "direction": "east",
+    "instruction": "Which way is Playground from Science Center? Tap the compass."
+   },
+   {
+    "id": "map-5",
+    "type": "name_direction",
+    "rotation": 0,
+    "fromId": "place-4",
+    "targetId": "place-9",
+    "direction": "west",
+    "instruction": "Which way is Kids Museum from Playground? Tap the compass."
+   }
+  ],
+  "challengeType": "name_direction",
+  "townMap": {
+   "name": "Seattle Center Area",
+   "city": "Seattle, Washington",
+   "source": "google_maps",
+   "center": {
+    "lat": 47.6205,
+    "lng": -122.3493
+   },
+   "places": [
+    {
+     "id": "place-1",
+     "name": "Queen Anne Library",
+     "kind": "library",
+     "lat": 47.62723,
+     "lng": -122.35824,
+     "fullName": "Queen Anne Branch - The Seattle Public Library",
+     "blurb": "You can find picture books about friendly dragons and read them.",
+     "mapsUri": "https://maps.google.com/maps?cid=8515742884196554292"
+    },
+    {
+     "id": "place-2",
+     "name": "Metropolitan Market Queen Anne",
+     "kind": "market",
+     "lat": 47.62365,
+     "lng": -122.35677,
+     "blurb": "This grocery store has a giant cookie counter with warm cookies.",
+     "mapsUri": "https://maps.google.com/maps?cid=15107838454557967876"
+    },
+    {
+     "id": "place-3",
+     "name": "Science Center",
+     "kind": "museum",
+     "lat": 47.62143,
+     "lng": -122.35332,
+     "fullName": "Pacific Science Center",
+     "blurb": "You can walk through a warm room filled with colorful butterflies.",
+     "mapsUri": "https://maps.google.com/maps?cid=11072473183036697406"
+    },
+    {
+     "id": "place-4",
+     "name": "Playground",
+     "kind": "playground",
+     "lat": 47.6225,
+     "lng": -122.3486,
+     "fullName": "\"Artists At Play\" Playground",
+     "blurb": "You can climb up a giant tower and zoom down a tall slide.",
+     "mapsUri": "https://maps.google.com/maps?cid=9024652461611369200"
+    },
+    {
+     "id": "place-5",
+     "name": "Denny Park",
+     "kind": "park",
+     "lat": 47.61805,
+     "lng": -122.34139,
+     "blurb": "You can play on the fun swings and run around on the grass.",
+     "mapsUri": "https://maps.google.com/maps?cid=17697390754654843374"
+    },
+    {
+     "id": "place-6",
+     "name": "Whole Foods",
+     "kind": "market",
+     "lat": 47.61664,
+     "lng": -122.33878,
+     "fullName": "Whole Foods Market",
+     "blurb": "You can pick out a bright, shiny apple for a snack.",
+     "mapsUri": "https://maps.google.com/maps?cid=13331991485400734650"
+    },
+    {
+     "id": "place-7",
+     "name": "Fire Station",
+     "kind": "fire_station",
+     "lat": 47.61439,
+     "lng": -122.34316,
+     "fullName": "Seattle Fire Station 2",
+     "blurb": "Real firefighters work here and drive huge red trucks with sirens.",
+     "mapsUri": "https://maps.google.com/maps?cid=15916840767408865178"
+    },
+    {
+     "id": "place-8",
+     "name": "Climate Pledge",
+     "kind": "stadium",
+     "lat": 47.62055,
+     "lng": -122.35528,
+     "fullName": "Climate Pledge Arena",
+     "blurb": "This is where the hockey team plays games on slippery ice.",
+     "mapsUri": "https://maps.google.com/maps?cid=15998104634649095719"
+    },
+    {
+     "id": "place-9",
+     "name": "Kids Museum",
+     "kind": "museum",
+     "lat": 47.62167,
+     "lng": -122.35417,
+     "fullName": "Seattle Children's Museum",
+     "blurb": "You get to pretend to run a store and dress up in costumes.",
+     "mapsUri": "https://maps.google.com/maps?cid=4808373583600415459"
+    }
+   ]
+  }
+ }
+}

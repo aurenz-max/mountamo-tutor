@@ -387,6 +387,8 @@ import { answerLabel as dnlAnswerLabel, ratioLineHarnessValues as dnlHarnessValu
 import { practiceParent as dnlPracticeParent, simplerLine as dnlSimplerLine }
   from '../../primitives/visual-primitives/math/doubleNumberLineLevers';
 
+import { flyRoute as mapFlight, type TownMap as MapExplorerTown } from '../../primitives/visual-primitives/history/map/mapModel';
+
 /** One real learner action for the mounted driver to perform. */
 export type DriverInput =
   | { type: 'place'; value: number }
@@ -2743,6 +2745,44 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
       throw new Error('Construction-site-diorama load_truck is taps on the 3D site, not driven at W1');
     },
     probes: { mounted: { selector: '[data-construction-scene]' } },
+  },
+  'map-explorer': {
+    execution: 'workspace',
+    component: 'primitives/visual-primitives/history/MapExplorer.tsx',
+    instanceId: 'map',
+    defaults: { grade: 'Grade 1', mode: 'find_by_direction', di: false, topic: 'Using a compass rose to find places on a map' },
+    leakTokens: [],
+    prompts: WORKSPACE_PROMPTS,
+    // Every answer goes through the real controls, and the tap (or Go) is the check: find_by_direction taps a place
+    // (wrong: the place the ask starts from); name_direction a compass arm (wrong: the opposite arm); find_on_globe
+    // and world_direction a continent or ocean (wrong: another continent, or the starting continent); build_route
+    // presses the arrows, one hop each, then Land (wrong: the east-west leg mirrored).
+    inputsFor: (intent, ctx) => {
+      if (intent === 'warmup') return [];
+      const c = ctx.challenge as { type?: string; targetId?: string; fromId?: string; direction?: string } | null;
+      const data = ctx.data as { townMap?: MapExplorerTown };
+      const opposite: Record<string, string> = { north: 'south', south: 'north', east: 'west', west: 'east' };
+      if (!c?.targetId) throw new Error(`map-explorer: no current ask ${ctx.itemId}`);
+      if (c.type === 'find_by_direction') return [{ type: 'touch', target: intent === 'wrong' ? c.fromId! : c.targetId }];
+      if (c.type === 'name_direction') return [{ type: 'touch', target: `arm-${intent === 'wrong' ? opposite[c.direction!] : c.direction}` }];
+      if (c.type === 'find_on_globe')
+        return [{ type: 'touch', target: `region-${intent === 'wrong' ? (c.targetId === 'africa' ? 'asia' : 'africa') : c.targetId}` }];
+      if (c.type === 'world_direction') return [{ type: 'touch', target: `region-${intent === 'wrong' ? c.fromId : c.targetId}` }];
+      if (c.type === 'build_route') {
+        if (!data.townMap) throw new Error('map-explorer build_route: no map');
+        const { wanted } = mapFlight(data.townMap, c as never, []);
+        const e = Math.round(wanted.east), n = Math.round(wanted.north);
+        const ew = e > 0 ? 'East' : 'West', ns = n > 0 ? 'North' : 'South';
+        const firstLeg = intent === 'wrong' ? (ew === 'East' ? 'West' : 'East') : ew;
+        return [
+          ...Array.from({ length: Math.abs(e) }, (): DriverInput => ({ type: 'choose', label: firstLeg })),
+          ...Array.from({ length: Math.abs(n) }, (): DriverInput => ({ type: 'choose', label: ns })),
+          { type: 'choose', label: 'Land!' },
+        ];
+      }
+      throw new Error(`map-explorer ${c.type} is not driven`);
+    },
+    probes: { mounted: { selector: '[data-live-map]' } },
   },
   'timeline-explorer': {
     execution: 'workspace',

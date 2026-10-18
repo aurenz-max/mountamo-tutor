@@ -941,6 +941,13 @@ PROBLEM_TYPE_REGISTRY: Dict[str, Dict[str, PriorConfig]] = {
     "open-builder": {
         "build_to_goal": PriorConfig(0.0, "Build to the goal"),
     },
+    "map-explorer": {
+        "find_on_globe": PriorConfig(-1.0, "Spin a globe and tap a named continent or ocean"),
+        "find_by_direction": PriorConfig(-0.5, "Find the place in a named compass direction from another place on a town map"),
+        "name_direction": PriorConfig(0.0, "Tap the compass arm that points from one place to another on a town map"),
+        "world_direction": PriorConfig(0.5, "Tap the continent or ocean just north, south, east or west of a named continent"),
+        "build_route": PriorConfig(1.0, "Plan a trip between two places on a town map with compass steps"),
+    },
     "construction-site-diorama": {
         "load_truck": PriorConfig(-1.0, "Work the excavator to load a dump truck with the right number of scoops"),
     },
