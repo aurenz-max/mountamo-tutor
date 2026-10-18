@@ -28,7 +28,7 @@
  */
 
 import { Type, Schema } from "@google/genai";
-import { ai } from "../geminiClient";
+import { resolveContextAxis, cleanStringList, type AxisSpec } from "../contextAxis";
 import type { PedagogicalScope } from "../scopeContext";
 
 /** Upper sanity bound on an enumerated taught-concept list (house rule: bound ALL arrays). */
@@ -83,6 +83,31 @@ const deckRequestSchema: Schema = {
   required: ["requestedCount", "isReview", "taughtConcepts"],
 };
 
+const deckAxis: AxisSpec<DeckRequest> = {
+  id: 'flashcard-deck.request',
+  activity: 'A flashcard deck',
+  intentLabel: "THIS DECK'S INTENT",
+  instructions: `Report ONLY what the text above actually says. Do not infer, do not fill in a sensible default.
+
+- requestedCount: the exact card count the text explicitly asks for ("10 simple review cards" -> 10, "a handful" -> null). If NO specific number appears, return null.
+- isReview: true ONLY if the text describes reviewing, recalling, or assessing material the lesson ALREADY covered. An open topic to study, or an introduction to something new, is false.
+- taughtConcepts: the specific things the lesson taught, as the text names them (e.g. "the light bulb", "electric light", "working at night"). If the text does not name or clearly imply particular taught concepts, return an empty array. Never add concepts that merely relate to the topic.`,
+  schema: deckRequestSchema,
+  validate(parsed) {
+    // Count: validate, never clamp. Out-of-window => unresolved, so the caller's default stands.
+    let requestedCount: number | null = null;
+    if (parsed?.requestedCount !== null && parsed?.requestedCount !== undefined) {
+      const n = Math.round(Number(parsed.requestedCount));
+      if (Number.isFinite(n) && n >= MIN_VALID_COUNT && n <= MAX_VALID_COUNT) requestedCount = n;
+    }
+    return {
+      requestedCount,
+      isReview: parsed?.isReview === true,
+      taughtConcepts: cleanStringList(parsed?.taughtConcepts, MAX_TAUGHT_CONCEPTS),
+    };
+  },
+};
+
 /**
  * Resolve what a flashcard deck was actually asked for from its pedagogical scope.
  *
@@ -91,56 +116,9 @@ const deckRequestSchema: Schema = {
  * @returns The request, or null when there is nothing to resolve / resolution failed
  *          (→ caller keeps its existing default: no regression).
  */
-export async function resolveDeckRequest(
+export function resolveDeckRequest(
   scope: PedagogicalScope,
   gradeLevel: string,
 ): Promise<DeckRequest | null> {
-  // Nothing lesson-specific to bind → keep the open-study default (no call, no cost).
-  if (!scope.intent && !scope.objectiveText) return null;
-
-  try {
-    const prompt = `A flashcard deck is being generated for a lesson. Read what the lesson asked for.
-
-TOPIC: "${scope.topic}"
-${scope.objectiveText ? `LEARNING OBJECTIVE: "${scope.objectiveText}"\n` : ''}${scope.intent ? `THIS DECK'S INTENT: "${scope.intent}"\n` : ''}GRADE: ${gradeLevel}
-
-Report ONLY what the text above actually says. Do not infer, do not fill in a sensible default.
-
-- requestedCount: the exact card count the text explicitly asks for ("10 simple review cards" -> 10, "a handful" -> null). If NO specific number appears, return null.
-- isReview: true ONLY if the text describes reviewing, recalling, or assessing material the lesson ALREADY covered. An open topic to study, or an introduction to something new, is false.
-- taughtConcepts: the specific things the lesson taught, as the text names them (e.g. "the light bulb", "electric light", "working at night"). If the text does not name or clearly imply particular taught concepts, return an empty array. Never add concepts that merely relate to the topic.`;
-
-    const result = await ai.models.generateContent({
-      model: "gemini-flash-lite-latest",
-      contents: prompt,
-      config: { temperature: 0, responseMimeType: "application/json", responseSchema: deckRequestSchema },
-    });
-    if (!result.text) return null;
-    const parsed = JSON.parse(result.text);
-
-    // Count: validate, never clamp. Out-of-window => unresolved, so the caller's default stands.
-    let requestedCount: number | null = null;
-    if (parsed?.requestedCount !== null && parsed?.requestedCount !== undefined) {
-      const n = Math.round(Number(parsed.requestedCount));
-      if (Number.isFinite(n) && n >= MIN_VALID_COUNT && n <= MAX_VALID_COUNT) requestedCount = n;
-    }
-
-    // Concepts: trim, drop empties, dedupe case-insensitively, bound the list.
-    const seen = new Set<string>();
-    const taughtConcepts = (Array.isArray(parsed?.taughtConcepts) ? parsed.taughtConcepts : [])
-      .map((c: unknown) => (typeof c === 'string' ? c.trim() : ''))
-      .filter((c: string) => {
-        if (!c) return false;
-        const key = c.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, MAX_TAUGHT_CONCEPTS);
-
-    return { requestedCount, isReview: parsed?.isReview === true, taughtConcepts };
-  } catch (e) {
-    console.warn('[resolveDeckRequest] resolution failed:', e);
-    return null;
-  }
+  return resolveContextAxis(deckAxis, scope, gradeLevel);
 }

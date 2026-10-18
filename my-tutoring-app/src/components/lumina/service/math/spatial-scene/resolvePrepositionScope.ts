@@ -51,7 +51,7 @@
  */
 
 import { Type, Schema } from "@google/genai";
-import { ai } from "../../geminiClient";
+import { resolveContextAxis, cleanStringList, type AxisSpec } from "../../contextAxis";
 import type { PedagogicalScope } from "../../scopeContext";
 
 /**
@@ -387,6 +387,28 @@ const prepositionScopeSchema: Schema = {
   required: ["requested", "unsupported"],
 };
 
+const prepositionAxis: AxisSpec<PrepositionScope> = {
+  id: 'spatial-scene.positions',
+  activity: 'A spatial-position activity',
+  instructions: `Report ONLY the position words the text above actually names. Do not infer, do not fill in a sensible default, do not add words that merely relate to the topic.
+
+- requested: which of these supported words the text asks the student to practise — ${SUPPORTED_POSITIONS.join(", ")}. Map natural phrasings onto this list ("on top of" -> on, "underneath"/"beneath" -> under, "next to"/"nextto" -> next_to, "to the left of" -> left_of, "inside"/"into" -> in, "in the middle of"/"in between" -> between, "in front of" -> in_front_of). If the text names NO particular position words, return an empty array.
+- unsupported: any other position or preposition words the text asks for that are not in that supported list (for example: through, around, across). Empty array if there are none.`,
+  schema: prepositionScopeSchema,
+  validate(parsed) {
+    // Requested: keep only genuinely supported words, dedupe, preserve canonical order.
+    const asked = new Set(
+      (Array.isArray(parsed?.requested) ? parsed.requested : [])
+        .map((p: unknown) => (typeof p === 'string' ? p.trim().toLowerCase() : '')),
+    );
+    const requested = SUPPORTED_POSITIONS.filter((p) => asked.has(p));
+    // Unsupported: a word that is actually supported is stripped.
+    const unsupported = cleanStringList(parsed?.unsupported, MAX_UNSUPPORTED, SUPPORTED_POSITIONS);
+    return { requested, unsupported };
+  },
+  gaps: (v) => v.unsupported,
+};
+
 /**
  * Resolve which position words a spatial-scene lesson actually asked for.
  *
@@ -395,57 +417,11 @@ const prepositionScopeSchema: Schema = {
  * @returns The resolved scope, or null when there is nothing to resolve / resolution
  *          failed (→ caller keeps its grade-band window: no regression).
  */
-export async function resolvePrepositionScope(
+export function resolvePrepositionScope(
   scope: PedagogicalScope,
   gradeLevel: string,
 ): Promise<PrepositionScope | null> {
-  // Nothing lesson-specific to bind → keep the band default (no call, no cost).
-  if (!scope.intent && !scope.objectiveText) return null;
-
-  try {
-    const prompt = `A spatial-position activity is being generated for a lesson. Read what the lesson asked for.
-
-TOPIC: "${scope.topic}"
-${scope.objectiveText ? `LEARNING OBJECTIVE: "${scope.objectiveText}"\n` : ''}${scope.intent ? `THIS ACTIVITY'S INTENT: "${scope.intent}"\n` : ''}GRADE: ${gradeLevel}
-
-Report ONLY the position words the text above actually names. Do not infer, do not fill in a sensible default, do not add words that merely relate to the topic.
-
-- requested: which of these supported words the text asks the student to practise — ${SUPPORTED_POSITIONS.join(", ")}. Map natural phrasings onto this list ("on top of" -> on, "underneath"/"beneath" -> under, "next to"/"nextto" -> next_to, "to the left of" -> left_of, "inside"/"into" -> in, "in the middle of"/"in between" -> between, "in front of" -> in_front_of). If the text names NO particular position words, return an empty array.
-- unsupported: any other position or preposition words the text asks for that are not in that supported list (for example: through, around, across). Empty array if there are none.`;
-
-    const result = await ai.models.generateContent({
-      model: "gemini-flash-lite-latest",
-      contents: prompt,
-      config: { temperature: 0, responseMimeType: "application/json", responseSchema: prepositionScopeSchema },
-    });
-    if (!result.text) return null;
-    const parsed = JSON.parse(result.text);
-
-    // Requested: keep only genuinely supported words, dedupe, preserve canonical order.
-    const asked = new Set(
-      (Array.isArray(parsed?.requested) ? parsed.requested : [])
-        .map((p: unknown) => (typeof p === 'string' ? p.trim().toLowerCase() : '')),
-    );
-    const requested = SUPPORTED_POSITIONS.filter((p) => asked.has(p));
-
-    // Unsupported: trim, drop empties, dedupe case-insensitively, bound the list.
-    const seen = new Set<string>();
-    const unsupported = (Array.isArray(parsed?.unsupported) ? parsed.unsupported : [])
-      .map((w: unknown) => (typeof w === 'string' ? w.trim() : ''))
-      .filter((w: string) => {
-        if (!w) return false;
-        const key = w.toLowerCase();
-        if (seen.has(key) || (SUPPORTED_POSITIONS as readonly string[]).includes(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, MAX_UNSUPPORTED);
-
-    return { requested, unsupported };
-  } catch (e) {
-    console.warn('[resolvePrepositionScope] resolution failed:', e);
-    return null;
-  }
+  return resolveContextAxis(prepositionAxis, scope, gradeLevel);
 }
 
 /**
