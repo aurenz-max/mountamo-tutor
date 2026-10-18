@@ -337,6 +337,21 @@ ${concept
   by twos"). Every anchor must name the SPECIFIC unit or amount of THIS instance ("plus two", "red then
   blue") — never a generic that fits any pattern ("it repeats", "alternating", "it goes up"); a generic is
   half an answer and the reviewer rejects it. None of them may be the instance read back.`}
+- WHY-QUESTIONS ABOUT EVERYDAY SCENES (social studies, science, choices): the instance is a short scene a
+  child can picture, 4-14 words ("Mia's grandma cooks food from Mexico", "Sam has one dollar for a snack").
+  The ask repeats the scene WORD FOR WORD (an ask that drops or rewords a scene word is rejected), then
+  asks WHY ("Why is it fun to try a new food?"). If the objective asks the child to CHOOSE, the scene names
+  every option once, in a neutral order and with equal weight, and the ask asks which one AND why ("An
+  apple or a candy bar. Which is the better snack, and why?") — an ask for the choice alone is not an
+  explanation. When the objective is about limited money or a trade-off, the scene states the limit
+  plainly ("Sam has enough money for only one") and the reason says why that choice is worth more than
+  what is given up. The scene never states the need the right option meets ("your eyes hurt", "you
+  want to read") — the child supplies the reason. "conceptStatement" is the right choice (if any) plus ONE
+  true reason for THIS scene. The anchors are the REASON alone, at most ${CONCEPT_ANCHOR_MAX_WORDS} words ("keeps you healthy",
+  "talk to more people") — never the chosen thing, never "X because Y", never a word from the scene.
+  When several reasons are right, "acceptRule" says any other true reason of that kind counts, and
+  "signatureError" names the empty answers: the choice with no reason, "because I like it", the scene
+  read back.
 - "acceptRule" names the wordings that count even without the anchor words ("any words that say the two
   sides match or are even count"). "signatureError" names the TRUE-BUT-NOT-AN-EXPLANATION answers: the
   result ("saying the sum, five, is NOT an explanation"), the next term, the thing's name, and the
@@ -412,7 +427,10 @@ ITEMS: ${JSON.stringify(items.map((i) => ({
 For EACH item: is conceptStatement a TRUE, grade-appropriate statement of what the objective asks the
 child to explain, for THIS instance? Does every anchor mean the same thing as the concept sentence?
 Would a child who says only an anchor have shown the understanding the objective names? Does the ask
-give the idea away? Reject the ITEM (by id) on any no. Reject the SESSION only if two items show the
+give the idea away? Reject the ITEM (by id) on any no. A why-question about an everyday scene may have
+several right reasons: conceptStatement names one of them, which is correct, and is not grounds for
+rejection. An ask that names every option and asks which AND why is an explanation ask; an ask for the
+choice alone is not. Reject the SESSION only if two items show the
 SAME thing on screen (the same equation, the same pattern) — different equations that happen to share
 a total ("3 + 2 = 5" and "1 + 4 = 5") are different instances and are fine.
 Return rejectedIds (empty if all pass), sessionValid, and a short reason.`,
@@ -623,7 +641,9 @@ const generateSessionContent = async (
         .map((item, i) => buildSpokenItem(item, i, mode, menu, concept))
         .filter((item): item is SpokenPracticeItem => item !== null);
       const result = gateSpokenItems(built);
-      items = result.kept;
+      // An explain session's items come only from the reviewed pool: if the
+      // review call throws, unreviewed (and uncapped) gate output must not ship.
+      if (!explain) items = result.kept;
       if (sparing && !explain) {
         // The marked-easier item and anything past `count` are spares, never session items.
         const plain = items.filter((i) => !i.easier);
@@ -634,8 +654,8 @@ const generateSessionContent = async (
       if (dropped.length) console.warn('[DiSpokenPractice] gate drops:', result.reasons);
       // The semantic half of the concept gate — shape passed, now meaning.
       if (explain) {
-        const review = items.length
-          ? await reviewConceptItems(items, { topic, gradeLevel, objectiveText: config?.objectiveText, intent })
+        const review = result.kept.length
+          ? await reviewConceptItems(result.kept, { topic, gradeLevel, objectiveText: config?.objectiveText, intent })
           : { kept: [], rejected: [], reason: '' };
         if (review.rejected.length) {
           console.warn(`[DiSpokenPractice] explain review rejected ${review.rejected.join(', ')}: ${review.reason}`);

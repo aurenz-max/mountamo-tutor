@@ -184,11 +184,12 @@ export const DI_SPOKEN_PRACTICE_MODES = defineDiModes<
     beta: 4.0,
     scaffoldingMode: 4,
     challengeTypes: ['explain_concept'],
-    description: 'The child sees one instance (an equation on a balance, a pattern, a ten rod) and says in their own words what it means or what rule it follows. Use for explain / describe / tell-why objectives whose answer is a short idea with many correct wordings. Judged on meaning; the ask never states the concept.',
+    description: 'The child sees one instance (an equation on a balance, a pattern, a ten rod, or a short everyday scene) and says in their own words what it means, what rule it follows, or why (why a choice is wise, why a difference is good). Use for explain / describe / tell-why objectives whose answer is a short idea or reason with many correct wordings. Judged on meaning; the ask never states the concept.',
     challengeDocs: {
       explain_concept: {
         promptDoc:
-          '"explain_concept": the child sees ONE instance (an equation, a pattern, a ten rod) and says '
+          '"explain_concept": the child sees ONE instance (an equation, a pattern, a ten rod, a short '
+          + 'everyday scene) and says '
           + 'IN THEIR OWN WORDS what it means, why it is so, or what rule governs it. The answer is an '
           + 'IDEA with many correct wordings, judged on meaning; the ask never states the concept. Use it '
           + 'for explain / describe / tell-why objectives whose answer is a short proposition.',

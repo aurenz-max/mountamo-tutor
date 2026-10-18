@@ -217,6 +217,13 @@ TASKS:
   concept varies per instance (the rule of a pattern), targets is empty, closedSet false, and
   conceptStatement empty — the item generator writes each instance and its rule. A PROCEDURE
   ("explain how to solve", the steps of a method) is not one proposition: use unsupported.
+  explain_concept ALSO covers a WHY question about an everyday scene (social studies, science,
+  choices): why a choice is wise, what was given up, why a difference or custom is good, why a rule
+  helps. A REASON ("you can talk to more people") is a short proposition even when several different
+  reasons are right; it is open, so targets is empty. An objective framed as a reflection or a
+  conversation with the tutor is this task when the child's turn is a short reason. An objective that
+  asks the child to choose AND give the reason is this task too: each item names the options and the
+  child says which and why.
 - unsupported: letter NAMES, open-ended answers that are not a short proposition, procedures,
   unsupported representations, or an impossible scope.
 An answer must be 1-3 short spoken words, except explain_concept anchors (1-${CONCEPT_ANCHOR_MAX_WORDS}). Letter names
@@ -259,12 +266,24 @@ ${feedback}`,
       }
       // Review even an empty/open plan: otherwise misclassifying a named set
       // as generic practice would bypass the coverage contract entirely.
+      // The reviewer sees what the child SEES: a picture target's stimulusText
+      // is a hidden label (the component renders the emoji only), so sending it
+      // raw read as "the answer is printed" and rejected every color/picture
+      // naming plan once, doubling planning latency.
       {
+        const shown = {
+          ...plan,
+          targets: plan.targets.map(({ stimulusText, stimulusEmoji, ...rest }) => ({
+            ...rest,
+            ...(stimulusEmoji ? { shownPicture: stimulusEmoji } : { printedText: stimulusText }),
+          })),
+        };
         const review = await ai.models.generateContent({
           model: PLAN_MODEL,
           contents: `Independently check this proposed spoken-practice plan against the ORIGINAL context.
 CONTEXT: ${context}
-PLAN: ${JSON.stringify(plan)}
+PLAN: ${JSON.stringify(shown)}
+Each target shows the child EITHER shownPicture (an emoji, no words printed) OR printedText.
 This is a TASK PLAN, not the generated practice session. Its targets array is ONLY for visual
 naming, explicitly enumerated reading targets, compare_choice — where the targets are the
 required comparison WORDS themselves (the objects each item compares are written later, so their
@@ -273,7 +292,9 @@ concept, where the single target only NAMES the concept (a token from the text, 
 grounding hook — the instances the child actually sees are written later, so the hook's glyph or
 picture is NOT grounds for rejection; judge only that conceptStatement is TRUE and grade-appropriate
 and that every anchor MEANS the same thing as it, and reject on any no. An open explain_concept plan
-(the rule varies per instance) has no targets and no conceptStatement, which is correct.
+(the rule varies per instance) has no targets and no conceptStatement, which is correct. So does
+an explain_concept plan for a why-question about everyday scenes, a reflection whose child turn is a
+short reason, or a choose-and-give-the-reason objective: saying the reason aloud IS that learner action.
 subject_verb_agreement is valid only when the requested action is present-tense agreement across
 singular and plural subjects; its targets MUST be empty because code builds answer-free is/are
 sentence pairs after this review. For listening recall, arithmetic, counting, or reading from a
