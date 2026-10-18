@@ -463,31 +463,36 @@ export function buildSolarChallenges(
     ]),
   );
 
-  // Interleave the kinds; the script gate drops what cannot be asked.
-  const rotation: ChallengeCandidate[] = [];
-  let progressed = true;
-  while (progressed) {
-    progressed = false;
-    for (const k of kinds) {
-      const next = pools.get(k)!.shift();
-      if (!next) continue;
-      progressed = true;
-      rotation.push(next);
-    }
-  }
-
-  const likes: SolarChallengeLike[] = rotation.map((c) => ({
+  // Interleave the kinds, one accepted item per kind per round. Each candidate goes
+  // through the script gate together with the items already accepted, and is
+  // skipped if the gate drops it (answer-once). Gating the whole rotation once and
+  // slicing let early classify items (four bodies each) answer every planet, so
+  // the later kinds were all dropped and the mixed session had three kinds.
+  const like = (c: ChallengeCandidate): SolarChallengeLike => ({
     id: c.key,
     type: c.type,
     facet: c.facet,
     position: c.position,
     optionBodyIds: c.optionBodyIds,
     answerBodyIds: c.answerBodyIds,
-  }));
-  const { items } = itemsFromChallenges(likes, { bodies, rung });
+  });
+  const accepted: ChallengeCandidate[] = [];
+  let kept: SolarItem[] = [];
+  let progressed = true;
+  while (progressed && kept.length < count) {
+    progressed = false;
+    for (const k of kinds) {
+      if (kept.length >= count) break;
+      const pool = pools.get(k)!;
+      while (pool.length) {
+        const next = pool.shift()!;
+        const { items } = itemsFromChallenges([...accepted, next].map(like), { bodies, rung });
+        if (items.length > kept.length) { accepted.push(next); kept = items; progressed = true; break; }
+      }
+    }
+  }
 
-  const rankOf = new Map(rotation.map((c) => [c.key, c.rank]));
-  const kept = items.slice(0, count);
+  const rankOf = new Map(accepted.map((c) => [c.key, c.rank]));
   kept.sort(
     (a, b) =>
       (TIER_ORDER.indexOf(a.kind) - TIER_ORDER.indexOf(b.kind))
