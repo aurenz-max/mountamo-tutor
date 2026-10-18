@@ -4,7 +4,7 @@ import { DI_CATALOG } from '../../../service/manifest/catalog/di';
 import { itemsFromRules, type DeductionItem, type DeductionRuleSpec } from './diDeductionScript';
 import { deductionSpokenMisses } from './diDeductionWorkspace';
 import { ANSWER_FRAME, COUNTEREXAMPLE_CARD, MODEL_CASE, SHARED_TERM, contentWords, counterexampleFact, counterexampleFor,
-  deductionLeverFacts, deductionLevers, frameText, modelCases, modelRuleFor, spareLeaks, sparesFor } from './diDeductionLevers';
+  DEDUCTION_LEVERS, frameText, modelCases, modelRuleFor, spareLeaks, sparesFor } from './diDeductionLevers';
 import concludeP from '../../../components/live-activity/runtime/testing/w1-payloads/di-deduction.conclude.json';
 import denyP from '../../../components/live-activity/runtime/testing/w1-payloads/di-deduction.deny.json';
 import cannotP from '../../../components/live-activity/runtime/testing/w1-payloads/di-deduction.cannot_tell.json';
@@ -64,7 +64,7 @@ describe('model_case (R1): every verdict on the spare, so the card points at non
   it('on every saved payload each item has a model, and its fact never states the item\'s conclusion', () => {
     for (const { items: session, spares } of SAVED) for (const it0 of session) {
       expect(modelRuleFor(it0, session, spares), it0.id).not.toBeNull();
-      const fact = deductionLeverFacts(it0, [MODEL_CASE], session, spares);
+      const fact = DEDUCTION_LEVERS.onScreen(it0, { items: session, spares: spares }, [MODEL_CASE]);
       expect(fact).not.toContain(it0.case.conclusionText);
       for (const look of it0.rule.lookalikes) expect(fact.toLowerCase()).not.toMatch(new RegExp(`\\b${look}\\b`));
     }
@@ -81,7 +81,7 @@ describe('help on the cards, and the counterexample practice case', () => {
 
   it('shared_term on conclude and deny only; never on cannot_tell', () => {
     const all = items([BIRDS]);
-    expect(all.map(i => deductionLevers(i, [], all, []).some(l => l.id === SHARED_TERM))).toEqual([true, true, false]);
+    expect(all.map(i => DEDUCTION_LEVERS.declare(i, { items: all, spares: [] }, []).some(l => l.id === SHARED_TERM))).toEqual([true, true, false]);
   });
 
   it('counterexample_card: a cannot_tell case on a spare, its lookalike printed; prefers a spare the model does not use', () => {
@@ -105,13 +105,13 @@ describe('starting positions and which lever answers which miss', () => {
     ['said_not_member', [], MODEL_CASE],
   ] as const)('cannot_tell: %s with %j on screen → %s', (miss, pulled, expected) => {
     const cannot = items([{ ...BIRDS, shapes: ['cannot_tell'] }])[0];
-    expect(nextLever(deductionLevers(cannot, pulled, [cannot], [SPIDERS, { ...SPIDERS, id: 's2' }]), miss)).toBe(expected);
+    expect(nextLever(DEDUCTION_LEVERS.declare(cannot, { items: [cannot], spares: [SPIDERS, { ...SPIDERS, id: 's2' }] }, pulled), miss)).toBe(expected);
   });
 
   it('every catalog miss is answered on every saved payload, and every named miss is listed', () => {
     for (const { items: session, spares } of SAVED) {
       const mode = session[0].shape;
-      const answered = new Set(session.flatMap((i: DeductionItem) => deductionLevers(i, [], session, spares).flatMap(l => l.answers ?? [])));
+      const answered = new Set(session.flatMap((i: DeductionItem) => DEDUCTION_LEVERS.declare(i, { items: session, spares: spares }, []).flatMap(l => l.answers ?? [])));
       for (const miss of CATALOG.misses![mode]) expect(answered.has(miss), `${mode}: ${miss}`).toBe(true);
       for (const i of session) for (const m of deductionSpokenMisses(i)) expect(CATALOG.misses![mode], `${i.id} ${m.id}`).toContain(m.id);
     }

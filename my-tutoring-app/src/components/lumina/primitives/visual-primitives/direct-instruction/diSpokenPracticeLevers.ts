@@ -210,6 +210,7 @@ const PRACTICE = 'Opens an easier one of the same kind first. It is not graded; 
 export const SPOKEN_LEVERS = leverSet<SpokenPracticeItem, SpokenLeverContext>({
   modeOf: item => item.mode,
   missesOf: mode => diSpokenPracticeCard.modes[mode]?.misses ?? [],
+  support: { tier: item => item.supportTier ?? 'easy', different: 'a different item', own: 'this answer' },
   specs: [
     { id: MODEL_COUNT, type: 'model', modes: ['count_and_say'], answers: 'all',
       when: 'The learner gets the count wrong or does not know how to start.',

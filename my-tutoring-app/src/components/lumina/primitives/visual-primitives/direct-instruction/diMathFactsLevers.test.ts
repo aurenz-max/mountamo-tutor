@@ -3,7 +3,7 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import { buildMathFactItems, mathFactSpokenMisses, type DiMathFactsChallenge, type MathFactItem } from './diMathFactsDomain';
 import type { DiMathFactsChallengeType } from './diMathFactsModes';
 import { DECADE_LEVER, DIGIT_LEVER, DOTS_LEVER, MODEL_LEVER, PATH_LEVER, SMALLER_LEVER, TAKE_AWAY_LEVER, TAKE_ONE_LEVER,
-  dotGroups, factItem, factParts, mathFactLeverFacts, mathFactLevers, modelFor, modelLeaks, numberPath, saysWords, simplerItem, takeAwayDots } from './diMathFactsLevers';
+  dotGroups, factItem, factParts, MATH_FACT_LEVERS, modelFor, modelLeaks, numberPath, saysWords, simplerItem, takeAwayDots } from './diMathFactsLevers';
 import answerFact from '../../../components/live-activity/runtime/testing/w1-payloads/di-math-facts.answer_fact.json';
 import countingNext from '../../../components/live-activity/runtime/testing/w1-payloads/di-math-facts.counting_next.json';
 import factReview from '../../../components/live-activity/runtime/testing/w1-payloads/di-math-facts.fact_review.json';
@@ -80,7 +80,7 @@ describe('help levers draw only what is printed', () => {
   });
   it('the scene fact never names this item\'s answer', () => {
     for (const item of [...SAVED, ...ALL]) {
-      const facts = mathFactLeverFacts(item, mathFactLevers(item, []).map(l => l.id));
+      const facts = MATH_FACT_LEVERS.onScreen(item, null, MATH_FACT_LEVERS.declare(item, null, []).map(l => l.id));
       expect(wordIn(facts, item.answerWord), `${item.display}: ${facts}`).toBe(false);
       expect(wordIn(facts, String(item.answerNumeral)), `${item.display}: ${facts}`).toBe(false);
     }
@@ -116,8 +116,8 @@ describe('simplify levers: same mode, one step simpler, never this item', () => 
 });
 
 describe('this wrong answer, then this lever', () => {
-  const open = (item: MathFactItem) => mathFactLevers(item, []);
-  const afterModel = (item: MathFactItem) => mathFactLevers(item, [MODEL_LEVER]);
+  const open = (item: MathFactItem) => MATH_FACT_LEVERS.declare(item, null, []);
+  const afterModel = (item: MathFactItem) => MATH_FACT_LEVERS.declare(item, null, [MODEL_LEVER]);
   it.each([
     ['said_addend', fact('answer_fact', 3, 2), MODEL_LEVER, DOTS_LEVER],
     ['one_short', fact('fact_review', 3, 2), MODEL_LEVER, DOTS_LEVER],
@@ -135,7 +135,7 @@ describe('this wrong answer, then this lever', () => {
 
   it('every miss the pack names on an item is answered by one of its levers', () => {
     for (const item of [...SAVED, ...ALL]) {
-      const levers = mathFactLevers(item, []);
+      const levers = MATH_FACT_LEVERS.declare(item, null, []);
       for (const miss of mathFactSpokenMisses(item))
         expect(levers.some(l => l.answers?.includes(miss.id)), `${item.display}: ${miss.id}`).toBe(true);
     }

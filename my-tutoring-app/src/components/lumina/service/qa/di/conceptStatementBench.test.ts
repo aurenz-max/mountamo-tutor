@@ -18,14 +18,10 @@ import {
   paraphraseAffirmRate,
 } from './conceptStatementBench';
 import { benchPasses, isFalseAffirmation, type OpenSetProbeResult } from './openSetWordBench';
-import { buildDiDrivePlan } from './diDrivePlan';
-import { RESPONSE_CLASSES } from '../../../hooks/judgedScriptContract';
-import { buildSubjectVerbAgreementItems } from '../../direct-instruction/spokenPracticePlan';
 import {
   buildSpokenItem,
   findConceptDefects,
   gateSpokenItems,
-  type SpokenPracticeItem,
 } from '../../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -214,152 +210,5 @@ describe('the gate is asymmetric AND floored, in code', () => {
 
   it('an empty run never passes', () => {
     expect(conceptBenchPasses([])).toBe(false);
-  });
-});
-
-describe('the bench plan builds through the REAL pack', () => {
-  const plan = buildDiDrivePlan('di-spoken-practice', {}, 'Grade 1', { bench: true });
-
-  it('is marked a bench and carries one item per stimulus', () => {
-    expect(plan.isBench).toBe(true);
-    expect(plan.items).toHaveLength(CONCEPT_BENCH_STIMULI.length);
-    expect(plan.componentId).toBe('di-spoken-practice');
-  });
-
-  it('attaches the scored key to every item, by id', () => {
-    for (const item of plan.items) {
-      expect(item.responseClass).toBe('concept_statement');
-      expect(item.answerKind).toBe('voice');
-      expect(item.answers.probes?.length ?? 0).toBeGreaterThanOrEqual(11);
-      const key = CONCEPT_BENCH_STIMULI.find((s) => s.id === item.id)!;
-      expect(item.answers.probes).toBe(key.probes);
-    }
-  });
-
-  it('carries the REAL cues: the concept-anchored clause and the concept-restating affirm', () => {
-    const equal = plan.items.find((i) => i.id === 'bench-concept-equal-sign')!;
-    // The affirmation restates the CONCEPT SENTENCE, not the anchor — the
-    // DISTAR firm-up rather than a clipped echo of a token.
-    expect(equal.affirmLine).toBe('Yes, the equal sign means both sides have the same amount.');
-    expect(equal.correctionLine).toBe(
-      'My turn: The equal sign means both sides have the same amount. Three plus two is five, and '
-      + 'five is five, so the two sides match. Your turn. Three plus two equals five. Look at the '
-      + 'equal sign. What does the equal sign tell us?',
-    );
-    // The four class refusals ride in the cue the tutor actually receives.
-    expect(equal.cue).toContain('Judge the MEANING of what you heard, not the words.');
-    expect(equal.cue).toContain('inside a sentence that means the OPPOSITE');
-    expect(equal.cue).toContain('The stimulus read back ("3 + 2 = 5") is NOT an explanation');
-    expect(equal.cue).toContain('Saying the sum, five, is NOT an explanation.');
-  });
-
-  it('opens the run with the how-to-play, then settles to the bare ask', () => {
-    const [first, second] = plan.items;
-    expect(first.askLine.startsWith(
-      'I will show you something, and you tell me what it means in your own words.',
-    )).toBe(true);
-    expect(second.askLine).toBe(
-      'Two, four, six, eight. Listen again: two, four, six, eight. What is the rule of this pattern?',
-    );
-  });
-
-  it('never puts an anchor or the concept in a spoken ask', () => {
-    for (const item of plan.items) {
-      const ask = ` ${norm(item.askLine)} `;
-      for (const token of item.answers.leakTokens) {
-        expect(ask, `"${token}" in the ask for ${item.id}`).not.toContain(` ${norm(token)} `);
-      }
-    }
-  });
-
-  it('labels the run honestly while the class is blocked, and cleanly once it is benched', () => {
-    // While `concept_statement` is `blocked`, `validateJudgedScriptPack`
-    // REFUSES the very class under test — the honest label on a bench run. The
-    // assertion is written against the registry so it flips WITH the record:
-    // after the bench clears and the status moves to `benched`, this same test
-    // demands a clean gate, and it is what would catch the class being pushed
-    // back to `blocked` without the fixture following it.
-    const blocked = plan.packGateIssues.filter((i) => i.includes('BLOCKED'));
-    if (RESPONSE_CLASSES.concept_statement.status === 'blocked') {
-      expect(blocked).toHaveLength(plan.items.length);
-      expect(plan.packGateIssues.filter((i) => !i.includes('BLOCKED'))).toEqual([]);
-    } else {
-      expect(plan.packGateIssues).toEqual([]);
-    }
-  });
-});
-
-describe('the ordinary drive path — the adapter is not bench-only', () => {
-  /**
-   * The pack shipped five modes with NO drive adapter (HUMAN-CHECKS #137 "no
-   * live drive"). Registering one for the bench also opens every closed mode
-   * to headless driving, and that half has to keep working whatever the bench
-   * decides about `concept_statement`.
-   */
-  const items: SpokenPracticeItem[] = [
-    buildSpokenItem({ stimulusText: '2 + 1', ask: 'Two plus one. What is two plus one?', expectedAnswer: 'three', correctionBody: 'Two and one more is three.' }, 0, 'say_answer')!,
-    buildSpokenItem({ stimulusText: 'bears', stimulusEmoji: '🐻', stimulusCount: 4, ask: 'Count the bears. How many bears?', expectedAnswer: '', correctionBody: 'Four bears.' }, 1, 'count_and_say')!,
-    buildSpokenItem({ stimulusText: 'sam', ask: 'Your turn. What word?', expectedAnswer: 'sam', correctionBody: 'It says sam.' }, 2, 'read_aloud')!,
-    buildSpokenItem({
-      stimulusText: 'a feather', stimulusEmoji: '🪶', stimulusText2: 'a rock', stimulusEmoji2: '🪨',
-      ask: 'Here is a feather, and here is a rock. Is the rock longer, shorter, heavier, or lighter?',
-      expectedAnswer: 'heavier', correctionBody: 'The rock is heavier.',
-    }, 3, 'compare_choice', ['longer', 'shorter', 'heavier', 'lighter'])!,
-  ];
-  const plan = buildDiDrivePlan('di-spoken-practice', { items }, 'Kindergarten');
-
-  it('builds a real payload with no bench flag and passes every pack gate', () => {
-    expect(plan.isBench).toBe(false);
-    expect(plan.items.map((i) => i.responseClass))
-      .toEqual(['number_word_to_20', 'number_word_to_20', 'short_spoken_word', 'closed_set_choice']);
-    expect(plan.droppedChallenges).toBe(0);
-    expect(plan.packGateIssues).toEqual([]);
-  });
-
-  it('gives the headless student a right, a wrong, and a signature-wrong answer per mode', () => {
-    const [say, count, read, compare] = plan.items;
-    expect(say.answers.correct).toBe('three');
-    expect(say.answers.signatureWrong?.text).toBe('2 + 1');
-    expect(count.answers.correct).toBe('four');
-    expect(count.answers.plainWrong).toBe('three');
-    // The count that runs one PAST the total contains every word of the answer.
-    expect(count.answers.signatureWrong?.text).toBe('one, two, three, four, five');
-    expect(read.answers.leakTokens).toEqual(['sam']);
-    expect(compare.answers.correct).toBe('heavier');
-    expect(compare.answers.plainWrong).toBe('longer');
-    // The menu is in the ask by contract, so the flat oracle is off for it.
-    expect(compare.answers.leakTokens).toEqual([]);
-  });
-
-  it('uses the opposite agreement form as the signature wrong answer', () => {
-    const agreement = buildSubjectVerbAgreementItems(2);
-    const agreementPlan = buildDiDrivePlan(
-      'di-spoken-practice',
-      { items: agreement },
-      'Kindergarten',
-    );
-    expect(agreementPlan.items.map(item => item.answers.correct)).toEqual(['is', 'are']);
-    expect(agreementPlan.items.map(item => item.answers.signatureWrong?.text)).toEqual(['are', 'is']);
-    expect(agreementPlan.packGateIssues).toEqual([]);
-  });
-
-  it('re-runs the shipped gate over a hand-edited payload and reports the drop', () => {
-    const leaky = { ...items[0], ask: 'Two plus one is three. What is two plus one?' };
-    const dirty = buildDiDrivePlan('di-spoken-practice', { items: [leaky, items[1]] }, 'Kindergarten');
-    expect(dirty.items).toHaveLength(1);
-    expect(dirty.droppedChallenges).toBe(1);
-  });
-
-  it('drives a GENERATED explain item without a borrowed key — never scored, always drivable', () => {
-    const explain = buildSpokenItem({
-      stimulusText: '4 + 1 = 5', ask: 'Four plus one equals five. What does the equal sign tell us?',
-      expectedAnswer: 'both sides the same', alsoAccept: 'balanced',
-      conceptStatement: 'The equal sign means both sides have the same amount.',
-      correctionBody: 'The equal sign means both sides have the same amount.',
-    }, 0, 'explain_concept')!;
-    const generated = buildDiDrivePlan('di-spoken-practice', { items: [explain] }, 'Grade 1');
-    expect(generated.items[0].answers.correct).toBe('both sides the same');
-    expect(generated.items[0].answers.signatureWrong?.text).toBe('4 + 1 = 5');
-    expect(generated.items[0].answers.probes).toBeUndefined();
   });
 });

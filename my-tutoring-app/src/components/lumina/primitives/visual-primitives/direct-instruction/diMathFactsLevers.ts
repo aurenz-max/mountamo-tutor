@@ -25,7 +25,8 @@
  *
  * Name numeral gets no dots: counting to a numeral's name is the `recited_sequence` miss, a different act.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { diMathFactsCard } from './diMathFacts.card';
 import { spokenIntegerWord } from '../math/spokenNumberWords';
 import { buildMathFactItems, type DiMathFactsChallenge, type DiMathFactsChallengeType, type MathFactItem }
   from './diMathFactsDomain';
@@ -40,14 +41,6 @@ export const DECADE_LEVER = 'inside_decade';
 export const DIGIT_LEVER = 'single_digit';
 
 const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
-const MODE_MISSES: Record<DiMathFactsChallengeType, string[]> = {
-  // The catalog declares the take-away misses on the addition modes too; the model answers any wrong number.
-  answer_fact: ['said_addend', 'said_start', 'said_change', 'added_instead', 'teen_decade_swap', ...OFF_BY],
-  fact_review: ['said_addend', 'said_start', 'said_change', 'added_instead', 'teen_decade_swap', ...OFF_BY],
-  subtraction_fact: ['said_start', 'said_change', 'added_instead', 'teen_decade_swap', ...OFF_BY],
-  counting_next: ['said_printed', 'said_before', 'said_two_after', 'decade_rollover', 'teen_decade_swap', ...OFF_BY],
-  name_numeral: ['recited_sequence', 'look_alike_numeral', 'teen_decade_swap', ...OFF_BY],
-};
 
 /** The printed numbers of an item, in order, and its operator ('' for a bare numeral). */
 export function factParts(item: Pick<MathFactItem, 'terms' | 'display'>) {
@@ -198,47 +191,44 @@ export function simplerItem(item: MathFactItem, lever: string): MathFactItem | n
   }
 }
 
-export function mathFactLevers(item: MathFactItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const misses = MODE_MISSES[item.challengeType];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const practice = 'Opens an easier one of the same kind first. It is not graded; the full problem comes back after it.';
-  const out: WorkspaceLever[] = [];
-  if (modelFor(item)) out.push(lever(MODEL_LEVER, 'help', 'both', misses,
-    'The learner gave a wrong number, or does not know how to start.',
-    'Shows a small card beside the problem with a DIFFERENT one solved (onScreen names it). Say it as your turn ("My turn: …"), '
-      + 'then ask the learner\'s own question again. Never say what the model means for this problem, and never say its answer.'));
-  if (dotGroups(item)) out.push(lever(DOTS_LEVER, 'help', 'shown', ['said_addend', ...OFF_BY],
-    'The learner says one of the printed numbers, or lands near the total.',
-    'Puts dots under each printed number, one group per number. The total is never drawn: let the learner count them all.'));
-  if (takeAwayDots(item)) out.push(lever(TAKE_AWAY_LEVER, 'help', 'shown', ['said_start', 'said_change', 'added_instead', ...OFF_BY],
-    'The learner says a printed number, adds, or lands near the answer.',
-    'Shows the first number as dots with the amount taken away crossed out. What is left is not counted for them.'));
-  if (numberPath(item)) out.push(lever(PATH_LEVER, 'help', 'shown', ['said_printed', 'said_before', 'said_two_after', ...OFF_BY],
-    'The learner repeats the number, goes back, or skips one.',
-    'Shows the numbers just before the printed one, then it, then an empty box. Let the learner say what goes in the box.'));
-  if (simplerItem(item, SMALLER_LEVER)) out.push(lever(SMALLER_LEVER, 'simplify', 'both', ['said_addend', ...OFF_BY],
-    'This fact is too big to work out yet.', practice));
-  if (simplerItem(item, TAKE_ONE_LEVER)) out.push(lever(TAKE_ONE_LEVER, 'simplify', 'both', ['said_start', 'said_change', 'added_instead'],
-    'Taking this many away is too much yet.', practice));
-  if (simplerItem(item, DECADE_LEVER)) out.push(lever(DECADE_LEVER, 'simplify', 'both', ['decade_rollover'],
-    'The learner cannot yet cross into the next ten.', practice));
-  if (simplerItem(item, DIGIT_LEVER)) out.push(lever(DIGIT_LEVER, 'simplify', 'both', ['teen_decade_swap'],
-    'Two-digit numerals are too much yet.', practice));
-  return out;
-}
+const PRACTICE = 'Opens an easier one of the same kind first. It is not graded; the full problem comes back after it.';
 
-/** What the pulled levers put on screen, as a scene fact. Names the model; never this item's answer. */
-export function mathFactLeverFacts(item: MathFactItem | null, pulled: readonly string[]): string {
-  if (!item) return '';
-  const model = pulled.includes(MODEL_LEVER) ? modelFor(item) : null;
-  const take = pulled.includes(TAKE_AWAY_LEVER) ? takeAwayDots(item) : null;
-  return [
-    model && `Beside the problem, a model card shows a different problem solved: ${model.challengeType === 'name_numeral'
-      ? `the numeral ${model.display}, ${model.answerWord}` : model.solvedDisplay} (${model.problem} is ${model.answerWord}). It is not this problem.`,
-    pulled.includes(DOTS_LEVER) && dotGroups(item) && 'Under each printed number is a group of that many dots. No total is shown.',
-    take && 'The first number is drawn as dots, and the amount taken away is crossed out. What is left is not counted.',
-    pulled.includes(PATH_LEVER) && numberPath(item) && 'A number path shows the numbers just before the printed number, then it, then an empty box.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** Every lever of the pack, by type, in the order the tutor sees them. The levers read nothing beyond the item. */
+export const MATH_FACT_LEVERS = leverSet<MathFactItem, null>({
+  modeOf: item => item.challengeType,
+  missesOf: mode => diMathFactsCard.modes[mode]?.misses ?? [],
+  support: { tier: item => item.supportTier ?? 'easy', different: 'a different fact', own: "this fact's answer" },
+  specs: [
+    { id: MODEL_LEVER, type: 'model', answers: 'all',
+      when: 'The learner gave a wrong number, or does not know how to start.',
+      does: 'Shows a small card beside the problem with a DIFFERENT one solved (onScreen names it). Say it as your turn ("My turn: …"), '
+        + 'then ask the learner\'s own question again. Never say what the model means for this problem, and never say its answer.',
+      content: item => modelFor(item),
+      fact: (model: MathFactItem) => `Beside the problem, a model card shows a different problem solved: ${model.challengeType === 'name_numeral'
+        ? `the numeral ${model.display}, ${model.answerWord}` : model.solvedDisplay} (${model.problem} is ${model.answerWord}). It is not this problem.` },
+    { id: DOTS_LEVER, type: 'marks', modes: ['answer_fact', 'fact_review'], answers: ['said_addend', ...OFF_BY],
+      when: 'The learner says one of the printed numbers, or lands near the total.',
+      does: 'Puts dots under each printed number, one group per number. The total is never drawn: let the learner count them all.',
+      content: item => dotGroups(item), fact: 'Under each printed number is a group of that many dots. No total is shown.' },
+    { id: TAKE_AWAY_LEVER, type: 'marks', modes: ['subtraction_fact'], answers: ['said_start', 'said_change', 'added_instead', ...OFF_BY],
+      when: 'The learner says a printed number, adds, or lands near the answer.',
+      does: 'Shows the first number as dots with the amount taken away crossed out. What is left is not counted for them.',
+      content: item => takeAwayDots(item),
+      fact: 'The first number is drawn as dots, and the amount taken away is crossed out. What is left is not counted.' },
+    { id: PATH_LEVER, type: 'custom', carrier: 'shown', modes: ['counting_next'],
+      why: 'It draws the numbers leading up to the printed one and an empty box, which no stock type shows.',
+      answers: ['said_printed', 'said_before', 'said_two_after', ...OFF_BY],
+      when: 'The learner repeats the number, goes back, or skips one.',
+      does: 'Shows the numbers just before the printed one, then it, then an empty box. Let the learner say what goes in the box.',
+      content: item => numberPath(item),
+      fact: 'A number path shows the numbers just before the printed number, then it, then an empty box.' },
+    { id: SMALLER_LEVER, type: 'easier', modes: ['answer_fact', 'fact_review'], answers: ['said_addend', ...OFF_BY],
+      when: 'This fact is too big to work out yet.', does: PRACTICE, content: item => simplerItem(item, SMALLER_LEVER) },
+    { id: TAKE_ONE_LEVER, type: 'easier', modes: ['subtraction_fact'], answers: ['said_start', 'said_change', 'added_instead'],
+      when: 'Taking this many away is too much yet.', does: PRACTICE, content: item => simplerItem(item, TAKE_ONE_LEVER) },
+    { id: DECADE_LEVER, type: 'easier', modes: ['counting_next'], answers: ['decade_rollover'],
+      when: 'The learner cannot yet cross into the next ten.', does: PRACTICE, content: item => simplerItem(item, DECADE_LEVER) },
+    { id: DIGIT_LEVER, type: 'easier', modes: ['name_numeral'], answers: ['teen_decade_swap'],
+      when: 'Two-digit numerals are too much yet.', does: PRACTICE, content: item => simplerItem(item, DIGIT_LEVER) },
+  ],
+});

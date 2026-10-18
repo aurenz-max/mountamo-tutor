@@ -39,4 +39,5 @@ None open.
 
 ## Changelog
 
+- 2026-10-18: moved onto the boss framework as the first STEPPED card — `diWordProblemSetup.card.ts` (each mode wired per step: big_number is `manipulate`, activity-checked; classify, family, operation and solve are SPOKEN) + `diWordProblemSetup.boss.ts` (bespoke, `stepOf: item.kind`); `adapters/diWordProblemSetupLive.ts` and the catalog `tutoring` block deleted; Pip moved from `useStimulusPipSurface` to `<PipDock />`/`<PipWorkspace>`; keys via `spokenKeyText` (classify and operation are menu keys); levers one `WORD_PROBLEM_LEVERS` set (`model_story` one spec per wording; step levers offered on their step). Guidance and keys changed: one replay sample owed.
 - 2026-10-03: derived (initial, static) with the DI lever slice. 6 requirements, 0 conflicts.

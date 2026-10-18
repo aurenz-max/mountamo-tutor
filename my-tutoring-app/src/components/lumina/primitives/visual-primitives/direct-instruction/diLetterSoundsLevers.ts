@@ -21,7 +21,8 @@
  * No simplify on any mode: another letter asks the same thing, not less, and every onset item is already at the mode
  * floor (one held continuant).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { diLetterSoundsCard } from './diLetterSounds.card';
 import { LETTER_SOUND_MENU, type LetterSoundMenuEntry } from './diLetterSoundsMenu';
 import type { LetterSoundItem } from './diLetterSoundsDomain';
 
@@ -70,49 +71,50 @@ export const startingLevers = (item: LetterSoundItem): string[] =>
 export const pictureShown = (item: LetterSoundItem, pulled: readonly string[]) =>
   !isGrapheme(item) || pulled.includes(KEYWORD_PICTURE);
 
-export function letterLevers(item: LetterSoundItem | null, pulled: readonly string[], items: readonly LetterSoundItem[]): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const onset = item.challengeType === 'first_sound_in_word';
-  const out: WorkspaceLever[] = [];
-  if (modelFor(item, items)) out.push(lever(MODEL_SOUND, 'help', 'both',
-    ['keyword_word', 'letter_name', 'added_vowel', 'other_sound', ...(onset ? ['last_sound'] : [])],
-    'The learner says a word, a letter name, or another sound, or does not know how to start.',
-    onset
-      ? 'Shows a small card with a DIFFERENT picture and its word (onScreen names it). Say it as your turn: the word, then '
-        + 'its first sound ("My turn: leaf … lll"). Then ask for the first sound of the learner\'s own word. Never say their '
-        + 'word\'s first sound, and never stretch its start.'
-      : 'Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn ("My turn: '
-        + 'this letter says lll, like leaf"), held or clipped as onScreen says. After a letter name you may add "its name is …; '
-        + 'its sound is …" for the MODEL letter only. Then ask the learner\'s letter again. Never say their letter\'s sound or '
-        + 'its picture word.'));
-  if (isGrapheme(item) && kindOf(item) === 'held' && HELD.has(item.letter.toLowerCase())) out.push(lever(SOUND_ARROW, 'help', 'shown',
-    ['added_vowel'], 'The learner adds a vowel after the sound ("muh") instead of holding it.',
-    'Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say "hold it", never the sound.'));
-  if (isGrapheme(item)) out.push(lever(KEYWORD_PICTURE, 'help', 'shown', ['other_sound', 'letter_name'],
-    'The learner says another letter\'s sound or the letter\'s name.',
-    'Shows the letter\'s picture above it. Do not name the picture or say its first sound; let the learner use it.'));
-  if (onset && KEYWORD_SOUNDS[item.keyword.toLowerCase()]) out.push(lever(FIRST_BOX, 'help', 'shown', ['last_sound'],
-    'The learner says the last sound of the word.',
-    'Draws a row of empty boxes under the picture, one per sound of the word, the first one lit: the first box is the start of the word. Nothing is written in the boxes.'));
-  return out;
-}
-
 const soundOf = (m: LetterSoundMenuEntry) => kindOf(m) === 'held' ? `the held sound ${m.spoken}`
   : kindOf(m) === 'clipped' ? `the short clipped sound ${m.spoken}` : `the short vowel sound ${m.spoken}`;
 
-/** What the pulled levers put on screen, as a scene fact. Names the model; never the child's answer. */
-export function letterLeverFacts(item: LetterSoundItem | null, pulled: readonly string[], items: readonly LetterSoundItem[]): string {
-  if (!item) return '';
-  const model = pulled.includes(MODEL_SOUND) ? modelFor(item, items) : null;
-  const onset = item.challengeType === 'first_sound_in_word';
-  return [
-    model && (onset
-      ? `Beside the learner's picture, a model card shows a different picture, a ${model.keyword}, with its word; its first sound is ${soundOf(model)}. It is not this word.`
-      : `Beside the learner's letter, a model card shows a different letter, ${model.letter}, with its picture, a ${model.keyword}; it says ${soundOf(model)}. It is not this letter.`),
-    pulled.includes(SOUND_ARROW) && 'A ball and a long arrow under the printed letter show the sound is held.',
-    isGrapheme(item) && pulled.includes(KEYWORD_PICTURE) && 'The letter\'s picture is shown above it.',
-    onset && pulled.includes(FIRST_BOX) && `A row of ${KEYWORD_SOUNDS[item.keyword.toLowerCase()]} empty boxes under the picture, one per sound of the word; the first box is lit.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** What the levers read beyond the item: the session's items, so a model is never a letter or picture still to come. */
+export interface LetterLeverContext { items: readonly LetterSoundItem[] }
+
+const GRAPHEME_MODES = ['letter_sound', 'letter_sound_review'];
+const ONSET = ['first_sound_in_word'];
+const MODEL_WHEN = 'The learner says a word, a letter name, or another sound, or does not know how to start.';
+
+/** Every lever of the pack, by type, in the order the tutor sees them. `model_sound` is worded per mode. */
+export const LETTER_LEVERS = leverSet<LetterSoundItem, LetterLeverContext>({
+  modeOf: item => item.challengeType,
+  missesOf: mode => diLetterSoundsCard.modes[mode]?.misses ?? [],
+  // Only the keyword picture starts on screen at easy; medium and hard start with neither.
+  support: { tier: item => item.supportTier ?? 'easy', different: 'a different letter', own: 'this sound' },
+  specs: [
+    { id: MODEL_SOUND, type: 'model', modes: GRAPHEME_MODES, answers: 'all', when: MODEL_WHEN,
+      does: 'Shows a small card with a DIFFERENT letter and its picture (onScreen names it). Say its sound as your turn ("My turn: '
+        + 'this letter says lll, like leaf"), held or clipped as onScreen says. After a letter name you may add "its name is …; '
+        + 'its sound is …" for the MODEL letter only. Then ask the learner\'s letter again. Never say their letter\'s sound or '
+        + 'its picture word.',
+      content: (item, { items }) => modelFor(item, items),
+      fact: (model: LetterSoundMenuEntry) => `Beside the learner\'s letter, a model card shows a different letter, ${model.letter}, with its picture, a ${model.keyword}; it says ${soundOf(model)}. It is not this letter.` },
+    { id: MODEL_SOUND, type: 'model', modes: ONSET, answers: 'all', when: MODEL_WHEN,
+      does: 'Shows a small card with a DIFFERENT picture and its word (onScreen names it). Say it as your turn: the word, then '
+        + 'its first sound ("My turn: leaf … lll"). Then ask for the first sound of the learner\'s own word. Never say their '
+        + 'word\'s first sound, and never stretch its start.',
+      content: (item, { items }) => modelFor(item, items),
+      fact: (model: LetterSoundMenuEntry) => `Beside the learner\'s picture, a model card shows a different picture, a ${model.keyword}, with its word; its first sound is ${soundOf(model)}. It is not this word.` },
+    { id: SOUND_ARROW, type: 'marks', modes: GRAPHEME_MODES, answers: ['added_vowel'],
+      offer: item => kindOf(item) === 'held' && HELD.has(item.letter.toLowerCase()),
+      when: 'The learner adds a vowel after the sound ("muh") instead of holding it.',
+      does: 'Draws a ball and a long arrow under the printed letter: hold the sound while a finger moves along it. Say "hold it", never the sound.',
+      fact: 'A ball and a long arrow under the printed letter show the sound is held.' },
+    { id: KEYWORD_PICTURE, type: 'custom', carrier: 'shown', modes: GRAPHEME_MODES, answers: ['other_sound', 'letter_name'],
+      why: 'It draws the letter\'s keyword picture, a route to the sound that is help, not words; no stock type draws a picture.',
+      when: 'The learner says another letter\'s sound or the letter\'s name.',
+      does: 'Shows the letter\'s picture above it. Do not name the picture or say its first sound; let the learner use it.',
+      fact: 'The letter\'s picture is shown above it.' },
+    { id: FIRST_BOX, type: 'marks', modes: ONSET, answers: ['last_sound'],
+      content: item => KEYWORD_SOUNDS[item.keyword.toLowerCase()] || null,
+      when: 'The learner says the last sound of the word.',
+      does: 'Draws a row of empty boxes under the picture, one per sound of the word, the first one lit: the first box is the start of the word. Nothing is written in the boxes.',
+      fact: (sounds: number) => `A row of ${sounds} empty boxes under the picture, one per sound of the word; the first box is lit.` },
+  ],
+});

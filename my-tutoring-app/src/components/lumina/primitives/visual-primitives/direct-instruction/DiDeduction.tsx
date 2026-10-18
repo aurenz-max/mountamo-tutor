@@ -24,10 +24,11 @@
 
 import React, { useMemo } from 'react';
 import type { DiDeductionMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
-import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
+import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
 import type { DeductionItem, DeductionRuleSpec, DiDeductionData } from './diDeductionScript';
-import { deductionAssignment, deductionItems, deductionScene } from './diDeductionWorkspace';
-import { ANSWER_FRAME, MODEL_CASE, SHARED_TERM, counterexampleFact, counterexampleFor, deductionLeverFacts, deductionLevers,
+import { deductionItems, deductionScene } from './diDeductionWorkspace';
+import { diDeductionBoss } from './diDeduction.boss';
+import { ANSWER_FRAME, MODEL_CASE, SHARED_TERM, counterexampleFact, DEDUCTION_LEVERS,
   frameText, modelCases, modelRuleFor, sharedTerms } from './diDeductionLevers';
 import { DiModelCard } from './DiModelCard';
 
@@ -135,14 +136,10 @@ export interface DiDeductionProps {
 export const DiDeduction: React.FC<DiDeductionProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => deductionItems(data), [data]);
   const spares = useMemo(() => data.spares ?? [], [data.spares]);
-  const levers = useMemo<DiStageLevers<DeductionItem>>(() => ({
-    declare: (item, pulled) => deductionLevers(item, pulled, items, spares),
-    onScreen: (item, pulled) => deductionLeverFacts(item, pulled, items, spares),
-    simpler: item => counterexampleFor(item, items, spares),
-  }), [items, spares]);
+  const levers = useMemo(() => DEDUCTION_LEVERS.bind({ items, spares }), [items, spares]);
   return <DiTeachingStage<DeductionItem, DiDeductionMetrics> primitiveId="di-deduction" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
-    assignment={deductionAssignment} scene={deductionScene} copy={COPY} trail={ledger} levers={levers}
+    assignment={diDeductionBoss.assignment} scene={deductionScene} copy={COPY} trail={ledger} levers={levers}
     stimulus={(item, marks, view) => stimulus(item, marks, view, view.practice ? null : modelRuleFor(item, items, spares))}
     recapLabel={recapLabel} counter={ruleCounter}
     metrics={result => {

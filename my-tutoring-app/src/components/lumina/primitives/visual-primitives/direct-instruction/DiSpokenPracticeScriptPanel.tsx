@@ -15,19 +15,17 @@
  * This panel makes them visible for the price of a generation call. Read, in
  * order: the ASK (does it contain the answer? does it have exactly one correct
  * completion?), then ACCEPT / MISS (are they the real error analysis for this
- * skill, or generic filler?), then the assembled CUE, which is verbatim what
- * the tutor receives.
+ * skill, or generic filler?).
  *
  * The leak row is mechanical, not advisory — `findAnswerLeaks` is the same
  * function the generator uses to DROP items, so anything flagged here escaped
  * the drop and is a bug in the scan, not in the content.
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { LuminaBadge, LuminaPanel, LuminaSectionLabel } from '../../../ui';
 import {
   findAnswerLeaks,
-  itemCue,
   MODE_SHAPE,
   type SpokenPracticeItem,
 } from './diSpokenPracticeScript';
@@ -48,7 +46,6 @@ const Row: React.FC<{ label: string; children: React.ReactNode; tone?: string }>
 );
 
 export function DiSpokenPracticeScriptPanel({ items }: Props) {
-  const [openCue, setOpenCue] = useState<string | null>(null);
   const leaks = useMemo(() => findAnswerLeaks(items), [items]);
 
   if (items.length === 0) return null;
@@ -135,18 +132,6 @@ export function DiSpokenPracticeScriptPanel({ items }: Props) {
                 <Row label="⚠ Leak" tone="text-rose-300">
                   {itemLeaks.map((l) => `"${l.answer}" appears in ${l.field}`).join('; ')}
                 </Row>
-              )}
-
-              <button
-                onClick={() => setOpenCue(openCue === item.id ? null : item.id)}
-                className="mt-2 text-[11px] text-slate-400 underline decoration-dotted hover:text-slate-200"
-              >
-                {openCue === item.id ? 'hide' : 'show'} the cue the tutor receives
-              </button>
-              {openCue === item.id && (
-                <pre className="mt-2 whitespace-pre-wrap rounded bg-black/40 p-2 text-[10px] leading-relaxed text-slate-400">
-                  {itemCue(item, { opening: false, howToPlay: true })}
-                </pre>
               )}
             </div>
           );

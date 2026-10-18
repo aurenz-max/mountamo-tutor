@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { formKey, readShape, type Pt } from '../math/shapeMakeBuild';
 import { BUILDABLE_SHAPES, BUILD_WITNESSES, GRID_MAX, WRONG_BUILD, buildAskFor, buildFacts, shapeBuildMiss } from './diShapesBuild';
-import { shapeItem, shapeLevers, simplerShape, MAKE_TRIANGLE, modelFor, shapeLeaks } from './diShapesLevers';
+import { shapeItem, SHAPE_LEVERS, simplerShape, MAKE_TRIANGLE, modelFor, shapeLeaks } from './diShapesLevers';
 import { shapesAssignment, shapesScene } from './diShapesWorkspace';
 
 const P = (...xy: number[]): Pt[] => Array.from({ length: xy.length / 2 }, (_, i) => ({ x: xy[2 * i], y: xy[2 * i + 1] }));
@@ -64,11 +64,11 @@ describe('the ask, scene and levers', () => {
     const model = modelFor(hex, [hex])!;
     expect(model.sides).not.toBeNull();
     expect(shapeLeaks(model.shape, 'hexagon')).toBe(false);
-    const ids = (shape: Parameters<typeof shapeItem>[0]) => shapeLevers(shapeItem(shape, 'build_shape', 'x'), [], []).map(l => l.id);
+    const ids = (shape: Parameters<typeof shapeItem>[0]) => SHAPE_LEVERS.declare(shapeItem(shape, 'build_shape', 'x'), { items: [] }, []).map(l => l.id);
     expect(ids('square')).toEqual(['model_shape', 'side_ticks', 'corner_marks', 'same_length_marks', 'make_triangle']);
     expect(ids('rectangle')).toEqual(['model_shape', 'side_ticks', 'corner_marks', 'make_triangle']);
     expect(ids('triangle')).toEqual(['model_shape', 'side_ticks']);
     expect(simplerShape(hex, MAKE_TRIANGLE, [hex])).toMatchObject({ id: 'b1~simpler', shape: 'triangle', challengeType: 'build_shape' });
-    for (const l of shapeLevers(hex, [], [hex])) expect(`${l.when} ${l.does}`).not.toMatch(/\bsix\b|\b6\b/);
+    for (const l of SHAPE_LEVERS.declare(hex, { items: [hex] }, [])) expect(`${l.when} ${l.does}`).not.toMatch(/\bsix\b|\b6\b/);
   });
 });

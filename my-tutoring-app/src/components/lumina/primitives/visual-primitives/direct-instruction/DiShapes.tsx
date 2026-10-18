@@ -34,12 +34,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PrimitiveEvaluationResult, DiShapesMetrics } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
+import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
 import { answerWordFor, countNoun, isCountingType, type DiShapesChallenge, type DiShapesChallengeType,
   type DiShapeName, type ShapeExemplar } from './diShapesScript';
 import { shapesAskFor, shapesAssignment, shapesScene } from './diShapesWorkspace';
 import { geometryFor, pointsAttr } from './diShapesGeometry';
-import { START_MARK, TOUCH_MARKS, modelFor, modelLever, shapeLeverFacts, shapeLevers, simplerShape } from './diShapesLevers';
+import { SHAPE_LEVERS, START_MARK, TOUCH_MARKS, modelFor, modelLever } from './diShapesLevers';
 import { DiModelCard } from './DiModelCard';
 import RealWorldShapeObject from '../shared/RealWorldShapeObject';
 import { ShapeBuildBoard } from './ShapeBuildBoard';
@@ -260,11 +260,7 @@ const recapLabel = (item: DiShapesChallenge, solved: boolean) => solved ? reward
 export const DiShapes: React.FC<DiShapesProps> = ({ data, className, runtimePlanItemId, runtimeEvalMode }) => {
   const items = useMemo(() => data.challenges ?? [], [data.challenges]);
   // The levers read the whole session: a model never shows a shape (or count) a later item asks.
-  const levers = useMemo<DiStageLevers<DiShapesChallenge>>(() => ({
-    declare: (item, pulled) => shapeLevers(item, pulled, items),
-    onScreen: (item, pulled) => shapeLeverFacts(item, pulled, items),
-    simpler: (item, lever) => simplerShape(item, lever, items),
-  }), [items]);
+  const levers = useMemo(() => SHAPE_LEVERS.bind({ items }), [items]);
   // The open build's shapes, by item: Try again keeps one, a new (or practice) item starts empty.
   const [builds, setBuilds] = useState<Record<string, ShapeBuildState>>({});
   const scene = useCallback((item: DiShapesChallenge) => shapesScene(item, builds[item.id] ?? EMPTY_SHAPE_BUILD), [builds]);

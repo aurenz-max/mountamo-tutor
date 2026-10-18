@@ -34,7 +34,7 @@
 - **Probe:** teaching test, name_numeral cases; `diMathFactsLevers.test.ts` (no dots lever on name_numeral).
 
 ### R4 — Counting to 120 keeps teen/decade and whole-compound discriminations · OBSERVED
-- **Property:** above twelve the assignment states teen ≠ decade and a compound number arrives whole; `decade_rollover` and `teen_decade_swap` are named misses.
+- **Property:** above twelve the spoken key (the assignment's `expectedAnswer`) states teen ≠ decade and a compound number arrives whole; `decade_rollover` and `teen_decade_swap` are named misses.
 - **Demanded by:** G1 counting within 120.
 - **Probe:** `diSpokenMisses.test.ts`; teaching test counting_next cases.
 
@@ -44,7 +44,7 @@
 - **Probe:** `gemini-di-math-facts.structural.test.ts`.
 
 ### R6 — Guidance fits the offer cap and has no line to recite · OBSERVED
-- **Property:** adapter guidance (domain + `WORKSPACE_DOCTRINE` + `LEVER_DOCTRINE`) ≤ 2000 characters; no "say exactly".
+- **Property:** adapter guidance (`ROTATION_DOCTRINE` of the card + `WORKSPACE_DOCTRINE` + `LEVER_DOCTRINE` + `LEVER_TYPE_DOCTRINE.model`) ≤ 2000 characters; no "say exactly".
 - **Demanded by:** the Live offer (`parse_activity_spec` closes the socket above the cap).
 - **Probe:** `activityContract.test.ts`; teaching test "keeps guidance inside the backend offer cap".
 
@@ -96,4 +96,5 @@ None open.
 
 ## Changelog
 
+- 2026-10-18: moved onto the boss framework — `diMathFacts.card.ts` + `diMathFacts.boss.ts` (`spokenBoss`); `DiMathFactsTeaching.tsx` folded into `DiMathFacts.tsx`; `adapters/diMathFactsLive.ts` and the catalog `tutoring` block deleted. The success condition moved from the `assignment` scene fact into the spoken key (`spokenKeyText`: counting route = accept rule, different-number and teen/decade = signature error); levers are one `MATH_FACT_LEVERS` set (ids, order and words kept; `number_path` is `custom`). The guidance and the key changed: one replay sample owed.
 - 2026-10-02: derived (initial, static) with the DI lever pilot. 13 requirements, 0 conflicts. Check: `qa/primitive-contracts/di-math-facts-check-2026-10-02.md`.

@@ -9,7 +9,7 @@ import {
   hasSubjectVerbAgreementCoverage, parseSpokenPlan, spokenSourceTokens,
 } from './spokenPracticePlan';
 import {
-  contextFor, findAnswerLeaks, findChoiceMenuDefects, findConceptDefects, findUnspokenStimulus, itemCue, pronounceCue,
+  findAnswerLeaks, findChoiceMenuDefects, findConceptDefects, findUnspokenStimulus,
 } from '../../primitives/visual-primitives/direct-instruction/diSpokenPracticeScript';
 
 const objective = 'Identify the plus sign (+) and equal sign (=) as math symbols';
@@ -45,9 +45,6 @@ describe('named target ownership through the generation boundary', () => {
       expect(i.correctionBody).toBe(`This is called ${answer}.`);
       expect(i.stimulusKind).toBe('text');
       expect(i.stimulusRole).toBe('visual_target');
-      expect(itemCue(i, { opening: true, howToPlay: false })).toContain(`The correct answer is "${answer}"`);
-      expect(pronounceCue(i)).toBe('');
-      expect(contextFor(i)).toEqual({ challengeType: 'say_answer' });
     }
     expect(findAnswerLeaks(data.items)).toEqual([]);
     expect(findUnspokenStimulus(data.items)).toEqual([]);
@@ -160,7 +157,7 @@ describe('named target ownership through the generation boundary', () => {
     ]));
     const data = await gen('say_answer', text);
     expect(data.items).toHaveLength(4);
-    expect(data.items.every(i => i.stimulusKind === 'emoji' && pronounceCue(i) === '')).toBe(true);
+    expect(data.items.every(i => i.stimulusKind === 'emoji' && i.stimulusRole === 'visual_target')).toBe(true);
     expect(findAnswerLeaks(data.items)).toEqual([]);
   });
 
@@ -207,7 +204,6 @@ describe('neighboring tasks retain their delivery and identity', () => {
     expect(data.items).toHaveLength(4);
     expect(data.items.every(i => i.stimulusKind === 'none' && i.stimulusEmoji === '')).toBe(true);
     expect(data.items.map(i => i.stimulusText)).toEqual(riddles.map(i => i.ask));
-    expect(data.items.every(i => pronounceCue(i).includes(i.ask))).toBe(true);
     expect(findAnswerLeaks(data.items)).toEqual([]);
     expect(findUnspokenStimulus(data.items)).toEqual([]);
   });
@@ -230,7 +226,7 @@ describe('neighboring tasks retain their delivery and identity', () => {
       targets: [target('cat', 'cat', text), target('2', 'two', text)] });
     const data = await gen('read_aloud', text);
     expect(new Set(data.items.map(i => i.expectedAnswer))).toEqual(new Set(['cat', 'two']));
-    expect(data.items.every(i => i.answerSource === 'decode' && pronounceCue(i) === '')).toBe(true);
+    expect(data.items.every(i => i.answerSource === 'decode')).toBe(true);
   });
 
   it('keeps the spoken-problem requirement for listening arithmetic', async () => {
@@ -240,7 +236,7 @@ describe('neighboring tasks retain their delivery and identity', () => {
     const data = await gen('say_answer', 'Add within five');
     expect(data.items).toHaveLength(4);
     expect(findUnspokenStimulus([{ ...data.items[0], ask: 'What is the answer?' }])).toHaveLength(1);
-    expect(pronounceCue(data.items[0])).toContain('2 + 1');
+    expect(data.items[0].stimulusText).toBe('2 + 1');
   });
 
   it('retries a partial generic session and refuses one still below the minimum', async () => {
@@ -295,8 +291,6 @@ describe('DSP-4 subject-verb agreement completion', () => {
       expect(item.ask).toContain(item.stimulusText);
       expect(item.ask.toLowerCase()).not.toMatch(new RegExp(`\\b${item.expectedAnswer}\\b`));
       expect(item.correctionBody).toContain(`Use ${item.expectedAnswer} with`);
-      expect(itemCue(item, { opening: false, howToPlay: false }))
-        .toContain(`My turn: ${item.correctionBody} Your turn. ${item.ask}`);
     }
   });
 
@@ -361,10 +355,6 @@ describe('compare_choice — the closed-set comparative session', () => {
       expect(i.choices).toEqual(MENU);
       expect(i.stimulusEmoji).toBeTruthy();
       expect(i.stimulusEmoji2).toBeTruthy();
-      expect(itemCue(i, { opening: false, howToPlay: false }))
-        .toContain('The learner is choosing one word from: "longer", "shorter", "heavier", "lighter".');
-      expect(contextFor(i).stimulus).toBe(`${i.stimulusText} and ${i.stimulusText2}`);
-      expect(pronounceCue(i)).toContain(`${i.stimulusText} and ${i.stimulusText2}`);
     }
     expect(findAnswerLeaks(data.items)).toEqual([]);
     expect(findChoiceMenuDefects(data.items)).toEqual([]);
@@ -467,10 +457,6 @@ describe('explain_concept — the named-concept session (ah5w)', () => {
       expect(i.expectedAnswer).toBe('both sides the same');
       expect(i.alternates).toEqual(['balanced', 'equal amounts']);
       expect(i.stimulusKind).toBe('text');
-      const cue = itemCue(i, { opening: false, howToPlay: false });
-      expect(cue).toContain(`The idea they must express: "${CONCEPT}"`);
-      expect(cue).toContain('say exactly: "Yes, the equal sign means both sides have the same amount."');
-      expect(contextFor(i)).toEqual({ challengeType: 'explain_concept', stimulus: i.stimulusText });
     }
     expect(new Set(data.items.map(i => i.stimulusText)).size).toBe(4);
     expect(findAnswerLeaks(data.items)).toEqual([]);

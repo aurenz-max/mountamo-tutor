@@ -49,7 +49,6 @@ try {
     suppliedProblem: gates.findUnspokenStimulus(data.items).length === 0,
     arithmetic: gates.findArithmeticMismatches(data.items).length === 0,
     noPrintedCounts: gates.findPrintedNumerals(data.items).length === 0,
-    visualNamingNoPronunciation: data.items.filter(i => i.stimulusRole === 'visual_target').every(i => gates.pronounceCue(i) === ''),
   });
 
   // One actual lesson-level selector call covers three distinct naming objectives

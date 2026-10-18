@@ -13,7 +13,7 @@
  * registry keyed by the same ids.
  */
 import type { BossCard, BossMode, TutoringScaffold } from '../../../types';
-import { bossInteraction, type Boss } from '../boss';
+import { bossInteraction, wiringsOf, type Boss } from '../boss';
 import type { LeverType } from '../bossLevers';
 import { getComponentById } from '../../../service/manifest/catalog';
 import { UNGRADED_MODE } from '../pinnedModes';
@@ -132,18 +132,32 @@ const FLOW: Record<BossMode['flow'], string> = {
  * whose modes differ gets one per wiring, named by mode.
  */
 export const ROTATION_DOCTRINE = ({ modes, words }: BossCard) => {
-  const wirings = new Map<string, { mode: BossMode; names: string[] }>();
-  for (const [name, mode] of Object.entries(modes)) {
-    const key = `${mode.judge}|${mode.flow}`;
-    wirings.set(key, { mode, names: [...(wirings.get(key)?.names ?? []), name] });
+  // One entry per (mode, step) wiring. A card with no stepped mode reads exactly as it did before steps existed.
+  const all = Object.entries(modes).flatMap(([name, mode]) => wiringsOf(mode).map(({ step, wiring }) => ({ name, step, wiring })));
+  const stepped = all.some(entry => entry.step);
+  const wirings = new Map<string, { mode: BossMode; entries: typeof all }>();
+  for (const entry of all) {
+    const key = `${entry.wiring.judge}|${entry.wiring.flow}`;
+    wirings.set(key, { mode: entry.wiring, entries: [...(wirings.get(key)?.entries ?? []), entry] });
   }
-  const judged = Array.from(wirings.values()).map(({ mode, names }) =>
-    (wirings.size > 1 ? `In ${names.join(' and ')}: ` : '') + JUDGED_BY[mode.judge](words.answer) + FLOW[mode.flow]).join(' ');
-  const board = Object.values(modes).some(mode => mode.flow === 'board');
-  const named = Object.entries(modes).filter(([, mode]) => mode.moves);
-  const moves = named.map(([name, mode]) => (named.length > 1 || Object.keys(modes).length > 1 ? `In ${name}, the learner ` : 'The learner ')
-    + `${mode.moves}.`).join(' ');
-  return `The learner's job is to ${words.job}. ${moves ? `${moves} ` : ''}${judged} ${cap(words.question)} are the question: say them freely `
+  const label = (entries: typeof all) => (stepped ? `the ${listOf(stepNames(entries, all))} steps` : entries.map(e => e.name).join(' and '));
+  const judged = Array.from(wirings.values()).map(({ mode, entries }) =>
+    (wirings.size > 1 ? `In ${label(entries)}: ` : '') + JUDGED_BY[mode.judge](words.answer) + FLOW[mode.flow]).join(' ');
+  const board = all.some(entry => entry.wiring.flow === 'board');
+  const named = all.filter(entry => entry.wiring.moves);
+  // A step with the same moves in several modes is said once, naming them all.
+  const byMoves = new Map<string, typeof all>();
+  for (const entry of named.filter(e => e.step)) {
+    const key = `${entry.step}|${entry.wiring.moves}`;
+    byMoves.set(key, [...(byMoves.get(key) ?? []), entry]);
+  }
+  const moves = stepped
+    ? Array.from(byMoves.values()).map(group => `In the ${group[0].step} step of ${listOf(group.map(e => e.name))}, the learner `
+      + `${group[0].wiring.moves}.`).join(' ')
+    : named.map(entry => (named.length > 1 || Object.keys(modes).length > 1 ? `In ${entry.name}, the learner ` : 'The learner ')
+      + `${entry.wiring.moves}.`).join(' ');
+  const steps = stepped ? 'Each item is one step of the problem, and the task\'s kind names the step. ' : '';
+  return `The learner's job is to ${words.job}. ${steps}${moves ? `${moves} ` : ''}${judged} ${cap(words.question)} are the question: say them freely `
     + 'and as often as needed, and read the instruction and every label aloud for a learner who cannot read, unless '
     + 'reading it is the task: then the print is the answer, so let the learner read it first. Never rule a choice out ("it is not that one") or state the one fact that decides it. '
     + 'Describing one thing on screen at a time is teaching; linking things the way the task asks is the answer. '
@@ -157,6 +171,24 @@ export const ROTATION_DOCTRINE = ({ modes, words }: BossCard) => {
 // activityContract.test.ts).
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** "a", "a and b", "a, b and c". */
+const listOf = (items: readonly string[]) =>
+  (items.length < 3 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
+
+/** The step names of one wiring group, in the order of the mode with the most steps; a step wired differently in
+ *  another mode is named with its modes. */
+function stepNames(entries: ReadonlyArray<{ name: string; step?: string }>, all: ReadonlyArray<{ name: string; step?: string }>): string[] {
+  const perMode = new Map<string, string[]>();
+  for (const e of all) perMode.set(e.name, [...(perMode.get(e.name) ?? []), e.step ?? e.name]);
+  const order = Array.from(perMode.values()).sort((a, b) => b.length - a.length).flat();
+  const steps = Array.from(new Set(entries.map(e => e.step ?? e.name))).sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  return steps.map(step => {
+    const here = entries.filter(e => (e.step ?? e.name) === step).map(e => e.name);
+    const everywhere = all.filter(e => (e.step ?? e.name) === step).map(e => e.name);
+    return here.length === everywhere.length ? step : `${step} (in ${here.join(' and ')})`;
+  });
+}
 
 /** A workspace family's guidance: its own domain facts, then the shared doctrine. */
 export const workspaceGuidance = (domain: string, levers = false) =>

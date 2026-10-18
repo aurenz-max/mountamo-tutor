@@ -22,7 +22,8 @@
  * No lever on the placement beyond help (an easier story would hand over or contradict the big status), on the
  * operation step (box-in-big-slot → add is the rule), or on the classify step (a cue word maps to the kind).
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { diWordProblemSetupCard } from './diWordProblemSetup.card';
 import { BIG_UNKNOWN_FRAMES, FRAME_IDS, SHAPE_WORD, familySpoken, numberWord as w, planWordProblem, shapeOfFrame, type FrameId,
   type StoryShape, type StoryTheme, type WordProblemPlan } from './diWordProblemPlan';
 import { itemsFromProblems, type WordProblemItem } from './diWordProblemScript';
@@ -130,46 +131,46 @@ export function withinTenSteps(item: WordProblemItem): WordProblemItem[] | null 
 export const withinTenFor = (item: WordProblemItem): WordProblemItem | null =>
   withinTenSteps(item)?.find(s => s.kind === 'solve') ?? null;
 
-export function wordProblemLevers(item: WordProblemItem | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: readonly string[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers: [...answers], when, does });
-  const out: WorkspaceLever[] = [];
-  const classify = item.challengeType === 'classify_and_build';
-  if (modelStoriesFor(item)) out.push(lever(MODEL_STORY, 'help', 'both',
-    ['box_in_big', 'printed_small_in_big', 'big_in_small_slot', 'subtraction_sentence', 'opposite_operation', 'wrong_way',
-      'said_story_number', ...OFF_BY, ...(classify ? ['signature_kind', 'other_kind'] : [])],
-    'The learner makes a wrong move on this step, or does not know how to start.',
-    `Shows a card with ${classify ? 'THREE different stories, one of each kind' : 'TWO different stories, one to add and one to subtract'}, `
-      + 'each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only '
-      + 'the one like the learner\'s story, and never say which of the learner\'s cards is big. Then hand back their step.'));
-  if (item.kind === 'big_number') out.push(lever(STORY_LINKS, 'help', 'shown', ['box_in_big', 'printed_small_in_big'],
-    'The learner puts the wrong card in the big slot.',
-    'When the learner taps a story-part card, the sentence it comes from is underlined. Say "tap a card to see where it comes from".'));
-  if (item.kind === 'family') out.push(lever(READ_ALONG, 'help', 'shown', ['big_in_small_slot', 'subtraction_sentence'],
-    'The learner reads the family in the wrong order or as a subtraction.',
-    'A highlight moves across the built family, left to right: small, plus, small, equals, big. Read along with it; never say the numbers.'));
-  if (item.kind === 'solve' && countDotsFor(item.plan)) out.push(lever(COUNT_DOTS, 'help', 'shown', ['wrong_way', 'said_story_number', ...OFF_BY],
-    'The learner gets the number wrong.',
-    'Draws dots in the bar model\'s known parts (to subtract, the known part is crossed out of the big amount). Never count them aloud.'));
-  if (withinTenFor(item)) out.push(lever(WITHIN_TEN, 'simplify', 'both', OFF_BY,
-    'These numbers are too big to work yet.',
-    'Opens the same kind of story with small numbers first; the learner solves it. It is not graded; the full step comes back after it.'));
-  return out;
-}
-
 const storyLine = (p: WordProblemPlan) =>
   `"${p.story}" Big amount: ${p.big.label} (${p.bigReason}). Family: ${familySpoken(p)}. ${p.operation === 'add' ? 'Add' : 'Subtract'}: ${w(p.answer)}.`;
 
-/** What the pulled levers put on screen, as a scene fact. Gives the models; never this story's big amount or answer. */
-export function wordProblemLeverFacts(item: WordProblemItem | null, pulled: readonly string[]): string {
-  if (!item) return '';
-  const models = pulled.includes(MODEL_STORY) ? modelStoriesFor(item) : null;
-  return [
-    models && `Beside the story, a model card shows ${models.length} different stories, solved: `
-      + models.map(m => `${SHAPE_WORD[m.shape]}: ${storyLine(m)}`).join(' ') + ' None is this story.',
-    pulled.includes(STORY_LINKS) && item.kind === 'big_number' && 'Tapping a story-part card underlines the sentence it comes from.',
-    pulled.includes(READ_ALONG) && item.kind === 'family' && 'A highlight moves left to right across the built family.',
-    pulled.includes(COUNT_DOTS) && item.kind === 'solve' && 'Dots fill the known parts of the bar model; nothing is in the box.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+const PLACING = ['box_in_big', 'printed_small_in_big', 'big_in_small_slot', 'subtraction_sentence', 'opposite_operation',
+  'wrong_way', 'said_story_number', ...OFF_BY];
+const MODEL_WHEN = 'The learner makes a wrong move on this step, or does not know how to start.';
+const modelDoes = (stories: string) => `Shows a card with ${stories}, `
+  + 'each solved (onScreen gives them). Say ALL of them as your turn, in order, each with its big amount and why; never only '
+  + 'the one like the learner\'s story, and never say which of the learner\'s cards is big. Then hand back their step.';
+const modelFact = (models: WordProblemPlan[]) => `Beside the story, a model card shows ${models.length} different stories, solved: `
+  + models.map(m => `${SHAPE_WORD[m.shape]}: ${storyLine(m)}`).join(' ') + ' None is this story.';
+
+/** Every lever of the pack, by type, in the order the tutor sees them. A step's levers are offered on that step only. */
+export const WORD_PROBLEM_LEVERS = leverSet<WordProblemItem, null>({
+  modeOf: item => item.challengeType,
+  missesOf: mode => diWordProblemSetupCard.modes[mode]?.misses ?? [],
+  // No tier is medium in this pack.
+  support: { tier: item => item.supportTier ?? 'medium', different: 'different stories', own: 'this step' },
+  specs: [
+    { id: MODEL_STORY, type: 'model', modes: ['find_big_number', 'build_family'], answers: PLACING, when: MODEL_WHEN,
+      does: modelDoes('TWO different stories, one to add and one to subtract'), content: item => modelStoriesFor(item), fact: modelFact },
+    { id: MODEL_STORY, type: 'model', modes: ['classify_and_build'], answers: [...PLACING, 'signature_kind', 'other_kind'], when: MODEL_WHEN,
+      does: modelDoes('THREE different stories, one of each kind'), content: item => modelStoriesFor(item), fact: modelFact },
+    { id: STORY_LINKS, type: 'marks', answers: ['box_in_big', 'printed_small_in_big'], offer: item => item.kind === 'big_number',
+      when: 'The learner puts the wrong card in the big slot.',
+      does: 'When the learner taps a story-part card, the sentence it comes from is underlined. Say "tap a card to see where it comes from".',
+      fact: 'Tapping a story-part card underlines the sentence it comes from.' },
+    { id: READ_ALONG, type: 'marks', modes: ['build_family', 'classify_and_build'], answers: ['big_in_small_slot', 'subtraction_sentence'],
+      offer: item => item.kind === 'family',
+      when: 'The learner reads the family in the wrong order or as a subtraction.',
+      does: 'A highlight moves across the built family, left to right: small, plus, small, equals, big. Read along with it; never say the numbers.',
+      fact: 'A highlight moves left to right across the built family.' },
+    { id: COUNT_DOTS, type: 'marks', answers: ['wrong_way', 'said_story_number', ...OFF_BY],
+      offer: item => item.kind === 'solve', content: item => countDotsFor(item.plan),
+      when: 'The learner gets the number wrong.',
+      does: 'Draws dots in the bar model\'s known parts (to subtract, the known part is crossed out of the big amount). Never count them aloud.',
+      fact: 'Dots fill the known parts of the bar model; nothing is in the box.' },
+    { id: WITHIN_TEN, type: 'easier', answers: OFF_BY,
+      when: 'These numbers are too big to work yet.',
+      does: 'Opens the same kind of story with small numbers first; the learner solves it. It is not graded; the full step comes back after it.',
+      content: item => withinTenFor(item) },
+  ],
+});

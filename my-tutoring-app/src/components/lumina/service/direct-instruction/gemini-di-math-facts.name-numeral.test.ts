@@ -155,7 +155,7 @@ describe('name_numeral — the success condition drops the two clauses that misf
 
   it('offers no "count to the answer" route — you do not count to a name', () => {
     expect(routeOf(naming)).toContain('none');
-    expect(conditionOf(naming)).toContain('Reciting the counting sequence up to it');
+    expect(conditionOf(naming)).toContain('Reciting the counting sequence up to the printed numeral 7');
     // Every other identity keeps the counting route.
     expect(routeOf(counting)).toContain('legitimate route');
     expect(conditionOf(counting)).toContain('Counting up to it out loud and then saying it is a correct answer');
@@ -163,7 +163,7 @@ describe('name_numeral — the success condition drops the two clauses that misf
 
   it('names the numeral itself as the answer, which a computed fact would call an echo', () => {
     // The stimulus is a bare numeral, so saying the number on the card IS the target production.
-    expect(conditionOf(naming)).toContain('the name of the printed numeral 7 out loud: seven');
+    expect(conditionOf(naming)).toMatch(/^"seven"\./);
   });
 
   it('still refuses a different number word', () => {

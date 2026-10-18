@@ -23,6 +23,14 @@ import type { SupportArtifact } from './runtime/contract';
 import type { LivePrimitiveId } from './activityContract';
 import { classificationSorterBoss } from '../../primitives/visual-primitives/biology/classificationSorter.boss';
 import type { Boss } from './boss';
+import { diWordProblemSetupBoss } from '../../primitives/visual-primitives/direct-instruction/diWordProblemSetup.boss';
+import { diShapesBoss } from '../../primitives/visual-primitives/direct-instruction/diShapes.boss';
+import { diWorkedProcedureBoss } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedure.boss';
+import { diDeductionBoss } from '../../primitives/visual-primitives/direct-instruction/diDeduction.boss';
+import { diDiceRollBoss } from '../../primitives/visual-primitives/direct-instruction/diDiceRoll.boss';
+import { diSentenceReadingBoss } from '../../primitives/visual-primitives/direct-instruction/diSentenceReading.boss';
+import { diLetterSoundsBoss } from '../../primitives/visual-primitives/direct-instruction/diLetterSounds.boss';
+import { diWordReadingBoss } from '../../primitives/visual-primitives/direct-instruction/diWordReading.boss';
 import { cellBuilderBoss } from '../../primitives/visual-primitives/biology/cellBuilder.boss';
 import { itemsFromChallenges as shapeItems, shapeSorterHarnessAnswers } from '../../primitives/visual-primitives/math/shapeSorterScript';
 import { simplerFromId as simplerShapeFromId } from '../../primitives/visual-primitives/math/shapeSorterLevers';
@@ -131,8 +139,7 @@ import { buildLetterSoundItems, letterSoundHarnessAnswers }
   from '../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain';
 import { buildWordReadingItems, wordReadingHarnessAnswers }
   from '../../primitives/visual-primitives/direct-instruction/diWordReadingDomain';
-import { buildMathFactItems, mathFactsHarnessAnswers }
-  from '../../primitives/visual-primitives/direct-instruction/diMathFactsDomain';
+import { diMathFactsBoss } from '../../primitives/visual-primitives/direct-instruction/diMathFacts.boss';
 import { buildSentenceReadingItems, sentenceReadingHarnessAnswers }
   from '../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain';
 import { buildLetterSoundLinkItems, letterSoundLinkWorkspaceAnswers }
@@ -2329,76 +2336,10 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     probes: { mounted: { selector: '[data-pip-object="shape"]' },
       demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
   },
-  'di-letter-sounds': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/direct-instruction/DiLetterSounds.tsx',
-    instanceId: 'sounds',
-    defaults: { grade: 'Kindergarten', mode: 'letter_sound', di: false,
-      topic: 'Saying the continuous sound a printed letter makes' },
-    leakTokens: RETIRED_DI_CUE_TAGS,
-    prompts: WORKSPACE_PROMPTS,
-    // The sound itself comes from the domain: the harness must not invent a phoneme.
-    inputsFor: spokenWorkspaceInputs(buildLetterSoundItems, letterSoundHarnessAnswers, 'letter-sound'),
-    probes: { mounted: { selector: '[data-sound-object="stimulus"]' },
-      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' } },
-  },
-  'di-word-reading': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/direct-instruction/DiWordReading.tsx',
-    instanceId: 'words',
-    defaults: { grade: 'Kindergarten', mode: 'cvc_reading', di: false,
-      topic: 'Blending and reading short-vowel CVC words in print' },
-    leakTokens: RETIRED_DI_CUE_TAGS,
-    prompts: WORKSPACE_PROMPTS,
-    // The wrong answer is a plainly different word: the near neighbour this pack
-    // exists to correct belongs in the JEV probe, where the tutor's reply is fixed
-    // and only the observer is under test.
-    inputsFor: spokenWorkspaceInputs(buildWordReadingItems, wordReadingHarnessAnswers, 'word-reading'),
-    probes: { mounted: { selector: '[data-word-object="printed"]' },
-      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' },
-      // The reward reveal, so a transcript inspection can check mechanically that
-      // no picture appeared before a committed success: this counts 0 until the
-      // observer has credited a read.
-      reward: { selector: '[data-word-read]', kind: 'count' } },
-  },
-  'di-sentence-reading': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/direct-instruction/DiSentenceReading.tsx',
-    instanceId: 'sentences',
-    defaults: { grade: 'Kindergarten', mode: 'read_sentence', di: false,
-      topic: 'Reading a printed short sentence aloud, every word in order' },
-    leakTokens: RETIRED_DI_CUE_TAGS,
-    prompts: WORKSPACE_PROMPTS,
-    // The wrong answer is a plainly different sentence: the near-neighbour misread
-    // this pack exists to correct belongs in the JEV probe, where the tutor's reply
-    // is fixed and only the observer is under test.
-    inputsFor: spokenWorkspaceInputs(buildSentenceReadingItems, sentenceReadingHarnessAnswers, 'sentence-reading'),
-    probes: { mounted: { selector: '[data-sentence-object="printed"]' },
-      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' },
-      // The reward reveal, so a transcript inspection can check mechanically that
-      // no picture appeared before a committed success: this counts 0 until the
-      // observer has credited a read.
-      reward: { selector: '[data-sentence-read]', kind: 'count' } },
-  },
-  'di-math-facts': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/direct-instruction/DiMathFacts.tsx',
-    instanceId: 'facts',
-    defaults: { grade: 'Kindergarten', mode: 'answer_fact', di: false,
-      topic: 'Adding within five and saying the answer out loud' },
-    leakTokens: RETIRED_DI_CUE_TAGS,
-    prompts: WORKSPACE_PROMPTS,
-    // The wrong answer is a plainly different quantity: the off-by-one this pack
-    // exists to correct belongs in the JEV probe, where the tutor's reply is fixed
-    // and only the observer is under test.
-    inputsFor: spokenWorkspaceInputs(buildMathFactItems, mathFactsHarnessAnswers, 'math-fact'),
-    probes: { mounted: { selector: '[data-fact-object="problem"]' },
-      demonstration: { selector: '[data-tutor-demonstration="true"]', kind: 'count' },
-      // The completed-equation reveal, so a transcript inspection can check
-      // mechanically that no answer appeared on the stage before a committed
-      // success: this counts 0 until the observer has credited a fact.
-      reward: { selector: '[data-fact-solved]', kind: 'count' } },
-  },
+  'di-letter-sounds': bossJourney(diLetterSoundsBoss),
+  'di-word-reading': bossJourney(diWordReadingBoss),
+  'di-sentence-reading': bossJourney(diSentenceReadingBoss),
+  'di-math-facts': bossJourney(diMathFactsBoss),
   'letter-sound-link': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/literacy/LetterSoundLink.tsx',
@@ -3120,120 +3061,12 @@ export const LIVE_JOURNEYS: Record<LivePrimitiveId, LiveJourney> = {
     },
     probes: { mounted: { selector: '[data-pip-object="workspace"]' } },
   },
-  'di-shapes': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/direct-instruction/DiShapes.tsx',
-    instanceId: 'shapes',
-    defaults: { grade: 'Kindergarten', mode: 'name_shape', di: false,
-      topic: 'Naming flat shapes: circle, square, triangle, rectangle' },
-    leakTokens: RETIRED_DI_CUE_TAGS,
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken answer per item: the shape name or count, or a plainly different one. build_shape through the real
-    // dot taps: a witness of the named shape (or a three-or-four-sided miss), closed on its first corner, then "I'm
-    // done!". Try again keeps the shape, so a right try clears it first; a second wrong presses done on the kept one.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current di-shapes item');
-      if (c.challengeType === 'build_shape') {
-        const done: DriverInput = { type: 'choose', label: "I'm done!" };
-        if (intent === 'wrong' && ctx.demand?.shapeClosed === 'yes') return [done];
-        const shape: Array<{ x: number; y: number }> | undefined = intent === 'wrong'
-          ? (c.shape === 'triangle' ? WRONG_SHAPE_BUILD.triangle : WRONG_SHAPE_BUILD.other) : SHAPE_BUILD_WITNESSES[c.shape]?.[0];
-        if (!shape) throw new Error(`di-shapes build_shape: no witness for ${c.shape}`);
-        const tap = (p: { x: number; y: number }): DriverInput => ({ type: 'touch', target: `dot-${p.x}-${p.y}` });
-        const kept = Number(ctx.demand?.cornersPlaced ?? 0) > 0;
-        return [...(kept ? [{ type: 'choose' as const, label: 'Clear Shape' }] : []), ...shape.map(tap), tap(shape[0]), done];
-      }
-      const answers = diShapesHarnessAnswers(c);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-shape-object="shape"]' }, reward: { selector: '[data-shape-credited]', kind: 'count' } },
-  },
+  'di-shapes': bossJourney(diShapesBoss),
   'di-spoken-practice': bossJourney(diSpokenPracticeBoss),
-  'di-dice-roll': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/direct-instruction/DiDiceRoll.tsx',
-    instanceId: 'dice',
-    defaults: { grade: 'Kindergarten', mode: 'count_pips', di: false,
-      topic: 'Counting the dots on a die' },
-    leakTokens: ['DICE_ITEM', 'DICE_MOVE_ON', 'DICE_COMPLETE'],
-    prompts: WORKSPACE_PROMPTS,
-    // Roll first (the dice are covered until then), then one spoken answer, or a plainly different one.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const c = (ctx.data.challenges ?? []).find((x: { id: string }) => x.id === ctx.itemId);
-      if (!c) throw new Error('No current di-dice-roll item');
-      const answers = diDiceRollHarnessAnswers(c);
-      const say: DriverInput = { type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct };
-      return ctx.demand?.rolled === 'yes' ? [say]
-        : [{ type: 'choose', label: c.challengeType === 'count_pips' ? 'Roll the die' : 'Roll both dice' }, say];
-    },
-    probes: { mounted: { selector: '[data-dice-object="dice"]' }, reward: { selector: '[data-dice-trail]', kind: 'count' } },
-  },
-  'di-deduction': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/direct-instruction/DiDeduction.tsx',
-    instanceId: 'deduction',
-    defaults: { grade: 'Grade 3', mode: 'deny', di: false,
-      topic: 'Using a rule about animal groups to decide what follows' },
-    leakTokens: ['DD_ITEM', 'DD_MOVE_ON', 'DD_COMPLETE', 'DD_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken answer per case: the pack's canonical verdict and reason, or the plainest wrong verdict.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const c = deductionItems(ctx.data as never).find(x => x.id === ctx.itemId);
-      if (!c) throw new Error('No current di-deduction case');
-      const answers = diDeductionHarnessAnswers(c);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-deduction-object="rule"]' }, reward: { selector: '[data-deduction-credited]', kind: 'count' } },
-  },
-  'di-worked-procedure': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/direct-instruction/DiWorkedProcedure.tsx',
-    instanceId: 'procedure',
-    defaults: { grade: 'Grade 2', mode: 'subtract_regroup', di: false,
-      topic: 'Two-digit subtraction with regrouping' },
-    leakTokens: ['WP_ITEM', 'WP_MOVE_ON', 'WP_COMPLETE', 'WP_HEAR'],
-    prompts: WORKSPACE_PROMPTS,
-    // One spoken step per item: the pack's canonical move or number, or the column's signature miss.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const c = workedProcedureItems(ctx.data as never).find(x => x.id === ctx.itemId);
-      if (!c) throw new Error('No current di-worked-procedure step');
-      const answers = diWorkedProcedureHarnessAnswers(c);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-procedure-object="problem"]' }, reward: { selector: '[data-procedure-digit]', kind: 'count' } },
-  },
-  'di-word-problem-setup': {
-    execution: 'workspace',
-    component: 'primitives/visual-primitives/direct-instruction/DiWordProblemSetup.tsx',
-    instanceId: 'wordproblem',
-    defaults: { grade: 'Grade 1', mode: 'find_big_number', di: false,
-      topic: 'Addition and subtraction word problems within 20' },
-    leakTokens: ['WPS_ITEM', 'WPS_MOVE_ON', 'WPS_COMPLETE', 'WPS_HEAR', 'WPS_BIG'],
-    prompts: WORKSPACE_PROMPTS,
-    // The hands step taps each card, then its slot (the build commits after the stillness window); a wrong
-    // build puts a small amount in the big slot. Every other step is one spoken answer.
-    inputsFor: (intent, ctx) => {
-      if (intent === 'warmup') return [];
-      const c = wordProblemItems(ctx.data as never).find(x => x.id === ctx.itemId);
-      if (!c) throw new Error('No current di-word-problem-setup step');
-      if (c.kind === 'big_number') {
-        const board = wordProblemHarnessPlacements(c, intent === 'wrong');
-        return (['small1', 'small2', 'big'] as const).flatMap((slot): DriverInput[] => {
-          const id = board[slot];
-          const label = c.plan.quantities.find(q => q.id === id)?.label;
-          return label ? [{ type: 'choose', label: `Select ${label}` }, { type: 'touch', target: `slot-${slot}` }] : [];
-        });
-      }
-      const answers = diWordProblemHarnessAnswers(c);
-      return [{ type: 'answer', text: intent === 'wrong' ? answers.plainWrong : answers.correct }];
-    },
-    probes: { mounted: { selector: '[data-word-problem-object="story"]' } },
-  },
+  'di-dice-roll': bossJourney(diDiceRollBoss),
+  'di-deduction': bossJourney(diDeductionBoss),
+  'di-worked-procedure': bossJourney(diWorkedProcedureBoss),
+  'di-word-problem-setup': bossJourney(diWordProblemSetupBoss),
   'spatial-scene': {
     execution: 'workspace',
     component: 'primitives/visual-primitives/math/SpatialScene.tsx',

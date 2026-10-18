@@ -64,12 +64,6 @@ export const numberWord = (n: number): string => {
 export type Place = 'ones' | 'tens' | 'hundreds';
 export const PLACES: readonly Place[] = ['ones', 'tens', 'hundreds'];
 
-/** The unit ONE of the place above is worth, in this place's words:
- *  "one ten becomes ten ones", "one hundred becomes ten tens". */
-export const PLACE_UNIT: Record<Place, string> = {
-  ones: 'one', tens: 'ten', hundreds: 'hundred',
-};
-
 // ── The problem plan ─────────────────────────────────────────────────────────
 
 export interface SubtractionColumn {

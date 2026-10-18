@@ -13,7 +13,9 @@ import { classificationSorterBoss } from '../../primitives/visual-primitives/bio
 import { LIVE_ADAPTERS, type LivePrimitiveId } from './activityContract';
 import { LIVE_JOURNEYS } from './liveJourneySpec';
 import { ROTATION_DOCTRINE } from './adapters/adapterContract';
-import { bossEntry, renderBoss, SPOKEN, TAP_ONE, type Boss, type Card } from './boss';
+import { bossEntry, renderBoss, SPOKEN, TAP_ONE, wiringsOf, type Boss, type Card } from './boss';
+import { leverScene, leverSet, type SceneOf } from './bossLevers';
+import { supportFact } from './supportFact';
 
 const LUMINA = join(__dirname, '../..');
 const PRIMITIVES = join(LUMINA, 'primitives');
@@ -54,6 +56,29 @@ describe('every boss on disk', () => {
       expect(LIVE_JOURNEYS[id]?.component, `${id}: LIVE_JOURNEYS row is bossJourney(boss)`).toBe(boss.drive.component);
       expect(LIVE_JOURNEYS[id].leakTokens, id).toEqual([...(boss.drive.leakTokens ?? [])]);
     }
+  });
+
+  it('carries no scripted cue builders: the boss is the only description of the activity', async () => {
+    const CUES = /^export (?:const|function) (itemCue|moveOnCue|completeCue|pronounceCue|judgingContract|correctionLines?|verifyLine|\w+PackBase)\b/m;
+    for (const { file, values: [boss] } of await load<Boss>(bossFiles, isBoss)) {
+      const dir = join(PRIMITIVES, file, '..');
+      const component = join(LUMINA, boss.drive.component);
+      const local = [join(PRIMITIVES, file), component].flatMap(f => Array.from(
+        readFileSync(f, 'utf8').matchAll(/from '\.\/([\w.]+)'/g), m => join(f === component ? join(component, '..') : dir, `${m[1]}`)));
+      for (const mod of Array.from(new Set(local))) {
+        const path = [`${mod}.ts`, `${mod}.tsx`].find(p => { try { readFileSync(p); return true; } catch { return false; } });
+        const hit = path && readFileSync(path, 'utf8').match(CUES);
+        expect(hit?.[1], `${boss.card.id}: ${path} exports ${hit?.[1]}, a scripted cue the tutor never receives; `
+          + 'the boss (ask, key, levers, support) describes the activity').toBeUndefined();
+      }
+    }
+  });
+
+  it('is driven by its journey, not by the old scripted DI drive (DI_PORTS)', async () => {
+    const ports = readFileSync(join(LUMINA, 'service/qa/di/diDrivePlan.ts'), 'utf8').split('export const DI_PORTS')[1];
+    for (const { values: [boss] } of await load<Boss>(bossFiles, isBoss))
+      expect(ports.includes(`'${boss.card.id}':`), `${boss.card.id}: a DI_PORTS row replays cues the tutor no longer receives; `
+        + 'the boss drive (LIVE_JOURNEYS) is its harness').toBe(false);
   });
 
   it('a card imports only cards and boss.ts, so the catalog does not load behavior', () => {
@@ -98,6 +123,13 @@ describe('every boss on disk', () => {
     }
   });
 
+  it('a card with stepped modes names each item\'s step', async () => {
+    for (const { values: [boss] } of await load<Boss>(bossFiles, isBoss)) {
+      const stepped = Object.values(boss.card.modes).some(m => 'steps' in m);
+      expect(!!boss.stepOf, `${boss.card.id}: a stepped card needs boss.stepOf (the step its scene publishes as kind)`).toBe(stepped);
+    }
+  });
+
   it('declares its levers once, by type, answering every miss', async () => {
     for (const { values: [boss] } of await load<Boss>(bossFiles, isBoss)) {
       const { card } = boss;
@@ -131,7 +163,8 @@ describe('boss cards in the catalog', () => {
     expect(LIVE_ADAPTERS[id as LivePrimitiveId].guidance).toContain(ROTATION_DOCTRINE(entry.teachingWorkspace!.card!));
     for (const [mode, wiring] of Object.entries(entry.teachingWorkspace!.card!.modes)) {
       const def = entry.evalModes!.find(m => m.evalMode === mode)!;
-      expect(def.affordances?.answers ?? entry.affordances?.answers).toContain(wiring.answer);
+      for (const { step, wiring: w } of wiringsOf(wiring))
+        expect(def.affordances?.answers ?? entry.affordances?.answers, `${id} ${mode}${step ? ` ${step}` : ''}`).toContain(w.answer);
     }
   });
 
@@ -177,21 +210,74 @@ describe('boss cards in the catalog', () => {
     expect(mixed).toContain('In fill: The activity checks the answer');
     expect(mixed).toContain('after a check you may say how many parts are right, never which');
   });
+
+  it('names steps, not modes, when a mode is wired by step', () => {
+    const words = { job: 'answer', answer: 'the answer', question: 'the prompt' };
+    const say = { answer: 'spoken', judge: 'tutor', flow: 'one-at-a-time' } as const;
+    const place = { answer: 'manipulate', judge: 'activity', flow: 'one-at-a-time', moves: 'drags a card into the box' } as const;
+    const doctrine = ROTATION_DOCTRINE({ words, modes: {
+      short: { steps: { place, solve: say } },
+      long: { steps: { classify: say, place, solve: say } } } });
+    expect(doctrine).toContain("Each item is one step of the problem, and the task's kind names the step.");
+    expect(doctrine).toContain('In the classify and solve steps: The learner answers out loud');
+    expect(doctrine).toContain('In the place steps: The activity checks the answer');
+    expect(doctrine).toContain('In the place step of short and long, the learner drags a card into the box.');
+    // A step wired one way in one mode and another way elsewhere is named with its modes.
+    const split = ROTATION_DOCTRINE({ words, modes: { a: { steps: { solve: say } }, b: { steps: { solve: place } } } });
+    expect(split).toContain('In the solve (in a) steps: The learner answers out loud');
+    // No stepped mode: the text is the one every unstepped card has always had.
+    expect(ROTATION_DOCTRINE({ words, modes: { say } })).not.toContain('step');
+  });
 });
 
 /**
  * Legacy patterns the framework replaces, counted over the source tree. Each number only goes down: when a family
  * moves onto a preset, lower it in the same change. A new instance fails here with the piece to use instead.
  */
+describe('support is the lever set\'s: a mode cannot write the tier rule itself', () => {
+  type Item = { id: string; supportTier?: 'easy' | 'medium' | 'hard' };
+  const model = { id: 'model_it', type: 'model' as const, answers: 'all' as const, when: 'stuck', does: 'shows one solved' };
+  const support = { tier: (i: Item) => i.supportTier ?? 'easy', different: 'a different fact', own: "this fact's answer" };
+
+  it('a lever set with a model lever and no support fails when it is built', () => {
+    expect(() => leverSet<Item, null>({ missesOf: () => [], specs: [model] })).toThrow(/declares `support`/);
+  });
+
+  it('the set writes the fact from the tier and names the model lever', () => {
+    const set = leverSet<Item, null>({ missesOf: () => [], support, specs: [model] });
+    expect(set.support({ id: 'a', supportTier: 'hard' })).toBe(supportFact('hard', { ...support, different: 'a different fact', lever: 'model_it' }));
+    expect(set.support({ id: 'a' })).toMatch(/^before the learner tries, pull the model lever \(model_it\)/);
+  });
+
+  it('a scene that writes support or onScreen throws when published', () => {
+    expect(() => leverScene({ objects: [], facts: { support: 'answer it cold' } }, { support: 'x', onScreen: '' })).toThrow(/lever set writes it/);
+    expect(leverScene({ objects: [], facts: { kind: 'k' } }, { support: 's', onScreen: '' }).facts).toEqual({ kind: 'k', support: 's' });
+  });
+
+  it('a scene function cannot type a support fact', () => {
+    // @ts-expect-error SceneOf forbids `support`: the lever set writes it.
+    const scene: SceneOf = { objects: [], facts: { support: 'answer it cold' } };
+    expect(scene).toBeTruthy();
+  });
+
+  it('every boss with a model lever declares support', async () => {
+    for (const { values: [boss] } of await load<Boss>(bossFiles, isBoss)) {
+      const items = boss.levers?.specs ?? [];
+      if (items.some(spec => spec.type === 'model')) expect(boss.levers!.support, boss.card.id).toBeTypeOf('function');
+    }
+  });
+});
+
 describe('ratchets: the old wiring only shrinks', () => {
   const sources = files(PRIMITIVES, f => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
   const count = (pattern: RegExp) => sources.filter(f => pattern.test(readFileSync(join(PRIMITIVES, f), 'utf8'))).length;
   it.each([
-    ['hand-built spoken assignments', /response: 'speech'/, 90, 'spokenBoss builds the assignment from speech.ask/key/misses'],
-    ['hand-written spoken key text', /also accept/i, 12, 'spokenKeyText (components/live-activity/spokenKey.ts) writes the key'],
-    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 171, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
+    ['hand-built spoken assignments', /response: 'speech'/, 83, 'spokenBoss builds the assignment from speech.ask/key/misses'],
+    ['hand-written spoken key text', /also accept/i, 10, 'spokenKeyText (components/live-activity/spokenKey.ts) writes the key'],
+    ['levers built outside a lever set', /kind: '(help|simplify)'|WorkspaceLever\['kind'\]/, 162, 'leverSet (components/live-activity/bossLevers.ts) builds them from typed specs'],
     ['Pip wired by hand in a primitive', /useWorkspacePipSurface\(|usePipSurface\(/, 177, 'the runner publishes Pip: render <PipDock /> and <PipWorkspace> (pip/WorkspacePip.tsx)'],
     ['scripted fallbacks beside the workspace', /withWorkspaceController|withTeachingWorkspace\(/, 94, 'withWorkspaceOnly: an unbound mount shows NeedsTutor'],
+    ['hand-written tier support facts', /support: \w+\.supportTier ===|model nothing before|before the learner tries, pull/, 0, 'supportFact (components/live-activity/supportFact.ts) writes when the model comes'],
   ] as const)('%s', (_name, pattern, ceiling, instead) => {
     expect(count(pattern), `more files than the ratchet allows; use ${instead}`).toBeLessThanOrEqual(ceiling);
   });
@@ -203,6 +289,6 @@ describe('ratchets: the old wiring only shrinks', () => {
   });
   it('hand-written live adapters', () => {
     const live = readdirSync(join(__dirname, 'adapters')).filter(f => f.endsWith('Live.ts')).length;
-    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(161);
+    expect(live, 'a new family is a <name>.card.ts + <name>.boss.ts with bossAdapter(boss), not adapters/<x>Live.ts').toBeLessThanOrEqual(152);
   });
 });

@@ -56,10 +56,10 @@ import { fractionBarLiveDomain } from './adapters/fractionBarLive';
 import { placeValueLiveDomain } from './adapters/placeValueLive';
 import { baseTenBlocksLiveDomain } from './adapters/baseTenBlocksLive';
 import { shapeSorterLiveDomain, validateShapeSorterData } from './adapters/shapeSorterLive';
-import { diLetterSoundsLiveDomain } from './adapters/diLetterSoundsLive';
-import { diWordReadingLiveDomain } from './adapters/diWordReadingLive';
-import { diMathFactsLiveDomain } from './adapters/diMathFactsLive';
-import { diSentenceReadingLiveDomain } from './adapters/diSentenceReadingLive';
+import { diLetterSoundsBoss } from '../../primitives/visual-primitives/direct-instruction/diLetterSounds.boss';
+import { diWordReadingBoss } from '../../primitives/visual-primitives/direct-instruction/diWordReading.boss';
+import { diMathFactsBoss } from '../../primitives/visual-primitives/direct-instruction/diMathFacts.boss';
+import { diSentenceReadingBoss } from '../../primitives/visual-primitives/direct-instruction/diSentenceReading.boss';
 import { letterSoundLinkLiveDomain } from './adapters/letterSoundLinkLive';
 import { barModelLiveDomain } from './adapters/barModelLive';
 import { phonicsBlenderLiveDomain } from './adapters/phonicsBlenderLive';
@@ -149,12 +149,12 @@ import { digitalSkillsSimLiveDomain } from './adapters/digitalSkillsSimLive';
 import { openBuilderLiveDomain } from './adapters/openBuilderLive';
 import { shapeBuilderLiveDomain } from './adapters/shapeBuilderLive';
 import { shapeComposerLiveDomain } from './adapters/shapeComposerLive';
-import { diShapesLiveDomain } from './adapters/diShapesLive';
+import { diShapesBoss } from '../../primitives/visual-primitives/direct-instruction/diShapes.boss';
 import { diSpokenPracticeBoss } from '../../primitives/visual-primitives/direct-instruction/diSpokenPractice.boss';
-import { diDiceRollLiveDomain } from './adapters/diDiceRollLive';
-import { diDeductionLiveDomain } from './adapters/diDeductionLive';
-import { diWorkedProcedureLiveDomain } from './adapters/diWorkedProcedureLive';
-import { diWordProblemSetupLiveDomain } from './adapters/diWordProblemSetupLive';
+import { diDiceRollBoss } from '../../primitives/visual-primitives/direct-instruction/diDiceRoll.boss';
+import { diDeductionBoss } from '../../primitives/visual-primitives/direct-instruction/diDeduction.boss';
+import { diWorkedProcedureBoss } from '../../primitives/visual-primitives/direct-instruction/diWorkedProcedure.boss';
+import { diWordProblemSetupBoss } from '../../primitives/visual-primitives/direct-instruction/diWordProblemSetup.boss';
 import { spatialSceneLiveDomain } from './adapters/spatialSceneLive';
 import { spatialPathLiveDomain } from './adapters/spatialPathLive';
 import { hundredsChartLiveDomain } from './adapters/hundredsChartLive';
@@ -233,10 +233,10 @@ export const LIVE_ADAPTERS = {
   'place-value-chart': workspaceAdapter('place-value-chart', placeValueLiveDomain),
   'base-ten-blocks': workspaceAdapter('base-ten-blocks', baseTenBlocksLiveDomain),
   'shape-sorter': workspaceAdapter('shape-sorter', shapeSorterLiveDomain),
-  'di-letter-sounds': workspaceAdapter('di-letter-sounds', diLetterSoundsLiveDomain),
-  'di-word-reading': workspaceAdapter('di-word-reading', diWordReadingLiveDomain),
-  'di-math-facts': workspaceAdapter('di-math-facts', diMathFactsLiveDomain),
-  'di-sentence-reading': workspaceAdapter('di-sentence-reading', diSentenceReadingLiveDomain),
+  'di-letter-sounds': bossAdapter(diLetterSoundsBoss),
+  'di-word-reading': bossAdapter(diWordReadingBoss),
+  'di-math-facts': bossAdapter(diMathFactsBoss),
+  'di-sentence-reading': bossAdapter(diSentenceReadingBoss),
   'letter-sound-link': workspaceAdapter('letter-sound-link', letterSoundLinkLiveDomain),
   'bar-model': workspaceAdapter('bar-model', barModelLiveDomain),
   'phonics-blender': workspaceAdapter('phonics-blender', phonicsBlenderLiveDomain),
@@ -326,12 +326,12 @@ export const LIVE_ADAPTERS = {
   'open-builder': workspaceAdapter('open-builder', openBuilderLiveDomain),
   'shape-builder': workspaceAdapter('shape-builder', shapeBuilderLiveDomain),
   'shape-composer': workspaceAdapter('shape-composer', shapeComposerLiveDomain),
-  'di-shapes': workspaceAdapter('di-shapes', diShapesLiveDomain),
+  'di-shapes': bossAdapter(diShapesBoss),
   'di-spoken-practice': bossAdapter(diSpokenPracticeBoss),
-  'di-dice-roll': workspaceAdapter('di-dice-roll', diDiceRollLiveDomain),
-  'di-deduction': workspaceAdapter('di-deduction', diDeductionLiveDomain),
-  'di-worked-procedure': workspaceAdapter('di-worked-procedure', diWorkedProcedureLiveDomain),
-  'di-word-problem-setup': workspaceAdapter('di-word-problem-setup', diWordProblemSetupLiveDomain),
+  'di-dice-roll': bossAdapter(diDiceRollBoss),
+  'di-deduction': bossAdapter(diDeductionBoss),
+  'di-worked-procedure': bossAdapter(diWorkedProcedureBoss),
+  'di-word-problem-setup': bossAdapter(diWordProblemSetupBoss),
   'spatial-scene': workspaceAdapter('spatial-scene', spatialSceneLiveDomain),
   'spatial-path': workspaceAdapter('spatial-path', spatialPathLiveDomain),
   'hundreds-chart': workspaceAdapter('hundreds-chart', hundredsChartLiveDomain),

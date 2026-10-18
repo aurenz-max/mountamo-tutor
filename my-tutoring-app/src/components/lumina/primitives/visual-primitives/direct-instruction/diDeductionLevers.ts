@@ -21,7 +21,8 @@
  *   lookalike fact ("A scorpion has eight legs. A scorpion is not a spider."), then the full case.
  * conclude and deny have no simplify: conclude is the mode floor, and dropping deny's reason crosses the mode.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { diDeductionCard } from './diDeduction.card';
 import { capitalize, planCases, withArticle, type DeductionCase, type DeductionRuleSpec } from './diDeductionPlan';
 import { itemsFromRules, type DeductionItem } from './diDeductionScript';
 
@@ -97,46 +98,45 @@ export function sharedTerms(item: DeductionItem): { rule: string; case: string }
 /** The answer frame's printed text. */
 export const frameText = (item: DeductionItem) => item.shape === 'conclude' ? `${capitalize(item.case.subject)} ___.` : '___ because ___';
 
-export function deductionLevers(item: DeductionItem | null, pulled: readonly string[], items: readonly DeductionItem[],
-    spares: readonly DeductionRuleSpec[]): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const out: WorkspaceLever[] = [];
-  const modeMisses = item.shape === 'conclude' ? ['said_negation', 'read_rule_back', 'read_case_back']
-    : item.shape === 'deny' ? ['said_member', 'said_cannot_tell', 'verdict_without_reason']
-      : ['backwards_yes', 'said_not_member', 'verdict_without_reason'];
-  if (modelRuleFor(item, items, spares)) out.push(lever(MODEL_CASE, 'help', 'both', modeMisses,
-    'The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.',
-    'Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can\'t tell), each with its reason '
-      + '(onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner\'s case. Then ask '
-      + 'the learner\'s case again. Never apply the model to their rule, and never name a lookalike of their rule.'));
-  out.push(lever(ANSWER_FRAME, 'help', 'both', item.shape === 'conclude' ? ['read_rule_back', 'read_case_back'] : ['verdict_without_reason'],
-    item.shape === 'conclude' ? 'The learner reads a card back instead of saying what follows.' : 'The learner gives a verdict with no reason.',
-    item.shape === 'conclude'
-      ? 'Prints the case\'s subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box.'
-      : 'Prints "___ because ___" under the verdict words: a verdict and a reason. Read the frame; never fill a box or light a word.'));
-  const terms = sharedTerms(item);
-  if (terms) out.push(lever(SHARED_TERM, 'help', 'shown', item.shape === 'conclude' ? ['said_negation'] : ['said_member', 'said_cannot_tell'],
-    'The learner\'s verdict does not follow from the two cards.',
-    'Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say "look at the lit words".'));
-  if (counterexampleFor(item, items, spares)) out.push(lever(COUNTEREXAMPLE_CARD, 'simplify', 'both', ['backwards_yes', 'said_not_member'],
-    'The learner runs the rule backwards, or says no.',
-    'Opens an easier case first, on a different rule, with a third card that prints its lookalike. It is not graded; the full case comes back after it. '
-      + 'Back on the full case, never say what its rule does not say ("not only …") or name a lookalike: that is the answer.'));
-  return out;
-}
+/** What the levers read beyond the case: the session's cases and the generator's spare rules (R3). */
+export interface DeductionLeverContext { items: readonly DeductionItem[]; spares: readonly DeductionRuleSpec[] }
 
-/** What the pulled levers put on screen, as a scene fact. Gives the model; never this case's conclusion. */
-export function deductionLeverFacts(item: DeductionItem | null, pulled: readonly string[], items: readonly DeductionItem[],
-    spares: readonly DeductionRuleSpec[]): string {
-  if (!item) return '';
-  const spare = pulled.includes(MODEL_CASE) ? modelRuleFor(item, items, spares) : null;
-  const terms = sharedTerms(item);
-  return [
-    spare && `Beside the cards, a model card shows a different rule, "All ${spare.categoryPlural} ${spare.propertyPlural}.", worked through: `
-      + modelCases(spare).map(c => `${c.caseText} ${c.reason}`).join(' ') + ' It is not this rule.',
-    pulled.includes(ANSWER_FRAME) && `Under the cards a frame is printed: "${frameText(item)}", with empty boxes.`,
-    pulled.includes(SHARED_TERM) && terms && `The words "${terms.rule}" on the rule card and "${terms.case}" on the case card are lit in one colour.`,
-  ].filter((s): s is string => !!s).join(' ');
-}
+const FRAME_DOES = 'Read the frame; never fill a box or light a word.';
+const SHARED_WHEN = 'The learner\'s verdict does not follow from the two cards.';
+const SHARED_DOES = 'Lights, in one colour, the words the two cards share. Draws no arrow and no verdict; say "look at the lit words".';
+const sharedFact = (terms: { rule: string; case: string }) => `The words "${terms.rule}" on the rule card and "${terms.case}" on the case card are lit in one colour.`;
+
+/** Every lever of the pack, by type, in the order the tutor sees them. The frame and the lit words differ by mode. */
+export const DEDUCTION_LEVERS = leverSet<DeductionItem, DeductionLeverContext>({
+  modeOf: item => item.shape,
+  missesOf: mode => diDeductionCard.modes[mode]?.misses ?? [],
+  support: { tier: item => item.supportTier ?? 'easy', different: 'a different rule', own: 'this conclusion' },
+  answersOf: item => [item.answerSpoken],
+  specs: [
+    { id: MODEL_CASE, type: 'model', answers: 'all',
+      when: 'The learner gives a wrong verdict or no reason, answers from what they know, or does not know how to start.',
+      does: 'Shows a card with a DIFFERENT rule worked through each answer it has (yes, no, and can\'t tell), each with its reason '
+        + '(onScreen gives them). Say ALL of them as your turn, in order, never only the one like the learner\'s case. Then ask '
+        + 'the learner\'s case again. Never apply the model to their rule, and never name a lookalike of their rule.',
+      content: (item, { items, spares }) => modelRuleFor(item, items, spares),
+      fact: (spare: DeductionRuleSpec) => `Beside the cards, a model card shows a different rule, "All ${spare.categoryPlural} ${spare.propertyPlural}.", worked through: `
+        + modelCases(spare).map(c => `${c.caseText} ${c.reason}`).join(' ') + ' It is not this rule.' },
+    { id: ANSWER_FRAME, type: 'clue', modes: ['conclude'], answers: ['read_rule_back', 'read_case_back'],
+      when: 'The learner reads a card back instead of saying what follows.',
+      does: 'Prints the case\'s subject and an empty box under the cards: the answer starts with the subject. Read the frame; never fill the box.',
+      fact: (_: unknown, item: DeductionItem) => `Under the cards a frame is printed: "${frameText(item)}", with empty boxes.` },
+    { id: ANSWER_FRAME, type: 'clue', modes: ['deny', 'cannot_tell'], answers: ['verdict_without_reason'],
+      when: 'The learner gives a verdict with no reason.',
+      does: `Prints "___ because ___" under the verdict words: a verdict and a reason. ${FRAME_DOES}`,
+      fact: (_: unknown, item: DeductionItem) => `Under the cards a frame is printed: "${frameText(item)}", with empty boxes.` },
+    { id: SHARED_TERM, type: 'marks', modes: ['conclude'], answers: ['said_negation'], when: SHARED_WHEN, does: SHARED_DOES,
+      content: item => sharedTerms(item), fact: sharedFact },
+    { id: SHARED_TERM, type: 'marks', modes: ['deny'], answers: ['said_member', 'said_cannot_tell'], when: SHARED_WHEN, does: SHARED_DOES,
+      content: item => sharedTerms(item), fact: sharedFact },
+    { id: COUNTEREXAMPLE_CARD, type: 'easier', modes: ['cannot_tell'], answers: ['backwards_yes', 'said_not_member'],
+      when: 'The learner runs the rule backwards, or says no.',
+      does: 'Opens an easier case first, on a different rule, with a third card that prints its lookalike. It is not graded; the full case comes back after it. '
+        + 'Back on the full case, never say what its rule does not say ("not only …") or name a lookalike: that is the answer.',
+      content: (item, { items, spares }) => counterexampleFor(item, items, spares) },
+  ],
+});

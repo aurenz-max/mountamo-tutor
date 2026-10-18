@@ -107,7 +107,7 @@ export type OpenSetBucket =
   // A FOURTH group, for a class whose target is a MOVE: the wrong side splits
   // by WHICH wrong move was made (the column flipped, the decrement forgotten,
   // a regroup where none was needed, the right move landing wrong) and by the
-  // turn that names a number with no move at all. See workedProcedureBench.ts.
+  // turn that names a number with no move at all.
   | 'flipped-column'
   | 'forgot-decrement'
   | 'unneeded-regroup'

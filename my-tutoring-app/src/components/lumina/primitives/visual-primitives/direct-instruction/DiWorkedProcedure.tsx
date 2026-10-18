@@ -25,10 +25,11 @@
 
 import React, { useMemo } from 'react';
 import type { DiWorkedProcedureMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
-import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
+import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
 import { itemsFromProblems, type DiWorkedProcedureData, type WorkedProcedureItem } from './diWorkedProcedureScript';
-import { workedProcedureAssignment, workedProcedureItems, workedProcedureScene } from './diWorkedProcedureWorkspace';
-import { MODEL_PROBLEM, TAKE_AWAY_CUBES, TOP_BLOCKS, fewerColumnsFor, modelFor, procedureLeverFacts, procedureLevers } from './diWorkedProcedureLevers';
+import { workedProcedureItems, workedProcedureScene } from './diWorkedProcedureWorkspace';
+import { diWorkedProcedureBoss } from './diWorkedProcedure.boss';
+import { MODEL_PROBLEM, PROCEDURE_LEVERS, TAKE_AWAY_CUBES, TOP_BLOCKS, modelFor } from './diWorkedProcedureLevers';
 import { DiModelCard } from './DiModelCard';
 
 export type {
@@ -154,10 +155,8 @@ const recapLabel = (item: WorkedProcedureItem, solved: boolean) =>
 const problemCounter = (item: WorkedProcedureItem, items: readonly WorkedProcedureItem[]) =>
   ({ current: item.problemIndex + 1, total: new Set(items.map(candidate => candidate.problemId)).size });
 
-const LEVERS: DiStageLevers<WorkedProcedureItem> = {
-  declare: procedureLevers, onScreen: procedureLeverFacts,
-  simpler: (item, lever, lastMiss) => lever === 'fewer_columns' ? fewerColumnsFor(item, lastMiss) : null,
-};
+/** The levers read nothing beyond the step, so one binding serves every lesson. */
+const LEVERS = PROCEDURE_LEVERS.bind(null);
 
 export interface DiWorkedProcedureProps {
   data: DiWorkedProcedureData & { onEvaluationSubmit?: (result: PrimitiveEvaluationResult<DiWorkedProcedureMetrics>) => void };
@@ -173,7 +172,7 @@ export const DiWorkedProcedure: React.FC<DiWorkedProcedureProps> = ({ data, clas
   const items = useMemo(() => workedProcedureItems(data), [data]);
   return <DiTeachingStage<WorkedProcedureItem, DiWorkedProcedureMetrics> primitiveId="di-worked-procedure" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
-    assignment={workedProcedureAssignment} scene={workedProcedureScene} copy={COPY} recapLabel={recapLabel} counter={problemCounter}
+    assignment={diWorkedProcedureBoss.assignment} scene={workedProcedureScene} copy={COPY} recapLabel={recapLabel} counter={problemCounter}
     levers={LEVERS}
     stimulus={(item, marks, view) => <ProcedureStage item={item} view={view} marked={marks.includes('problem')}
       // A practice step is the first step of its own small problem: its earlier marks are none.

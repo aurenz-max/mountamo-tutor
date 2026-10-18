@@ -30,19 +30,19 @@
  * version of the same tension: 4 modes, but all "read this sentence aloud", so
  * a misconception genuinely does transfer.
  */
-import { missLists, sameMisses } from './missLists';
+import { missLists } from './missLists';
 import type { SpokenWordProblemMiss, WordProblemMiss } from '../../../primitives/visual-primitives/direct-instruction/diWordProblemWorkspace';
-import type { SpokenDeductionMiss } from '../../../primitives/visual-primitives/direct-instruction/diDeductionWorkspace';
-import type { SpokenDiceMiss } from '../../../primitives/visual-primitives/direct-instruction/diDiceRollWorkspace';
-import type { SpokenFactMiss } from '../../../primitives/visual-primitives/direct-instruction/diMathFactsDomain';
+import { diMathFactsCard } from '../../../primitives/visual-primitives/direct-instruction/diMathFacts.card';
 import { diSpokenPracticeCard } from '../../../primitives/visual-primitives/direct-instruction/diSpokenPractice.card';
+import { diWordReadingCard } from '../../../primitives/visual-primitives/direct-instruction/diWordReading.card';
+import { diLetterSoundsCard } from '../../../primitives/visual-primitives/direct-instruction/diLetterSounds.card';
+import { diSentenceReadingCard } from '../../../primitives/visual-primitives/direct-instruction/diSentenceReading.card';
+import { diDiceRollCard } from '../../../primitives/visual-primitives/direct-instruction/diDiceRoll.card';
+import { diDeductionCard } from '../../../primitives/visual-primitives/direct-instruction/diDeduction.card';
+import { diWorkedProcedureCard } from '../../../primitives/visual-primitives/direct-instruction/diWorkedProcedure.card';
+import { diShapesCard } from '../../../primitives/visual-primitives/direct-instruction/diShapes.card';
+import { diWordProblemSetupCard } from '../../../primitives/visual-primitives/direct-instruction/diWordProblemSetup.card';
 import { bossEntry } from '../../../components/live-activity/boss';
-import type { SpokenProcedureMiss } from '../../../primitives/visual-primitives/direct-instruction/diWorkedProcedureWorkspace';
-import type { SpokenShapeMiss } from '../../../primitives/visual-primitives/math/shapeSorterDomain';
-import { SHAPE_BUILD_MISSES, type ShapeBuildMiss } from '../../../primitives/visual-primitives/direct-instruction/diShapesBuild';
-import type { SpokenDiLetterSoundMiss } from '../../../primitives/visual-primitives/direct-instruction/diLetterSoundsDomain';
-import type { SpokenWordReadingMiss } from '../../../primitives/visual-primitives/direct-instruction/diWordReadingDomain';
-import type { SpokenSentenceMiss } from '../../../primitives/visual-primitives/direct-instruction/diSentenceReadingDomain';
 import { ComponentDefinition } from '../../../types';
 import { DI_DEDUCTION_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diDeductionModes';
 import { DI_DICE_ROLL_EVAL_MODES } from '../../../primitives/visual-primitives/direct-instruction/diDiceRollModes';
@@ -58,24 +58,8 @@ import { DI_WORKED_PROCEDURE_EVAL_MODES } from '../../../primitives/visual-primi
 export const DI_CATALOG: ComponentDefinition[] = [
   {
     id: 'di-letter-sounds',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The gold-ringed card is the stimulus. Its keyword picture is drawn on an onset item, and on a letter item '
-        + 'only as the keyword_picture lever. The child answers OUT LOUD. '
-        + `A letter's NAME is not its sound; naming the picture is a step toward a held sound, not the sound. A short `
-        + 'vowel or a stop also accepts its keyword or a word starting with the sound; a small "uh" after a stop counts. '
-        + `Never say this item's sound or route it through its picture before the child tries: your model is the `
-        + 'model_sound lever, a DIFFERENT letter beside it. The support fact says where levers start. '
-        + 'Your feedback is the only record of the sound. demonstrate takes "stimulus" or "picture"; [] clears. '
-        + 'You cannot change the letter or the picture, write, or answer for the child.',
-      // The spoken sound's known wrong answers (`diLetterSoundSpokenMisses`).
-      levers: true,
-      // `last_sound` needs the printed word, so it is named on first_sound_in_word only.
-      misses: missLists<SpokenDiLetterSoundMiss>({
-        ...sameMisses<SpokenDiLetterSoundMiss>(['letter_sound', 'letter_sound_review'], ['keyword_word', 'letter_name', 'added_vowel', 'other_sound']),
-        first_sound_in_word: ['keyword_word', 'letter_name', 'added_vowel', 'last_sound', 'other_sound'],
-      }),
-    },
+    // How it is wired to the live tutor: `diLetterSounds.card.ts` (behavior: `diLetterSounds.boss.ts`).
+    ...bossEntry(diLetterSoundsCard),
     description: 'Live-judged Direct Instruction for continuous letter SOUNDS (not letter names): the child sees a printed letter and says its sound; the tutor models only a DIFFERENT letter ("My turn: lll, like leaf"), never the child\'s own, and judges the spoken audio. The child SPEAKS each sound aloud (voice/microphone). Perfect for kindergarten phonemic awareness and letter-sound correspondence. ESSENTIAL for K phonics / early reading foundations — grapheme-to-phoneme mapping for pre-readers. Also drills first-sound (onset) isolation from a spoken word and cumulative spaced review of taught sounds.',
     constraints: 'Requires microphone + live audio tutor. Continuous (stretchable) sounds, short vowels and single clipped stops (t p c k h d g b) only — NOT letter names, digraphs, or blends. The manifest must NOT supply specific letters; the menu-scoped generator selects target letters from the objective and attaches keywords/pictures in code.',
     affordances: { representation: ['pictorial', 'symbolic'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
@@ -86,108 +70,11 @@ export const DI_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
-    // Judged-loop engine needs manual voice-activity brackets (Gemini's own VAD
-    // is unusable for held phonemes — bench run-3 ruling). Declared here so a
-    // LESSON session containing this primitive opens with manual activity; the
-    // standalone connect falls back to it too.
-    audioInput: { manual_activity: true },
-    // L2 tutoring block — hand-authored (DI "custom-made" rule: exact wording
-    // is the pedagogy). Moved here from diLetterSoundsScript at the L2 layer so
-    // both connect paths (standalone fallback + lesson auth/switch) resolve it
-    // from the catalog, the single source of truth. Sentinel discipline: no
-    // struggle response or scaffolding line begins with "Yes" or "My turn" —
-    // the engine's sentence-scoped verdict scan must never see a phantom opener.
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction letter-sounds practice for a kindergarten learner '
-        + '(current task: {{challengeType}}). You speak the exact scripted lines from each bracketed '
-        + 'application message and judge each learner attempt from the audio you heard, using only '
-        + 'the two allowed reply branches.',
-      // Stimulus-side only — the target sound reaches the tutor inside each
-      // [DI_ITEM] judging contract, never through RUNTIME STATE. `supportTier`
-      // (L3) is the tier the cue is composed at, so the tutor's own scaffolding
-      // channel stays tier-aware — at `hard` nothing may say, stretch, or model
-      // the target sound before the learner's attempt.
-      contextKeys: ['challengeType', 'letter', 'keyword', 'letters', 'supportTier'],
-      // L3 tier audit (2026-08-01): like di-math-facts, NO rewording was needed.
-      // Level 1 repeats the PROMPT — the ask the tutor just spoke ("Your turn.
-      // What sound?"), which never carries the target sound — not the model
-      // line. Levels 2-3 and the sound-modeling commonStruggles below all
-      // describe post-attempt (or non-attempt) remediation — correction
-      // territory, which re-models at every tier by design (standing gate 3:
-      // remediation is not scaffolding).
-      scaffoldingLevels: {
-        level1: 'Repeat the prompt once, slowly.',
-        level2: 'Model a DIFFERENT letter\'s sound, then ask for this one again.',
-        level3: 'Accept the attempt warmly and continue as instructed.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Adds a vowel to a continuant — "muh" or "suh" instead of a held "mmm"/"sss"',
-          response: 'Stretch the sound long and ask for one clean held sound with no vowel at the end.',
-        },
-        {
-          pattern: 'Says the letter NAME ("em") instead of its sound',
-          response: 'Say that letters have a name and a sound, model a different letter\'s sound, and ask for this one\'s sound.',
-        },
-        {
-          pattern: 'Stays silent after "Your turn"',
-          response: 'Invite one try together first, then hand it back alone.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DI_ITEM], [DI_MOVE_ON], or [DI_COMPLETE] contain the only lesson words you may '
-            + 'speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. Each '
-            + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
-            + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
-            + 'sentence with those words. Judge honestly from the audio: affirm a reasonable kindergarten '
-            + 'production of the target; correct a wrong, missing, or different production. Every correction '
-            + 'models a DIFFERENT letter, never this sound, and begins with "My turn". Do not praise to be kind. The application decides '
-            + 'which item comes next; never introduce one yourself. Some items deliberately give you nothing '
-            + 'to model before the ask — when the quoted text is only the "Your turn" line, the learner is '
-            + 'answering cold on purpose: never say, stretch, or model the target sound before they have '
-            + 'answered.',
-        },
-        {
-          title: 'SOUND PRONUNCIATION',
-          instruction:
-            'A stretched letter sequence like "mmm", "sss", or "fff" is a continuous letter sound held for '
-            + 'about two seconds. Never say a letter name and never spell it out — the sound, not the name.',
-        },
-        {
-          title: 'BREVITY',
-          instruction:
-            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
-            + 'Keep pacing brisk: no filler, no chit-chat.',
-        },
-      ],
-    },
   },
   {
     id: 'di-word-reading',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The gold-ringed card shows ONE printed word; reading it is the whole skill. Never read, blend or sound '
-        + 'out this word, before or after a miss: your model is the model_word lever, a DIFFERENT word beside it. The '
-        + 'support fact says where levers start. Never name a word still to come. A different word is wrong however '
-        + 'close it sounds; a rhyme or a homophone still gets a correction. Blending and then saying the whole word IS '
-        + 'a correct read; sounds with no whole word are unfinished; letter names are not reading. A decodable word may '
-        + 'be blended from its letters; an irregular sight word is recalled whole, and its letters are not marking '
-        + 'targets. demonstrate takes "word", or a letter target on a decodable word; [] clears. You cannot change '
-        + 'the word, add a picture, write, or answer for the child.',
-      // The spoken read's known wrong answers (`diWordReadingSpokenMisses`).
-      levers: true,
-      // A decodable word is never named `similar_word`, and a sight word never a position miss.
-      misses: missLists<SpokenWordReadingMiss>({
-        cvc_reading: ['letter_name', 'sounds_no_word', 'read_backwards', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed'],
-        sight_word: ['letter_name', 'sounds_no_word', 'similar_word'],
-        ...sameMisses<SpokenWordReadingMiss>(['read_word', 'word_reading_review'],
-          ['letter_name', 'sounds_no_word', 'read_backwards', 'similar_word', 'first_sound_changed', 'middle_sound_changed', 'last_sound_changed']),
-      }),
-    },
+    // How it is wired to the live tutor: `diWordReading.card.ts` (behavior: `diWordReading.boss.ts`).
+    ...bossEntry(diWordReadingCard),
     description: 'Live-judged Direct Instruction WORD READING (DISTAR "What word?"): the child sees a printed word and reads it aloud; the tutor models only a DIFFERENT word (sounding out a decodable CVC word, "sss-uuu-nnn… sun", or naming a sight word whole), never the child\'s own, and judges the spoken audio. The child SEES the printed word and READS it aloud (voice/microphone). Perfect for kindergarten and grade 1 decoding: short-vowel CVC word reading, blending, and high-frequency sight-word recognition. ESSENTIAL for K/G1 early reading — print-to-speech decoding for beginning readers.',
     constraints: 'Requires microphone + live audio tutor. SHORT-vowel CVC words and starter sight words only — NO long-vowel or silent-e / magic-e (CVCe) words like cake, ride, or hope, and NO digraphs, blends, or multisyllable words. When the objective is the silent-e rule, long vowels, or any other pattern outside short-vowel CVC, use phonics-blender (cvce_blend), cvc-speller, or decodable-reader instead — this pack cannot serve those words and will fall back to short-vowel CVC ones. The manifest must NOT supply specific words; the menu-scoped generator selects target words from the objective (phonics pattern or sight-word set) and attaches graphemes/rewards in code. The printed word is the answer: no pictures or audio pre-cues before the child reads.',
     // reader: 'none' — the printed word IS the target skill, not incidental load: reading
@@ -201,137 +88,11 @@ export const DI_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
-    // Same judged-loop engine, same transport need (see di-letter-sounds).
-    audioInput: { manual_activity: true },
-    // L2 tutoring block (2026-08-03) — hand-authored (DI "custom-made" rule:
-    // exact wording is the pedagogy). Moved here from diWordReadingScript at the
-    // L2 layer so both connect paths (standalone fallback + lesson
-    // auth/switch_primitive) resolve it from the catalog, the single source of
-    // truth. The cue lines and per-item judging contract it framed were deleted
-    // with the scripted drill (LA-14 S5). Sentinel discipline re-checked on all the
-    // new copy: no scaffolding level, struggle response, or directive sentence
-    // begins with "Yes" or "My turn" — the engine's sentence-scoped verdict scan
-    // must never see a phantom opener.
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction word-reading practice for a beginning reader '
-        + '(current task: {{challengeType}}). You speak the exact scripted lines from each bracketed '
-        + 'application message and judge each learner attempt from the audio you heard, using only '
-        + 'the two allowed reply branches.',
-      // Follows the SENTENCE precedent, not math's: the printed word is the
-      // stimulus and the target at once — the tutor must have it to model it,
-      // and the child is already looking at it — so there is no answer side to
-      // withhold, and `word` legitimately sits in RUNTIME STATE. What IS new
-      // here is `words`: the whole practice list, including words not yet shown.
-      // That is the sibling packs' shape (`sentences` / `letters` / `facts`) and
-      // the reason the WORD READING directive below carries an explicit
-      // never-preview clause.
-      // `wordType` carries the branch that matters pedagogically: a decodable
-      // word is BLENDED, an irregular sight word is recalled whole and must
-      // never be sounded out. The handoff's fifth candidate — the graphemes /
-      // sound-out blend — is deliberately NOT here: it is absent on every sight
-      // word (an absent key renders the literal string "(not set)" into RUNTIME
-      // STATE), it is derived rather than generated (so it can never resolve at
-      // Tier-2 probe time), and the [DI_ITEM] cue already carries the blend
-      // verbatim for the item in flight. RUNTIME STATE is the ambient frame,
-      // not a second copy of the script.
-      contextKeys: ['challengeType', 'word', 'wordType', 'words'],
-      // Ported from the L0 block unchanged, and re-audited against the pack's
-      // pre-read rule ("no audio pre-cues before the child reads"). Level 1
-      // repeats the PROMPT — "Your turn. What word?", which never carries the
-      // word — not the model line. Levels 2-3 describe what happens AFTER an
-      // attempt: correction territory, which re-models at every tier by design
-      // (standing gate 3 — remediation is not scaffolding). The same ruling
-      // covers the word-modeling struggle responses below.
-      scaffoldingLevels: {
-        level1: 'Repeat the prompt once, slowly.',
-        level2: 'Model a DIFFERENT word, then ask for this one again.',
-        level3: 'Accept the attempt warmly and continue as instructed.',
-      },
-      // Observable behaviours only. The first is this pack's signature error
-      // class and the one real risk the waived bench gate deferred here
-      // (near-neighbour over-affirmation: matt/mat, son/sun, read/red,
-      // sea/see); the last protects against OVER-correcting a child who
-      // actually read the word, which the strict contract makes the live risk
-      // in the other direction.
-      commonStruggles: [
-        {
-          pattern: 'Reads a close-sounding DIFFERENT word — "matt" for "mat", "son" for "sun", "read" for "red"',
-          response: 'A different word is a different word: correct it, model a different word, and ask for this one again, however close it sounded.',
-        },
-        {
-          pattern: 'Spells the word with letter NAMES ("see-ay-tee") instead of reading it',
-          response: 'Say that letters have a name and a sound, sound the word out yourself, then ask for the whole word.',
-        },
-        {
-          pattern: 'Sounds the word out but stops before saying it fast — "sss-aaa-mmm" with no whole word at the end',
-          response: 'Treat the blend alone as unfinished: model a different word blended into a whole word, then ask what this word is.',
-        },
-        {
-          pattern: 'Sounds it out slowly first and then says the whole word correctly',
-          response: 'That is a correct read — affirm it, because blending out loud is the skill at this stage, not a fault.',
-        },
-        {
-          pattern: 'Stays silent after "Your turn. What word?"',
-          response: 'Model a DIFFERENT word, then hand this one back to them alone.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DI_ITEM], [DI_MOVE_ON], or [DI_COMPLETE] contain the only lesson words you may '
-            + 'speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. Each '
-            + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
-            + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
-            + 'sentence with those words. Judge honestly from the audio: affirm a real read of the target word; '
-            + 'correct a wrong, missing, or different word. EVERY correction models a DIFFERENT word, never '
-            + 'this one, and begins with "My turn". Do not praise to be kind. The '
-            + 'application decides which word comes next; never introduce one yourself.',
-        },
-        {
-          title: 'WORD READING',
-          instruction:
-            'The target is a whole printed word read aloud. A hyphenated stretch like "sss-aaa-mmm" is a '
-            + 'slow sound-out blend: say each sound smoothly and then the whole word fast. Never spell with '
-            + 'letter names. Affirm a correct read whether it was fluent or sounded out first — but judge the '
-            + 'FINAL word strictly: a close-sounding different word (like "son" for "sun" or "read" for "red") '
-            + 'is wrong and gets the correction branch. The practice word list in your runtime state is '
-            + 'background only: the child must READ each word off the screen, so never say a word aloud before '
-            + 'the quoted lesson text for that word asks you to, and never preview a word that is still coming.',
-        },
-        {
-          title: 'BREVITY',
-          instruction:
-            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
-            + 'Keep pacing brisk: no filler, no chit-chat.',
-        },
-      ],
-    },
   },
   {
     id: 'di-math-facts',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The card shows ONE printed problem; the child answers it out loud. '
-        + 'The answer is NOT on the card: the facts carry it so you can judge, never to supply it. '
-        + 'For a printed numeral, the numeral is the answer. '
-        + 'Never model this problem; your model is the model_fact lever, a different fact solved beside it. '
-        + 'The support fact says where levers start; at the cold tier nothing is modelled before a try. '
-        + 'A different number is wrong however close; young-child pronunciation of the right one is correct. '
-        + 'The counting-route fact says whether counting to the answer is allowed, and which way; a child who '
-        + 'counts and then says the number has answered. Echoing a printed number is a miss. '
-        + 'demonstrate takes "problem" or a term id from workspace.objects; [] clears. '
-        + 'You cannot write the answer, change the problem, or answer for the child.',
-      levers: true,
-      // Every item is spoken: its known wrong answers (`mathFactSpokenMisses`), named by the `spoken_miss` observer.
-      misses: missLists<SpokenFactMiss>({
-        ...sameMisses<SpokenFactMiss>(['answer_fact', 'fact_review'], ['said_addend', 'said_start', 'said_change', 'added_instead', 'teen_decade_swap', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
-        subtraction_fact: ['said_start', 'said_change', 'added_instead', 'teen_decade_swap', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        counting_next: ['said_printed', 'said_before', 'said_two_after', 'decade_rollover', 'teen_decade_swap', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        name_numeral: ['recited_sequence', 'look_alike_numeral', 'teen_decade_swap', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-      }),
-    },
+    // How it is wired to the live tutor: `diMathFacts.card.ts` (behavior: `diMathFacts.boss.ts`).
+    ...bossEntry(diMathFactsCard),
     description: 'Live-judged Direct Instruction MATH FACT fluency ("What is 2 plus 1?"): the tutor models a DIFFERENT fact aloud ("My turn: two plus one is three"), then asks the learner their own printed fact and judges the spoken number-word answer. The child SEES the printed problem and SPEAKS the answer aloud (voice/microphone); response time is captured silently as the fluency signal — no visible timer. Perfect for kindergarten and grade 1 fact fluency: addition within 5 or 10, doubles, make-ten pairs, take-away (subtraction) facts in the same range, cumulative mixed review of taught facts, and the counting-sequence step underneath them — see a number, say the number that comes next, all the way to 120 (decade transitions like "39 → forty" and compound numerals like "one hundred seven"). ALSO serves pure NUMERAL RECOGNITION AND NAMING: the child sees one printed numeral ("7") and says its name aloud ("seven"), with no computation and no sequence — the primitive for K.CC.3-style "recognize and name the written numbers 1 through 10" objectives, where the child must PRODUCE the number name rather than point at a match. NOT for identifying the SIGNS themselves: an objective like "identify the minus sign and the equals sign" or "recognize + and = as math symbols" is served by a symbol-introduction or equation-building block, never by this pack — every mode here has the child compute or name a NUMBER, so a sign-identification objective gets no assessment from it. ESSENTIAL for K/G1 MATHEMATICS operations — spoken fact fluency and number-word production for early learners.',
     constraints: 'Requires microphone + live audio tutor. Addition and subtraction facts within 10 only — NO multiplication, division, or multi-digit arithmetic. The next-number counting step reaches 120 (a G1 "counting forward within 120" objective is served with a session windowed near the top of its range). Use a dedicated counting primitive when COUNTING ITSELF is the objective (counting objects, one-to-one correspondence); this pack drills only the say-the-next-number step as fluency. That carve-out is about COUNTING, not about numerals: naming a written numeral aloud is a recognition/production task with no counting in it, and IS served here. Likewise NOT for objectives asking the child to identify, name, or point at a printed OPERATOR or relational symbol (+, -, =): none of this pack\'s modes test symbol recognition — only numeral naming and fact computation — so a sign-identification objective needs a different primitive\'s introduce/apply block, not this one. The manifest must NOT supply specific facts; the scoped pool builds problems from the objective (within 5 / within 10 / within 120 counting / doubles / make ten) and attaches number words + ASR aliases in code. The printed problem is the stimulus and the spoken number word is the answer: the answer never appears on screen before the child says it.',
     affordances: { representation: 'symbolic', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 4 },
@@ -345,108 +106,11 @@ export const DI_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
-    // Same judged-loop engine, same transport need (see di-letter-sounds).
-    audioInput: { manual_activity: true },
-    // L2 tutoring block — hand-authored (DI "custom-made" rule: exact wording is
-    // the pedagogy). Moved here from diMathFactsScript at the L2 layer so both
-    // connect paths (standalone fallback + lesson auth/switch) resolve it from
-    // the catalog, the single source of truth. Sentinel discipline: no struggle
-    // response or scaffolding line begins with "Yes" or "My turn" — the engine's
-    // sentence-scoped verdict scan must never see a phantom opener. The per-item
-    // judging contract it framed was deleted with the scripted drill (LA-14 S5).
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction math-facts practice for a young learner '
-        + '(current task: {{challengeType}}). You speak the exact scripted lines from each bracketed '
-        + 'application message and judge each learner attempt from the audio you heard, using only '
-        + 'the two allowed reply branches.',
-      // Stimulus-side only. The answer (answerWord / solvedDisplay) is deliberately
-      // absent: the tutor already receives it inside each [DI_ITEM] judging
-      // contract, and RUNTIME STATE is echoed far more loosely than a scripted line.
-      // `supportTier` (L3) is the tier the cue is composed at, so the tutor's own
-      // scaffolding channel stays tier-aware — at `hard` nothing may speak the
-      // fact or its answer before the learner's attempt.
-      contextKeys: ['challengeType', 'display', 'problem', 'facts', 'supportTier'],
-      // L3 tier audit: unlike di-sentence-reading, level 1 needed NO rewording —
-      // it repeats the QUESTION, which is the stimulus already printed on the
-      // child's screen, never the fact statement carrying the answer. Levels 2-3
-      // are safe for the sibling pack's reason: they describe what happens AFTER
-      // an attempt, and a correction re-models the whole fact at every tier by
-      // design (standing gate 3 — remediation is not scaffolding). The same
-      // ruling covers the commonStruggles below that model the fact: each is a
-      // post-attempt (or non-attempt) remediation, i.e. correction territory.
-      scaffoldingLevels: {
-        level1: 'Repeat the question once, slowly.',
-        level2: 'Model a DIFFERENT fact, then ask for this one again.',
-        level3: 'Accept the attempt warmly and continue as instructed.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Says a different number that is near the answer — "four" for a fact that makes five',
-          response: 'Treat it as wrong and correct it: re-state the whole fact, then ask for it once more.',
-        },
-        {
-          pattern: 'Counts out loud but never lands on a final number',
-          response: 'Let the counting finish, then ask once for the number they ended on.',
-        },
-        {
-          pattern: 'Repeats the problem back instead of answering it',
-          response: 'State the whole fact once yourself, then ask again for the number that finishes it.',
-        },
-        {
-          pattern: 'Echoes a number straight out of the problem as the answer — most often the LAST number heard ("2 + 1" answered "one")',
-          response: 'Name their number and contrast it with the right one, so they hear that theirs was the wrong quantity rather than just hearing the fact again.',
-        },
-        {
-          pattern: 'Stays silent after "Your turn"',
-          response: 'Model a DIFFERENT fact, then hand this one back to them alone.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DI_ITEM], [DI_MOVE_ON], or [DI_COMPLETE] contain the only lesson words you may '
-            + 'speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. Each '
-            + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
-            + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
-            + 'sentence with those words — even excited praise like "Yes!" outside the affirmation line is '
-            + 'forbidden. Judge honestly from the audio: affirm the right number, correct a wrong or missing '
-            + 'one. EVERY correction models a DIFFERENT fact, never this one, and begins with "My turn". Do not praise to be '
-            + 'kind. The application decides which fact comes next; never introduce one yourself. Some items '
-            + 'deliberately give you nothing to say before the question — when the quoted text is only the '
-            + '"Your turn" ask, the learner is answering cold on purpose: never say the fact or its answer '
-            + 'before they have answered.',
-        },
-        {
-          title: 'NUMBER WORDS',
-          instruction:
-            'Always say numbers as words ("two plus one is three"), never as digits or symbols — read '
-            + '"2 + 1" aloud as "two plus one", "3 - 1" as "three minus one", and "5 →" as "the number '
-            + 'after five". The learner answers with a spoken number word; affirm a '
-            + 'correct answer whether it came instantly, with young-child pronunciation (like "free" for '
-            + 'three), or after counting out loud to reach it. You are judging the SOUND you heard, so a '
-            + 'word that sounds like the target number IS the target number ("won" is one, "too" is two, '
-            + '"for" is four, "ate" is eight) — but a DIFFERENT number is always wrong and gets the '
-            + 'correction branch. Past twenty an answer may take several words: "fifty-one", "one hundred '
-            + 'seven" — read "39 →" aloud as "the number after thirty-nine". That is still ONE answer and '
-            + 'it only counts when the whole number arrives: "hundred seven" and a trailing-off "one '
-            + 'hundred" are incomplete, not close. A teen and its decade are different numbers however '
-            + 'alike they sound — thirteen is not thirty, fourteen is not forty, seventeen is not '
-            + 'seventy — so judge the number you actually heard.',
-        },
-        {
-          title: 'BREVITY',
-          instruction:
-            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
-            + 'Keep pacing brisk: no filler, no chit-chat. Never mention time or speed — practice stays warm '
-            + 'and unhurried out loud even though the learner is building quickness.',
-        },
-      ],
-    },
   },
   {
     id: 'di-dice-roll',
+    // How it is wired to the live tutor: `diDiceRoll.card.ts` (behavior: `diDiceRoll.boss.ts`).
+    ...bossEntry(diDiceRollCard),
     affordances: { representation: ['concrete', 'pictorial'], reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
     description:
       'Live-judged Direct Instruction DICE practice: the child taps one or two dice to roll, looks at the '
@@ -470,100 +134,13 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // two sets; sum composes both sets and may produce totals through twelve.
     evalModes: DI_DICE_ROLL_EVAL_MODES,
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The dice stay covered until the child taps them to roll; the roll is theirs, and there is nothing to '
-        + 'answer before it, so ask them to roll first. Then the child answers OUT LOUD: how many dots, which die has '
-        + 'more (left, right, or same), or how many dots altogether. No number is printed. Counting aloud and ending on '
-        + 'the right number is an answer. A different number is wrong however close. Never model this roll: your model '
-        + 'is the model_roll lever, a different roll solved beside it. You cannot roll, change a die or count for the child.',
-      levers: true,
-      // Every item is spoken: its known wrong answers (`diceSpokenMisses`), named by the `spoken_miss` observer.
-      misses: missLists<SpokenDiceMiss>({
-        count_pips: ['skipped_a_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        compare_dice: ['other_die', 'said_same', 'picked_a_side', 'said_number'],
-        sum_two_dice: ['said_addend', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-      }),
-    },
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
-    // The live tutor judges the child's number word inside the manual turn.
-    audioInput: { manual_activity: true },
-    // DI-native birth exception: exact cue wording and in-band judgment are the
-    // mechanism, so the generic tutor cannot execute this primitive safely.
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction dice practice (current task: {{challengeType}}; '
-        + 'support tier: {{supportTier}}; interaction: {{interaction}}). Speak only the exact scripted lines in each bracketed '
-        + 'application message and judge the learner\'s spoken number or comparison word from the audio you heard.',
-      // Answer-safe runtime state only. The die value, number word, aliases, and
-      // expected answer remain inside the per-item judging contract.
-      contextKeys: ['challengeType', 'supportTier', 'interaction'],
-      scaffoldingLevels: {
-        level1: 'Repeat only the item\'s exact scripted question, then wait; never add an unscripted strategy.',
-        level2: 'Use the item\'s exact tier-aware correction line, then wait. The line already contains all support allowed at the current supportTier.',
-        level3: 'Use the exact tier-aware model-and-retry correction and continue only when the application instructs you; never supplement it with easier-tier help.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Loses one-to-one correspondence by skipping a pip or touching the same pip twice',
-          response: 'Use only the item\'s exact tier-aware correction branch. It supplies touch-each-dot language only when the active support tier allows it.',
-        },
-        {
-          pattern: 'Guesses a number immediately without inspecting or counting the pips',
-          response: 'Judge the spoken number honestly; if it is wrong, use the exact tier-aware correction branch without adding an easier-tier strategy.',
-        },
-        {
-          pattern: 'Recounts repeatedly, changes the answer, or never lands on one final number',
-          response: 'Wait for a final number; judge the last completed count, and use only the scripted correction if no final number arrives.',
-        },
-        {
-          pattern: 'Compares the physical position of the dice instead of matching their pip quantities',
-          response: 'Use only the exact tier-aware comparison correction, then ask for left, right, or same again.',
-        },
-        {
-          pattern: 'Counts each die correctly but states one face instead of the combined total',
-          response: 'Use only the exact tier-aware addition correction before re-eliciting the total; never append an easier-tier count-on hint.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DICE_ITEM], [DICE_MOVE_ON], or [DICE_COMPLETE] contain the only lesson words '
-            + 'you may speak. Never speak the bracketed tag or invent wording. Use the exact quoted branch '
-            + 'for the audio actually heard: an affirmation begins with "Yes"; every correction begins with '
-            + '"My turn". Never begin any other sentence with those verdict words. The application alone '
-            + 'chooses and advances items.',
-        },
-        {
-          title: 'JUDGE THE CURRENT DICE TASK',
-          instruction:
-            'For count and sum, judge the learner\'s final spoken number; counting aloud and ending on the '
-            + 'correct quantity is correct. For compare, accept the scripted left/right/same equivalents only. '
-            + 'Never say a die value, total, or correct relation before the learner attempts it unless the '
-            + 'application\'s exact quoted correction line models it after an incorrect or missing answer.',
-        },
-        {
-          title: 'EXACT CUES AND BREVITY',
-          instruction:
-            'Speak only the exact quoted cue or judging line, then stop and wait. Never narrate the die state, '
-            + 'count the pips for the learner, reveal an upcoming value, explain scoring, or add praise, hints, '
-            + 'filler, or chit-chat outside the scripted line.',
-        },
-        {
-          title: 'SUPPORT TIER STAYS SCRIPT-OWNED',
-          instruction:
-            'RUNTIME STATE names the current supportTier, but each [DICE_ITEM] correction already contains '
-            + 'the complete strategy allowance for that tier. Easy may name the explicit one-to-one strategy; '
-            + 'medium gives one brief reminder; hard re-models and immediately re-asks. Never add support from '
-            + 'a different tier or change how the spoken answer is judged.',
-        },
-      ],
-    },
   },
   {
     id: 'di-shapes',
+    // How it is wired to the live tutor: `diShapes.card.ts` (behavior: `diShapes.boss.ts`).
+    ...bossEntry(diShapesCard),
     description: 'Live-judged Direct Instruction SHAPE PRACTICE over voice: the tutor shows one drawn 2D shape, asks the child, and judges the spoken answer from the audio; any model is a DIFFERENT shape ("My turn: this shape is a hexagon"), never the child\'s own. Two kinds of ask — NAME the shape ("What shape is this?") and COUNT its attributes ("How many sides does this shape have?", "How many corners?") — plus an open build: the tutor names a shape ("Make a hexagon") and the child MAKES one on a dot grid. The child SEES the drawn shape and SPEAKS the answer aloud (voice/microphone); shapes appear at varied rotations so naming is orientation-independent. Perfect for kindergarten and grade 1 geometry: correctly naming circles, triangles, squares, rectangles, and hexagons regardless of orientation or size, plus ovals, pentagons, rhombuses, and trapezoids when the objective names them, and counting the sides and corners (vertices) of straight-sided shapes to confirm what they are. ESSENTIAL for K/G1 MATHEMATICS geometry — 2D shape identification, naming, and side/vertex counting for early learners.',
     constraints: 'Requires microphone + live audio tutor. FLAT 2D shapes only — NO 3D solids (spheres, cubes, cones, cylinders) and no composing, decomposing, or building shapes from other shapes; use a geometry primitive when composing IS the objective (build_shape makes ONE shape from its corners on a dot grid, straight-sided shapes only). Side and corner counting ARE supported (count_sides / count_corners), on straight-sided shapes only — a curved shape carries no side count, so a circles-and-ovals objective routes to naming. The manifest must NOT supply specific shapes; the menu-scoped generator selects target shapes from the objective and draws them in code at varied rotations. The drawn shape is the stimulus and the spoken answer is the answer: neither the shape name nor its side/corner count ever appears on screen (or in the title/description) before the child says it.',
     affordances: { representation: 'pictorial', reader: 'none', answers: ['spoken'], role: 'apply', minutes: 5 },
@@ -589,160 +166,13 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // K GEOM001-02-A "…based on their attributes (sides and vertices)" (0.786).
     evalModes: DI_SHAPES_EVAL_MODES,
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1', 'Grade 2'],
-      guidance: 'The stage draws one flat shape, or a familiar object. The child answers OUT LOUD: the shape name, or '
-        + 'how many sides or corners. A close but different name (square for a rectangle) is wrong; a named alternate '
-        + 'counts. On counting items never say the shape name: it gives the count away. On real objects the shape in '
-        + 'the object is the answer. Never say the answer before the child tries or model this shape or its count: your '
-        + 'model is the model lever, a DIFFERENT shape beside it. The support fact says where levers start. On a naming '
-        + 'item never describe the shape or offer a choice of names. Stuck with the model on screen: say the model '
-        + 'again, then ask. You cannot draw, rotate or resize the shape. On a build item (kind build_shape) the child '
-        + 'makes the named shape on the dots and the board checks it: never say how many sides or corners it has or '
-        + 'what their shape is short of. You cannot place a corner.',
-      levers: true,
-      // Every item is spoken: its known wrong answers (`shapesSpokenMisses`, shape-sorter's ids), named by the `spoken_miss` observer.
-      misses: missLists<SpokenShapeMiss | ShapeBuildMiss>({
-        ...sameMisses<SpokenShapeMiss>(['name_shape', 'shape_review'], ['near_name', 'other_shape_name', 'described_shape']),
-        find_real_object: ['said_object', 'near_name', 'other_shape_name', 'described_shape'],
-        ...sameMisses<SpokenShapeMiss>(['count_sides', 'count_corners'], ['said_shape_name', 'one_short', 'one_over', 'short_by_more', 'over_by_more']),
-        // The open build's misses are the board's own check (`shapeBuildMiss`), not words.
-        build_shape: SHAPE_BUILD_MISSES,
-      }),
-    },
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
-    // Same judged-loop engine, same transport need (see di-letter-sounds).
-    audioInput: { manual_activity: true },
-    // Tutoring block — hand-authored (DI "custom-made" rule), in the CATALOG at
-    // birth per the family lesson-mode wiring (di-sentence-reading precedent),
-    // so lesson mode works on day one. Sentinel discipline checked on every
-    // line: no scaffolding level, struggle response, or directive sentence
-    // begins with "Yes" or "My turn". RUNTIME STATE is deliberately minimal —
-    // the ANSWERS are the shape names (naming modes) and the side/corner counts
-    // (counting modes), so neither the current shape, the session's shape list,
-    // nor any count may enter contextKeys (the math-facts answer-side rule,
-    // stricter here because the answer is a single word). `challengeType` names
-    // only the ASK, and the COMPONENT sends the CURRENT item's identity so a
-    // blended session never leaves it stale. `supportTier` (L3) is the tier the
-    // cue is composed at — not an answer, and load-bearing: at `hard` the script
-    // hands the tutor nothing to say before the ask, so the tier is what tells
-    // it that the silence is deliberate rather than a missing line.
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction shape practice for a young learner '
-        + '(current task: {{challengeType}} — either naming a drawn shape or counting its sides or '
-        + 'corners). You speak the exact scripted lines from each bracketed '
-        + 'application message and judge each learner attempt from the audio you heard, using only '
-        + 'the two allowed reply branches.',
-      contextKeys: ['challengeType', 'supportTier'],
-      // These are POST-attempt remediation, so a support tier does NOT withdraw
-      // them (standing gate 3 — DISTAR always re-models on an error; remediation
-      // is not scaffolding). level2 says "model the answer" rather than "the way
-      // the script did": at the `hard` tier the script models nothing before the
-      // ask, so a back-reference to a model line would point at silence.
-      scaffoldingLevels: {
-        level1: 'Repeat the question once, slowly.',
-        level2: 'Model a DIFFERENT shape once, then ask about this one again.',
-        level3: 'Accept the attempt warmly and continue as instructed.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Names a close DIFFERENT shape — "rectangle" for a square, "circle" for an oval, "pentagon" for a hexagon',
-          response: 'A different shape name is a different shape: name theirs and contrast it with the right one, so they hear that their word was for another shape.',
-        },
-        {
-          pattern: 'Describes the shape instead of naming it — "it\'s round", "the pointy one", a color or size word',
-          response: 'Acknowledge the description in a word, then name a DIFFERENT shape as your model and ask for this shape\'s name.',
-        },
-        {
-          pattern: 'Says the name with young-child pronunciation — "twiangle", "wectangle"',
-          response: 'That is the right name said the way young children say it — affirm it as correct.',
-        },
-        {
-          pattern: 'Stays silent after "Your turn"',
-          response: 'Model a DIFFERENT shape, then hand this one back to them alone.',
-        },
-        {
-          pattern: 'Counting task — gives a number that is off by one, usually from double-counting a corner or skipping the side they started on',
-          response: 'Off by one is still the wrong count: say their number back, contrast it with the right one, and re-ask. Do not treat "close" as correct.',
-        },
-        {
-          pattern: 'Counting task — answers with the shape NAME instead of a number ("triangle" when asked how many sides)',
-          response: 'They answered a different question. Acknowledge nothing, model the count of a DIFFERENT shape, and ask again for how many — the count is what this item measures.',
-        },
-        {
-          pattern: 'Counting task — counts aloud ("one, two, three") instead of stating the total',
-          response: 'Counting out loud is exactly right at this age. Wait for them to stop and judge only the number they finish on; if it is right, affirm it as correct.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DI_ITEM], [DI_MOVE_ON], or [DI_COMPLETE] contain the only lesson words you may '
-            + 'speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. Each '
-            + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
-            + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
-            + 'sentence with those words. Judge honestly from the audio: affirm the right answer, correct '
-            + 'a wrong or missing one. EVERY correction models a DIFFERENT shape, never this answer, and begins with "My turn". Do not '
-            + 'praise to be kind. The application decides which shape and which question come next; never '
-            + 'introduce either yourself. Some items deliberately give you nothing to say before the '
-            + 'question — when the quoted text is only the "Your turn" ask, the learner is answering cold '
-            + 'on purpose: never name the shape, state its count, or describe the drawing before they have '
-            + 'answered.',
-        },
-        {
-          title: 'SHAPE NAMES',
-          instruction:
-            'The learner answers with a spoken shape name; affirm a correct name whether it came instantly, '
-            + 'with young-child pronunciation ("twiangle" for triangle, "wectangle" for rectangle), or with or '
-            + 'without "a" or "an" in front. A DIFFERENT shape name is always wrong and gets the correction '
-            + 'branch, however close: at this age a rectangle is not a square, a circle is not an oval, and a '
-            + 'hexagon is not a pentagon — the near-name is exactly the error this practice corrects. When an '
-            + 'item\'s quoted rule says another word is also correct (like "diamond" for a rhombus), accept it. '
-            + 'Judge the name you actually heard, never the name you expected.',
-        },
-        {
-          title: 'SIDE AND CORNER COUNTS',
-          instruction:
-            'On a counting item the learner answers with a NUMBER, not a shape name. Counting out loud is a '
-            + 'correct route at this age, not hesitation: wait until they stop and judge only the number they '
-            + 'finish on. A different number is wrong even by one — an off-by-one from double-counting a corner '
-            + 'is precisely the error this practice corrects, so it gets the correction branch with their own '
-            + 'number said back to them. A shape name, "lots", "many", or a colour is not a count and gets the '
-            + 'plain re-model. Never count the sides or corners aloud yourself except inside a quoted scripted '
-            + 'line — doing the counting for them replaces the thing being measured. Judge the number you '
-            + 'actually heard, never the number you expected.',
-        },
-        {
-          title: 'BREVITY',
-          instruction:
-            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
-            + 'Keep pacing brisk: no filler, no chit-chat, and never describe the shape on screen beyond the '
-            + 'scripted lines — describing its look would hand over the answer.',
-        },
-      ],
-    },
   },
   {
     id: 'di-sentence-reading',
-    teachingWorkspace: {
-      grades: ['Kindergarten', 'Grade 1'],
-      guidance: 'The gold-ringed card shows ONE printed sentence, and reading it aloud, every word '
-        + 'in order, is the whole skill. Never read this sentence, or any word of it, to the child before they read it, '
-        + 'and never re-read it after a miss: your model is the model_sentence lever, a DIFFERENT sentence beside it. The '
-        + 'support fact says where levers start. After credit you may say it back. '
-        + 'A word skipped, added, or read as a different word is a miss however small, but catching and fixing their '
-        + 'own slip mid-read still counts as an accurate read. Judge accuracy, never speed: slow, effortful '
-        + 'sounding-out that lands on the right words is correct. A different word is wrong however close it sounds. '
-        + 'demonstrate takes "sentence"; [] clears. You cannot change the sentence, add a picture, write, or answer '
-        + 'for the child.',
-      // The spoken read's known wrong answers (`diSentenceSpokenMisses`).
-      levers: true,
-      misses: sameMisses<SpokenSentenceMiss>(['decodable_sentence', 'read_sentence', 'sentence_review', 'sight_phrase_sentence'],
-        ['word_skip', 'word_swap']),
-    },
+    // How it is wired to the live tutor: `diSentenceReading.card.ts` (behavior: `diSentenceReading.boss.ts`).
+    ...bossEntry(diSentenceReadingCard),
     description: 'Live-judged Direct Instruction SENTENCE READING (connected text): the child reads a printed short sentence aloud, cold, and the tutor judges the spoken audio WORD BY WORD; any model is a DIFFERENT sentence read as "My turn", never the child\'s own — a skipped, added, or swapped word is corrected, not waved through. The child SEES the printed sentence and READS it aloud (voice/microphone). Perfect for kindergarten through grade 2 reading accuracy and fluency on short decodable sentences: reading fully sound-it-out CVC sentences (blending carried into connected text), reading sentences that carry irregular high-frequency sight words which must be recognised whole, and cumulative spaced review of sentences already taught. ESSENTIAL for K/G1/G2 early reading — the rung above single-word decoding, where reading accuracy first becomes measurable.',
     constraints: 'Requires microphone + live audio tutor. Short DECODABLE sentences of 3-8 words only — the 8-word ceiling is the benched limit for reliable one-word-error detection, and longer connected text is unverified. Short-vowel CVC vocabulary plus starter sight words; NO digraphs, blends, or multisyllable words. Use read-aloud-studio instead for CONNECTED PASSAGES at grades 1-6, or for phrasing / character-voice practice with older readers — since its own DI port (2026-08-12) that primitive is judged too, so the fork is no longer graded-vs-ungraded: this pack owns ISOLATED short sentences drawn from a phonics or sight-word menu at K-2, and read-aloud-studio owns a passage whose lines read as one continuous text. Use a single-word primitive (di-word-reading) when reading ONE word is the objective; this pack always reads connected text. The manifest must NOT supply specific sentences; the menu-scoped generator selects them from the objective (phonics pattern or sight-word focus) and attaches word counts/rewards in code. The printed sentence is the answer: no pictures or audio pre-cues before the child reads.',
     // reader: 'emerging' (R10, 2026-10-03). It was 'none' while the tutor read the sentence
@@ -763,107 +193,6 @@ export const DI_CATALOG: ComponentDefinition[] = [
     supportsEvaluation: true,
     // Misconception Loop gate 3 — family ruling, see the module docblock.
     misconceptionScope: 'primitive',
-    // Same judged-loop engine, same transport need (see di-letter-sounds).
-    audioInput: { manual_activity: true },
-    // Tutoring block — hand-authored (DI "custom-made" rule: exact wording is
-    // the pedagogy). The DI family's justified departure from the L0 "defer the
-    // tutoring block" default: the mechanism IS the in-band judging contract,
-    // so the generic tutor cannot run this primitive at all. It shipped in the
-    // CATALOG at birth (rather than in the script, as the two older reading
-    // packs did) because the family lesson-mode wiring already resolves both
-    // connect paths from here — so lesson mode worked on day one instead of
-    // waiting for /add-tutoring-scaffold.
-    // L2 (2026-07-25) added what birth deliberately left out: contextKeys, the
-    // {{challengeType}} placeholder they make safe (an unfilled key renders
-    // SILENTLY, so the placeholder could not ship before its key), and
-    // commonStruggles. The bench-proven aiDirectives are untouched, byte for
-    // byte. Sentinel discipline re-checked on the new copy: no struggle
-    // response or scaffolding line begins with "Yes" or "My turn" — the
-    // engine's sentence-scoped verdict scan must never see a phantom opener.
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction sentence-reading practice for a beginning reader '
-        + '(current task: {{challengeType}}). You speak the exact scripted lines from each bracketed '
-        + 'application message and judge each learner attempt from the audio you heard, using only '
-        + 'the two allowed reply branches.',
-      // Unlike the sibling packs, EVERY key here is legitimately shareable. In
-      // di-math-facts the answer (`answerWord`/`solvedDisplay`) is deliberately
-      // kept out of RUNTIME STATE, because RUNTIME STATE is echoed far more
-      // loosely than a scripted line. Here the printed sentence IS both the
-      // stimulus and the target — the tutor must have it to model it, and it is
-      // already on the child's screen — so there is no answer to withhold.
-      contextKeys: ['challengeType', 'text', 'wordCount', 'sentences', 'supportTier'],
-      // L3 note: level 1 used to say "Read the sentence once more, slowly." —
-      // which at the `hard` tier would have read aloud the very sentence the
-      // tier withheld, undoing it through the scaffolding channel (the tier
-      // gotcha: hidden on screen, revealed by the tutor = only half applied).
-      // Levels 2 and 3 are safe unchanged because they describe what happens
-      // AFTER an attempt, and a correction re-models at every tier by design.
-      scaffoldingLevels: {
-        level1: 'Ask for one more try, unhurried.',
-        level2: 'Model a DIFFERENT sentence, then ask for this one again.',
-        level3: 'Accept the attempt warmly and continue as instructed.',
-      },
-      // Observable behaviours from the standing-gate bench sitting and the two
-      // live runs. The first two are the pack's signature error classes; the
-      // middle two protect against OVER-correcting a child who actually read it.
-      commonStruggles: [
-        {
-          pattern: 'Pauses in the middle of a sentence, so the attempt sounds finished before it is',
-          response: 'Let the pause run and wait for the rest of the sentence — judge only the whole reading.',
-        },
-        {
-          pattern: 'Leaves out a small word ("the", "a", "is") and reads the rest correctly',
-          response: 'Treat the dropped word as a miss and correct it — a skipped word is the error this practice exists to catch, however small.',
-        },
-        {
-          pattern: 'Stumbles on a word, then goes back and fixes it without help',
-          response: 'That is a correct reading — affirm it, because self-correction is the skill, not a fault.',
-        },
-        {
-          pattern: 'Reads word by word, slowly and without phrasing, but every word is right',
-          response: 'Count it correct and move on — accuracy is what is being judged here, never speed.',
-        },
-        {
-          pattern: 'Reads a near-neighbour word ("hen" for "pen", "hut" for "hat") and keeps going',
-          response: 'A different word is a different word: model a different sentence and ask for this one again.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DI_ITEM], [DI_MOVE_ON], or [DI_COMPLETE] contain the only lesson words you may '
-            + 'speak. The square-bracket label is private metadata: never speak, reproduce, or invent it. Each '
-            + '[DI_ITEM] message includes a two-branch judging rule: affirmations must begin with "Yes" and '
-            + 'corrections must begin with "My turn", using the exact quoted lines. Never begin any other '
-            + 'sentence with those words. Judge honestly from the audio: affirm an accurate read, correct a '
-            + 'misread one. EVERY correction models a DIFFERENT sentence, never this one, and begins with "My turn". Do not '
-            + 'praise to be kind. The application decides which sentence comes next; never introduce one '
-            + 'yourself, and never invent a sentence of your own.',
-        },
-        {
-          title: 'CONNECTED TEXT',
-          instruction:
-            'The target is a printed SENTENCE read aloud. When you model it, read it at an unhurried but '
-            + 'natural pace — that is the fluent reading the learner copies, so never spell it, never sound '
-            + 'it out word-by-word, and never explain what it means. Judge the learner on ACCURACY: every '
-            + 'word, in order. A learner who reads slowly, or who stumbles and then fixes it themselves, read '
-            + 'it correctly. A learner who swaps, skips, or adds a word did not — say so, however small the '
-            + 'word, because a dropped word is exactly what this practice exists to catch. A pause in the '
-            + 'middle of a sentence is part of one reading: wait for the whole sentence before judging it. '
-            + 'Some items deliberately give you NOTHING to read first — when the quoted text is only the '
-            + 'instruction to the learner, that learner is reading cold on purpose: say nothing else aloud '
-            + 'before they read, and never preview the sentence for them.',
-        },
-        {
-          title: 'BREVITY',
-          instruction:
-            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
-            + 'Keep pacing brisk: no filler, no chit-chat, and no greeting before the first scripted line.',
-        },
-      ],
-    },
   },
   {
     id: 'di-spoken-practice',
@@ -905,6 +234,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // the column where the error happens. The step chain is code-built
     // (diWorkedProcedurePlan.ts); the script is hand-authored.
     id: 'di-worked-procedure',
+    // How it is wired to the live tutor: `diWorkedProcedure.card.ts` (behavior: `diWorkedProcedure.boss.ts`).
+    ...bossEntry(diWorkedProcedureCard),
     description:
       'Live-judged Direct Instruction TALK-THROUGH SOLVE for multi-digit SUBTRACTION (two- and three-digit, '
       + 'with or without regrouping): the problem is printed in columns, the tutor asks one column at a '
@@ -928,95 +259,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // skill's signature errors. β mirrors backend problem_type_registry.py.
     evalModes: DI_WORKED_PROCEDURE_EVAL_MODES,
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4'],
-      guidance: 'One subtraction is printed in columns, the current column ringed. The child works it OUT LOUD one '
-        + 'step at a time: the move in the ringed column, then after a regroup the difference. The page writes a step '
-        + 'only once credited; the answer is never printed. A regroup counts only with both new numbers. After a lend '
-        + 'the crossed-out digit is no longer the top. Never say a column\'s numbers before the child tries, and never '
-        + 'work this problem: your model is the model_problem lever, a DIFFERENT problem worked beside it. On a decide '
-        + 'step never ask whether the top is enough ("can you take eight from three?"): that IS the decision. The '
-        + 'support fact says where levers start. You cannot write on the problem or change it.',
-      levers: true,
-      // Every step is spoken: its known wrong answers (`workedProcedureSpokenMisses`), named by the `spoken_miss` observer.
-      misses: missLists<SpokenProcedureMiss>({
-        // No lend ever happens in this mode, so `read_crossed_out` cannot be named.
-        subtract_no_regroup: ['regrouped_needlessly', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        subtract_regroup: ['upside_down_column', 'no_decrement', 'said_no_regroup', 'regrouped_needlessly', 'read_crossed_out', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-      }),
-    },
     misconceptionScope: 'primitive',
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction talk-through subtraction (current task: {{challengeType}}; problem '
-        + '{{problem}}; column open: {{column}}). You speak the exact scripted lines from each bracketed '
-        + 'application message and judge each learner step from the audio you heard, using only the '
-        + 'scripted reply branches.',
-      // Stimulus side only: the printed problem and which column is open. The
-      // answer to a step (the regrouped digits, the difference) reaches the tutor
-      // inside each [WP_ITEM] judging contract, never through RUNTIME STATE.
-      contextKeys: ['challengeType', 'problem', 'column', 'supportTier'],
-      scaffoldingLevels: {
-        level1: 'Repeat the column ask once, slowly.',
-        level2: 'Model a column of a DIFFERENT problem, then hand this column back.',
-        level3: 'Accept the step warmly and continue as instructed.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Turns the column upside down — "eight minus three is five" where three is on top',
-          response: 'Run the correction branch for this step: name what they said, model a regroup on a DIFFERENT problem, then hand the column back.',
-        },
-        {
-          pattern: 'Regroups but never changes the digit above — says the new ones and nothing about the tens',
-          response: 'Run the forgot-to-decrement branch: say what the tens become, then hand the column back.',
-        },
-        {
-          pattern: 'Says a bare number on a "tell me what you do" ask',
-          response: 'Run the correction branch — a number with no move is not the step — then hand the column back.',
-        },
-        {
-          pattern: 'Stays silent after the hand-over',
-          response: 'Wait for them without speaking. If the silence stretches long, re-ask the scripted column question once, slowly — never a new question.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [WP_ITEM], [WP_MOVE_ON], [WP_HEAR], or [WP_COMPLETE] contain the only lesson '
-            + 'words you may speak. The square-bracket label is private metadata: never speak, reproduce, or '
-            + 'invent it. Each [WP_ITEM] message includes its judging rule: affirmations must begin with '
-            + '"Yes" and every correction must begin with "My turn", using the exact quoted lines. Never '
-            + 'begin any other sentence with those words. Judge honestly from the audio and do not praise '
-            + 'to be kind. The application decides which column comes next; never continue into another '
-            + 'column or another problem yourself.',
-        },
-        {
-          title: 'WHAT COUNTS AS A STEP',
-          instruction:
-            'On a "tell me what you do" ask the learner must say the MOVE — regroup (they may say borrow, '
-            + 'trade, or take one from the tens) with both new numbers, or the column subtracted cleanly. A '
-            + 'bare number is not a step. On a "subtract the ones" ask the learner says the difference, as '
-            + 'the bare number or the whole fact, right away or after counting back to it. Always say '
-            + 'numbers as words, never as digits.',
-        },
-        {
-          title: "THE LEARNER'S TURN",
-          instruction:
-            'After you ask, WAIT in silence — think time belongs to the learner and is unbounded. Never '
-            + 'say the move or the difference during their turn, and never read the problem\'s working off '
-            + 'the runtime state. Everything the application sends you exists to be performed or obeyed, '
-            + 'never spoken about: if a reply is not one of the scripted lines, the reply is silence.',
-        },
-        {
-          title: 'BREVITY',
-          instruction:
-            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
-            + 'Keep pacing brisk: no filler, no chit-chat, and no greeting before the first scripted line.',
-        },
-      ],
-    },
   },
   {
     // The second "DI for Older Learners" pack (design brief 2026-09-07,
@@ -1025,6 +268,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // how they know. The cases are code-built from one generated rule
     // (diDeductionPlan.ts); the script is hand-authored.
     id: 'di-deduction',
+    // How it is wired to the live tutor: `diDeduction.card.ts` (behavior: `diDeduction.boss.ts`).
+    ...bossEntry(diDeductionCard),
     description:
       'Live-judged Direct Instruction DEDUCTIONS: a RULE card ("All insects have six legs.") and a CASE '
       + 'card ("A beetle is an insect." / "A spider does not have six legs." / "This animal has six legs."), '
@@ -1055,95 +300,7 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // demand. β mirrors backend problem_type_registry.py.
     evalModes: DI_DEDUCTION_EVAL_MODES,
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'],
-      guidance: 'A rule card and a case card are printed. The child says aloud what the rule tells them about the case, '
-        + 'using only the rule. On a verdict case they say yes, no, or can\'t tell AND the reason from the rule: a '
-        + 'right verdict with no reason is not yet the answer, so ask how they know. The rule does not run backwards. '
-        + 'Never state the conclusion before the child tries, and never reason this case: your model is the model_case '
-        + 'lever, a DIFFERENT rule worked through every answer. The support fact says where levers start. On a '
-        + 'can\'t-tell case never say what the rule does not say about THIS category ("not only birds…") or name '
-        + 'another thing with its property: that is the reason the child must give. You cannot change the cards.',
-      levers: true,
-      // Every case is spoken: its known wrong answers (`deductionSpokenMisses`), named by the `spoken_miss` observer.
-      misses: missLists<SpokenDeductionMiss>({
-        conclude: ['said_negation', 'read_rule_back', 'read_case_back'],
-        deny: ['said_member', 'said_cannot_tell', 'verdict_without_reason'],
-        cannot_tell: ['backwards_yes', 'said_not_member', 'verdict_without_reason'],
-      }),
-    },
     misconceptionScope: 'primitive',
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction deductions (current case shape: {{challengeType}}; rule on screen: '
-        + '{{rule}}; case on screen: {{case}}). You speak the exact scripted lines from each bracketed '
-        + 'application message and judge each learner deduction from the audio you heard, using only the '
-        + 'scripted reply branches.',
-      // Stimulus side only: the printed rule and case. The conclusion and the
-      // verdict reach the tutor inside each [DD_ITEM] judging contract, never
-      // through RUNTIME STATE.
-      contextKeys: ['challengeType', 'rule', 'case', 'supportTier'],
-      scaffoldingLevels: {
-        level1: 'Repeat the case ask once, slowly.',
-        level2: 'Model the reasoning on a DIFFERENT rule, then hand this case back.',
-        level3: 'Accept the deduction warmly and continue as instructed.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Says yes on a can\'t-tell case — "yes, because it lays eggs" — running the rule backwards',
-          response: 'Run the signature-error branch for this case: the rule does not work backwards, model the reasoning on a DIFFERENT rule, then hand this case back.',
-        },
-        {
-          pattern: 'Gives the right verdict with no reason — "no", or "no, because it\'s a spider"',
-          response: 'Run the how-do-you-know branch: model a reason on a DIFFERENT rule, then hand this case back.',
-        },
-        {
-          pattern: 'Reads the rule back instead of answering — "all insects have six legs"',
-          response: 'Run the general correction branch — the rule read back is not a conclusion — then hand the case back.',
-        },
-        {
-          pattern: 'Stays silent after the hand-over',
-          response: 'Wait for them without speaking. If the silence stretches long, re-ask the scripted case question once, slowly — never a new question.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [DD_ITEM], [DD_MOVE_ON], [DD_HEAR], or [DD_COMPLETE] contain the only lesson '
-            + 'words you may speak. The square-bracket label is private metadata: never speak, reproduce, or '
-            + 'invent it. Each [DD_ITEM] message includes its judging rule: affirmations must begin with '
-            + '"Yes" and every correction must begin with "My turn", using the exact quoted lines. Never '
-            + 'begin any other sentence with those words. Judge honestly from the audio and do not praise '
-            + 'to be kind. The application decides which case comes next; never continue into another '
-            + 'case or another rule yourself.',
-        },
-        {
-          title: 'WHAT COUNTS AS A DEDUCTION',
-          instruction:
-            'On a "what does the rule tell you" ask the learner states the conclusion about the case in '
-            + 'any words. On an "is it… how do you know" ask the learner gives a VERDICT (no, or can\'t '
-            + 'tell) AND a REASON that comes from the rule; a bare verdict is half an answer, and a reason '
-            + 'from outside the rule is not the reason the rule gives. Judge the meaning, not the words: '
-            + 'a child\'s own phrasing counts when the idea is there. The rule read back is never an answer.',
-        },
-        {
-          title: "THE LEARNER'S TURN",
-          instruction:
-            'After you ask, WAIT in silence — think time belongs to the learner and is unbounded. Never '
-            + 'say the conclusion or the verdict during their turn, and never read the case\'s answer off '
-            + 'the runtime state. Everything the application sends you exists to be performed or obeyed, '
-            + 'never spoken about: if a reply is not one of the scripted lines, the reply is silence.',
-        },
-        {
-          title: 'BREVITY',
-          instruction:
-            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
-            + 'Keep pacing brisk: no filler, no chit-chat, and no greeting before the first scripted line.',
-        },
-      ],
-    },
   },
   {
     // The third "DI for Older Learners" pack (design brief 2026-09-07, concept
@@ -1154,6 +311,8 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // numbers, families and answers are code-built (diWordProblemPlan.ts);
     // Gemini supplies only the themes.
     id: 'di-word-problem-setup',
+    // How it is wired to the live tutor: `diWordProblemSetup.card.ts` (behavior: `diWordProblemSetup.boss.ts`).
+    ...bossEntry(diWordProblemSetupCard),
     description:
       'Live-judged Direct Instruction WORD-PROBLEM SETUP (Connecting Math Concepts number families): a '
       + 'short addition or subtraction story is printed and read aloud. Depending on mode, the child '
@@ -1178,112 +337,6 @@ export const DI_CATALOG: ComponentDefinition[] = [
     // β mirrors backend problem_type_registry.py.
     evalModes: DI_WORD_PROBLEM_EVAL_MODES,
     supportsEvaluation: true,
-    teachingWorkspace: {
-      grades: ['Grade 1', 'Grade 2', 'Grade 3'],
-      guidance: 'One story is printed; read it aloud to the child when they need it. They set it up one step at a time. '
-        + 'Naming the story kind, reading the number family, choosing add or subtract, and solving are said OUT LOUD. '
-        + 'Placing the big amount, or building small + small = big, is done with their hands on the story-part cards, '
-        + 'and the activity checks it: you cannot place a card, and never say which part is the big amount or where a '
-        + 'part belongs before they try. The family decides the operation, not the story\'s words. Nothing they must '
-        + 'say is printed before it is credited. Never do a step of this story for them: your model is the model_story '
-        + 'lever, different stories solved (an add and a subtract, or one of each kind), all said. The support fact says '
-        + 'where levers start.',
-      levers: true,
-      // The activity's own check of the big slot (`wordProblemMiss`), then the spoken steps' known wrong answers
-      // (`wordProblemSpokenMisses`), named by the `spoken_miss` observer.
-      misses: missLists<WordProblemMiss | SpokenWordProblemMiss>({
-        find_big_number: ['box_in_big', 'printed_small_in_big', 'wrong_way', 'said_story_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        build_family: ['box_in_big', 'printed_small_in_big', 'big_in_small_slot', 'subtraction_sentence', 'opposite_operation',
-          'wrong_way', 'said_story_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-        classify_and_build: ['signature_kind', 'other_kind', 'box_in_big', 'printed_small_in_big', 'big_in_small_slot',
-          'subtraction_sentence', 'opposite_operation', 'wrong_way', 'said_story_number', 'one_short', 'one_over', 'short_by_more', 'over_by_more'],
-      }),
-    },
     misconceptionScope: 'primitive',
-    audioInput: { manual_activity: true },
-    tutoring: {
-      taskDescription:
-        'Live-judged Direct Instruction word-problem setup (current task: {{challengeType}}; story: '
-        + '{{story}}; step open: {{step}}). You speak the exact scripted lines from each bracketed '
-        + 'application message and judge each learner step from the audio you heard, using only the '
-        + 'scripted reply branches. On the big-number step the learner answers with their hands and you '
-        + 'are told what they placed.',
-      // Stimulus side only: the printed story and which step is open. The
-      // answer to a step (the big number, the family, the answer) reaches the
-      // tutor inside each [WPS_ITEM] judging contract, never through RUNTIME STATE.
-      contextKeys: ['challengeType', 'story', 'step', 'supportTier'],
-      scaffoldingLevels: {
-        level1: 'Repeat the step ask once, slowly.',
-        level2: 'Model the step on a DIFFERENT story, then hand this step back.',
-        level3: 'Accept the step warmly and continue as instructed.',
-      },
-      commonStruggles: [
-        {
-          pattern: 'Puts the biggest number they can see in the big slot, whatever its role in the story',
-          response: 'The placement verdict message carries the correction: model that the big number is the whole amount, then hand the placement back.',
-        },
-        {
-          pattern: 'Says the family upside down — the big number before "equals"',
-          response: 'Run the misplaced branch for this step: the big number goes last, then hand it back.',
-        },
-        {
-          pattern: 'Says a subtraction sentence instead of the family',
-          response: 'Run the not-a-family branch: a family says small plus small equals big; we do not subtract yet.',
-        },
-        {
-          pattern: 'Picks add or subtract from the story\'s verb ("found" → add) instead of from the family',
-          response: 'Run the from-the-story branch: the family decides — the box is a small number, so we subtract.',
-        },
-        {
-          pattern: 'Stays silent after the hand-over',
-          response: 'Wait for them without speaking. If the silence stretches long, re-ask the scripted step question once, slowly — never a new question.',
-        },
-      ],
-      aiDirectives: [
-        {
-          title: 'LIVE-JUDGED DIRECT INSTRUCTION',
-          instruction:
-            'Messages tagged [WPS_ITEM], [WPS_BIG], [WPS_MOVE_ON], [WPS_HEAR], or [WPS_COMPLETE] contain the '
-            + 'only lesson words you may speak. The square-bracket label is private metadata: never speak, '
-            + 'reproduce, or invent it. Each [WPS_ITEM] message includes its judging rule: affirmations must '
-            + 'begin with "Yes" and every correction must begin with "My turn", using the exact quoted lines. '
-            + 'Never begin any other sentence with those words. Judge honestly from the audio and do not '
-            + 'praise to be kind. The application decides which step comes next; never continue into another '
-            + 'step or another story yourself.',
-        },
-        {
-          title: 'THE HANDS STEP',
-          instruction:
-            'On "Find the big amount" or "Build the family" the learner answers with their hands, not their '
-            + 'voice: stay completely silent while they place the requested card or cards, never say which amount is the big '
-            + 'number, and speak only when a [WPS_BIG] message tells you what they placed and hands you the '
-            + 'exact line to say.',
-        },
-        {
-          title: 'WHAT COUNTS AS A FAMILY',
-          instruction:
-            'On "Read the number family" the learner says the two small numbers, then equals, then the big number, '
-            + 'with the unknown said as box, blank, something, or what. Judge the numbers in their slots, not '
-            + 'the exact words — "and" for plus and "makes" for equals both count. The big number said '
-            + 'before equals is wrong; a subtraction sentence is not a family. Always say numbers as words, '
-            + 'never as digits.',
-        },
-        {
-          title: "THE LEARNER'S TURN",
-          instruction:
-            'After you ask, WAIT in silence — think time belongs to the learner and is unbounded. Never say '
-            + 'the big number, the family, or the answer during their turn, and never read the story\'s '
-            + 'numbers off the runtime state as a hint. Everything the application sends you exists to be '
-            + 'performed or obeyed, never spoken about: if a reply is not one of the scripted lines, the '
-            + 'reply is silence.',
-        },
-        {
-          title: 'BREVITY',
-          instruction:
-            'Speak only the exact quoted lesson text. Never narrate judging, scoring, or application state. '
-            + 'Keep pacing brisk: no filler, no chit-chat, and no greeting before the first scripted line.',
-        },
-      ],
-    },
   },
 ];

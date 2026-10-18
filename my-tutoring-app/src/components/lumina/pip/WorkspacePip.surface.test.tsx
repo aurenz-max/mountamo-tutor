@@ -34,7 +34,7 @@ const bosses = (readdirSync(join(LUMINA, 'primitives'), { recursive: true }) as 
   })
   .filter(b => /<PipWorkspace\b/.test(read(join(LUMINA, b.component))));
 
-it('finds the bosses that take Pip from the runner', () => expect(bosses.map(b => b.id).sort()).toEqual(['cell-builder', 'classification-sorter']));
+it('finds the bosses that take Pip from the runner', () => expect(bosses.map(b => b.id).sort()).toEqual(['cell-builder', 'classification-sorter', 'di-word-problem-setup']));
 
 it.each(bosses.map(b => [b.id, b] as const))('%s: a dock, one workspace target, a point only on its own speech, a look at a touch', (_id, b) => {
   const store = new PipSurfaceStore();

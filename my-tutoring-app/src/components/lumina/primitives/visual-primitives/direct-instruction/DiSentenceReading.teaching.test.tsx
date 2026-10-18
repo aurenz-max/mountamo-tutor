@@ -36,12 +36,13 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiSentenceReading, { type DiSentenceReadingData } from './DiSentenceReading';
-import { DI_SENTENCE_READING_WORKSPACE_MODES, buildSentenceReadingItems, workspaceAssignment, workspaceScene,
+import { DI_SENTENCE_READING_WORKSPACE_MODES, buildSentenceReadingItems, workspaceScene,
   type DiSentenceReadingChallenge, type DiSentenceReadingChallengeType } from './diSentenceReadingDomain';
-import { validateDiSentenceReadingData }
-  from '../../../components/live-activity/adapters/diSentenceReadingLive';
+import { diSentenceReadingBoss, validateDiSentenceReadingData } from './diSentenceReading.boss';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { OFFER_GUIDANCE_MAX } from '../../../components/live-activity/adapters/adapterContract';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { SENTENCE_LEVERS } from './diSentenceReadingLevers';
 const diSentenceReadingLive = LIVE_ADAPTERS['di-sentence-reading'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
@@ -167,8 +168,8 @@ it('publishes exactly one demonstrable object — the whole printed sentence —
 it('carries the strict near-neighbour success condition, and self-correction tolerance, into every mode', () => {
   for (const mode of ALL_MODES) {
     const h = mount(mode);
-    expect(String(h.state().task!.demand.assignment), mode).toMatch(/is not close enough/);
-    expect(String(h.state().task!.demand.assignment), mode)
+    expect(String(h.state().task!.workspace!.expectedAnswer), mode).toMatch(/is not close enough/);
+    expect(String(h.state().task!.workspace!.expectedAnswer), mode)
       .toMatch(/Catching and fixing their own slip mid-read still counts as an accurate read\./);
     cleanup();
   }
@@ -343,12 +344,14 @@ it('keeps guidance inside the backend offer cap, with no sentence for the tutor 
 });
 
 it('publishes exactly the domain assignment and scene that the verdict probe replays', () => {
-  // `scripts/tutor-verdict-probe.mjs` builds its model input from `workspaceAssignment`
+  // `scripts/tutor-verdict-probe.mjs` builds its model input from the boss's assignment
   // and `workspaceScene`. It replays the lesson only while the mounted stage publishes
   // those and nothing else.
   const h = mount('decodable_sentence');
   const item = buildSentenceReadingItems(CHALLENGES.decodable_sentence)[0];
-  const { task, expectedAnswer, response } = workspaceAssignment(item), scene = workspaceScene(item);
+  const { task, expectedAnswer, response } = diSentenceReadingBoss.assignment(item);
+  // The scene as the probe builds it: the lever set writes `support` (`leverScene`).
+  const scene = leverScene(workspaceScene(item), { support: SENTENCE_LEVERS.support(item), onScreen: '' });
   expect(h.state().task!.task).toBe(task);
   // No lever starts on screen, so the demand carries no onScreen fact.
   expect(h.state().task!.demand).toEqual({ ...scene.facts, response, presentation: 'ready' });

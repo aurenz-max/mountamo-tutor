@@ -220,8 +220,9 @@ async function handleProbe(request: NextRequest, frozen?: Record<string, unknown
                 : {
                     error:
                       `"${componentId}" has no DI drive adapter — it is either not a `
-                      + '/add-di-loop port, or its port has not registered one. See '
-                      + 'DI_PORTS in service/qa/di/diDrivePlan.ts.',
+                      + '/add-di-loop port, its port has not registered one (DI_PORTS in '
+                      + 'service/qa/di/diDrivePlan.ts), or it is on a boss and is driven by '
+                      + 'its LIVE_JOURNEYS row instead.',
                   },
             }
           : {}),

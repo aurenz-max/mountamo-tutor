@@ -72,13 +72,13 @@ describe('DiShapes — the tutor is told the tier and the task, never the answer
     expect(String(task.demand.support)).toMatch(tier === 'hard' ? /cold/ : tier === 'medium' ? /tries first/ : /before the learner tries, pull the model lever/);
     const handed = JSON.stringify({ task: task.task, demand: task.demand, objects: task.workspace!.objects }).toLowerCase();
     for (const leak of ['triangle', 'three']) expect(handed, `${tier} leaked "${leak}"`).not.toContain(leak);
-    expect(task.workspace!.expectedAnswer).toBe('three');
+    expect(task.workspace!.expectedAnswer).toMatch(/^"three"\./);
     expect(screen.queryByText(/triangle|three/i)).toBeNull();
   });
 
   it('a naming item publishes its spoken alternates with the key', () => {
     const h = mount(pack([triangle({ shape: 'rhombus', shapeWord: 'rhombus', spokenAlternates: ['diamond'] })]));
-    expect(h.state().task!.workspace!.expectedAnswer).toBe('rhombus (also accept diamond)');
+    expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"rhombus" \(also accept "diamond"\)/);
   });
 });
 

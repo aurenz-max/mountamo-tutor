@@ -9,9 +9,9 @@
  * (qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md). The split is by
  * ownership:
  *
- *   - HERE: the assignment. Which items can be asked at all, the question the
- *     child hears, what counts as the answer, and the success condition stated
- *     plainly enough for a tutor to judge against.
+ *   - HERE: which items can be asked at all, the question the child hears, and
+ *     the spoken key the tutor judges against. The assignment itself is the
+ *     boss's (`diMathFacts.boss.ts`, on the spoken preset).
  *   - The scripted drill (model/guide/test lead-in, sentinel-opened affirm and
  *     correction lines, in-band judging contract, bracketed cues) was deleted in
  *     LA-14 S5; the workspace is the only teaching path.
@@ -40,9 +40,10 @@
  * openers, the two-branch law, the correction cap and the exact-line contract.
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { spokenIntegerWord } from '../math/spokenNumberWords';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
 import { offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { diMathFactsModePlan, DI_MATH_FACTS_MODES, type DiMathFactsChallengeType }
   from './diMathFactsModes';
 
@@ -136,7 +137,7 @@ export interface MathFactItem extends TeachingItem {
   ask: string;
   /** The accepted answer, short enough to compare a tutor's affirmation against. */
   accepted: string;
-  /** The success condition in full, for the tutor's scene facts. */
+  /** The spoken key the tutor judges with (`spokenKeyText`): the answer, the route that counts, and what does not. */
   assignment: string;
 }
 
@@ -200,30 +201,28 @@ export function askFor(item: Pick<DiMathFactsChallenge, 'problem'>): string {
 }
 
 /**
- * The success condition, and what is NOT it — short, because this sentence is
- * what a tutor's feedback gets judged against. Three sentences for a computed
- * fact (target, strictness, accepted route) and two for naming a numeral, which
- * has no route. The word-reading finding holds: a condition that states the same
- * thing twice reads as two conditions, so each discrimination appears once.
+ * The key the tutor judges with (`spokenKeyText`): the number word, the counting route as the accept rule, and the
+ * strict different-quantity rule as the signature error. Naming a numeral has no route, and reciting the sequence to
+ * reach it is its signature error.
  *
- * The teen/decade and whole-compound clauses are added only above twelve, where
- * they are the two discriminations the 1-120 counting extension depends on.
- * Below that they would be inert text on every item in the pack.
+ * The teen/decade and whole-compound clauses are added only above twelve, where they are the two discriminations
+ * the 1-120 counting extension depends on. Below that they would be inert text on every item in the pack.
  */
-function assignmentFor(c: DiMathFactsChallenge): string {
+function keyFor(c: DiMathFactsChallenge): string {
+  const answer = c.answerWord.trim().toLowerCase();
+  const sounds = 'Young-child pronunciation of it, or a word that sounds like it, is that number.';
   if (stimulusIsAnswer(c)) {
-    return `The learner must say the name of the printed numeral ${c.display.trim()} out loud: `
-      + `${c.answerWord}. Reciting the counting sequence up to it, or saying a different number, `
-      + 'is not naming this numeral.';
+    return spokenKeyText({ answer, alsoAccept: [], acceptRule: sounds,
+      signatureError: `Reciting the counting sequence up to the printed numeral ${c.display.trim()}, or saying a `
+        + 'different number, is not naming this numeral.' });
   }
-  const route = countingRouteFor(c);
   const compound = c.answerNumeral >= 13
     ? ' A teen and its decade are different numbers, never near misses: thirteen is not thirty. '
       + 'A number said as several words is one answer and must arrive whole.'
     : '';
-  return `The learner must say the answer to "${c.problem}" out loud: ${c.answerWord}. `
-    + `A different number is not the answer, however close it is.${compound} `
-    + `Counting ${route} to it out loud and then saying it is a correct answer.`;
+  return spokenKeyText({ answer, alsoAccept: [],
+    acceptRule: `Counting ${countingRouteFor(c)} to it out loud and then saying it is a correct answer. ${sounds}`,
+    signatureError: `A different number is not the answer, however close it is.${compound}` });
 }
 
 /** Expand a generated pool into the assignments the workspace actually asks.
@@ -247,7 +246,7 @@ export function buildMathFactItems(challenges: DiMathFactsChallenge[] = []): Mat
     countingRoute: countingRouteFor(c),
     ask: askFor(c),
     accepted: c.answerWord.trim().toLowerCase(),
-    assignment: assignmentFor(c),
+    assignment: keyFor(c),
     answerKind: diMathFactsModePlan(c).answerStep.actionContract.answerKind === 'voice' ? 'voice' : 'gesture',
     responseClass: c.answerNumeral <= 20 ? 'number_word_to_20' : 'number_word_to_120',
   }));
@@ -311,20 +310,13 @@ export function mathFactSpokenMisses(item: MathFactItem): KnownMiss[] {
   return [...own, ...offByMisses(n, of).filter(m => !(m.id === 'one_short' || m.id === 'one_over') || !named.has(spokenIntegerWord(n + (m.id === 'one_over' ? 1 : -1))))];
 }
 
-/** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
- *  child says a number word, the tutor hears the audio and JEV reads its completed feedback. */
-export const workspaceAssignment = (item: MathFactItem): TeachingAssignment => {
-  const misses = mathFactSpokenMisses(item);
-  return { id: item.id, task: item.ask, expectedAnswer: item.answerWord, response: 'speech', ...(misses.length ? { misses } : {}) };
-};
-
 /** Is this printed token a number the tutor can point at, or the operator
  *  between them? Both are markable; only the label differs. */
 const isNumeral = (term: string) => /^[0-9]+$/.test(term);
 
 /** The drawn stage. Term objects exist only where the stimulus really has parts: a bare
  *  numeral is one object, so there is no term inside it to point at separately. */
-export const workspaceScene = (item: MathFactItem): WorkspaceScene => ({
+export const workspaceScene = (item: MathFactItem): SceneOf => ({
   objects: [
     { id: 'problem', selected: false, group: 'assignment target (the printed problem)',
       label: `the printed problem "${item.display}", which the learner must answer out loud` },
@@ -334,15 +326,8 @@ export const workspaceScene = (item: MathFactItem): WorkspaceScene => ({
         ? `the printed number "${term}", part ${position + 1} of the problem`
         : `the "${term}" sign in the problem` })),
   ],
-  facts: { kind: item.challengeType, assignment: item.assignment, printedProblem: item.display,
+  facts: { kind: item.challengeType, printedProblem: item.display,
     spokenProblem: item.problem,
-    // The tier the child is meant to meet this fact at. DI's model is on a PARALLEL fact, never this one
-    // (user ruling 2026-10-02): easy pulls the `model_fact` card before the learner tries, medium models
-    // only after a miss, and at `hard` the point of the item is that nothing models first.
-    support: item.supportTier === 'hard'
-      ? 'answer it cold: model nothing before the learner answers, and never say this fact\'s answer'
-      : item.supportTier === 'medium' ? 'the learner tries first; after a miss, model a different fact with the model_fact lever, never this one'
-        : 'before the learner tries, pull the model lever (a card of a different fact): say it as your turn, then ask this problem. Never model this problem',
     countingRoute: item.countingRoute === null
       ? 'none — counting the sequence is not a route to this answer'
       : `counting ${item.countingRoute} to the answer is a legitimate route`,

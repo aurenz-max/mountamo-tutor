@@ -134,7 +134,6 @@ export const DI_DEDUCTION_TYPE_DOCS = challengeTypeDocsFromDiModes(DI_DEDUCTION_
 export const DI_DEDUCTION_CHALLENGE_TYPES = DI_DEDUCTION_MODES.flatMap(
   (definition) => definition.challengeTypes,
 ) as DeductionChallengeType[];
-export const DEDUCTION_HOW_TO_PLAY = DI_DEDUCTION_MODES[0].metadata!.howToPlay;
 
 export const diDeductionModePlan = (item: DeductionModePlanItem) =>
   buildDiModePlan(DI_DEDUCTION_MODES, item);

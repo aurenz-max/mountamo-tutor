@@ -12,9 +12,9 @@
  * gone. The generator gates (`findAnswerLeaks`, `findChoiceMenuDefects`, `findConceptDefects`) still
  * decide what ships, so the ask never contains the answer.
  */
-import type { WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { spokenKeyText } from '../../../components/live-activity/spokenKey';
 import { offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { DI_SPOKEN_PRACTICE_MODES } from './diSpokenPracticeModes';
 import { conceptAffirmForm, numberWordFor, type SpokenPracticeItem } from './diSpokenPracticeScript';
 
@@ -104,9 +104,9 @@ function drawn(item: SpokenPracticeItem): { label: string; constraints: string }
         ? { label: `the printed text "${item.stimulusText}", which the learner reads aloud`,
           constraints: 'The learner reads the printed text aloud; reading it is the whole task.' }
         : { label: `the printed "${item.stimulusText}"`,
-          constraints: 'The learner answers aloud. The answer is not printed.' };
+          constraints: 'The answer is not printed.' };
     case 'emoji':
-      return { label: 'one unlabeled picture', constraints: 'The learner answers aloud. The picture has no label.' };
+      return { label: 'one unlabeled picture', constraints: 'The picture has no label.' };
     case 'pair':
       return { label: `two unlabeled pictures side by side: ${item.stimulusText} and ${item.stimulusText2 ?? ''}`,
         constraints: `The learner says one word from ${quoted(item.choices ?? [])}. The pictures have no labels, `
@@ -116,19 +116,15 @@ function drawn(item: SpokenPracticeItem): { label: string; constraints: string }
         constraints: 'The learner counts the pictures and says how many aloud. No numeral is shown.' };
     case 'none':
     default:
-      return { label: 'nothing printed', constraints: 'Nothing is printed: the learner hears the question from you and answers aloud.' };
+      return { label: 'nothing printed', constraints: 'Nothing is printed: the learner hears the question from you.' };
   }
 }
 
-export function spokenPracticeScene(item: SpokenPracticeItem): WorkspaceScene {
+export function spokenPracticeScene(item: SpokenPracticeItem): SceneOf {
   const { label, constraints } = drawn(item);
   return {
     objects: [{ id: 'stimulus', selected: false, group: 'assignment target', label }],
-    facts: { kind: item.mode, constraints,
-      // DI's model is a DIFFERENT item, never this one (ruling 2026-10-02): easy (or no tier) starts with its card.
-      support: item.supportTier === 'hard' ? 'answer it cold: model nothing before the learner answers, and never say this answer'
-        : item.supportTier === 'medium' ? 'the learner tries first; after a miss, model a different item with the model lever, never this one'
-          : 'before the learner tries, pull the model lever (a card of a different item): say it as your turn, then ask this one. Never model this one' },
+    facts: { kind: item.mode, constraints },
   };
 }
 

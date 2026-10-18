@@ -36,11 +36,13 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiWordReading, { type DiWordReadingData } from './DiWordReading';
-import { DI_WORD_READING_WORKSPACE_MODES, buildWordReadingItems, workspaceAssignment, workspaceScene,
+import { DI_WORD_READING_WORKSPACE_MODES, buildWordReadingItems, workspaceScene,
   type DiWordReadingChallenge, type DiWordReadingChallengeType } from './diWordReadingDomain';
-import { validateDiWordReadingData } from '../../../components/live-activity/adapters/diWordReadingLive';
+import { diWordReadingBoss, validateDiWordReadingData } from './diWordReading.boss';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { OFFER_GUIDANCE_MAX } from '../../../components/live-activity/adapters/adapterContract';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { WORD_LEVERS } from './diWordReadingLevers';
 const diWordReadingLive = LIVE_ADAPTERS['di-word-reading'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
@@ -170,7 +172,7 @@ it('publishes no letter and no blend for an irregular sight word, and refuses so
   expect(h.state().task!.workspace!.objects.map(o => o.id)).toEqual(['word']);
   expect(h.state().task!.demand.soundOut).toBeUndefined();
   expect(String(h.state().task!.demand.wordType)).toMatch(/recalled whole, never sounded out/);
-  expect(String(h.state().task!.demand.assignment))
+  expect(String(h.state().task!.workspace!.expectedAnswer))
     .toMatch(/sounding it out letter by letter is not how it is read/);
   // The teaching error is refused by the scene, not by a sentence of guidance.
   expect(h.dispatch('demonstrate', { targets: ['letter-0'] }).status).not.toBe('committed');
@@ -181,8 +183,8 @@ it('publishes no letter and no blend for an irregular sight word, and refuses so
 it('carries the strict near-neighbour success condition into every mode', () => {
   for (const mode of ALL_MODES) {
     const h = mount(mode);
-    expect(String(h.state().task!.demand.assignment), mode)
-      .toMatch(/A different word is not a correct read, however close it sounds\./);
+    expect(String(h.state().task!.workspace!.expectedAnswer), mode)
+      .toMatch(/A different word is not a correct read, however close it sounds/);
     cleanup();
   }
 });
@@ -358,12 +360,14 @@ it('keeps guidance inside the backend offer cap, with no sentence for the tutor 
 });
 
 it('publishes exactly the domain assignment and scene that the verdict probe replays', () => {
-  // `scripts/tutor-verdict-probe.mjs` builds its model input from `workspaceAssignment`
+  // `scripts/tutor-verdict-probe.mjs` builds its model input from the boss's assignment
   // and `workspaceScene`. It replays the lesson only while the mounted stage publishes
   // those and nothing else.
   const h = mount('cvc_reading');
   const item = buildWordReadingItems(CHALLENGES.cvc_reading)[0];
-  const { task, expectedAnswer, response } = workspaceAssignment(item), scene = workspaceScene(item);
+  const { task, expectedAnswer, response } = diWordReadingBoss.assignment(item);
+  // The scene as the probe builds it: the lever set writes `support` (`leverScene`).
+  const scene = leverScene(workspaceScene(item), { support: WORD_LEVERS.support(item), onScreen: '' });
   expect(h.state().task!.task).toBe(task);
   // No lever starts on screen, so the demand carries no onScreen fact.
   expect(h.state().task!.demand).toEqual({ ...scene.facts, response, presentation: 'ready' });

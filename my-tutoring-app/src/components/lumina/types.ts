@@ -1792,9 +1792,20 @@ export interface BossWords {
  * `bossEntry(card)`, never written in the catalog by hand.
  */
 export interface BossCard {
-  modes: Readonly<Record<string, BossMode>>;
+  modes: Readonly<Record<string, BossModeWiring>>;
   words: BossWords;
 }
+
+/**
+ * A mode whose items are steps of one problem, wired differently (say the story kind, place the cards, say the
+ * answer). Keyed by the step name the item's scene publishes as `kind`; the boss's `stepOf` returns it.
+ */
+export interface BossSteps {
+  steps: Readonly<Record<string, BossMode>>;
+}
+
+/** How one eval mode is wired: every item alike, or by step. */
+export type BossModeWiring = BossMode | BossSteps;
 
 export interface TutoringScaffold {
   /** Template describing the task. Supports {{key}} interpolation from primitive_data. */

@@ -11,9 +11,10 @@
  * correction branches, sentinel lines and move-on carry were control protocol and are gone: a wrong answer
  * no longer closes a step, so the page only ever writes what the child earned.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { numberMisses, offByMisses, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
 import { numberWord as w, PLACES, type Place } from './diWorkedProcedurePlan';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { itemsFromProblems, withWorkedProcedureAction, type DiWorkedProcedureData, type WorkedProcedureItem } from './diWorkedProcedureScript';
 
 /** The steps a payload asks, built by the one builder the generator and the drive harness use. */
@@ -27,25 +28,28 @@ export const workedProcedureItems = (data: Pick<DiWorkedProcedureData, 'problems
 export const workedProcedureAskFor = (item: WorkedProcedureItem): string =>
   withWorkedProcedureAction(item).actionContract.instruction;
 
+/** The key the tutor judges with (`spokenKeyText`): a regroup is judged on meaning, a number exactly. */
 export function workedProcedureKey(item: WorkedProcedureItem): string {
   const c = item.column;
   const flip = `"${w(c.bottom)} minus ${w(c.topAfterLend)}"`;
   if (item.kind === 'decide' && item.regroup) {
     const above = item.placeAbove as Place;
-    return `Regroup (borrow, trade, or take one from the ${above}) AND both new numbers, in any order or wording: `
-      + `${w(item.newAbove)} ${above} and ${w(c.effectiveTop)} ${c.place}. Naming the regroup and `
-      + `${w(c.effectiveTop)} with nothing about ${w(item.newAbove)} ${above} is not yet the answer (the ${above} were `
-      + `never changed). Turning the column upside down, ${flip}, is the signature error.`;
+    return spokenKeyText({ answer: item.answerSpoken, alsoAccept: [],
+      meaning: { idea: `Regroup (borrow, trade, or take one from the ${above}), with both new numbers: ${w(item.newAbove)} ${above} `
+        + `and ${w(c.effectiveTop)} ${c.place}, in any order.`,
+        notIt: `naming the regroup and ${w(c.effectiveTop)} with nothing about ${w(item.newAbove)} ${above} (the ${above} were never changed)` },
+      signatureError: `Turning the column upside down, ${flip}, is the signature error.` });
   }
-  const answer = `"${w(c.difference)}": the bare number, or the whole fact ${w(c.effectiveTop)} minus ${w(c.bottom)} said aloud, `
-    + 'straight away or after counting back to it.';
+  const number = { answer: w(c.difference), alsoAccept: [`${w(c.effectiveTop)} minus ${w(c.bottom)} is ${w(c.difference)}`],
+    acceptRule: 'The bare number or the whole fact said aloud counts, straight away or after counting back to it.' };
   if (item.kind === 'subtract') {
-    return `${answer} Any other number is wrong; ${w(c.bottom - c.topAfterLend)} is the digits subtracted the wrong way round.`;
+    return spokenKeyText({ ...number,
+      signatureError: `Any other number is wrong; ${w(c.bottom - c.topAfterLend)} is the digits subtracted the wrong way round.` });
   }
   const lent = c.lent ? ` Saying ${w(c.top - c.bottom)} reads the crossed-out ${w(c.top)}: this column lent one to the `
     + `${PLACES[c.index - 1]}.` : '';
-  return `${answer} No regrouping is needed; regrouping here (working from ${w(c.topAfterLend + 10)}) is the signature `
-    + `error.${lent}`;
+  return spokenKeyText({ ...number,
+    signatureError: `No regrouping is needed; regrouping here (working from ${w(c.topAfterLend + 10)}) is the signature error.${lent}` });
 }
 
 /** What a wrong spoken step shows (handoff 20 Part B). */
@@ -86,32 +90,20 @@ export function workedProcedureSpokenMisses(item: WorkedProcedureItem): KnownMis
   ];
 }
 
-export function workedProcedureAssignment(item: WorkedProcedureItem): TeachingAssignment {
-  const misses = workedProcedureSpokenMisses(item);
-  return { id: item.id, task: workedProcedureAskFor(item), response: 'speech', expectedAnswer: workedProcedureKey(item),
-    ...(misses.length ? { misses } : {}) };
-}
-
 /** What the page shows: the problem in columns, the current column ringed, and the marks already credited on
  *  this problem. The difference being asked is never on it. The label names no number: with the whole problem
  *  in it ("92 − 75"), the observer refused a clear credit for the tens column ("eight minus seven is one"),
  *  3/3 on replay (count-fact rule). */
-export function workedProcedureScene(item: WorkedProcedureItem): WorkspaceScene {
+export function workedProcedureScene(item: WorkedProcedureItem): SceneOf {
   const c = item.column;
   return {
     objects: [{ id: 'problem', selected: false, group: 'assignment target',
       label: `the subtraction printed in columns, with the ${c.place} column ringed` }],
     facts: { kind: item.challengeType, step: item.kind === 'decide' ? 'decide what to do in this column' : 'subtract this column',
       column: c.place,
-      // DI's model is a DIFFERENT problem, never this one (ruling 2026-10-02): easy starts with its card on screen; no tier
-      // is medium in this pack.
-      support: item.supportTier === 'easy'
-        ? 'before the learner tries, pull the model lever (a card of a different subtraction): walk every column of it as your turn, then ask this column. Never work this problem'
-        : item.supportTier === 'hard' ? 'work it cold: model nothing before the learner tries, and never say a step answer of this problem'
-          : 'the learner tries first; after a miss, model a different subtraction with the model_problem lever, never this one',
-      constraints: 'The learner says the move or the number aloud; the page writes each step only after it is credited. '
-        + (c.lent ? `The top digit of the ${c.place} column is crossed out: it lent one to the ${PLACES[c.index - 1]}. ` : '')
-        + (item.kind === 'subtract' ? `The ${c.place} column was just regrouped. ` : '') },
+      ...(c.lent || item.kind === 'subtract' ? { constraints: [
+        c.lent ? `The top digit of the ${c.place} column is crossed out: it lent one to the ${PLACES[c.index - 1]}.` : '',
+        item.kind === 'subtract' ? `The ${c.place} column was just regrouped.` : ''].filter(Boolean).join(' ') } : {}) },
   };
 }
 

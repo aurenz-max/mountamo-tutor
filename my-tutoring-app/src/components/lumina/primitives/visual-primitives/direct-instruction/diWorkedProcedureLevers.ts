@@ -22,7 +22,8 @@
  *   the mode floor); then the full step.
  * No simplify after `upside_down_column` or `said_no_regroup`: the practice regroups, which hands over "regroup".
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { diWorkedProcedureCard } from './diWorkedProcedure.card';
 import { numberWord, planSubtraction, type SubtractionPlan } from './diWorkedProcedurePlan';
 import { itemsFromProblems, type WorkedProcedureItem } from './diWorkedProcedureScript';
 
@@ -114,38 +115,36 @@ export function fewerColumnsFor(item: WorkedProcedureItem, lastMiss?: string): W
 
 const regroupDecide = (item: WorkedProcedureItem) => item.challengeType === 'subtract_regroup' && item.kind === 'decide';
 
-export function procedureLevers(item: WorkedProcedureItem | null, pulled: readonly string[], lastMiss?: string): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const out: WorkspaceLever[] = [];
-  const decideMisses = ['upside_down_column', 'no_decrement', 'said_no_regroup', 'regrouped_needlessly', 'read_crossed_out', ...OFF_BY];
-  if (modelFor(item)) out.push(lever(MODEL_PROBLEM, 'help', 'both', decideMisses,
-    'The learner makes a wrong move or gets a wrong number, or does not know how to start.',
-    'Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in '
-      + 'order as your turn, never only the one like the learner\'s step, then ask the ringed column again. Never apply it '
-      + 'to their problem.'));
-  if (item.kind === 'decide') out.push(lever(TOP_BLOCKS, 'help', 'shown',
-    ['upside_down_column', 'no_decrement', 'said_no_regroup', 'regrouped_needlessly', 'read_crossed_out', ...OFF_BY],
-    'The learner reads the column the wrong way up, or misjudges whether the top number is enough.',
-    'Draws each column\'s top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. '
-      + 'Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column\'s digits.'));
-  if (!regroupDecide(item)) out.push(lever(TAKE_AWAY_CUBES, 'help', 'shown', ['upside_down_column', ...OFF_BY],
-    'The learner gets the column\'s difference wrong.',
-    'Draws the ringed column\'s top number as cubes with the bottom number of them crossed out. Never say how many are left.'));
-  if (fewerColumnsFor(item, lastMiss)) out.push(lever(FEWER_COLUMNS, 'simplify', 'both', ['no_decrement'],
-    'The learner regroups but leaves the place above unchanged.',
-    'Opens a smaller problem\'s regroup step first (two digits). It is not graded; the full step comes back after it.'));
-  return out;
-}
+const DECIDE_MISSES = ['upside_down_column', 'no_decrement', 'said_no_regroup', 'regrouped_needlessly', 'read_crossed_out', ...OFF_BY];
 
-/** What the pulled levers put on screen, as a scene fact. Gives the model's walk; never a step answer of this problem. */
-export function procedureLeverFacts(item: WorkedProcedureItem | null, pulled: readonly string[]): string {
-  if (!item) return '';
-  const model = pulled.includes(MODEL_PROBLEM) ? modelFor(item) : null;
-  return [
-    model && `Beside the problem, a model card shows a different subtraction, fully worked: ${modelWalk(model)} It is not this problem.`,
-    pulled.includes(TOP_BLOCKS) && item.kind === 'decide' && 'Place-value pieces under each column show its top number as it reads now.',
-    pulled.includes(TAKE_AWAY_CUBES) && 'Cubes under the ringed column show its top number with the bottom number of them crossed out.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+/** Every lever of the pack, by type, in the order the tutor sees them. The levers read nothing beyond the step. */
+export const PROCEDURE_LEVERS = leverSet<WorkedProcedureItem, null>({
+  modeOf: item => item.challengeType,
+  missesOf: mode => diWorkedProcedureCard.modes[mode]?.misses ?? [],
+  // No tier is medium in this pack.
+  support: { tier: item => item.supportTier ?? 'medium', different: 'a different subtraction', own: 'a step answer of this problem' },
+  specs: [
+    { id: MODEL_PROBLEM, type: 'model', answers: DECIDE_MISSES,
+      when: 'The learner makes a wrong move or gets a wrong number, or does not know how to start.',
+      does: 'Shows a small card with a DIFFERENT subtraction, fully worked (onScreen gives its walk). Say every column of it in '
+        + 'order as your turn, never only the one like the learner\'s step, then ask the ringed column again. Never apply it '
+        + 'to their problem.',
+      content: item => modelFor(item),
+      fact: (model: SubtractionPlan) => `Beside the problem, a model card shows a different subtraction, fully worked: ${modelWalk(model)} It is not this problem.` },
+    { id: TOP_BLOCKS, type: 'custom', carrier: 'shown', answers: DECIDE_MISSES, offer: item => item.kind === 'decide',
+      why: 'It draws each column\'s top number as place-value pieces, a representation no stock type draws.',
+      when: 'The learner reads the column the wrong way up, or misjudges whether the top number is enough.',
+      does: 'Draws each column\'s top number, as it reads now, as place-value pieces under the problem. No count, no bottom number. '
+        + 'Point at the pieces and ask what they do in the column; never ask whether the top is enough or name the column\'s digits.',
+      fact: 'Place-value pieces under each column show its top number as it reads now.' },
+    { id: TAKE_AWAY_CUBES, type: 'custom', carrier: 'shown', answers: ['upside_down_column', ...OFF_BY], offer: item => !regroupDecide(item),
+      why: 'It draws the ringed column\'s top number as cubes with the bottom number crossed out, which no stock type draws.',
+      when: 'The learner gets the column\'s difference wrong.',
+      does: 'Draws the ringed column\'s top number as cubes with the bottom number of them crossed out. Never say how many are left.',
+      fact: 'Cubes under the ringed column show its top number with the bottom number of them crossed out.' },
+    { id: FEWER_COLUMNS, type: 'easier', modes: ['subtract_regroup'], answers: ['no_decrement'],
+      when: 'The learner regroups but leaves the place above unchanged.',
+      does: 'Opens a smaller problem\'s regroup step first (two digits). It is not graded; the full step comes back after it.',
+      content: (item, _ctx, lastMiss) => fewerColumnsFor(item, lastMiss) },
+  ],
+});

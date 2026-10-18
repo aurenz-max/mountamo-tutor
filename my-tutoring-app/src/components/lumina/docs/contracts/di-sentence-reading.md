@@ -42,6 +42,7 @@ None open.
 
 ## Changelog
 
+- 2026-10-18: moved onto the boss framework — `diSentenceReading.card.ts` + `diSentenceReading.boss.ts` (`spokenBoss`); `DiSentenceReadingTeaching.tsx` folded into `DiSentenceReading.tsx`; `adapters/diSentenceReadingLive.ts` and the catalog `tutoring` block deleted. The success condition moved from the `assignment` scene fact into the spoken key (`spokenKeyText`: self-correction and slow sounding-out = accept rule; skipped, added or swapped word = signature error); levers are one `SENTENCE_LEVERS` set (ids, order and words kept). Guidance and key changed: one replay sample owed.
 - 2026-10-03: derived (initial, static) with the DI lever slice. 5 requirements, 0 conflicts.
 - 2026-10-14: R6 added (`/add-word-space`). Before: both runs of a tier gave the same four sentences in every mode; "s a t i p n" served "The red hen ran" and "The dog is hot". After: 752 bank sentences + the menu, scope-checked; group 1 gets "Pip sat at it", "Nat sat in the pan"; runs differ. The structural suite's two menu-id assertions (sam-cat-mat) restated as the requirement they protect.
 - 2026-10-15: K tiers target their own length (easy and medium no longer share sentences); bank sense-checked (172 dropped, logged); bank 755.

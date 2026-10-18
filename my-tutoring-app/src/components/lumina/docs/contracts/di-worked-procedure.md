@@ -41,4 +41,5 @@ None open.
 
 ## Changelog
 
+- 2026-10-18: moved onto the boss framework — `diWorkedProcedure.card.ts` + `diWorkedProcedure.boss.ts` (`spokenBoss`); `adapters/diWorkedProcedureLive.ts` and the catalog `tutoring` block deleted (the scripted-pack catalog check became "no tutoring block"). The key is `spokenKeyText` (a regroup step is a meaning key with both new numbers; a difference is exact, the whole fact in `alsoAccept`); levers are one `PROCEDURE_LEVERS` set (`top_blocks`, `take_away_cubes` custom). Guidance and key changed: one replay sample owed.
 - 2026-10-03: derived (initial, static) with the DI lever slice. 6 requirements, 0 conflicts.

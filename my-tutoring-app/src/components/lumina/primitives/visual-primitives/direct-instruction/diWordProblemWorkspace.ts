@@ -9,15 +9,17 @@
  * wording (the small numbers in either order, the box said as box, a solved box counts), the big number in
  * a small slot as the signature error, the operation decided by the family rather than the story's verb,
  * and the wrong-way answer. The hands step is checked in code: only which card sits in the big slot
- * decides it, exactly as `bigNumberVerdictCue` did.
+ * decides it.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import type { TeachingAssignment } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import {
   familyAsSubtraction, familyMisplaced, familySolved, familySpoken, familySpokenSwapped, numberWord as w,
   SHAPE_WORD, STORY_SHAPES, wrongWayAnswer, type FamilySlot, type WordProblemPlan,
 } from './diWordProblemPlan';
 import { itemsFromProblems, type DiWordProblemSetupData, type WordProblemItem } from './diWordProblemScript';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
 import { numberMisses, offByMisses, spokenNumber, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 
 export type FamilyPlacements = Record<FamilySlot, string | null>;
 
@@ -28,46 +30,47 @@ export const wordProblemItems = (data: Pick<DiWordProblemSetupData, 'problems'>)
 /** The step's own question; the story is printed above it. Never the answer. */
 export const wordProblemAskFor = (item: WordProblemItem): string => item.actionContract.instruction;
 
-const quoted = (words: readonly string[]) => words.map(word => `"${word}"`).join(', ');
 const boxRole = (plan: WordProblemPlan) => (plan.unknown.slot === 'big' ? 'the big number' : 'a small number');
 const SHAPE_WHY: Record<WordProblemPlan['shape'], string> = {
   comparison: 'it compares two amounts', change: 'it starts with an amount that changes', part_whole: 'two parts make one whole',
 };
 
+/** The key the tutor judges a spoken step with (`spokenKeyText`); the placing step has none (the activity checks it). */
 export function wordProblemKey(item: WordProblemItem): string | undefined {
   const p = item.plan;
   switch (item.kind) {
     case 'classify': {
-      const variants = p.shape === 'comparison' ? ['comparison', 'compare', 'a compare problem']
-        : p.shape === 'change' ? ['change', 'a change problem', 'changing'] : ['part-whole', 'part whole', 'parts and whole'];
-      const others = STORY_SHAPES.filter(shape => shape !== p.shape).map(shape => `"${SHAPE_WORD[shape]}"`).join(' or ');
+      const variants = p.shape === 'comparison' ? ['compare', 'a compare problem']
+        : p.shape === 'change' ? ['a change problem', 'changing'] : ['part whole', 'parts and whole'];
       const signature = p.shape === 'change'
         ? `Taking the kind from the last sentence ("${p.verbCueWord}" sounds like a comparison) is the signature error.`
         : p.shape === 'comparison'
           ? 'Calling it a change problem because a sentence says "has" is the signature error: nothing changes.'
           : 'Calling it a comparison because two kinds are named is the signature error: nothing is compared.';
-      return `"${SHAPE_WORD[p.shape]}" (${quoted(variants)}, alone or in a sentence), because ${SHAPE_WHY[p.shape]}. `
-        + `${others} is wrong. ${signature}`;
+      return spokenKeyText({ answer: SHAPE_WORD[p.shape], alsoAccept: variants, menu: STORY_SHAPES.map(shape => SHAPE_WORD[shape]),
+        acceptRule: `Alone or in a sentence, because ${SHAPE_WHY[p.shape]}.`, signatureError: signature });
     }
     case 'big_number':
       return undefined; // checked by the activity
     case 'family': {
       const subtraction = familyAsSubtraction(p);
-      return `The family "${familySpoken(p)}" (or "${familySpokenSwapped(p)}"), in any wording that puts the right numbers in `
-        + 'the right slots: "and" for plus, "makes" or "is" for equals, "box", "blank" or "what" for the unknown. Said in '
-        + `pieces still counts, and so does the solved number in the box's place ("${familySolved(p)}"). The big number `
-        + `in a small slot ("${familyMisplaced(p)}") is the signature error${subtraction ? `; a subtraction sentence ("${subtraction}") `
-          + 'is arithmetic, not the family' : ''}; a family with a number missing is not yet the answer.`;
+      return spokenKeyText({ answer: familySpoken(p), alsoAccept: [familySpokenSwapped(p), familySolved(p)],
+        acceptRule: 'Any wording that puts the right numbers in the right slots counts: "and" for plus, "makes" or "is" for '
+          + 'equals, "box", "blank" or "what" for the unknown; said in pieces still counts.',
+        signatureError: `The big number in a small slot ("${familyMisplaced(p)}") is the signature error${subtraction
+          ? `; a subtraction sentence ("${subtraction}") is arithmetic, not the family` : ''}; a family with a number missing is not yet the answer.` });
     }
     case 'operation': {
-      const words = p.operation === 'add' ? ['add', 'plus', 'put them together'] : ['subtract', 'minus', 'take away'];
+      const words = p.operation === 'add' ? ['plus', 'put them together'] : ['minus', 'take away'];
       const verb = p.verbCueOperation !== p.operation
-        ? ` The story's word "${p.verbCueWord}" sounds like ${p.verbCueOperation}; taking the operation from it is the signature error.` : '';
-      return `"${p.operation}" (${quoted(words)}), because the box is ${boxRole(p)} in "${familySpoken(p)}".${verb}`;
+        ? `The story's word "${p.verbCueWord}" sounds like ${p.verbCueOperation}; taking the operation from it is the signature error.` : '';
+      return spokenKeyText({ answer: p.operation, alsoAccept: words, menu: ['add', 'subtract'],
+        acceptRule: `It is ${p.operation} because the box is ${boxRole(p)} in "${familySpoken(p)}".`, signatureError: verb });
     }
     case 'solve':
-      return `"${w(p.answer)}": the bare number or a sentence like "${p.answerSentence}", straight away or after counting. `
-        + `${w(wrongWayAnswer(p))} is the story numbers combined the wrong way.`;
+      return spokenKeyText({ answer: w(p.answer), alsoAccept: [p.answerSentence],
+        acceptRule: 'The bare number or a sentence counts, straight away or after counting.',
+        signatureError: `${w(wrongWayAnswer(p))} is the story numbers combined the wrong way.` });
   }
 }
 
@@ -159,7 +162,7 @@ export function describePlacement(item: WordProblemItem, board: FamilyPlacements
     : `Built the family with "${label(board.small1)}" and "${label(board.small2)}" as the small amounts and "${label(board.big)}" as the big amount.`;
 }
 
-export function wordProblemScene(item: WordProblemItem, view: { familyShown: boolean }): WorkspaceScene {
+export function wordProblemScene(item: WordProblemItem, view: { familyShown: boolean }): SceneOf {
   const hands = item.kind === 'big_number';
   return {
     objects: [
@@ -167,17 +170,11 @@ export function wordProblemScene(item: WordProblemItem, view: { familyShown: boo
       ...(hands ? item.plan.quantities.map(q => ({ id: q.id, selected: false, group: 'story-part card', label: q.label })) : []),
     ],
     facts: { kind: item.kind, printedStory: item.plan.story,
-      // DI's model is a DIFFERENT story, never this one (ruling 2026-10-02): easy pulls the model card first; no tier is
-      // medium in this pack.
-      support: item.supportTier === 'easy'
-        ? 'before the learner tries, pull the model lever (a card of different stories): say every one as your turn, then hand this step back. Never do this step'
-        : item.supportTier === 'hard' ? 'work it cold: model nothing before the learner tries'
-          : 'the learner tries first; after a miss, model different stories with the model_story lever, never this one',
       constraints: hands
         ? (item.challengeType === 'find_big_number'
-          ? 'The learner drags or taps a story-part card into the big-amount box; the activity checks it. You cannot place a card.'
-          : 'The learner puts all three story-part cards into small + small = big; the activity checks the big slot. You cannot place a card.')
-        : `The learner answers aloud. ${view.familyShown ? 'The family they built is drawn on screen. ' : ''}`
+          ? 'The learner drags or taps a story-part card into the big-amount box.'
+          : 'The learner puts all three story-part cards into small + small = big; the activity checks the big slot.')
+        : `${view.familyShown ? 'The family they built is drawn on screen. ' : ''}`
           + 'Nothing the learner must say is printed before it is credited.' },
   };
 }

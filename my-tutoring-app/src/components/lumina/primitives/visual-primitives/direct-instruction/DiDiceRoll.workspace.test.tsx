@@ -53,7 +53,7 @@ describe('DiDiceRoll — every mode binds; the roll comes first', () => {
   });
 
   it('the key names the count-aloud route, or the three comparison answers', () => {
-    expect(mount(pack([sum])).state().task!.workspace!.expectedAnswer).toBe('"seven". Counting all the dots aloud and ending on seven is the answer.');
+    expect(mount(pack([sum])).state().task!.workspace!.expectedAnswer).toBe('"seven". Counting all the dots aloud and ending on seven is the answer. A different number is not the answer, however close it is.');
     cleanup();
     expect(mount(pack([compare])).state().task!.workspace!.expectedAnswer).toContain('"the right die"');
   });

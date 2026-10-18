@@ -8,9 +8,9 @@
  * `diLetterSoundsDomain` (qa/live-runtime-handoffs/07-sunset-scripted-tutoring.md).
  * The split is by ownership:
  *
- *   - HERE: the assignment. Which items can be asked at all, the question the
- *     child hears, what counts as the answer, and the success condition stated
- *     plainly enough for a tutor to judge against.
+ *   - HERE: which items can be asked at all, the question the child hears, and
+ *     the spoken key the tutor judges against. The assignment itself is the
+ *     boss's (`diWordReading.boss.ts`, on the spoken preset).
  *   - The scripted drill (model/guide/test lead-in, sentinel-opened affirm and
  *     correction lines, in-band judging contract, bracketed cues) was deleted in
  *     LA-14 S5; the workspace is the only teaching path.
@@ -33,8 +33,9 @@
  *      second, so the difference is structural rather than a sentence of guidance.
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { wordReadingMisses, type WordReadingMiss } from '../literacy/spokenReadingMisses';
 import { diWordReadingModePlan, DI_WORD_READING_MODES, type DiWordReadingChallengeType }
   from './diWordReadingModes';
@@ -107,7 +108,7 @@ export interface WordReadingItem extends TeachingItem {
   ask: string;
   /** The accepted answer, short enough to compare a tutor's affirmation against. */
   accepted: string;
-  /** The success condition in full, for the tutor's scene facts. */
+  /** The spoken key the tutor judges with (`spokenKeyText`): the word, the read that counts, and what does not. */
   assignment: string;
 }
 
@@ -147,8 +148,8 @@ export function askFor(_item?: Pick<DiWordReadingChallenge, 'challengeType'>): s
 }
 
 /**
- * The success condition, and what is NOT it — short, because this sentence is
- * what a tutor's feedback gets judged against. Each branch states the target once
+ * The spoken key (`spokenKeyText`): the success condition, and what is NOT it — short,
+ * because this sentence is what a tutor's feedback gets judged against. Each branch states the target once
  * and then the two discriminations that matter: a success condition that says the
  * same thing twice reads as two conditions (the letter-sounds finding). No
  * example wording, because an example in this position becomes a script.
@@ -164,8 +165,8 @@ export function askFor(_item?: Pick<DiWordReadingChallenge, 'challengeType'>): s
  *   - "Naming its letters is not reading it." No effect. A tutor affirming
  *     "Correct, s-a-m!" still classified at 0.98–1.00, because the observer never
  *     sees the learner transcript and so cannot tell a spelled word from a read
- *     one. That discrimination is only the tutor's to make, and it stays in the
- *     adapter guidance where the tutor reads it.
+ *     one. That discrimination is only the tutor's to make; since the boss move
+ *     (2026-10-18) it is in the key's signature error, which the tutor judges with.
  *   - "A read that follows the tutor's model still counts." Lifted one refused
  *     case from 0.84 to the 0.90 gate boundary and no further, while the plain
  *     affirmation case fell from 0.96 to 0.91 and once below the gate. A sentence
@@ -175,15 +176,15 @@ export function askFor(_item?: Pick<DiWordReadingChallenge, 'challengeType'>): s
  *
  * The residual belongs to LA-13, not here: see the adoption report.
  */
-function assignmentFor(c: DiWordReadingChallenge): string {
+function keyFor(c: DiWordReadingChallenge): string {
+  const different = 'A different word is not a correct read, however close it sounds (a rhyme too), and letter names are not reading.';
   return isCvc(c)
-    ? `The learner must read the printed word "${c.word}" out loud. `
-      + 'Saying the separate sounds slowly and then the whole word is a correct read; stopping at the '
-      + 'separate sounds without ever saying the whole word is not. '
-      + 'A different word is not a correct read, however close it sounds.'
-    : `The learner must read the printed word "${c.word}" out loud. `
-      + 'It is irregular and is recalled whole, so sounding it out letter by letter is not how it is read. '
-      + 'A different word is not a correct read, however close it sounds.';
+    ? spokenKeyText({ answer: c.word, alsoAccept: [],
+      acceptRule: 'Saying the separate sounds slowly and then the whole word is a correct read.',
+      signatureError: `Stopping at the separate sounds without ever saying the whole word is not a read. ${different}` })
+    : spokenKeyText({ answer: c.word, alsoAccept: [],
+      acceptRule: 'It is irregular and is recalled whole, so sounding it out letter by letter is not how it is read.',
+      signatureError: different });
 }
 
 /** Expand a generated pool into the assignments the workspace actually asks.
@@ -205,18 +206,11 @@ export function buildWordReadingItems(challenges: DiWordReadingChallenge[] = [])
     supportTier: c.supportTier ?? 'easy',
     ask: askFor(c),
     accepted: c.word,
-    assignment: assignmentFor(c),
+    assignment: keyFor(c),
     answerKind: diWordReadingModePlan(c).answerStep.actionContract.answerKind === 'voice' ? 'voice' : 'gesture',
     responseClass: 'short_spoken_word',
   }));
 }
-
-/** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
- *  child reads print aloud, the tutor hears the audio and JEV reads its completed feedback. */
-export const workspaceAssignment = (item: WordReadingItem): TeachingAssignment => {
-  const misses = diWordReadingSpokenMisses(item);
-  return { id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech', ...(misses.length ? { misses } : {}) };
-};
 
 /** What a wrong spoken read shows (handoff 20 Part B). */
 export type SpokenWordReadingMiss = WordReadingMiss;
@@ -234,7 +228,7 @@ export function diWordReadingSpokenMisses(item: WordReadingItem): KnownMiss[] {
 
 /** The drawn stage. Letter objects exist only where the letters really spell the word, so
  *  a sight word has no letter to sound out and the attempt is refused by the scene. */
-export const workspaceScene = (item: WordReadingItem): WorkspaceScene => ({
+export const workspaceScene = (item: WordReadingItem): SceneOf => ({
   objects: [
     { id: 'word', selected: false, group: 'assignment target (gold ring)',
       label: `the word "${item.word}" printed on the card, which the learner must read` },
@@ -242,13 +236,10 @@ export const workspaceScene = (item: WordReadingItem): WorkspaceScene => ({
       group: 'printed letter of that word',
       label: `the letter "${letter}", letter ${position + 1} of the printed word` })),
   ],
-  facts: { kind: item.challengeType, assignment: item.assignment, printedWord: item.word,
+  facts: { kind: item.challengeType, printedWord: item.word,
     wordType: item.wordType === 'cvc' ? 'decodable — blended from its printed letters'
       : 'irregular sight word — recalled whole, never sounded out',
     // No `soundOut` fact (R2, 2026-10-03): "sss-aaa-mmm" was a ready script for blending the child's own word.
-    support: item.supportTier === 'hard' ? 'read it cold: model nothing before the learner reads, and never say this word'
-      : item.supportTier === 'medium' ? 'the learner reads first; after a miss, model a different word with the model_word lever, never this one'
-        : 'before the learner tries, pull the model lever (a card of a different word): read it as your turn, then ask for this one. Never say this word',
     markMeaning: 'Purple dashed marks are yours. They point at the whole word or at one of its printed '
       + 'letters while you teach; they are not the learner reading, and they never move the gold ring off '
       + 'the word.' },

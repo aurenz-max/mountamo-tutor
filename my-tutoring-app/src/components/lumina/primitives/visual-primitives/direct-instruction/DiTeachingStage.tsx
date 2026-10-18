@@ -27,8 +27,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type Reac
 import { LuminaBadge, LuminaCard, LuminaCardContent, LuminaCardDescription, LuminaCardHeader,
   LuminaCardTitle, LuminaChallengeCounter, LuminaReadAloudGlyph } from '../../../ui';
 import PhaseSummaryPanel from '../../../components/PhaseSummaryPanel';
-import { useTeachingWorkspace, type TeachingAssignment, type TeachingItem, type TeachingWorkspace,
-  type WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { useTeachingWorkspace, type TeachingAssignment, type TeachingItem, type TeachingWorkspace }
+  from '../../../components/live-activity/runtime/useTeachingWorkspace';
 import { useTeachingEvaluation, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useTeachingEvaluation';
 import { useLiveRuntime } from '../../../components/live-activity/runtime/LiveRuntimeContext';
@@ -37,6 +37,7 @@ import { WorkspacePin } from '../../../components/live-activity/runtime/workspac
 import { PracticeCreditScope } from '../../../components/live-activity/runtime/practiceCredit';
 import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
 import { catalogBindsWorkspace } from '../../../components/live-activity/pinnedModes';
+import { leverScene, type SceneOf } from '../../../components/live-activity/bossLevers';
 import type { PrimitiveMetrics } from '../../../evaluation';
 import type { ComponentId } from '../../../types';
 import { useLuminaAIContext } from '@/contexts/LuminaAIContext';
@@ -85,6 +86,8 @@ export interface DiStageLevers<Item> {
   declare: (item: Item, pulled: readonly string[], lastMiss?: string) => WorkspaceLever[];
   /** What the levers on screen show, as a scene fact. Never the item's answer. */
   onScreen: (item: Item, pulled: readonly string[]) => string;
+  /** When the model lever comes, by the item's tier (`leverSet` support). The scene never writes it. */
+  support: (item: Item) => string;
   /** Levers the item's tier starts with on screen. Not a pull, so never recorded. */
   starting?: (item: Item) => readonly string[];
   /** The easier item a simplify lever opens, with an id of its own, or null to refuse. */
@@ -101,7 +104,8 @@ export interface DiTeachingStageProps<Item extends { id: string }, M extends Pri
   runtimePlanItemId?: string;
   assignment: (item: Item) => TeachingAssignment;
   /** `pulled`: the levers on screen for this item (none on a practice item), so a lever-drawn object is a target only while drawn. */
-  scene: (item: Item, view: { ready: boolean; pulled: readonly string[] }) => WorkspaceScene;
+  /** Never `support` or `onScreen`: the lever set writes those (`leverScene`). */
+  scene: (item: Item, view: { ready: boolean; pulled: readonly string[] }) => SceneOf;
   metrics: (result: TeachingEvaluationResult) => M;
   copy: { empty: string; title: string; badge: string; prompt: string; heading: string; celebration: string };
   /** A per-item badge and prompt, for a pack whose gesture items are not answered aloud. Default: `copy`. */
@@ -195,8 +199,7 @@ function StageWorkspace<Item extends { id: string }, M extends PrimitiveMetrics>
     const declared = levers && !practiceItem ? levers.declare(sessionItem, pulled, lastMiss) : [];
     const onScreen = levers && !practiceItem ? levers.onScreen(sessionItem, pulled) : '';
     workspace.current = {
-      ...drawn,
-      ...(onScreen ? { facts: { ...drawn.facts, onScreen } } : {}),
+      ...leverScene(drawn, { support: levers?.support(item) ?? '', onScreen }),
       demonstration: marks,
       readyForResponse: ready, canDemonstrate: true, mark, clearPresentation: () => mark([]),
       ...(levers ? {

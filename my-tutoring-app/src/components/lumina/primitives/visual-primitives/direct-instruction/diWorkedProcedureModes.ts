@@ -8,7 +8,7 @@ import {
   type DiModeItem,
   type DiModeStepDefinition,
 } from '../../../hooks/diModeContract';
-import { numberWord, type Place } from './diWorkedProcedurePlan';
+import type { Place } from './diWorkedProcedurePlan';
 
 export type WorkedProcedureChallengeType = 'subtract_no_regroup' | 'subtract_regroup';
 export type WorkedProcedureSupportTier = 'easy' | 'medium' | 'hard';
@@ -35,11 +35,6 @@ export interface WorkedProcedureModePlanItem extends DiModeItem {
 
 const HOW_TO_PLAY =
   'We are going to work subtraction out loud, one column at a time. I ask, and you tell me what you do. ';
-
-export const workedProcedureColumnPhrase = (item: WorkedProcedureModePlanItem): string =>
-  item.kind === 'subtract'
-    ? `${numberWord(item.column.effectiveTop)} minus ${numberWord(item.column.bottom)}`
-    : `${numberWord(item.column.topAfterLend)} minus ${numberWord(item.column.bottom)}`;
 
 // The ask never says the column's digits at any tier (R2, 2026-10-03): the easy phrase said the lent top, which is
 // the `read_crossed_out` answer, and on a subtract step the regrouped top. Easy support is the model lever, a
@@ -129,7 +124,6 @@ export const DI_WORKED_PROCEDURE_TYPE_DOCS = challengeTypeDocsFromDiModes(
 export const DI_WORKED_PROCEDURE_CHALLENGE_TYPES = DI_WORKED_PROCEDURE_MODES.flatMap(
   (definition) => definition.challengeTypes,
 ) as WorkedProcedureChallengeType[];
-export const WORKED_PROCEDURE_HOW_TO_PLAY = DI_WORKED_PROCEDURE_MODES[0].metadata!.howToPlay;
 
 export const diWorkedProcedureModePlan = (item: WorkedProcedureModePlanItem) =>
   buildDiModePlan(DI_WORKED_PROCEDURE_MODES, item);

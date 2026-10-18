@@ -37,7 +37,6 @@ export const diSpokenPracticeBoss = spokenBoss<DiSpokenPracticeData, SpokenPract
     instanceId: 'spoken',
     defaults: { grade: 'Grade 1', mode: 'compare_choice', topic: 'Comparing lengths: longer and shorter' },
     mounted: '[data-spoken-object="stimulus"]',
-    leakTokens: ['SAY_ITEM', 'SAY_MOVE', 'SAY_HEAR', 'SAY_COMPLETE'],
     probes: { reward: { selector: '[data-spoken-credited]', kind: 'count' } },
   },
 });

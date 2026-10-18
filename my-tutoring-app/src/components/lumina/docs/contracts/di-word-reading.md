@@ -54,5 +54,6 @@ None open.
 
 ## Changelog
 
+- 2026-10-18: moved onto the boss framework — `diWordReading.card.ts` + `diWordReading.boss.ts` (`spokenBoss`); `DiWordReadingTeaching.tsx` folded into `DiWordReading.tsx`; `adapters/diWordReadingLive.ts` and the catalog `tutoring` block deleted. The success condition moved from the `assignment` scene fact into the spoken key (`spokenKeyText`: blend-then-word = accept rule; sounds with no word, a different word, letter names = signature error); levers are one `WORD_LEVERS` set (ids, order and words kept; `model_word` words its job per item via a `does` function). Guidance and key changed: one replay sample owed.
 - 2026-10-03: derived (initial, static) with the DI lever slice. 8 requirements, 0 conflicts.
 - 2026-10-14: R9 added (word space, `/add-word-space`). Before: all 4 modes gave the same words at every tier (review: and the red pig in 6/6 runs), "s a t i p n" served mat/cat/hat, a CVC-and-sight objective served 4 sight words, "and" was labelled irregular. After: all 4 modes code-picked, tiers separate (short a easy man/map/ran -> hard mad/bag/tap/pan; G1 sight easy is/blue/two -> hard were/of/could). R7 narrowed to the menu path.

@@ -52,4 +52,5 @@ None open.
 
 ## Changelog
 
+- 2026-10-18: moved onto the boss framework — `diLetterSounds.card.ts` + `diLetterSounds.boss.ts` (`spokenBoss`); `DiLetterSoundsTeaching.tsx` folded into `DiLetterSounds.tsx`; `adapters/diLetterSoundsLive.ts` and the catalog `tutoring` block deleted. The success condition moved from the `assignment` scene fact into the spoken key (`spokenKeyText`: keyword as `alsoAccept` on a short vowel or stop; name, whole word, picture word = signature error); levers are one `LETTER_LEVERS` set (`model_sound` one spec per mode, `keyword_picture` custom, `startingLevers` kept). Guidance and key changed: one replay sample owed.
 - 2026-10-03: derived (initial, static) with the DI lever slice. 7 requirements, 0 conflicts.

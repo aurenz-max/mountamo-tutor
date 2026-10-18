@@ -5,7 +5,7 @@ import { FRAME_IDS, themeUsable, type StoryTheme } from './diWordProblemPlan';
 import { itemsFromProblems, type WordProblemItem, type WordProblemProblemSpec } from './diWordProblemScript';
 import { wordProblemSpokenMisses } from './diWordProblemWorkspace';
 import { COUNT_DOTS, MODEL_STORY, READ_ALONG, STORY_LINKS, WITHIN_TEN, countDotsFor, modelStoriesFor, storyLeaks,
-  storySentences, withinTenFor, withinTenSteps, wordProblemLeverFacts, wordProblemLevers } from './diWordProblemLevers';
+  storySentences, withinTenFor, withinTenSteps, WORD_PROBLEM_LEVERS } from './diWordProblemLevers';
 import findP from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-problem-setup.find_big_number.json';
 import buildP from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-problem-setup.build_family.json';
 import classifyP from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-problem-setup.classify_and_build.json';
@@ -51,7 +51,7 @@ describe('model_story (R1): an add and a subtract (or one of each kind), never t
       const models = modelStoriesFor(it0)!;
       expect(models, it0.id).not.toBeNull();
       for (const m of models) expect(m.quantities.map(q => q.value).some(v => amounts(it0).includes(v))).toBe(false);
-      expect(wordProblemLeverFacts(it0, [MODEL_STORY])).not.toContain(it0.plan.story);
+      expect(WORD_PROBLEM_LEVERS.onScreen(it0, null, [MODEL_STORY])).not.toContain(it0.plan.story);
     }
   });
 
@@ -69,14 +69,14 @@ describe('help per step', () => {
       if (q.known) expect(sentences[sentenceOf[q.id]]).toMatch(new RegExp(`\\b${q.value}\\b`));
       else expect(sentences[sentenceOf[q.id]].endsWith('?')).toBe(true);
     }
-    expect(wordProblemLevers(big, []).map(l => l.id)).toEqual([MODEL_STORY, STORY_LINKS]);
+    expect(WORD_PROBLEM_LEVERS.declare(big, null, []).map(l => l.id)).toEqual([MODEL_STORY, STORY_LINKS]);
   });
 
   it('read_along on the family step; count_dots and within_ten on the solve step', () => {
     const all = steps('change:gain_end', 14, 5);
-    expect(wordProblemLevers(all.find(i => i.kind === 'family')!, []).map(l => l.id)).toEqual([MODEL_STORY, READ_ALONG]);
-    expect(wordProblemLevers(all.find(i => i.kind === 'solve')!, []).map(l => l.id)).toEqual([MODEL_STORY, COUNT_DOTS, WITHIN_TEN]);
-    expect(wordProblemLevers(all.find(i => i.kind === 'operation')!, []).map(l => l.id)).toEqual([MODEL_STORY]);
+    expect(WORD_PROBLEM_LEVERS.declare(all.find(i => i.kind === 'family')!, null, []).map(l => l.id)).toEqual([MODEL_STORY, READ_ALONG]);
+    expect(WORD_PROBLEM_LEVERS.declare(all.find(i => i.kind === 'solve')!, null, []).map(l => l.id)).toEqual([MODEL_STORY, COUNT_DOTS, WITHIN_TEN]);
+    expect(WORD_PROBLEM_LEVERS.declare(all.find(i => i.kind === 'operation')!, null, []).map(l => l.id)).toEqual([MODEL_STORY]);
   });
 
   it('count_dots: add draws each known small amount; subtract crosses the known part out of the big amount; none above 20', () => {
@@ -119,13 +119,13 @@ describe('starting positions and which lever answers which miss', () => {
     ['one_over', 'solve', [MODEL_STORY, COUNT_DOTS], WITHIN_TEN],
   ] as const)('%s on the %s step with %j → %s', (miss, kind, pulled, expected) => {
     const it0 = steps('change:gain_end', 14, 5).find(i => i.kind === kind)!;
-    expect(nextLever(wordProblemLevers(it0, pulled), miss)).toBe(expected);
+    expect(nextLever(WORD_PROBLEM_LEVERS.declare(it0, null, pulled), miss)).toBe(expected);
   });
 
   it('every catalog miss is answered on every saved payload, and every named spoken miss is listed', () => {
     for (const session of SAVED) {
       const mode = session[0].challengeType;
-      const answered = new Set(session.flatMap(i => wordProblemLevers(i, []).flatMap(l => l.answers ?? [])));
+      const answered = new Set(session.flatMap(i => WORD_PROBLEM_LEVERS.declare(i, null, []).flatMap(l => l.answers ?? [])));
       for (const miss of CATALOG.misses![mode]) expect(answered.has(miss), `${mode}: ${miss}`).toBe(true);
       for (const i of session) for (const m of wordProblemSpokenMisses(i)) expect(CATALOG.misses![mode], `${i.id} ${m.id}`).toContain(m.id);
     }

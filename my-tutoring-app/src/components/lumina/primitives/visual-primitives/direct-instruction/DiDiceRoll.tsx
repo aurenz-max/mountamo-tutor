@@ -21,11 +21,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from '../../../ui';
 import type { DiDiceRollMetrics, PrimitiveEvaluationResult } from '../../../evaluation/types';
 import { SoundManager } from '../../../utils/SoundManager';
-import DiTeachingStage, { diStageMetrics, type DiStageLevers, type DiStageView } from './DiTeachingStage';
+import DiTeachingStage, { diStageMetrics, type DiStageView } from './DiTeachingStage';
 import { diceValuesFor, isTwoDiceChallenge, type DiDiceRollChallenge, type DiDiceRollChallengeType,
   type DieValue } from './diDiceRollScript';
-import { diceAssignment, diceScene } from './diDiceRollWorkspace';
-import { BRACKET_LEVER, MODEL_LEVER, TOUCH_LEVER, compareModels, diceLeverFacts, diceLevers, modelFor, simplerRoll } from './diDiceRollLevers';
+import { diceScene } from './diDiceRollWorkspace';
+import { diDiceRollBoss } from './diDiceRoll.boss';
+import { BRACKET_LEVER, MODEL_LEVER, TOUCH_LEVER, compareModels, DICE_LEVERS, modelFor } from './diDiceRollLevers';
 import { DiModelCard } from './DiModelCard';
 
 export type {
@@ -283,9 +284,8 @@ const DiceStage: React.FC<{ item: DiDiceRollChallenge; view: DiStageView; marked
   </div>;
 };
 
-const LEVERS: DiStageLevers<DiDiceRollChallenge> = {
-  declare: diceLevers, onScreen: diceLeverFacts, simpler: simplerRoll,
-};
+/** The levers read nothing beyond the roll, so one binding serves every lesson. */
+const LEVERS = DICE_LEVERS.bind(null);
 
 /** Credited rolls, each drawn small with its answer. */
 function creditedRolls(done: DiDiceRollChallenge[]) {
@@ -317,7 +317,7 @@ export const DiDiceRoll: React.FC<DiDiceRollProps> = ({ data, className, runtime
   const items = useMemo(() => data.challenges ?? [], [data.challenges]);
   return <DiTeachingStage<DiDiceRollChallenge, DiDiceRollMetrics> primitiveId="di-dice-roll" data={data}
     items={items} runtimeEvalMode={runtimeEvalMode} className={className} runtimePlanItemId={runtimePlanItemId}
-    assignment={diceAssignment} scene={diceScene} copy={COPY} recapLabel={recapLabel} trail={creditedRolls}
+    assignment={diDiceRollBoss.assignment} scene={diceScene} copy={COPY} recapLabel={recapLabel} trail={creditedRolls}
     awaitsStimulus levers={LEVERS}
     stimulus={(item, marks, view) => <DiceStage key={item.id} item={item} view={view} marked={marks.includes('dice')}
       appearance={data.appearance} />}

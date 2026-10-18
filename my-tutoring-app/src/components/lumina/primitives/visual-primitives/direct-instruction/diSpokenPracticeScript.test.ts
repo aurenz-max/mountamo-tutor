@@ -6,14 +6,10 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { findSentinelCollisions } from '../../../hooks/judgedScriptContract';
 import {
   buildSpokenItem,
-  completeCue,
   conceptAffirmForm,
-  contextFor,
   deriveResponseClass,
-  diSpokenPracticePackBase,
   findAnswerLeaks,
   findArithmeticMismatches,
   findChoiceMenuDefects,
@@ -21,11 +17,8 @@ import {
   findPrintedNumerals,
   findUnspokenStimulus,
   gateSpokenItems,
-  itemCue,
-  moveOnCue,
   normalizeConceptAnchors,
   normalizeSpokenAnswer,
-  pronounceCue,
   reconcileConceptAnchors,
   withSpokenPracticeAction,
   type SpokenPracticeItem,
@@ -266,81 +259,6 @@ describe('arithmetic-consistency scan — the printed fact is the ground truth',
   });
 });
 
-describe('runtime state — the full channel, stimulus-side only', () => {
-  // Keys here must stay in lockstep with `contextKeys` on the di-spoken-practice
-  // catalog entry (catalog/di.ts): ['challengeType', 'stimulus'].
-  it('pushes the mode and the stimulus on a recall item', () => {
-    expect(contextFor(item())).toEqual({ challengeType: 'say_answer', stimulus: '2 + 1' });
-  });
-
-  it('pushes NO stimulus on a decode item — there the stimulus IS the answer', () => {
-    // Family rule (di-math-facts): runtime state is echoed far more loosely
-    // than a scripted line, so answer-side values never ride it.
-    expect(contextFor(item({ mode: 'read_aloud', answerSource: 'decode', stimulusText: 'sam' })))
-      .toEqual({ challengeType: 'read_aloud' });
-  });
-
-  it('pushes the object word, never the count, on a counting item', () => {
-    const state = contextFor(item({
-      mode: 'count_and_say',
-      stimulusKind: 'objects',
-      stimulusText: 'bears',
-      stimulusCount: 5,
-      expectedAnswer: 'five',
-    }));
-    expect(state).toEqual({ challengeType: 'count_and_say', stimulus: 'bears' });
-    expect(JSON.stringify(state)).not.toContain('5');
-    expect(JSON.stringify(state)).not.toContain('five');
-  });
-});
-
-describe('standing gate 2 — sentinel discipline is structural, not generated', () => {
-  it('no cue the tutor may speak opens a sentence with a sentinel', () => {
-    const items = [item(), item({ id: 'dsp-2', expectedAnswer: 'four' })];
-    const cues = [
-      { label: 'itemCue', text: itemCue(items[0], { opening: true, howToPlay: true }) },
-      { label: 'moveOnCue', text: moveOnCue(items[0], items[1], { opening: false, howToPlay: true }) },
-      { label: 'moveOnCue-last', text: moveOnCue(items[0], null, { opening: false, howToPlay: false }) },
-      { label: 'completeCue', text: completeCue() },
-      { label: 'pronounceCue', text: pronounceCue(items[0]) },
-    ];
-    expect(findSentinelCollisions(cues)).toEqual([]);
-  });
-
-  it('a generated correction that opens with a sentinel cannot break the contract', () => {
-    // Code owns the "My turn:" opener, so the model's text lands mid-sentence
-    // where the sentence-scoped verdict scan cannot misread it.
-    const cue = itemCue(item({ correctionBody: 'Yes it is three, count again.' }), {
-      opening: false,
-      howToPlay: false,
-    });
-    expect(findSentinelCollisions([{ label: 'itemCue', text: cue }])).toEqual([]);
-  });
-
-  it('carries both generated judging clauses into the contract verbatim', () => {
-    const cue = itemCue(item(), { opening: false, howToPlay: false });
-    expect(cue).toContain('Counting aloud that ENDS on the answer counts as that answer.');
-    expect(cue).toContain('The number in the question said back is NOT the answer.');
-  });
-
-  it('the correction re-asks rather than ending on the answer', () => {
-    const cue = itemCue(item(), { opening: false, howToPlay: false });
-    expect(cue).toContain('My turn: Two and one more makes three. Your turn. Two plus one.');
-  });
-});
-
-describe('tap-to-hear never reads the child their own task', () => {
-  it('speaks the stimulus on a recall item', () => {
-    expect(pronounceCue(item({ stimulusText: 'cat' }))).toContain('"cat"');
-  });
-
-  it('returns nothing on a decode item — the stimulus IS the answer there', () => {
-    // phonics-blender shipped the opposite of this: its third tap spoke the
-    // answer outright. Closed at the source rather than per pack.
-    expect(pronounceCue(item({ mode: 'read_aloud', answerSource: 'decode' }))).toBe('');
-  });
-});
-
 // ── compare_choice — the menu is what makes the exemption safe ───────────────
 
 const MENU = ['longer', 'shorter', 'heavier', 'lighter'];
@@ -456,21 +374,6 @@ describe('compare_choice — a spoken menu, and the gate that keeps it closed', 
       .toEqual([{ itemId: 'dsp-1', missing: ['feather'] }]);
     expect(findUnspokenStimulus([pairItem()])).toEqual([]);
   });
-
-  it('hands the judge the menu in code, not in a generated clause', () => {
-    const cue = itemCue(pairItem(), { opening: false, howToPlay: false });
-    expect(cue).toContain(
-      'The learner is choosing one word from: "longer", "shorter", "heavier", "lighter".');
-    expect(cue).toContain('The correct answer is "heavier"');
-    expect(cue).toContain('If the answer is right, say exactly: "Yes, heavier."');
-  });
-
-  it('re-hears BOTH things, and pushes both as stimulus state without the menu', () => {
-    expect(pronounceCue(pairItem()))
-      .toBe('[SAY_HEAR] Say exactly: "a feather and a rock" Then stop — say nothing else.');
-    expect(contextFor(pairItem()))
-      .toEqual({ challengeType: 'compare_choice', stimulus: 'a feather and a rock' });
-  });
 });
 
 // ── explain_concept — an idea, not a token, and the gates that keep it honest ─
@@ -563,48 +466,8 @@ describe('explain_concept — the first open proposition, and what code can gate
     })])).toEqual([]);
   });
 
-  it('hands the judge the concept, the anchors as EXAMPLES, and the meaning rule — in code', () => {
-    const cue = itemCue(explainItem(), { opening: false, howToPlay: false });
-    expect(cue).toContain('The idea they must express: "The equal sign means both sides have the same amount."');
-    expect(cue).toContain('for example "both sides the same", "balanced", "equal amounts"');
-    expect(cue).toContain("a child's own phrasing that uses none of those words");
-    expect(cue).toContain('Judge the MEANING of what you heard, not the words.');
-    expect(cue).toContain('inside a sentence that means the OPPOSITE');
-    expect(cue).toContain('The stimulus read back ("3 + 2 = 5") is NOT an explanation');
-    expect(cue).toContain('Saying the sum, five, is NOT an explanation.');
-    // No "The correct answer is" — there is no single right wording.
-    expect(cue).not.toContain('The correct answer is');
-  });
-
-  it('affirms by restating the CONCEPT SENTENCE, not the anchor — the DISTAR firm-up', () => {
-    const cue = itemCue(explainItem(), { opening: false, howToPlay: false });
-    expect(cue).toContain('say exactly: "Yes, the equal sign means both sides have the same amount."');
-    expect(cue).not.toContain('"Yes, both sides the same."');
+  it('the affirmation form lowercases the concept and ends it on one period', () => {
     expect(conceptAffirmForm('This pattern grows by adding two each time')).toBe('this pattern grows by adding two each time.');
-  });
-
-  it('never models the concept in the ask — the re-teach lives in the correction', () => {
-    const cue = itemCue(explainItem(), { opening: true, howToPlay: true });
-    const spoken = cue.match(/Say exactly: "([^"]+)"/)![1];
-    expect(spoken).toBe(
-      'I will show you something, and you tell me what it means in your own words. Three plus two '
-      + 'equals five. Look at the equal sign. What does the equal sign tell us?',
-    );
-    expect(cue).toContain('My turn: The equal sign means both sides have the same amount. Your turn. Three plus two');
-  });
-
-  it('keeps sentinel discipline with the concept spoken inside the affirm', () => {
-    const items = [explainItem(), explainItem({ id: 'dsp-2', stimulusText: '4 + 1 = 5', ask: 'Four plus one equals five. What does the equal sign tell us?' })];
-    expect(findSentinelCollisions([
-      { label: 'itemCue', text: itemCue(items[0], { opening: true, howToPlay: true }) },
-      { label: 'moveOnCue', text: moveOnCue(items[0], items[1], { opening: false, howToPlay: false }) },
-      { label: 'pronounceCue', text: pronounceCue(items[0]) },
-    ])).toEqual([]);
-  });
-
-  it('pushes the instance as state and re-hears the instance — never the concept', () => {
-    expect(contextFor(explainItem())).toEqual({ challengeType: 'explain_concept', stimulus: '3 + 2 = 5' });
-    expect(pronounceCue(explainItem())).toBe('[SAY_HEAR] Say exactly: "3 + 2 = 5" Then stop — say nothing else.');
   });
 
   it('builds through the shipped gate with a session-wide anchor set stamped in', () => {
@@ -624,13 +487,6 @@ describe('explain_concept — the first open proposition, and what code can gate
     expect(built.responseClass).toBe('concept_statement');
     expect(built.stimulusKind).toBe('text');
     expect(gateSpokenItems([built]).dropped).toEqual([]);
-  });
-
-  it('exports ONE cue surface the component and the harness both spread', () => {
-    const surface = diSpokenPracticePackBase([explainItem()]);
-    expect(surface.primitiveType).toBe('di-spoken-practice');
-    expect(surface.itemCue(explainItem(), { opening: false, howToPlay: false }))
-      .toBe(itemCue(explainItem(), { opening: false, howToPlay: false }));
   });
 });
 

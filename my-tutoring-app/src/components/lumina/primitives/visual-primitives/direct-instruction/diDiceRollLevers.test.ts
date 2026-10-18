@@ -3,8 +3,8 @@ import { nextLever } from '../../../components/live-activity/runtime/observerLev
 import type { DiDiceRollChallenge, DiDiceRollChallengeType } from './diDiceRollScript';
 import { diceChallengeValid, diceSpokenMisses } from './diDiceRollWorkspace';
 import { saysWords } from './diMathFactsLevers';
-import { compareModels, BRACKET_LEVER, FAR_LEVER, FEWER_LEVER, MODEL_LEVER, SMALLER_LEVER, TOUCH_LEVER, diceItem, diceLeverFacts,
-  diceLevers, modelFor, modelLeaks, simplerRoll } from './diDiceRollLevers';
+import { compareModels, BRACKET_LEVER, FAR_LEVER, FEWER_LEVER, MODEL_LEVER, SMALLER_LEVER, TOUCH_LEVER, diceItem, DICE_LEVERS,
+  modelFor, modelLeaks, simplerRoll } from './diDiceRollLevers';
 import compare from '../../../components/live-activity/runtime/testing/w1-payloads/di-dice-roll.compare_dice.json';
 import count from '../../../components/live-activity/runtime/testing/w1-payloads/di-dice-roll.count_pips.json';
 import sum from '../../../components/live-activity/runtime/testing/w1-payloads/di-dice-roll.sum_two_dice.json';
@@ -48,7 +48,7 @@ describe('model_roll: a different roll, never a route to this answer', () => {
 });
 
 describe('levers per mode, and what they say', () => {
-  const ids = (item: DiDiceRollChallenge) => diceLevers(item, []).map(l => l.id);
+  const ids = (item: DiDiceRollChallenge) => DICE_LEVERS.declare(item, null, []).map(l => l.id);
   it('compare gets no in-item help; count and sum do', () => {
     expect(ids(roll('compare_dice', 4, 3))).toEqual([MODEL_LEVER, FAR_LEVER]);
     expect(ids(roll('compare_dice', 3, 3))).toEqual([MODEL_LEVER]);
@@ -65,15 +65,15 @@ describe('levers per mode, and what they say', () => {
         expect(faces(m).some(v => faces(item).includes(v)), `${faces(m)} beside ${faces(item)}`).toBe(false);
       }
       // The card and its fact say all three words, so neither points at the child's answer.
-      expect(diceLeverFacts(item, [MODEL_LEVER])).toMatch(/left die has more.*right die has more.*same/);
-      expect(diceLevers(item, []).find(l => l.id === MODEL_LEVER)!.does).toMatch(/all three/);
+      expect(DICE_LEVERS.onScreen(item, null, [MODEL_LEVER])).toMatch(/left die has more.*right die has more.*same/);
+      expect(DICE_LEVERS.declare(item, null, []).find(l => l.id === MODEL_LEVER)!.does).toMatch(/all three/);
     }
   });
 
   it('the scene fact never says the child\'s answer', () => {
     // A comparison card says all three words by design (R1, tested above); count and sum never say the answer.
     for (const item of [...SAVED, ...ALL].filter(i => i.challengeType !== 'compare_dice')) {
-      const facts = diceLeverFacts(item, diceLevers(item, []).map(l => l.id));
+      const facts = DICE_LEVERS.onScreen(item, null, DICE_LEVERS.declare(item, null, []).map(l => l.id));
       expect(saysWords(facts, item.spokenAnswer), `${faces(item).join('/')}: ${facts}`).toBe(false);
       const n = item.challengeType === 'sum_two_dice' ? item.total : item.challengeType === 'count_pips' ? item.value : null;
       if (n !== null) expect(saysWords(facts, String(n))).toBe(false);
@@ -113,7 +113,7 @@ describe('simplify: same mode, easier, never the child\'s roll or answer', () =>
 });
 
 describe('this wrong answer, then this lever', () => {
-  const afterModel = (item: DiDiceRollChallenge) => diceLevers(item, [MODEL_LEVER]);
+  const afterModel = (item: DiDiceRollChallenge) => DICE_LEVERS.declare(item, null, [MODEL_LEVER]);
   it.each([
     ['skipped_a_number', roll('count_pips', 5), TOUCH_LEVER],
     ['one_over', roll('count_pips', 5), TOUCH_LEVER],
@@ -123,13 +123,13 @@ describe('this wrong answer, then this lever', () => {
     ['other_die', roll('compare_dice', 4, 3), FAR_LEVER],
     ['said_same', roll('compare_dice', 4, 3), FAR_LEVER],
   ])('%s on %s: the model first, then %s', (miss, item, second) => {
-    expect(nextLever(diceLevers(item, []), miss)).toBe(MODEL_LEVER);
+    expect(nextLever(DICE_LEVERS.declare(item, null, []), miss)).toBe(MODEL_LEVER);
     expect(nextLever(afterModel(item), miss)).toBe(second);
   });
 
   it('every miss the pack names on a roll is answered by one of its levers', () => {
     for (const item of [...SAVED, ...ALL]) {
-      const levers = diceLevers(item, []);
+      const levers = DICE_LEVERS.declare(item, null, []);
       for (const miss of diceSpokenMisses(item))
         expect(levers.some(l => l.answers?.includes(miss.id)), `${faces(item).join('/')}: ${miss.id}`).toBe(true);
     }

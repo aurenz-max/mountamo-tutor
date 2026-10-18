@@ -9,8 +9,9 @@
  * judging contract carried that is task structure stays in the key: counting aloud that lands on the
  * total is the answer, and a comparison has three answers ("left", "right", "same") in the child's words.
  */
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
 import { offByMisses, spokenNumber, type KnownMiss, type OffByMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { DI_DICE_ROLL_MODES } from './diDiceRollModes';
 import { diceValuesFor, isTwoDiceChallenge, studentPrompt, type DiDiceRollChallenge } from './diDiceRollScript';
 
@@ -20,16 +21,16 @@ const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'e
 /** The roll instruction, then the ask. Neither names a value: the dice are covered until the roll. */
 export const diceAskFor = (item: DiDiceRollChallenge): string => studentPrompt(item);
 
+/** The key the tutor judges with (`spokenKeyText`): the word for the roll, what else counts, and what does not. */
 export function diceKey(item: DiDiceRollChallenge): string {
   if (item.challengeType === 'compare_dice') {
-    return item.comparison === 'same'
-      ? '"same" (also accept "equal", "a tie", or "they are the same")'
-      : `"${item.comparison}" (also accept "the ${item.comparison} one" or "the ${item.comparison} die")`;
+    return spokenKeyText(item.comparison === 'same'
+      ? { answer: 'same', alsoAccept: ['equal', 'a tie', 'they are the same'] }
+      : { answer: item.comparison, alsoAccept: [`the ${item.comparison} one`, `the ${item.comparison} die`] });
   }
-  const counted = item.challengeType === 'sum_two_dice'
-    ? `Counting all the dots aloud and ending on ${item.spokenAnswer} is the answer.`
-    : `Counting the dots aloud and ending on ${item.spokenAnswer} is the answer.`;
-  return `"${item.spokenAnswer}". ${counted}`;
+  return spokenKeyText({ answer: item.spokenAnswer, alsoAccept: [],
+    acceptRule: `Counting ${item.challengeType === 'sum_two_dice' ? 'all ' : ''}the dots aloud and ending on ${item.spokenAnswer} is the answer.`,
+    signatureError: 'A different number is not the answer, however close it is.' });
 }
 
 /** What a wrong spoken answer about the dice shows (handoff 20 Part B). */
@@ -66,23 +67,17 @@ export function diceSpokenMisses(item: DiDiceRollChallenge): KnownMiss[] {
   ];
 }
 
-export function diceAssignment(item: DiDiceRollChallenge): TeachingAssignment {
-  const misses = diceSpokenMisses(item);
-  return { id: item.id, task: diceAskFor(item), response: 'speech', expectedAnswer: diceKey(item), ...(misses.length ? { misses } : {}) };
-}
-
-export function diceScene(item: DiDiceRollChallenge, view: { ready: boolean }): WorkspaceScene {
+export function diceScene(item: DiDiceRollChallenge, view: { ready: boolean }): SceneOf {
   const two = isTwoDiceChallenge(item);
   const dice = two ? 'two dice, left and right' : 'one die';
   return {
     objects: [{ id: 'dice', selected: false, group: 'assignment target', label: dice }],
-    facts: { kind: item.challengeType, ...(item.supportTier ? { supportTier: item.supportTier } : {}),
+    facts: { kind: item.challengeType,
       rolled: view.ready ? 'yes' : 'no',
       constraints: view.ready
-        ? `The learner rolled ${two ? 'the dice' : 'the die'}; the dots are showing and no number is printed. `
-          + 'The learner answers aloud.'
+        ? `The learner rolled ${two ? 'the dice' : 'the die'}; the dots are showing and no number is printed.`
         : `The ${two ? 'dice are' : 'die is'} still covered. The learner taps ${two ? 'them' : 'it'} to roll; `
-          + 'there is nothing to answer until then, and you cannot roll for them.' },
+          + 'there is nothing to answer until then.' },
   };
 }
 

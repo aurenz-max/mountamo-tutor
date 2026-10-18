@@ -135,13 +135,13 @@ it('asks a short vowel for its sound and accepts its keyword (R5), and accepts a
   // The ask no longer contains the answer ("Say the word apple" credited "apple").
   expect(vowel.state().task!.task).toBe('What sound does the letter "a" make?');
   expect(vowel.state().task!.task).not.toMatch(/apple/);
-  expect(vowel.state().task!.workspace!.expectedAnswer).toBe('aaa or apple');
-  expect(String(vowel.state().task!.demand.assignment)).toMatch(/letter's name is not the answer/);
+  expect(vowel.state().task!.workspace!.expectedAnswer).toMatch(/^"aaa" \(also accept "apple"\)/);
+  expect(String(vowel.state().task!.workspace!.expectedAnswer)).toMatch(/letter's name is not the answer/);
   cleanup();
   const stop = mount('letter_sound_review');
   stop.say('sss'); stop.feedback('correct', 'advance');
-  expect(stop.state().task!.workspace!.expectedAnswer).toBe('/t/ or tent');
-  expect(String(stop.state().task!.demand.assignment)).toMatch(/A small "uh" after it counts/);
+  expect(stop.state().task!.workspace!.expectedAnswer).toMatch(/^"\/t\/" \(also accept "tent"\)/);
+  expect(String(stop.state().task!.workspace!.expectedAnswer)).toMatch(/a small "uh" after it counts/i);
 });
 
 it('draws the WORD and never the lone grapheme on an onset-isolation item', () => {
@@ -154,8 +154,8 @@ it('draws the WORD and never the lone grapheme on an onset-isolation item', () =
 
 it('blocks the letter name as the answer on a grapheme item', () => {
   const h = mount('letter_sound');
-  expect(String(h.state().task!.demand.assignment)).toMatch(/name is not the answer/);
-  expect(String(h.state().task!.demand.assignment)).toMatch(/naming the picture "moon" is a step/);
+  expect(String(h.state().task!.workspace!.expectedAnswer)).toMatch(/name is not the answer/);
+  expect(String(h.state().task!.workspace!.expectedAnswer)).toMatch(/naming the picture "moon" is a step/i);
 });
 
 // ── Help and demonstration are not learner work (TW-4, TW-8, TW-9) ──

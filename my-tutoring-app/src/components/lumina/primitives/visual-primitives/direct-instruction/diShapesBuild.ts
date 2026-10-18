@@ -21,11 +21,9 @@ export const BUILDABLE_SHAPES: readonly DiShapeName[] =
   ['triangle', 'square', 'rectangle', 'hexagon', 'pentagon', 'rhombus', 'trapezoid'];
 export const isBuildable = (shape: DiShapeName) => BUILDABLE_SHAPES.includes(shape);
 
-/** What the made shape got wrong, first one first (TeachingAttempt.miss). */
-export type ShapeBuildMiss = 'too_few_sides' | 'too_many_sides' | 'corners_not_square' | 'sides_not_equal'
-  | 'made_square' | 'parallel_off';
-export const SHAPE_BUILD_MISSES: readonly ShapeBuildMiss[] =
-  ['too_few_sides', 'too_many_sides', 'corners_not_square', 'sides_not_equal', 'made_square', 'parallel_off'];
+// What the made shape got wrong is the card's (`diShapes.card.ts`), so the catalog reads it without this module.
+export { SHAPE_BUILD_MISSES, type ShapeBuildMiss } from './diShapes.card';
+import type { ShapeBuildMiss } from './diShapes.card';
 
 const isSquare = (f: ShapeFacts) => f.sides === 4 && f.rightAngles === 4 && f.sidesOfOneLength === 4;
 

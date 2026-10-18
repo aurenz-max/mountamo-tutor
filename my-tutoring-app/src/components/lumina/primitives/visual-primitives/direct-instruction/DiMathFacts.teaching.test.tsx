@@ -38,11 +38,13 @@ vi.mock('../../../utils/SoundManager', () => ({ SoundManager: { playCorrect: sea
 vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 vi.mock('../../../components/DiActionPanel', () => ({ default: () => null }));
 import DiMathFacts, { type DiMathFactsData } from './DiMathFacts';
-import { DI_MATH_FACTS_WORKSPACE_MODES, buildMathFactItems, workspaceAssignment, workspaceScene,
+import { DI_MATH_FACTS_WORKSPACE_MODES, buildMathFactItems, workspaceScene,
   type DiMathFactsChallenge, type DiMathFactsChallengeType } from './diMathFactsDomain';
-import { validateDiMathFactsData } from '../../../components/live-activity/adapters/diMathFactsLive';
+import { diMathFactsBoss, validateDiMathFactsData } from './diMathFacts.boss';
 import { LIVE_ADAPTERS } from '../../../components/live-activity/activityContract';
 import { OFFER_GUIDANCE_MAX } from '../../../components/live-activity/adapters/adapterContract';
+import { leverScene } from '../../../components/live-activity/bossLevers';
+import { MATH_FACT_LEVERS } from './diMathFactsLevers';
 const diMathFactsLive = LIVE_ADAPTERS['di-math-facts'];
 
 beforeEach(() => { vi.useFakeTimers(); vi.clearAllMocks(); seam.conversation = []; seam.voiceActive = false;
@@ -163,7 +165,7 @@ it('never draws the answer, and never puts it in a task a tutor might read aloud
     if (mode !== 'name_numeral') expect(stage, mode).not.toContain(String(buildMathFactItems(CHALLENGES[mode])[0].answerNumeral));
     // The tutor DOES get it — it cannot judge otherwise — and that is exactly
     // why the guidance, not the scene, is what stops it being spoken first.
-    expect(String(h.state().task!.demand.assignment)).toContain(buildMathFactItems(CHALLENGES[mode])[0].answerWord);
+    expect(String(h.state().task!.workspace!.expectedAnswer)).toContain(buildMathFactItems(CHALLENGES[mode])[0].answerWord);
     cleanup();
   }
 });
@@ -191,23 +193,23 @@ it('licenses counting up for addition, counting back for take-away, and neither 
   expect(route('subtraction_fact')).toMatch(/counting back/); cleanup();
   const naming = route('name_numeral');
   expect(naming).toMatch(/none/);
-  expect(String(mount('name_numeral').state().task!.demand.assignment))
-    .toMatch(/Reciting the counting sequence up to it/);
+  expect(String(mount('name_numeral').state().task!.workspace!.expectedAnswer))
+    .toMatch(/Reciting the counting sequence up to the printed numeral/);
 });
 
 it('adds the teen/decade and whole-compound discriminations only where the answer needs them', () => {
   const h = mount('counting_next');
-  expect(String(h.state().task!.demand.assignment)).not.toMatch(/thirteen is not thirty/); // answer six
+  expect(String(h.state().task!.workspace!.expectedAnswer)).not.toMatch(/thirteen is not thirty/); // answer six
   h.say('six'); h.feedback('correct'); h.dispatch('advance');
-  expect(String(h.state().task!.demand.assignment)).toMatch(/thirteen is not thirty/); // answer thirteen
-  expect(String(h.state().task!.demand.assignment)).toMatch(/must arrive whole/);
+  expect(String(h.state().task!.workspace!.expectedAnswer)).toMatch(/thirteen is not thirty/); // answer thirteen
+  expect(String(h.state().task!.workspace!.expectedAnswer)).toMatch(/must arrive whole/);
 });
 
 it('carries the strict different-quantity success condition into every computed mode', () => {
   for (const mode of ALL_MODES) {
     if (mode === 'name_numeral') continue;
     const h = mount(mode);
-    expect(String(h.state().task!.demand.assignment), mode)
+    expect(String(h.state().task!.workspace!.expectedAnswer), mode)
       .toMatch(/A different number is not the answer, however close it is\./);
     cleanup();
   }
@@ -493,12 +495,14 @@ it('keeps guidance inside the backend offer cap, with no sentence for the tutor 
 });
 
 it('publishes exactly the domain assignment and scene that the verdict probe replays', () => {
-  // `scripts/tutor-verdict-probe.mjs` builds its model input from `workspaceAssignment`
+  // `scripts/tutor-verdict-probe.mjs` builds its model input from the boss's assignment
   // and `workspaceScene`. It replays the lesson only while the mounted stage publishes
   // those and nothing else.
   const h = mount('answer_fact');
   const item = buildMathFactItems(CHALLENGES.answer_fact)[0];
-  const { task, expectedAnswer, response } = workspaceAssignment(item), scene = workspaceScene(item);
+  const { task, expectedAnswer, response } = diMathFactsBoss.assignment(item);
+  // The scene as the probe builds it: the lever set writes `support` (`leverScene`).
+  const scene = leverScene(workspaceScene(item), { support: MATH_FACT_LEVERS.support(item), onScreen: '' });
   // No lever starts on screen, so the demand carries no onScreen fact.
   expect(h.state().task).toMatchObject({ task, demand: { ...scene.facts, response, presentation: 'ready' } });
   expect(h.state().task!.demand).toEqual({ ...scene.facts, response, presentation: 'ready' });

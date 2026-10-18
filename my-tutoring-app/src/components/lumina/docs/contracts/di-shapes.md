@@ -73,5 +73,6 @@ None open.
 
 ## Changelog
 
+- 2026-10-18: moved onto the boss framework, bespoke (`defineBoss`: five SPOKEN modes and build_shape built and board-checked) — `diShapes.card.ts` (holds `SHAPE_BUILD_MISSES` now) + `diShapes.boss.ts`; `adapters/diShapesLive.ts` and the catalog `tutoring` block deleted. The spoken key is `spokenKeyText` (no hand-written "also accept"; a near name and a different number named as signature errors); levers are one `SHAPE_LEVERS` set (counting levers one spec per counting mode, `model_shape` one for naming and one for the build). Guidance and key changed: one replay sample owed.
 - 2026-10-11: R11 added with the `build_shape` open build (fork: a new challenge type; R2's "stage draws the shape only" does not apply to a build item, which draws none).
 - 2026-10-03: derived (initial, static) with the DI lever slice. 10 requirements, 0 conflicts.

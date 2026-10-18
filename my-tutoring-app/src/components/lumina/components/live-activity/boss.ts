@@ -17,7 +17,7 @@
  * `boss.test.ts` checks every card and boss on disk against the catalog, the adapter, the journey and these rules.
  * Pure and free of React: the server route imports adapters, and the catalog imports cards.
  */
-import type { AudioInputConfig, BossMode, BossWords, ComponentDefinition, EvalModeDefinition } from '../../types';
+import type { AudioInputConfig, BossMode, BossModeWiring, BossWords, ComponentDefinition, EvalModeDefinition } from '../../types';
 import type { DriverInput, JourneyContext, JourneyProbe } from './liveJourneySpec';
 import type { TeachingAssignment } from './runtime/useTeachingWorkspace';
 import type { KnownMiss } from './runtime/spokenMissContract';
@@ -25,14 +25,22 @@ import type { LeverSet } from './bossLevers';
 
 // ── The card ────────────────────────────────────────────────────────────────
 
-/** One eval mode on the card: how it is wired, and the misses its judge names. */
-export interface CardMode<M extends string = string> extends BossMode {
-  /** What a wrong answer shows (`TeachingAttempt.miss`), as the check or the spoken-miss observer names it. */
+/** One eval mode on the card: how it is wired (every item alike, or by step), and the misses its judges name. */
+export type CardMode<M extends string = string> = BossModeWiring & {
+  /** What a wrong answer shows (`TeachingAttempt.miss`), as the check or the spoken-miss observer names it. On a
+   *  stepped mode, the misses of every step. */
   misses: readonly M[];
   /** Misses no lever answers, each by decision (journey sweep J9). */
   unanswered?: readonly M[];
   /** A spoken mode whose wrong answers are recorded from the learner's words (`missFromWords`, RP-2). */
   missFromWords?: true;
+};
+
+/** A mode's wirings: one with no step name, or one per step. Every reader of a card's wiring goes through this. */
+export function wiringsOf(mode: BossModeWiring): Array<{ step?: string; wiring: BossMode }> {
+  if ('steps' in mode) return Object.entries(mode.steps).map(([step, wiring]) => ({ step, wiring }));
+  const { answer, judge, flow, moves } = mode;
+  return [{ wiring: { answer, judge, flow, ...(moves ? { moves } : {}) } }];
 }
 
 export interface Card<M extends string = string> {
@@ -112,6 +120,8 @@ export interface Boss<D extends { title: string } = any, I = any, M extends stri
   assignment?: (item: I) => TeachingAssignment;
   /** The in-item levers, declared by type (`bossLevers.ts`). */
   levers?: LeverSet<I, any>;
+  /** On a card with stepped modes, the step an item is (its scene's `kind`). Required there (boss.test.ts). */
+  stepOf?: (item: I) => string;
   drive: BossDrive<I>;
 }
 
@@ -135,6 +145,8 @@ export function spokenBoss<D extends { title: string }, I extends { id: string }
     misses?: (item: I) => KnownMiss[];
     /** The journey's answers: the key's own words, or a plainly different answer of the same kind. */
     say: (item: I) => { correct: string; plainWrong: string };
+    /** What the learner does on screen before there is anything to say (roll the dice), when it is not done yet. */
+    before?: (item: I, ctx: JourneyContext) => DriverInput[];
   };
   drive: Drive<I>;
 }): Boss<D, I, M> & Required<Pick<Boss<D, I, M>, 'assignment'>> {
@@ -148,9 +160,9 @@ export function spokenBoss<D extends { title: string }, I extends { id: string }
       return { id: item.id, task: speech.ask(item), response: 'speech', expectedAnswer: speech.key(item),
         ...(misses.length ? { misses } : {}) };
     },
-    drive: { ...drive, play: (right, item) => {
+    drive: { ...drive, play: (right, item, ctx) => {
       const answers = speech.say(item);
-      return [{ type: 'answer', text: right ? answers.correct : answers.plainWrong }];
+      return [...(speech.before?.(item, ctx) ?? []), { type: 'answer', text: right ? answers.correct : answers.plainWrong }];
     } },
   };
 }
@@ -184,7 +196,7 @@ export function tapBoss<D extends { title: string }, I extends { id: string }, M
 
 /** How the host judges this card, said once on mount: the sentences its modes' judges make true. */
 export function bossInteraction(card: Card): string {
-  const judges = new Set(Object.values(card.modes).map(m => m.judge));
+  const judges = new Set(Object.values(card.modes).flatMap(m => wiringsOf(m).map(w => w.wiring.judge)));
   return 'Teach from liveRuntime.task and its workspace. '
     + (judges.has('tutor') ? 'Judge spoken answers naturally; the host records your completed feedback and handles retry/advance. ' : '')
     + (judges.has('activity') ? 'The activity checks a placement or selection itself.' : '');
@@ -209,10 +221,12 @@ export function renderBoss(boss: Boss, evalModes: readonly EvalModeDefinition[] 
     const def = evalModes.find(e => e.evalMode === mode);
     const levers = boss.levers?.specs.filter(s => !s.modes || s.modes.includes(mode)).map(s => `${s.id} (${s.type})`) ?? [];
     out.push(`MODE ${mode}${def ? ` · ${def.label} · β ${def.beta}` : ''}`,
-      line('Learner answers', `${m.answer.toUpperCase()} (the learner ${ANSWER_WORDS[m.answer]} it)`),
-      ...(m.moves ? [line('Moves', m.moves)] : []),
-      line('Judged by', m.judge === 'activity' ? 'ACTIVITY CHECK, in code; the tutor never sees the key' : 'TUTOR, from the learner\'s words, against the key in the task'),
-      line('Item flow', m.flow === 'board' ? 'a board of parts, checked together' : 'one item at a time'),
+      ...wiringsOf(m).flatMap(({ step, wiring: w }) => [
+        ...(step ? [line(`Step ${step}`, '')] : []),
+        line('Learner answers', `${w.answer.toUpperCase()} (the learner ${ANSWER_WORDS[w.answer]} it)`),
+        ...(w.moves ? [line('Moves', w.moves)] : []),
+        line('Judged by', w.judge === 'activity' ? 'ACTIVITY CHECK, in code; the tutor never sees the key' : 'TUTOR, from the learner\'s words, against the key in the task'),
+        line('Item flow', w.flow === 'board' ? 'a board of parts, checked together' : 'one item at a time')]),
       line('Levers', levers.length ? levers.join(', ') : card.levers ? 'declared in the component (not on the boss yet)' : 'none'),
       line('Misses it names', m.misses.length ? m.misses.join(', ') : 'none'),
       ...(m.unanswered?.length ? [line('No lever answers', m.unanswered.join(', '))] : []),

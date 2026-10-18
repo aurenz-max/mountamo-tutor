@@ -22,7 +22,8 @@
  * compare_dice gets no in-item help: lines matching dots, glowing extra dots or dots in rows all show the answer.
  * A tie gets no simplify: an easier tie is answered "same", and the child would repeat it on the full roll.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { diDiceRollCard } from './diDiceRoll.card';
 import { saysWords } from './diMathFactsLevers';
 import { diceValuesFor, type DiDiceRollChallenge, type DiDiceRollChallengeType, type DieValue } from './diDiceRollScript';
 
@@ -35,11 +36,6 @@ export const SMALLER_LEVER = 'smaller_dice';
 
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
 const OFF_BY = ['one_short', 'one_over', 'short_by_more', 'over_by_more'];
-const MODE_MISSES: Record<DiDiceRollChallengeType, string[]> = {
-  count_pips: ['skipped_a_number', ...OFF_BY],
-  compare_dice: ['other_die', 'said_same', 'picked_a_side', 'said_number'],
-  sum_two_dice: ['said_addend', ...OFF_BY],
-};
 
 const relation = (a: number, b: number) => a === b ? 'same' as const : a > b ? 'left' as const : 'right' as const;
 
@@ -137,51 +133,51 @@ export function simplerRoll(item: DiDiceRollChallenge, lever: string): DiDiceRol
   }
 }
 
-export function diceLevers(item: DiDiceRollChallenge | null, pulled: readonly string[]): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const practice = 'Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it.';
-  const out: WorkspaceLever[] = [];
-  if (modelFor(item)) out.push(lever(MODEL_LEVER, 'help', 'both', MODE_MISSES[item.challengeType],
-    'The learner gave a wrong answer, or does not know how to start.',
-      item.challengeType === 'compare_dice'
-        // R1: one pair per answer, so the card points at none of them; all three are voiced, in order, every time.
-        ? 'Shows a small card beside the dice with THREE different pairs, solved: the left die has more, the right die has '
-          + 'more, and the same. Say all three as your turn, in that order, pointing at each ("My turn: here the left die has '
-          + 'more…"); never only one. Then ask about the learner\'s own dice again.'
-        : 'Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn ("My turn: …"), '
-          + 'then ask about the learner\'s own dice again. Never say what the model means for their dice.'));
-  if (item.challengeType !== 'compare_dice') out.push(lever(TOUCH_LEVER, 'help', 'shown', ['skipped_a_number', 'one_short', 'one_over'],
-    'The learner skips a dot or counts one twice.',
-    'Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers.'));
-  if (item.challengeType === 'sum_two_dice') out.push(lever(BRACKET_LEVER, 'help', 'both', ['said_addend'],
-    'The learner says the dots on one die only.',
-    'Draws one bracket under both dice: the question is about all the dots on both.'));
-  if (simplerRoll(item, FEWER_LEVER)) out.push(lever(FEWER_LEVER, 'simplify', 'both', ['skipped_a_number', ...OFF_BY],
-    'This many dots is too many to count yet.', practice));
-  if (simplerRoll(item, FAR_LEVER)) out.push(lever(FAR_LEVER, 'simplify', 'both', ['other_die', 'said_same'],
-    'These two are too close to tell apart yet.', practice));
-  if (simplerRoll(item, SMALLER_LEVER)) out.push(lever(SMALLER_LEVER, 'simplify', 'both', ['said_addend', ...OFF_BY],
-    'Adding these two dice is too much yet.', practice));
-  return out;
-}
-
 const dots = (n: number) => `${WORDS[n]} dot${n === 1 ? '' : 's'}`;
 
-/** What the pulled levers put on screen, as a scene fact. Names the model; never the child's answer. */
-export function diceLeverFacts(item: DiDiceRollChallenge | null, pulled: readonly string[]): string {
-  if (!item) return '';
-  const model = pulled.includes(MODEL_LEVER) ? modelFor(item) : null;
-  const shown = !model ? '' : model.challengeType === 'count_pips'
-    ? `a single die with ${dots(model.value)}, answered ${model.spokenAnswer}`
-    : model.challengeType === 'sum_two_dice'
-      ? `a pair of dice with ${dots(model.value)} and ${dots(model.secondValue)}, ${model.spokenAnswer} altogether`
-      : 'three pairs of dice: in the first the left die has more, in the second the right die has more, in the third they '
-        + 'are the same; a star marks the die with more';
-  return [
-    model && `Beside the dice, a model card shows ${model.challengeType === 'compare_dice' ? 'different rolls' : 'a different roll'}, solved: ${shown}. It is not this roll.`,
-    pulled.includes(TOUCH_LEVER) && item.challengeType !== 'compare_dice' && 'The dots on the learner\'s dice can be tapped; each tapped dot gets a ring.',
-    pulled.includes(BRACKET_LEVER) && item.challengeType === 'sum_two_dice' && 'A bracket under both dice shows the question is about all their dots.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+const shownModel = (model: DiDiceRollChallenge) => model.challengeType === 'count_pips'
+  ? `a single die with ${dots(model.value)}, answered ${model.spokenAnswer}`
+  : model.challengeType === 'sum_two_dice'
+    ? `a pair of dice with ${dots(model.value)} and ${dots(model.secondValue)}, ${model.spokenAnswer} altogether`
+    : 'three pairs of dice: in the first the left die has more, in the second the right die has more, in the third they '
+      + 'are the same; a star marks the die with more';
+
+const PRACTICE = 'Opens an easier roll of the same kind first; the learner rolls it. It is not graded; the full roll comes back after it.';
+const COUNTED = ['count_pips', 'sum_two_dice'];
+
+/** Every lever of the pack, by type, in the order the tutor sees them. `model_roll` is worded per mode. */
+export const DICE_LEVERS = leverSet<DiDiceRollChallenge, null>({
+  modeOf: item => item.challengeType,
+  missesOf: mode => diDiceRollCard.modes[mode]?.misses ?? [],
+  support: { tier: item => item.supportTier ?? 'easy', different: 'a different roll', own: 'this answer' },
+  specs: [
+    { id: MODEL_LEVER, type: 'model', modes: COUNTED, answers: 'all',
+      when: 'The learner gave a wrong answer, or does not know how to start.',
+      does: 'Shows a small card beside the dice with a DIFFERENT roll, solved (onScreen names it). Say it as your turn ("My turn: …"), '
+        + 'then ask about the learner\'s own dice again. Never say what the model means for their dice.',
+      content: item => modelFor(item),
+      fact: (model: DiDiceRollChallenge) => `Beside the dice, a model card shows a different roll, solved: ${shownModel(model)}. It is not this roll.` },
+    // R1: one pair per answer, so the card points at none of them; all three are voiced, in order, every time.
+    { id: MODEL_LEVER, type: 'model', modes: ['compare_dice'], answers: 'all',
+      when: 'The learner gave a wrong answer, or does not know how to start.',
+      does: 'Shows a small card beside the dice with THREE different pairs, solved: the left die has more, the right die has '
+        + 'more, and the same. Say all three as your turn, in that order, pointing at each ("My turn: here the left die has '
+        + 'more…"); never only one. Then ask about the learner\'s own dice again.',
+      content: item => modelFor(item),
+      fact: (model: DiDiceRollChallenge) => `Beside the dice, a model card shows different rolls, solved: ${shownModel(model)}. It is not this roll.` },
+    { id: TOUCH_LEVER, type: 'marks', modes: COUNTED, answers: ['skipped_a_number', 'one_short', 'one_over'],
+      when: 'The learner skips a dot or counts one twice.',
+      does: 'Lets the learner tap each dot as they count it; a tapped dot gets a ring. No numbers.',
+      fact: 'The dots on the learner\'s dice can be tapped; each tapped dot gets a ring.' },
+    { id: BRACKET_LEVER, type: 'marks', carrier: 'both', modes: ['sum_two_dice'], answers: ['said_addend'],
+      when: 'The learner says the dots on one die only.',
+      does: 'Draws one bracket under both dice: the question is about all the dots on both.',
+      fact: 'A bracket under both dice shows the question is about all their dots.' },
+    { id: FEWER_LEVER, type: 'easier', modes: ['count_pips'], answers: ['skipped_a_number', ...OFF_BY],
+      when: 'This many dots is too many to count yet.', does: PRACTICE, content: item => simplerRoll(item, FEWER_LEVER) },
+    { id: FAR_LEVER, type: 'easier', modes: ['compare_dice'], answers: ['other_die', 'said_same'],
+      when: 'These two are too close to tell apart yet.', does: PRACTICE, content: item => simplerRoll(item, FAR_LEVER) },
+    { id: SMALLER_LEVER, type: 'easier', modes: ['sum_two_dice'], answers: ['said_addend', ...OFF_BY],
+      when: 'Adding these two dice is too much yet.', does: PRACTICE, content: item => simplerRoll(item, SMALLER_LEVER) },
+  ],
+});

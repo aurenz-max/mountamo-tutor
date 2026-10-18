@@ -75,5 +75,6 @@ None open.
 
 ## Changelog
 
+- 2026-10-18: moved onto the boss framework — `diDiceRoll.card.ts` + `diDiceRoll.boss.ts` (`spokenBoss`, with the new `speech.before` step for the roll); `adapters/diDiceRollLive.ts` and the catalog `tutoring` block deleted. The key is `spokenKeyText` (no hand-written "also accept"; count and sum gain "a different number is not the answer"); levers are one `DICE_LEVERS` set (`model_roll` one spec per wording). Guidance and key changed: one replay sample owed.
 - 2026-10-03: derived (initial, static) with the DI lever slice. 12 requirements, 0 conflicts. Check: `qa/primitive-contracts/di-dice-roll-check-2026-10-03.md`.
 - 2026-10-03: R8 rewritten for plan ruling R1 (three compare pairs, one per answer).

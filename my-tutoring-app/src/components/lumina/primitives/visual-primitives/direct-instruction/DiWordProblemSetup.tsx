@@ -45,14 +45,15 @@ import type { TeachingWorkspace } from '../../../components/live-activity/runtim
 import { withWorkspaceOnly } from '../../../components/live-activity/runtime/withTeachingWorkspace';
 import { commitGesture, useWorkspaceRunner, type TeachingEvaluationResult }
   from '../../../components/live-activity/runtime/useWorkspaceRunner';
-import { useStimulusPipSurface } from '../../../pip/useStimulusPipSurface';
+import { PipDock, PipWorkspace } from '../../../pip/WorkspacePip';
+import { leverScene } from '../../../components/live-activity/bossLevers';
 import { SoundManager } from '../../../utils/SoundManager';
 import { SHAPE_WORD, type Quantity } from './diWordProblemPlan';
 import type { DiWordProblemSetupData, WordProblemItem, WordProblemStepKind } from './diWordProblemScript';
 import { boardComplete, bigSlotMatches, describePlacement, wordProblemAssignment, wordProblemItems, wordProblemMiss,
   wordProblemScene, type FamilyPlacements } from './diWordProblemWorkspace';
 import { COUNT_DOTS, MODEL_STORY, READ_ALONG, STORY_LINKS, WITHIN_TEN, countDotsFor, modelStoriesFor, storySentences,
-  withinTenSteps, wordProblemLeverFacts, wordProblemLevers } from './diWordProblemLevers';
+  withinTenSteps, WORD_PROBLEM_LEVERS } from './diWordProblemLevers';
 import { familySpoken, numberWord as spokenNumber } from './diWordProblemPlan';
 import { practiceScore } from '../../../hooks/usePhaseResults';
 import { DiModelCard } from './DiModelCard';
@@ -152,9 +153,9 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
   useLayoutEffect(() => {
     if (!current || !sessionItem) return;
     const scene = wordProblemScene(current, { familyShown });
-    const levers = practiceSteps ? [] : wordProblemLevers(sessionItem, pulled);
-    const onScreen = practiceSteps ? '' : wordProblemLeverFacts(sessionItem, pulled);
-    workspace.current = { ...scene, ...(onScreen ? { facts: { ...scene.facts, onScreen } } : {}),
+    const levers = practiceSteps ? [] : WORD_PROBLEM_LEVERS.declare(sessionItem, null, pulled);
+    const onScreen = practiceSteps ? '' : WORD_PROBLEM_LEVERS.onScreen(sessionItem, null, pulled);
+    workspace.current = { ...leverScene(scene, { support: WORD_PROBLEM_LEVERS.support(current), onScreen }),
       levers,
       // A synchronous commit (the workspace runs it inside flushSync): the page changes before this returns.
       pullLever: (id: string) => {
@@ -186,10 +187,6 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
     return () => window.clearInterval(timer);
   }, [reading]);
 
-  const pip = useStimulusPipSurface({
-    run: runner, instanceId: resolvedInstanceId, label: 'The story', finished: showSummary,
-    gesture: current?.kind === 'big_number', handover: current?.kind === 'big_number',
-  });
 
   const live = current?.kind === 'big_number' && runner.canAttempt && !runner.isAwaitingGesture();
   /** Commit the finished board once it has sat still; a change in the window restarts it. */
@@ -207,7 +204,6 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
     const next = { ...boardRef.current };
     (Object.keys(next) as FamilySlot[]).forEach(key => { if (next[key] === id) next[key] = null; });
     next[slot] = id;
-    pip.look('builder');
     boardRef.current = next; setBoard(next); setSelectedId(null); setDragOver(null);
     SoundManager.select();
     runner.clearStillness();
@@ -310,9 +306,9 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
         <div className="mb-2 flex justify-center">
           <LuminaChallengeCounter current={Math.min(current.problemIndex + 1, problemCount)} total={problemCount} variant="dots" />
         </div>
-        {pip.store && <div {...pip.dock} />}
-        <div className="space-y-5">
-          <div {...pip.target('stimulus')} data-word-problem-object="story" className="rounded-xl border border-white/10 bg-white/5 px-5 py-4">
+        <PipDock />
+        <PipWorkspace className="space-y-5">
+          <div data-word-problem-object="story" className="rounded-xl border border-white/10 bg-white/5 px-5 py-4">
             {classified && <div className="mb-2 text-[11px] uppercase tracking-[0.2em] text-emerald-300">{SHAPE_WORD[plan.shape]} problem</div>}
             {shown.includes(STORY_LINKS) && current.kind === 'big_number' ? (() => {
               const { sentences, sentenceOf } = storySentences(plan);
@@ -325,14 +321,14 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
           </div>
           <LuminaPrompt>{current.actionContract.instruction}</LuminaPrompt>
           {focusedBigMode ? (
-            <div {...pip.target('builder')} className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-5" aria-label="Big amount builder">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-5" aria-label="Big amount builder">
               <div className="mb-1 text-center text-sm font-semibold text-slate-200">{placedBig ? 'The big amount' : 'Find the big amount'}</div>
               <p className="mb-5 text-center text-xs text-slate-400">The big amount is the whole amount — the one that has it all.</p>
               <div className="mx-auto max-w-[13rem]">{familySlot('big', 'big amount')}</div>
               {storyPartBank}
             </div>
           ) : (
-            <div {...pip.target('builder')} className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-5">
               <div className="mb-1 text-center text-sm font-semibold text-slate-200">
                 {current.kind === 'big_number' ? 'Build the number family' : 'Your number family'}
               </div>
@@ -397,7 +393,7 @@ const DiWordProblemSetupSurface: React.FC<DiWordProblemSetupProps> = ({ data, cl
               </div>)}
             </DiModelCard>;
           })()}
-        </div>
+        </PipWorkspace>
       </LuminaCardContent>
     </LuminaCard>
   );

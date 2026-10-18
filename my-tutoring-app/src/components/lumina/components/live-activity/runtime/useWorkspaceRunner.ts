@@ -7,6 +7,7 @@ import { useWorkspaceSubmission } from '../../../evaluation/workspaceSubmission'
 import { useTeachingWorkspace, type TeachingAssignment, type TeachingWorkspace } from './useTeachingWorkspace';
 import { teachingEvaluation } from './teachingEvaluation';
 import { useWorkspacePin } from './workspacePin';
+import { useRunnerPip } from '../../../pip/WorkspacePip';
 import type { TeachingSummary } from './TeachingSession';
 import type { JudgedRunSummary } from '../../../hooks/useJudgedScriptRunner';
 
@@ -206,6 +207,12 @@ export function useWorkspaceRunner<Item extends WorkspaceRunItem>(options: Works
     submission?.scored(teachingResult);
     latest.current.onFinished?.(teachingResult);
   });
+
+  // Pip comes from the runner, not the primitive: it publishes only where the surface renders <PipDock /> and
+  // <PipWorkspace> inside a bound mount (`pip/WorkspacePip.tsx`). Every runner, so a surface driving it directly
+  // (di-word-problem-setup) gets Pip the same way as one behind `useWorkspaceProgressFor`. A practice item is its own scope.
+  useRunnerPip({ instanceId: options.instanceId, itemId: item ? `${item.id}${state.practice ? '~practice' : ''}` : null,
+    running: state.phase !== 'completed', solved: solved || !!practiceSolved });
 
   return { currentIndex: state.index, currentItem: item, running: state.phase !== 'completed', preparing: false,
     stage: state.phase === 'completed' ? 'done' : solved ? 'affirmed' : 'asking',

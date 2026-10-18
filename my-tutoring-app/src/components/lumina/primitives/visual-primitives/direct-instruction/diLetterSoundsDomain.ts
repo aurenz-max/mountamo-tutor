@@ -21,8 +21,9 @@
  * standing block on letter NAMES. What does not survive is the wording that decided progression.
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { LETTER_NAME, childSound } from '../literacy/spokenReadingMisses';
 import { diLetterSoundModePlan, DI_LETTER_SOUNDS_MODES, type DiLetterSoundChallengeType }
   from './diLetterSoundsModes';
@@ -168,26 +169,23 @@ function acceptedFor(c: DiLetterSoundChallenge): string {
 }
 
 /**
- * The success condition, and what is NOT it — short, because this sentence is
- * what a tutor's feedback gets judged against. The keyword picture is on the
- * stage at easy (or as a lever), so naming it is the near miss this primitive has to
- * distinguish: for a held sound, saying "moon" is progress toward mmm and not
- * the answer, while a short vowel or a stop accepts its keyword.
- *
- * Each branch states the target once. `targetDescription` already carries the
- * name block for a clipped stop, so the generic suffix is not appended there —
- * a success condition that says the same thing twice reads as two conditions.
+ * The spoken key (`spokenKeyText`): the sound, what else counts, and what is NOT it — short, because this is what a
+ * tutor's feedback gets judged against. The keyword picture is on the stage at easy (or as a lever), so naming it is
+ * the near miss this primitive has to distinguish: for a held sound, saying "moon" is progress toward mmm and not the
+ * answer, while a short vowel or a stop accepts its keyword (`alsoAccept`).
  */
-function assignmentFor(c: DiLetterSoundChallenge): string {
-  if (isOnset(c)) return `The learner must say the first sound in "${c.keyword}": ${c.spoken}. `
-    + `Saying the whole word "${c.keyword}" back, or naming a letter, is a step toward the answer and is not it.`;
-  if (c.elicitation === 'keyword') return `The learner must say the short vowel sound ${c.spoken}, as at the start of "${c.keyword}". `
-    + `"${c.keyword}" or another word starting with that sound counts too. The letter's name is not the answer.`;
-  if (c.articulation === 'clipped') return `The learner must say the clipped sound ${c.spoken}. `
-    + `A small "uh" after it counts, and so does "${c.keyword}" or another word starting with that sound. `
-    + `The letter's name is not the answer.`;
-  return `The learner must say the continuous sound ${c.spoken}. The letter's name is not the answer, `
-    + `and naming the picture "${c.keyword}" is a step toward the sound rather than the sound itself.`;
+function keyFor(c: DiLetterSoundChallenge): string {
+  const name = "The letter's name is not the answer.";
+  if (isOnset(c)) return spokenKeyText({ answer: c.spoken, alsoAccept: [],
+    signatureError: `Saying the whole word "${c.keyword}" back, or naming a letter, is a step toward the answer and is not it.` });
+  if (c.elicitation === 'keyword') return spokenKeyText({ answer: c.spoken, alsoAccept: [c.keyword],
+    acceptRule: `It is the short vowel sound at the start of "${c.keyword}"; another word starting with that sound counts too.`,
+    signatureError: name });
+  if (c.articulation === 'clipped') return spokenKeyText({ answer: c.spoken, alsoAccept: [c.keyword],
+    acceptRule: 'It is a clipped sound: a small "uh" after it counts, and so does another word starting with that sound.',
+    signatureError: name });
+  return spokenKeyText({ answer: c.spoken, alsoAccept: [],
+    signatureError: `It is a continuous sound. ${name} Naming the picture "${c.keyword}" is a step toward the sound rather than the sound itself.` });
 }
 
 /** Expand a generated pool into the assignments the workspace actually asks.
@@ -211,18 +209,11 @@ export function buildLetterSoundItems(challenges: DiLetterSoundChallenge[] = [])
     stimulus: isOnset(c) ? 'word' : 'letter',
     ask: askFor(c),
     accepted: acceptedFor(c),
-    assignment: assignmentFor(c),
+    assignment: keyFor(c),
     answerKind: diLetterSoundModePlan(c).answerStep.actionContract.answerKind === 'voice' ? 'voice' : 'gesture',
     responseClass: 'continuant_sound',
   }));
 }
-
-/** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
- *  child produces a sound, the tutor hears the audio and JEV reads its completed feedback. */
-export const workspaceAssignment = (item: LetterSoundItem): TeachingAssignment => {
-  const misses = diLetterSoundSpokenMisses(item);
-  return { id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech', ...(misses.length ? { misses } : {}) };
-};
 
 /** What a wrong spoken sound shows (handoff 20 Part B); ids shared with letter-sound-link where the pattern is. */
 export type SpokenDiLetterSoundMiss = 'keyword_word' | 'letter_name' | 'added_vowel' | 'last_sound' | 'other_sound';
@@ -261,7 +252,7 @@ export function diLetterSoundSpokenMisses(item: LetterSoundItem): KnownMiss[] {
 
 /** The drawn stage: the stimulus card, and the keyword picture where it is drawn (always on an onset item; on a
  *  grapheme item only as the `keyword_picture` lever, ruling R4), both markable. */
-export const workspaceScene = (item: LetterSoundItem, view?: { pulled: readonly string[] }): WorkspaceScene => {
+export const workspaceScene = (item: LetterSoundItem, view?: { pulled: readonly string[] }): SceneOf => {
   const picture = item.stimulus === 'word' || !!view?.pulled.includes('keyword_picture');
   return {
     objects: [
@@ -271,13 +262,8 @@ export const workspaceScene = (item: LetterSoundItem, view?: { pulled: readonly 
           : `the letter "${item.letter}" printed on the card` },
       ...(picture ? [{ id: 'picture', selected: false, group: 'keyword picture', label: `a picture of a ${item.keyword}` }] : []),
     ],
-    facts: { kind: item.challengeType, assignment: item.assignment,
+    facts: { kind: item.challengeType,
       keyword: item.keyword, elicitation: item.elicitation, articulation: item.articulation,
-      // DI's model is a PARALLEL letter, never this one (user ruling 2026-10-02): easy pulls the model card before the
-      // learner tries (only the keyword picture starts on screen), medium and hard without either.
-      support: item.supportTier === 'hard' ? 'answer it cold: model nothing before the learner answers, and never say this sound'
-        : item.supportTier === 'medium' ? 'the learner tries first; after a miss, model a different letter with the model_sound lever, never this one'
-          : 'before the learner tries, pull the model lever (a card of a different letter): say it as your turn, then ask this one. Never say this sound',
       ...(item.stimulus === 'letter' ? { printedLetter: item.letter } : { printedWord: item.keyword }),
       markMeaning: 'Purple dashed marks are yours. They point at the card or the picture while you teach; '
         + 'they are not the learner answering, and they never move the gold ring off the stimulus.' },

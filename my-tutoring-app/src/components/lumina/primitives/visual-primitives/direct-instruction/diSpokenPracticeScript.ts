@@ -1,58 +1,20 @@
 /**
- * diSpokenPracticeScript — the CONTENT-GENERIC member of the DI family.
+ * diSpokenPracticeScript — the item type and the generation-boundary content gates of the CONTENT-GENERIC
+ * member of the DI family: one component, one generator, many skills, for practice where the screen shows a
+ * stimulus and the child answers aloud (no manipulative carries the pedagogy).
  *
- * WHY THIS EXISTS (user thread 2026-08-11). Every judged-loop consumer so far
- * is a bespoke component: 5 DI packs (694-910 lines each) + 4 literacy ports +
- * 2 runner pilots. Measured against what they actually render, most of that is
- * not a manipulative — after the verbal ruling stripped the costumes,
- * `WordFlip.tsx` (661 lines) and `SoundSwap.tsx` (767 lines) each expose ONE
- * interactive element, a tap-to-hear. They are a stimulus, an ask, and a
- * judged spoken answer: "what is 1 + 2?" / "three!" / "yes".
- *
- * So the fork this pack draws is: DOES THE MANIPULATIVE CARRY PEDAGOGY?
- *   - YES  → a bespoke component, runner plugged in. Touching each bear once
- *            IS one-to-one correspondence (counting-board); Elkonin boxes ARE
- *            encoding (cvc-speller); the sim IS the truth (push-pull-arena).
- *   - NO   → THIS pack. One component, one generator, N skills.
- *
- * WHAT IS CODE AND WHAT IS GENERATED — the line that makes this safe.
- * The family's standing finding is that a cue TEMPLATE ships the answer inside
- * the ask (three ports produced three cue shapes). That finding is about
- * hard-coded SENTENCES, not about structure. Here:
- *   - The DISTAR SKELETON is code: wait-silently, the two verdict branches,
- *     the sentinel openers ("Yes, …" / "My turn: …"), re-model-then-re-elicit,
- *     the bracket-tag discipline. Gemini cannot break a sentinel because it
- *     never writes one.
- *   - Every SENTENCE inside that skeleton is a slot: the ask, the how-to-play,
- *     the correction body, and — the interesting ones — `acceptRule` and
- *     `signatureError`.
- *
- * `acceptRule` / `signatureError` ARE THE EXPERIMENT. They encode what every
- * port had to discover by driving it live: a right answer that does not look
- * right (counting aloud that lands on the target IS the answer; sounding out
- * then saying the word IS the answer), and a wrong answer that sounds right
- * (the starting word said back; the bare singular). Whether flash-lite can
- * write those two clauses per skill is the open question this pack is built to
- * answer — the tester is where you read them before a child ever hears them.
- *
- * WHAT THIS PACK CAN GATE THAT NO BESPOKE PACK CAN. `expectedAnswer` is a
- * FIELD here, so the answer-leak rule stops being a thing a human notices in a
- * live run and becomes `findAnswerLeaks()` — mechanical, and run in the
- * generator before items ship. Every port so far found its leak the expensive
- * way: phonics-blender's printed target word, word-flip's chips, cvc-speller's
- * two vowel buttons, push-pull-arena's labeled Push/Pull.
- *
- * STANDING GATE 1 IS ENFORCED AT THE GENERATION BOUNDARY. `deriveResponseClass`
- * returns null for anything it cannot honestly place in the benched registry —
- * a 4-word answer is open-set production, which is a BLOCKED class, and the
- * generator drops the item rather than laundering it through a free-text field.
+ * The generator writes each item's sentences (ask, correction body, `acceptRule`, `signatureError`); code
+ * owns the structure. Because `expectedAnswer` is a field, the gates here are mechanical and run before items
+ * ship: `deriveResponseClass` refuses an answer it cannot place in a benched response class (a long free-text
+ * answer is open-set production, which is blocked), `findAnswerLeaks` drops an item that shows or says its
+ * own answer, and the menu, concept, arithmetic and unspoken-stimulus gates drop the other defects
+ * `gateSpokenItems` lists. The tutor's words come from the boss (`diSpokenPractice.boss.ts`), not from this
+ * module.
  */
 
 import {
   opensWithSentinel,
   type DiActionContract,
-  type JudgedCueOptions,
-  type JudgedCueSurface,
   type JudgedScriptItem,
   type ResponseClassId,
 } from '../../../hooks/judgedScriptContract';
@@ -180,8 +142,8 @@ export type ActionableSpokenPracticeItem = SpokenPracticeItem & {
   actionContract: DiActionContract;
 };
 
-/** Upgrade generated, stored, or hand-authored items into the shared DI action
- * contract. The generated ask is the exact sentence shown and spoken. */
+/** Attach the shared DI action contract at the generation boundary. The generated ask is the exact sentence
+ *  shown and spoken. */
 export const withSpokenPracticeAction = (
   item: SpokenPracticeItem,
 ): ActionableSpokenPracticeItem => {
@@ -782,10 +744,10 @@ const clampCount = (value: unknown): number => {
  * fallbacks: a class that cannot be placed is standing gate 1, and a missing
  * ask/answer is an item with nothing to judge.
  *
- * Lives in the SCRIPT module rather than the generator so the DI drive adapter
- * can build a bench fixture through it without importing the Gemini client —
- * the shipped gate is what a bench must go through, or it benches a contract
- * the primitive does not use (`openSetWordBench.ts`).
+ * Lives in the SCRIPT module rather than the generator so a bench fixture can
+ * build through it without importing the Gemini client — the shipped gate is
+ * what a bench must go through, or it benches a contract the primitive does
+ * not use (`conceptStatementBench.ts`).
  *
  * `menu` (compare_choice) and `concept` (a session-planned explain_concept
  * anchor set) are the two code-owned, session-wide slots stamped INTO every
@@ -944,53 +906,7 @@ export const gateSpokenItems = (items: SpokenPracticeItem[]): {
   };
 };
 
-// ── Cues — the DISTAR skeleton, code-owned ──────────────────────────────────
-
-/**
- * The judging contract. Everything structural is code; the three generated
- * clauses ride inside it. Note the two verdict branches carry their sentinel
- * openers HERE, so no generated sentence can begin with one.
- *
- * PER-ITEM DATA ONLY (user ruling 2026-08-11, run 436dcb5616cb): the standing
- * doctrine — wait silently, unbounded think time, never answer for them, never
- * recite instructions — is SESSION PRIMING and lives in the catalog's
- * aiDirectives, where every other primitive puts it and where the model meets
- * it before the first turn. Repeating it in-band on every cue is what made it
- * conversational content: told "don't say these instructions" mid-dialogue,
- * she was already primed to say them. What stays here is only what changes per
- * item: the answer, its alternates, the two generated judging clauses, and the
- * two verdict branch lines.
- */
-/**
- * The turn stated as a FACT, never an order. "Then wait for the learner." is
- * the exact imperative shape `findPerformedStageDirections` flags — ten-frame's
- * tutor wrapped it in an invented bracket tag and read "[WAIT silently]" to a
- * child — and this pack carried it from birth because nothing ran
- * `checkPackGates` over it until the DI drive adapter arrived (2026-09-07).
- */
-const WAIT_FACT = 'You then stay silent while the learner answers. ';
-
-const judgingContract = (item: SpokenPracticeItem): string => {
-  const accept = item.alternates.length
-    ? `Also accept: ${item.alternates.map((a) => `"${a}"`).join(', ')}. `
-    : '';
-  const rule = item.acceptRule.trim() ? `${item.acceptRule.trim()} ` : '';
-  const miss = item.signatureError.trim() ? `${item.signatureError.trim()} ` : '';
-  // The menu clause is CODE-OWNED, like the sentinels: `closed_set_choice` is a
-  // class the judge may only work in when it has been handed the whole set, so
-  // that sentence cannot be left to a generated `acceptRule` to remember.
-  const menu = item.mode === 'compare_choice' && item.choices?.length
-    ? `The learner is choosing one word from: ${item.choices.map((c) => `"${c}"`).join(', ')}. `
-      + 'Judge only which of those words they said; anything else is not an answer to this question. '
-    : '';
-  if (item.mode === 'explain_concept') return explainJudgingContract(item, rule, miss);
-  return (
-    WAIT_FACT
-    + `${menu}The correct answer is "${item.expectedAnswer}". ${accept}${rule}${miss}`
-    + `If the answer is right, say exactly: "Yes, ${item.expectedAnswer}." `
-    + `If it is wrong, say exactly: "My turn: ${item.correctionBody} Your turn. ${withSpokenPracticeAction(item).actionContract.instruction}"`
-  );
-};
+// ── The concept affirmation ─────────────────────────────────────────────────
 
 /** "The equal sign means…" → "the equal sign means…", so "Yes, the equal sign
  *  means…" reads as one sentence; a trailing period is guaranteed. */
@@ -998,154 +914,3 @@ export const conceptAffirmForm = (concept: string): string => {
   const trimmed = concept.trim().replace(/[.!?]+$/, '');
   return `${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}.`;
 };
-
-/**
- * The concept-anchored clause — the only new script surface the mode adds
- * (handoff §4). Two deliberate departures from the token modes, both benched:
- *
- *   - The judge is handed ONE idea and told that WORDS ARE NOT THE TEST. The
- *     anchors are examples; a child's own phrasing with none of those words
- *     counts, and the anchor words inside a sentence that means the opposite
- *     ("they are NOT the same") do not. That last sentence is the whole reason
- *     the class exists — it is the bucket a word-matching judge fails.
- *   - The AFFIRMATION restates the CONCEPT SENTENCE, not `expectedAnswer`.
- *     "Yes, both sides the same." is a clipped echo of a token; "Yes, the equal
- *     sign means both sides have the same amount." is the DISTAR firm-up.
- *
- * Code-owned, like the menu clause: the refusals that belong to the CLASS
- * (echo, the answer instead of the meaning, the name of the thing on screen, a
- * turn with no idea in it) cannot be left to a generated `signatureError` to
- * remember — that clause adds the SKILL's own adjacent misconception on top.
- *
- * NO MODEL IN THE ASK, at any tier. The re-teach lives in the correction, which
- * is already model-then-re-elicit; modeling the concept before the ask would
- * put the answer in the ask (the leak `findConceptDefects` refuses).
- */
-const explainJudgingContract = (item: SpokenPracticeItem, rule: string, miss: string): string => {
-  const concept = item.conceptStatement?.trim() ?? '';
-  const examples = [item.expectedAnswer, ...item.alternates]
-    .map((a) => a.trim()).filter(Boolean).map((a) => `"${a}"`).join(', ');
-  return (
-    WAIT_FACT
-    + 'The learner is explaining in their own words, and there is no single right wording. '
-    + `The idea they must express: "${concept}" `
-    + `Any wording that means that counts — for example ${examples} — and so does a child's own `
-    + 'phrasing that uses none of those words, as long as the idea is there. Judge the MEANING '
-    + 'of what you heard, not the words. '
-    + 'Those same words inside a sentence that means the OPPOSITE, or a different idea, are wrong. '
-    + `${rule}${miss}`
-    + `The stimulus read back ("${item.stimulusText}") is NOT an explanation, and neither is a `
-    + 'bare number or the name of what is on screen. A turn with no idea in it, or "I don\'t '
-    + 'know", is wrong — run the correction. '
-    + `If the idea is right, say exactly: "Yes, ${conceptAffirmForm(concept)}" `
-    + `If it is wrong, say exactly: "My turn: ${item.correctionBody} Your turn. ${withSpokenPracticeAction(item).actionContract.instruction}"`
-  );
-};
-
-/** One item's ask. ONE job: speak this — the how-to-play lives inside the
- *  quoted line, never as a second directive on the same turn (SWAP-1). */
-export const itemCue = (item: SpokenPracticeItem, opts: JudgedCueOptions): string => {
-  const how = opts.opening || opts.howToPlay ? `${HOW_TO_PLAY[item.mode]} ` : '';
-  const spoken = `${how}${withSpokenPracticeAction(item).actionContract.instruction}`;
-  return `[SAY_ITEM] Say exactly: "${spoken}" ${judgingContract(item)}`;
-};
-
-/** Correction cap reached: acknowledge warmly and carry the lesson forward. */
-export const moveOnCue = (
-  _item: SpokenPracticeItem,
-  next: SpokenPracticeItem | null,
-  opts: JudgedCueOptions,
-): string => {
-  if (!next) {
-    return (
-      '[SAY_MOVE] Say exactly: "Good try! That one takes practice — we will see it again '
-      + 'another day." Then stop.'
-    );
-  }
-  const how = opts.howToPlay ? `${HOW_TO_PLAY[next.mode]} ` : '';
-  return (
-    `[SAY_MOVE] Say exactly: "Good try! Here comes the next one. ${how}${withSpokenPracticeAction(next).actionContract.instruction}" `
-    + `${judgingContract(next)}`
-  );
-};
-
-export const completeCue = (): string =>
-  '[SAY_COMPLETE] Say exactly: "Great work today! Your voice did the hard part. See you next '
-  + 'time!" Then stop — the activity is over.';
-
-/**
- * Tap-to-hear: speak the STIMULUS, never the answer.
- *
- * On a `decode` item the stimulus IS the answer, so this would read the child
- * their own task — it returns '' and the component hides the affordance. That
- * is the same defect phonics-blender shipped (its third tap spoke the answer
- * outright), closed structurally instead of per-pack.
- */
-export const pronounceCue = (item: SpokenPracticeItem): string => {
-  if (item.answerSource === 'decode' || item.stimulusRole === 'visual_target') return '';
-  // A pair re-hears BOTH things. Naming them is never a leak here (the answer is
-  // the comparison word), and hearing only one of two would be a broken replay.
-  const spoken = item.mode === 'compare_choice'
-    ? [item.stimulusText, item.stimulusText2].map((t) => (t ?? '').trim()).filter(Boolean).join(' and ')
-    : item.stimulusText.trim();
-  if (!spoken) return '';
-  return `[SAY_HEAR] Say exactly: "${spoken}" Then stop — say nothing else.`;
-};
-
-/**
- * THE FULL RUNTIME-STATE CHANNEL, RESTORED — user ruling 2026-08-11.
- *
- * An earlier revision shipped this empty after a live run (`5813884d14d3`)
- * where the tutor read the `[CURRENT STATE]` block aloud, on the theory that a
- * channel with no consumer only had a failure mode. The user overruled it:
- * every other Lumina primitive sends state and instructions through this
- * channel with no recitation, and a GENERALIZED pack does not get to amputate
- * the platform's channels to feel safe. The next run (`436dcb5616cb`) proved
- * the real roots were elsewhere anyway — the tutor recited a catalog
- * commonStruggles "response" verbatim ("Wait. Think time is unbounded here;
- * only re-ask if the application tells you to."), i.e. directive-voice text
- * authored into a field whose contract is WORDS THE TUTOR SPEAKS. She was
- * primed at session start to say those instructions; no cue trailer can undo
- * that. The fix is voice discipline in the catalog block, not a dead channel.
- *
- * What rides here follows the family rule di-math-facts wrote down: STIMULUS
- * SIDE ONLY, never the answer — runtime state is echoed far more loosely than
- * a scripted line. `decode` items push no stimulus at all (there the stimulus
- * IS the answer), and counting items push the object word, never the count.
- * Keys must stay in lockstep with `contextKeys` on the catalog entry.
- */
-export const contextFor = (item: SpokenPracticeItem): Record<string, string> => {
-  const state: Record<string, string> = { challengeType: item.mode };
-  if (item.answerSource !== 'decode' && item.stimulusRole !== 'visual_target') {
-    // Stimulus side only, as ever — for a pair that is both objects and NOT the
-    // menu: the menu rides the scripted cue, where its wording is exact.
-    state.stimulus = item.mode === 'compare_choice' && (item.stimulusText2 ?? '').trim()
-      ? `${item.stimulusText} and ${item.stimulusText2}`
-      : item.stimulusText;
-  }
-  return state;
-};
-
-// ── The cue surface — exported once, spread by the component and the harness ─
-
-/**
- * Every field of the pack that can reach the tutor (`JudgedCueSurface`). The
- * component spreads this and adds only what the screen does with the verdict;
- * the DI drive adapter (`service/qa/di/diDrivePlan.ts`) names it so the
- * headless harness replays production strings rather than a Python replica —
- * a second consumer is exactly why a port exports its surface once.
- */
-export const diSpokenPracticePackBase = (
-  items: SpokenPracticeItem[],
-): JudgedCueSurface<SpokenPracticeItem> => ({
-  primitiveType: 'di-spoken-practice',
-  activityLine: 'live direct instruction spoken practice',
-  items,
-  itemCue,
-  moveOnCue,
-  completeCue,
-  // Returns '' on decode items; the runner sends nothing and the button is
-  // hidden, so the tutor can never read the child their own task.
-  pronounceCue: (item) => pronounceCue(item),
-  contextFor,
-});

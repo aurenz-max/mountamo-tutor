@@ -4,8 +4,7 @@ import { wordsOf } from '../literacy/decodablePracticeLines';
 import { buildSentenceReadingItems, type DiSentenceReadingChallenge, type SentenceReadingItem } from './diSentenceReadingDomain';
 import type { DiSentenceReadingChallengeType } from './diSentenceReadingModes';
 import { SENTENCE_MENU } from './diSentenceReadingMenu';
-import { MODEL_SENTENCE, SHORT_LINE, SHORT_SIGHT_LINE, SOUND_DOTS, TRACKING_UNDERLINE, isCvcWord, modelFor, sentenceLeverFacts,
-  sentenceLevers, simplerLine } from './diSentenceReadingLevers';
+import { MODEL_SENTENCE, SHORT_LINE, SHORT_SIGHT_LINE, SOUND_DOTS, TRACKING_UNDERLINE, isCvcWord, modelFor, SENTENCE_LEVERS, simplerLine } from './diSentenceReadingLevers';
 import decodable from '../../../components/live-activity/runtime/testing/w1-payloads/di-sentence-reading.decodable_sentence.json';
 import read from '../../../components/live-activity/runtime/testing/w1-payloads/di-sentence-reading.read_sentence.json';
 import review from '../../../components/live-activity/runtime/testing/w1-payloads/di-sentence-reading.sentence_review.json';
@@ -42,7 +41,7 @@ describe('model_sentence: a different sentence that reads no word of the child\'
       const model = modelFor(it0, session);
       expect(model, it0.text).not.toBeNull();
       expect(session.map(i => i.text)).not.toContain(model);
-      expect(sentenceLeverFacts(it0, [MODEL_SENTENCE], session)).not.toContain(it0.text);
+      expect(SENTENCE_LEVERS.onScreen(it0, { items: session }, [MODEL_SENTENCE])).not.toContain(it0.text);
     }
   });
 });
@@ -53,11 +52,11 @@ describe('help on the sentence draws marks, and dots only under words that can b
 
   it('sight_phrase_sentence gets no dots; a sentence with no CVC word gets none either', () => {
     const [s] = items(['I can see it.'], 'sight_phrase_sentence');
-    expect(sentenceLevers(s, [], [s]).map(l => l.id)).not.toContain(SOUND_DOTS);
+    expect(SENTENCE_LEVERS.declare(s, { items: [s] }, []).map(l => l.id)).not.toContain(SOUND_DOTS);
     const [none] = items(['You and I can go.'], 'read_sentence');
-    expect(sentenceLevers(none, [], [none]).map(l => l.id)).toContain(SOUND_DOTS); // "can" is CVC
+    expect(SENTENCE_LEVERS.declare(none, { items: [none] }, []).map(l => l.id)).toContain(SOUND_DOTS); // "can" is CVC
     const [noCvc] = items(['Look at me!'], 'read_sentence');
-    expect(sentenceLevers(noCvc, [], [noCvc]).map(l => l.id)).not.toContain(SOUND_DOTS);
+    expect(SENTENCE_LEVERS.declare(noCvc, { items: [noCvc] }, []).map(l => l.id)).not.toContain(SOUND_DOTS);
   });
 });
 
@@ -75,7 +74,7 @@ describe('simplify: a shorter line of the same mode', () => {
   it('refused on a 3-word item (the mode floor)', () => {
     const [three] = items(['The rat ran.'], 'read_sentence');
     expect(simplerLine(three, SHORT_LINE, [three])).toBeNull();
-    expect(sentenceLevers(three, [], [three]).filter(l => l.kind === 'simplify')).toEqual([]);
+    expect(SENTENCE_LEVERS.declare(three, { items: [three] }, []).filter(l => l.kind === 'simplify')).toEqual([]);
   });
 
   it('short_sight_line (R8): a shorter sight-heavy sentence sharing no word with the item', () => {
@@ -98,12 +97,12 @@ describe('the lever set and which lever answers which miss', () => {
     ['word_swap', [MODEL_SENTENCE, SOUND_DOTS, TRACKING_UNDERLINE], SHORT_LINE],
   ] as const)('%s with %j on screen → %s', (miss, pulled, expected) => {
     const [it0] = items(['The big pig had a red hat on.'], 'read_sentence', 'hard');
-    expect(nextLever(sentenceLevers(it0, pulled, [it0]), miss)).toBe(expected);
+    expect(nextLever(SENTENCE_LEVERS.declare(it0, { items: [it0] }, pulled), miss)).toBe(expected);
   });
 
   it('both named misses are answered on every saved payload', () => {
     for (const session of SAVED) {
-      const answered = new Set(session.flatMap(i => sentenceLevers(i, [], session).flatMap(l => l.answers ?? [])));
+      const answered = new Set(session.flatMap(i => SENTENCE_LEVERS.declare(i, { items: session }, []).flatMap(l => l.answers ?? [])));
       expect(answered.has('word_skip') && answered.has('word_swap')).toBe(true);
     }
   });

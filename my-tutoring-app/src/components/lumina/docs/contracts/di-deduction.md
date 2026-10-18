@@ -40,4 +40,5 @@ None open.
 
 ## Changelog
 
+- 2026-10-18: moved onto the boss framework — `diDeduction.card.ts` + `diDeduction.boss.ts` (`spokenBoss`); `adapters/diDeductionLive.ts` and the catalog `tutoring` block deleted (the scripted-pack catalog check became "no tutoring block"). The key is a meaning key (`spokenKeyText` with `meaning`: verdict and reason in any words; no reason, backwards yes = signature error); levers are one `DEDUCTION_LEVERS` set (`answer_frame` and `shared_term` one spec per mode, `answer_frame` typed `clue` with `answersOf`). Guidance and key changed: one replay sample owed.
 - 2026-10-03: derived (initial, static) with the DI lever slice. 6 requirements, 0 conflicts.

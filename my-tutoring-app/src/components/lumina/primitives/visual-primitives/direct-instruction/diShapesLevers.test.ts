@@ -4,7 +4,7 @@ import { DI_CATALOG } from '../../../service/manifest/catalog/di';
 import { REAL_WORLD_SHAPE_OBJECTS } from '../shared/realWorldShapeObjects';
 import { SHAPE_MENU } from './diShapesMenu';
 import { FEWER_SIDES, MODEL_COUNT, MODEL_OBJECT, MODEL_SHAPE, PLAIN_DRAWING, START_MARK, TOUCH_MARKS, modelFor, shapeItem,
-  shapeLeaks, shapeLeverFacts, shapeLevers, simplerShape } from './diShapesLevers';
+  shapeLeaks, SHAPE_LEVERS, simplerShape } from './diShapesLevers';
 import { shapesSpokenMisses } from './diShapesWorkspace';
 import { isCountingType, type DiShapeName, type DiShapesChallenge } from './diShapesScript';
 import nameShape from '../../../components/live-activity/runtime/testing/w1-payloads/di-shapes.name_shape.json';
@@ -78,7 +78,7 @@ describe('model levers: a different shape, solved', () => {
     for (const items of SAVED) for (const it0 of items) {
       const model = modelFor(it0, items);
       expect(model, it0.id).not.toBeNull();
-      const fact = shapeLeverFacts(it0, [isCountingType(it0.challengeType) ? MODEL_COUNT : it0.challengeType === 'name_real_object' ? MODEL_OBJECT : MODEL_SHAPE], items);
+      const fact = SHAPE_LEVERS.onScreen(it0, { items: items }, [isCountingType(it0.challengeType) ? MODEL_COUNT : it0.challengeType === 'name_real_object' ? MODEL_OBJECT : MODEL_SHAPE]);
       expect(fact).toMatch(/different one, solved/);
       if (isCountingType(it0.challengeType)) expect(fact).not.toMatch(new RegExp(`\\b${it0.countWord}\\b`));
       else expect(fact).not.toMatch(new RegExp(`\\b${it0.shapeWord}\\b`));
@@ -115,16 +115,16 @@ describe('simplify levers keep the mode, and never repeat or name the item', () 
   it('fewer_sides is refused on a triangle, and simplify never applies to find_real_object', () => {
     const tri = item('triangle', 'count_sides');
     expect(simplerShape(tri, FEWER_SIDES, [tri])).toBeNull();
-    expect(shapeLevers(tri, [], [tri]).map(l => l.id)).not.toContain(FEWER_SIDES);
+    expect(SHAPE_LEVERS.declare(tri, { items: [tri] }, []).map(l => l.id)).not.toContain(FEWER_SIDES);
     const obj = objectItem(REAL_WORLD_SHAPE_OBJECTS[0]);
-    expect(shapeLevers(obj, [], [obj]).filter(l => l.kind === 'simplify')).toEqual([]);
+    expect(SHAPE_LEVERS.declare(obj, { items: [obj] }, []).filter(l => l.kind === 'simplify')).toEqual([]);
   });
 });
 
 describe('the lever set per mode, and which lever answers which miss', () => {
   it('naming modes get no in-item help: only the model, and plain_drawing when there is a step to drop', () => {
     const it0 = item('hexagon', 'shape_review', 'h', { exemplar: 'variant' });
-    expect(shapeLevers(it0, [], [it0]).map(l => l.id)).toEqual([MODEL_SHAPE, PLAIN_DRAWING]);
+    expect(SHAPE_LEVERS.declare(it0, { items: [it0] }, []).map(l => l.id)).toEqual([MODEL_SHAPE, PLAIN_DRAWING]);
   });
 
   it.each([
@@ -135,20 +135,20 @@ describe('the lever set per mode, and which lever answers which miss', () => {
     ['one_short', [MODEL_COUNT, START_MARK, TOUCH_MARKS], FEWER_SIDES],
   ] as const)('count_sides on a hexagon: %s with %j pulled → %s', (miss, pulled, expected) => {
     const it0 = item('hexagon', 'count_sides');
-    expect(nextLever(shapeLevers(it0, pulled, [it0]), miss)).toBe(expected);
+    expect(nextLever(SHAPE_LEVERS.declare(it0, { items: [it0] }, pulled), miss)).toBe(expected);
   });
 
   it.each([['near_name', MODEL_SHAPE], ['described_shape', MODEL_SHAPE], ['other_shape_name', MODEL_SHAPE]] as const)(
     'name_shape: %s → %s', (miss, expected) => {
       const it0 = item('square', 'name_shape', 's', { rotationDeg: 40 });
-      expect(nextLever(shapeLevers(it0, [], [it0]), miss)).toBe(expected);
-      expect(nextLever(shapeLevers(it0, [MODEL_SHAPE], [it0]), miss)).toBe(PLAIN_DRAWING);
+      expect(nextLever(SHAPE_LEVERS.declare(it0, { items: [it0] }, []), miss)).toBe(expected);
+      expect(nextLever(SHAPE_LEVERS.declare(it0, { items: [it0] }, [MODEL_SHAPE]), miss)).toBe(PLAIN_DRAWING);
     });
 
   it('every catalog miss of every mode is answered by a lever on a saved item, and every named miss is listed', () => {
     for (const items of SAVED) {
       const mode = items[0].challengeType === 'name_real_object' ? 'find_real_object' : items[0].challengeType;
-      const answered = new Set(items.flatMap(i => shapeLevers(i, [], items).flatMap(l => l.answers ?? [])));
+      const answered = new Set(items.flatMap(i => SHAPE_LEVERS.declare(i, { items: items }, []).flatMap(l => l.answers ?? [])));
       for (const miss of CATALOG.misses![mode]) expect(answered.has(miss), `${mode}: ${miss}`).toBe(true);
       for (const i of items) for (const m of shapesSpokenMisses(i)) expect(CATALOG.misses![mode], `${mode} ${m.id}`).toContain(m.id);
     }

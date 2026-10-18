@@ -21,9 +21,15 @@ finds every card and boss on disk and fails on a missing or wrong one.
 
 | Mechanic | Card mode | Boss | The primitive supplies |
 |---|---|---|---|
-| The learner says it; the tutor judges | `{ ...SPOKEN, misses }`, card `audio: SPOKEN_AUDIO` | `spokenBoss({ card, validate, items, levers?, speech: { ask, key, misses?, say }, drive })` | the ask; the key via `spokenKeyText`; known misses (`KnownMiss[]`); the harness's `{ correct, plainWrong }` |
+| The learner says it; the tutor judges | `{ ...SPOKEN, misses }`, card `audio: SPOKEN_AUDIO` | `spokenBoss({ card, validate, items, levers?, speech: { ask, key, misses?, say, before? }, drive })` | the ask; the key via `spokenKeyText`; known misses (`KnownMiss[]`); the harness's `{ correct, plainWrong }`; `before`: what the learner does on screen first (roll the dice) |
 | The learner taps one choice; the activity checks | `{ ...TAP_ONE, misses }` | `tapBoss({ card, validate, items, levers?, choice: { ask, targets }, drive })` | the ask; the harness's `{ correct, wrong }` targets |
 | Anything else (a board, a build, a simulation) | spell `answer`/`judge`/`flow` | `defineBoss({ card, validate, items, ask, drive })` | its own assignment in the component, `drive.play` |
+
+**A mode whose items are steps wired differently** (say the story kind, place the cards, say the answer) is
+`{ steps: { <step>: BossMode, … }, misses }`, keyed by the step name the item's scene publishes as `kind`, and the
+boss gives `stepOf(item)` (the guard requires it). The doctrine then speaks of steps ("In the big_number steps: …")
+and says the task's kind names the step; a card with no stepped mode reads exactly as before. Pilot:
+di-word-problem-setup (bespoke). Read a mode's wiring through `wiringsOf(mode)`, never `mode.answer`.
 
 The preset builds the assignment (`boss.assignment`, which the component passes to its workspace) and the harness
 play.
@@ -74,6 +80,14 @@ export const LEVERS = leverSet<Item, Ctx>({
   lever ids. The readable card lists the ids per mode from the set, so they cannot drift.
 - Every miss of a mode is answered by a lever in it, or listed in `unanswered` with a reason.
 - One id may have a spec per mode when its words differ by mode (cell-builder's `structure_jobs`); never two in a mode.
+  When the words differ by item inside one mode (word reading's `model_word`: a decodable word is sounded out, a sight
+  word said whole), `does` is a function of the item.
+- When the model lever comes, by support tier, is the lever set's: a set with a `model` lever declares
+  `support: { tier, different, own }`, and `supportFact` writes the `support` scene fact (easy models a different
+  item first, medium after a miss, hard never before a try) and names the item's model lever. Enforced three ways:
+  `leverSet` throws at import without `support`; a scene function returns `SceneOf`, whose type forbids `support`
+  and `onScreen`; `leverScene` (the one merge `DiTeachingStage` and a bespoke mount use) throws on a scene that
+  writes either. No family writes the tier sentence.
 - What a type means for the tutor is written once in `LEVER_TYPE_DOCTRINE` (`adapterContract.ts`), added to the
   guidance of every boss whose set uses that type (`model`: a DIFFERENT item; never model the learner's own).
 
@@ -92,11 +106,16 @@ catalog eval modes; adapter and journey rows present; leak tokens carried; card 
 workspace-only and wiring no Pip (markers only); preset used when the wiring matches; levers declared once and
 answering every miss.
 
-Ratchets over the source tree (lower the number in the change that moves a family):
-Pip wired by hand in a primitive (177), hand-built `response: 'speech'` assignments (90), hand-written "also accept" key text (12), levers built outside a
-lever set (171), scripted fallbacks beside the workspace (94), hand-written key schema fields in generators (1),
-`adapters/*Live.ts` (161), and
-`PROSE_GUIDANCE_FAMILIES` in `activityContract.test.ts` (161).
+A boss family exports no scripted cue builders (`itemCue`, `moveOnCue`, `completeCue`, `pronounceCue`,
+`judgingContract`, `correctionLines`, `verifyLine`, `*PackBase`) from any module its boss or component imports: the
+boss is the one description of the activity. A boss id may not appear in `DI_PORTS` (`service/qa/di/diDrivePlan.ts`): that drive replays scripted cues the tutor
+no longer receives; the boss's `drive` is its harness.
+
+Ratchets over the source tree (lower the number in the change that moves a family; the current ceilings are in
+`boss.test.ts`, not copied here): Pip wired by hand, hand-built `response: 'speech'` assignments, hand-written
+"also accept" key text, levers built outside a lever set, scripted fallbacks beside the workspace, hand-written tier
+support facts (0), hand-written key schema fields in generators, `adapters/*Live.ts`, and `PROSE_GUIDANCE_FAMILIES`
+in `activityContract.test.ts`.
 
 ## Testing a boss
 

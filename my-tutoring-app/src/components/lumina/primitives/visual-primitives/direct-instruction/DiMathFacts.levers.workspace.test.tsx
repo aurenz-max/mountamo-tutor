@@ -78,7 +78,7 @@ it('subtraction: take_one_away is an ungraded easier fact, then the full fact is
   expect(q(h, '[data-dot-crossed]')).toHaveLength(3);
   h.dispatch('pull_lever', { lever: 'take_one_away' });
   expect(h.state().task!.itemId).toBe(`${full}~simpler`);
-  expect(h.state().task!.workspace!.expectedAnswer).toBe('four');
+  expect(h.state().task!.workspace!.expectedAnswer).toMatch(/^"four"\./);
   expect(q(h, '[data-practice-item]')[0].textContent).toBe('5-1');
   expect(q(h, '[data-dot-crossed]')).toHaveLength(0);
   h.say('three'); h.feedback('incorrect', 'retry');

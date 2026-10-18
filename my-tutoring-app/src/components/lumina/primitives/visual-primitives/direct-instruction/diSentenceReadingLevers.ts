@@ -22,7 +22,8 @@
  * - `short_sight_line` (sight_phrase_sentence): a shorter sight-heavy menu sentence that shares no word with the ITEM
  *   (R8: sight sentences share "you", "can", "see" across a session, so the rule is item-scoped). Refused on 3 words.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { diSentenceReadingCard } from './diSentenceReading.card';
 import { PRACTICE_LINES, practiceLineLeak, printedSet, wordsOf } from '../literacy/decodablePracticeLines';
 import { buildSentenceReadingItems, type SentenceReadingItem } from './diSentenceReadingDomain';
 import { SENTENCE_MENU } from './diSentenceReadingMenu';
@@ -82,37 +83,37 @@ export function simplerLine(item: SentenceReadingItem, lever: string, items: rea
   return null;
 }
 
-export function sentenceLevers(item: SentenceReadingItem | null, pulled: readonly string[], items: readonly SentenceReadingItem[]): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const practice = 'Opens a shorter line first. The learner reads it; do not read it for them. It is not graded; the full sentence comes back after it.';
-  const out: WorkspaceLever[] = [];
-  if (modelFor(item, items)) out.push(lever(MODEL_SENTENCE, 'help', 'both', ['word_skip', 'word_swap'],
-    'The learner leaves out or changes a word, or does not know how to start.',
-    'Shows a small card with a DIFFERENT sentence (onScreen gives it). Read it as your turn, one word at a time, pointing '
-      + '("My turn: …"). Then ask the learner to read their own sentence. Never read their sentence or any word of it, and '
-      + 'never say "so yours says…".'));
-  out.push(lever(TRACKING_UNDERLINE, 'help', 'shown', ['word_skip'],
-    'The learner skips a word.',
-    'Draws a line under every word and an arrow pointing left to right: touch each word in turn. Read none of them.'));
-  if (item.challengeType !== 'sight_phrase_sentence' && wordsOf(item.text).some(isCvcWord)) out.push(lever(SOUND_DOTS, 'help', 'shown',
-    ['word_swap'], 'The learner reads a word as a different word.',
-    'Puts a dot under each letter of the words that can be sounded out (none under the others). Say nothing about which word.'));
-  if (simplerLine(item, SHORT_LINE, items)) out.push(lever(SHORT_LINE, 'simplify', 'shown', ['word_skip', 'word_swap'],
-    'This sentence is too long to read yet.', practice));
-  if (simplerLine(item, SHORT_SIGHT_LINE, items)) out.push(lever(SHORT_SIGHT_LINE, 'simplify', 'shown', ['word_skip', 'word_swap'],
-    'This sentence is too long to read yet.', practice));
-  return out;
-}
+/** What the levers read beyond the item: the session's sentences, so a model or practice line shares no word with one. */
+export interface SentenceLeverContext { items: readonly SentenceReadingItem[] }
 
-/** What the pulled levers put on screen, as a scene fact. Gives the model; never reads the child's sentence. */
-export function sentenceLeverFacts(item: SentenceReadingItem | null, pulled: readonly string[], items: readonly SentenceReadingItem[]): string {
-  if (!item) return '';
-  const model = pulled.includes(MODEL_SENTENCE) ? modelFor(item, items) : null;
-  return [
-    model && `Beside the learner's sentence, a model card shows a different sentence: "${model}". It shares no word with theirs.`,
-    pulled.includes(TRACKING_UNDERLINE) && 'A line sits under every printed word, with an arrow pointing left to right.',
-    pulled.includes(SOUND_DOTS) && 'Dots sit under the letters of the words that can be sounded out.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+const PRACTICE = 'Opens a shorter line first. The learner reads it; do not read it for them. It is not graded; the full sentence comes back after it.';
+const DECODABLE_MODES = ['decodable_sentence', 'read_sentence', 'sentence_review'];
+
+/** Every lever of the pack, by type, in the order the tutor sees them. */
+export const SENTENCE_LEVERS = leverSet<SentenceReadingItem, SentenceLeverContext>({
+  modeOf: item => item.challengeType,
+  missesOf: mode => diSentenceReadingCard.modes[mode]?.misses ?? [],
+  support: { tier: item => item.supportTier ?? 'easy', different: 'a different sentence', own: 'this sentence' },
+  specs: [
+    { id: MODEL_SENTENCE, type: 'model', answers: 'all',
+      when: 'The learner leaves out or changes a word, or does not know how to start.',
+      does: 'Shows a small card with a DIFFERENT sentence (onScreen gives it). Read it as your turn, one word at a time, pointing '
+        + '("My turn: …"). Then ask the learner to read their own sentence. Never read their sentence or any word of it, and '
+        + 'never say "so yours says…".',
+      content: (item, { items }) => modelFor(item, items),
+      fact: (model: string) => `Beside the learner's sentence, a model card shows a different sentence: "${model}". It shares no word with theirs.` },
+    { id: TRACKING_UNDERLINE, type: 'marks', answers: ['word_skip'],
+      when: 'The learner skips a word.',
+      does: 'Draws a line under every word and an arrow pointing left to right: touch each word in turn. Read none of them.',
+      fact: 'A line sits under every printed word, with an arrow pointing left to right.' },
+    { id: SOUND_DOTS, type: 'marks', modes: DECODABLE_MODES, answers: ['word_swap'],
+      offer: item => wordsOf(item.text).some(isCvcWord),
+      when: 'The learner reads a word as a different word.',
+      does: 'Puts a dot under each letter of the words that can be sounded out (none under the others). Say nothing about which word.',
+      fact: 'Dots sit under the letters of the words that can be sounded out.' },
+    { id: SHORT_LINE, type: 'easier', modes: DECODABLE_MODES, carrier: 'shown', answers: ['word_skip', 'word_swap'],
+      when: 'This sentence is too long to read yet.', does: PRACTICE, content: (item, { items }) => simplerLine(item, SHORT_LINE, items) },
+    { id: SHORT_SIGHT_LINE, type: 'easier', modes: ['sight_phrase_sentence'], carrier: 'shown', answers: ['word_skip', 'word_swap'],
+      when: 'This sentence is too long to read yet.', does: PRACTICE, content: (item, { items }) => simplerLine(item, SHORT_SIGHT_LINE, items) },
+  ],
+});

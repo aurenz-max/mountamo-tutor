@@ -4,7 +4,7 @@ import { DI_CATALOG } from '../../../service/manifest/catalog/di';
 import { SIGHT_LOOKALIKES } from '../literacy/spokenReadingMisses';
 import { buildWordReadingItems, diWordReadingSpokenMisses, type DiWordReadingChallenge, type WordReadingItem } from './diWordReadingDomain';
 import type { DiWordReadingChallengeType } from './diWordReadingModes';
-import { BLEND_SLIDE, MODEL_WORD, SHORT_WORD, SOUND_DOTS, TRACKING_ARROW, blendOf, modelFor, modelLeaks, shortWordFor, wordLeverFacts, wordLevers } from './diWordReadingLevers';
+import { BLEND_SLIDE, MODEL_WORD, SHORT_WORD, SOUND_DOTS, TRACKING_ARROW, blendOf, modelFor, modelLeaks, shortWordFor, WORD_LEVERS } from './diWordReadingLevers';
 import cvcReading from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-reading.cvc_reading.json';
 import readWord from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-reading.read_word.json';
 import sightWord from '../../../components/live-activity/runtime/testing/w1-payloads/di-word-reading.sight_word.json';
@@ -54,7 +54,7 @@ describe('model_word: a different word that gives no route to this one', () => {
   it('every saved item has a model, and no scene fact says the item\'s word', () => {
     for (const session of SAVED) for (const it0 of session) {
       expect(modelFor(it0, session), it0.word).not.toBeNull();
-      const fact = wordLeverFacts(it0, wordLevers(it0, [], session).map(l => l.id), session);
+      const fact = WORD_LEVERS.onScreen(it0, { items: session }, WORD_LEVERS.declare(it0, { items: session }, []).map(l => l.id));
       // The fact names the model in quotes; the item's own word is never the model.
       expect(fact, it0.word).not.toContain(`"${it0.word}"`);
     }
@@ -82,9 +82,9 @@ describe('short_word (R7): a two-letter word, the same act with one sound fewer'
 describe('the lever set, and which lever answers which miss', () => {
   it('a decodable word gets the model, three silent print levers and short_word; a sight word only the model (R6)', () => {
     const [cvc] = items(['cat'], 'cvc_reading');
-    expect(wordLevers(cvc, [], [cvc]).map(l => l.id)).toEqual([MODEL_WORD, BLEND_SLIDE, SOUND_DOTS, TRACKING_ARROW, SHORT_WORD]);
+    expect(WORD_LEVERS.declare(cvc, { items: [cvc] }, []).map(l => l.id)).toEqual([MODEL_WORD, BLEND_SLIDE, SOUND_DOTS, TRACKING_ARROW, SHORT_WORD]);
     const [sight] = items(['the'], 'sight_word');
-    expect(wordLevers(sight, [], [sight]).map(l => l.id)).toEqual([MODEL_WORD]);
+    expect(WORD_LEVERS.declare(sight, { items: [sight] }, []).map(l => l.id)).toEqual([MODEL_WORD]);
   });
 
 
@@ -96,14 +96,14 @@ describe('the lever set, and which lever answers which miss', () => {
     ['letter_name', [], MODEL_WORD],
   ] as const)('cvc: %s with %j on screen → %s', (miss, pulled, expected) => {
     const [cvc] = items(['pan'], 'cvc_reading');
-    expect(nextLever(wordLevers(cvc, pulled, [cvc]), miss)).toBe(expected);
+    expect(nextLever(WORD_LEVERS.declare(cvc, { items: [cvc] }, pulled), miss)).toBe(expected);
   });
 
   it('every catalog miss is answered on the saved payloads, and every named miss is listed for its mode', () => {
     const answered = new Map<string, Set<string>>();
     for (const session of SAVED) for (const it0 of session) {
       const set = answered.get(it0.challengeType) ?? new Set<string>();
-      wordLevers(it0, [], session).forEach(l => l.answers?.forEach(a => set.add(a)));
+      WORD_LEVERS.declare(it0, { items: session }, []).forEach(l => l.answers?.forEach(a => set.add(a)));
       answered.set(it0.challengeType, set);
       for (const m of diWordReadingSpokenMisses(it0)) expect(CATALOG.misses![it0.challengeType], `${it0.id} ${m.id}`).toContain(m.id);
     }

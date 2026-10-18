@@ -19,7 +19,8 @@
  *   Never a session word, and never the start or end of one (at for cat gives away most of it).
  * A sight word the child does not know gets no lever (R6): it has no decodable path, and hearing it is the answer.
  */
-import type { WorkspaceLever } from '../../../components/live-activity/runtime/contract';
+import { leverSet } from '../../../components/live-activity/bossLevers';
+import { diWordReadingCard } from './diWordReading.card';
 import { PRACTICE_WORDS } from '../literacy/cvcSpellerLevers';
 import { SIGHT_LOOKALIKES } from '../literacy/spokenReadingMisses';
 import { buildWordReadingItems, type WordReadingItem } from './diWordReadingDomain';
@@ -74,48 +75,43 @@ export function shortWordFor(item: WordReadingItem, items: readonly WordReadingI
   return built ?? null;
 }
 
-export function wordLevers(item: WordReadingItem | null, pulled: readonly string[], items: readonly WordReadingItem[]): WorkspaceLever[] {
-  if (!item) return [];
-  const lever = (id: string, kind: WorkspaceLever['kind'], carrier: WorkspaceLever['carrier'], answers: string[], when: string,
-    does: string): WorkspaceLever => ({ id, kind, carrier, pulled: pulled.includes(id), answers, when, does });
-  const out: WorkspaceLever[] = [];
-  const dec = decodable(item);
-  if (modelFor(item, items)) out.push(lever(MODEL_WORD, 'help', 'both',
-    dec ? ['letter_name', 'sounds_no_word', 'read_backwards', ...POSITION] : ['letter_name', 'sounds_no_word', 'similar_word'],
-    'The learner spells the word, says sounds with no word, says a different word, or does not know how to start.',
-    dec
-      ? 'Shows a small card with a DIFFERENT word and its picture (onScreen names it). Read it as your turn, sounds then the '
-        + 'word, sweeping left to right ("My turn: sss-uuu-nnn, sun"). Then ask the learner to read their own word. Never sound '
-        + 'out, name, or rhyme their word.'
-      : 'Shows a small card with a DIFFERENT sight word (onScreen names it). Say it once, whole, as your turn ("My turn: this word '
-        + 'is …"); never sound it out. Then ask the learner to read their own word. Never say their word.'));
-  if (dec) {
-    out.push(lever(BLEND_SLIDE, 'help', 'shown', ['sounds_no_word'],
-      'The learner says the sounds and never the whole word.',
-      'Slides the printed letters together over an arrow. Nothing plays; say "slide them together", never the word.'));
-    out.push(lever(SOUND_DOTS, 'help', 'shown', POSITION,
-      'The learner says a real word with one sound changed.',
-      'Puts a dot under each letter: one stop per sound for a finger. Say nothing about which sound.'));
-    out.push(lever(TRACKING_ARROW, 'help', 'shown', ['read_backwards'],
-      'The learner reads the word backwards.',
-      'Draws an arrow under the word pointing left to right.'));
-  }
-  if (shortWordFor(item, items)) out.push(lever(SHORT_WORD, 'simplify', 'shown', ['letter_name', 'sounds_no_word', ...POSITION],
-    'This word is too long to blend yet.',
-    'Opens a shorter word first, two letters, same job: read it. It is not graded; the full word comes back after it. Do not read it for the learner.'));
-  return out;
-}
+/** What the levers read beyond the item: the session's words, so a model is never a word the session asks. */
+export interface WordLeverContext { items: readonly WordReadingItem[] }
 
-/** What the pulled levers put on screen, as a scene fact. Names the model; never the child's word. */
-export function wordLeverFacts(item: WordReadingItem | null, pulled: readonly string[], items: readonly WordReadingItem[]): string {
-  if (!item) return '';
-  const model = pulled.includes(MODEL_WORD) ? modelFor(item, items) : null;
-  return [
-    model && (model.decodable
-      ? `Beside the learner's word, a model card shows a different word with its picture: "${model.word}", read ${blendOf(model.word)}, ${model.word}. It is not this word.`
-      : `Beside the learner's word, a model card shows a different sight word: "${model.word}", said whole. It is not this word.`),
-    pulled.includes(BLEND_SLIDE) && 'The printed letters slide together over an arrow.',
-    pulled.includes(SOUND_DOTS) && 'A dot sits under each printed letter.',
-    pulled.includes(TRACKING_ARROW) && 'An arrow under the word points left to right.',
-  ].filter((s): s is string => !!s).join(' ');
-}
+const DECODABLE_MODES = ['cvc_reading', 'read_word', 'word_reading_review'];
+
+/** Every lever of the pack, by type, in the order the tutor sees them. */
+export const WORD_LEVERS = leverSet<WordReadingItem, WordLeverContext>({
+  modeOf: item => item.challengeType,
+  missesOf: mode => diWordReadingCard.modes[mode]?.misses ?? [],
+  support: { tier: item => item.supportTier ?? 'easy', different: 'a different word', own: 'this word' },
+  specs: [
+    { id: MODEL_WORD, type: 'model', answers: 'all',
+      when: 'The learner spells the word, says sounds with no word, says a different word, or does not know how to start.',
+      does: item => (decodable(item)
+        ? 'Shows a small card with a DIFFERENT word and its picture (onScreen names it). Read it as your turn, sounds then the '
+          + 'word, sweeping left to right ("My turn: sss-uuu-nnn, sun"). Then ask the learner to read their own word. Never sound '
+          + 'out, name, or rhyme their word.'
+        : 'Shows a small card with a DIFFERENT sight word (onScreen names it). Say it once, whole, as your turn ("My turn: this word '
+          + 'is …"); never sound it out. Then ask the learner to read their own word. Never say their word.'),
+      content: (item, { items }) => modelFor(item, items),
+      fact: (model: WordModel) => (model.decodable
+        ? `Beside the learner's word, a model card shows a different word with its picture: "${model.word}", read ${blendOf(model.word)}, ${model.word}. It is not this word.`
+        : `Beside the learner's word, a model card shows a different sight word: "${model.word}", said whole. It is not this word.`) },
+    { id: BLEND_SLIDE, type: 'marks', modes: DECODABLE_MODES, answers: ['sounds_no_word'], offer: decodable,
+      when: 'The learner says the sounds and never the whole word.',
+      does: 'Slides the printed letters together over an arrow. Nothing plays; say "slide them together", never the word.',
+      fact: 'The printed letters slide together over an arrow.' },
+    { id: SOUND_DOTS, type: 'marks', modes: DECODABLE_MODES, answers: POSITION, offer: decodable,
+      when: 'The learner says a real word with one sound changed.',
+      does: 'Puts a dot under each letter: one stop per sound for a finger. Say nothing about which sound.',
+      fact: 'A dot sits under each printed letter.' },
+    { id: TRACKING_ARROW, type: 'marks', modes: DECODABLE_MODES, answers: ['read_backwards'], offer: decodable,
+      when: 'The learner reads the word backwards.', does: 'Draws an arrow under the word pointing left to right.',
+      fact: 'An arrow under the word points left to right.' },
+    { id: SHORT_WORD, type: 'easier', modes: DECODABLE_MODES, carrier: 'shown', answers: ['letter_name', 'sounds_no_word', ...POSITION],
+      when: 'This word is too long to blend yet.',
+      does: 'Opens a shorter word first, two letters, same job: read it. It is not graded; the full word comes back after it. Do not read it for the learner.',
+      content: (item, { items }) => shortWordFor(item, items) },
+  ],
+});

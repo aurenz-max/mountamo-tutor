@@ -5,7 +5,7 @@ import { planSubtraction } from './diWorkedProcedurePlan';
 import { itemsFromProblems, type WorkedProblemSpec, type WorkedProcedureItem } from './diWorkedProcedureScript';
 import { workedProcedureSpokenMisses } from './diWorkedProcedureWorkspace';
 import { FEWER_COLUMNS, MODEL_PROBLEM, TAKE_AWAY_CUBES, TOP_BLOCKS, fewerColumnsFor, modelFor, modelLeaks, modelWalk,
-  procedureLeverFacts, procedureLevers } from './diWorkedProcedureLevers';
+  PROCEDURE_LEVERS } from './diWorkedProcedureLevers';
 import noRegroup from '../../../components/live-activity/runtime/testing/w1-payloads/di-worked-procedure.subtract_no_regroup.json';
 import regroup from '../../../components/live-activity/runtime/testing/w1-payloads/di-worked-procedure.subtract_regroup.json';
 import regroup3 from '../../../components/live-activity/runtime/testing/w1-payloads/di-worked-procedure.subtract_regroup-3digit-hard.json';
@@ -53,7 +53,7 @@ describe('model_problem: a different subtraction that says no step answer of thi
     for (const c of model.columns) for (const o of own.columns)
       expect([`${c.top}/${c.bottom}`]).not.toContain(`${o.top}/${o.bottom}`);
     expect(spokenNumbers(walk).has(own.difference)).toBe(false);
-    expect(procedureLeverFacts(it0, [MODEL_PROBLEM])).not.toContain(`${own.difference}`);
+    expect(PROCEDURE_LEVERS.onScreen(it0, null, [MODEL_PROBLEM])).not.toContain(`${own.difference}`);
   });
 });
 
@@ -61,14 +61,14 @@ describe('help levers per step', () => {
   it('a regroup decide step gets the model and top_blocks (R9); a subtract step gets take_away_cubes, not top_blocks', () => {
     const [decide, subtract] = steps(52, 28);
     expect(decide.kind).toBe('decide');
-    expect(procedureLevers(decide, []).map(l => l.id)).toEqual([MODEL_PROBLEM, TOP_BLOCKS]);
+    expect(PROCEDURE_LEVERS.declare(decide, null, []).map(l => l.id)).toEqual([MODEL_PROBLEM, TOP_BLOCKS]);
     expect(subtract.kind).toBe('subtract');
-    expect(procedureLevers(subtract, []).map(l => l.id)).toEqual([MODEL_PROBLEM, TAKE_AWAY_CUBES]);
+    expect(PROCEDURE_LEVERS.declare(subtract, null, []).map(l => l.id)).toEqual([MODEL_PROBLEM, TAKE_AWAY_CUBES]);
   });
 
   it('every no-regroup step gets take_away_cubes and top_blocks; never a simplify', () => {
     for (const it0 of steps(57, 23, 'subtract_no_regroup'))
-      expect(procedureLevers(it0, [], 'one_over').map(l => l.id)).toEqual([MODEL_PROBLEM, TOP_BLOCKS, TAKE_AWAY_CUBES]);
+      expect(PROCEDURE_LEVERS.declare(it0, null, [], 'one_over').map(l => l.id)).toEqual([MODEL_PROBLEM, TOP_BLOCKS, TAKE_AWAY_CUBES]);
   });
 });
 
@@ -76,9 +76,9 @@ describe('fewer_columns: only on a 3-digit tens regroup, only after no_decrement
   const tens = steps(630, 498).find(i => i.kind === 'decide' && i.columnIndex === 1 && i.regroup)!;
   it('is declared only after no_decrement', () => {
     expect(tens).toBeDefined();
-    expect(procedureLevers(tens, []).map(l => l.id)).not.toContain(FEWER_COLUMNS);
-    expect(procedureLevers(tens, [], 'upside_down_column').map(l => l.id)).not.toContain(FEWER_COLUMNS);
-    expect(procedureLevers(tens, [], 'no_decrement').map(l => l.id)).toContain(FEWER_COLUMNS);
+    expect(PROCEDURE_LEVERS.declare(tens, null, []).map(l => l.id)).not.toContain(FEWER_COLUMNS);
+    expect(PROCEDURE_LEVERS.declare(tens, null, [], 'upside_down_column').map(l => l.id)).not.toContain(FEWER_COLUMNS);
+    expect(PROCEDURE_LEVERS.declare(tens, null, [], 'no_decrement').map(l => l.id)).toContain(FEWER_COLUMNS);
   });
 
   it('builds a 2-digit ones regroup decide step, not the item\'s pair, and not its new numbers', () => {
@@ -104,13 +104,13 @@ describe('starting positions and which lever answers which miss', () => {
     ['upside_down_column', [MODEL_PROBLEM], TOP_BLOCKS],
     ['no_decrement', [MODEL_PROBLEM], TOP_BLOCKS],
   ] as const)('regroup decide: %s with %j on screen → %s', (miss, pulled, expected) => {
-    expect(nextLever(procedureLevers(steps(52, 28)[0], pulled, miss), miss)).toBe(expected);
+    expect(nextLever(PROCEDURE_LEVERS.declare(steps(52, 28)[0], null, pulled, miss), miss)).toBe(expected);
   });
 
   it('every catalog miss is answered on the saved payloads, and every named miss is listed', () => {
     for (const session of SAVED) {
       const mode = session[0].challengeType;
-      const answered = new Set(session.flatMap(i => procedureLevers(i, [], 'no_decrement').flatMap(l => l.answers ?? [])));
+      const answered = new Set(session.flatMap(i => PROCEDURE_LEVERS.declare(i, null, [], 'no_decrement').flatMap(l => l.answers ?? [])));
       for (const miss of CATALOG.misses![mode]) expect(answered.has(miss), `${mode}: ${miss}`).toBe(true);
       for (const i of session) for (const m of workedProcedureSpokenMisses(i)) expect(CATALOG.misses![mode], `${i.id} ${m.id}`).toContain(m.id);
     }

@@ -36,8 +36,9 @@
  *      accurate. A near-miss word is never accepted, however close it sounds.
  */
 import type { TeachingItem } from '../../../hooks/teachingItemContract';
-import type { TeachingAssignment, WorkspaceScene } from '../../../components/live-activity/runtime/useTeachingWorkspace';
+import { spokenKeyText } from '../../../components/live-activity/spokenKey';
 import type { KnownMiss } from '../../../components/live-activity/runtime/spokenMissContract';
+import type { SceneOf } from '../../../components/live-activity/bossLevers';
 import { lineReadingMisses } from '../literacy/spokenReadingMisses';
 import { diSentenceReadingModePlan, DI_SENTENCE_READING_MODES, type DiSentenceReadingChallengeType }
   from './diSentenceReadingModes';
@@ -147,16 +148,17 @@ export function askFor(): string {
 }
 
 /**
- * The success condition, and what is NOT it — short, because this sentence is
+ * The spoken key (`spokenKeyText`): the success condition, and what is NOT it — short, because this sentence is
  * what a tutor's feedback gets judged against. Every challenge type shares this
  * SAME judging criteria (the class the standing-gate sitting benched); what
  * differs between them is which sentences are drawn, not how a read is judged.
  */
-function assignmentFor(c: DiSentenceReadingChallenge): string {
-  return `The learner must read the printed sentence "${sentenceText(c)}" aloud, every word in order. `
-    + 'A word skipped, added, or read as a different word is a miss, however small — a near-sounding word '
-    + 'is not close enough. Catching and fixing their own slip mid-read still counts as an accurate read. '
-    + 'Slow, effortful sounding-out that lands on the right words is correct; speed is never judged.';
+function keyFor(c: DiSentenceReadingChallenge): string {
+  return spokenKeyText({ answer: sentenceText(c), alsoAccept: [],
+    acceptRule: 'Catching and fixing their own slip mid-read still counts as an accurate read. Slow, effortful '
+      + 'sounding-out that lands on the right words is correct; speed is never judged.',
+    signatureError: 'Every word must be read, in order: a word skipped, added, or read as a different word is a miss, '
+      + 'however small, and a near-sounding word is not close enough.' });
 }
 
 /** Expand a generated pool into the assignments the workspace actually asks.
@@ -176,18 +178,11 @@ export function buildSentenceReadingItems(challenges: DiSentenceReadingChallenge
     emoji: c.emoji ?? '',
     ask: askFor(),
     accepted: sentenceText(c),
-    assignment: assignmentFor(c),
+    assignment: keyFor(c),
     answerKind: diSentenceReadingModePlan(c).answerStep.actionContract.answerKind === 'voice' ? 'voice' : 'gesture',
     responseClass: 'sentence_read_aloud',
   }));
 }
-
-/** The item as the tutor and the outcome observer are told it. Every mode is spoken: the
- *  child reads print aloud, the tutor hears the audio and JEV reads its completed feedback. */
-export const workspaceAssignment = (item: SentenceReadingItem): TeachingAssignment => {
-  const misses = diSentenceSpokenMisses(item);
-  return { id: item.id, task: item.ask, expectedAnswer: item.accepted, response: 'speech', ...(misses.length ? { misses } : {}) };
-};
 
 /** What a wrong spoken read of the sentence shows (handoff 20 Part B), with decodable-reader's ids. */
 export type SpokenSentenceMiss = 'word_skip' | 'word_swap';
@@ -200,17 +195,13 @@ export function diSentenceSpokenMisses(item: SentenceReadingItem): KnownMiss[] {
 /** The drawn stage: the printed sentence, one markable object. Connected text has no
  *  discrete sound-out sub-units the way a single decodable word does, so unlike
  *  word reading there is no per-letter demonstration target — only the whole sentence. */
-export const workspaceScene = (item: SentenceReadingItem): WorkspaceScene => ({
+export const workspaceScene = (item: SentenceReadingItem): SceneOf => ({
   objects: [
     { id: 'sentence', selected: false, group: 'assignment target (gold ring)',
       label: `the sentence "${item.text}" printed on the card, which the learner must read aloud` },
   ],
-  facts: { kind: item.challengeType, assignment: item.assignment, printedSentence: item.text,
+  facts: { kind: item.challengeType, printedSentence: item.text,
     wordCount: item.wordCount,
-    // DI's model is a DIFFERENT sentence, never this one (ruling 2026-10-02, R2): easy starts with its card on screen.
-    support: item.supportTier === 'hard' ? 'read it cold: read nothing before the learner reads, and never read this sentence'
-      : item.supportTier === 'medium' ? 'the learner reads first; after a miss, model a different sentence with the model_sentence lever, never this one'
-        : 'before the learner tries, pull the model lever (a card of a different sentence): read it as your turn, then ask for this one. Never read this sentence',
     markMeaning: 'Purple dashed marks are yours. They point at the printed sentence while you teach; '
       + 'they are not the learner reading, and they never move the gold ring off the sentence.' },
 });

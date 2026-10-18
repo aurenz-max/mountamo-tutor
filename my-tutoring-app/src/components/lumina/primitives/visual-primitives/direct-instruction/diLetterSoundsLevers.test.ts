@@ -4,7 +4,7 @@ import { DI_CATALOG } from '../../../service/manifest/catalog/di';
 import { buildLetterSoundItems, diLetterSoundSpokenMisses, type DiLetterSoundChallenge, type LetterSoundItem } from './diLetterSoundsDomain';
 import type { DiLetterSoundChallengeType } from './diLetterSoundsModes';
 import { LETTER_SOUND_MENU } from './diLetterSoundsMenu';
-import { FIRST_BOX, KEYWORD_PICTURE, KEYWORD_SOUNDS, MODEL_SOUND, SOUND_ARROW, letterLeverFacts, letterLevers, modelFor,
+import { FIRST_BOX, KEYWORD_PICTURE, KEYWORD_SOUNDS, MODEL_SOUND, SOUND_ARROW, LETTER_LEVERS, modelFor,
   pictureShown, startingLevers } from './diLetterSoundsLevers';
 import letterSound from '../../../components/live-activity/runtime/testing/w1-payloads/di-letter-sounds.letter_sound.json';
 import stops from '../../../components/live-activity/runtime/testing/w1-payloads/di-letter-sounds.letter_sound-stops.json';
@@ -59,7 +59,7 @@ describe('model_sound: a different letter of the same kind, never a route to thi
     const without = session.filter(i => !expectSafeModel(i, session)).map(i => i.letter);
     // The early items of a 20-letter review have every other letter still to come. Pinned so a change is seen.
     expect(without).toEqual(['m', 'a']);
-    for (const l of without) expect(letterLevers(session.find(i => i.letter === l)!, [], session).map(x => x.id)).not.toContain(MODEL_SOUND);
+    for (const l of without) expect(LETTER_LEVERS.declare(session.find(i => i.letter === l)!, { items: session }, []).map(x => x.id)).not.toContain(MODEL_SOUND);
   });
 });
 
@@ -70,8 +70,8 @@ describe('the lever set per mode', () => {
     ['short vowel', items(['a'], 'letter_sound_review')[0], [MODEL_SOUND, KEYWORD_PICTURE]],
     ['onset', items(['f'], 'first_sound_in_word')[0], [MODEL_SOUND, FIRST_BOX]],
   ] as const)('%s', (_, it0, expected) => {
-    expect(letterLevers(it0, [], [it0]).map(l => l.id)).toEqual(expected);
-    expect(letterLevers(it0, [], [it0]).every(l => l.kind === 'help')).toBe(true);
+    expect(LETTER_LEVERS.declare(it0, { items: [it0] }, []).map(l => l.id)).toEqual(expected);
+    expect(LETTER_LEVERS.declare(it0, { items: [it0] }, []).every(l => l.kind === 'help')).toBe(true);
   });
 
   it('the keyword picture is drawn on an onset item always, on a letter item only as the lever (R4)', () => {
@@ -98,7 +98,7 @@ describe('the lever set per mode', () => {
 
   it('a scene fact never says the item\'s sound', () => {
     for (const session of SAVED) for (const it0 of session) {
-      const fact = letterLeverFacts(it0, letterLevers(it0, [], session).map(l => l.id), session);
+      const fact = LETTER_LEVERS.onScreen(it0, { items: session }, LETTER_LEVERS.declare(it0, { items: session }, []).map(l => l.id));
       expect(fact, it0.id).not.toContain(it0.spoken);
     }
   });
@@ -113,14 +113,14 @@ describe('this wrong answer, then this lever', () => {
     ['keyword_word', 'm', 'first_sound_in_word', [], MODEL_SOUND],
   ] as const)('%s on %s (%s), with %j on screen → %s', (miss, l, type, pulled, expected) => {
     const [it0] = items([l], type);
-    expect(nextLever(letterLevers(it0, pulled, [it0]), miss)).toBe(expected);
+    expect(nextLever(LETTER_LEVERS.declare(it0, { items: [it0] }, pulled), miss)).toBe(expected);
   });
 
   it('every catalog miss is answered on the saved payloads, and every named miss is listed for its mode', () => {
     const answered = new Map<string, Set<string>>();
     for (const session of SAVED) for (const it0 of session) {
       const set = answered.get(it0.challengeType) ?? new Set<string>();
-      letterLevers(it0, [], session).forEach(l => l.answers?.forEach(a => set.add(a)));
+      LETTER_LEVERS.declare(it0, { items: session }, []).forEach(l => l.answers?.forEach(a => set.add(a)));
       answered.set(it0.challengeType, set);
       for (const m of diLetterSoundSpokenMisses(it0)) expect(CATALOG.misses![it0.challengeType], `${it0.id} ${m.id}`).toContain(m.id);
     }

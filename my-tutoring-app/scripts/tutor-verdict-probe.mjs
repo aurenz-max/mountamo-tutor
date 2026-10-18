@@ -19,6 +19,11 @@ const server = await vite.createServer({ root: process.cwd(), configFile: false,
   server: { middlewareMode: true, hmr: false, ws: false, watch: null } });
 const runner = vite.createServerModuleRunner(server.environments.ssr, { hmr: false });
 const domain = path => runner.import('/src/components/lumina/primitives/visual-primitives/' + path);
+// A boss scene is published through `leverScene`, as the stage publishes it: the lever set writes `support` and
+// `onScreen`, so the probe replays exactly what the tutor receives.
+const { leverScene } = await runner.import('/src/components/lumina/components/live-activity/bossLevers.ts');
+const published = (scene, set, item, ctx, pulled = []) =>
+  leverScene(scene, { support: set.support(item), onScreen: set.onScreen(item, ctx, pulled) });
 
 const [board, shapes, sounds, words, facts, trains, links, sentences, procedure, wordProblem] = await Promise.all([
   'math/countingBoardDomain.ts', 'math/shapeSorterDomain.ts', 'direct-instruction/diLetterSoundsDomain.ts',
@@ -162,12 +167,12 @@ const SHAPE_CASES = [
 // The stage draws the tier's starting levers (easy: the model card and, on a letter item, the keyword picture) and
 // publishes them as `onScreen`, so the probe does too.
 const soundLevers = await domain('direct-instruction/diLetterSoundsLevers.ts');
+const soundBoss = await domain('direct-instruction/diLetterSounds.boss.ts');
 const soundItem = challenge => {
   const item = only(sounds.buildLetterSoundItems([challenge]), challenge.id);
   const pulled = soundLevers.startingLevers(item, [item]);
   const scene = sounds.workspaceScene(item, { pulled });
-  const onScreen = soundLevers.letterLeverFacts(item, pulled, [item]);
-  return { assignment: sounds.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
+  return { assignment: soundBoss.diLetterSoundsBoss.assignment(item), scene: published(scene, soundLevers.LETTER_LEVERS, item, { items: [item] }, pulled) };
 };
 const SOUND_ITEMS = {
   grapheme: soundItem({ id: 'm', challengeType: 'letter_sound', letter: 'm', spoken: 'mmm', keyword: 'moon', emoji: '🌙', elicitation: 'isolated', articulation: 'held' }),
@@ -209,11 +214,11 @@ const SOUND_CASES = [
 // sounds: a near neighbour affirmed as the printed word, a sound-out praised before
 // the whole word was ever said, and the tutor's own read standing in for the child's.
 const wordLevers = await domain('direct-instruction/diWordReadingLevers.ts');
+const wordBoss = await domain('direct-instruction/diWordReading.boss.ts');
 const wordItem = challenge => {
   const item = only(words.buildWordReadingItems([challenge]), challenge.id);
   const scene = words.workspaceScene(item);
-  const onScreen = wordLevers.wordLeverFacts(item, [], [item]);
-  return { assignment: words.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
+  return { assignment: wordBoss.diWordReadingBoss.assignment(item), scene: published(scene, wordLevers.WORD_LEVERS, item, { items: [item] }) };
 };
 const WORD_ITEMS = {
   cvc: wordItem({ id: 'sam', challengeType: 'cvc_reading', word: 'sam', wordType: 'cvc', graphemes: ['s', 'a', 'm'] }),
@@ -261,11 +266,11 @@ const WORD_CASES = [
 // answer, and a teen and its decade are one unstressed syllable apart.
 // The stage adds what its tier's starting levers draw (the easy model card) as `onScreen`, so the probe does too.
 const factLevers = await domain('direct-instruction/diMathFactsLevers.ts');
+const factBoss = await domain('direct-instruction/diMathFacts.boss.ts');
 const factItem = challenge => {
   const item = only(facts.buildMathFactItems([challenge]), challenge.id);
   const scene = facts.workspaceScene(item);
-  const onScreen = factLevers.mathFactLeverFacts(item, []);
-  return { assignment: facts.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
+  return { assignment: factBoss.diMathFactsBoss.assignment(item), scene: published(scene, factLevers.MATH_FACT_LEVERS, item, null) };
 };
 const FACT_ITEMS = {
   addition: factItem({ id: 'add', challengeType: 'answer_fact', a: 2, b: 1, display: '2 + 1', problem: 'two plus one', answerWord: 'three', answerNumeral: 3, solvedDisplay: '2 + 1 = 3' }),
@@ -411,11 +416,11 @@ const LINK_CASES = [
 // right read; praise for part of the sentence; a slow read or a self-correction that
 // must still count; and the tutor's own model standing in for the child's read.
 const sentenceLevers = await domain('direct-instruction/diSentenceReadingLevers.ts');
+const sentenceBoss = await domain('direct-instruction/diSentenceReading.boss.ts');
 const sentenceItem = challenge => {
   const item = only(sentences.buildSentenceReadingItems([challenge]), challenge.id);
   const scene = sentences.workspaceScene(item);
-  const onScreen = sentenceLevers.sentenceLeverFacts(item, [], [item]);
-  return { assignment: sentences.workspaceAssignment(item), scene: onScreen ? { ...scene, facts: { ...scene.facts, onScreen } } : scene };
+  return { assignment: sentenceBoss.diSentenceReadingBoss.assignment(item), scene: published(scene, sentenceLevers.SENTENCE_LEVERS, item, { items: [item] }) };
 };
 const SENTENCE_ITEMS = {
   cat: sentenceItem({ id: 'cat', challengeType: 'decodable_sentence', text: 'The cat sat.', wordCount: 3 }),
@@ -446,11 +451,13 @@ const SENTENCE_CASES = [
 // LA-13 part 2 measures is the reverse of counting-board's rows: the tutor's natural words for a correct
 // item ("step", "ready to subtract") read as partial credit on the whole problem. The false-credit risks
 // stay: the flipped column, the regroup without the decremented place, a sub-step of the item itself.
+const procedureBoss = await domain('direct-instruction/diWorkedProcedure.boss.ts');
+const procedureLevers = await domain('direct-instruction/diWorkedProcedureLevers.ts');
 const procedureItem = (minuend, subtrahend, challengeType, id) => {
   const item = procedure.workedProcedureItems({ problems: [{ id: `p${minuend}`, minuend, subtrahend, challengeType }] })
     .find(i => i.id === id);
   if (!item) throw new Error(`Fixture ${id} built no item`);
-  return { assignment: procedure.workedProcedureAssignment(item), scene: procedure.workedProcedureScene(item) };
+  return { assignment: procedureBoss.diWorkedProcedureBoss.assignment(item), scene: published(procedure.workedProcedureScene(item), procedureLevers.PROCEDURE_LEVERS, item, null) };
 };
 const PROCEDURE_ITEMS = {
   clean_ones: procedureItem(69, 54, 'subtract_no_regroup', 'p69-c0-decide'),
@@ -496,10 +503,11 @@ const PROCEDURE_CASES = [
 // Each item is one setup step of a printed story. The build step is a checked gesture (the activity's
 // check decides correctness, the observer only reads whether the tutor settled it); the rest are spoken.
 const THEME = { nameA: 'Ben', nameB: 'Ava', nounPlural: 'shells', gainPast: 'picked', gainBase: 'pick', losePast: 'dropped', loseBase: 'drop' };
+const wordProblemLevers = await domain('direct-instruction/diWordProblemLevers.ts');
 const wordProblemItem = (problem, kind, familyShown = false) => {
   const item = wordProblem.wordProblemItems({ problems: [problem] }).find(i => i.kind === kind);
   if (!item) throw new Error(`Fixture ${problem.id} built no ${kind} item`);
-  return { assignment: wordProblem.wordProblemAssignment(item), scene: wordProblem.wordProblemScene(item, { familyShown }) };
+  return { assignment: wordProblem.wordProblemAssignment(item), scene: published(wordProblem.wordProblemScene(item, { familyShown }), wordProblemLevers.WORD_PROBLEM_LEVERS, item, null) };
 };
 const PART_WHOLE = { id: 'wps-1-part_whole-part', frameId: 'part_whole:part', theme: THEME, first: 7, second: 5, adjectivePair: 2, challengeType: 'build_family', maxNumber: 20 };
 const LOSS = { id: 'wps-2-change-loss_change', frameId: 'change:loss_change', theme: THEME, first: 12, second: 7, adjectivePair: 0, challengeType: 'build_family', maxNumber: 20 };
