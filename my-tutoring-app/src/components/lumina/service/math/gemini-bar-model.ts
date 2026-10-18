@@ -33,6 +33,7 @@ import {
   type BarModelRemediationMove,
 } from "./barModelRemediation";
 import { GRAPH_MAX, makeGraphAsk, type GraphRule, type GraphRuleKind } from "../../primitives/visual-primitives/math/barModelBuild";
+import { resolveBarDataset, countsFor, makeOneRowSame, type BarDataset } from "./barModelDataset";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -1716,7 +1717,8 @@ RULES:
 
 /** Gemini supplies only category vocabulary; code owns both data sets. */
 async function generateGraphExplanation(topic: string, gradeContext: string, intent: string,
-  tier: SupportTier | null = null, variant = 0, paired = false): Promise<SubGenResult> {
+  tier: SupportTier | null = null, variant = 0, paired = false, dataset: BarDataset | null = null): Promise<SubGenResult> {
+  if (dataset) return graphExplanationFromDataset(dataset, tier, variant, paired);
   const slots = kCategorySlots(3);
   const response = await ai.models.generateContent({
     model: MODEL,
@@ -1741,7 +1743,7 @@ ${kSettingLine(variant)}`,
   })) : undefined;
   const comparisonFocus = variant % 2 === 0 ? 'same' : 'different';
   const prompt = paired
-    ? `Look at the morning and afternoon graphs. Tell me something that is ${comparisonFocus}.`
+    ? `Look at the morning and afternoon graphs. Tell me something that is ${comparisonFocus === 'same' ? 'the same' : 'different'}.`
     : 'Tell me one thing this graph shows: compare two groups, in your own words.';
   return { title: paired ? 'Our Morning and Afternoon Surveys' : 'Tell Me About Our Graph',
     description: 'Each picture stands for one choice.',
@@ -1752,6 +1754,52 @@ ${kSettingLine(variant)}`,
       hint: tier === 'hard' ? undefined : 'Look along the rows. Which groups have more, fewer, or the same?',
       showBarValues: false, showTargetHighlight: false,
     },
+  };
+}
+
+/**
+ * The lesson named what to graph (bar-model.dataset axis): its categories, its places or
+ * times as the graph labels, and counts ranked as the world ranks them. No model call.
+ */
+function graphExplanationFromDataset(dataset: BarDataset, tier: SupportTier | null, variant: number,
+  paired: boolean): SubGenResult {
+  const cats = dataset.categories;
+  const labels = cats.map((c) => c.label);
+  const ctxs = dataset.contexts;
+  const a = ctxs.length ? ctxs[variant % ctxs.length] : null;
+  const first = countsFor(labels, a?.order ?? [], 1, 9);
+  const values = kRows(cats, first);
+  const hint = tier === 'hard' ? undefined : 'Look along the rows. Which groups have more, fewer, or the same?';
+  const base = { id: '', graphStyle: 'picture' as const, scale: kScale(10, cats[0].emoji), hint,
+    showBarValues: false, showTargetHighlight: false };
+
+  if (!paired) {
+    const graphLabel = a?.name ?? 'Our graph';
+    return { title: a ? `Our Graph for ${a.name}` : 'Tell Me About Our Graph',
+      description: 'Each picture stands for one.',
+      challenge: { ...base, evalMode: 'say_what_it_shows', values, graphLabel,
+        prompt: `This graph shows ${graphLabel}. Tell me one thing it shows: compare two groups, in your own words.` },
+    };
+  }
+
+  // Two contexts compare as the lesson asked; with fewer, the pair keeps the survey labels.
+  const b = ctxs.length >= 2 ? ctxs[(variant + 1) % ctxs.length] : null;
+  const firstLabel = a && b ? a.name : 'Morning';
+  const secondLabel = a && b ? b.name : 'Afternoon';
+  const second = countsFor(labels, b?.order ?? [], 1, 9);
+  let comparisonFocus: 'same' | 'different' = variant % 2 === 0 ? 'same' : 'different';
+  if (comparisonFocus === 'same' && makeOneRowSame(labels, first, second, b?.order ?? [], variant) === null) {
+    comparisonFocus = 'different';
+  }
+  if (comparisonFocus === 'different' && second.every((v, i) => v === first[i])) {
+    second[0] = second[0] === 9 ? 8 : second[0] + 1;
+  }
+  return { title: `${firstLabel} and ${secondLabel}`,
+    description: 'Each picture stands for one.',
+    challenge: { ...base, evalMode: 'compare_two_graphs', values,
+      secondValues: kRows(cats, second), comparisonFocus,
+      graphLabel: firstLabel, secondGraphLabel: secondLabel,
+      prompt: `Look at the ${firstLabel} and ${secondLabel} graphs. Tell me something that is ${comparisonFocus === 'same' ? 'the same' : 'different'}.` },
   };
 }
 
@@ -1779,7 +1827,8 @@ const GRAPH_THEMES: Record<string, readonly { label: string; emoji: string }[]> 
 };
 const THEME_IDS = Object.keys(GRAPH_THEMES);
 
-async function generateMakeGraph(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null, variant = 0): Promise<SubGenResult> {
+async function generateMakeGraph(topic: string, gradeContext: string, intent: string, tier: SupportTier | null = null, variant = 0,
+  dataset: BarDataset | null = null): Promise<SubGenResult> {
   const schema: Schema = {
     type: Type.OBJECT,
     properties: {
@@ -1811,7 +1860,8 @@ THEMES: ${THEME_IDS.join(', ')}
   const raw = JSON.parse(response.text) as Record<string, unknown>;
   const ranked = (Array.isArray(raw.themes) ? raw.themes : []).map(String).filter(t => t in GRAPH_THEMES);
   const theme = ranked.length ? ranked[variant % ranked.length] : THEME_IDS[variant % THEME_IDS.length];
-  const cats = shuffleInPlace([...GRAPH_THEMES[theme]]).slice(0, tier === 'hard' ? 4 : 3);
+  // The lesson's own categories (bar-model.dataset) replace the theme pool when it named them.
+  const cats = shuffleInPlace([...(dataset ? dataset.categories : GRAPH_THEMES[theme])]).slice(0, tier === 'hard' ? 4 : 3);
   const rule: GraphRule = { kind: 'most', a: 0 };
   return {
     title: safeKText(raw.title, 'Make a Graph'),
@@ -1853,10 +1903,13 @@ function assignGraphRules(challenges: BarModelChallenge[], gradeContext: string)
   });
 }
 
-function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: string, intent: string, tier?: SupportTier | null, variant?: number) => Promise<SubGenResult> {
+/** Modes whose content the bar-model.dataset axis can supply. */
+const DATASET_MODES = new Set<BarModelEvalMode>(['say_what_it_shows', 'compare_two_graphs', 'make_graph']);
+
+function subGeneratorFor(mode: BarModelEvalMode): (topic: string, gradeContext: string, intent: string, tier?: SupportTier | null, variant?: number, dataset?: BarDataset | null) => Promise<SubGenResult> {
   switch (mode) {
-    case 'say_what_it_shows': return generateGraphExplanation;
-    case 'compare_two_graphs': return (topic, grade, intent, tier, variant) => generateGraphExplanation(topic, grade, intent, tier, variant, true);
+    case 'say_what_it_shows': return (topic, grade, intent, tier, variant, dataset) => generateGraphExplanation(topic, grade, intent, tier, variant, false, dataset);
+    case 'compare_two_graphs': return (topic, grade, intent, tier, variant, dataset) => generateGraphExplanation(topic, grade, intent, tier, variant, true, dataset);
     case 'build_one_to_one':   return generateBuildOneToOne;
     case 'read_one_to_one':    return generateReadOneToOne;
     case 'most_least':         return generateMostLeast;
@@ -1924,8 +1977,13 @@ export const generateBarModel = async (ctx: GenerationContext): Promise<BarModel
   // Fan out N calls, cycling through the selected per-mode sub-generators. Variance
   // comes from independent generations (per PRD §6a #2 — structured output
   // converges per-call, not across independent calls).
+  // What the lesson asked the graph to show (bar-model.dataset); null keeps the code pools.
+  const dataset = modes.some((m) => DATASET_MODES.has(m)) ? await resolveBarDataset(ctx.scope, gradeContext) : null;
+  if (dataset) console.log(`[BarModel] dataset axis: ${dataset.categories.map((c) => c.label).join(', ')}`
+    + (dataset.contexts.length ? ` | ${dataset.contexts.map((c) => `${c.name}${c.order.length ? ' (ranked)' : ''}`).join(', ')}` : ''));
+
   const subResults = await Promise.all(
-    Array.from({ length: instanceCount }, (_, idx) => subGeneratorFor(modes[idx % modes.length])(topic, gradeContext, intent, supportTier, idx)),
+    Array.from({ length: instanceCount }, (_, idx) => subGeneratorFor(modes[idx % modes.length])(topic, gradeContext, intent, supportTier, idx, dataset)),
   );
 
   // First sub-result provides session-level title/description; both are
