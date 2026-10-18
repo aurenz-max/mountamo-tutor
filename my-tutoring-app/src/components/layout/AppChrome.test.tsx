@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import AppChrome from './AppChrome';
 
 const route = vi.hoisted(() => ({ pathname: '/' }));
@@ -27,6 +27,11 @@ vi.mock('@/components/NavHeader', async () => {
   };
 });
 
+// LegacyAppChrome is lazy() and pulls in NavHeader + AICoachContext + GlobalAICoachToggle.
+// Cold, that import took >8s under jsdom in the full suite and timed the first render out.
+// Load it once here (a hook has its own timeout); lazy() then resolves from the module cache.
+beforeAll(async () => { await import('./LegacyAppChrome'); }, 60_000);
+
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
@@ -45,18 +50,10 @@ describe('route-owned application chrome', () => {
     expect(screen.queryByText('Legacy tutor')).toBeNull();
   });
 
-  // Test-level timeout raised to give the 8000ms findByText below headroom —
-  // vitest's 5000ms default would otherwise kill the test before that wait
-  // could ever resolve.
   it('preserves the coach across older routes, then removes it on entering Lumina', async () => {
     route.pathname = '/practice';
     const view = render(<AppChrome><p>Page content</p></AppChrome>);
-    // First render in the suite to hit the Suspense branch: LegacyAppChrome's
-    // lazy() import is cold here (later renders reuse the resolved module).
-    // It transitively pulls in NavHeader + AICoachContext + GlobalAICoachToggle,
-    // which measured >3s under jsdom on a loaded machine — 3000ms was still
-    // marginal (observed 3007ms), not just the old 1000ms default.
-    await screen.findByText('Connect legacy coach', {}, { timeout: 8000 });
+    await screen.findByText('Connect legacy coach', {}, { timeout: 3000 });
     fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
     expect(screen.getByText('Legacy tutor')).toBeTruthy();
 
@@ -76,7 +73,7 @@ describe('route-owned application chrome', () => {
     await screen.findByText('Connect legacy coach', {}, { timeout: 3000 });
     fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
     expect(screen.getByText('Legacy tutor')).toBeTruthy();
-  }, 10000);
+  });
 
   it('closes the old connection and prevents an in-flight retry from following the student into Lumina', async () => {
     const sockets: FakeSocket[] = [];
@@ -90,8 +87,7 @@ describe('route-owned application chrome', () => {
     vi.stubGlobal('WebSocket', FakeSocket);
     route.pathname = '/practice';
     const view = render(<AppChrome><p>Practice content</p></AppChrome>);
-    // Same cold lazy-import margin as the previous test's first render.
-    await screen.findByText('Connect legacy coach', {}, { timeout: 8000 });
+    await screen.findByText('Connect legacy coach', {}, { timeout: 3000 });
     vi.useFakeTimers();
     fireEvent.click(screen.getByText('Connect legacy coach'));
     expect(sockets).toHaveLength(1);
@@ -105,5 +101,5 @@ describe('route-owned application chrome', () => {
     expect(audio.destroy).toHaveBeenCalledOnce();
     await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
     expect(sockets).toHaveLength(1);
-  }, 10000);
+  });
 });
