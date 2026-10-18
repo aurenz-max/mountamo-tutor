@@ -41,7 +41,7 @@ queue item (a defect class) · `qa/<lane>/` (run evidence) · here, as a row (st
 | 6 | Drawers + curator brief | `qa/drawers/ROADMAP.md` | 18 kinds + one-screen brief committed (9e39be02, bbe0a635). Next DR-2 quality, DR-3 leak, DR-5 tutor. Brief findings: K hook with no pattern drawn, empty Pip dock |
 | 7 | Prerequisite graph + practice selection | `qa/pulse/ROADMAP.md` · `/pulse-fix`, `/pulse-agent` | Model selects (10-13) and sets gates (C13, b40aa75a); C14 backfill on every student 10-16. C15, C18 BUILT 10-16, C19 (Pulse beat back) 10-17, committed ea253f49. Next: C16 browser check (parent report OK), C17, C12 joint fit; T5, T6 residual, 7.14, 7.8, P5 |
 | 8 | Difficulty is code-owned | `my-tutoring-app/qa/difficulty-demo/QUEUE.md` · `/add-item-space`, `/add-word-space`, `/eval-fix` | 25 math spaces, 15 word-space primitives. 8.1a-j + o DONE 10-16, both handoffs closed (8.1f + percent-of space committed 09b94299). Next: 8.1p/q levers (`/add-support-tiers`); 8.1n ruling; 8.2q one browser sitting; HUMAN-CHECKS #185-186 |
-| 9 | Every primitive is a boss card | `references/boss-framework.md` · guards `boss.test.ts` · `/review-live-wiring` | **ACTIVE 10-18 (user).** 12 bosses (10 DI, sorter, cell-builder); support/cues/DI_PORTS guarded 10-18, uncommitted. **Owed:** user 1-sample replay of 10 DI. **Next:** `/review-live-wiring all` → migrate top legacy family |
+| 9 | Every primitive is a boss card | `references/boss-framework.md` · guards `boss.test.ts` · `/review-live-wiring` | **ACTIVE 10-18 (user).** 12 bosses (10 DI, sorter, cell-builder); support/cues/DI_PORTS guarded 10-18, committed 3e78e9ef. **Owed:** user 1-sample replay of 10 DI. **Next:** `/review-live-wiring all` → migrate top legacy family |
 
 ## Proposed WIP (10-15, user to confirm)
 
