@@ -17,15 +17,15 @@ grep -c '^> ### ' WORKSTREAMS.md                                  # 0
 Findings go to: the executor skill (how) · `docs/contracts/<id>.md` (one primitive) · a
 queue item (a defect class) · `qa/<lane>/` (run evidence) · here, as a row (state only).
 
-## Where we are (2026-10-16)
+## Where we are (2026-10-19)
 
 | Item | State |
 |---|---|
-| Branch | `ship/2026-08-10-judged-loop` pushed; `main` = 56fbda8c (10-14), branch 38 ahead after the 10-17 ship (fast-forward owed) |
-| Tree | Shipped 10-17 (ea253f49..HEAD: C15/C18/C19, 8.1f, ecosystem-diorama, dialogue credit, KC-3, science-K fixes, 4.2 step 0). Left out: `backend/tests/tutor_live/replay/*.json` (R2 B1 replay run output, belongs in ignored `qa/tutor-reports/`), `my-tutoring-app/sizes.txt` scratch |
+| Branch | `ship/2026-08-10-judged-loop` = origin (adccebcc); `main` = 6be4994d (10-18), branch 4 ahead (fast-forward owed) |
+| Tree | Clean except untracked `backend/tests/tutor_live/replay/*.json` (18 replay outputs 10-16..10-19; move to ignored `qa/tutor-reports/` or ignore the dir) and `my-tutoring-app/sizes.txt` scratch |
 | Gates | `typecheck:lumina` 0; full tsc 770 baseline (09-29, re-measure) |
 | Human checks | 134 open, next free #185 (`my-tutoring-app/qa/HUMAN-CHECKS.md`); 10-08..10-15 browser debt still lives in queues |
-| WIP | 7 phases marked current vs a limit of 2+1. Proposal 10-15 below, user to confirm |
+| WIP | Commits 10-17..19 touch 9, 8, 4.2, 7; phase 1 starved since 10-16 (R2 B2 unstarted). Over 2+1; proposal below |
 | Handoffs (`qa/HANDOFF-*-2026-10-16.md`) | Done: r1-batch4, 8.1-item-space-fixes, 8.1-decided-forks. Built, browser owed: c15-c18 (C16). In progress: r2 (triage + B1 done; B2-B5 left). Not started: 4.2-construction-site-L1 |
 
 ## Phases
@@ -41,13 +41,13 @@ queue item (a defect class) · `qa/<lane>/` (run evidence) · here, as a row (st
 | 6 | Drawers + curator brief | `qa/drawers/ROADMAP.md` | 18 kinds + one-screen brief committed (9e39be02, bbe0a635). Next DR-2 quality, DR-3 leak, DR-5 tutor. Brief findings: K hook with no pattern drawn, empty Pip dock |
 | 7 | Prerequisite graph + practice selection | `qa/pulse/ROADMAP.md` · `/pulse-fix`, `/pulse-agent` | Model selects (10-13) and sets gates (C13, b40aa75a); C14 backfill on every student 10-16. C15, C18 BUILT 10-16, C19 (Pulse beat back) 10-17, committed ea253f49. Next: C16 browser check (parent report OK), C17, C12 joint fit; T5, T6 residual, 7.14, 7.8, P5 |
 | 8 | Difficulty is code-owned | `my-tutoring-app/qa/difficulty-demo/QUEUE.md` · `/add-item-space`, `/add-word-space`, `/eval-fix` | 25 math spaces, 15 word-space primitives. 8.1a-j + o DONE 10-16, both handoffs closed (8.1f + percent-of space committed 09b94299). Next: 8.1p/q levers (`/add-support-tiers`); 8.1n ruling; 8.2q one browser sitting; HUMAN-CHECKS #185-186 |
-| 9 | Every primitive is a boss card | `references/boss-framework.md` · guards `boss.test.ts` · `/review-live-wiring` | **ACTIVE 10-18 (user).** 12 bosses (10 DI, sorter, cell-builder); support/cues/DI_PORTS guarded 10-18, committed 3e78e9ef. Live signed off by user 10-18 (dice, shapes, procedure; several runs). 10-18 `/review-live-wiring all` done: queue `my-tutoring-app/qa/boss-migration/PLAN-2026-10-18.md` (152 legacy: 17 spoken-ready, 14 say-or-show, 24 say-or-show+board, 22 spoken+tap/build, 2 tap+check, 71 boards, 2 ungraded). Wave 1 pilot shape-sorter DONE 10-18 (13 bosses; also-accept ceiling 10→9 came with it); sorting-station DONE 10-18 (14 bosses, 150 legacy); phoneme-explorer DONE 10-19 (15 bosses, 149 legacy); word-sorter DONE 10-19 (16 bosses, 148 legacy); decodable-reader DONE 10-19 (17 bosses, 147 legacy); story-ribbon DONE 10-19 (18 bosses, 146 legacy); 3d-shape-explorer DONE 10-19 (19 bosses, 145 legacy); push-pull-arena DONE 10-19 (20 bosses, 144 legacy); matter-explorer DONE 10-19 (21 bosses, 143 legacy); genre-explorer DONE 10-19 (22 bosses, 142 legacy); text-structure-analyzer DONE 10-19 (23 bosses, 141 legacy); sentence-analyzer DONE 10-19 (24 bosses, 140 legacy); era-explorer DONE 10-19 (25 bosses, 139 legacy); oral-sentence-studio DONE 10-19 (26 bosses, 138 legacy); states-of-matter DONE 10-19 (27 bosses, 137 legacy); solar-system-explorer DONE 10-19 (28 bosses, 136 legacy); you-and-me DONE 10-19 (29 bosses, 135 legacy); bucket A complete. Gate per family = free checks (USER RULING 10-19); a user Live sample only when a slice touches the shared path. **Next:** wave 0 rulings, then the 3 shared findings in the PLAN's "Queued after wave 1" list, then wave 2 (B-E card values; pilots rocket-builder, counting-board, light-shadow-lab) (`/add-live-tutor-tools`) |
+| 9 | Every primitive is a boss card | `qa/boss-migration/PLAN-2026-10-18.md` · `/add-live-tutor-tools` | **ACTIVE 10-18 (user).** Wave 1 DONE 10-19: 29 bosses, 135 legacy. Gate = free checks (USER 10-19). **Next:** wave 0 rulings (G, number-sequencer modes); the PLAN's 3 shared findings; wave 2 pilots rocket-builder, counting-board, light-shadow-lab |
 
-## Proposed WIP (10-15, user to confirm)
+## Proposed WIP (10-19, user to confirm)
 
-ACTIVE: **8** (difficulty) and **4.2** (dioramas). Opportunistic: **3** paid class Live gates,
-once approved. Park 1, 2, 4.1, 6, 7 at the next pulls above; close 5. **10-15 user:** phase 1
-resumed (R1 first), phase 2 follows it.
+ACTIVE: **9** (bosses, user 10-18) and **1** (R2 B2-B5; user 10-15). Opportunistic: **8**
+(8.1p/q levers). Park 2, 3, 4.1, 4.2, 6, 7 at the next pulls above; close 5. Superseded:
+the 10-15 proposal (8 + 4.2 ACTIVE).
 
 ## Rulings owed (block nothing above unless named)
 
