@@ -265,9 +265,10 @@ whole gate. (c) **No tutor replay per primitive (USER RULING 2026-10-17).** What
 decided by the shared doctrine, which is already proven; a new binding only adds its own payload, and
 the free checks above cover that (the answer must not be in a scene fact, state note, lever text or task
 text before the try). Replay is for a change to the SHARED doctrine, host messages or tool
-descriptions, and the user runs it (`LIVE_TESTING.md`). **Boss path (USER RULING 2026-10-18): one sample, breadth.** A family
-moved to a boss records its moments (free) and hands the user ONE `--samples 1` replay command, not as its gate
-but as a breadth signal on the shared rotation. A miss is fixed once on the shared path (`ROTATION_DOCTRINE`,
+descriptions, and the user runs it (`LIVE_TESTING.md`). **Boss path (USER RULING 2026-10-19, narrowing 10-18): no sample per family.** A family
+moved to a boss is gated by the free checks. Hand the user ONE `--samples 1` command only when the slice touches
+the shared path (a doctrine sentence, a judge or flow value, the assignment or key shape in `boss.ts`, host
+messages, tool descriptions) or adds `words.special`, and name that trigger. A miss is fixed once on the shared path (`ROTATION_DOCTRINE`,
 `WORKSPACE_DOCTRINE`, `boss.ts`), never by re-sampling or by a per-primitive sentence unless the fact is that
 primitive's alone. If a binding needs a primitive-specific
 instruction to the tutor, write the command and the question in the queue row for the user. Do not

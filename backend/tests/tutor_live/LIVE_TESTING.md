@@ -70,6 +70,11 @@ sweep did not record comes back marked pulled in the packet. Until 10-15 an unre
 pulled, and the tutor pulled again: every two-lever reply in the 10-15 lever-turn replay was that
 (`qa/tutor-reports/lever-turn-doctrine-2026-10-15.md`).
 
+**USER RULING 2026-10-19: no sample per family on the boss path.** A family moved to a boss is gated by the free
+checks (`test:primitive`, the boss guards, `boss-card.mjs`). Ask the user for a sample only when a change touches the
+shared path (a doctrine sentence, a judge or flow value, the assignment or key shape in `boss.ts`, host messages,
+tool descriptions) or adds `words.special`. Nothing is recorded as owed.
+
 **USER RULING 2026-10-18: one sample, breadth over depth, on the boss path.** The 10-17 bar (under 3% misses per
 check) took ~22K samples across the primitives and is retired. A replay or Live run is ONE sample per moment, and
 speed beats per-primitive certainty: cover many bosses once rather than one boss many times.

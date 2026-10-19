@@ -48,8 +48,10 @@ Give each item a verdict: **PASS**, **CHANGE** (state the edit: file, what goes,
 5. **Assignment.** On a preset, the component takes `<x>Boss.assignment`, and the workspace module builds no
    `{ response: 'speech' | 'gesture' }` assignment of its own. Bespoke bosses build their own; check that it never
    carries the gesture key to the tutor.
-6. **Spoken key** (spoken modes). The key is `spokenKeyText(...)`, with no hand-written "also accept". The leak gate
-   is `spokenKeyLeaks` over the surfaces that must not carry the answer. The generator spreads
+6. **Spoken key** (spoken modes). The boss returns a `SpokenKey` object (`speech.key`, or `spoken.key` on a bespoke
+   boss) and builds speech assignments only with `spokenAssignment`. The ask-leak gate is automatic (`askLeaks` on
+   `validate`, run over saved payloads by `boss.test.ts`); review each `given` entry: it must be something the ask says
+   by design, never a way to silence a real leak. Surfaces beyond the ask use `spokenKeyLeaks`. The generator spreads
    `spokenKeyProperties(...)` instead of writing `alsoAccept`/`acceptRule`/`signatureError`.
 7. **Levers.** One lever set (`leverSet`) in the levers module, passed as `levers` on the boss. Each spec has a stock
    `type` (`custom` only with `why`). The component calls `declare`/`onScreen`/`simpler` (or `bind`) and keeps no
@@ -74,12 +76,13 @@ Give each item a verdict: **PASS**, **CHANGE** (state the edit: file, what goes,
     delete the hook, the hand-picked `tutorSpeaking` and the per-primitive surface test, and mark the two elements.
 12. **Ratchets.** Compare the ratchet counts in `boss.test.ts` with the tree. A change that moved a family lowers
     them in the same slice. A new instance is a CHANGE naming the framework piece to use.
-13. **Verification.** `test:primitive` green; the card and guidance printed. Decide whether the change altered the
-    tutor's input:
-    - Byte-identical guidance, lever words and key text: no Live needed. Say how you know (tests, a diff of
-      `boss-card.mjs` output).
-    - Otherwise: hand the user ONE `--samples 1` command and the question it answers (agents never run Live:
-      USER RULING 2026-10-17).
+13. **Verification.** `test:primitive` green; the card and guidance printed. That is the gate (USER RULING
+    2026-10-19). Ask for Live only when the change touches the shared path:
+    - New card words (`job`, `answer`, `question`), keys, levers or misses on one family: no Live. They fill
+      shared sentences the free checks already cover.
+    - A doctrine sentence, a judge or flow value, the assignment or key shape in `boss.ts`, host messages, tool
+      descriptions, or a new `words.special`: hand the user ONE `--samples 1` command, the trigger, and the
+      question it answers (agents never run Live: USER RULING 2026-10-17). Record nothing as owed.
 
 ## 3. Report
 

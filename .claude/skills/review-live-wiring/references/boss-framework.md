@@ -19,11 +19,16 @@ finds every card and boss on disk and fails on a missing or wrong one.
 
 ## Choose a preset first
 
+The rotation is the same for every boss; a mode's variant is a card value, never its own wiring. Every item's
+assignment comes from `bossAssignment` (a spoken key, or none: a gesture the activity checks). A family whose modes
+mix said, shown and board items is still one `spokenBoss`: its shown items return a null key and play through `show`.
+
 | Mechanic | Card mode | Boss | The primitive supplies |
 |---|---|---|---|
-| The learner says it; the tutor judges | `{ ...SPOKEN, misses }`, card `audio: SPOKEN_AUDIO` | `spokenBoss({ card, validate, items, levers?, speech: { ask, key, misses?, say, before? }, drive })` | the ask; the key via `spokenKeyText`; known misses (`KnownMiss[]`); the harness's `{ correct, plainWrong }`; `before`: what the learner does on screen first (roll the dice) |
-| The learner taps one choice; the activity checks | `{ ...TAP_ONE, misses }` | `tapBoss({ card, validate, items, levers?, choice: { ask, targets }, drive })` | the ask; the harness's `{ correct, wrong }` targets |
-| Anything else (a board, a build, a simulation) | spell `answer`/`judge`/`flow` | `defineBoss({ card, validate, items, ask, drive })` | its own assignment in the component, `drive.play` |
+| The learner says it; the tutor judges | `{ ...SPOKEN, misses }`, card `audio: SPOKEN_AUDIO` | `spokenBoss({ card, validate, items, levers?, speech: { ask, key, misses?, say, show?, before?, modeOf? }, drive })` | the ask; the key as a `SpokenKey` (the preset writes its text), or null on an item answered on screen; `given`, what the ask says by design; known misses (`KnownMiss[]`); the harness's `{ correct, plainWrong }`; `show`: the harness's moves on a keyless item; `before`: what the learner does on screen first (roll the dice) |
+| The learner says it or shows it | `{ ...SAY_OR_SHOW, misses }` (`judge: 'either'`) | `spokenBoss`, with `speech.modeOf` when other modes sit beside it | as spoken; the assignment adds `acceptsGesture` |
+| The learner taps one choice; the activity checks | `{ ...TAP_ONE, misses }` | `tapBoss({ card, validate, items, levers?, choice: { ask, targets, commit? }, drive })` | the ask; the harness's `{ correct, wrong }` targets; `commit`: the button pressed after the tap ("Check"), named in the card's `moves` |
+| Every mode a board, a build, a simulation | spell `answer`/`judge`/`flow` | `defineBoss({ card, validate, items, ask, drive })` | its own assignment in the component, `drive.play` |
 
 **A mode whose items are steps wired differently** (say the story kind, place the cards, say the answer) is
 `{ steps: { <step>: BossMode, … }, misses }`, keyed by the step name the item's scene publishes as `kind`, and the
@@ -54,9 +59,18 @@ argue for, not a default.
 
 One shape for every spoken answer (`spokenKey.ts`): `answer`, `alsoAccept[]`, `acceptRule?`, `signatureError?`, and
 either `menu` (a closed word menu said in full in the ask) or `meaning` (`{ idea, notIt }`, judged on meaning).
-`spokenKeyText(key)` writes the sentence the judge reads; never write "also accept …" by hand.
-`spokenKeyLeaks(key, surfaces)` is the leak check: list the surfaces that must not carry the answer (the ask; a
-print only when reading it is not the task). The generator spreads `spokenKeyProperties(answerDescription)`
+A boss hands over the key OBJECT, never its text: `speech.key` (or `spoken.key` on a bespoke boss) returns a
+`SpokenKey`, and `spokenAssignment` (`boss.ts`, the only builder of a `response: 'speech'` assignment) writes the
+sentence with `spokenKeyText`.
+
+**The ask never says the answer, by construction.** A boss with spoken items declares `spoken` (`spokenBoss` does it),
+and `defineBoss` wraps its `validate` with `askLeaks(ask, key, given)`: content whose ask says an accepted answer is
+rejected at launch. A menu key's ask must say its whole menu instead. `given` lists what the ask says by design
+("zero plus three" asks for three; dice's "left, right, or same"); a sound in slashes (`/t/`) is not its letter.
+`boss.test.ts` requires every spoken boss to declare `spoken`, to have a saved payload in
+`runtime/testing/w1-payloads/`, and to pass `askLeaks` on every item of it; no boss family file may write
+`response: 'speech'` itself. `spokenKeyLeaks(key, surfaces)` remains for surfaces beyond the ask (a printed
+stimulus, a picture's name). The generator spreads `spokenKeyProperties(answerDescription)`
 (`service/spokenKeySchema.ts`) into its item schema instead of writing `alsoAccept`/`acceptRule`/`signatureError`.
 
 ## Levers
@@ -120,6 +134,4 @@ in `activityContract.test.ts`.
 ## Testing a boss
 
 Free: `npm run test:primitive -- <id>` (the boss guards, the journey sweep, the workspace tests),
-`node scripts/boss-card.mjs <id>` (the card and the guidance the tutor receives). Paid Live is the user's (USER RULING
-2026-10-18: one `--samples 1` sample per boss; a miss is fixed on the shared path). A change that keeps the tutor's
-input byte-identical (the guidance, the lever words, the key text) needs no Live sample.
+`node scripts/boss-card.mjs <id>` (the card and the guidance the tutor receives). Those are the gate. Paid Live is the user's. USER RULING 2026-10-19: a family moved to a boss is gated by the free checks only; ask the user for ONE `--samples 1` sample only when the change touches the shared path (a doctrine sentence, a judge or flow value, the assignment or key shape in `boss.ts`, host messages, tool descriptions) or adds `words.special`, and name that trigger. New card words (`job`, `answer`, `question`) fill shared sentences and need no sample. A miss is fixed on the shared path.
